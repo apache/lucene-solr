@@ -271,6 +271,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           } catch (Exception e) {
             ParWork.propagateInterrupt(e);
+            if (e instanceof RuntimeException) {
+              throw (RuntimeException) e;
+            }
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         });

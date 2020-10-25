@@ -330,9 +330,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           }
         }
         // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
+//        if (asyncId != null) {
+//          propMap.put(ASYNC, asyncId);
+//        }
         ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
       }
 
@@ -500,10 +500,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             propMap.put(key, message.getStr(key));
           }
         }
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
+//        // add async param
+//        if (asyncId != null) {
+//          propMap.put(ASYNC, asyncId);
+//        }
         // special flag param to instruct addReplica not to create the replica in cluster state again
         propMap.put(OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, "true");
 

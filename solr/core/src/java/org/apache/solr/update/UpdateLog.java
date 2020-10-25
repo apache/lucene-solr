@@ -308,11 +308,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @return the current transaction log's size (based on its output stream)
    */
   public long getCurrentLogSizeFromStream() {
-    // if we sync this, it's a bad block and it's not critical its up to date (it's used to check
-    // if we should commit/flush in mem buffer)
-    // if we want it up to date, we should make a fastinputstream with volatile size field
-    TransactionLog ftlog = tlog;
-    return ftlog == null ? 0 : ftlog.getLogSizeFromStream();
+    tlogLock.lock();
+    try {
+      TransactionLog ftlog = tlog;
+      return ftlog == null ? 0 : ftlog.getLogSizeFromStream();
+    } finally {
+      tlogLock.unlock();
+    }
   }
 
   public long getTotalLogsNumber() {

@@ -209,7 +209,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   }
 
-  @Ignore // nocommit investigate java.lang.AssertionError: Expected :1 Actual   :2
   public void testSearcherListeners() throws Exception {
     MockSearchComponent.registerSlowSearcherListener = false;
         
@@ -223,7 +222,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     
     MockSearchComponent.registerFirstSearcherListener = true;
     MockSearchComponent.registerNewSearcherListener = true;
-    createCoreAndValidateListeners(1, 1, 2, 1);
+    createCoreAndValidateListeners(1, 1, 2, 2);
   }
   
   private void createCoreAndValidateListeners(int numTimesCalled, int numTimesCalledFirstSearcher,

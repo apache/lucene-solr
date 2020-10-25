@@ -32,7 +32,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
-@Ignore // nocommit flakey test
 public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 1;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final ConnectionManager.IsClosed isClosed;
 
   private volatile boolean finished = false; // see finish()
 
@@ -66,12 +68,21 @@ public class SolrCmdDistributor implements Closeable {
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
     this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    isClosed = null;
+  }
+
+  public SolrCmdDistributor(UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
+    assert ObjectReleaseTracker.track(this);
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    this.isClosed = isClosed;
   }
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
   //  nonCommitTracker.waitForComplete();
-    solrClient.waitForOutstandingRequests();
+    if (isClosed != null && !isClosed.isClosed()) {
+      solrClient.waitForOutstandingRequests();
+    }
     finished = true;
   }
   

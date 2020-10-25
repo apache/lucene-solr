@@ -1578,8 +1578,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
       log.warn("Too many close [count:{}] on {}", count, this);
-      return;
-      //throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
     }
     log.info("{} CLOSING SolrCore {}", logid, this);
 

@@ -336,7 +336,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       }
       return rsp.getResponse();
     } catch (SolrServerException | IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail, e);
     }
   }
 

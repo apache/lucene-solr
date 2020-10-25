@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -31,6 +33,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public abstract class ShardHandlerFactory implements Closeable {
 
   public abstract ShardHandler getShardHandler();
+
+  public abstract ShardHandler getShardHandler(LBHttp2SolrClient lbClient);
 
   public abstract void close();
 

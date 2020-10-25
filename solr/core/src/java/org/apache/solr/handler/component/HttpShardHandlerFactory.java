@@ -141,6 +141,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     return new HttpShardHandler(this);
   }
 
+  @Override
+  public ShardHandler getShardHandler(LBHttp2SolrClient lbClient) {
+    return new HttpShardHandler(this, lbClient);
+  }
+
   /**
    * Returns this Factory's {@link WhitelistHostChecker}.
    * This method can be overridden to change the checker implementation.

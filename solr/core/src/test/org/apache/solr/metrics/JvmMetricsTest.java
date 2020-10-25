@@ -132,14 +132,13 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   }
 
   @Test
-  @Ignore // nocommit jvm metrics off atm
   public void testSetupJvmMetrics() throws Exception {
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
     Map<String,Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     assertTrue(metrics.size() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("buffers.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("classes.")).count() > 0);
-    // nocommit - off right now
+
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("os.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("gc.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("memory.")).count() > 0);

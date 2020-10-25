@@ -63,10 +63,10 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.disableMetricsHistoryHandler", "false");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.skipCommitOnClose", "false");
   }
 
@@ -105,7 +105,6 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
-  @Ignore // nocommit debug
   public void leaderRecoverFromLogOnStartupTest() throws Exception {
     AtomicInteger countReplayLog = new AtomicInteger(0);
     TestInjection.skipIndexWriterCommitOnClose = true;
@@ -156,11 +155,13 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         Timer timer = (Timer)metrics.get("REPLICATION.peerSync.time");
         Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
         Counter skipped = (Counter)metrics.get("REPLICATION.peerSync.skipped");
-        replicationCount += timer.getCount();
-        if (counter != null) {
-          errorsCount += counter.getCount();
+        if (timer != null && counter != null && skipped != null) {
+          replicationCount += timer.getCount();
+          if (counter != null) {
+            errorsCount += counter.getCount();
+          }
+          skippedCount += skipped.getCount();
         }
-        skippedCount += skipped.getCount();
       }
     }
 

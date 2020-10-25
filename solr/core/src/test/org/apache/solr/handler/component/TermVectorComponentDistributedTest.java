@@ -30,7 +30,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit flakey
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
   @BeforeClass
   public static void betterNotBeJ9() {

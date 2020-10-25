@@ -221,6 +221,7 @@ public  class LeaderElector {
    */
   public int joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     if (context.isClosed() || zkClient.isClosed()) {
+      if (log.isDebugEnabled()) log.debug("Already closed");
       throw new AlreadyClosedException();
     }
 
@@ -235,8 +236,8 @@ public  class LeaderElector {
     int tries = 0;
     while (cont) {
       try {
-        if(joinAtHead){
-          log.debug("Node {} trying to join election at the head", id);
+        if (joinAtHead){
+          if (log.isDebugEnabled()) log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
           if(nodes.size() <2){
             leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
@@ -254,7 +255,8 @@ public  class LeaderElector {
           }
         } else {
           while (true) {
-            try {
+            if (log.isDebugEnabled()) log.debug("create ephem election node {}", shardsElectZkPath + "/" + id + "-n_");
+              try {
               leaderSeqPath = zkClient.getSolrZooKeeper().create(shardsElectZkPath + "/" + id + "-n_", null,
                       zkClient.getZkACLProvider().getACLsToAdd(shardsElectZkPath + "/" + id + "-n_"),
                       CreateMode.EPHEMERAL_SEQUENTIAL);

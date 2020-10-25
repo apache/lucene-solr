@@ -38,7 +38,6 @@ import org.junit.Test;
  * See SOLR-7147 for more information
  */
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit flakey
 public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBase {
 
   public TestTrackingShardHandlerFactory() {

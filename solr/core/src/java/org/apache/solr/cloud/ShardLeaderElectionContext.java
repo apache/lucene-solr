@@ -395,19 +395,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
     log.info("There may be a better leader candidate than us - going back into recovery");
 
+    cancelElection();
+
     if (isClosed()) {
       log.debug("Not rejoining election because CoreContainer is closed");
       return;
     }
+
+    leaderElector.joinElection(this, true);
 
     core.getUpdateHandler().getSolrCoreState().doRecovery(zkController.getCoreContainer(), core.getCoreDescriptor());
-
-    if (isClosed()) {
-      log.debug("Not rejoining election because CoreContainer is closed");
-      return;
-    }
-    cancelElection();
-    leaderElector.joinElection(this, true);
   }
 
   public String getShardId() {

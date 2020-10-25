@@ -43,6 +43,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -111,7 +112,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     CoreContainer cc = req.getCore().getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = cc.getZkController();
-    cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
+    cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler(), new IsCCClosed(req));
     try {
       cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
       collection = cloudDesc.getCollectionName();
@@ -1312,5 +1313,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot talk to ZooKeeper - Updates are disabled.");
+  }
+
+  private static class IsCCClosed extends ConnectionManager.IsClosed {
+    private final SolrQueryRequest req;
+
+    public IsCCClosed(SolrQueryRequest req) {
+      this.req = req;
+    }
+
+    @Override
+    public boolean isClosed() {
+      return req.getCore().getCoreContainer().isShutDown();
+    }
   }
 }

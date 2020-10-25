@@ -42,8 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-@Ignore // nocommit - debug this later
+@Ignore // nocommit - does not appear to be fully working, perhaps due to cluster property change ..
 public class TestDistributedTracing extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -60,7 +59,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
 
   private static void waitForSampleRateUpdated(double rate) throws TimeoutException, InterruptedException {

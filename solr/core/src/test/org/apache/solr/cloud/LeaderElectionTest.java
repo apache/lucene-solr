@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 @Slow
 @LuceneTestCase.Nightly
-@Ignore // nocommit debug
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -99,7 +99,6 @@ abstract public class BaseTestHarness {
     return null;
   }
 
-  private static AtomicInteger RS_CNT = new AtomicInteger();
   public static TinyDocumentImpl getTinyDocument(String xml, SolrResourceLoader loader) {
     TinyDocumentImpl docTree = null;
     Configuration conf1 = Configuration.newConfiguration();
@@ -114,7 +113,7 @@ abstract public class BaseTestHarness {
     //      parseOptions.setXIncludeAware(true);
 
     // parseOptions.setSchemaValidationMode(Validation.STRIP);
-    parseOptions.setSchemaValidationMode(0);
+    parseOptions.setSchemaValidationMode(Validation.LAX);
 
     SolrTinyBuilder builder = new SolrTinyBuilder(conf1.makePipelineConfiguration(), new Properties());
     try {
@@ -145,7 +144,7 @@ abstract public class BaseTestHarness {
     TinyDocumentImpl docTree = getTinyDocument(xml, null);
 
     xpath = xpath.trim();
-    return getXpath().evaluate(xpath.trim(), docTree, returnType);
+    return getXpath().evaluate(xpath, docTree, returnType);
   }
 
   /**

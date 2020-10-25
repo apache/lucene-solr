@@ -26,13 +26,13 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
   String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)
 
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     useFactory(null);
   }
 
@@ -64,7 +64,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
     JettySolrRunner j = createJetty(jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
     j.start();
     assertEquals(0, CollectionAdminRequest
-        .createCollection(DEFAULT_COLLECTION, "conf1", 1, 1)
+        .createCollection(DEFAULT_COLLECTION, "_default", 1, 1)
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest

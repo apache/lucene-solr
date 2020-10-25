@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.Nightly // too flakey atm, and ugly sleeps as well
+//@LuceneTestCase.Nightly // too flakey atm, and ugly sleeps as well
 public class CollectionPropsTest extends SolrCloudTestCase {
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -122,9 +122,9 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
 
-    // We don't allow immediate reads like this anymore, the system will get the props when notified
+    // We don't allow immediate reads like this, the system will get the props when notified
     // checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
-    
+
   }
   
   private void checkValue(String propertyName, String expectedValue) throws InterruptedException {
@@ -162,6 +162,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly // ugly retry - properties should be implemented better than this ...
   public void testWatcher() throws KeeperException, InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
@@ -193,14 +194,14 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
     // TODO: delete is not a normal, good op here (should clear the file) and it may take a moment to arrive
     if (!props.isEmpty()) {
-      Thread.sleep(100);
+      Thread.sleep(3000);
     }
     props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());
   }
 
   @Test
-  @Ignore // nocommit - currently we only allow a single watcher per collection .. hmmm, we need to allow multiple observers for one collection
+  //@Ignore // nocommit - currently we only allow a single watcher per collection .. hmmm, we need to allow multiple observers for one collection
   public void testMultipleWatchers() throws InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());

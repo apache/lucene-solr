@@ -92,7 +92,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - this is a long timeout to wait for, we need to lower it and test this better
   public void testLeaderNotResponding() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 

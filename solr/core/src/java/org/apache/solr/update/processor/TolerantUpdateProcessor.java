@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -247,7 +248,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node added
         // to the exception when it failed.
-        if ( ! (error.t instanceof SolrException) ) {
+        if ( ! (error.t instanceof SolrException) && ! (error.t instanceof BaseHttpSolrClient.RemoteExecutionException) ) {
           log.error("async update exception is not SolrException, no metadata to process", error.t);
           continue;
         }

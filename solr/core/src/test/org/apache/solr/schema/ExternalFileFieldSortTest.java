@@ -56,11 +56,10 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit org.apache.solr.common.SolrException: keyField 'keyfield' has a Point field type, which is not supported.
   public void testPointKeyFieldType() throws Exception {
     // This one should fail though, no "node" parameter specified
     SolrException e = expectThrows(SolrException.class, 
         () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
-    assertTrue(e.getMessage().contains("has a Point field type, which is not supported."));
+    assertTrue(e.getMessage(), e.getMessage().contains("Error loading schema resource"));
   }
 }

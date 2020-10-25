@@ -332,7 +332,7 @@ public class Utils {
 
       public static Object fromJSON (Reader is){
         try {
-          return STANDARDOBJBUILDER.apply(getJSONParser(is)).getValStrict();
+          return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
         }

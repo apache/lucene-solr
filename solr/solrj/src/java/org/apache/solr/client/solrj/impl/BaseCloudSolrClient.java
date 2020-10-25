@@ -1466,11 +1466,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         return false;
 
       if (!exact) {
-        if (collectionState.getSlices().size() < expectedShards) {
+        if (collectionState.getActiveSlices().size() < expectedShards) {
           return false;
         }
       } else {
-        if (collectionState.getSlices().size() != expectedShards) {
+        if (collectionState.getActiveSlices().size() != expectedShards) {
           return false;
         }
       }
@@ -1480,7 +1480,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       int activeReplicas = 0;
-      for (Slice slice : collectionState) {
+      for (Slice slice : collectionState.getActiveSlices()) {
+        if (!slice.getState().equals(Slice.State.ACTIVE)) {
+          return false;
+        }
         Replica leader = slice.getLeader();
         if (leader == null) {
           return false;

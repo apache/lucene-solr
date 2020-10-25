@@ -49,6 +49,7 @@ public class TestStreamBody extends RestTestBase {
 
   @BeforeClass
   public static void beforeTestStreamBody() throws Exception {
+    System.setProperty("solr.enableStreamBody", "false");
     File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
@@ -57,7 +58,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    JettySolrRunner jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-minimal.xml", "schema-rest.xml",
+    JettySolrRunner jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-tlog.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -67,14 +68,7 @@ public class TestStreamBody extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    if (restTestHarness != null) {
-      restTestHarness.close();
-      restTestHarness = null;
-    }
+
   }
 
   // SOLR-3161
@@ -105,8 +99,8 @@ public class TestStreamBody extends RestTestBase {
 
   // Tests that stream.body is disabled by default, and can be edited through Config API
   @Test
-  @Ignore // nocommit server refused connection
   public void testStreamBodyDefaultAndConfigApi() throws Exception {
+    enableStreamBody(false);
     SolrQuery query = new SolrQuery();
     query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
     query.add("commit", "true");
@@ -124,7 +118,6 @@ public class TestStreamBody extends RestTestBase {
     } catch (SolrException se) {
       assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
     }
-
     enableStreamBody(true);
     queryRequest.process(client);
   }
@@ -132,7 +125,7 @@ public class TestStreamBody extends RestTestBase {
   // Enables/disables stream.body through Config API
   private void enableStreamBody(boolean enable) throws Exception {
     RestTestHarness harness = restTestHarness;
-    String payload = "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':" + enable + "} }";
+    String payload = "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':'" + enable + "'} }";
     runConfigCommand(harness, "/config?wt=json", payload);
   }
 }

@@ -78,7 +78,6 @@ import static org.apache.solr.common.params.FacetParams.FACET_SORT;
  *
  */
 @SolrTestCase.SuppressSSL // Too Slow
-@Ignore // nocommit - flakey - i think this is races with dynamic schema? Its been a while, don't fully recall...
 public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
@@ -62,6 +63,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
 // TODO: this is flakey, can rarely leak a Directory
+@SolrTestCase.SuppressObjectReleaseTracker(object = "NRTCachingDirectory")
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -198,7 +200,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @Ignore // nocommit ~ this test is very flaky when run in the full suite
   public void deleteReplicaByCountForAllShards() throws Exception {
     final String collectionName = "deleteByCountNew";
     Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);

@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
  * Tests a schemaless collection configuration with SolrCloud
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit debug
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
 public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -85,6 +84,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
 
   @Test
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
+  // TODO: this test is flakey, can hit unknown field on initial adds
   public void test() throws Exception {
     setupRestTestHarnesses();
 

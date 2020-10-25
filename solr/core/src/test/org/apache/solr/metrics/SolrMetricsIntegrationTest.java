@@ -44,7 +44,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
 public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 20;
   private static final String CORE_NAME = "metrics_integration";
@@ -75,7 +74,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
-    System.setProperty("solr.disableDefaultJmxReporter", "false");
     Path home = Paths.get(TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -127,12 +125,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
 
     deleteCore();
-
-    for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
-      MockMetricReporter mockReporter = (MockMetricReporter) reporter;
-      assertTrue("Reporter " + reporterName + " was not closed: " + mockReporter, mockReporter.didClose);
-    }
   }
 
   @Test

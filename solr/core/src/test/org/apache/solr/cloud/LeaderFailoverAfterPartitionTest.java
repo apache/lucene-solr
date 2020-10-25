@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit debug
+@LuceneTestCase.Nightly
 public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

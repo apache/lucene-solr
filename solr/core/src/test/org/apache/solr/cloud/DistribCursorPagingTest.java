@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -63,7 +64,9 @@ import java.util.Map;
  */
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
-@Ignore // nocommit finish compare query impl
+// nocommit finish compare query impl
+// nocommit this test is flakey
+@LuceneTestCase.AwaitsFix(bugUrl = "FINISH ABOVE")
 public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

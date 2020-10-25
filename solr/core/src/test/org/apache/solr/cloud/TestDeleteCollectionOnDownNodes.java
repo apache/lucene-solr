@@ -27,7 +27,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debugging
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
   @BeforeClass

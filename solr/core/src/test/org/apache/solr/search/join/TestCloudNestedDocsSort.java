@@ -42,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - investigate
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   private static ArrayList<String> vals = new ArrayList<>();
@@ -69,7 +68,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     int shards = 2;
     int replicas = 2 ;
     CollectionAdminRequest.createCollection("collection1", configName, shards, replicas)
-        .withProperty("config", "solrconfig-minimal.xml")
+        .withProperty("config", "solrconfig-tlog.xml")
         .withProperty("schema", "schema.xml")
         .process(cluster.getSolrClient());
 
@@ -125,6 +124,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   @AfterClass
   public static void cleanUpAfterClass() throws Exception {
     client = null;
+    vals = null;
   }
 
   @Test 

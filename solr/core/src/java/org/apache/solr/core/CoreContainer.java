@@ -1912,7 +1912,7 @@ public class CoreContainer implements Closeable {
   public SolrCore getCore(String name, boolean incRefCount) {
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, incRefCount, true);
+    SolrCore core = solrCores.getCoreFromAnyList(name, incRefCount);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {
@@ -1938,14 +1938,14 @@ public class CoreContainer implements Closeable {
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
 
-      // todo: ensure only transient?
-      if (core == null) {
-        if (isZooKeeperAware()) {
-          zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
-        }
-        core = createFromDescriptor(desc, false); // This should throw an error if it fails.
+    // todo: ensure only transient?
+    if (core == null) {
+      if (isZooKeeperAware()) {
+        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
       }
-      core.open();
+      core = createFromDescriptor(desc, false); // This should throw an error if it fails.
+    }
+    core.open();
 
 
     return core;

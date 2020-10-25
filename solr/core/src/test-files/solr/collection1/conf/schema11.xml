@@ -154,7 +154,7 @@
         Duplicate tokens at the same position (which may result from Stemmed Synonyms or
         WordDelim parts) are removed.
         -->
-    <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.MockTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time

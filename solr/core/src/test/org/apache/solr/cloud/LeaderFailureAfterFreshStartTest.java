@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -59,7 +60,7 @@ import static java.util.Collections.singletonList;
  * This test is modeled after SyncSliceTest
  */
 @Slow
-@Ignore // nocommit not working since starting to straighten out some more overseer action
+@LuceneTestCase.Nightly
 public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

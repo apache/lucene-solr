@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * the responses indicate the requests are handled sequentially for
  * the same ConfigSet and base ConfigSet.
  */
-@Ignore // nocommit debug
 public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

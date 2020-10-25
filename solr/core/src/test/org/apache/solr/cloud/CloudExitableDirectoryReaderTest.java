@@ -238,7 +238,6 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
   @Test 
   @Repeat(iterations=5)
-  @Ignore // nocommit
   public void testCreepThenBite() throws Exception {
     int creep=100;
     ModifiableSolrParams params = params("q", "{!cache=false}name:a*");

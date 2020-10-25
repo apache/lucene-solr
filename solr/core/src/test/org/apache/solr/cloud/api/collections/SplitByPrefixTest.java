@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
  *  This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
  *  See SplitHandlerTest for random tests of lower-level split selection logic.
  */
-@Ignore // nocommit debug
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -154,15 +153,12 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
   public void doTest() throws IOException, SolrServerException {
     // SPLITSHARD is recommended to be run in async mode, so we default to that.
     // Also, autoscale triggers use async with splits as well.
-    boolean doAsync = true;
+    boolean doAsync = random().nextBoolean();
 
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 1, 1)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
-
 
     CloudHttp2SolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(COLLECTION_NAME);
@@ -177,8 +173,8 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT1");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 3); // expectedReplicas==3 because original replica still exists (just inactive)
-
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+    cluster.getZkClient().printLayout();
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
     if (uniquePrefixes.size() % 2 == 1) {  // make it an even sized list so we can split it exactly in two
@@ -200,7 +196,10 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT2");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 3, 5);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 3, 3);
+
+    cluster.getZkClient().printLayout();
+
     // OK, now let's check that the correct split point was chosen
     // We can use the router to find the shards for the middle prefixes and they should be different.
 
@@ -230,7 +229,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT3");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 4, 7);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 4, 4);
 
     collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
     slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
@@ -252,7 +251,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT4");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 5, 9);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 4, 5);
 
     collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
     slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);
@@ -270,7 +269,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT5");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 11);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 5);
 
     collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
     slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);

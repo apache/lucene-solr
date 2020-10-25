@@ -44,13 +44,12 @@ import org.slf4j.LoggerFactory;
  * Test of the MiniSolrCloudCluster functionality with authentication enabled.
  */
 @LuceneTestCase.Slow
-@Ignore // nocommit debug
 public class TestAuthenticationFramework extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 2;
+  private static final int maxShardsPerNode = 20;
   private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";

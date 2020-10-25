@@ -67,6 +67,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
+    if (log.isDebugEnabled()) log.debug("cancelElection");
     if (!zkClient.isConnected()) {
       log.info("Can't cancel, zkClient is not connected");
       return;
@@ -75,9 +76,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       try {
         if (leaderZkNodeParentVersion != null) {
           try {
-            if (!zkClient.exists(leaderSeqPath)) {
-              return;
-            }
+//            if (!zkClient.exists(leaderSeqPath)) {
+//              return;
+//            }
             // We need to be careful and make sure we *only* delete our own leader registration node.
             // We do this by using a multi and ensuring the parent znode of the leader registration node
             // matches the version we expect - there is a setData call that increments the parent's znode
@@ -121,6 +122,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
           }
         } else {
+          zkClient.delete(leaderSeqPath, -1);
           log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
         }
       } catch (Exception e) {
@@ -147,7 +149,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         log.info("Bailing on becoming leader, we are closed");
         return;
       }
-      log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+      log.info("Creating leader registration node {} after winning as {} parent is {}", leaderPath, leaderSeqPath, parent);
       List<Op> ops = new ArrayList<>(3);
 
       // We use a multi operation to get the parent nodes version, which will
@@ -171,7 +173,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
         }
       }
-      // assert leaderZkNodeParentVersion != null;
+      //assert leaderZkNodeParentVersion != null;
 
     } catch (Throwable t) {
       ParWork.propagateInterrupt(t);

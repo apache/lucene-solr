@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 @SolrTestCaseJ4.SuppressSSL
 // Tests https://issues.apache.org/jira/browse/SOLR-13963
-@Ignore // nocommit - more flakey after par commit/update
 public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase {
 
   private static final String COLLECTION = "test";

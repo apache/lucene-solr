@@ -35,7 +35,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Nightly // too many sleeps and waits
-@Ignore // nocommit I"ve changed the queue to be more sensible
+@Ignore // nocommit I"ve changed the queue
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   private static final Charset UTF8 = Charset.forName("UTF-8");

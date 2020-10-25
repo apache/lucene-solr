@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,7 +39,6 @@ import static org.hamcrest.CoreMatchers.is;
  * and also asserts that a meaningful exception is thrown when shards.tolerant=false
  * See SOLR-7566
  */
-@Ignore // nocommit debug
 public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,8 +55,6 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1)
         .process(cluster.getSolrClient());
-
-//    cluster.waitForActiveCollection("tolerant", 2, 2);
 
     UpdateRequest update = new UpdateRequest();
     for (int i = 0; i < 100; i++) {

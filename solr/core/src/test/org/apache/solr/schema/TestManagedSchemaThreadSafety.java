@@ -50,7 +50,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-@Ignore // nocommit look into later
+@Ignore // nocommit this mock needs updating since zkController and ZkSolrClient work slightly differently
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   private static final class SuspendingZkClient extends SolrZkClient {

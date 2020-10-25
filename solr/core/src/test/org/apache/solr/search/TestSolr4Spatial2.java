@@ -131,7 +131,6 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testRptWithGeometryField() throws Exception {
     //note: fails with "srpt_geohash" because it's not as precise
     final boolean testCache = true;
@@ -141,7 +140,6 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testRptWithGeometryGeo3dField() throws Exception {
     final boolean testCache = true;
     final boolean testHeatmap = true;
@@ -297,7 +295,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
-      MetricsMap cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
+      MetricsMap cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
       assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
       assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
@@ -323,7 +321,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
       Object leafKey2 = getFirstLeafReaderKey();
       // get the current instance of metrics - the old one may not represent the current cache instance
-      cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
+      cacheMetrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
       assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
     }
 

@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
-@Ignore // nocommit debug
 public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -101,6 +100,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void multipleShardMigrateTest() throws Exception  {
 
     CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());

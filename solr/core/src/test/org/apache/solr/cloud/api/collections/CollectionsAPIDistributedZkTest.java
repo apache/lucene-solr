@@ -296,7 +296,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     });
 
     // create another collection should still work
-    CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)
+    CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2).setMaxShardsPerNode(100)
             .process(cluster.getSolrClient());
   }
 }

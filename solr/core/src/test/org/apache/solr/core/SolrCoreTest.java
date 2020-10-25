@@ -40,8 +40,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-@Ignore // nocommit flakey, can leak solrindexsearcher
 
+@Ignore // nocommit investigate
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
   

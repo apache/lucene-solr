@@ -91,6 +91,19 @@ public class HttpShardHandler extends ShardHandler {
     shardToURLs = new HashMap<>();
   }
 
+  public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, LBHttp2SolrClient lb) {
+    this.httpShardHandlerFactory = httpShardHandlerFactory;
+    this.lbClient = lb;
+    this.pending = new AtomicInteger(0);
+    this.responses = new LinkedBlockingQueue<>();
+    this.responseCancellableMap = new ConcurrentHashMap<>();
+
+    // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+    // This is primarily to keep track of what order we should use to query the replicas of a shard
+    // so that we use the same replica for all phases of a distributed request.
+    shardToURLs = new HashMap<>();
+  }
+
 
   private static class SimpleSolrResponse extends SolrResponse {
 

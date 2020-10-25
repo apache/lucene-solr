@@ -59,7 +59,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     useFactory(null);
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "10000");
     System.setProperty("solr.skipCommitOnClose", "false");
@@ -93,10 +92,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
-    
+
     shutdownCluster();
   }
 
@@ -155,19 +151,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     JettySolrRunner j2 = cluster.getJettySolrRunner(2);
     j1.stop();
     j2.stop();
-    cluster.waitForJettyToStop(j1);
-    cluster.waitForJettyToStop(j2);
 
     addDocs(collection, 1, docId);
     JettySolrRunner j3 = cluster.getJettySolrRunner(0);
     j3.stop();
-    cluster.waitForJettyToStop(j3);
 
     cluster.getJettySolrRunner(1).start();
     cluster.getJettySolrRunner(2).start();
-    
-    cluster.waitForNode(j1, 30);
-    cluster.waitForNode(j2, 30);
 
     // the meat of the test -- wait to see if a different replica become a leader
     // the correct behavior is that this should time out, if it succeeds we have a problem...
@@ -187,11 +177,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     JettySolrRunner j0 = cluster.getJettySolrRunner(0);
     j0.start();
-    cluster.waitForNode(j0, 30);
-    
-    // waitForNode not solid yet?
-    cluster.waitForAllNodes(30);
-    
+
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
@@ -255,7 +241,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     proxies.get(j1).reopen();
     j1.start();
-    cluster.waitForAllNodes(30);;
+    cluster.waitForAllNodes(30);
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());

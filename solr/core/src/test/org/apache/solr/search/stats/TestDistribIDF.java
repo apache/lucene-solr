@@ -72,7 +72,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit ~ fails due to query result mismatch
+  @Ignore // nocommit - hmm, finding 0 docs return instead of 2? strange ...
   public void testSimpleQuery() throws Exception {
     //3 shards. 3rd shard won't have any data.
     createCollection("onecollection", "conf1", ImplicitDocRouter.NAME);
@@ -130,13 +130,13 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           query.setFields("*,score");
           queryResponse = solrClient_local.query("onecollection_local", query);
           assertEquals(2, queryResponse.getResults().getNumFound());
-          // nocommit this is order sensitive
-         // assertEquals("2", queryResponse.getResults().get(0).get("id"));
-         // assertEquals("1", queryResponse.getResults().get(1).get("id"));
-//          float score1_local = (float) queryResponse.getResults().get(0).get("score");
-//          float score2_local = (float) queryResponse.getResults().get(1).get("score");
-//          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
-//              Float.compare(score1_local, score2_local));
+
+          assertEquals("2", queryResponse.getResults().get(0).get("id"));
+          assertEquals("1", queryResponse.getResults().get(1).get("id"));
+          float score1_local = (float) queryResponse.getResults().get(0).get("score");
+          float score2_local = (float) queryResponse.getResults().get(1).get("score");
+          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
+              Float.compare(score1_local, score2_local));
         }
       }
     }
@@ -146,6 +146,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   // commented 4-Sep-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   // TODO: this test is flakey, can fail on one of the later collection creates on start
+  // => java.lang.IllegalStateException: No core node name found for collection1_local_shard1_replica_n5 replica=null positions:2 cores:2 replicas:1
   public void testMultiCollectionQuery() throws Exception {
     // collection1 and collection2 are collections which have distributed idf enabled
     // collection1_local and collection2_local don't have distributed idf available
@@ -202,12 +203,12 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     CollectionAdminResponse response;
     if (router.equals(ImplicitDocRouter.NAME)) {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
-      create.setMaxShardsPerNode(1);
+      create.setMaxShardsPerNode(100);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
-      create.setMaxShardsPerNode(1);
+      create.setMaxShardsPerNode(100);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);
     }

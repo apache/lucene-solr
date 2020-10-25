@@ -267,12 +267,15 @@ public class TransactionLog implements Closeable {
 
     // needed to read other records
 
-    synchronized (globalStringList) {
+    fosLock.lock();
+    try {
       globalStringList = (List<String>) header.get("strings");
       globalStringMap = new HashMap<>(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }
+    } finally {
+      fosLock.unlock();
     }
   }
 
@@ -659,7 +662,12 @@ public class TransactionLog implements Closeable {
    * @return the FastOutputStream size
    */
   public long getLogSizeFromStream() {
-    return fos.size();
+    fosLock.lock();
+    try {
+      return fos.size();
+    } finally {
+      fosLock.unlock();
+    }
   }
 
   /** Returns a reader that can be used while a log is still in use.
@@ -734,7 +742,6 @@ public class TransactionLog implements Closeable {
       assert size == fis.position() - pos - 4;
 
       return o;
-
     }
 
     public void close() {

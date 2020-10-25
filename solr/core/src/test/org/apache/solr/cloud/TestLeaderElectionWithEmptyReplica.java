@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -37,18 +38,23 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 /**
  * See SOLR-9504
  */
-@Ignore // nocommit debug
+@Ignore // nocommit debug, we don't get a leader till the addReplica fails - is it hanging onto a higher leader ephem election node?
 public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String COLLECTION_NAME = "solr_9504";
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+
     useFactory(null);
     configureCluster(2)
         .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -70,27 +76,24 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     solrClient.commit();
 
     // find the leader node
-    Replica replica = solrClient.getZkStateReader().getLeaderRetry(COLLECTION_NAME, "shard1");
-    JettySolrRunner replicaJetty = null;
-    List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
-    for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
-      int port = jettySolrRunner.getLocalPort();
-      if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
-        replicaJetty = jettySolrRunner;
-        break;
-      }
-    }
+
+    JettySolrRunner replicaJetty = cluster.getShardLeaderJetty(COLLECTION_NAME, "shard1");
+
 
     // kill the leader
     replicaJetty.stop();
-    cluster.waitForJettyToStop(replicaJetty);
 
     // add a replica (asynchronously)
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1");
     String asyncId = addReplica.processAsync(solrClient);
 
+    //cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
+
+
     // bring the old leader node back up
     replicaJetty.start();
+
+    cluster.getZkClient().printLayout();
 
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
 
@@ -109,7 +112,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
       Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
           .withHttpClient(cloudClient.getHttpClient()).build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
-//      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
+      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
       if (numFound == Long.MIN_VALUE)  {
         numFound = response.getResults().getNumFound();
       } else  {

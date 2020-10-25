@@ -371,10 +371,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (ExecutionException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (TimeoutException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (Exception e) {
+          log.info("Exception closing Overseer {} {}", e.getClass().getName(), e.getMessage());
         }
       }
     }

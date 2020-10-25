@@ -843,13 +843,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
       if (!isClosed() && mayPutReplicaAsDown && numTried == 1 && docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName()).getState() == Replica.State.ACTIVE) {
         // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
-        //zkController.publish(coreDesc, Replica.State.DOWN);
-        // We should be in recovery and ignored by queries
+        // zkController.publish(coreDesc, Replica.State.DOWN);
+        // TODO: We should be in recovery and ignored by queries?
       }
       numTried++;
 
       if (numTried > 3) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not ping leader");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get leader");
         // instead of hammering on the leader,
         // let recovery process continue normally
       }

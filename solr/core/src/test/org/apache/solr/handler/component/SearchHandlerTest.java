@@ -39,7 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit, TJP: this code is closing client objects it doesn't own, so test may be testing unsupported behavior in ref branch?
 public class SearchHandlerTest extends SolrTestCaseJ4 
 {
   @BeforeClass
@@ -153,6 +152,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
       // Use the replica's core URL to avoid ZK communication
       try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+        jetty.getCoreContainer().getZkController().getZkClient().disableCloseLock();
         jetty.getCoreContainer().getZkController().getZkClient().close();
         rsp = req.process(client);
         assertFalse(rsp.getResponseHeader().getBooleanArg("zkConnected"));
@@ -198,6 +198,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // Use the replica's core URL to avoid ZK communication
       try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(disconnectedReplica.getCoreUrl()).build()) {
         ignoreException("ZooKeeper is not connected");
+        disconnectedJetty.getCoreContainer().getZkController().getZkClient().disableCloseLock();
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
         req.process(httpSolrClient);
         fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
@@ -252,6 +253,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
         ignoreException("ZooKeeper is not connected");
         ignoreException("no servers hosting shard:");
         JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+        disconnectedJetty.getCoreContainer().getZkController().getZkClient().disableCloseLock();
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
         req.process(httpSolrClient);
         fail("An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");

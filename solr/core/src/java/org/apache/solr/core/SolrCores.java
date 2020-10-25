@@ -294,12 +294,8 @@ class SolrCores implements Closeable {
     return ret;
   }
 
-  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
-    return getCoreFromAnyList(name, incRefCount, false);
-  }
-
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  SolrCore  getCoreFromAnyList(String name, boolean incRefCount, boolean onClose) {
+  SolrCore getCoreFromAnyList(String name, boolean incRefCount) {
     if (closed) {
       throw new AlreadyClosedException("SolrCores has been closed");
     }
@@ -438,13 +434,6 @@ class SolrCores implements Closeable {
     }
     return false;
   }
-
-//  public void queueCoreToClose(SolrCore coreToClose) {
-//    synchronized (pendingCloses) {
-//      pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
-//      pendingCloses.notifyAll(); // Wakes up closer thread too
-//    }
-//  }
 
   public TransientSolrCoreCache getTransientCacheHandler() {
 

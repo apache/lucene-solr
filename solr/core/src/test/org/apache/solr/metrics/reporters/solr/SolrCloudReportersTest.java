@@ -55,7 +55,7 @@ public class SolrCloudReportersTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @Ignore // nocommit remove silly sleep
+  @AwaitsFix(bugUrl = "remove silly sleep")
   public void testExplicitConfiguration() throws Exception {
     String solrXml = IOUtils.toString(SolrCloudReportersTest.class.getResourceAsStream("/solr/solr-solrreporter.xml"), "UTF-8");
     configureCluster(2).withSolrXml(solrXml).addConfig("test", configset("cloud-minimal")).configure();
