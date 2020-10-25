@@ -24,7 +24,7 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 import org.apache.lucene.util.TestUtil;
 
-public class FieldPhraseListTest extends AbstractTestCase {
+public class TestFieldPhraseList extends AbstractTestCase {
   
   public void test1TermIndex() throws Exception {
     make1d1fIndex( "a" );
