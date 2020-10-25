@@ -91,8 +91,8 @@ public class IndexFingerprint implements MapSerializable {
   /** Opens a new realtime searcher and returns it's (possibly cached) fingerprint */
   public static IndexFingerprint getFingerprint(SolrCore core, long maxVersion) throws IOException {
     RTimer timer = new RTimer();
-
-    RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().openRealtimeSearcher(true);
+    core.getUpdateHandler().getUpdateLog().openRealtimeSearcher();
+    RefCounted<SolrIndexSearcher> newestSearcher = core.getUpdateHandler().getUpdateLog().uhandler.core.getRealtimeSearcher();
     try {
       IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
       final double duration = timer.stop();
@@ -107,7 +107,6 @@ public class IndexFingerprint implements MapSerializable {
 
   public static IndexFingerprint getFingerprint(SolrIndexSearcher searcher, LeafReaderContext ctx, Long maxVersion)
       throws IOException {
-
     SchemaField versionField = VersionInfo.getAndCheckVersionField(searcher.getSchema());
     ValueSource vs = versionField.getType().getValueSource(versionField, null);
     @SuppressWarnings({"rawtypes"})

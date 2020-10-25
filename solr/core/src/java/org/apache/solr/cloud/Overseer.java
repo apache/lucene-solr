@@ -934,6 +934,10 @@ public class Overseer implements SolrCloseable {
       log.debug("doClose() - start");
     }
 
+    if (closeAndDone) {
+      shardHandler.cancelAll();
+    }
+
     if (ccThread != null) {
       ((OverseerCollectionConfigSetProcessor) ccThread.getThread()).closing();
       ccThread.interrupt();

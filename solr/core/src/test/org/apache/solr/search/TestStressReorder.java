@@ -30,14 +30,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@Ignore // nocommit - parallel commit/update (need to track down and harden this) // if the version matches, the val must log.error("ERROR, id={} found={} model {}", id, response, info);
 public class TestStressReorder extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -166,24 +164,27 @@ public class TestStressReorder extends TestRTGBase {
             if (before) {
               lastId = id;
             }
+            Object sync = syncArr[id];
+            // nocommit do we need this like in TestRealTimeGet to make sure our model matches?
+            // maybe try a test httpclient with strict ordering?
+            synchronized (sync) {
+              DocInfo info = model.get(id);
 
-            DocInfo info = model.get(id);
+              long val = info.val;
+              long nextVal = Math.abs(val) + 1;
 
-            long val = info.val;
-            long nextVal = Math.abs(val)+1;
+              // the version we set on the update should determine who wins
+              // These versions are not derived from the actual leader update handler hand hence this
+              // test may need to change depending on how we handle version numbers.
+              long version = testVersion.incrementAndGet();
 
-            // the version we set on the update should determine who wins
-            // These versions are not derived from the actual leader update handler hand hence this
-            // test may need to change depending on how we handle version numbers.
-            long version = testVersion.incrementAndGet();
-
-            // yield after getting the next version to increase the odds of updates happening out of order
-            if (rand.nextBoolean()) Thread.yield();
+              // yield after getting the next version to increase the odds of updates happening out of order
+              if (rand.nextBoolean()) Thread.yield();
 
               if (oper < commitPercent + deletePercent) {
-                verbose("deleting id",id,"val=",nextVal,"version",version);
+                verbose("deleting id", id, "val=", nextVal, "version", version);
 
-                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
+                Long returnedVersion = deleteAndGetVersion(Integer.toString(id), params("_version_", Long.toString(-version), DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
                 // TODO: returning versions for these types of updates is redundant
                 // but if we do return, they had better be equal
@@ -199,12 +200,12 @@ public class TestStressReorder extends TestRTGBase {
                   }
                 }
 
-                verbose("deleting id", id, "val=",nextVal,"version",version,"DONE");
+                verbose("deleting id", id, "val=", nextVal, "version", version, "DONE");
               } else if (oper < commitPercent + deletePercent + deleteByQueryPercent) {
 
-                verbose("deleteByQuery id",id,"val=",nextVal,"version",version);
+                verbose("deleteByQuery id", id, "val=", nextVal, "version", version);
 
-                Long returnedVersion = deleteByQueryAndGetVersion("id:"+Integer.toString(id), params("_version_",Long.toString(-version), DISTRIB_UPDATE_PARAM,FROM_LEADER));
+                Long returnedVersion = deleteByQueryAndGetVersion("id:" + Integer.toString(id), params("_version_", Long.toString(-version), DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
                 // TODO: returning versions for these types of updates is redundant
                 // but if we do return, they had better be equal
@@ -220,12 +221,13 @@ public class TestStressReorder extends TestRTGBase {
                   }
                 }
 
-                verbose("deleteByQuery id", id, "val=",nextVal,"version",version,"DONE");
+                verbose("deleteByQuery id", id, "val=", nextVal, "version", version, "DONE");
 
               } else {
-                verbose("adding id", id, "val=", nextVal,"version",version);
+                verbose("adding id", id, "val=", nextVal, "version", version);
 
-                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), "_version_",Long.toString(version)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+                Long returnedVersion = addAndGetVersion(sdoc("id", Integer.toString(id), FIELD, Long.toString(nextVal), "_version_", Long.toString(version)),
+                    params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
                 if (returnedVersion != null) {
                   assertEquals(version, returnedVersion.longValue());
                 }
@@ -239,11 +241,11 @@ public class TestStressReorder extends TestRTGBase {
                 }
 
                 if (VERBOSE) {
-                  verbose("adding id", id, "val=", nextVal,"version",version,"DONE");
+                  verbose("adding id", id, "val=", nextVal, "version", version, "DONE");
                 }
 
               }
-            // }   // end sync
+            }   // end sync
 
             if (!before) {
               lastId = id;

@@ -725,40 +725,27 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   }
 
-  public RefCounted<SolrIndexSearcher> openRealtimeSearcher() {
-    return openRealtimeSearcher(false);
-  }
-
   /** Opens a new realtime searcher and clears the id caches.
    * This may also be called when we updates are being buffered (from PeerSync/IndexFingerprint)
-   * @return opened searcher if requested
    */
-  public RefCounted<SolrIndexSearcher> openRealtimeSearcher(boolean returnSearcher) {
+  public void openRealtimeSearcher() {
     // We must cause a new IndexReader to be opened before anything looks at these caches again
     // so that a cache miss will read fresh data.
-    RefCounted<SolrIndexSearcher> holder = null;
     tlogLock.lock();
     try {
+      // We must cause a new IndexReader to be opened before anything looks at these caches again
+      // so that a cache miss will read fresh data.
       try {
-        holder = uhandler.core.openNewSearcher(true, true);
-
+        RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
+        holder.decref();
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e, true);
         SolrException.log(log, "Error opening realtime searcher", e);
-        return null;
-      } finally {
-
-        if (map != null) map.clear();
-        if (prevMap != null) prevMap.clear();
-        if (prevMap2 != null) prevMap2.clear();
-
-        if (!returnSearcher && holder != null) holder.decref();
+        return;
       }
 
-      if (returnSearcher) {
-        return holder;
-      }
-      return null;
+      if (map != null) map.clear();
+      if (prevMap != null) prevMap.clear();
+      if (prevMap2 != null) prevMap2.clear();
     } finally {
       tlogLock.unlock();
     }
@@ -863,25 +850,24 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public void preCommit(CommitUpdateCommand cmd) {
-
-    if (debug) {
-      log.debug("TLOG: preCommit");
-    }
-
-    if (getState() != State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
-      // if we aren't in the active state, and this isn't a replay
-      // from the recovery process, then we shouldn't mess with
-      // the current transaction log.  This normally shouldn't happen
-      // as DistributedUpdateProcessor will prevent this.  Commits
-      // that don't use the processor are possible though.
-      return;
-    }
-
-    // since we're changing the log, we must change the map.
-    newMap();
-
     tlogLock.lock();
     try {
+      if (debug) {
+        log.debug("TLOG: preCommit");
+      }
+
+      if (getState() != State.ACTIVE && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
+        // if we aren't in the active state, and this isn't a replay
+        // from the recovery process, then we shouldn't mess with
+        // the current transaction log.  This normally shouldn't happen
+        // as DistributedUpdateProcessor will prevent this.  Commits
+        // that don't use the processor are possible though.
+        return;
+      }
+
+      // since we're changing the log, we must change the map.
+      newMap();
+
       if (prevTlog != null) {
         globalStrings = prevTlog.getGlobalStrings();
 
@@ -1140,29 +1126,31 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
         // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
       }
-
-      if (entry != null) {
-        return entry.version;
-      }
-
-      // Now check real index
-      Long version = versionInfo.getVersionFromIndex(indexedId);
-
-      if (version != null) {
-        return version;
-      }
-
-      // We can't get any version info for deletes from the index, so if the doc
-      // wasn't found, check a cache of recent deletes.
-
-      entry = oldDeletes.get(indexedId);
-
-      if (entry != null) {
-        return entry.version;
-      }
-
     } finally {
       tlogLock.unlock();
+    }
+
+    if (entry != null) {
+      return entry.version;
+    }
+
+    // Now check real index
+    Long version = versionInfo.getVersionFromIndex(indexedId);
+
+    if (version != null) {
+      return version;
+    }
+
+    // We can't get any version info for deletes from the index, so if the doc
+    // wasn't found, check a cache of recent deletes.
+    tlogLock.lock();
+    try {
+      entry = oldDeletes.get(indexedId);
+    } finally {
+      tlogLock.unlock();
+    }
+    if (entry != null) {
+      return entry.version;
     }
 
     return null;

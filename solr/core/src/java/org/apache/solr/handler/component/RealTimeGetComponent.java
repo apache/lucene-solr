@@ -452,7 +452,8 @@ public class RealTimeGetComponent extends SearchComponent
    */
   private static SolrDocument reopenRealtimeSearcherAndGet(SolrCore core, Term idTerm, ReturnFields returnFields) throws IOException {
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    RefCounted<SolrIndexSearcher> searcherHolder = ulog.openRealtimeSearcher(true);
+    ulog.openRealtimeSearcher();
+    RefCounted<SolrIndexSearcher> searcherHolder = core.getRealtimeSearcher();
     try {
       SolrIndexSearcher searcher = searcherHolder.get();
 
