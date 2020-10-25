@@ -45,7 +45,7 @@ import org.locationtech.spatial4j.shape.Shape;
 
 import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
-public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
+public class TestGeo3dRpt extends RandomSpatialOpStrategyTestCase {
 
   private PlanetModel planetModel;
   private RandomGeo3dShapeGenerator shapeGenerator;

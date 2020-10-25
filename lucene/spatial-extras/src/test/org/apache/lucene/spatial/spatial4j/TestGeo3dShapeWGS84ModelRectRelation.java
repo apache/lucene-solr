@@ -31,11 +31,11 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
-public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestCase {
+public class TestGeo3dShapeWGS84ModelRectRelation extends ShapeRectRelationTestCase {
 
   PlanetModel planetModel = RandomPicks.randomFrom(random(), new PlanetModel[] {PlanetModel.WGS84, PlanetModel.CLARKE_1866});
 
-  public Geo3dShapeWGS84ModelRectRelationTest() {
+  public TestGeo3dShapeWGS84ModelRectRelation() {
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
     factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();

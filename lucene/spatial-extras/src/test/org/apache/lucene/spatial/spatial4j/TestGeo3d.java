@@ -23,7 +23,7 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
 import org.locationtech.spatial4j.shape.Shape;
 
-public class Geo3dTest extends LuceneTestCase {
+public class TestGeo3d extends LuceneTestCase {
 
   @Test
   public void testWKT() throws Exception {

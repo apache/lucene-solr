@@ -34,11 +34,11 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
-public class Geo3dShapeSphereModelRectRelationTest extends ShapeRectRelationTestCase {
+public class TestGeo3dShapeSphereModelRectRelation extends ShapeRectRelationTestCase {
 
   PlanetModel planetModel = PlanetModel.SPHERE;
 
-  public Geo3dShapeSphereModelRectRelationTest() {
+  public TestGeo3dShapeSphereModelRectRelation() {
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
     factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();
