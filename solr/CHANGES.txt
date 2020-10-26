@@ -158,7 +158,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used
+  as the client (Munendra S N)
 
 Other Changes
 ---------------------
