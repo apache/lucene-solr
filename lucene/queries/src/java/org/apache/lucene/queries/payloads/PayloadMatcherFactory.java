@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.queries.payloads;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
@@ -58,7 +59,7 @@ public class PayloadMatcherFactory {
    * a payload based on the payload type, and apply a matching inequality operations (eq,lt,lte,gt,and gte)
    * 
    * @param payloadType the type of the payload to decode, STRING, INT, FLOAT
-   * @param and inequalit operation as the test (example: eq for equals, gt for greater than)
+   * @param op and inequalit operation as the test (example: eq for equals, gt for greater than)
    * @return a payload matcher that decodes the payload and applies the operation inequality test.
    * 
    */
@@ -87,7 +88,7 @@ public class PayloadMatcherFactory {
     
     private String decodeString(byte[] bytes, int offset) {
       // TODO: Encoding?  Is this correct?  What about null pointers? Do we need to deal with the offsets here?
-      return new String(bytes);      
+      return new String(bytes, StandardCharsets.UTF_8);      
     }
     
     protected abstract boolean stringCompare(String val, String threshold);
