@@ -253,6 +253,11 @@ public class CoreContainer {
           getZkController().getOverseer() != null &&
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
+
+  private final ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
+  // initially these are the same to collect the plugin-based listeners during init
+  private ClusterEventProducer clusterEventProducer = clusterEventProducerFactory;
+
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
@@ -672,6 +677,7 @@ public class CoreContainer {
     }
 
     customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
+    customContainerPlugins.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
@@ -886,6 +892,9 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // create target ClusterEventProducer (possibly from plugins)
+      clusterEventProducer = clusterEventProducerFactory.create(customContainerPlugins);
 
       // init ClusterSingleton-s
 
@@ -2125,6 +2134,10 @@ public class CoreContainer {
 
   public ClusterSingletons getClusterSingletons() {
     return clusterSingletons;
+  }
+
+  public ClusterEventProducer getClusterEventProducer() {
+    return clusterEventProducer;
   }
 
   static {

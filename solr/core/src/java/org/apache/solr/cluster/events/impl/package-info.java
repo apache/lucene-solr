@@ -15,4 +15,9 @@
  * limitations under the License.
  */
 
-description = 'Lucene HTML documentation'
+/**
+ * Default implementation of {@link org.apache.solr.cluster.events.ClusterEventProducer}.
+ */
+package org.apache.solr.cluster.events.impl;
+
+
