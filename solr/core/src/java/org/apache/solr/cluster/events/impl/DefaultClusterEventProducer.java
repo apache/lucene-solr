@@ -87,6 +87,7 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
       liveNodesListener = null;
       cloudCollectionsListener = null;
       clusterPropertiesListener = null;
+      state = State.STOPPED;
       return;
     }
     state = State.STARTING;
@@ -244,8 +245,11 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
         log.warn("event type {} not supported yet.", type);
         continue;
       }
-      listeners.computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet())
-          .add(listener);
+      // to avoid removing no-longer empty set in unregister
+      synchronized (listeners) {
+        listeners.computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet())
+            .add(listener);
+      }
     }
   }
 
@@ -254,8 +258,16 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
     if (eventTypes == null || eventTypes.length == 0) {
       eventTypes = ClusterEvent.EventType.values();
     }
-    for (ClusterEvent.EventType type : eventTypes) {
-      listeners.getOrDefault(type, Collections.emptySet()).remove(listener);
+    synchronized (listeners) {
+      for (ClusterEvent.EventType type : eventTypes) {
+        Set<ClusterEventListener> perType = listeners.get(type);
+        if (perType != null) {
+          perType.remove(listener);
+          if (perType.isEmpty()) {
+            listeners.remove(type);
+          }
+        }
+      }
     }
   }
 

@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.Utils;
@@ -178,12 +179,12 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
   private static CountDownLatch dummyEventLatch = new CountDownLatch(1);
   private static ClusterEvent lastEvent = null;
 
-  public static class DummyEventListener implements ClusterEventListener {
+  public static class DummyEventListener implements ClusterEventListener, ClusterSingleton {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    boolean running = false;
+    State state = State.STOPPED;
     @Override
     public void onEvent(ClusterEvent event) {
-      if (!running) {
+      if (state != State.RUNNING) {
         log.debug("skipped event, not running: {}", event);
         return;
       }
@@ -205,18 +206,18 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     @Override
     public void start() throws Exception {
       log.debug("starting {}", Integer.toHexString(hashCode()));
-      running = true;
+      state = State.RUNNING;
     }
 
     @Override
-    public boolean isRunning() {
-      return running;
+    public State getState() {
+      return state;
     }
 
     @Override
     public void stop() {
       log.debug("stopping {}", Integer.toHexString(hashCode()));
-      running = false;
+      state = State.STOPPED;
     }
   }
 

@@ -151,9 +151,6 @@ public class ClusterSingletons {
    */
   public void startClusterSingletons() {
     final Runnable initializer = () -> {
-      if (!runSingletons.get()) {
-        return;
-      }
       try {
         waitUntilReady(DEFAULT_WAIT_TIMEOUT_SEC, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
@@ -161,6 +158,9 @@ public class ClusterSingletons {
         return;
       } catch (TimeoutException te) {
         log.warn("Timed out during initialization of ClusterSingleton-s (waited {} sec)", DEFAULT_WAIT_TIMEOUT_SEC);
+        return;
+      }
+      if (!runSingletons.get()) {
         return;
       }
       singletonMap.forEach((name, singleton) -> {

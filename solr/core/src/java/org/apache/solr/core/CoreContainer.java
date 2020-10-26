@@ -72,8 +72,6 @@ import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
-import org.apache.solr.cluster.events.impl.InitialClusterEventProducer;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -255,7 +253,9 @@ public class CoreContainer {
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
 
-  private ClusterEventProducer clusterEventProducer = new InitialClusterEventProducer();
+  private final ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
+  // initially these are the same to collect the plugin-based listeners during init
+  private ClusterEventProducer clusterEventProducer = clusterEventProducerFactory;
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -676,6 +676,7 @@ public class CoreContainer {
     }
 
     customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
+    customContainerPlugins.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
@@ -891,17 +892,8 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
 
-      // init ClusterEventProducer
-      InitialClusterEventProducer initialClusterEventProducer = (InitialClusterEventProducer) clusterEventProducer;
-      CustomContainerPlugins.ApiInfo clusterEventProducerInfo = customContainerPlugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
-      if (clusterEventProducerInfo != null) {
-        clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
-      } else {
-        clusterEventProducer = new DefaultClusterEventProducer(this);
-        clusterSingletons.singletonMap.put(ClusterEventProducer.PLUGIN_NAME, clusterEventProducer);
-      }
-      // transfer those listeners that were already registered to the initial impl
-      initialClusterEventProducer.transferListeners(clusterEventProducer);
+      // create target ClusterEventProducer (possibly from plugins)
+      clusterEventProducer = clusterEventProducerFactory.create(customContainerPlugins);
 
       // init ClusterSingleton-s
 

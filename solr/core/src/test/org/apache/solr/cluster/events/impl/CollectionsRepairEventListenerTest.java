@@ -19,6 +19,7 @@ package org.apache.solr.cluster.events.impl;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.events.AllEventsListener;
 import org.apache.solr.cluster.events.ClusterEvent;
@@ -36,7 +37,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
-  public static class CollectionsRepairWrapperListener implements ClusterEventListener {
+  public static class CollectionsRepairWrapperListener implements ClusterEventListener, ClusterSingleton {
     final CollectionsRepairEventListener delegate;
 
     CountDownLatch completed = new CountDownLatch(1);
@@ -62,8 +63,8 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public boolean isRunning() {
-      return delegate.isRunning();
+    public State getState() {
+      return delegate.getState();
     }
 
     @Override

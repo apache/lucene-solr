@@ -51,21 +51,4 @@ public interface ClusterEventProducer extends ClusterSingleton {
    *                   is null or empty then all event types will be used
    */
   void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
-
-  ClusterEventProducer NO_OP_PRODUCER = new ClusterEventProducer() {
-    @Override
-    public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-
-    }
-
-    @Override
-    public void unregisterListener(ClusterEventListener listener) {
-
-    }
-
-    @Override
-    public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-
-    }
-  };
 }
