@@ -69,7 +69,13 @@ public class PayloadMatcherFactory {
       return new EQPayloadMatcher();
     }
     // otherwise, we need to pay attention to the payload type and operation
-    return payloadCheckerOpTypeMap.get(payloadType).get(op);
+    HashMap<String, PayloadMatcher> opMap = payloadCheckerOpTypeMap.get(payloadType);
+    if (opMap != null) {
+      return opMap.get(op);
+    } else {
+      // Unknown op and payload type gets you an equals operator.
+      return new EQPayloadMatcher();
+    }
   }
   
   private static class EQPayloadMatcher implements PayloadMatcher {
