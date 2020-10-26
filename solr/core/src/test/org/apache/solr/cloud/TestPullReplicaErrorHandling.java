@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -44,6 +45,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -219,9 +221,26 @@ public void testCantConnectToPullReplica() throws Exception {
     addDocs(30);
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
-    waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 1));
+    waitForState("Expecting node to be reconnected", collectionName, activeReplicaCount(1, 0, 1));
     try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(40, pullReplicaClient);
+    }
+  }
+
+  public void testCloseHooksDeletedOnReconnect() throws Exception {
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 1)
+      .process(cluster.getSolrClient());
+    addDocs(10);
+
+    DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
+    Slice s = docCollection.getSlices().iterator().next();
+    JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
+    SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
+
+    for (int i = 0; i < 5; i++) {
+      cluster.expireZkSession(jetty);
+      waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
+      assertEquals(5, core.getCloseHooks().size()); // Why is this 5 and not 3? Why are there still two ReplicationHandlers here...
     }
   }
   

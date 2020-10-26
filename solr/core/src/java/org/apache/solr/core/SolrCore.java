@@ -1749,6 +1749,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
+  // Visible for testing
+  public Collection<CloseHook> getCloseHooks() {
+    return Collections.unmodifiableCollection(closeHooks);
+  }
+
   /**
    * @lucene.internal Debugging aid only.  No non-test code should be released with uncommented verbose() calls.
    */
