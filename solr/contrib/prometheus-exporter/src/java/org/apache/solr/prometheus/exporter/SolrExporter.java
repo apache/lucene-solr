@@ -68,7 +68,7 @@ public class SolrExporter {
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
-  private static final String ARG_CONFIG_DEFAULT = "./conf/solr-exporter-config.xml";
+  private static final String ARG_CONFIG_DEFAULT = "solr-exporter-config.xml";
   private static final String ARG_CONFIG_HELP = "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
 
   private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};

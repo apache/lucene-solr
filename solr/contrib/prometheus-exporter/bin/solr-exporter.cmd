@@ -71,7 +71,7 @@ if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
-set CLASSPATH=%REPO%\*;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\lucene-libs\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*
+set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\lucene-libs\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*;%BASEDIR%\..\..\server\lib\ext\*
 set EXTRA_JVM_ARGUMENTS=-Dlog4j.configurationFile=file:///%BASEDIR%\..\..\server\resources\log4j2-console.xml
 goto endInit
 
