@@ -61,18 +61,22 @@ public final class Lucene90VectorReader extends VectorReader {
   private final Map<String, FieldEntry> fields = new HashMap<>();
   private final IndexInput vectorData;
   private final IndexInput vectorIndex;
+  private final long checksumSeed;
 
   Lucene90VectorReader(SegmentReadState state) throws IOException {
     this.fieldInfos = state.fieldInfos;
 
     int versionMeta = readMetadata(state, Lucene90VectorFormat.META_EXTENSION);
-    vectorData = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_DATA_EXTENSION, Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME);
-    vectorIndex = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_INDEX_EXTENSION, Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME);
+    long[] checksumRef = new long[1];
+    vectorData = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_DATA_EXTENSION, Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME, checksumRef);
+    vectorIndex = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_INDEX_EXTENSION, Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME, checksumRef);
+    checksumSeed = checksumRef[0];
   }
 
   private int readMetadata(SegmentReadState state, String fileExtension) throws IOException {
     String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     int versionMeta = -1;
+    long checksum = -1;
     try (ChecksumIndexInput meta = state.directory.openChecksumInput(metaFileName, state.context)) {
       Throwable priorE = null;
       try {
@@ -92,7 +96,7 @@ public final class Lucene90VectorReader extends VectorReader {
     return versionMeta;
   }
 
-  private static IndexInput openDataInput(SegmentReadState state, int versionMeta, String fileExtension, String codecName) throws IOException {
+  private static IndexInput openDataInput(SegmentReadState state, int versionMeta, String fileExtension, String codecName, long[] checksumRef) throws IOException {
     boolean success = false;
 
     String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
@@ -107,8 +111,7 @@ public final class Lucene90VectorReader extends VectorReader {
       if (versionMeta != versionVectorData) {
         throw new CorruptIndexException("Format versions mismatch: meta=" + versionMeta + ", " + codecName + "=" + versionVectorData, in);
       }
-      CodecUtil.retrieveChecksum(in);
-
+      checksumRef[0] = CodecUtil.retrieveChecksum(in);
       success = true;
     } finally {
       if (!success) {
@@ -274,7 +277,6 @@ public final class Lucene90VectorReader extends VectorReader {
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
 
-    final Random random = new Random();
     final BytesRef binaryValue;
     final ByteBuffer byteBuffer;
     final FloatBuffer floatBuffer;
@@ -357,6 +359,8 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
+      // use a seed that is fixed for the index so we get reproducible results for the same query
+      final Random random = new Random(checksumSeed);
       Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
       while (results.size() > topK) {
         results.pop();
@@ -368,7 +372,7 @@ public final class Lucene90VectorReader extends VectorReader {
         Neighbor n = results.pop();
         float score;
         if (reversed) {
-          score = (float) Math.exp(- n.score);
+          score = (float) Math.exp(- n.score / vector.length);
         } else {
           score = n.score;
         }

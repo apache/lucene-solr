@@ -17,6 +17,11 @@
 
 package org.apache.lucene.index;
 
+/**
+ * Something (generally a {@link VectorValues}) that provides a {@link RandomAccessVectorValues}.
+ *
+ * @lucene.experimental
+ */
 public interface RandomAccessVectorValuesProducer {
   /**
    * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
