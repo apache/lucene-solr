@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
@@ -102,11 +103,11 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
           if (rawPayload.length() > 0)
             payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
-
-        SpanPayloadCheckQuery q = new SpanPayloadCheckQuery(query, payloads);
-        if (op != null) {
-          q.setOp(op);
-        }
+        // TODO: this should be driven off the field type. and maybe throw an exception if it doesn't match
+        // the encoder type?  
+        // maybe encoder type should match the field type?
+        PayloadType payloadType = PayloadType.FLOAT;
+        SpanPayloadCheckQuery q = new SpanPayloadCheckQuery(query, payloads, payloadType, op);
         return q;
       }
     };
