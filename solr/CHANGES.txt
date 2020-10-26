@@ -164,7 +164,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
 ==================  8.7.0 ==================
 
