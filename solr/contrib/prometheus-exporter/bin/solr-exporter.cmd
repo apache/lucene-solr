@@ -88,7 +88,7 @@ IF NOT "%SOLR_URL%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -b %SOLR_URL%
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% %ZK_CREDS_AND_ACLS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %EXPORTER_ARGS% CMD_LINE_ARGS%
+%JAVACMD% %JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% %ZK_CREDS_AND_ACLS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %EXPORTER_ARGS% %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 
