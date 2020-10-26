@@ -98,7 +98,7 @@ class VectorValuesWriter {
     }
   }
 
-  private static class SortingVectorValues extends VectorValues {
+  static class SortingVectorValues extends VectorValues {
 
     private final VectorValues delegate;
     private final VectorValues.RandomAccess randomAccess;
