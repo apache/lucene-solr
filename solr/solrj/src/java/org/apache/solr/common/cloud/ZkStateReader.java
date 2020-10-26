@@ -675,7 +675,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     if (fire) {
-      try (ParWork worker = new ParWork(this, false)) {
+      try (ParWork worker = new ParWork(this, true)) {
         cloudCollectionsListeners.forEach(listener -> {
 
           listener.onChange(oldCollections, newCollections);
@@ -697,8 +697,8 @@ public class ZkStateReader implements SolrCloseable {
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
     private final String collName;
-    private volatile long lastUpdateTime;
-    private volatile DocCollection cachedDocCollection;
+    private long lastUpdateTime;
+    private DocCollection cachedDocCollection;
 
     public LazyCollectionRef(String collName) {
       super(null);
@@ -707,24 +707,26 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
-    public DocCollection get(boolean allowCached) {
+    public synchronized DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
-        DocCollection fcachedDocCollection = cachedDocCollection;
-        if (fcachedDocCollection != null) {
+        boolean shouldFetch = true;
+        if (cachedDocCollection != null) {
           Stat exists = null;
           try {
-            exists = zkClient.exists(getCollectionPath(collName), null);
+            exists = zkClient.exists(getCollectionPath(collName), null, true);
           } catch (Exception e) {
             ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
-          if (exists != null && exists.getVersion() == fcachedDocCollection.getZNodeVersion()) {
-            return fcachedDocCollection;
+          if (exists != null && exists.getVersion() == cachedDocCollection.getZNodeVersion()) {
+            shouldFetch = false;
           }
         }
-        cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
-        lastUpdateTime = System.nanoTime();
+        if (shouldFetch) {
+          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+          lastUpdateTime = System.nanoTime();
+        }
       }
       return cachedDocCollection;
     }
@@ -1078,12 +1080,10 @@ public class ZkStateReader implements SolrCloseable {
   private void loadClusterProperties() {
     try {
         try {
-          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat());
+          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
           this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
-          try (ParWork worker = new ParWork(this)) {
-            clusterPropertiesListeners.forEach((it) -> it.onChange(getClusterProperties()));
-          }
+          clusterPropertiesListeners.forEach((it) -> it.onChange(getClusterProperties()));
           return;
         } catch (KeeperException.NoNodeException e) {
           this.clusterProperties = Collections.emptyMap();
@@ -1131,32 +1131,39 @@ public class ZkStateReader implements SolrCloseable {
    * @return a map representing the key/value properties for the collection.
    */
   public Map<String, String> getCollectionProperties(final String collection, long cacheForMillis) {
-    VersionedCollectionProps properties = watchedCollectionProps.get(collection);
-
-    if (properties == null) {
-      synchronized (watchedCollectionProps) {
-        properties = watchedCollectionProps.get(collection);
-        if (properties == null) {
-          PropsWatcher propsWatcher = new PropsWatcher(collection);
-          // load it
-          Stat stat = new Stat();
-          try {
-            byte[] data = zkClient.getData(getCollectionPropsPath(collection), propsWatcher, stat);
-
-            VersionedCollectionProps props = new VersionedCollectionProps(stat.getVersion(), (Map<String,String>) fromJSON(data));
-            watchedCollectionProps.put(collection, props);
-            properties = props;
-          } catch (KeeperException e) {
-            log.error("KeeperException", e);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
+    synchronized (watchedCollectionProps) { // making decisions based on the result of a get...
+      Watcher watcher = null;
+      if (cacheForMillis > 0) {
+        watcher = collectionPropsWatchers.compute(collection,
+            (c, w) -> w == null ? new PropsWatcher(c, cacheForMillis) : w.renew(cacheForMillis));
+      }
+      VersionedCollectionProps vprops = watchedCollectionProps.get(collection);
+      boolean haveUnexpiredProps = vprops != null && vprops.cacheUntilNs > System.nanoTime();
+      long untilNs = System.nanoTime() + TimeUnit.NANOSECONDS.convert(cacheForMillis, TimeUnit.MILLISECONDS);
+      Map<String, String> properties;
+      if (haveUnexpiredProps) {
+        properties = vprops.props;
+        vprops.cacheUntilNs = Math.max(vprops.cacheUntilNs, untilNs);
+      } else {
+        try {
+          VersionedCollectionProps vcp = fetchCollectionProperties(collection, watcher);
+          properties = vcp.props;
+          if (cacheForMillis > 0) {
+            vcp.cacheUntilNs = untilNs;
+            watchedCollectionProps.put(collection, vcp);
+          } else {
+            // we're synchronized on watchedCollectionProps and we can only get here if we have found an expired
+            // vprops above, so it is safe to remove the cached value and let the GC free up some mem a bit sooner.
+            if (!collectionPropsObservers.containsKey(collection)) {
+              watchedCollectionProps.remove(collection);
+            }
           }
-
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading collection properties", SolrZkClient.checkInterrupted(e));
         }
       }
+      return properties;
     }
-
-    return properties.props;
   }
 
   private static class VersionedCollectionProps {
@@ -1219,8 +1226,8 @@ public class ZkStateReader implements SolrCloseable {
     }
     try {
       Stat stat = new Stat();
-      if (getZkClient().exists(SOLR_SECURITY_CONF_PATH)) {
-        final byte[] data = getZkClient().getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, stat);
+      if (getZkClient().exists(SOLR_SECURITY_CONF_PATH, true)) {
+        final byte[] data = getZkClient().getData(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, stat, true);
         return data != null && data.length > 0 ?
             new ConfigData((Map<String, Object>) Utils.fromJSON(data), stat.getVersion()) :
             null;
@@ -1389,49 +1396,7 @@ public class ZkStateReader implements SolrCloseable {
         Thread.currentThread().interrupt();
         log.error("Lost collection property watcher for {} due to the thread being interrupted", coll, e);
       }
-
     }
-
-    /**
-     * Refresh collection properties from ZK and leave a watch for future changes. Updates the properties in
-     * watchedCollectionProps with the results of the refresh. Optionally notifies watchers
-     */
-//    void refreshAndWatch(boolean notifyWatchers) {
-//      try {
-//        synchronized (watchedCollectionProps) { // making decisions based on the result of a get...
-//          VersionedCollectionProps vcp = fetchCollectionProperties(coll, this);
-//          Map<String, String> properties = vcp.props;
-//          VersionedCollectionProps existingVcp = watchedCollectionProps.get(coll);
-//          if (existingVcp == null ||                   // never called before, record what we found
-//              vcp.zkVersion > existingVcp.zkVersion || // newer info we should update
-//              vcp.zkVersion == -1) {                   // node was deleted start over
-//            watchedCollectionProps.put(coll, vcp);
-//            if (notifyWatchers) {
-//              notifyPropsWatchers(coll, properties);
-//            }
-//            if (vcp.zkVersion == -1 && existingVcp != null) { // Collection DELETE detected
-//
-//              // We should not be caching a collection that has been deleted.
-//              watchedCollectionProps.remove(coll);
-//
-//              // core ref counting not relevant here, don't need canRemove(), we just sent
-//              // a notification of an empty set of properties, no reason to watch what doesn't exist.
-//              collectionPropsObservers.remove(coll);
-//
-//              // This is the one time we know it's safe to throw this out. We just failed to set the watch
-//              // due to an NoNodeException, so it isn't held by ZK and can't re-set itself due to an update.
-//              collectionPropsWatchers.remove(coll);
-//            }
-//          }
-//        }
-//      } catch (KeeperException e) {
-//        log.error("Lost collection property watcher for {} due to ZK error", coll, e);
-//        throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "A ZK error has occurred", e);
-//      } catch (InterruptedException e) {
-//        Thread.currentThread().interrupt();
-//        log.error("Lost collection property watcher for {} due to the thread being interrupted", coll, e);
-//      }
-//    }
   }
 
   /**
@@ -1526,7 +1491,7 @@ public class ZkStateReader implements SolrCloseable {
     while (true) {
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(collectionPath, watcher, stat);
+        byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
         if (data == null) return null;
         ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
@@ -1534,7 +1499,7 @@ public class ZkStateReader implements SolrCloseable {
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a state.json is created later.
-          Stat exists = zkClient.exists(collectionPath, watcher);
+          Stat exists = zkClient.exists(collectionPath, watcher, true);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
             // Loop and try again.
@@ -1716,8 +1681,6 @@ public class ZkStateReader implements SolrCloseable {
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher = (n, c) -> {
       if (isClosed()) return true;
-      // nocommit
-      //log.info("watcher updated:" + c);
       docCollection.set(c);
       boolean matches = predicate.matches(n, c);
       if (matches)
@@ -1941,10 +1904,10 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     // Resolve race with unregisterCore.
-//    if (!collectionWatches.containsKey(coll)) {
-//      watchedCollectionStates.remove(coll);
-//      log.debug("Removing uninteresting collection [{}]", coll);
-//    }
+    if (!collectionWatches.containsKey(coll)) {
+      watchedCollectionStates.remove(coll);
+      log.debug("Removing uninteresting collection [{}]", coll);
+    }
 
     return updated;
   }
@@ -2128,7 +2091,7 @@ public class ZkStateReader implements SolrCloseable {
           } catch (KeeperException.BadVersionException e) {
             log.debug("{}", e, e);
             log.warn("Couldn't save aliases due to race with another modification; will update and retry until timeout");
-            Thread.sleep(500);
+            Thread.sleep(250);
             // considered a backoff here, but we really do want to compete strongly since the normal case is
             // that we will do one update and succeed. This is left as a hot loop for limited tries intentionally.
             // More failures than that here probably indicate a bug or a very strange high write frequency usage for
