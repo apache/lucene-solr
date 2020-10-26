@@ -181,6 +181,20 @@ curl -X POST -H 'Content-type: application/json' -d '{
     "configSetProp.immutable": "false"}}'
     http://localhost:8983/api/cluster/configs?omitHeader=true
 ----
+
+With the v2 API, ConfigSet properties can also be provided via the `properties` map:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+  "create":{
+    "name": "myConfigSet",
+    "baseConfigSet": "predefinedTemplate",
+    "properties": {
+      "immutable": "false"
+    }}}'
+    http://localhost:8983/api/cluster/configs?omitHeader=true
+----
 ====
 --
 
