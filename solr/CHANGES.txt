@@ -13,6 +13,8 @@ New Features
 
 * SOLR-14151 Make schema components load from packages (noble)
 
+* SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
+
 * SOLR-14615: Implement CPU Utilization Based Circuit Breaker (#1737)
 
 * SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
@@ -75,7 +77,7 @@ Improvements
 
 * SOLR-14933: Ability to add T and P type replica from admin UI (Sayan Das via Eric Pugh)
 
-* SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)\
+* SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
 
 * SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
   (hossman, Munendra S N, yonik)
