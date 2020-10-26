@@ -35,112 +35,12 @@ Consult the lucene/CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
+
 * SOLR-14151 Make schema components load from packages (noble)
 
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
-* SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
-
-Improvements
-----------------------
-* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
-
-* SOLR-14223: PKI Auth can bootstrap from existing key files instead of creating new keys on startup (Mike Drob)
-
-* SOLR-11725: Use corrected sample formula for computing stdDev and variance in JSON aggregations
-  (hossman, Munendra S N, yonik)
-
-* SOLR-14387: SolrClient.getById() will escape comma separater within ids (Markus Schuch via Mike Drob)
-
-* SOLR-10814: Add short-name feature to RuleBasedAuthz plugin (Mike Drob, Hrishikesh Gadre)
-
-Other Changes
-----------------------
-* SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
-
-* LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
-
-* SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
-
-* SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
-
-* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
-
-* LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
-
-* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
-
-* SOLR-14271: Remove duplicate async id check meant for pre Solr 8 versions (Anshum Gupta)
-
-* SOLR-14272: Remove autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay for 9.0 as it was
-  deprecated in 7.1 (Anshum Gupta)
-
-* SOLR-14258: DocList no longer extends DocSet. (David Smiley)
-
-* SOLR-14256: Remove HashDocSet; add DocSet.getBits() instead.  DocSet is now strictly immutable and ascending order.
-  It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
-
-* SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
-
-* SOLR-14012: Return long value for unique and hll aggregations irrespective of shard count (Munendra S N, hossman)
-
-* SOLR-14322: AbstractFullDistribZkTestBase.waitForRecoveriesToFinish now takes a timeout and time unit instead of
-  assuming that we are passed value in seconds. (Mike Drob)
-
-* SOLR-13893: Remove support to read BlobRepository's max jar size from deprecated `runtme.lib.size` system property
-  (Erick Erickson, Kesharee Nandan Vishwakarma, Munendra S N)
-
-* SOLR-12720: Remove support for `autoReplicaFailoverWaitAfterExpiration`. (marcussorealheis, shalin)
-
-* SOLR-9909: The deprecated SolrjNamedThreadFactory has been removed. Use SolrNamedThreadFactory instead.
-  (Andras Salamon, shalin)
-
-* SOLR-14420: AuthenticationPlugin.authenticate accepts HttpServletRequest instead of ServletRequest. (Mike Drob)
-
-* SOLR-14429: Convert .txt files to properly formatted .md files. (Tomoko Uchida, Uwe Schindler)
-
-* SOLR-14412: Automatically set urlScheme to https when running secure solr with embedded zookeeper. (Mike Drob)
-  Do not erroneously set solr.jetty.https.port system property when running in http mode (Upendra Penegalapati)
-
-* SOLR-14014: Introducing a system property that allows users to disable the Admin UI, which is enabled by default.
-  If you have security concerns or other reasons to disable the Admin UI, you can modify `SOLR_ADMIN_UI_DISABLED`
-  `solr.in.sh`/`solr.in.cmd` at start. (marcussorealheis)
-
-* SOLR-14486: Autoscaling simulation framework no longer creates /clusterstate.json (format 1),
-  instead it creates individual per-collection /state.json files (format 2). (ab)
-
-* SOLR-12823: Remove /clusterstate.json support, including support for collections created with stateFormat=1,
-  as well as support for Collection API MIGRATESTATEFORMAT action and support for the legacyCloud flag (Ilan Ginzburg).
-
-* LUCENE-9411: Fail complation on warnings, 9x gradle-only (Erick Erickson, Dawid Weiss)
-  Deserves mention here as well as Lucene CHANGES.txt since it affects both.
-
-* SOLR-12847: Remove support for maxShardsPerNode. (ab)
-
-* SOLR-14244: Remove ReplicaInfo. (ab)
-
-* SOLR-14654: Remove plugin loading from .system collection (for 9.0) (noble)
-
-* SOLR-14702: All references to "master" and "slave" replaced with "leader" and "follower" (MarcusSorealheis,
-  Erick Erickson, Tomás Fernández Löbbe)
-
-Bug Fixes
----------------------
-* SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
-  of Collection API tasks competing for a lock (Ilan Ginzburg).
-
-* SOLR-14948: Autoscaling maxComputeOperations override causes exceptions. (ab)
-
-==================  8.7.0 ==================
-
-Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
-
-New Features
----------------------
-
-* SOLR-14151 Make schema components load from packages (noble)
-
-* SOLR-14615: Implement CPU Utilization Based Circuit Breaker (#1737)
+* SOLR-14615: Implement CPU Utilization Based Circuit Breaker (Atri Sharma)
 
 * SOLR-14681: Introduce ability to delete .jar stored in the Package Store. (MarcusSorealheis , Mike Drob)
 
@@ -164,6 +64,8 @@ New Features
 
 Improvements
 ---------------------
+
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 * SOLR-14523: Enhance gradle logging calls validation: eliminate getMessage() (Andras Salamon via Erick Erickson)
 
