@@ -90,6 +90,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -849,8 +850,15 @@ public class Http2SolrClient extends SolrClient {
             } else if (metadataObj instanceof Map) {
               metadata = new NamedList((Map) metadataObj);
             }
+            List details = (ArrayList) Utils.getObjectByPath(error, false, Collections.singletonList("details"));
+            if (details != null) {
+              reason = reason + " " + details;
+            }
+
           }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+          log.warn("Exception parsing error response", ex);
+        }
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getReason())

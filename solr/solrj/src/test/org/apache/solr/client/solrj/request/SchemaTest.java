@@ -64,12 +64,8 @@ public class SchemaTest extends RestTestBase {
   }
   
   private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    BaseHttpSolrClient.RemoteExecutionException e = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
-    SimpleOrderedMap errorMap = (SimpleOrderedMap)e.getMetaData().get("error");
-    assertEquals("org.apache.solr.api.ApiBag$ExceptionWithErrObject",
-        ((NamedList)errorMap.get("metadata")).get("error-class"));
-    List details = (List)errorMap.get("details");
-    assertTrue(((List)((Map)details.get(0)).get("errorMessages")).get(0).toString().contains(expectedErrorMessage));
+    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, runnable);
+    assertTrue(e.getMessage(), e.getMessage().contains(expectedErrorMessage));
   }
 
   private static void createStoredStringField(String fieldName, SolrClient solrClient) throws Exception {
