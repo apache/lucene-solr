@@ -33,7 +33,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -124,26 +123,6 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       Collections.shuffle(sliceReplicas, OverseerCollectionMessageHandler.RANDOM);
       replica = sliceReplicas.iterator().next();
-    }
-
-    if (coll.getStr(CollectionAdminParams.COLOCATED_WITH) != null) {
-      // we must ensure that moving this replica does not cause the co-location to break
-      String sourceNode = replica.getNodeName();
-      String colocatedCollectionName = coll.getStr(CollectionAdminParams.COLOCATED_WITH);
-      DocCollection colocatedCollection = clusterState.getCollectionOrNull(colocatedCollectionName);
-      if (colocatedCollection != null) {
-        if (colocatedCollection.getReplica((s, r) -> sourceNode.equals(r.getNodeName())) != null) {
-          // check if we have at least two replicas of the collection on the source node
-          // only then it is okay to move one out to another node
-          List<Replica> replicasOnSourceNode = coll.getReplicas(replica.getNodeName());
-          if (replicasOnSourceNode == null || replicasOnSourceNode.size() < 2) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Collection: " + collection + " is co-located with collection: " + colocatedCollectionName
-                    + " and has a single replica: " + replica.getName() + " on node: " + replica.getNodeName()
-                    + " so it is not possible to move it to another node");
-          }
-        }
-      }
     }
 
     log.info("Replica will be moved to node {}: {}", targetNode, replica);

@@ -44,7 +44,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -74,7 +73,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, Object> snitchSession = new HashMap<>();
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
-  private Map<String, String> withCollectionsMap = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
@@ -100,9 +98,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
-      if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
-        withCollectionsMap.put(coll.getName(), (String) coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION));
-      }
       coll.forEachReplica((shard, replica) -> {
         Map<String, Map<String, List<Replica>>> nodeData = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<Replica>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
