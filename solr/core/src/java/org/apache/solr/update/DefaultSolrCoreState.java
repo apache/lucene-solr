@@ -451,18 +451,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       } catch (NullPointerException e) {
         // okay
       }
-//      try {
-//        recoveryFuture.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
-//      } catch (CancellationException e) {
-//        // okay
-//      } catch (InterruptedException e) {
-//        ParWork.propagateInterrupt(e);
-//        throw new AlreadyClosedException();
-//      } catch (NullPointerException e) {
-//        // okay
-//      } catch (Exception e) {
-//        log.warn("Exception canceling recovery", e);
-//      }
     }
 
     recoveryFuture = null;
