@@ -51,7 +51,23 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   protected final SpanQuery match;
   protected String operation = null;
   protected PayloadType payloadType = PayloadType.STRING;
-  public static enum PayloadType { INT, FLOAT, STRING };  
+  /**
+   * The payload type.  This specifies the decoding of the ByteRef for the payload.
+   */
+  public static enum PayloadType {
+    /**
+     * INT is for a 4 byte payload that is a packed integer
+     */
+    INT, 
+    /**
+     * FLOAT is a 4 byte payload decoded to a float(32bit).
+     */
+    FLOAT, 
+    /**
+     * STRING is a UTF8 encoded string, decoded from the byte array
+     */
+    STRING 
+  };  
 
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
