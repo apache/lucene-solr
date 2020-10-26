@@ -24,6 +24,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -150,16 +152,20 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   // SOLR-13491
   public void testWrappingWatches() throws Exception {
     AtomicInteger calls = new AtomicInteger(0);
+    Semaphore semA = new Semaphore(0);
+    Semaphore semB = new Semaphore(0);
     Watcher watcherA = new Watcher() {
       @Override
       public void process(WatchedEvent event) {
         calls.getAndIncrement();
+        semA.release();
       }
     };
     Watcher watcherB = new Watcher() {
       @Override
       public void process(WatchedEvent event) {
         calls.getAndDecrement();
+        semB.release();
       }
     };
     Watcher wrapped1A = defaultClient.wrapWatcher(watcherA);
@@ -184,7 +190,11 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
         .process(solrClient);
 
-    Thread.sleep(1000); // make sure zk client watch has time to be notified.
+    assertTrue("Watch A didn't trigger", semA.tryAcquire(5, TimeUnit.SECONDS));
+    if (TEST_NIGHTLY) {
+      // give more time in nightly tests to ensure no extra watch calls
+      Thread.sleep(500);
+    }
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
 
     solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null,true);
@@ -193,7 +203,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
         .process(solrClient);
 
-    Thread.sleep(1000); // make sure zk client watch has time to be notified.
+    assertTrue("Watch A didn't trigger", semA.tryAcquire(5, TimeUnit.SECONDS));
+    assertTrue("Watch B didn't trigger", semB.tryAcquire(5, TimeUnit.SECONDS));
+    if (TEST_NIGHTLY) {
+      // give more time in nightly tests to ensure no extra watch calls
+      Thread.sleep(500);
+    }
     assertEquals(1, calls.get()); // offsetting watches, no change
   }
 
