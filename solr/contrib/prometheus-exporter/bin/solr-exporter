@@ -74,7 +74,7 @@ then
   REPO="$BASEDIR"/lib
 fi
 
-CLASSPATH=$CLASSPATH_PREFIX
+CLASSPATH=$CLASSPATH_PREFIX:$BASEDIR/conf
 for JAR in $(find "$REPO" -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
@@ -100,6 +100,10 @@ do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 for JAR in $(find "$BASEDIR"/../../server/solr-webapp/webapp/WEB-INF/lib -name '*.jar')
+do
+  CLASSPATH="$CLASSPATH":"$JAR"
+done
+for JAR in $(find "$BASEDIR"/../../server/lib/ext -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
