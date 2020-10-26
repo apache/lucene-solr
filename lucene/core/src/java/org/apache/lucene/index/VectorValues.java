@@ -87,56 +87,11 @@ public abstract class VectorValues extends DocIdSetIterator {
   public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
 
   /**
-   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
-   * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
-   * will retrieve independent copies that do not overwrite each others' returned values.
-   */
-  public abstract RandomAccess randomAccess();
-
-  /**
-   * Provides random access to vectors by dense ordinal.
-   *
-   * @lucene.experimental
-   */
-  public interface RandomAccess {
-
-    /**
-     * Return the number of vector values
-     */
-    int size();
-
-    /**
-     * Return the dimension of the returned vector values
-     */
-    int dimension();
-
-    /**
-     * Return the search strategy used to compare these vectors
-     */
-    SearchStrategy searchStrategy();
-
-    /**
-     * Return the vector value indexed at the given ordinal. The provided floating point array may
-     * be shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    float[] vectorValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-     * these are the bytes corresponding to the float array. The provided bytes may be shared and overwritten 
-     * by subsequent calls to this method and {@link #vectorValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    BytesRef binaryValue(int targetOrd) throws IOException;
-  }
-
-  /**
    * Search strategy. This is a label describing the method used during indexing and searching of the vectors in order to
    * determine the nearest neighbors.
    */
   public enum SearchStrategy {
-    /** No search strategy is provided. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
+    /** No search strategy is provided. Note: {@link VectorValues#search(float[], int, int)}
      * is not supported for fields specifying this strategy. */
     NONE,
 
@@ -175,11 +130,6 @@ public abstract class VectorValues extends DocIdSetIterator {
 
     @Override
     public TopDocs search(float[] target, int k, int fanout) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RandomAccess randomAccess() {
       throw new UnsupportedOperationException();
     }
 

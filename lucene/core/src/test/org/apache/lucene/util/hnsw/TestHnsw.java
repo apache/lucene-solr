@@ -29,6 +29,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -95,7 +97,7 @@ public class TestHnsw extends LuceneTestCase {
     // oriented in the right directions
     public void testAknn() throws IOException {
         int nDoc = 100;
-        VectorValues vectors = new CircularVectorValues(nDoc);
+        RandomAccessVectorValuesProducer vectors = new CircularVectorValues(nDoc);
         HnswGraph hnsw = HnswGraphBuilder.build(vectors);
         // run some searches
         Neighbors nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw.getGraphValues(), random());
@@ -109,7 +111,7 @@ public class TestHnsw extends LuceneTestCase {
 
     /** Returns vectors evenly distributed around the unit circle.
      */
-    class CircularVectorValues extends VectorValues implements VectorValues.RandomAccess {
+    class CircularVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
         private final int size;
         private final float[] value;
 
@@ -145,7 +147,7 @@ public class TestHnsw extends LuceneTestCase {
         }
 
         @Override
-        public RandomAccess randomAccess() {
+        public RandomAccessVectorValues randomAccess() {
             return this;
         }
 
@@ -263,7 +265,7 @@ public class TestHnsw extends LuceneTestCase {
     /**
      * Produces random vectors and caches them for random-access.
      */
-    class RandomVectorValues extends VectorValues implements VectorValues.RandomAccess {
+    class RandomVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
         private final int dimension;
         private final float[][] denseValues;
@@ -326,7 +328,7 @@ public class TestHnsw extends LuceneTestCase {
         }
 
         @Override
-        public RandomAccess randomAccess() {
+        public RandomAccessVectorValues randomAccess() {
             return copy();
         }
 

@@ -31,6 +31,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.KnnGraphValues;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.ScoreDoc;
@@ -267,7 +269,7 @@ public final class Lucene90VectorReader extends VectorReader {
   }
 
   /** Read the vector values from the index input. This supports both iterated and random access. */
-  private final class OffHeapVectorValues extends VectorValues {
+  private final class OffHeapVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
 
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
@@ -349,7 +351,7 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public RandomAccessVectorValues randomAccess() {
       return new OffHeapRandomAccess(dataIn.clone());
     }
 
@@ -376,7 +378,7 @@ public final class Lucene90VectorReader extends VectorReader {
       return new TopDocs(new TotalHits(scoreDocs.length, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
     }
 
-    class OffHeapRandomAccess implements VectorValues.RandomAccess {
+    class OffHeapRandomAccess implements RandomAccessVectorValues {
 
       final IndexInput dataIn;
 

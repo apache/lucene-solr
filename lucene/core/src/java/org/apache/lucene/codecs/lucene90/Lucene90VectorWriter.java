@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.IndexOutput;
@@ -91,7 +92,11 @@ public final class Lucene90VectorWriter extends VectorWriter {
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
     long vectorIndexOffset = vectorIndex.getFilePointer();
     if (isHnswStrategy(vectors.searchStrategy())) {
-        writeGraph(vectorIndex, vectors, vectorIndexOffset, offsets, count);
+      if (vectors instanceof RandomAccessVectorValuesProducer) {
+        writeGraph(vectorIndex, (RandomAccessVectorValuesProducer) vectors, vectorIndexOffset, offsets, count);
+      } else {
+        throw new IllegalArgumentException("Indexing an HNSW graph requires a random access vector values, got " + vectors);
+      }
     }
     long vectorIndexLength = vectorIndex.getFilePointer() - vectorIndexOffset;
     if (vectorDataLength > 0) {
@@ -132,7 +137,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
     }
   }
 
-  private void writeGraph(IndexOutput graphData, VectorValues vectorValues, long graphDataOffset, long[] offsets, int count) throws IOException {
+  private void writeGraph(IndexOutput graphData, RandomAccessVectorValuesProducer vectorValues, long graphDataOffset, long[] offsets, int count) throws IOException {
     HnswGraph graph = HnswGraphBuilder.build(vectorValues);
     for (int ord = 0; ord < count; ord++) {
       // write graph

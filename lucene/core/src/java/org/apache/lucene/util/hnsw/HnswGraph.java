@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.index.KnnGraphValues;
+import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.VectorValues;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -81,7 +82,7 @@ public final class HnswGraph {
    * @param random a source of randomness, used for generating entry points to the graph
    * @return a priority queue holding the neighbors found
    */
-  public static Neighbors search(float[] query, int topK, int numSeed, VectorValues.RandomAccess vectors, KnnGraphValues graphValues,
+  public static Neighbors search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
     boolean scoreReversed = isReversed(searchStrategy);
