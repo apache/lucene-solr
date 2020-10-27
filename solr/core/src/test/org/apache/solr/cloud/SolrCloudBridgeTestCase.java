@@ -260,7 +260,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   public HttpSolrClient getClient(String collection, int i) {
     String baseUrl = cluster.getJettySolrRunner(i).getBaseUrl().toString() + "/" + collection;
     HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15)
+        .withConnectionTimeout(15000)
         .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
         .build();
     newClients.add(client);
@@ -270,7 +270,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   public HttpSolrClient getClient(String collection, String url) {
     String baseUrl = url + "/" + collection;
     HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15)
+        .withConnectionTimeout(15000)
         .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
         .build();
     newClients.add(client);

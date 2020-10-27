@@ -283,7 +283,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
       int numShards = TestUtil.nextInt(random(), 0, cluster.getJettySolrRunners().size()) + 1;
       int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 1;
-      int maxShardsPerNode = (((numShards * replicationFactor) / cluster.getJettySolrRunners().size())) + 1;
+      int maxShardsPerNode = 100;
 
       createRequests[i]
           = CollectionAdminRequest.createCollection("awhollynewcollection_" + i, "conf2", numShards, replicationFactor)

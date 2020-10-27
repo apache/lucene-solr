@@ -124,6 +124,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @Before
   private void deleteAllDocs() throws Exception {
     assertEquals(0, update(params("commit","true")).deleteByQuery("*:*").process(CLOUD_CLIENT).getStatus());
+
+    // TODO: this can rarely randomly fail, whats the race?
     assertEquals("index should be empty", 0L, countDocs(CLOUD_CLIENT));
   }
   
