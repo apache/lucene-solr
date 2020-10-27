@@ -92,7 +92,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
 
   private void writeMeta(FieldInfo field, long vectorDataOffset, long vectorDataLength, List<Integer> docIds) throws IOException {
     meta.writeInt(field.number);
-    meta.writeInt(field.getVectorScoreFunction().ordinal());
+    meta.writeInt(field.getVectorSearchStrategy().ordinal());
     meta.writeVLong(vectorDataOffset);
     meta.writeVLong(vectorDataLength);
     meta.writeInt(field.getVectorDimension());

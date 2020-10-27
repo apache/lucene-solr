@@ -55,7 +55,7 @@ public final class FieldInfo {
   private int pointNumBytes;
 
   private int vectorDimension;  // if it is a positive value, it means this field indexes vectors
-  private VectorValues.ScoreFunction vectorScoreFunction = VectorValues.ScoreFunction.NONE;
+  private VectorValues.SearchStrategy vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
 
   // whether this field is used as the soft-deletes field
   private final boolean softDeletesField;
@@ -68,7 +68,7 @@ public final class FieldInfo {
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, boolean storePayloads,
                    IndexOptions indexOptions, DocValuesType docValues, long dvGen, Map<String,String> attributes,
                    int pointDimensionCount, int pointIndexDimensionCount, int pointNumBytes,
-                   int vectorDimension, VectorValues.ScoreFunction vectorScoreFunction, boolean softDeletesField) {
+                   int vectorDimension, VectorValues.SearchStrategy vectorSearchStrategy, boolean softDeletesField) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
@@ -88,7 +88,7 @@ public final class FieldInfo {
     this.pointIndexDimensionCount = pointIndexDimensionCount;
     this.pointNumBytes = pointNumBytes;
     this.vectorDimension = vectorDimension;
-    this.vectorScoreFunction = vectorScoreFunction;
+    this.vectorSearchStrategy = vectorSearchStrategy;
     this.softDeletesField = softDeletesField;
     this.checkConsistency();
   }
@@ -147,8 +147,8 @@ public final class FieldInfo {
       throw new IllegalStateException("vectorDimension must be >=0; got " + vectorDimension);
     }
 
-    if (vectorDimension == 0 && vectorScoreFunction != VectorValues.ScoreFunction.NONE) {
-      throw new IllegalStateException("vector score function must be NONE when dimension = 0; got " + vectorScoreFunction);
+    if (vectorDimension == 0 && vectorSearchStrategy != VectorValues.SearchStrategy.NONE) {
+      throw new IllegalStateException("vector search strategy must be NONE when dimension = 0; got " + vectorSearchStrategy);
     }
 
     return true;
@@ -247,25 +247,25 @@ public final class FieldInfo {
   }
 
   /** Record that this field is indexed with vectors, with the specified num of dimensions and distance function */
-  public void setVectorDimensionAndScoreFunction(int dimension, VectorValues.ScoreFunction scoreFunction) {
+  public void setVectorDimensionAndSearchStrategy(int dimension, VectorValues.SearchStrategy searchStrategy) {
     if (dimension < 0) {
       throw new IllegalArgumentException("vector dimension must be >= 0; got " + dimension);
     }
     if (dimension > VectorValues.MAX_DIMENSIONS) {
       throw new IllegalArgumentException("vector dimension must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + dimension);
     }
-    if (dimension == 0 && scoreFunction != VectorValues.ScoreFunction.NONE) {
-      throw new IllegalArgumentException("vector score function must be NONE when the vector dimension = 0; got " + scoreFunction);
+    if (dimension == 0 && searchStrategy != VectorValues.SearchStrategy.NONE) {
+      throw new IllegalArgumentException("vector search strategy must be NONE when the vector dimension = 0; got " + searchStrategy);
     }
     if (vectorDimension != 0 && vectorDimension != dimension) {
       throw new IllegalArgumentException("cannot change vector dimension from " + vectorDimension + " to " + dimension + " for field=\"" + name + "\"");
     }
-    if (vectorScoreFunction != VectorValues.ScoreFunction.NONE && vectorScoreFunction != scoreFunction) {
-      throw new IllegalArgumentException("cannot change vector score function from " + vectorScoreFunction + " to " + scoreFunction + " for field=\"" + name + "\"");
+    if (vectorSearchStrategy != VectorValues.SearchStrategy.NONE && vectorSearchStrategy != searchStrategy) {
+      throw new IllegalArgumentException("cannot change vector search strategy from " + vectorSearchStrategy + " to " + searchStrategy + " for field=\"" + name + "\"");
     }
 
     this.vectorDimension = dimension;
-    this.vectorScoreFunction = scoreFunction;
+    this.vectorSearchStrategy = searchStrategy;
 
     assert checkConsistency();
   }
@@ -275,9 +275,9 @@ public final class FieldInfo {
     return vectorDimension;
   }
 
-  /** Returns {@link org.apache.lucene.index.VectorValues.ScoreFunction} for the field */
-  public VectorValues.ScoreFunction getVectorScoreFunction() {
-    return vectorScoreFunction;
+  /** Returns {@link VectorValues.SearchStrategy} for the field */
+  public VectorValues.SearchStrategy getVectorSearchStrategy() {
+    return vectorSearchStrategy;
   }
 
   /** Record that this field is indexed with docvalues, with the specified type */

@@ -111,7 +111,7 @@ _(raw; not yet edited)_
 * SOLR-14656: Autoscaling framework removed
   This includes:
     Autoscaling, policy, triggers etc.
-    withCollection handling
+    withCollection handling (SOLR-14964)
     UTILIZENODE command
     Sim framework
     Suggestions tab in UI
