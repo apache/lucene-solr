@@ -66,9 +66,11 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -173,6 +175,9 @@ public class Overseer implements SolrCloseable {
 
     private final Stats zkStats;
 
+    private final SolrMetricManager metricManager = new SolrMetricManager();
+    private String registryName;
+
     private boolean isClosed = false;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
@@ -185,6 +190,9 @@ public class Overseer implements SolrCloseable {
       this.completedMap = getCompletedMap(zkClient);
       this.myId = myId;
       this.reader = reader;
+
+      registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.overseer);
+      metricManager.registerGauge(null, registryName, () -> stateUpdateQueue.getZkStats().getQueueLength(), "overseer", true, "stateUpdateQueueSize", "queue");
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -544,6 +552,7 @@ public class Overseer implements SolrCloseable {
     @Override
       public void close() {
         this.isClosed = true;
+        metricManager.unregisterGauges(registryName, "overseer");
       }
 
   }
