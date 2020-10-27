@@ -23,8 +23,13 @@ import org.apache.solr.cloud.ClusterSingleton;
  */
 public interface ClusterEventProducer extends ClusterSingleton {
 
-  /** Unique name for the registration of plugin-based implementation. */
+  /** Unique name for the registration of a plugin-based implementation. */
   String PLUGIN_NAME = "clusterEventProducer";
+
+  @Override
+  default String getName() {
+    return PLUGIN_NAME;
+  }
 
   /**
    * Register an event listener for processing the specified event types.
@@ -51,4 +56,41 @@ public interface ClusterEventProducer extends ClusterSingleton {
    *                   is null or empty then all event types will be used
    */
   void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes);
+
+  /**
+   * No-op implementation of {@link ClusterEventProducer}. This implementation is always in
+   * RUNNING state.
+   */
+  final class NoOpProducer implements ClusterEventProducer {
+
+    @Override
+    public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+      // no-op
+    }
+
+    @Override
+    public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
+      // no-op
+    }
+
+    @Override
+    public String getName() {
+      return ClusterEventProducer.PLUGIN_NAME;
+    }
+
+    @Override
+    public void start() throws Exception {
+      // no-op
+    }
+
+    @Override
+    public State getState() {
+      return State.RUNNING;
+    }
+
+    @Override
+    public void stop() {
+      // no-op
+    }
+  }
 }

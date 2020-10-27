@@ -157,11 +157,6 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
   }
 
   @Override
-  public String getName() {
-    return ClusterEventProducer.PLUGIN_NAME;
-  }
-
-  @Override
   public void start() throws Exception {
     throw new UnsupportedOperationException("start not implemented");
   }
@@ -175,4 +170,6 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
   public void stop() {
     throw new UnsupportedOperationException("stop not implemented");
   }
+
+
 }

@@ -75,11 +75,6 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
     this.coreContainer = coreContainer;
   }
 
-  @Override
-  public String getName() {
-    return PLUGIN_NAME;
-  }
-
   // ClusterSingleton lifecycle methods
   @Override
   public void start() {

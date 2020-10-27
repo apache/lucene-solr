@@ -254,9 +254,8 @@ public class CoreContainer {
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
 
-  private final ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
   // initially these are the same to collect the plugin-based listeners during init
-  private ClusterEventProducer clusterEventProducer = clusterEventProducerFactory;
+  private ClusterEventProducer clusterEventProducer;
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -675,6 +674,9 @@ public class CoreContainer {
     if (modified) {
       loader.reloadLuceneSPI();
     }
+
+    ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
+    clusterEventProducer = clusterEventProducerFactory;
 
     customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
     customContainerPlugins.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
