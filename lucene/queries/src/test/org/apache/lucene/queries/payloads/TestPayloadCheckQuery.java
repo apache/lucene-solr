@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.payloads;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -190,8 +192,6 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     checkHits(query, new int[]{1103, 1203,1303,1403,1503,1603,1703,1803,1903});
   }
 
-  // NOCOMMIT: needs test for operations ("gt, gte, lt, lte, eq")
-
   public void testEquality() {
     SpanQuery sq1 = new SpanTermQuery(new Term("field", "one"));
     SpanQuery sq2 = new SpanTermQuery(new Term("field", "two"));
@@ -210,6 +210,37 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     assertFalse(query2.equals(query3));
     assertFalse(query2.equals(query4));
     assertFalse(query3.equals(query4));
+    
+    // Create an integer and a float encoded payload
+    Integer i = 451;
+    BytesRef intPayload = new BytesRef(ByteBuffer.allocate(4).putInt(i).array());
+    Float e = 2.71828f;
+    BytesRef floatPayload = new BytesRef(ByteBuffer.allocate(4).putFloat(e).array());
+    
+    SpanQuery floatLTQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lt");
+    SpanQuery floatLTEQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lte");
+    SpanQuery floatGTQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gt");
+    SpanQuery floatGTEQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gte");
+    
+    SpanQuery intLTQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(intPayload), PayloadType.INT, "lt");
+    SpanQuery intLTEQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(intPayload), PayloadType.INT, "lte");
+    SpanQuery intGTQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(intPayload), PayloadType.INT, "gt");
+    SpanQuery intGTEQuery = new SpanPayloadCheckQuery(sq1, Collections.singletonList(intPayload), PayloadType.INT, "gte");
+    
+    assertFalse(floatLTQuery.equals(floatLTEQuery));
+    assertFalse(floatLTQuery.equals(floatGTQuery));
+    assertFalse(floatLTQuery.equals(floatGTEQuery));
+    assertFalse(floatLTQuery.equals(intLTQuery));
+    assertFalse(floatLTQuery.equals(intLTEQuery));
+    assertFalse(floatLTQuery.equals(intGTQuery));
+    assertFalse(floatLTQuery.equals(intGTEQuery));
+    
+    // eq operator should be default, which is a byte comparison (so payload type should / is ignored
+    SpanQuery stringEQQuery1 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1), PayloadType.STRING, "eq");
+    SpanQuery stringEQQuery2 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1));
+    
+    assertTrue(stringEQQuery1.equals(stringEQQuery2));
+
   }
 
   public void testRewrite() throws IOException {

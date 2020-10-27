@@ -226,7 +226,14 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
+    if (payloadType != null) {
+      buffer.append(", payloadType:").append(payloadType).append(";");
+    }
+    if (operation != null) {
+      buffer.append(", operation:").append(operation).append(";");
+    }
     buffer.append(")");
+    // TODO: update the toString for this.
     return buffer.toString();
   }
 
@@ -237,7 +244,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch) &&
         match.equals(((SpanPayloadCheckQuery) other).match) &&
         (operation == null && (((SpanPayloadCheckQuery) other).operation == null) ||
-            (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation)));
+            (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation))) &&
+        (payloadType == null && (((SpanPayloadCheckQuery) other).payloadType == null) ||
+            (payloadType != null && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType)));
   }
 
   @Override
@@ -246,6 +255,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     result = 31 * result + Objects.hashCode(match);
     result = 31 * result + Objects.hashCode(payloadToMatch);
     result = 31 * result + Objects.hashCode(operation);
+    result = 31 * result + Objects.hashCode(payloadType);
     return result;
   }
 }
