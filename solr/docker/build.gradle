@@ -34,10 +34,10 @@ dependencies {
   docker dockerPackage
 }
 
-def dockerImageRepo = propertyOrEnvOrDefault("docker.solr.imageRepo", "DOCKER_SOLR_IMAGE_REPO", "apache/solr")
-def dockerImageTag = propertyOrEnvOrDefault("docker.solr.imageTag", "DOCKER_SOLR_IMAGE_TAG", "${version}")
-def dockerImageName = propertyOrEnvOrDefault("docker.solr.imageName", "DOCKER_SOLR_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
-def baseDockerImage = propertyOrEnvOrDefault("docker.solr.baseImage", "DOCKER_SOLR_BASE_IMAGE", 'openjdk:11-jre-slim')
+def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
+def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
+def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 
 docker {
   name = dockerImageName

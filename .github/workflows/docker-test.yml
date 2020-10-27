@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DOCKER_SOLR_IMAGE_REPO: github-pr/solr
-      DOCKER_SOLR_IMAGE_TAG: ${{github.event.number}}
+      SOLR_DOCKER_IMAGE_REPO: github-pr/solr
+      SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
 
     steps:
     # Setup

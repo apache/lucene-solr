@@ -10,18 +10,18 @@ The docker image and its tag can be customized via the following options, all ac
 
 Docker Image Repository:
    Default: "apache/solr"
-   EnvVar: DOCKER_SOLR_IMAGE_REPO
-   Gradle Property: -Pdocker.solr.imageRepo
+   EnvVar: SOLR_DOCKER_IMAGE_REPO
+   Gradle Property: -Psolr.docker.imageRepo
 
 Docker Image Tag:
    Default: the Solr version, e.g. "9.0.0-SNAPSHOT"
-   EnvVar: DOCKER_SOLR_IMAGE_TAG
-   Gradle Property: -Pdocker.solr.imageTag
+   EnvVar: SOLR_DOCKER_IMAGE_TAG
+   Gradle Property: -Psolr.docker.imageTag
 
 Docker Image Name: (Use this to explicitly set a whole image name. If given, the image repo and image version options above are ignored.)
    Default: {image_repo}/{image_tag} (both options provided above, with defaults)
-   EnvVar: DOCKER_SOLR_IMAGE_NAME
-   Gradle Property: -Pdocker.solr.imageName
+   EnvVar: SOLR_DOCKER_IMAGE_NAME
+   Gradle Property: -Psolr.docker.imageName
 
 Building
 --------
@@ -34,8 +34,8 @@ The docker build task accepts the following inputs, in addition to the common in
 
 Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
    Default: "openjdk:11-jre-slim"
-   EnvVar: DOCKER_SOLR_BASE_IMAGE
-   Gradle Property: -Pdocker.solr.baseImage
+   EnvVar: SOLR_DOCKER_BASE_IMAGE
+   Gradle Property: -Psolr.docker.baseImage
 
 Testing
 -------
