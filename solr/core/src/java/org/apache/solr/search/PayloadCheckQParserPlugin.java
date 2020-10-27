@@ -85,12 +85,16 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         PayloadEncoder encoder = null;
         String e = PayloadUtils.getPayloadEncoder(ft);
+        PayloadType payloadType = null;
         if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
           encoder = new FloatEncoder();
+          payloadType = PayloadType.FLOAT;
         } else if ("integer".equals(e)) {
           encoder = new IntegerEncoder();
+          payloadType = PayloadType.INT;
         } else if ("identity".equals(e)) {
           encoder = new IdentityEncoder();
+          payloadType = PayloadType.STRING;
         }
 
         if (encoder == null) {
@@ -103,10 +107,6 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
           if (rawPayload.length() > 0)
             payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
-        // TODO: this should be driven off the field type. and maybe throw an exception if it doesn't match
-        // the encoder type?  
-        // maybe encoder type should match the field type?
-        PayloadType payloadType = PayloadType.FLOAT;
         SpanPayloadCheckQuery q = new SpanPayloadCheckQuery(query, payloads, payloadType, op);
         return q;
       }
