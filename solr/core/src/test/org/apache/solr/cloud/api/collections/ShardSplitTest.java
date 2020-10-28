@@ -89,9 +89,10 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   private static final String SHARD1_1 = SHARD1 + "_1";
 
   public ShardSplitTest() throws Exception {
-    createControl = true;
+    createControl = false;
     schemaString = "schema15.xml";      // we need a string id
     solrconfigString = "solrconfig.xml";
+    uploadSelectCollection1Config = true;
     System.setProperty("managed.schema.mutable", "true");
     useFactory(null);
   }

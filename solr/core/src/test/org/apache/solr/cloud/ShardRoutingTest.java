@@ -48,7 +48,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
   public ShardRoutingTest() throws Exception {
     super.sliceCount = 4;
-    numJettys = 8;
+    numJettys = 4;
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
@@ -279,7 +279,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   public void doAtomicUpdate() throws Exception {
     log.info("### STARTING doAtomicUpdate");
     int nClients = clients.size();
-    assertEquals(8, nClients);
+    assertEquals(4, nClients);
 
     int expectedVal = 0;
     for (SolrClient client : clients) {

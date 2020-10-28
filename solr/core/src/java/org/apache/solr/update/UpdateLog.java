@@ -373,7 +373,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (dataDir != null) {
       assert ObjectReleaseTracker.release(this);
     }
-    assert ObjectReleaseTracker.track(this);
+    // TODO: This is very tricky to track without extremely rare fails, because we start
+    // tracking in this init call that can be recalled, and we create in the updatehandler
+    // but then the solrcorestate is what closes ...
+    // assert ObjectReleaseTracker.track(this);
     try {
       dataDir = core.getUlogDir();
 

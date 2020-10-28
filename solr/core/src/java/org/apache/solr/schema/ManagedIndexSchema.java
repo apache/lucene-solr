@@ -217,21 +217,26 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (createOnly) {
           try {
             zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-            schemaZkVersion = 1;
+            schemaZkVersion = 0;
             log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
           } catch (KeeperException.NodeExistsException e) {
             // This is okay - do nothing and fall through
-            log.info("Managed schema znode at {} already exists - no need to create it", managedSchemaPath);
+            Stat stat = new Stat();
+            zkClient.getData(managedSchemaPath, null, stat, true);
+            log.info("Managed schema znode at {} already exists - no need to create it version at {}", managedSchemaPath, stat.getVersion());
+            schemaZkVersion = stat.getVersion();
           }
         } else {
           try {
             // Assumption: the path exists
             Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
             schemaZkVersion = stat.getVersion();
-            log.info("Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
+            log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
           } catch (KeeperException.BadVersionException e) {
+            Stat stat = new Stat();
+            zkClient.getData(managedSchemaPath, null, stat, true);
 
-            log.info("Bad version when trying to persist schema using {}", schemaZkVersion);
+            log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
 
             success = false;
             schemaChangedInZk = true;

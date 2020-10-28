@@ -68,7 +68,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         collectionName, clusterShape(1, 2));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    cluster.waitForNode(newNode, 10);
+
     String newNodeName = newNode.getNodeName();
 
     // add a replica to the new node so that it starts watching the collection
