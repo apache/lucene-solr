@@ -71,6 +71,8 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -145,6 +147,9 @@ public class Overseer implements SolrCloseable {
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
 
+  private SolrMetricsContext solrMetricsContext;
+  private volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   enum LeaderStatus {DONT_KNOW, NO, YES}
@@ -175,8 +180,7 @@ public class Overseer implements SolrCloseable {
 
     private final Stats zkStats;
 
-    private final SolrMetricManager metricManager = new SolrMetricManager();
-    private String registryName;
+    private SolrMetricsContext clusterStateUpdaterMetricContext;
 
     private boolean isClosed = false;
 
@@ -191,8 +195,8 @@ public class Overseer implements SolrCloseable {
       this.myId = myId;
       this.reader = reader;
 
-      registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.overseer);
-      metricManager.registerGauge(null, registryName, () -> stateUpdateQueue.getZkStats().getQueueLength(), "overseer", true, "stateUpdateQueueSize", "queue");
+      clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
+      clusterStateUpdaterMetricContext.gauge(() -> stateUpdateQueue.getZkStats().getQueueLength(), true, "stateUpdateQueueSize", "queue" );
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -552,7 +556,7 @@ public class Overseer implements SolrCloseable {
     @Override
       public void close() {
         this.isClosed = true;
-        metricManager.unregisterGauges(registryName, "overseer");
+        clusterStateUpdaterMetricContext.unregister();
       }
 
   }
@@ -625,6 +629,8 @@ public class Overseer implements SolrCloseable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+
+    this.solrMetricsContext = new SolrMetricsContext(zkController.getCoreContainer().getMetricManager(), SolrInfoBean.Group.overseer.toString(), metricTag);
   }
 
   public synchronized void start(String id) {
@@ -645,7 +651,7 @@ public class Overseer implements SolrCloseable {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
     OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, getStateUpdateQueue(), adminPath, shardHandler.getShardHandlerFactory());
-    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
+    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer, solrMetricsContext);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
 

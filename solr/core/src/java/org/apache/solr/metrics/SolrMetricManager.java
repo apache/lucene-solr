@@ -101,12 +101,6 @@ public class SolrMetricManager {
    */
   public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
 
-  /**
-   * Registry name for Overseer-specific metrics.
-   * This registry is shared between instances of {@link SolrMetricManager}.
-   */
-  public static final String OVERSEER_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.overseer.toString();
-
   private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>();
@@ -429,13 +423,13 @@ public class SolrMetricManager {
   /**
    * Check for predefined shared registry names. This compares the input name
    * with normalized names of predefined shared registries -
-   * {@link #JVM_REGISTRY}, {@link #JETTY_REGISTRY}, and {@link #OVERSEER_REGISTRY}
+   * {@link #JVM_REGISTRY} and {@link #JETTY_REGISTRY}.
    *
    * @param registry already normalized name
    * @return true if the name matches one of shared registries
    */
   private static boolean isSharedRegistry(String registry) {
-    return JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry) || OVERSEER_REGISTRY.equals(registry);
+    return JETTY_REGISTRY.equals(registry) || JVM_REGISTRY.equals(registry);
   }
 
   /**

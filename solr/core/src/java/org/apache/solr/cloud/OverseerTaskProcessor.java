@@ -48,6 +48,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -96,8 +97,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private boolean isClosed;
 
   private volatile Stats stats;
-  private final SolrMetricManager metricManager = new SolrMetricManager();
-  private String registryName;
+  private SolrMetricsContext overseerTaskProcessorMetricsContext;
 
   /**
    * Set of tasks that have been picked up for processing but not cleaned up from zk work-queue.
@@ -138,13 +138,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private String thisNode;
 
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
-                                        Stats stats,
-                                        OverseerMessageHandlerSelector selector,
-                                        OverseerNodePrioritizer prioritizer,
-                                        OverseerTaskQueue workQueue,
-                                        DistributedMap runningMap,
-                                        DistributedMap completedMap,
-                                        DistributedMap failureMap) {
+                               Stats stats,
+                               OverseerMessageHandlerSelector selector,
+                               OverseerNodePrioritizer prioritizer,
+                               OverseerTaskQueue workQueue,
+                               DistributedMap runningMap,
+                               DistributedMap completedMap,
+                               DistributedMap failureMap,
+                               SolrMetricsContext solrMetricsContext) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.stats = stats;
@@ -159,8 +160,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.completedTasks = new ConcurrentHashMap<>();
     thisNode = Utils.getMDCNode();
 
-    registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.overseer);
-    metricManager.registerGauge(null, registryName, () -> workQueue.getZkStats().getQueueLength(), "overseer", true, "collectionWorkQueueSize", "queue");
+    overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
+    overseerTaskProcessorMetricsContext.gauge(() -> workQueue.getZkStats().getQueueLength(), true, "collectionWorkQueueSize", "queue");
   }
 
   @Override
@@ -393,7 +394,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public void close() {
     isClosed = true;
-    metricManager.unregisterGauges(registryName, "overseer");
+    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
