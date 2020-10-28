@@ -17,10 +17,17 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockSynonymAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -39,9 +46,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
@@ -248,6 +258,142 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "app"), filter);
     suggest = indexSearcher.suggest(query, 3, false);
     assertSuggestions(suggest, new Entry("applle", 4), new Entry("apples", 3));
+
+    reader.close();
+    iw.close();
+  }
+
+  /**
+   * Test that the correct amount of documents are collected if using a collector that also rejects documents.
+   */
+  public void testCollectorThatRejects() throws Exception {
+
+    // Use synonym analyzer to have multiple paths to same suggested document. This mock adds "dog" as synonym for "dogs"
+    // This will lead to two calls to the collector later for each document
+    Analyzer analyzer = new MockSynonymAnalyzer();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    List<Entry> expectedResults = new ArrayList<Entry>();
+
+    for (int docCount = 10; docCount > 0; docCount--) {
+      Document document = new Document();
+      String value = "ab" + docCount + " dogs";
+      document.add(new SuggestField("suggest_field", value, docCount));
+      expectedResults.add(new Entry(value, docCount));
+      iw.addDocument(document);
+    }
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
+
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
+    int topN = 5;
+
+    // use a TopSuggestDocsCollector that rejects results with duplicate docID
+    // due to the adding synonym "dog" for "dogs" earlier, the collector will be called twice
+    // for each docID, which we want to de-duplicate by rejecting the document the second time
+    TopSuggestDocsCollector collector = new DocIDDeduplicatingCollector(topN, false);
+
+    indexSearcher.suggest(query, collector);
+    TopSuggestDocs suggestions = collector.get();
+    assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
+    assertTrue(suggestions.isComplete());
+
+    // repeat but try to collect the top 8 docs. This returns the expected results but isComplete is false
+    // since the queue size estimation in NRTSuggester is too small for the rejections we're seeing
+    topN = 10;
+    collector = new DocIDDeduplicatingCollector(topN, false);
+    indexSearcher.suggest(query, collector);
+    suggestions = collector.get();
+    assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
+    assertFalse(suggestions.isComplete());
+
+    reader.close();
+    iw.close();
+  }
+
+  private class DocIDDeduplicatingCollector extends TopSuggestDocsCollector {
+
+    private Set<Integer> seenDocIds = new HashSet<>();
+
+    public DocIDDeduplicatingCollector(int num, boolean skipDuplicates) {
+      super(num, skipDuplicates);
+    }
+
+    @Override
+    public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+        int globalDocId = docID + docBase;
+        boolean collected = false;
+        if (seenDocIds.contains(globalDocId) == false) {
+            super.collect(docID, key, context, score);
+            seenDocIds.add(globalDocId);
+            collected = true;
+        }
+        return collected;
+    }
+
+    @Override
+    protected boolean canReject() {
+      return true;
+    }
+  }
+
+  /**
+   * A large scale tests where the collector rejects based on docIds
+   */
+  public void testCollectorWithManyRejects() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Set<Integer> acceptedDocs = new HashSet<>();
+    List<Entry> expectedResults = new ArrayList<Entry>();
+
+    for (int docCount = 0; docCount < 5000; docCount++) {
+      Document document = new Document();
+      String value = "ab" + RandomStrings.randomAsciiAlphanumOfLength(random(), 10) +"_" + docCount;
+      document.add(new SuggestField("suggest_field", value, docCount));
+      if (random().nextDouble() > 0.75) {
+        acceptedDocs.add(docCount);
+        expectedResults.add(new Entry(value, null, docCount));
+      }
+      iw.addDocument(document);
+    }
+    ToDoubleFunction<Entry> fn = e -> e.value;
+    expectedResults.sort(Comparator.comparingDouble(fn).reversed());
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
+
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
+    int topN = TestUtil.nextInt(random(), 1, acceptedDocs.size());
+
+    TopSuggestDocsCollector collector = new TopSuggestDocsCollector(topN, false) {
+
+      @Override
+      public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+          String idPart = key.toString().split("_")[1];
+          if (acceptedDocs.contains(Integer.parseInt(idPart))) {
+              super.collect(docID, key, context, score);
+              return true;
+          }
+          return false;
+      }
+
+      @Override
+      protected boolean canReject() {
+        return true;
+      }
+    };
+
+    indexSearcher.suggest(query, collector);
+    TopSuggestDocs suggestions = collector.get();
+    assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
 
     reader.close();
     iw.close();

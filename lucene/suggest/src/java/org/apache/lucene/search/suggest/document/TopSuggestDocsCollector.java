@@ -43,6 +43,8 @@ import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestSc
  * <p>
  * Subclasses should only override
  * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}.
+ * Overwriting subclasses can opt to reject documents, in which case
+ * they should return <tt>false</tt> to signal this back to the caller.
  * <p>
  * NOTE: {@link #setScorer(org.apache.lucene.search.Scorable)} and
  * {@link #collect(int)} is not used
@@ -62,6 +64,8 @@ public class TopSuggestDocsCollector extends SimpleCollector {
 
   /** Document base offset for the current Leaf */
   protected int docBase;
+
+  private boolean isComplete = true;
 
   /**
    * Sole constructor
@@ -113,10 +117,14 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * similar to {@link org.apache.lucene.search.LeafCollector#collect(int)}
    * but for completions.
    *
+   * This implementation always returns <tt>true</tt> because it collects all documents, but
+   * subclasses overwriting this can choose to reject documents in which case they should
+   * return <tt>false</tt> to signal this back to the caller.
+   *
    * NOTE: collection at the leaf level is guaranteed to be in
    * descending order of score
    */
-  public void collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+  public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
     SuggestScoreDoc current = new SuggestScoreDoc(docBase + docID, key, context, score);
     if (current == priorityQueue.insertWithOverflow(current)) {
       // if the current SuggestScoreDoc has overflown from pq,
@@ -125,6 +133,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
       // TODO: reuse the overflow instance?
       throw new CollectionTerminatedException();
     }
+    return true;
   }
 
   /**
@@ -179,7 +188,8 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     }
 
     if (suggestScoreDocs.length > 0) {
-      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO), suggestScoreDocs);
+      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO),
+          suggestScoreDocs, this.isComplete);
     } else {
       return TopSuggestDocs.EMPTY;
     }
@@ -200,5 +210,28 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   @Override
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE;
+  }
+
+  /**
+   * returns true if the collector clearly exhausted all possibilities to collect results
+   */
+  boolean isComplete() {
+    return this.isComplete ;
+  }
+
+  /**
+   * call to signal that during collection at least one segment might have returned incomplete results, e.g. because
+   * of too many rejections
+   */
+  void setNotComplete() {
+    this.isComplete = false;
+  }
+
+  /**
+   * indicate if this collectors {@link #collect(int, CharSequence, CharSequence, float)} method potentially rejects
+   * documents. This information can be used to e.g. estimating necessary queue sizes in the searcher.
+   */
+  protected boolean canReject() {
+    return false;
   }
 }
