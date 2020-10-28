@@ -237,7 +237,7 @@ public class Overseer implements SolrCloseable {
         // we do not sure which message is bad message, therefore we will re-process node one by one
         int fallbackQueueSize = Integer.MAX_VALUE;
         ZkDistributedQueue fallbackQueue = workQueue;
-        while (!isClosed() && !Thread.currentThread().isInterrupted()) {
+        while (!isClosed()) {
           if (zkStateWriter == null) {
             try {
               zkStateWriter = new ZkStateWriter(reader, stats);
@@ -439,13 +439,9 @@ public class Overseer implements SolrCloseable {
       ClusterState state;
       LinkedHashMap<String,ClusterState.CollectionRef> collStates;
       ClusterState prevState = null;
-      if (itemsQueued.sum() == 1) {
-        log.info("First queue item for Overseer ...");
-        // we have ensured a full cluster state update on start over cluster state updater loop
-        state = reader.getClusterState();
-      } else {
-        state = clusterState;
-      }
+
+      state = clusterState;
+
       collStates = new LinkedHashMap<>(state.getCollectionStates());
       for (DocCollection docCollection : updatesToWrite.values()) {
         Map<String,Slice> slicesMap = docCollection.getSlicesMap();
@@ -713,7 +709,7 @@ public class Overseer implements SolrCloseable {
             log.info("Overseer leader has changed, closing ...");
             Overseer.this.close();
           }
-        }});
+        }}, true);
     } catch (KeeperException.SessionExpiredException e) {
       log.warn("ZooKeeper session expired");
       return;

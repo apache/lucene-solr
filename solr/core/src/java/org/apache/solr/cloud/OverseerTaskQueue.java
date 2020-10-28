@@ -83,7 +83,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     for (String childName : childNames) {
       if (childName != null && childName.startsWith(PREFIX)) {
         try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null);
+          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
           if (data != null) {
             ZkNodeProps message = ZkNodeProps.load(data);
             if (message.containsKey(requestIdKey)) {
@@ -114,13 +114,13 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
           + path.substring(path.lastIndexOf("-") + 1);
 
       try {
-        zookeeper.setData(responsePath, event.getBytes(), false);
+        zookeeper.setData(responsePath, event.getBytes(), true);
       } catch (KeeperException.NoNodeException ignored) {
         // this will often not exist or have been removed
         if (log.isDebugEnabled()) log.debug("Response ZK path: {} doesn't exist.", responsePath);
       }
       try {
-        zookeeper.delete(path, -1);
+        zookeeper.delete(path, -1, true);
       } catch (KeeperException.NoNodeException ignored) {
       }
     } finally {
@@ -232,7 +232,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String watchID = createResponseNode();
 
       LatchWatcher watcher = new LatchWatcher(zookeeper);
-      byte[] bytes = zookeeper.getData(watchID, watcher, null);
+      byte[] bytes = zookeeper.getData(watchID, watcher, null, true);
 
       // create the request node
       createRequestNode(data, watchID);
@@ -240,13 +240,13 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       pendingResponses.increment();
       if (bytes == null) {
         watcher.await(timeout);
-        bytes = zookeeper.getData(watchID, null, null);
+        bytes = zookeeper.getData(watchID, null, null, true);
       }
 
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
-      zookeeper.delete(watchID, -1);
+      zookeeper.delete(watchID, -1, true);
       return event;
     } finally {
       time.stop();
@@ -311,7 +311,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (headNode != null) {
         try {
           QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
-              null, null), null);
+              null, null, true), null);
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
           // Another client removed the node first, try next

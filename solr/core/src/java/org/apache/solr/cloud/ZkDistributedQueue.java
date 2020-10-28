@@ -279,7 +279,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           // don't know which nodes are not exist, so try to delete one by one node
           for (int j = from; j < to; j++) {
             try {
-              zookeeper.delete(ops.get(j).getPath(), -1);
+              zookeeper.delete(ops.get(j).getPath(), -1, true);
             } catch (KeeperException.NoNodeException e2) {
               if (log.isDebugEnabled()) {
                 log.debug("Can not remove node which is not exist : {}", ops.get(j).getPath());
@@ -333,7 +333,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         if (maxQueueSize > 0) {
           if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
             // If a max queue size is set, check it before creating a new queue item.
-            Stat stat = zookeeper.exists(dir, null);
+            Stat stat = zookeeper.exists(dir, null, true);
             if (stat == null) {
               // jump to the code below, which tries to create dir if it doesn't exist
               throw new KeeperException.NoNodeException();
@@ -511,7 +511,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           break;
         }
         try {
-          byte[] data = zookeeper.getData(dir + "/" + child, null, null);
+          byte[] data = zookeeper.getData(dir + "/" + child, null, null, true);
           result.add(new Pair<>(child, data));
         } catch (KeeperException.NoNodeException e) {
           continue;
@@ -538,7 +538,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           return null;
         }
         try {
-          return zookeeper.getData(dir + "/" + firstChild, null, null);
+          return zookeeper.getData(dir + "/" + firstChild, null, null, true);
         } catch (KeeperException.NoNodeException e) {
           return null;
         }
@@ -558,8 +558,8 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
         try {
           String path = dir + "/" + firstChild;
-          byte[] result = zookeeper.getData(path, null, null);
-          zookeeper.delete(path, -1);
+          byte[] result = zookeeper.getData(path, null, null, true);
+          zookeeper.delete(path, -1, true);
           // stats.setQueueLength(knownChildren.size());
           return result;
         } catch (KeeperException.NoNodeException e) {

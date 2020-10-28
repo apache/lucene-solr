@@ -92,7 +92,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @After
   public void afterTest() throws Exception {
-    cluster.deleteAllCollections();
+
   }
 
   /**
