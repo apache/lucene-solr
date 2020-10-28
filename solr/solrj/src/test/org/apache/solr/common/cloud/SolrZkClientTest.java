@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -26,12 +27,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -219,5 +222,46 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertFalse(Thread.currentThread().isInterrupted());
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
+  }
+
+  /**
+   * This test reproduces the issue of trying to delete zk-nodes that have the same length. (SOLR-14961). 
+   * 
+   * @throws InterruptedException when having troublke creating test nodes
+   * @throws KeeperException error when talking to zookeeper
+   * @throws SolrServerException when having trouble connecting to solr 
+   * @throws UnsupportedEncodingException when getBytes() uses unknown encoding
+   * 
+   */
+  @Test
+  public void testClean() throws KeeperException, InterruptedException, SolrServerException, UnsupportedEncodingException {
+    /* PREPARE */
+    String path = "/myPath/isTheBest";
+    String data1 = "myStringData1";
+    String data2 = "myStringData2";
+    String longData = "myLongStringData";
+    // create zk nodes that have the same path length
+    defaultClient.create("/myPath", null, CreateMode.PERSISTENT, true);
+    defaultClient.create(path, null, CreateMode.PERSISTENT, true);
+    defaultClient.create(path +"/file1.txt", data1.getBytes("UTF-8"), CreateMode.PERSISTENT, true);
+    defaultClient.create(path +"/nothing.txt", null, CreateMode.PERSISTENT, true);
+    defaultClient.create(path +"/file2.txt", data2.getBytes("UTF-8"), CreateMode.PERSISTENT, true);
+    defaultClient.create(path +"/some_longer_file2.txt", longData.getBytes("UTF-8"), CreateMode.PERSISTENT, true);
+    
+    String listZnode = defaultClient.listZnode(path, false);
+    log.info(listZnode);
+    
+    /* RUN */
+    // delete all nodes that contain "file"
+    defaultClient.clean(path, node -> node.contains("file"));
+    
+    /* CHECK */
+    listZnode = defaultClient.listZnode(path, false);
+    log.info(listZnode);
+    // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
+    assertTrue(!listZnode.contains("file1"));
+    assertTrue(!listZnode.contains("file2"));
+    assertTrue(!listZnode.contains("some_longer_file2"));
+    assertTrue(listZnode.contains("nothing"));
   }
 }

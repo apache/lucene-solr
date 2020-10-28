@@ -26,10 +26,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -259,12 +260,16 @@ public class ZkMaintenanceUtils {
       clean(zkClient, path);
       return;
     }
-
-    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+    
+    ArrayList<String> paths = new ArrayList<>();
+//    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
 
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
     });
+    
+    // sort the list in descending order to ensure that child entries are deleted first
+    Collections.sort(paths, Comparator.comparingInt(String::length).reversed());
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
