@@ -136,6 +136,38 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testParentFilterLimitOnlyAncestorJSON() throws Exception {
+    indexSampleData(numberOfDocsPerNestedTest);
+
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=2]",
+            "fq", fqToExcludeNonTestedDocs)) {
+      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
+      while (docsStreamer.hasNext()) {
+        SolrDocument doc = docsStreamer.next();
+        cleanSolrDocumentFields(doc);
+        assertFalse("root doc should not have anonymous child docs", doc.hasChildDocuments());
+        assertEquals("should only have 2 top level child docs", 2, doc.getFieldValues("toppings").size());
+        assertFalse("root doc should not have any other child docs", doc.containsKey("lonely"));
+      }
+    }
+
+    assertJQ(req("q", "type_s:donut",
+            "sort", "id asc",
+            "fl", "*, [child limit=2]",
+            "fq", fqToExcludeNonTestedDocs),
+            "/response/docs/[0]/type_s==donut",
+            "/response/docs/[0]/lonely/test_s==testing",
+            "/response/docs/[0]/lonely/lonelyGrandChild/test2_s==secondTest",
+            // only find 1 topping. The "limit" kept us from reaching the other next toppings.
+            "/response/docs/[0]/toppings/[0]/type_s==Regular",
+            // should find direct descendant of toppings#1
+            "/response/docs/[0]/toppings/[0]/ingredients/[0]/name_s==cocoa",
+            "!/response/docs/[0]/toppings/[1]/type_s==Chocolate"
+    );
+  }
+
+  @Test
   public void testWithDeletedChildren() throws Exception {
     // add a doc to create another segment
     final String addNonTestedDoc =

@@ -19,11 +19,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -141,11 +137,17 @@ class ChildDocTransformer extends DocTransformer {
         // Do we need to do anything with this doc (either ancestor or matched the child query)
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
 
-          // If we reached the limit, only add if it's an ancestor
-          if (limit != -1 && matches >= limit && !isAncestor) {
-            continue;
+          // If we reached the limit, only add if it's an ancestor or non 1st level child document
+          if (limit != -1 && matches >= limit) {
+            break;
           }
-          ++matches; // note: includes ancestors that are not necessarily in childDocSet
+
+          // get parent path
+          String parentDocPath = getParentPath(fullDocPath);
+          final boolean isFirstLevelChildDoc = Objects.equals(parentDocPath, rootDocPath);
+          if (isFirstLevelChildDoc) {
+            ++matches; // note: includes ancestors that are not necessarily in childDocSet
+          }
 
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
@@ -161,8 +163,6 @@ class ChildDocTransformer extends DocTransformer {
             addChildrenToParent(doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
           }
 
-          // get parent path
-          String parentDocPath = getParentPath(fullDocPath);
           String lastPath = getLastPath(fullDocPath);
           // put into pending:
           // trim path if the doc was inside array, see trimPathIfArrayDoc()
@@ -246,13 +246,13 @@ class ChildDocTransformer extends DocTransformer {
 
   /**
    * Returns the *parent* path for this document.
-   * Children of the root will yield null.
+   * Children of the root will yield "".
    */
   private static String getParentPath(String currDocPath) {
     // chop off leaf (after last '/')
-    // if child of leaf then return null (special value)
+    // if child of leaf then return "" (special value)
     int lastPathIndex = currDocPath.lastIndexOf(PATH_SEP_CHAR);
-    return lastPathIndex == -1 ? null : currDocPath.substring(0, lastPathIndex);
+    return lastPathIndex == -1 ? "" : currDocPath.substring(0, lastPathIndex);
   }
 
   /** Looks up the nest path.  If there is none, returns {@link #ANON_CHILD_KEY}. */
