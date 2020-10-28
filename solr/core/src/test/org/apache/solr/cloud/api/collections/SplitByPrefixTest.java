@@ -75,7 +75,6 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    cluster.deleteAllCollections();
   }
 
   public static class Prefix implements Comparable<Prefix> {
@@ -174,7 +173,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     }
     splitShard.process(client);
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
-    cluster.getZkClient().printLayout();
+
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
     if (uniquePrefixes.size() % 2 == 1) {  // make it an even sized list so we can split it exactly in two
@@ -197,8 +196,6 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     }
     splitShard.process(client);
     cluster.waitForActiveCollection(COLLECTION_NAME, 3, 3);
-
-    cluster.getZkClient().printLayout();
 
     // OK, now let's check that the correct split point was chosen
     // We can use the router to find the shards for the middle prefixes and they should be different.

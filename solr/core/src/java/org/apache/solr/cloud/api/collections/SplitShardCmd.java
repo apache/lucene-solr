@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -773,7 +774,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         Collection<Slice> searchSlices = router.getSearchSlicesSingle(splitKey, new ModifiableSolrParams(), collection);
 
         int tryCnt = 0;
-        while (searchSlices.isEmpty() && tryCnt < 50) {
+        while (searchSlices.isEmpty() && tryCnt < 500) {
           tryCnt++;
           clusterState = zkStateReader.getClusterState();
           collection = clusterState.getCollection(collectionName);
@@ -784,6 +785,13 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             ParWork.propagateInterrupt(e);
           }
           searchSlices = router.getSearchSlicesSingle(splitKey, new ModifiableSolrParams(), collection);
+          Iterator<Slice> it = searchSlices.iterator();
+          while (it.hasNext()) {
+            if (it.next().getState() != Slice.State.ACTIVE) {
+              searchSlices.clear();
+              break;
+            }
+          }
         }
 
         if (searchSlices.isEmpty()) {
@@ -803,6 +811,21 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     } else {
       parentSlice = collection.getSlice(slice.get());
+      int tryCnt = 0;
+      // TODO use zkStateReader#waitFor
+      while (parentSlice.getState() != Slice.State.ACTIVE && tryCnt < 500) {
+        tryCnt++;
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        }
+        clusterState = zkStateReader.getClusterState();
+        collection = clusterState.getCollection(collectionName);
+
+        parentSlice = collection.getSlice(slice.get());
+      }
+
     }
 
     if (parentSlice == null) {

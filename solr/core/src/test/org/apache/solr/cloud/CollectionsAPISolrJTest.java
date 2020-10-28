@@ -362,7 +362,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
 
     // wait for 5 active shards
-    cluster.waitForActiveCollection(collectionName, 5, 5);
+    cluster.waitForActiveCollection(collectionName, 4, 4);
 
   }
 
