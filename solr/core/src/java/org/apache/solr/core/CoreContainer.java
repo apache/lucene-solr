@@ -1191,28 +1191,14 @@ public class CoreContainer implements Closeable {
     if (old == null || old == core) {
       if (log.isDebugEnabled()) log.debug("registering core: " + cd.getName());
       if (registerInZk) {
-        try {
-          zkSys.registerInZk(core, skipRecovery).get();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } catch (ExecutionException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
+        zkSys.registerInZk(core, skipRecovery);
       }
       return null;
     } else {
       if (log.isDebugEnabled()) log.debug("replacing core: " + cd.getName());
       old.close();
       if (registerInZk) {
-        try {
-          zkSys.registerInZk(core, skipRecovery).get();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } catch (ExecutionException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
+        zkSys.registerInZk(core, skipRecovery);
       }
       return old;
     }

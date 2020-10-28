@@ -336,11 +336,6 @@ public class ZkStateReader implements SolrCloseable {
   public void forciblyRefreshAllClusterStateSlow() throws KeeperException, InterruptedException {
     updateLock.lock();
     try {
-      if (clusterState == null) {
-        // Never initialized, just run normal initialization.
-        createClusterStateWatchersAndUpdate();
-        return;
-      }
       // No need to set watchers because we should already have watchers registered for everything.
       refreshCollectionList(null);
       refreshLiveNodes(null);
@@ -741,42 +736,25 @@ public class ZkStateReader implements SolrCloseable {
       return "LazyCollectionRef(" + collName + ")";
     }
   }
-
-  // We don't get a Stat or track versions on getChildren() calls, so force linearization.
-  private final Object refreshLiveNodesLock = new Object();
-  // Ensures that only the latest getChildren fetch gets applied.
-  private final AtomicReference<SortedSet<String>> lastFetchedLiveNodes = new AtomicReference<>();
-
   /**
    * Refresh live_nodes.
    */
   private void refreshLiveNodes(Watcher watcher) throws KeeperException, InterruptedException {
-    synchronized (refreshLiveNodesLock) {
-      SortedSet<String> newLiveNodes;
+    // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
+    SortedSet<String> oldLiveNodes;
+    SortedSet<String> newLiveNodes = null;
+    updateLock.lock();
+    try {
       try {
         List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
         newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException e) {
         newLiveNodes = emptySortedSet();
       }
-      lastFetchedLiveNodes.set(newLiveNodes);
-    }
-
-    // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
-    SortedSet<String> oldLiveNodes, newLiveNodes;
-    updateLock.lock();
-    try {
-      newLiveNodes = lastFetchedLiveNodes.getAndSet(null);
-      if (newLiveNodes == null) {
-        // Someone else won the race to apply the last update, just exit.
-        return;
-      }
 
       oldLiveNodes = this.liveNodes;
       this.liveNodes = newLiveNodes;
-      if (clusterState != null) {
-        clusterState.setLiveNodes(newLiveNodes);
-      }
+      clusterState.setLiveNodes(newLiveNodes);
     } finally {
       updateLock.unlock();
     }
@@ -790,8 +768,9 @@ public class ZkStateReader implements SolrCloseable {
     }
     if (!oldLiveNodes.equals(newLiveNodes)) { // fire listeners
       if (log.isDebugEnabled()) log.debug("Fire live node listeners");
+      SortedSet<String> finalNewLiveNodes = newLiveNodes;
       liveNodesListeners.forEach(listener -> {
-        if (listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(newLiveNodes))) {
+        if (listener.onChange(new TreeSet<>(oldLiveNodes), new TreeSet<>(finalNewLiveNodes))) {
           removeLiveNodesListener(listener);
         }
       });
@@ -830,6 +809,10 @@ public class ZkStateReader implements SolrCloseable {
    */
   public ClusterState getClusterState() {
     return clusterState;
+  }
+
+  public Set<String> getLiveNodes() {
+    return liveNodes;
   }
 
   public ReentrantLock getUpdateLock() {
@@ -1493,7 +1476,7 @@ public class ZkStateReader implements SolrCloseable {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
         if (data == null) return null;
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, Collections.emptySet());
+        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, liveNodes);
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {
@@ -1630,16 +1613,16 @@ public class ZkStateReader implements SolrCloseable {
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
-
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null) {
-        v = new CollectionWatch<>();
-        watchSet.set(true);
-      }
-      v.stateWatchers.add(stateWatcher);
-      return v;
-    });
-
+    synchronized (collectionWatches) {
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) {
+          v = new CollectionWatch<>();
+          watchSet.set(true);
+        }
+        v.stateWatchers.add(stateWatcher);
+        return v;
+      });
+    }
     if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
     }

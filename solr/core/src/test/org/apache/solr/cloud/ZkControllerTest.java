@@ -305,7 +305,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
         long now = System.nanoTime();
         long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
-        zkController.publishAndWaitForDownStates(5);
+        zkController.publishDownStates();
         assertTrue("The ZkController.publishAndWaitForDownStates should have timed out but it didn't", System.nanoTime() >= timeout);
       } finally {
         if (zkController != null)

@@ -586,6 +586,8 @@ public class ZkDistributedQueue implements DistributedQueue {
       }
       if (log.isDebugEnabled()) log.debug("DistributedQueue changed {} {}", event.getPath(), event.getType());
 
+      // nocommit - all the nodes are watching this currently instead of just the Overseer
+
       updateLock.lock();
       try {
         knownChildren = fetchZkChildren(this);

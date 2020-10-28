@@ -357,11 +357,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // replacement via SolrCloud) then we need to explicitly inform() the similarity because
     // we can't rely on the normal SolrResourceLoader lifecycle because the sim was instantiated
     // after the SolrCore was already live (see: SOLR-8311 + SOLR-8280)
+
+    this.schema = replacementSchema;
+
     final SimilarityFactory similarityFactory = replacementSchema.getSimilarityFactory();
     if (similarityFactory instanceof SolrCoreAware) {
       ((SolrCoreAware) similarityFactory).inform(this);
     }
-    this.schema = replacementSchema;
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -1081,8 +1083,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.ruleExpiryLock = new ReentrantLock();
       this.snapshotDelLock = new ReentrantLock();
 
-      registerConfListener();
-
       // register any SolrInfoMBeans SolrResourceLoader initialized
       //
       // this must happen after the latch is released, because a JMX server impl may
@@ -1093,12 +1093,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
       resourceLoader.inform(this); // last call before the latch is released.
+
+      registerConfListener();
+
       searcherReadyLatch.countDown();
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
-      if (!reload) {
+      //if (!reload) { // reload could move to a different index
         seedVersionBuckets();
-      }
+     // }
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
@@ -3176,13 +3179,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       if (cfg != null) {
         cfg.refreshRequestParams();
       }
+
       if (checkStale(zkClient, overlayPath, solrConfigversion) || checkStale(zkClient, solrConfigPath, overlayVersion) || checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
         cc.reload(coreName);
       }
 
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (ParWork worker = new ParWork("ConfListeners")) {
+      try (ParWork worker = new ParWork("ConfListeners", false)) {
 
           if (core.isClosed() || cc.isShutDown()) return;
           for (Runnable listener : core.confListeners) {
@@ -3196,7 +3200,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         }
       }
-
     };
   }
 
@@ -3235,18 +3238,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public void cleanupOldIndexDirectories(boolean reload) {
-    final DirectoryFactory myDirFactory = getDirectoryFactory();
-    final String myDataDir = getDataDir();
-    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected
     final String coreName = getName();
-    if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
-      log.debug("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
-      try {
+    try {
+      final DirectoryFactory myDirFactory = getDirectoryFactory();
+      final String myDataDir = getDataDir();
+      final String myIndexDir = getIndexDir(); // ensure the latest replicated index is protected
+      if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
+        log.debug("Looking for old index directories to cleanup for core {} in {}", coreName, myDataDir);
+
         myDirFactory.cleanupOldIndexDirectories(myDataDir, myIndexDir, reload);
-      } catch (Exception exc) {
-        SolrZkClient.checkInterrupted(exc);
-        log.error("Failed to cleanup old index directories for core {}", coreName, exc);
+
       }
+    } catch (Exception exc) {
+      SolrZkClient.checkInterrupted(exc);
+      log.error("Failed to cleanup old index directories for core {}", coreName, exc);
     }
   }
 

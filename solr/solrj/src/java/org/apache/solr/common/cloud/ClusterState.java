@@ -43,7 +43,7 @@ public class ClusterState implements JSONWriter.Writable {
   private final Integer znodeVersion;
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
-  private Set<String> liveNodes;
+  private volatile Set<String> liveNodes;
 
   // nocommit
   public ClusterState(Set<String> liveNodes,

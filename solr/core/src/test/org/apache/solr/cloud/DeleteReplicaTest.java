@@ -264,8 +264,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   @Slow
-  @Ignore // nocommit: investigate
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  @Nightly // TODO look at performance of this - need lower connection timeouts for test?
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
@@ -337,7 +337,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     try {
       replica1Jetty.stop();
-      cluster.waitForJettyToStop(replica1Jetty);
       waitForState("Expected replica:"+replica1+" get down", collectionName, (liveNodes, collectionState)
               -> collectionState.getSlice("shard1").getReplica(replica1.getName()).getState() == DOWN);
       replica1Jetty.start();

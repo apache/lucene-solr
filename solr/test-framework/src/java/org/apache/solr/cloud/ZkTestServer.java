@@ -807,11 +807,6 @@ public class ZkTestServer implements Closeable {
     this.minSessionTimeout = minSessionTimeout;
   }
 
-  void buildZooKeeper(String config,
-                      String schema) throws Exception {
-    buildZooKeeper(SOLRHOME, config, schema);
-  }
-
   public static void putConfig(String confName, SolrZkClient zkClient, File solrhome, final String name)
           throws Exception {
     putConfig(confName, zkClient, null, solrhome, name, name);
@@ -840,7 +835,7 @@ public class ZkTestServer implements Closeable {
   }
 
   // static to share with distrib test
-  public void buildZooKeeper(File solrhome, String config, String schema) throws Exception {
+  public void buildZooKeeper() throws Exception {
     // this workaround is acceptable until we remove legacyCloud because we just init a single core here
     String defaultClusterProps = "{}";
     chRootClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8),

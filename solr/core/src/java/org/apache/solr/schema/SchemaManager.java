@@ -54,6 +54,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A utility class to manipulate schema using the bulk mode.
@@ -72,7 +74,7 @@ public class SchemaManager {
     this.req = req;
     this.isClosed = isClosed;
     //The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
-    timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 600);
+    timeout = req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, 60);
 
     //If BaseSolrResource.UPDATE_TIMEOUT_SECS=0 or -1 then end time then we'll try for 10 mins ( default timeout )
     if (timeout < 1) {
@@ -108,7 +110,8 @@ public class SchemaManager {
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
-    req.getSchema().getSchemaUpdateLock().lockInterruptibly();
+    ReentrantLock schemaUpdateLock = req.getSchema().getSchemaUpdateLock();
+    schemaUpdateLock.lockInterruptibly();
     DistributedLock lock = null;
     try {
       if (core.getCoreContainer().isZooKeeperAware()) {
@@ -120,7 +123,8 @@ public class SchemaManager {
           Thread.sleep(250);
         }
       }
-      while (!timeOut.hasTimedOut()) {
+
+      while (!timeOut.hasTimedOut() && !req.getCore().getCoreContainer().isShutDown()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
         for (CommandOperation op : operations) {
           OpType opType = OpType.get(op.name);
@@ -175,11 +179,11 @@ public class SchemaManager {
         }
       }
     } finally {
-      if (req.getSchema().getSchemaUpdateLock().isHeldByCurrentThread()) {
-        req.getSchema().getSchemaUpdateLock().unlock();
+      if (schemaUpdateLock.isHeldByCurrentThread()) {
+        schemaUpdateLock.unlock();
       }
       if (core.getCoreContainer().isZooKeeperAware()) {
-        if (lock != null) lock.unlock();
+        if (lock != null && lock.isOwner()) lock.unlock();
       }
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
@@ -477,7 +481,7 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
+        return new ManagedIndexSchema(core.getCoreDescriptor().getCollectionName(), core.getSolrConfig(), name, new InputSource(in), true, name, version,
             core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();

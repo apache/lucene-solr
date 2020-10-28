@@ -82,7 +82,13 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public ZooKeeper getKeeper() {
-    return keeper;
+    synchronized (keeperLock) {
+      SolrZooKeeper rKeeper = keeper;
+      if (rKeeper == null) {
+        throw new AlreadyClosedException();
+      }
+      return rKeeper;
+    }
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
@@ -267,7 +273,6 @@ public class ConnectionManager implements Watcher, Closeable {
         // our retry loop will try to create one again
         try {
           ParWork.close(keeper);
-          keeper = null;
         } catch (Exception e) {
           ParWork.propagateInterrupt("Exception closing keeper after hitting exception", e);
           if (e instanceof InterruptedException || e instanceof AlreadyClosedException) {
@@ -340,6 +345,7 @@ public class ConnectionManager implements Watcher, Closeable {
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
 
 
+    client.zkCallbackSerialExecutor.shutdown();
     client.zkCallbackExecutor.shutdown();
     client.zkConnManagerCallbackExecutor.shutdown();
     if (keeper != null) {
@@ -347,6 +353,7 @@ public class ConnectionManager implements Watcher, Closeable {
     }
     keeper = null;
 
+    ExecutorUtil.awaitTermination(client.zkCallbackSerialExecutor);
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
     ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -33,7 +34,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
-@Ignore // nocommit Overseer leak
+@LuceneTestCase.Nightly
 public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private final static int NUM_REPLICAS_OF_SHARD1 = 5;
 
@@ -44,6 +45,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
 
   @Override
   public void setUp() throws Exception {
+    useFactory(null);
     super.setUp();
     configureCluster(6)
         .addConfig("conf", configset("cloud-minimal"))

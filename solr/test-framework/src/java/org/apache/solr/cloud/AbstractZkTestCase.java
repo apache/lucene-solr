@@ -63,8 +63,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     System.setProperty("jetty.port", "0000");
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     
-    zkServer.buildZooKeeper(SOLRHOME,
-        "solrconfig.xml", "schema.xml");
+    zkServer.buildZooKeeper();
 
     initCore("solrconfig.xml", "schema.xml");
   }

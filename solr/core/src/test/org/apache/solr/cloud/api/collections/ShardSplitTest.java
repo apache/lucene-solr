@@ -81,7 +81,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
-@Ignore // nocommit debug
 public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -89,15 +88,17 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   private static final String SHARD1_0 = SHARD1 + "_0";
   private static final String SHARD1_1 = SHARD1 + "_1";
 
-  public ShardSplitTest() {
+  public ShardSplitTest() throws Exception {
     createControl = true;
     schemaString = "schema15.xml";      // we need a string id
+    solrconfigString = "solrconfig.xml";
+    System.setProperty("managed.schema.mutable", "true");
+    useFactory(null);
   }
 
   @BeforeClass
   public static void beforeShardSplitTest() throws Exception {
-    System.setProperty("managed.schema.mutable", "true");
-    useFactory(null);
+
   }
 
   @Test
@@ -108,10 +109,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     splitByUniqueKeyTest();
     splitByRouteFieldTest();
     splitByRouteKeyTest();
-
-    // todo can't call  because it looks for jettys of all shards
-    // and the new sub-shards don't have any.
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION);
   }
 
   /*
@@ -119,6 +116,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   Add a replica. Ensure count matches in leader and replica.
    */
   @Test
+  @Ignore // nocommit
   public void testSplitStaticIndexReplication() throws Exception {
     doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.REWRITE);
   }
@@ -140,8 +138,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
-
-    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
 
     cloudClient.setDefaultCollection(collectionName);
@@ -191,9 +187,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
           if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
             stoppedNodeName = jetty.getNodeName();
             jetty.stop();
-            cluster.waitForJettyToStop(jetty);
             jetty.start();
-            cluster.waitForNode(jetty, 10);
             restarted = true;
             break;
           }
@@ -256,16 +250,17 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cloudClient.getHttpClient()).build();
-      QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
-      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
-      if (numFound == Long.MIN_VALUE)  {
-        numFound = response.getResults().getNumFound();
-      } else  {
-        assertEquals("Shard " + shard.getName() + " replicas do not have same number of documents", numFound, response.getResults().getNumFound());
+      try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
+              .withHttpClient(cloudClient.getHttpClient()).build()) {
+        QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
+        log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
+        if (numFound == Long.MIN_VALUE) {
+          numFound = response.getResults().getNumFound();
+        } else {
+          assertEquals("Shard " + shard.getName() + " replicas do not have same number of documents", numFound, response.getResults().getNumFound());
+        }
+        count++;
       }
-      count++;
     }
     return count;
   }
@@ -340,6 +335,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   @Slow
+  @Nightly // TODO speed up
   public void testSplitMixedReplicaTypes() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
   }
@@ -357,10 +353,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.process(cloudClient);
 
-    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 4));
-
-    waitForRecoveriesToFinish(collectionName);
-
     for (int i = 0; i < 100; i++) {
       cloudClient.add(collectionName, getDoc("id", "id-" + i, "foo_s", "bar " + i));
     }
@@ -370,9 +362,6 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     splitShard.setShardName(SHARD1);
     splitShard.setSplitMethod(splitMethod.toLower());
     CollectionAdminResponse rsp = splitShard.process(cloudClient);
-
-
-    cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 12));
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -552,6 +541,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
+  @Nightly // TODO speed up
   public void testSplitLocking() throws Exception {
     String collectionName = "testSplitLocking";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2);
@@ -631,16 +621,12 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     CollectionAdminResponse response = createRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
 
-    try {
-      cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 2));
-    } catch (TimeoutException e) {
-      new RuntimeException("Timeout waiting for 1shards and 2 replicas.", e);
-    }
-
     CollectionAdminRequest.SplitShard splitShardRequest = CollectionAdminRequest.splitShard(collectionName)
             .setShardName("shard1").setSplitMethod(splitMethod.toLower());
     response = splitShardRequest.process(cloudClient);
     assertEquals(String.valueOf(response.getErrorMessages()), 0, response.getStatus());
+
+    cluster.waitForActiveCollection(collectionName, 2, 4);
   }
 
   private void incompleteOrOverlappingCustomRangeTest() throws Exception  {

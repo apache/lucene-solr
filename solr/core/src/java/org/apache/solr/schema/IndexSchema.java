@@ -752,7 +752,7 @@ public class IndexSchema {
 
   protected void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
-    try (ParWork work = new ParWork(this)) {
+    try (ParWork work = new ParWork(this, false, true)) {
       for (SchemaAware aware : schemaAware) {
         work.collect("postReadInform", () -> {
           aware.inform(this);

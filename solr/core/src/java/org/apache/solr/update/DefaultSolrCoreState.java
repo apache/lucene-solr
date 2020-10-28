@@ -361,6 +361,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             if (closed || prepForClose) {
               return;
             }
+            cancelRecovery();
           }
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {

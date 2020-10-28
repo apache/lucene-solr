@@ -77,7 +77,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit perhaps due to async on search side? An async call returns no response while splitting: No response on request for async status
   public void testSolrJAPICalls() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();

@@ -43,7 +43,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -133,7 +132,6 @@ public class ZkController implements Closeable, Runnable {
 
   public static final String CLUSTER_SHUTDOWN = "/cluster/shutdown";
 
-  static final int WAIT_DOWN_STATES_TIMEOUT_SECONDS = 60;
   public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
   public final int WAIT_FOR_STATE = Integer.getInteger("solr.waitForState", 10);
 
@@ -504,7 +502,7 @@ public class ZkController implements Closeable, Runnable {
 
             try (ParWork parWork = new ParWork(this)) {
               // the OnReconnect operation can be expensive per listener, so do that async in the background
-              for (OnReconnect listener : reconnectListeners) {
+              reconnectListeners.forEach(listener -> {
                 try {
                   parWork.collect(new OnReconnectNotifyAsync(listener));
                 } catch (Exception exc) {
@@ -512,7 +510,7 @@ public class ZkController implements Closeable, Runnable {
                   // not much we can do here other than warn in the log
                   log.warn("Error when notifying OnReconnect listener {} after session re-connected.", listener, exc);
                 }
-              }
+              });
             }
           } catch (InterruptedException e) {
             log.warn("interrupted");
@@ -1163,14 +1161,11 @@ public class ZkController implements Closeable, Runnable {
             }
           });
 
-          worker.collect("registerLiveNodesListener", () -> {
-            registerLiveNodesListener();
-          });
           worker.collect("publishDownState", () -> {
             try {
               Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
               if (stat != null && stat.getNumChildren() > 0) {
-                publishAndWaitForDownStates();
+                publishDownStates();
               }
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
@@ -1194,40 +1189,6 @@ public class ZkController implements Closeable, Runnable {
                 "", e);
       }
     }
-  }
-
-  private void registerLiveNodesListener() {
-    log.info("register live nodes listener");
-    // this listener is used for generating nodeLost events, so we check only if
-    // some nodes went missing compared to last state
-    LiveNodesListener listener = new LiveNodesListener() {
-      @Override
-      public boolean onChange(SortedSet<String> oldNodes, SortedSet<String> newNodes) {
-        {
-          oldNodes.removeAll(newNodes);
-          if (oldNodes.isEmpty()) { // only added nodes
-            return false;
-          }
-          if (isClosed) {
-            return true;
-          }
-          // if this node is in the top three then attempt to create nodeLost message
-          int i = 0;
-          for (String n : newNodes) {
-            if (n.equals(getNodeName())) {
-              break;
-            }
-            if (i > 2) {
-              return false; // this node is not in the top three
-            }
-            i++;
-          }
-
-          return false;
-        }
-      }
-    };
-    zkStateReader.registerLiveNodesListener(listener);
   }
 
   private synchronized void shutdown() {
@@ -1313,46 +1274,8 @@ public class ZkController implements Closeable, Runnable {
     }
   }
 
-  public void publishAndWaitForDownStates() throws KeeperException,
-  InterruptedException {
-    publishAndWaitForDownStates(WAIT_DOWN_STATES_TIMEOUT_SECONDS);
-  }
-
-  public void publishAndWaitForDownStates(int timeoutSeconds) throws KeeperException,
-      InterruptedException {
-
+  public void publishDownStates() throws KeeperException {
     publishNodeAsDown(getNodeName());
-
-    Set<String> collectionsWithLocalReplica = ConcurrentHashMap.newKeySet();
-    for (CoreDescriptor descriptor : cc.getCoreDescriptors()) {
-      collectionsWithLocalReplica.add(descriptor.getCloudDescriptor().getCollectionName());
-    }
-
-    CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
-    for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
-      zkStateReader.registerDocCollectionWatcher(collectionWithLocalReplica, (collectionState) -> {
-        if (collectionState == null)  return false;
-        boolean foundStates = true;
-        for (CoreDescriptor coreDescriptor : cc.getCoreDescriptors()) {
-          if (coreDescriptor.getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
-            Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getCoreNodeName());
-            if (replica == null || replica.getState() != Replica.State.DOWN) {
-              foundStates = false;
-            }
-          }
-        }
-
-        if (foundStates && collectionsWithLocalReplica.remove(collectionWithLocalReplica))  {
-          latch.countDown();
-        }
-        return foundStates;
-      });
-    }
-
-    boolean allPublishedDown = latch.await(timeoutSeconds, TimeUnit.SECONDS);
-    if (!allPublishedDown) {
-      log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
-    }
   }
 
   /**

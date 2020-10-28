@@ -45,15 +45,16 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     System.setProperty("enable.update.log", "true");
   }
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-managed-schema.xml";
-  }
-
-  @Override
-  public String getCloudSchemaFile() {
-    return "managed-schema";
-  }
+// nocommit no longer used
+//  @Override
+//  protected String getCloudSolrConfig() {
+//    return "solrconfig-managed-schema.xml";
+//  }
+//
+//  @Override
+//  public String getCloudSchemaFile() {
+//    return "managed-schema";
+//  }
 
   @Test
   public void test() throws Exception {

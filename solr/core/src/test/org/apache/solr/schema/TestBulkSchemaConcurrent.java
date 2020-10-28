@@ -49,11 +49,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
   public static void initSysProperties() {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "true");
-    solrconfigString = getCloudSolrConfig();
-  }
-
-  private static String getCloudSolrConfig() {
-    return "solrconfig-managed-schema.xml";
+    solrconfigString = "solrconfig-managed-schema.xml";
   }
 
   @Test

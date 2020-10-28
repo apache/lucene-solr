@@ -64,8 +64,10 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     System.setProperty("zkHost", zkServer.getZkAddress());
     System.setProperty("jetty.port", "0000");
 
-    zkServer.buildZooKeeper(getFile("dih/solr"),
-        "dataimport-solrconfig.xml", "dataimport-schema.xml");
+    zkServer.buildZooKeeper();
+    // nocommit - you can't set config this way anymore, the _default config is used
+//    zkServer.buildZooKeeper(getFile("dih/solr"),
+//        "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
     cc = createDefaultCoreContainer(getFile("dih/solr").toPath());

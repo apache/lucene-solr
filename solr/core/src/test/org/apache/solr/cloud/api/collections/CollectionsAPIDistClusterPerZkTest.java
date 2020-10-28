@@ -93,19 +93,11 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     if (TEST_NIGHTLY) {
-      System.setProperty("createCollectionWaitTimeTillActive", "10");
+      System.setProperty("createCollectionWaitTimeTillActive", "100");
       TestInjection.randomDelayInCoreCreation = "true:5";
     } else {
-      System.setProperty("createCollectionWaitTimeTillActive", "10");
+      System.setProperty("createCollectionWaitTimeTillActive", "100");
     }
-    // this class deletes all the collections between each test and so really
-    // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
-    // bad cases
-    System.setProperty("distribUpdateSoTimeout", "20000");
-    System.setProperty("socketTimeout", "20000");
-    System.setProperty("solr.test.socketTimeout.default", "20000");
-    System.setProperty("solr.so_commit_timeout.default", "20000");
-    System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
 
     configureCluster(TEST_NIGHTLY ? 4 : 2)
         .addConfig("conf", configset(getConfigSet()))

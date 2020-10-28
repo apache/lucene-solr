@@ -55,6 +55,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.DistributedLock;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -95,6 +96,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   public static final DynamicField[] EMPTY_DYNAMIC_FIELDS = {};
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPY_FIELDS = {};
   private final boolean isMutable;
+  private String collection;
 
   @Override public boolean isMutable() { return isMutable; }
 
@@ -112,10 +114,11 @@ public final class ManagedIndexSchema extends IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
-  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
+  ManagedIndexSchema(String collection, SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
                      String managedSchemaResourceName, int schemaZkVersion, ReentrantLock schemaUpdateLock) {
     super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
+    this.collection = collection;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
     this.schemaUpdateLock = schemaUpdateLock;
@@ -126,42 +129,47 @@ public final class ManagedIndexSchema extends IndexSchema {
    * Persist the schema to local storage or to ZooKeeper
    * @param createOnly set to false to allow update of existing schema
    */
-  public synchronized boolean persistManagedSchema(boolean createOnly) {
-    if (loader instanceof ZkSolrResourceLoader) {
-      return persistManagedSchemaToZooKeeper(createOnly);
-    }
-    // Persist locally
-    File managedSchemaFile = new File(loader.getConfigDir(), managedSchemaResourceName);
-    OutputStreamWriter writer = null;
+  public boolean persistManagedSchema(boolean createOnly) {
+    schemaUpdateLock.lock();
     try {
-      File parentDir = managedSchemaFile.getParentFile();
-      if ( ! parentDir.isDirectory()) {
-        if ( ! parentDir.mkdirs()) {
-          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
-          log.error(msg);
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      if (loader instanceof ZkSolrResourceLoader) {
+        return persistManagedSchemaToZooKeeper(createOnly);
+      }
+      // Persist locally
+      File managedSchemaFile = new File(loader.getConfigDir(), managedSchemaResourceName);
+      OutputStreamWriter writer = null;
+      try {
+        File parentDir = managedSchemaFile.getParentFile();
+        if (!parentDir.isDirectory()) {
+          if (!parentDir.mkdirs()) {
+            final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
+            log.error(msg);
+            throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+          }
+        }
+        final FileOutputStream out = new FileOutputStream(managedSchemaFile);
+        writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+        persist(writer);
+        if (log.isInfoEnabled()) {
+          log.info("Upgraded to managed schema at {}", managedSchemaFile.getPath());
+        }
+      } catch (IOException e) {
+        final String msg = "Error persisting managed schema " + managedSchemaFile;
+        log.error(msg, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+      } finally {
+        IOUtils.closeQuietly(writer);
+        try {
+          FileUtils.sync(managedSchemaFile);
+        } catch (IOException e) {
+          final String msg = "Error syncing the managed schema file " + managedSchemaFile;
+          log.error(msg, e);
         }
       }
-      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
-      writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-      persist(writer);
-      if (log.isInfoEnabled()) {
-        log.info("Upgraded to managed schema at {}", managedSchemaFile.getPath());
-      }
-    } catch (IOException e) {
-      final String msg = "Error persisting managed schema " + managedSchemaFile;
-      log.error(msg, e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+      return true;
     } finally {
-      IOUtils.closeQuietly(writer);
-      try {
-        FileUtils.sync(managedSchemaFile);
-      } catch (IOException e) {
-        final String msg = "Error syncing the managed schema file " + managedSchemaFile;
-        log.error(msg, e);
-      }
+      schemaUpdateLock.unlock();
     }
-    return true;
   }
 
   /**
@@ -175,56 +183,78 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @return true on success 
    */
   boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
-    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
+    final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
-    final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
-    boolean success = true;
-    boolean schemaChangedInZk = false;
+
+    DistributedLock lock = null;
+    if (collection != null) {
+      String lockPath = "/collections/" + collection + "/schema_lock";
+      lock = new DistributedLock(zkClient, lockPath, zkClient.getZkACLProvider().getACLsToAdd(lockPath));
+      if (log.isDebugEnabled()) log.debug("get cluster lock");
+      try {
+        while (!lock.lock()) {
+          Thread.sleep(250);
+        }
+      } catch (KeeperException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
     try {
-      // Persist the managed schema
-      StringWriter writer = new StringWriter();
-      persist(writer);
 
-      final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
-      if (createOnly) {
-        try {
-          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-          schemaZkVersion = 1;
-          log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
-        } catch (KeeperException.NodeExistsException e) {
-          // This is okay - do nothing and fall through
-          log.info("Managed schema znode at {} already exists - no need to create it", managedSchemaPath);
+      final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+      boolean success = true;
+      boolean schemaChangedInZk = false;
+      try {
+        // Persist the managed schema
+        StringWriter writer = new StringWriter();
+        persist(writer);
+
+        final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
+        if (createOnly) {
+          try {
+            zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
+            schemaZkVersion = 0;
+            log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
+          } catch (KeeperException.NodeExistsException e) {
+            // This is okay - do nothing and fall through
+            log.info("Managed schema znode at {} already exists - no need to create it", managedSchemaPath);
+          }
+        } else {
+          try {
+            // Assumption: the path exists
+            Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
+            schemaZkVersion = stat.getVersion();
+            log.info("Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
+          } catch (KeeperException.BadVersionException e) {
+
+            log.info("Bad version when trying to persist schema using {}", schemaZkVersion);
+
+            success = false;
+            schemaChangedInZk = true;
+          }
         }
-      } else {
-        try {
-          // Assumption: the path exists
-          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
-          schemaZkVersion = stat.getVersion();
-          log.info("Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);
-        } catch (KeeperException.BadVersionException e) {
-
-          log.info("Bad version when trying to persist schema using {}", schemaZkVersion);
-
-          success = false;
-          schemaChangedInZk = true;
+      } catch (Exception e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt(); // Restore the interrupted status
         }
+        final String msg = "Error persisting managed schema at " + managedSchemaPath;
+        log.error(msg, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
       }
-    } catch (Exception e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt(); // Restore the interrupted status
+      if (schemaChangedInZk) {
+        String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
+        log.info(msg);
+        throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
       }
-      final String msg = "Error persisting managed schema at " + managedSchemaPath;
-      log.error(msg, e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+
+      return success;
+    } finally {
+      if (lock != null && lock.isOwner()) lock.unlock();
     }
-    if (schemaChangedInZk) {
-      String msg = "Failed to persist managed schema at " + managedSchemaPath
-        + " - version mismatch";
-      log.info(msg);
-      throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
-    }
-    return success; 
   }
 
   /**
@@ -241,7 +271,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient(), isClosed));
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getOverseerOnlyClient(), isClosed));
     if (concurrentTasks.isEmpty())
       return; // nothing to wait for ...
 
@@ -255,7 +285,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     try {
       List<Future<Integer>> results = new ArrayList<>(concurrentTasks.size());
       for (GetZkSchemaVersionCallable call : concurrentTasks) {
-        results.add(ParWork.getMyPerThreadExecutor().submit(call));
+        results.add(ParWork.getRootSharedExecutor().submit(call));
       }
 
       // determine whether all replicas have the update
@@ -427,38 +457,45 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema = shallowCopy(true);
 
-      newSchema.fields = new ConcurrentHashMap<>(fields);
+      newSchema.fields = new ConcurrentHashMap<>(fields.size());
+      ManagedIndexSchema finalNewSchema = newSchema;
+      fields.forEach((s, schemaField) -> {
+        finalNewSchema.fields.put(s, schemaField);
+      });
+
       newSchema.requiredFields = ConcurrentHashMap.newKeySet(requiredFields.size());
       newSchema.requiredFields.addAll(requiredFields);
       newSchema.fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(fieldsWithDefaultValue.size());
       newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
 
-      for (SchemaField newField : newFields) {
-        if (null != newSchema.fields.get(newField.getName())) {
+      Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
+      newFields.forEach(newField -> {
+        if (null != finalNewSchema.fields.get(newField.getName())) {
           String msg = "Field '" + newField.getName() + "' already exists.";
           throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
         }
-        newSchema.fields.put(newField.getName(), newField);
+        finalNewSchema.fields.put(newField.getName(), newField);
 
         if (null != newField.getDefaultValue()) {
           if (log.isDebugEnabled()) {
             log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
           }
-          newSchema.fieldsWithDefaultValue.add(newField);
+          finalNewSchema.fieldsWithDefaultValue.add(newField);
         }
         if (newField.isRequired()) {
           if (log.isDebugEnabled()) {
             log.debug("{} is required in this schema", newField.getName());
           }
-          newSchema.requiredFields.add(newField);
+          finalNewSchema.requiredFields.add(newField);
         }
-        Collection<String> copyFields = copyFieldNames.get(newField.getName());
+        Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
         if (copyFields != null) {
           for (String copyField : copyFields) {
-            newSchema.registerCopyField(newField.getName(), copyField);
+            finalNewSchema.registerCopyField(newField.getName(), copyField);
           }
         }
-      }
+
+      });
 
       newSchema.postReadInform();
 
@@ -988,7 +1025,13 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // we shallow copied fieldTypes, but since we're changing them, we need to do a true
     // deep copy before adding the new field types
-    newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
+
+    HashMap<Object,Object> tmpMap = new HashMap<>(fieldTypes.size());
+    fieldTypes.forEach((s, fieldType) -> {
+      tmpMap.put(s, fieldType);
+    });
+
+    newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) tmpMap.clone());
 
     // do a first pass to validate the field types don't exist already
     for (FieldType fieldType : fieldTypeList) {    
@@ -1202,7 +1245,9 @@ public final class ManagedIndexSchema extends IndexSchema {
   @Override
   protected void postReadInform() {
     super.postReadInform();
-    try (ParWork worker = new ParWork(this)) {
+    // we need another thread because we share a virtual pool and the informResourceLoaderAwareObjectsForFieldType
+    // also uses ParWork and we can't have this nesting and use a limited, caller runs pool
+    try (ParWork worker = new ParWork(this, true, true)) {
       for (FieldType fieldType : fieldTypes.values()) {
         worker.collect("informResourceLoaderAwareObjectsForFieldType", () -> {
           informResourceLoaderAwareObjectsForFieldType(fieldType);
@@ -1345,7 +1390,9 @@ public final class ManagedIndexSchema extends IndexSchema {
    * are loaded (as they depend on this callback to complete initialization work)
    */
   protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
-    try (ParWork worker = new ParWork(this)) {
+    // we are nested in a ParWork call and since we share the same virtual executor, we need to ensure
+    // the caller thread is not used here with requireAnotherThread
+    try (ParWork worker = new ParWork(this, true, true)) {
 
       CharFilterFactory[] charFilters = chain.getCharFilterFactories();
       for (CharFilterFactory next : charFilters) {

@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLeaderNode;
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
-@Ignore // nocommit - this seems to really on the Overseer starting a thread on close one more time to still see if its a leader, and that should go
+@LuceneTestCase.AwaitsFix(bugUrl = "These Overseer role feature is no longer supported")
 public class OverseerRolesTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

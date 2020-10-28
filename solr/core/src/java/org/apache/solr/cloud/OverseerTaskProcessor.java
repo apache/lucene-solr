@@ -49,6 +49,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -254,7 +255,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             continue;
           }
           OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-          OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
+          String op = message.getStr("operation");
+          OverseerMessageHandler.Lock lock = null;
+          lock = messageHandler.lockTask(message, taskBatch);
           if (lock == null) {
             log.debug("Exclusivity check failed for [{}]", message.toString());
             // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
@@ -448,14 +451,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
 
     public void run() {
-      String statsName = messageHandler.getTimerName(operation);
-      final Timer.Context timerContext = stats.time(statsName);
-
-      boolean success = false;
-      final String asyncId = message.getStr(ASYNC);
-      String taskKey = messageHandler.getTaskKey(message);
 
       try {
+        String statsName = messageHandler.getTimerName(operation);
+        final Timer.Context timerContext = stats.time(statsName);
+
+        boolean success = false;
+        final String asyncId = message.getStr(ASYNC);
+        String taskKey = messageHandler.getTaskKey(message);
+
         try {
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
@@ -467,8 +471,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         }
 
         if (asyncId != null) {
-          if (response != null && (response.getResponse().get("failure") != null
-              || response.getResponse().get("exception") != null)) {
+          if (response != null && (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)) {
             failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             if (log.isDebugEnabled()) {
               log.debug("Updated failed map for task with zkid:[{}]", head.getId());
@@ -487,8 +490,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         log.debug("Marked task [{}] as completed.", head.getId());
         printTrackingMaps();
 
-        log.debug(messageHandler.getName() + ": Message id:" + head.getId() +
-            " complete, response:" + response.getResponse().toString());
+        log.debug(messageHandler.getName() + ": Message id:" + head.getId() + " complete, response:" + response.getResponse().toString());
 
         taskFutures.remove(this);
         success = true;
@@ -502,7 +504,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         }
         log.error("Exception running task", e);
       } finally {
-        lock.unlock();
+        if (lock != null) lock.unlock();
       }
 
       if (log.isDebugEnabled()) {

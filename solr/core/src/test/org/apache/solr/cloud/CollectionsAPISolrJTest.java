@@ -84,28 +84,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public static void beforeCollectionsAPISolrJTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
-    // this class deletes all the collections between each test and so really
-    // stresses a difficult code path - give a higher so timeout for low end hardware to make it through
-    // bad cases
-    System.setProperty("distribUpdateSoTimeout", "20000");
-    System.setProperty("socketTimeout", "20000");
-    System.setProperty("solr.test.socketTimeout.default", "20000");
-    System.setProperty("solr.so_commit_timeout.default", "20000");
-    System.setProperty("solr.httpclient.defaultSoTimeout", "20000");
     configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
             .addConfig("conf", configset("cloud-minimal"))
             .addConfig("conf2", configset("cloud-dynamic"))
             .configure();
-
-
-//    final ClusterProperties props = new ClusterProperties(zkClient());
-//    CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, null).process(cluster.getSolrClient());
-//    assertEquals("Cluster property was not unset", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, null), null);
   }
 
   @After
   public void afterTest() throws Exception {
-   // cluster.deleteAllCollections();
+    cluster.deleteAllCollections();
   }
 
   /**
@@ -331,7 +318,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testSplitShard() throws Exception {
 
     final String collectionName = "solrj_test_splitshard";
@@ -512,6 +498,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void testColStatus() throws Exception {
     final String collectionName = "collectionStatusTest";
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
@@ -568,13 +555,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     JettySolrRunner jetty = cluster.getJettyForShard(collectionName, "shard1");
     jetty.stop();
-    cluster.waitForJettyToStop(jetty);
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
     Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
     assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
     jetty.start();
-    cluster.waitForNode(jetty, 10);
   }
 
   @Test

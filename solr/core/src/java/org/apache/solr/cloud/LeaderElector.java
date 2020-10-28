@@ -257,9 +257,8 @@ public  class LeaderElector {
           while (true) {
             if (log.isDebugEnabled()) log.debug("create ephem election node {}", shardsElectZkPath + "/" + id + "-n_");
               try {
-              leaderSeqPath = zkClient.getSolrZooKeeper().create(shardsElectZkPath + "/" + id + "-n_", null,
-                      zkClient.getZkACLProvider().getACLsToAdd(shardsElectZkPath + "/" + id + "-n_"),
-                      CreateMode.EPHEMERAL_SEQUENTIAL);
+              leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", null,
+                      CreateMode.EPHEMERAL_SEQUENTIAL, false);
               break;
             } catch (ConnectionLossException e) {
               log.warn("Connection loss during leader election, trying again ...");
@@ -268,7 +267,7 @@ public  class LeaderElector {
           }
         }
 
-        log.debug("Joined leadership election with path: {}", leaderSeqPath);
+        if (log.isDebugEnabled()) log.debug("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
@@ -316,7 +315,7 @@ public  class LeaderElector {
     final String myNode,watchedNode;
     final ElectionContext context;
 
-    private boolean canceled = false;
+    private volatile boolean canceled = false;
 
     private ElectionWatcher(String myNode, String watchedNode, int seq, ElectionContext context) {
       this.myNode = myNode;

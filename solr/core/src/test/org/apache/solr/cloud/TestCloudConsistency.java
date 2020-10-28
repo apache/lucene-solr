@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,7 +49,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
+@LuceneTestCase.Nightly
 public class TestCloudConsistency extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -60,7 +61,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   public void setupCluster() throws Exception {
     useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("leaderVoteWait", "10000");
+    System.setProperty("leaderVoteWait", "15000");
     System.setProperty("solr.skipCommitOnClose", "false");
 
     configureCluster(4)
@@ -135,6 +136,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       addDocWhenOtherReplicasAreNetworkPartitioned(collectionName, oldLeader, 4);
     }
 
+    cluster.waitForActiveCollection(collectionName, 1, 3);
     assertDocsExistInAllReplicas(getCollectionState(collectionName).getReplicas(), collectionName, 1, 4);
 
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
@@ -147,36 +149,56 @@ public class TestCloudConsistency extends SolrCloudTestCase {
    * Leader should be on node - 0
    */
   private void addDocToWhenOtherReplicasAreDown(String collection, Replica leader, int docId) throws Exception {
-    JettySolrRunner j1 = cluster.getJettySolrRunner(1);
-    JettySolrRunner j2 = cluster.getJettySolrRunner(2);
-    j1.stop();
-    j2.stop();
+    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
+    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "shard1");
+
+    for (JettySolrRunner j : cluster.getJettySolrRunners()) {
+      if (j != j1) {
+        j.stop();
+      }
+    }
 
     addDocs(collection, 1, docId);
-    JettySolrRunner j3 = cluster.getJettySolrRunner(0);
-    j3.stop();
 
-    cluster.getJettySolrRunner(1).start();
-    cluster.getJettySolrRunner(2).start();
+    j1.stop();
+
+
+    waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState)
+        ->  collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
+
+    for (JettySolrRunner j : cluster.getJettySolrRunners()) {
+      if (j != j1) {
+        j.start(true, false);
+      }
+    }
+
+    Thread thread = new Thread() {
+      public void run() {
+        try {
+          j1.start();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    };
+    thread.start();
+
 
     // the meat of the test -- wait to see if a different replica become a leader
     // the correct behavior is that this should time out, if it succeeds we have a problem...
     expectThrows(TimeoutException.class,
                  "Did not time out waiting for new leader, out of sync replica became leader",
                  () -> {
-                   cluster.getSolrClient().waitForState(collection, 4, TimeUnit.SECONDS, (state) -> {
+                   cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (state) -> {
             Replica newLeader = state.getSlice("shard1").getLeader();
             if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
               // this is is the bad case, our "bad" state was found before timeout
-              log.error("WTF: New Leader={}", newLeader);
+              log.error("WTF: New Leader={} original Leader={}", newLeader, leader);
               return true;
             }
             return false; // still no bad state, wait for timeout
           });
       });
-
-    JettySolrRunner j0 = cluster.getJettySolrRunner(0);
-    j0.start();
 
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
@@ -192,18 +214,8 @@ public class TestCloudConsistency extends SolrCloudTestCase {
    * Leader should be on node - 0
    */
   private void addDocWhenOtherReplicasAreNetworkPartitioned(String collection, Replica leader, int docId) throws Exception {
-    DocCollection col = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collection);
-    Replica shard1Leader = col.getLeader("shard1");
-    String baseUrl = shard1Leader.getBaseUrl();
-    JettySolrRunner j1 = null;
-    for (JettySolrRunner j : cluster.getJettySolrRunners()) {
-      if (j.getProxyBaseUrl().toString().equals(baseUrl)) {
-        j1 = j;
-        break;
-      }
-    }
-
-    assertNotNull(baseUrl, j1);
+    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
+    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "shard1");
 
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       if (j != j1) {
@@ -214,7 +226,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     addDoc(collection, docId, j1);
 
     j1.stop();
-    cluster.waitForJettyToStop(j1);
+
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       if (j != j1) {
         proxies.get(j).reopen();
@@ -228,7 +240,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     expectThrows(TimeoutException.class,
                  "Did not time out waiting for new leader, out of sync replica became leader",
                  () -> {
-                   cluster.getSolrClient().waitForState(collection, 4, TimeUnit.SECONDS, (state) -> {
+                   cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (state) -> {
             Replica newLeader = state.getSlice("shard1").getLeader();
             if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
               // this is is the bad case, our "bad" state was found before timeout
@@ -239,14 +251,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
           });
       });
 
-    proxies.get(j1).reopen();
     j1.start();
-    cluster.waitForAllNodes(30);
+
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
-    
+
     cluster.waitForActiveCollection(collection, 1, 3);
   }
 

@@ -36,7 +36,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @SolrTestCase.SuppressObjectReleaseTracker(object = "Http2SolrClient")
-@Ignore // nocommit - we have to close Http2SolrClient earlier
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
   private static JettySolrRunner jetty;

@@ -792,11 +792,23 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner getReplicaJetty(Replica replica) {
     for (JettySolrRunner jetty : jettys) {
-      if (jetty.isStopped()) continue;
-      if (replica.getCoreUrl().startsWith(jetty.getBaseUrl().toString()))
+      if (replica.getCoreUrl().startsWith(jetty.getBaseUrl()))
+        return jetty;
+    }
+    for (JettySolrRunner jetty : jettys) {
+      System.out.println("against " + jetty.getProxyBaseUrl());
+      if (replica.getCoreUrl().startsWith(jetty.getProxyBaseUrl()))
         return jetty;
     }
     throw new IllegalArgumentException("Cannot find Jetty for a replica with core url " + replica.getCoreUrl());
+  }
+
+  public JettySolrRunner getJetty(String baseUrl) {
+    for (JettySolrRunner jetty : jettys) {
+      if (baseUrl.equals(jetty.getBaseUrl()))
+        return jetty;
+    }
+    throw new IllegalArgumentException("Cannot find Jetty with baseUrl " + baseUrl + " " + jettys);
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {

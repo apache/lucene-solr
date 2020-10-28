@@ -75,21 +75,11 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     System.setProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
 
-    String schema = getCloudSchemaFile();
-    if (schema == null) schema = "schema.xml";
-    zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
+    zkServer.buildZooKeeper();
 
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-  }
-
-  protected String getCloudSolrConfig() {
-    return "solrconfig-tlog.xml";
-  }
-
-  protected String getCloudSchemaFile() {
-    return getSchemaFile();
   }
 
 //  @Override

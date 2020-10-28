@@ -199,7 +199,7 @@ public class ZkContainer implements Closeable {
   public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;
 
   public Future registerInZk(final SolrCore core, boolean skipRecovery) {
-    log.info("Register in ZooKeeper core={} skipRecovery={}", core.getName(), skipRecovery);
+    log.info("Register in ZooKeeper core={} skipRecovery={} liveNodes={}", core.getName(), skipRecovery, zkController.getZkStateReader().getLiveNodes());
     CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
     Runnable r = () -> {
         MDCLoggingContext.setCore(core);

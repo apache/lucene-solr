@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 @Slow
-@Ignore // nocommit investigate, hangs/leaks
 public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

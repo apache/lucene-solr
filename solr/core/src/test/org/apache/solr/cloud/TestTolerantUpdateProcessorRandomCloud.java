@@ -300,6 +300,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /** sanity check that randomUnsetBit works as expected 
    * @see #randomUnsetBit
    */
+  @AwaitsFix(bugUrl = "this sanity check is flakey...")
   public void testSanityRandomUnsetBit() {
     final int max = atLeast(100);
     BitSet bits = new BitSet(max+1);

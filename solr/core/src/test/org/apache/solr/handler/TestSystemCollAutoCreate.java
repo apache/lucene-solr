@@ -22,7 +22,6 @@ import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.junit.Ignore;
 
-@Ignore // nocommit debugl;
 public class TestSystemCollAutoCreate extends SolrCloudBridgeTestCase {
 
   public TestSystemCollAutoCreate() {

@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ctc.wstx.shaded.msv_core.verifier.Acceptor;
 import org.apache.solr.common.ParWork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,6 @@ public class SocketProxy {
     int listenPort = port;
     this.usesSSL = useSSL;
     serverSocket = createServerSocket(useSSL);
-    serverSocket.setReuseAddress(true);
     if (receiveBufferSize > 0) {
       serverSocket.setReceiveBufferSize(receiveBufferSize);
     }
@@ -126,17 +126,25 @@ public class SocketProxy {
   }
 
   private ServerSocket createServerSocket(boolean useSSL) throws Exception {
+    ServerSocket socket;
     if (useSSL) {
-      return SSLServerSocketFactory.getDefault().createServerSocket();
+      socket = SSLServerSocketFactory.getDefault().createServerSocket();
+    } else {
+      socket = new ServerSocket();
     }
-    return new ServerSocket();
+    socket.setReuseAddress(true);
+    return socket;
   }
 
   private Socket createSocket(boolean useSSL) throws Exception {
+    Socket socket;
     if (useSSL) {
-      return SSLSocketFactory.getDefault().createSocket();
+      socket = SSLSocketFactory.getDefault().createSocket();
+    } else {
+      socket = new Socket();
     }
-    return new Socket();
+    socket.setReuseAddress(true);
+    return socket;
   }
 
   public URI getUrl() {
@@ -192,7 +200,6 @@ public class SocketProxy {
         throw new IllegalStateException("Can not call open before open(URI uri).");
       }
       serverSocket = createServerSocket(usesSSL);
-      serverSocket.setReuseAddress(true);
       if (receiveBufferSize > 0) {
         serverSocket.setReceiveBufferSize(receiveBufferSize);
       }

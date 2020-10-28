@@ -30,9 +30,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -102,11 +103,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
- // private Lock reloadLock = new ReentrantLock(true);
+  private Lock reloadLock = new ReentrantLock(true);
 
-//  //public Lock getReloadLock() {
-//    return reloadLock;
-//  }
+  public Lock getReloadLock() {
+    return reloadLock;
+  }
 
   private boolean isImmutableConfigSet = false;
 
@@ -125,7 +126,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
-    Command command = new Command(req, rsp, httpMethod);
+    Command command = new Command(req, rsp, httpMethod, reloadLock);
     if ("POST".equals(httpMethod)) {
       if (configEditing_disabled || isImmutableConfigSet) {
         final String reason = configEditing_disabled ? "due to " + CONFIGSET_EDITING_DISABLED_ARG : "because ConfigSet is immutable";
@@ -162,13 +163,16 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     private String path;
     List<String> parts;
 
-    private Command(SolrQueryRequest req, SolrQueryResponse resp, String httpMethod) {
+    private final Lock reloadLock;
+
+    private Command(SolrQueryRequest req, SolrQueryResponse resp, String httpMethod, Lock reloadLock) {
       this.req = req;
       this.resp = resp;
       this.method = httpMethod;
       path = (String) req.getContext().get("path");
       if (path == null) path = getDefaultPath();
       parts = StrUtils.splitSmart(path, '/', true);
+      this.reloadLock = reloadLock;
     }
 
     private String getDefaultPath() {
@@ -221,18 +225,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               log.info("I already have the expected version {} of params", expectedVersion);
             }
             if (isStale && req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
-              //                if (!reloadLock.tryLock()) {
-              //                  log.info("Another reload is in progress . Not doing anything");
-              //                  return;
-              //                }
-              //  reloadLock.unlock();
               Runnable runner = new Runnable() {
                 @Override
                 public void run() {
-                  //                if (!reloadLock.tryLock()) {
-                  //                  log.info("Another reload is in progress . Not doing anything");
-                  //                  return;
-                  //                }
+                  try {
+                    reloadLock.lockInterruptibly();
+                  } catch (InterruptedException e) {
+                    ParWork.propagateInterrupt(e);
+                    return;
+                  }
                   try {
                     log.info("Trying to update my configs");
                     SolrCore.getConfListener(req.getCore(),
@@ -245,11 +246,12 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                     }
                     log.error("Unable to refresh conf ", e);
                   } finally {
-                    //  reloadLock.unlock();
+                     reloadLock.unlock();
                   }
                 }
               };
-              runner.run();
+              ParWork.getRootSharedExecutor().submit(runner);
+              //runner.run();
             } else {
               if (log.isInfoEnabled()) {
                 log.info("isStale {} , resourceloader {}", isStale, req.getCore().getResourceLoader().getClass().getName());
@@ -376,7 +378,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
-        for (int i = 0;  i < 5; i++) {
+        while (!req.getCore().getCoreContainer().isShutDown()) {
           ArrayList<CommandOperation> opsCopy = new ArrayList<>(ops.size());
           for (CommandOperation op : ops) opsCopy.add(op.getCopy());
           try {
@@ -393,7 +395,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (log.isInfoEnabled()) {
               log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage());
             }
-            Thread.sleep(250);
+            Thread.sleep(10);
           }
         }
       } catch (Exception e) {
@@ -436,7 +438,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               try {
                 val = (Map) entry.getValue();
               } catch (Exception e1) {
-                ParWork.propagateInterrupt(e1);
                 op.addError("invalid params for key : " + key);
                 continue;
               }
@@ -817,21 +818,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     try {
       List<Future<Boolean>> results =
-          ParWork.getMyPerThreadExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          ParWork.getRootSharedExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
       for (int f = 0; f < results.size(); f++) {
         Boolean success = false;
         Future<Boolean> next = results.get(f);
-        if (next.isDone() && !next.isCancelled()) {
-          // looks to have finished, but need to check if it succeeded
-          try {
-            success = next.get();
-          } catch (ExecutionException e) {
-            log.error("Exception waiting for schema update", e);
-            // shouldn't happen since we checked isCancelled
-          }
+
+        // looks to have finished, but need to check if it succeeded
+        try {
+          success = next.get();
+        } catch (Exception e) {
+          log.error("Exception waiting for schema update", e);
         }
 
         if (!success) {
@@ -850,7 +849,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     } catch (InterruptedException ie) {
       ParWork.propagateInterrupt(ie);
-      return;
+      throw new AlreadyClosedException(ie);
     }
 
     if (log.isInfoEnabled()) {
@@ -864,7 +863,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
       final Collection<Slice> activeSlices = docCollection.getActiveSlices();
       for (Slice next : activeSlices) {
@@ -955,7 +954,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
         log.info("Time elapsed : {} secs, maxWait {}", timeElapsed, maxWait);
-        Thread.sleep(500);
+        Thread.sleep(50);
       }
 
       return true;

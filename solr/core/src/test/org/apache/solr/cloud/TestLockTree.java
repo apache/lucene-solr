@@ -49,7 +49,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
     assertNull("Should not be able to lock coll1/shard1", lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
         Arrays.asList("coll1", "shard1")));
 
-    assertNull(lockTree.getSession().lock(ADDREPLICAPROP,
+    assertNull(lockTree.getSession().lock(CollectionAction.MOVEREPLICA,
         Arrays.asList("coll1", "shard1", "core_node2")));
     coll1Lock.unlock();
     Lock shard1Lock = lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
@@ -62,17 +62,16 @@ public class TestLockTree extends SolrTestCaseJ4 {
 
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
-    operations.add(new Pair<>(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
+    operations.add(new Pair<>(CollectionAction.MOCK_REPLICA_TASK, Arrays.asList("coll1", "shard1", "core_node2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll1", "shard1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll2", "shard2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll2")));
-    operations.add(new Pair<>(DELETEREPLICA, Arrays.asList("coll2", "shard1")));
 
     List<Set<String>> orderOfExecution = Arrays.asList(
         ImmutableSet.of("coll1/shard1/core_node2", "coll2/shard2"),
         ImmutableSet.of("coll1", "coll2"),
-        ImmutableSet.of("coll1/shard1", "coll2/shard1"));
+        ImmutableSet.of("coll1/shard1"));
     lockTree = new LockTree();
     for (int counter = 0; counter < orderOfExecution.size(); counter++) {
       LockTree.Session session = lockTree.getSession();

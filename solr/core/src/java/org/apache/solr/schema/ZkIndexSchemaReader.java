@@ -43,6 +43,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   private final SolrZkClient zkClient;
   private final String managedSchemaPath;
   private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
+  private final String collection;
   private volatile SchemaWatcher schemaWatcher;
 
   public ZkIndexSchemaReader(ManagedIndexSchemaFactory managedIndexSchemaFactory, SolrCore solrCore) {
@@ -51,6 +52,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     this.zkClient = zkLoader.getZkController().getZkClient();
     this.managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedIndexSchemaFactory.getManagedSchemaResourceName();
     this.uniqueCoreId = solrCore.getName()+":"+solrCore.getStartNanoTime();
+    this.collection = solrCore.getCoreDescriptor().getCollectionName();
 
     // register a CloseHook for the core this reader is linked to, so that we can de-register the listener
     solrCore.addCloseHook(new CloseHook() {
@@ -122,7 +124,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     public void process(WatchedEvent event) {
       ZkIndexSchemaReader indexSchemaReader = schemaReader;
 
-    if (indexSchemaReader == null || (managedIndexSchemaFactory != null && managedIndexSchemaFactory.getSolrCore().getCoreContainer().isShutDown())) {
+    if (indexSchemaReader == null || (managedIndexSchemaFactory != null && managedIndexSchemaFactory.getCoreContainer().isShutDown())) {
         return; // the core for this reader has already been removed, don't process this event
       }
 
@@ -173,7 +175,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
           InputSource inputSource = new InputSource(new ByteArrayInputStream(data));
           String resourceName = managedIndexSchemaFactory.getManagedSchemaResourceName();
           ManagedIndexSchema newSchema = new ManagedIndexSchema
-              (managedIndexSchemaFactory.getConfig(), resourceName, inputSource, managedIndexSchemaFactory.isMutable(), 
+              (collection, managedIndexSchemaFactory.getConfig(), resourceName, inputSource, managedIndexSchemaFactory.isMutable(),
                   resourceName, stat.getVersion(), oldSchema.getSchemaUpdateLock());
           managedIndexSchemaFactory.setSchema(newSchema);
           long stop = System.nanoTime();
@@ -192,7 +194,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   @Override
   public void command() {
     try {
-      if (managedIndexSchemaFactory.getSolrCore().getCoreContainer().isShutDown()) {
+      if (managedIndexSchemaFactory.getCoreContainer().isShutDown()) {
         return;
       }
       // setup a new watcher to get notified when the managed schema changes

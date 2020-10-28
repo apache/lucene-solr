@@ -132,7 +132,7 @@ public class JSONWriter {
         writeValueSeparator();
       }
       if (sz > 1) indent();
-      writeString(entry.getKey().toString());
+      if (entry.getKey() != null) writeString(entry.getKey().toString());
       writeNameSeparator();
       write(entry.getValue());
     }

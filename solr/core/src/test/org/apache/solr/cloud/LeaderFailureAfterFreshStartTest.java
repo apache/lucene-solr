@@ -92,6 +92,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     fixShardCount(3);
   }
 
+  // nocommit no longer used
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }

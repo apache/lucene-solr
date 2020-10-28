@@ -122,11 +122,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected static boolean enableProxy = false;
   
   protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
+  protected volatile static boolean createCollection1 = true;
   protected volatile static boolean createControl;
   protected volatile static CloudHttp2SolrClient controlClient;
   protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
+  protected volatile static boolean uploadSelectCollection1Config = false;
   protected volatile static boolean formatZk = true;
 
   protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
@@ -150,28 +152,48 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     
     if (schemaString != null) {
-      //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
       if (zkClient.exists("/configs/_default/schema.xml")) {
         zkClient.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
-      } else if (zkClient.exists("/configs/_default/managed-schema")) {
-        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
-        zkClient.setData("/configs/_default/managed-schema", data, true);
       } else {
         byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
-        zkClient.create("/configs/_default/managed-schema", data, CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/schema.xml", data, CreateMode.PERSISTENT, true);
+      }
+
+      if (zkClient.exists("/configs/_default/managed-schema")) {
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        zkClient.setData("/configs/_default/managed-schema", data, true);
       }
     }
     if (solrconfigString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString), "/configs/_default, null);
       zkClient.setData("/configs/_default/solrconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
     }
-    
-    CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor)
-        .setMaxShardsPerNode(10)
-        .process(cluster.getSolrClient());
+
+    if (uploadSelectCollection1Config) {
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml"),
+          "/configs/_default/solrconfig.snippet.randomindexconfig.xml", null);
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("enumsConfig.xml"),
+          "/configs/_default/enumsConfig.xml", null);
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("currency.xml"),
+          "/configs/_default/currency.xml", null);
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("old_synonyms.txt"),
+          "/configs/_default/old_synonyms.txt", null);
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("open-exchange-rates.json"),
+          "/configs/_default/open-exchange-rates.json", null);
+      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt"),
+          "/configs/_default/mapping-ISOLatin1Accent.txt", null);
+
+    }
+
+    if (createCollection1) {
+      CollectionAdminRequest.createCollection(COLLECTION, "_default", sliceCount, replicationFactor).setMaxShardsPerNode(10).process(cluster.getSolrClient());
+    }
 
     cloudClient = cluster.getSolrClient();
-    cloudClient.setDefaultCollection(COLLECTION);
+
+    if (createCollection1) {
+      cloudClient.setDefaultCollection(COLLECTION);
+    }
     
     
     for (int i =0;i < cluster.getJettySolrRunners().size(); i++) {
@@ -190,11 +212,10 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         
         zkClientControl.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
         byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
-        zkClientControl.create("/configs/_default/managed-schema", data, CreateMode.PERSISTENT, true);
       }
       if (solrconfigString != null) {
         //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString), "/configs/_default", null);
-        zkClientControl.setData("/configs/co_defaultnf1/solrconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
+        zkClientControl.setData("/configs/_default/solrconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
       }
       CollectionAdminRequest.createCollection(COLLECTION, "_default", 1, 1)
           .setMaxShardsPerNode(10)
@@ -280,7 +301,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected CollectionAdminResponse createCollection(String collectionName, int numShards, int numReplicas) throws SolrServerException, IOException {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, "_default", numShards, numReplicas)
         .setMaxShardsPerNode(10)
-        .setCreateNodeSet(null)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -289,6 +309,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, "_default", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
+        .setCreateNodeSet(createNodeSetStr)
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -297,6 +318,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, conf, numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
+
         .process(cluster.getSolrClient());
     return resp;
   }
@@ -620,6 +642,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       for (RestTestHarness h : restTestHarnesses) {
         h.close();
       }
+      restTestHarnesses.clear();
     }
   }
 

@@ -60,11 +60,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
   static final int TIMEOUT = 10000;
   private AtomicInteger killCounter = new AtomicInteger();
 
-  @BeforeClass
-  public static void beforeSuperClass() {
-    System.clearProperty("solr.httpclient.retries");
-    System.clearProperty("solr.retries.on.forward");
-    System.clearProperty("solr.retries.to.followers");
+  public ChaosMonkeyShardSplitTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 

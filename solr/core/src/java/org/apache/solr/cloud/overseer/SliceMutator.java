@@ -199,10 +199,11 @@ public class SliceMutator {
     for (String key : message.keySet()) {
       if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;
       if (Overseer.QUEUE_OPERATION.equals(key)) continue;
+      if (key == null) continue;
 
       Slice slice = collection.getSlice(key);
       if (slice == null) {
-        throw new RuntimeException("Overseer.updateShardState unknown collection: " + collectionName + " slice: " + key);
+        throw new RuntimeException("Overseer.updateShardState unknown slice: " + collectionName + " slice: " + key);
       }
       log.info("Update shard state " + key + " to " + message.getStr(key));
       Map<String, Object> props = slice.shallowCopy();

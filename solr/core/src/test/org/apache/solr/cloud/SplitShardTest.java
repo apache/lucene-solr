@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -45,12 +44,10 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
 public class SplitShardTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -87,7 +84,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setNumSubShards(5)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 7);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 6);
 
     try {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(10);
@@ -134,7 +131,6 @@ public class SplitShardTest extends SolrCloudTestCase {
         .setSplitFuzz(0.5f)
         .setShardName("shard1");
     splitShard.process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION_NAME, 3, 4);
     DocCollection coll = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -237,7 +233,6 @@ public class SplitShardTest extends SolrCloudTestCase {
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
           .setShardName("shard1");
       splitShard.process(client);
-      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 3*repFactor); // 2 repFactor for the new split shards, 1 repFactor for old replicas
 
       // make sure that docs were able to be indexed during the split
       assertTrue(model.size() > docCount);

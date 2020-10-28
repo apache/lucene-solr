@@ -46,6 +46,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.tests.ramBufferSizeMB", "99");
     initCore("solrconfig-test-misc.xml","schema-reversed.xml");
   }
 
@@ -243,9 +244,8 @@ public class TestConfig extends SolrTestCaseJ4 {
   }
 
   // sanity check that sys properties are working as expected
-  @Ignore // nocommit
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
-
+    System.setProperty("solr.tests.ramBufferSizeMB", "100");
     SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-basic.xml");
     SolrIndexConfig sic = sc.indexConfig;
 

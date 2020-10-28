@@ -227,6 +227,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void testRouting() throws Exception {
     createTestCollection("routing_collection", 2, 1);
 
@@ -367,7 +368,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         0, increaseFromUnexpectedUrls);
 
     CollectionAdminRequest.deleteCollection("routing_collection")
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   /**
@@ -376,6 +377,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    */
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+  @Nightly
   public void preferLocalShardsTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -400,7 +402,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     queryWithShardsPreferenceRules(getRandomClient(), true, collectionName);
 
     CollectionAdminRequest.deleteCollection(collectionName)
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   @SuppressWarnings("deprecation")
@@ -462,6 +464,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    * Tests if the 'shards.preference' parameter works with single-sharded collections.
    */
   @Test
+  @Nightly
   public void singleShardedPreferenceRules() throws Exception {
     String collectionName = "singleShardPreferenceTestColl";
 
@@ -485,7 +488,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     queryReplicaType(getRandomClient(), Replica.Type.NRT, collectionName);
 
     CollectionAdminRequest.deleteCollection(collectionName)
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   private void queryReplicaType(CloudHttp2SolrClient cloudClient,
@@ -665,9 +668,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
 
       CollectionAdminRequest.deleteCollection(async1)
-          .processAndWait(cluster.getSolrClient(), TIMEOUT);
+          .process(cluster.getSolrClient());
       CollectionAdminRequest.deleteCollection(async2)
-          .processAndWait(cluster.getSolrClient(), TIMEOUT);
+          .process(cluster.getSolrClient());
     }
 
   }
@@ -741,10 +744,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertEquals(" Error code should be 510", SolrException.ErrorCode.INVALID_STATE.code, sse.code());
     }
     CollectionAdminRequest.deleteCollection(collection)
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   @Test
+  @Nightly
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(SolrTestCaseJ4.DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);
@@ -830,7 +834,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     NamedList deletes = (NamedList) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
     CollectionAdminRequest.deleteCollection("versions_collection")
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
   
   @Test
@@ -843,7 +847,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     client.commit(collection);
     assertEquals(1, client.query(collection, params("q", "*:*")).getResults().getNumFound());
     CollectionAdminRequest.deleteCollection(collection)
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   @Test
@@ -918,7 +922,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       assertEquals(1, stale_client.query(new SolrQuery("*:*")).getResults().getNumFound());
 
       CollectionAdminRequest.deleteCollection(COL)
-          .processAndWait(cluster.getSolrClient(), TIMEOUT);
+          .process(cluster.getSolrClient());
     }
   }
   
@@ -977,7 +981,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
     queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", true, collectionName);
     CollectionAdminRequest.deleteCollection(collectionName)
-        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+        .process(cluster.getSolrClient());
   }
 
   private void queryWithPreferReplicaTypes(CloudHttp2SolrClient cloudClient,

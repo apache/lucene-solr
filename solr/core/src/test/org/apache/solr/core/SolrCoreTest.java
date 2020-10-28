@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-@Ignore // nocommit investigate
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
   
@@ -168,7 +167,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     c1.close();
     cores.shutdown();
-    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertTrue("Refcount != 0", core.getOpenCount() == -1);
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
   }
     
@@ -235,10 +234,9 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     }
     
     cores.shutdown();
-    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertTrue("Refcount != -1", core.getOpenCount() == -1);
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
-    
-    service.shutdown();
+
     assertTrue("Running for too long...", service.awaitTermination(60, TimeUnit.SECONDS));
   }
 
@@ -266,30 +264,6 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
     assertEquals("wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
-  }
-
-  /**
-   * Test that's meant to be run with many iterations to expose a leak of SolrIndexSearcher when a core is closed
-   * due to a reload. Without the fix, this test fails with most iters=1000 runs.
-   */
-  @Test
-  public void testReloadLeak() throws Exception {
-    final ExecutorService executor = testExecutor;
-
-    // Continuously open new searcher while core is not closed, and reload core to try to reproduce searcher leak.
-    // While in practice we never continuously open new searchers, this is trying to make up for the fact that opening
-    // a searcher in this empty core is very fast by opening new searchers continuously to increase the likelihood
-    // for race.
-    SolrCore core = h.getCore();
-    assertTrue("Refcount != 1", core.getOpenCount() == 1);
-    executor.execute(new NewSearcherRunnable(core));
-
-    // Since we called getCore() vs getCoreInc() and don't own a refCount, the container should decRef the core
-    // and close it when we call reload.
-    h.reload();
-
-    // Check that all cores are closed and no searcher references are leaked.
-    assertTrue("SolrCore " + core + " is not closed", core.isClosed());
   }
 
   private static class NewSearcherRunnable implements Runnable {

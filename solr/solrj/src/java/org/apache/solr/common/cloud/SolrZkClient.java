@@ -69,7 +69,6 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -100,10 +99,12 @@ public class SolrZkClient implements Closeable {
   private ZkCmdExecutor zkCmdExecutor;
 
   // TODO: this is less efficient now, only using a single thread - allowing multiple threads leaves room for out of order cluster state updates
-  // TODO: could allow parallel by collection?]
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 10000, new BlockingArrayQueue());
+  // TODO: we want to allow more parralel for sure, but make sure state updates per collection are serial
+  final ExecutorService zkCallbackSerialExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 10000, new BlockingArrayQueue());
 
-  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 60000, new BlockingArrayQueue());
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 12, 10000, new BlockingArrayQueue());
+
+  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 10000, new BlockingArrayQueue());
 
   private volatile boolean isClosed = false;
 
@@ -264,6 +265,10 @@ public class SolrZkClient implements Closeable {
    */
   public Watcher wrapWatcher(final Watcher watcher) {
     if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
+
+    if (watcher instanceof ZkStateReader.LiveNodeWatcher || watcher instanceof DocCollectionWatcher) {
+      return new ProcessWatchWithExecutor(watcher, zkCallbackSerialExecutor);
+    }
     return new ProcessWatchWithExecutor(watcher, zkCallbackExecutor);
   }
 
@@ -412,7 +417,13 @@ public class SolrZkClient implements Closeable {
       InterruptedException {
       List<ACL> acls = zkACLProvider.getACLsToAdd(path);
       ZooKeeper keeper = connManager.getKeeper();
-      return keeper.create(path, data, acls, createMode);
+      if (retryOnConnLoss) {
+        return zkCmdExecutor.retryOperation(() -> {
+          return keeper.create(path, data, acls, createMode);
+        });
+      } else {
+        return keeper.create(path, data, acls, createMode);
+      }
   }
 
   public void makePath(String path, boolean failOnExists, boolean retryOnConnLoss) throws KeeperException,
@@ -993,7 +1004,7 @@ public class SolrZkClient implements Closeable {
     try {
       Stat stat = new Stat();
       ZooKeeper keeper = connManager.getKeeper();
-      keeper.sync(ZooDefs.CONFIG_NODE, null, null);
+     // keeper.sync(ZooDefs.CONFIG_NODE, null, null);
       byte[] data = keeper.getConfig(false, stat);
       if (data == null || data.length == 0) {
         return "";

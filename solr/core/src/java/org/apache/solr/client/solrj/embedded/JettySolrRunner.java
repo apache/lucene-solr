@@ -479,6 +479,10 @@ public class JettySolrRunner implements Closeable {
     return chain;
   }
 
+  @Override
+  public String toString() {
+    return "JettySolrRunner: " + getBaseUrl();
+  }
 
   /**
    * @return the {@link SolrDispatchFilter} for this node
@@ -578,7 +582,7 @@ public class JettySolrRunner implements Closeable {
         }
       }
 
-      if (getCoreContainer() != null && System.getProperty("zkHost") != null) {
+      if (getCoreContainer() != null && System.getProperty("zkHost") != null && wait) {
         SolrZkClient zkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -605,13 +609,11 @@ public class JettySolrRunner implements Closeable {
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         }
 
-        if (wait) {
-          log.info("waitForNode: {}", getNodeName());
+        log.info("waitForNode: {}", getNodeName());
 
-          ZkStateReader reader = getCoreContainer().getZkController().getZkStateReader();
+        ZkStateReader reader = getCoreContainer().getZkController().getZkStateReader();
 
-          reader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && getNodeName() != null && n.contains(getNodeName()));
-        }
+        reader.waitForLiveNodes(30, TimeUnit.SECONDS, (o, n) -> n != null && getNodeName() != null && n.contains(getNodeName()));
       }
 
     } finally {
@@ -835,7 +837,7 @@ public class JettySolrRunner implements Closeable {
    * Connector in use by the Jetty Server contained in this runner.
    */
   public String getProxyBaseUrl() {
-    return protocol +":" + host + ":" + getLocalPort() + config.context;
+    return protocol +"://" + host + ":" + getLocalPort() + config.context;
   }
 
   public SolrClient newClient() {

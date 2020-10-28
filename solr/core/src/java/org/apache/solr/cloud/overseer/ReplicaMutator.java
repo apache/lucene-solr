@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import net.sf.saxon.trans.Err;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -374,136 +376,141 @@ public class ReplicaMutator {
   private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String coreNodeName, String sliceName, Replica replica) {
     Slice slice = collection.getSlice(sliceName);
     Map<String, Object> sliceProps = slice.getProperties();
-    if (slice.getState() == Slice.State.RECOVERY) {
-      log.info("Shard: {} is in recovery state", sliceName);
-      // is this replica active?
-      if (replica.getState() == Replica.State.ACTIVE) {
-        log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
-        // are all other replicas also active?
-        boolean allActive = true;
-        for (Map.Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
-          if (coreNodeName.equals(entry.getKey())) continue;
-          if (entry.getValue().getState() != Replica.State.ACTIVE) {
-            allActive = false;
-            break;
-          }
-        }
-        if (allActive) {
-          if (log.isInfoEnabled()) {
-            log.info("Shard: {} - all {} replicas are active. Finding status of fellow sub-shards", sliceName, slice.getReplicasMap().size());
-          }
-          // find out about other sub shards
-          Map<String, Slice> allSlicesCopy = new HashMap<>(collection.getSlicesMap());
-          List<Slice> subShardSlices = new ArrayList<>();
-          outer:
-          for (Map.Entry<String, Slice> entry : allSlicesCopy.entrySet()) {
-            if (sliceName.equals(entry.getKey()))
-              continue;
-            Slice otherSlice = entry.getValue();
-            if (otherSlice.getState() == Slice.State.RECOVERY) {
-              if (slice.getParent() != null && slice.getParent().equals(otherSlice.getParent())) {
-                if (log.isInfoEnabled()) {
-                  log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
-                }
-                // this is a fellow sub shard so check if all replicas are active
-                for (Map.Entry<String, Replica> sliceEntry : otherSlice.getReplicasMap().entrySet()) {
-                  if (sliceEntry.getValue().getState() != Replica.State.ACTIVE) {
-                    allActive = false;
-                    break outer;
-                  }
-                }
-                if (log.isInfoEnabled()) {
-                  log.info("Shard: {} - Fellow sub-shard: {} has all {} replicas active", sliceName, otherSlice.getName(), otherSlice.getReplicasMap().size());
-                }
-                subShardSlices.add(otherSlice);
-              }
+    String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
+    // now lets see if the parent leader is still the same or else there's a chance of data loss
+    // see SOLR-9438 for details
+    String shardParentZkSession = (String) sliceProps.remove("shard_parent_zk_session");
+    String shardParentNode = (String) sliceProps.remove("shard_parent_node");
+    try {
+      if (slice.getState() == Slice.State.RECOVERY) {
+        log.info("Shard: {} is in recovery state", sliceName);
+        // is this replica active?
+        if (replica.getState() == Replica.State.ACTIVE) {
+          log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
+          // are all other replicas also active?
+          boolean allActive = true;
+          for (Map.Entry<String,Replica> entry : slice.getReplicasMap().entrySet()) {
+            if (coreNodeName.equals(entry.getKey())) continue;
+            if (entry.getValue().getState() != Replica.State.ACTIVE) {
+              allActive = false;
+              break;
             }
           }
           if (allActive) {
-            // hurray, all sub shard replicas are active
-            log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE.", sliceName);
-            String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
-            // now lets see if the parent leader is still the same or else there's a chance of data loss
-            // see SOLR-9438 for details
-            String shardParentZkSession = (String) sliceProps.remove("shard_parent_zk_session");
-            String shardParentNode = (String) sliceProps.remove("shard_parent_node");
-            boolean isLeaderSame = true;
-            if (shardParentNode != null && shardParentZkSession != null) {
-              log.info("Checking whether sub-shard leader node is still the same one at {} with ZK session id {}", shardParentNode, shardParentZkSession);
-              try {
-                VersionedData leaderZnode = null;
+            if (log.isInfoEnabled()) {
+              log.info("Shard: {} - all {} replicas are active. Finding status of fellow sub-shards", sliceName, slice.getReplicasMap().size());
+            }
+            // find out about other sub shards
+            Map<String,Slice> allSlicesCopy = new HashMap<>(collection.getSlicesMap());
+            List<Slice> subShardSlices = new ArrayList<>();
+            outer:
+            for (Map.Entry<String,Slice> entry : allSlicesCopy.entrySet()) {
+              if (sliceName.equals(entry.getKey())) continue;
+              Slice otherSlice = entry.getValue();
+              if (otherSlice.getState() == Slice.State.RECOVERY) {
+                if (slice.getParent() != null && slice.getParent().equals(otherSlice.getParent())) {
+                  if (log.isInfoEnabled()) {
+                    log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
+                  }
+                  // this is a fellow sub shard so check if all replicas are active
+                  for (Map.Entry<String,Replica> sliceEntry : otherSlice.getReplicasMap().entrySet()) {
+                    if (sliceEntry.getValue().getState() != Replica.State.ACTIVE) {
+                      allActive = false;
+                      break outer;
+                    }
+                  }
+                  if (log.isInfoEnabled()) {
+                    log.info("Shard: {} - Fellow sub-shard: {} has all {} replicas active", sliceName, otherSlice.getName(), otherSlice.getReplicasMap().size());
+                  }
+                  subShardSlices.add(otherSlice);
+                }
+              }
+            }
+            if (allActive) {
+              // hurray, all sub shard replicas are active
+              log.info("Shard: {} - All replicas across all fellow sub-shards are now ACTIVE.", sliceName);
+              sliceProps.remove(Slice.PARENT);
+              sliceProps.remove("shard_parent_zk_session");
+              sliceProps.remove("shard_parent_node");
+              boolean isLeaderSame = true;
+              if (shardParentNode != null && shardParentZkSession != null) {
+                log.info("Checking whether sub-shard leader node is still the same one at {} with ZK session id {}", shardParentNode, shardParentZkSession);
                 try {
-                  leaderZnode = stateManager.getData(ZkStateReader.LIVE_NODES_ZKNODE
-                          + "/" + shardParentNode, null);
-                } catch (NoSuchElementException e) {
-                  // ignore
+                  VersionedData leaderZnode = null;
+                  try {
+                    leaderZnode = stateManager.getData(ZkStateReader.LIVE_NODES_ZKNODE + "/" + shardParentNode, null);
+                  } catch (NoSuchElementException e) {
+                    // ignore
+                  }
+                  if (leaderZnode == null) {
+                    log.error("The shard leader node: {} is not live anymore!", shardParentNode);
+                    isLeaderSame = false;
+                  } else if (!shardParentZkSession.equals(leaderZnode.getOwner())) {
+                    log.error("The zk session id for shard leader node: {} has changed from {} to {}", shardParentNode, shardParentZkSession, leaderZnode.getOwner());
+                    isLeaderSame = false;
+                  }
+                } catch (InterruptedException e) {
+                  ParWork.propagateInterrupt(e);
+                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
+                } catch (Exception e) {
+                  ParWork.propagateInterrupt(e);
+                  log.warn("Error occurred while checking if parent shard node is still live with the same zk session id. {}", "We cannot switch shard states at this time.", e);
+                  return collection; // we aren't going to make any changes right now
                 }
-                if (leaderZnode == null) {
-                  log.error("The shard leader node: {} is not live anymore!", shardParentNode);
-                  isLeaderSame = false;
-                } else if (!shardParentZkSession.equals(leaderZnode.getOwner())) {
-                  log.error("The zk session id for shard leader node: {} has changed from {} to {}",
-                          shardParentNode, shardParentZkSession, leaderZnode.getOwner());
-                  isLeaderSame = false;
-                }
-              } catch (InterruptedException e) {
-                ParWork.propagateInterrupt(e);
-                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-              } catch (Exception e) {
-                ParWork.propagateInterrupt(e);
-                log.warn("Error occurred while checking if parent shard node is still live with the same zk session id. {}"
-                        , "We cannot switch shard states at this time.", e);
-                return collection; // we aren't going to make any changes right now
               }
-            }
 
-            Map<String, Object> propMap = new HashMap<>();
-            propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-            propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
-            if (isLeaderSame) {
-              log.info("Sub-shard leader node is still the same one at {} with ZK session id {}. Preparing to switch shard states.", shardParentNode, shardParentZkSession);
-              propMap.put(parentSliceName, Slice.State.INACTIVE.toString());
-              propMap.put(sliceName, Slice.State.ACTIVE.toString());
-              long now = cloudManager.getTimeSource().getEpochTimeNs();
-              for (Slice subShardSlice : subShardSlices) {
-                propMap.put(subShardSlice.getName(), Slice.State.ACTIVE.toString());
-                String lastTimeStr = subShardSlice.getStr(ZkStateReader.STATE_TIMESTAMP_PROP);
-                if (lastTimeStr != null) {
-                  long start = Long.parseLong(lastTimeStr);
-                  if (log.isInfoEnabled()) {
-                    log.info("TIMINGS: Sub-shard {} recovered in {} ms", subShardSlice.getName(),
-                            TimeUnit.MILLISECONDS.convert(now - start, TimeUnit.NANOSECONDS));
-                  }
-                } else {
-                  if (log.isInfoEnabled()) {
-                    log.info("TIMINGS Sub-shard {} not available: {}", subShardSlice.getName(), subShardSlice);
+              Map<String,Object> propMap = new HashMap<>();
+              propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+              propMap.put(ZkStateReader.COLLECTION_PROP, collection.getName());
+              if (isLeaderSame) {
+                log.info("Sub-shard leader node is still the same one at {} with ZK session id {}. Preparing to switch shard states.", shardParentNode, shardParentZkSession);
+                propMap.put(parentSliceName, Slice.State.INACTIVE.toString());
+                propMap.put(sliceName, Slice.State.ACTIVE.toString());
+                long now = cloudManager.getTimeSource().getEpochTimeNs();
+                for (Slice subShardSlice : subShardSlices) {
+                  propMap.put(subShardSlice.getName(), Slice.State.ACTIVE.toString());
+                  String lastTimeStr = subShardSlice.getStr(ZkStateReader.STATE_TIMESTAMP_PROP);
+                  if (lastTimeStr != null) {
+                    long start = Long.parseLong(lastTimeStr);
+                    if (log.isInfoEnabled()) {
+                      log.info("TIMINGS: Sub-shard {} recovered in {} ms", subShardSlice.getName(), TimeUnit.MILLISECONDS.convert(now - start, TimeUnit.NANOSECONDS));
+                    }
+                  } else {
+                    if (log.isInfoEnabled()) {
+                      log.info("TIMINGS Sub-shard {} not available: {}", subShardSlice.getName(), subShardSlice);
+                    }
                   }
                 }
+              } else {
+                // we must mark the shard split as failed by switching sub-shards to recovery_failed state
+                propMap.put(sliceName, Slice.State.RECOVERY_FAILED.toString());
+                for (Slice subShardSlice : subShardSlices) {
+                  propMap.put(subShardSlice.getName(), Slice.State.RECOVERY_FAILED.toString());
+                }
               }
-            } else {
-              // we must mark the shard split as failed by switching sub-shards to recovery_failed state
-              propMap.put(sliceName, Slice.State.RECOVERY_FAILED.toString());
-              for (Slice subShardSlice : subShardSlices) {
-                propMap.put(subShardSlice.getName(), Slice.State.RECOVERY_FAILED.toString());
-              }
+              TestInjection.injectSplitLatch();
+
+              ZkNodeProps m = new ZkNodeProps(propMap);
+              return new SliceMutator(cloudManager).updateShardState(cloudManager.getClusterStateProvider().getClusterState(), m).collection;
             }
-            TestInjection.injectSplitLatch();
-            try {
-              SplitShardCmd.unlockForSplit(cloudManager, collection.getName(), parentSliceName);
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
-            } catch (Exception e) {
-              ParWork.propagateInterrupt(e);
-              log.warn("Failed to unlock shard after {} successful split: {} / {}"
-                  , (isLeaderSame ? "" : "un"), collection.getName(), parentSliceName);
-            }
-            ZkNodeProps m = new ZkNodeProps(propMap);
-            return new SliceMutator(cloudManager).updateShardState(prevState, m).collection;
           }
         }
       }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+
+//      try {
+//        SplitShardCmd.unlockForSplit(cloudManager, collection.getName(), parentSliceName);
+//      } catch (InterruptedException e) {
+//        ParWork.propagateInterrupt(e);
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
+//      } catch (Exception e) {
+//        ParWork.propagateInterrupt(e);
+//        log.warn("Failed to unlock shard after split: {} / {}", collection.getName(), parentSliceName);
+//      }
     }
+
     return collection;
   }
 }

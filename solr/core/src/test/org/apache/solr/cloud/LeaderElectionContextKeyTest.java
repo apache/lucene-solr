@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -34,10 +35,9 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.hamcrest.CoreMatchers;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
+@LuceneTestCase.AwaitsFix(bugUrl = "This test relies on replica name assignment logic that it should not")
 public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
 
   private static final String TEST_COLLECTION_1 = "testCollection1";

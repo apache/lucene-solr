@@ -22,6 +22,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Iterator;
+
 public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
 
   // number of instances configured in the solrconfig.xml
@@ -60,12 +62,23 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
   // Determine that when the query lists are commented out of both new and
   // first searchers in the config, we don't throw an NPE
   @Test
-  @Ignore // nocommit listeners not in order anymore
   public void testSearcherEvents() throws Exception {
     SolrCore core = h.getCore();
-    SolrEventListener newSearcherListener = core.newSearcherListeners.iterator().next();
-    assertTrue("Not an instance of QuerySenderListener", newSearcherListener instanceof QuerySenderListener);
-    QuerySenderListener qsl = (QuerySenderListener) newSearcherListener;
+    SolrEventListener nsl = null;
+    boolean foundQuerySenderListener = false;
+    Iterator<SolrEventListener> it = core.newSearcherListeners.iterator();
+    while (it.hasNext()) {
+      SolrEventListener newSearcherListener = it.next();
+      if (newSearcherListener instanceof QuerySenderListener) {
+        foundQuerySenderListener = true;
+        nsl = newSearcherListener;
+      }
+    }
+
+
+
+    assertTrue("Not an instance of QuerySenderListener", foundQuerySenderListener);
+    QuerySenderListener qsl = (QuerySenderListener) nsl;
 
     h.getCore().withSearcher(currentSearcher -> {
       SolrIndexSearcher dummy = null;

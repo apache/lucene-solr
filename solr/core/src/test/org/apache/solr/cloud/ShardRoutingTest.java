@@ -61,6 +61,10 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
     // start if using an EphemeralDirectoryFactory
     useFactory(null);
 
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema15.xml";
+    uploadSelectCollection1Config = true;
+
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
     // from negative to positive, the upper bits of the hash ranges should be

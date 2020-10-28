@@ -146,17 +146,17 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private static final String MAX_CHARS_PARAM = "maxChars";
   private static final String IS_DEFAULT_PARAM = "default";
 
-  private List<TypeMapping> typeMappings = Collections.emptyList();
-  private SelectorParams inclusions = new SelectorParams();
-  private Collection<SelectorParams> exclusions = new ArrayList<>();
-  private SolrResourceLoader solrResourceLoader = null;
-  private String defaultFieldType;
+  private volatile List<TypeMapping> typeMappings = Collections.emptyList();
+  private volatile SelectorParams inclusions = new SelectorParams();
+  private volatile Collection<SelectorParams> exclusions = new ArrayList<>();
+  private volatile SolrResourceLoader solrResourceLoader = null;
+  private volatile String defaultFieldType;
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next) {
-    return new AddSchemaFieldsUpdateProcessor(next);
+    return new AddSchemaFieldsUpdateProcessor(next, typeMappings, inclusions, exclusions, solrResourceLoader, defaultFieldType);
   }
 
   @Override
@@ -176,7 +176,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       defaultFieldType = defaultFieldTypeParam.toString();
     }
 
-    typeMappings = parseTypeMappings(args);
+    typeMappings = Collections.unmodifiableList(parseTypeMappings(args));
     if (null == defaultFieldType && typeMappings.stream().noneMatch(TypeMapping::isDefault)) {
       throw new SolrException(SERVER_ERROR, "Must specify either '" + DEFAULT_FIELD_TYPE_PARAM + 
           "' or declare one typeMapping as default.");
@@ -370,9 +370,21 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     }
   }
 
-  private class AddSchemaFieldsUpdateProcessor extends UpdateRequestProcessor {
-    public AddSchemaFieldsUpdateProcessor(UpdateRequestProcessor next) {
+  private static class AddSchemaFieldsUpdateProcessor extends UpdateRequestProcessor {
+    private final SelectorParams inclusions;
+    private final Collection<SelectorParams> exclusions;
+    private final SolrResourceLoader solrResourceLoader;
+    private final List<TypeMapping> typeMappings;
+    private final String defaultFieldType;
+
+    public AddSchemaFieldsUpdateProcessor(UpdateRequestProcessor next, List<TypeMapping> typeMappings, SelectorParams inclusions, Collection<SelectorParams> exclusions,
+        SolrResourceLoader solrResourceLoader, String defaultFieldType) {
       super(next);
+      this.inclusions = inclusions;
+      this.typeMappings = typeMappings;
+      this.exclusions = exclusions;
+      this.solrResourceLoader = solrResourceLoader;
+      this.defaultFieldType = defaultFieldType;
     }
     
     @Override
@@ -477,6 +489,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             }
           } catch (ManagedIndexSchema.FieldExistsException e) {
             log.error("At least one field to be added already exists in the schema - retrying.");
+            oldSchema = core.getLatestSchema();
             cmd.getReq().updateSchemaToLatest();
           } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
             log.info("Schema changed while processing request - retrying.");

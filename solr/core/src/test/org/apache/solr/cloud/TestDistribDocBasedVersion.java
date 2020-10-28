@@ -52,13 +52,9 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
     useFactory(null);
   }
 
-  protected String getCloudSolrConfig() {
-    return "solrconfig-externalversionconstraint.xml";
-  }
-
   public TestDistribDocBasedVersion() {
     schemaString = "schema15.xml";      // we need a string id
-    solrconfigString = getCloudSolrConfig();
+    solrconfigString = "solrconfig-externalversionconstraint.xml";
     super.sliceCount = 2;
     numJettys = 4;
 

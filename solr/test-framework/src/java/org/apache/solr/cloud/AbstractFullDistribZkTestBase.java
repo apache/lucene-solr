@@ -2324,6 +2324,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       for (RestTestHarness h : restTestHarnesses) {
         h.close();
       }
+      restTestHarnesses.clear();
     }
   }
 

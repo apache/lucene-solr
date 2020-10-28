@@ -41,7 +41,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /** Verify we can read/write previous versions' Lucene indexes. */
-@Ignore // nocommit debug... java.lang.AssertionError: Index name 8.0.0-cfs not found
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
   private static final String[] oldNames = TestBackwardsCompatibility.getOldNames();
   private static final String[] oldSingleSegmentNames = TestBackwardsCompatibility.getOldSingleSegmentNames();

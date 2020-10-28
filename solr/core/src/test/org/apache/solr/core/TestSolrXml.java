@@ -287,7 +287,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  @Ignore // nocommit - this check does not seem to be enabled currently
   public void testFailAtConfigParseTimeWhenSolrConfigParamsAreDuplicated() {
     String v1 = ""+random().nextInt();
     String v2 = ""+random().nextInt();
@@ -299,7 +298,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                                    v1, v2);
 
     expectedException.expect(SolrException.class);
-    expectedException.expectMessage("Main section of solr.xml contains duplicated 'coreLoadThreads'");
+    expectedException.expectMessage("<solr> section of solr.xml contains duplicated 'coreLoadThreads'");
 
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }

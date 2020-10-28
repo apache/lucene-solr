@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.ZkIndexSchemaReader;
+import org.apache.zookeeper.CreateMode;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -37,38 +38,35 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit debug
-public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBase {
+public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeLeaderFailureAfterFreshStartTest() {
+  public static void beforeLeaderFailureAfterFreshStartTest() throws Exception {
+    useFactory(null);
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
   public TestOnReconnectListenerSupport() {
     super();
     sliceCount = 2;
-    fixShardCount(3);
-  }
-
-  @BeforeClass
-  public static void initSysProperties() {
+    numJettys = 3;
+    solrconfigString = "solrconfig-managed-schema.xml";
+    createCollection1 = false;
     System.setProperty("managed.schema.mutable", "false");
     System.setProperty("enable.update.log", "true");
-  }
-
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-managed-schema.xml";
   }
 
   @Test
   public void test() throws Exception {
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "_default", 1, 1, 1);
+
+    cloudClient.getZkStateReader().getZkClient().makePath("/configs/_default/solrconfig.snippet.randomindexconfig.xml",
+        TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(), false);
+
+    createCollection(testCollectionName, 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);
@@ -89,10 +87,13 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
     // verify the ZkIndexSchemaReader is a registered OnReconnect listener
     Set<OnReconnect> listeners = zkController.getCurrentOnReconnectListeners();
     assertNotNull("ZkController returned null OnReconnect listeners", listeners);
+    assertTrue(listeners.size() > 0);
     ZkIndexSchemaReader expectedListener = null;
     for (OnReconnect listener : listeners) {
+      System.out.println("listener:" + listener.getClass().getSuperclass().getName());
       if (listener instanceof ZkIndexSchemaReader) {
         ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
+        System.out.println("leadercoreid:" + leaderCoreId + " against:" + reader.getUniqueCoreId());
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;
@@ -100,7 +101,7 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
       }
     }
     assertNotNull("ZkIndexSchemaReader for core " + leaderCoreName +
-        " not registered as an OnReconnect listener and should be", expectedListener);
+        " not registered as an OnReconnect listener and should be " + listeners, expectedListener);
 
     // reload the collection
     boolean wasReloaded = reloadCollection(leader, testCollectionName);

@@ -160,7 +160,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
 
   @Test
-  @Ignore // nocommit - finds 3 backups left instead of 1 or 2
   public void doTestBackup() throws Exception {
     final BackupStatusChecker backupStatus
       = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
@@ -210,7 +209,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
       // Only the last two should still exist.
       final List<String> remainingBackups = new ArrayList<>();
       
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot\\.*")) { // careful, could be snapshot_metadata
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
           remainingBackups.add(iter.next().getFileName().toString());

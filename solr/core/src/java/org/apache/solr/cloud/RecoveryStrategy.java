@@ -200,6 +200,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
           try {
             prevSendPreRecoveryHttpUriRequest.cancel();
+            prevSendPreRecoveryHttpUriRequest = null;
           } catch (NullPointerException e) {
             // expected
           }

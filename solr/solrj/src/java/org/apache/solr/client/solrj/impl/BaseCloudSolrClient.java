@@ -1218,7 +1218,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (theUrlList.isEmpty()) {
         collectionStateCache.keySet().removeAll(collectionNames);
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
-            "Could not find a healthy node to handle the request.");
+            "Could not find a healthy node to handle the request, collection names: " + collectionNames);
       }
     }
 
