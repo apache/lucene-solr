@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.junit.BeforeClass;
@@ -38,17 +39,18 @@ import org.junit.Test;
  * See SOLR-7147 for more information
  */
 @SolrTestCaseJ4.SuppressSSL
-public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBase {
+public class TestTrackingShardHandlerFactory extends SolrCloudBridgeTestCase {
 
   public TestTrackingShardHandlerFactory() {
+
     schemaString = "schema15.xml"; // we need a string id
+    solrconfigString = "solrconfig.xml";
+    solrxmlString = "solr-trackingshardhandler.xml";
+    uploadSelectCollection1Config = true;
+    createControl = false;
+    numJettys = 2;
+    createCollection1 = false;
   }
-
-  @Override
-  protected String getSolrXml() {
-    return "solr-trackingshardhandler.xml";
-  }
-
 
   @BeforeClass
   public static void beforeTestTrackingShardHandlerFactory() throws Exception {
@@ -56,12 +58,11 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
   }
 
   @Test
-  @BaseDistributedSearchTestCase.ShardsFixed(num = 2)
   public void testRequestTracking() throws Exception {
     String collectionName = "testTwoPhase";
 
-    List<JettySolrRunner> runners = new ArrayList<>(jettys);
-    runners.add(controlJetty);
+    List<JettySolrRunner> runners = new ArrayList<>(cluster.getJettySolrRunners());
+
 
     TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue = new TrackingShardHandlerFactory.RequestTrackingQueue();
     TrackingShardHandlerFactory.setTrackingQueue(runners, trackingQueue);
@@ -75,7 +76,7 @@ public class TestTrackingShardHandlerFactory extends AbstractFullDistribZkTestBa
       assertSame(trackingQueue, trackingShardHandlerFactory.getTrackingQueue());
     }
 
-    createCollection(collectionName, "_default", 2, 1, 1);
+    createCollection(collectionName, 2, 1);
 
     List<TrackingShardHandlerFactory.ShardRequestAndParams> coreAdminRequests = trackingQueue.getCoreAdminRequests();
     assertNotNull(coreAdminRequests);

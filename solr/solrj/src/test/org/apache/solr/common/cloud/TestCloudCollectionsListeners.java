@@ -55,12 +55,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     configureCluster(CLUSTER_SIZE)
     .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
     .configure();
-    
-    int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
-    for (int i = 0; i < missingServers; i++) {
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(30);
   }
   
   @After
@@ -98,8 +92,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
     assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(1).contains("testcollection1"));
     assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(2).contains("testcollection1"));
@@ -111,7 +103,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
 
     assertFalse("CloudCollectionsListener notified after removal", oldResults.get(1).contains("testcollection1"));
@@ -137,11 +128,9 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    cluster.waitForActiveCollection("testcollection1", 4, 4);
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();

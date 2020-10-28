@@ -128,6 +128,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static MiniSolrCloudCluster controlCluster;
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
+  protected volatile static String solrxmlString = "solr.xml";
   protected volatile static boolean uploadSelectCollection1Config = false;
   protected volatile static boolean formatZk = true;
 
@@ -143,7 +144,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
-    cluster = configureCluster(numJettys).formatZk(formatZk).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
+    cluster = configureCluster(numJettys).formatZk(formatZk).withSolrXml(TEST_PATH().resolve(solrxmlString)).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
     
     SolrZkClient zkClient = cluster.getZkClient();
 
@@ -201,7 +202,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     
     if (createControl) {
-      controlCluster = configureCluster(1).formatZk(formatZk).build();
+      controlCluster = configureCluster(1).withSolrXml(TEST_PATH().resolve(solrxmlString)).formatZk(formatZk).build();
       
       SolrZkClient zkClientControl = controlCluster.getZkClient();
       
@@ -254,6 +255,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     createControl = false;
     solrconfigString = null;
     schemaString = null;
+    solrxmlString = "solr.xml";
     numJettys = 3;
     formatZk = true;
 
