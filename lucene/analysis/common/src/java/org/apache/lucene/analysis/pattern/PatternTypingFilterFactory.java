@@ -19,11 +19,12 @@ package org.apache.lucene.analysis.pattern;
 
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.pattern.PatternTypingFilter.PatternTypingRule;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -69,7 +70,7 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
   public static final String NAME = "patternTyping";
 
   private final String patternFile;
-  private final LinkedHashMap<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern = new LinkedHashMap<>();
+  private PatternTypingRule[] rules;
 
   /**
    * Creates a new PatternTypingFilterFactory
@@ -91,6 +92,7 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
+    List<PatternTypingRule> ruleList = new ArrayList<>();
     List<String> lines = getLines(loader, patternFile);
     // format: # regex ::: typename[_$1[_$2 ...]]    (technically _$1 does not need the '_' but it usually makes sense)
     // eg: 2 (\d+\(?([a-z])\)?\(?(\d+)\)? ::: legal3_$1_$2_3
@@ -104,12 +106,13 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
         throw new RuntimeException("The PatternTypingFilter: Always two there are, no more, no less, a pattern and a replacement (separated by ' ::: ' )");
       }
       Pattern compiled = Pattern.compile(split[0]);
-      replacementAndFlagByPattern.put(compiled, Map.entry(split[1], flagsVal));
+      ruleList.add(new PatternTypingRule(compiled, flagsVal, split[1]));
     }
+    this.rules = ruleList.toArray(new PatternTypingRule[0]);
   }
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new PatternTypingFilter(input, replacementAndFlagByPattern);
+    return new PatternTypingFilter(input, rules);
   }
 }

@@ -39,7 +39,7 @@ public class TestPatternTypingFilterFactory extends BaseTokenStreamFactoryTestCa
 
     TokenFilterFactory tokenFilterFactory = tokenFilterFactory("patternTyping", Version.LATEST, new StringMockResourceLoader(
         "6 \\b(\\d+)-(\\d+) ::: $1_hnum_$2\n" +
-            "2 \\b(\\w+)-(\\w+) ::: $1_hword_$2"
+        "2 \\b(\\w+)-(\\w+) ::: $1_hword_$2"
     ), "patternFile", "patterns.txt");
 
     ts = tokenFilterFactory.create(ts);
@@ -49,5 +49,4 @@ public class TestPatternTypingFilterFactory extends BaseTokenStreamFactoryTestCa
         null, null, null, null, null, false, null,
         new int[]{0, 2, 6});
   }
-
 }

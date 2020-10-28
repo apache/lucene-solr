@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,12 +39,12 @@ import java.util.regex.Pattern;
  */
 public class PatternTypingFilter extends TokenFilter {
 
-  private final Map<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern;
+  private final PatternTypingRule[] replacementAndFlagByPattern;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final FlagsAttribute flagAtt = addAttribute(FlagsAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-  public PatternTypingFilter(TokenStream input, LinkedHashMap<Pattern, Map.Entry<String, Integer>> replacementAndFlagByPattern) {
+  public PatternTypingFilter(TokenStream input,  PatternTypingRule... replacementAndFlagByPattern) {
     super(input);
     this.replacementAndFlagByPattern = replacementAndFlagByPattern;
   }
@@ -54,18 +52,44 @@ public class PatternTypingFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      for (Map.Entry<Pattern, Map.Entry<String, Integer>> patRep : replacementAndFlagByPattern.entrySet()) {
-        Matcher matcher = patRep.getKey().matcher(termAtt);
+      for (PatternTypingRule rule : replacementAndFlagByPattern) {
+        Matcher matcher = rule.getPattern().matcher(termAtt);
         if (matcher.find()) {
-          Map.Entry<String, Integer> replAndFlags = patRep.getValue();
           // allow 2nd reset() and find() that occurs inside replaceFirst to avoid excess string creation
-          typeAtt.setType(matcher.replaceFirst(replAndFlags.getKey()));
-          flagAtt.setFlags(replAndFlags.getValue());
+          typeAtt.setType(matcher.replaceFirst(rule.getTypeTemplate()));
+          flagAtt.setFlags(rule.getFlags());
           return true;
         }
       }
       return true;
     }
     return false;
+  }
+
+  /**
+   * Value holding class for pattern typing rules.
+   */
+  public static class PatternTypingRule {
+    private final Pattern pattern;
+    private final int flags;
+    private final String typeTemplate;
+
+    public PatternTypingRule(Pattern pattern, int flags, String typeTemplate) {
+      this.pattern = pattern;
+      this.flags = flags;
+      this.typeTemplate = typeTemplate;
+    }
+
+    public Pattern getPattern() {
+      return pattern;
+    }
+
+    public int getFlags() {
+      return flags;
+    }
+
+    public String getTypeTemplate() {
+      return typeTemplate;
+    }
   }
 }
