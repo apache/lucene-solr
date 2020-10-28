@@ -236,4 +236,5 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
   }
+
 }
