@@ -269,7 +269,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT5");
     }
     splitShard.process(client);
-    cluster.waitForActiveCollection(COLLECTION_NAME, 5, 6);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 6, 6);
 
     collection = client.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
     slices1 = collection.getRouter().getSearchSlicesSingle(uniquePrefixes.get(0).key, null, collection);

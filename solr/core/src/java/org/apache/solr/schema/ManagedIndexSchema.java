@@ -96,7 +96,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   public static final DynamicField[] EMPTY_DYNAMIC_FIELDS = {};
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPY_FIELDS = {};
   private final boolean isMutable;
-  private String collection;
+  private final String collection;
 
   @Override public boolean isMutable() { return isMutable; }
 
@@ -194,7 +194,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (log.isDebugEnabled()) log.debug("get cluster lock");
       try {
         while (!lock.lock()) {
-          Thread.sleep(250);
+          Thread.sleep(50);
         }
       } catch (KeeperException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -404,7 +404,6 @@ public final class ManagedIndexSchema extends IndexSchema {
               }
               // rather than waiting and re-polling, let's be proactive and tell the replica
               // to refresh its schema from ZooKeeper, if that fails, then the
-              Thread.sleep(500); // slight delay before requesting version again
               log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }
@@ -467,6 +466,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.requiredFields.addAll(requiredFields);
       newSchema.fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(fieldsWithDefaultValue.size());
       newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
+      newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes.size());
+      newSchema.fieldTypes.putAll(fieldTypes);
 
       Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
       newFields.forEach(newField -> {
@@ -1434,13 +1435,14 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
   
-  private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
+  private ManagedIndexSchema(String collection, Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
                              String managedSchemaResourceName, int schemaZkVersion, ReentrantLock schemaUpdateLock, Properties substitutableProps) {
     super(luceneVersion, loader, substitutableProps);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
     this.schemaUpdateLock = schemaUpdateLock;
+    this.collection = collection;
   }
 
   /**
@@ -1454,7 +1456,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    */
    ManagedIndexSchema shallowCopy(boolean includeFieldDataStructures) {
      ManagedIndexSchema newSchema = new ManagedIndexSchema
-         (luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock(), substitutableProperties);
+         (collection, luceneVersion, loader, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock(), substitutableProperties);
 
     newSchema.name = name;
     newSchema.version = version;
@@ -1473,10 +1475,10 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.fields.putAll(fields);
       newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
       newSchema.requiredFields.addAll(requiredFields);
+      newSchema.fieldTypes = fieldTypes;
     }
 
     // These don't need new collections - addFields() won't add members to them
-    newSchema.fieldTypes = fieldTypes;
     newSchema.dynamicFields = dynamicFields;
     newSchema.dynamicCopyFields = dynamicCopyFields;
     newSchema.copyFieldsMap = copyFieldsMap;

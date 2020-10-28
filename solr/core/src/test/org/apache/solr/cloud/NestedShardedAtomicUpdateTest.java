@@ -59,6 +59,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
   }
 
   public void doRootShardRoutingTest() throws Exception {
+    cloudClient.getZkStateReader().forciblyRefreshAllClusterStateSlow();
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     final String[] ids = {"3", "4", "5", "6"};
 

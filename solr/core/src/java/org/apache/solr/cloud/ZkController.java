@@ -1035,7 +1035,7 @@ public class ZkController implements Closeable, Runnable {
         DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"));
         if (log.isDebugEnabled()) log.debug("get cluster lock");
         while (!lock.lock()) {
-          Thread.sleep(250);
+          Thread.sleep(50);
         }
         try {
 

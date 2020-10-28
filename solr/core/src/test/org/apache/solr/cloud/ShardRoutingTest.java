@@ -23,13 +23,11 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Map;
 
 public class ShardRoutingTest extends SolrCloudBridgeTestCase {
@@ -50,6 +48,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
   public ShardRoutingTest() throws Exception {
     super.sliceCount = 4;
+    numJettys = 8;
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
@@ -279,7 +278,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   public void doAtomicUpdate() throws Exception {
     log.info("### STARTING doAtomicUpdate");
     int nClients = clients.size();
-    assertEquals(3, nClients);
+    assertEquals(8, nClients);
 
     int expectedVal = 0;
     for (SolrClient client : clients) {
