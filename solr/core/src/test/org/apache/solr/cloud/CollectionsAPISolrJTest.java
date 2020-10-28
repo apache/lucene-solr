@@ -351,6 +351,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       return true;
     });
 
+    cluster.waitForActiveCollection(collectionName, 3, 3);
+
     // Test splitting using split.key
     response = CollectionAdminRequest.splitShard(collectionName)
         .setSplitKey("b!")
@@ -359,7 +361,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    waitForState("Expected 5 slices to be active", collectionName, (n, c) -> c.getActiveSlices().size() == 5);
+    // wait for 5 active shards
+    cluster.waitForActiveCollection(collectionName, 5, 5);
 
   }
 

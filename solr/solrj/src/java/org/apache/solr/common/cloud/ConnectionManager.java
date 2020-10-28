@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -60,7 +61,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private volatile boolean isClosed = false;
 
-  private final Object keeperLock = new Object();
+  private final ReentrantLock keeperLock = new ReentrantLock(true);
 
   private volatile CountDownLatch connectedLatch = new CountDownLatch(1);
   private volatile CountDownLatch disconnectedLatch = new CountDownLatch(1);
@@ -82,12 +83,15 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public ZooKeeper getKeeper() {
-    synchronized (keeperLock) {
+    keeperLock.lock();
+    try {
       SolrZooKeeper rKeeper = keeper;
       if (rKeeper == null) {
         throw new AlreadyClosedException();
       }
       return rKeeper;
+    } finally {
+      keeperLock.unlock();
     }
   }
 
@@ -189,14 +193,16 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   private void updatezk() throws IOException {
-    synchronized (keeperLock) {
+    keeperLock.lock();
+    try {
       if (isClosed()) return;
       if (keeper != null) {
         ParWork.close(keeper);
-        keeper = null;
       }
       SolrZooKeeper zk = createSolrZooKeeper(zkServerAddress, zkTimeout, this);
       keeper = zk;
+    } finally {
+      keeperLock.unlock();
     }
   }
 
@@ -265,7 +271,8 @@ public class ConnectionManager implements Watcher, Closeable {
       }
     }
 
-    synchronized (keeperLock) {
+    keeperLock.lock();
+    try {
       if (isClosed()) return;
       if (keeper != null) {
         // if there was a problem creating the new SolrZooKeeper
@@ -281,6 +288,8 @@ public class ConnectionManager implements Watcher, Closeable {
         }
       }
 
+    } finally {
+      keeperLock.unlock();
     }
 
     do {
@@ -351,7 +360,6 @@ public class ConnectionManager implements Watcher, Closeable {
     if (keeper != null) {
       keeper.close();
     }
-    keeper = null;
 
     ExecutorUtil.awaitTermination(client.zkCallbackSerialExecutor);
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);

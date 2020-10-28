@@ -76,22 +76,14 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
     log.info("Registered as Overseer leader, starting Overseer ...");
 
-    synchronized (this) {
-      if (isClosed()) {
-        log.info("Bailing on becoming leader, we are closed");
-        return;
-      }
-      if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
-
-        try {
-          overseer.start(id, context);
-        } finally {
-          if (isClosed()) {
-            overseer.close();
-          }
-        }
-      }
+    if (isClosed()) {
+      log.info("Bailing on becoming leader, we are closed");
+      return;
     }
+    if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
+      overseer.start(id, context);
+    }
+
   }
 
   private void clearQueue(ZkDistributedQueue queue)

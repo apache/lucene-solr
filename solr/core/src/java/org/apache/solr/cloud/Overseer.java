@@ -237,7 +237,7 @@ public class Overseer implements SolrCloseable {
         // we do not sure which message is bad message, therefore we will re-process node one by one
         int fallbackQueueSize = Integer.MAX_VALUE;
         ZkDistributedQueue fallbackQueue = workQueue;
-        while (!isClosed()) {
+        while (!checkClosed()) {
           if (zkStateWriter == null) {
             try {
               zkStateWriter = new ZkStateWriter(reader, stats);
@@ -282,7 +282,6 @@ public class Overseer implements SolrCloseable {
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no op call
               clusterState = zkStateWriter.writePendingUpdates(clusterState);
-              assert clusterState != null;
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
@@ -315,6 +314,10 @@ public class Overseer implements SolrCloseable {
 //            }
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
           } catch (AlreadyClosedException e) {
+            if (isClosed()) {
+              log.info("Overseer closed (AlreadyClosedException), exiting loop");
+              return;
+            }
             return;
           } catch (KeeperException.SessionExpiredException e) {
             log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
@@ -350,7 +353,10 @@ public class Overseer implements SolrCloseable {
                   processedNodes.clear();
                 });
               }
-              if (isClosed()) return;
+              if (isClosed()) {
+                log.info("Overseer closed, exiting loop");
+                return;
+              }
               // if an event comes in the next *ms batch it together
               int wait = 0;
 //              if (zkStateWriter.getUpdatesToWrite().isEmpty()) {
@@ -359,7 +365,7 @@ public class Overseer implements SolrCloseable {
 //                wait = 0;
 //              }
               queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> !processedNodes.contains(node)));
-              if (loopCnt >= 1) {
+              if (loopCnt >= 3) {
                 break;
               }
               loopCnt++;
@@ -397,6 +403,14 @@ public class Overseer implements SolrCloseable {
       if (log.isDebugEnabled()) {
         log.debug("run() - end");
       }
+    }
+
+    private boolean checkClosed() {
+      boolean closed = isClosed();
+      if (closed) {
+        log.info("Overseer is closed, will not continue loop ...");
+      }
+      return closed;
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
@@ -673,11 +687,11 @@ public class Overseer implements SolrCloseable {
   }
 
   public synchronized void start(String id, ElectionContext context) throws KeeperException {
+    doClose();
     if (getCoreContainer().isShutDown() || closeAndDone) {
       if (log.isDebugEnabled()) log.debug("Already closed, exiting");
       return;
     }
-    doClose();
     closed = false;
 
     MDCLoggingContext.setNode(zkController == null ?
