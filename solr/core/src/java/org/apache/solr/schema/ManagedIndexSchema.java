@@ -217,7 +217,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (createOnly) {
           try {
             zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-            schemaZkVersion = 0;
+            schemaZkVersion = 1;
             log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
           } catch (KeeperException.NodeExistsException e) {
             // This is okay - do nothing and fall through
