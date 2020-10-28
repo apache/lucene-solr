@@ -217,7 +217,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (createOnly) {
           try {
             zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-            schemaZkVersion = 0;
+            schemaZkVersion = 1;
             log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
           } catch (KeeperException.NodeExistsException e) {
             // This is okay - do nothing and fall through
@@ -233,13 +233,29 @@ public final class ManagedIndexSchema extends IndexSchema {
             schemaZkVersion = stat.getVersion();
             log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
           } catch (KeeperException.BadVersionException e) {
-            Stat stat = new Stat();
-            zkClient.getData(managedSchemaPath, null, stat, true);
+            if (schemaZkVersion == 1) {
+              try {
+                Stat stat = zkClient.setData(managedSchemaPath, data, 0, true);
+                schemaZkVersion = stat.getVersion();
+                log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
+              } catch (KeeperException.BadVersionException e1) {
+                Stat stat = new Stat();
+                zkClient.getData(managedSchemaPath, null, stat, true);
 
-            log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
+                log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
 
-            success = false;
-            schemaChangedInZk = true;
+                success = false;
+                schemaChangedInZk = true;
+              }
+            } else {
+              Stat stat = new Stat();
+              zkClient.getData(managedSchemaPath, null, stat, true);
+
+              log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
+
+              success = false;
+              schemaChangedInZk = true;
+            }
           }
         }
       } catch (Exception e) {
