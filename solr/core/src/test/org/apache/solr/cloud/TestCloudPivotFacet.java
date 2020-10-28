@@ -98,6 +98,9 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema.xml";
+    uploadSelectCollection1Config = true;
     log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
   

@@ -250,6 +250,19 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       }
     }
     newClients.clear();
+    createCollection1 = true;
+    createControl = false;
+    solrconfigString = null;
+    schemaString = null;
+    numJettys = 3;
+    formatZk = true;
+
+    sliceCount = 2;
+
+    replicationFactor = 1;
+
+    enableProxy = false;
+
   }
   
   protected String getBaseUrl(HttpSolrClient client) {

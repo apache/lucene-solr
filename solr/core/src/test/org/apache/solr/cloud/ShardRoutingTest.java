@@ -109,6 +109,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   @Test
   public void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
+    cloudClient.getZkStateReader().forciblyRefreshAllClusterStateSlow();
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
     // for now,  we know how ranges will be distributed to shards.

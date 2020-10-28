@@ -53,9 +53,17 @@ public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public TestDynamicFieldNamesIndexCorrectly () {
+    numJettys = 3;
+    createCollection1 = false;
+    solrconfigString = "solrconfig.xml";
+    schemaString = "schema.xml";
+    uploadSelectCollection1Config = true;
+  }
+
   @Test
   public void test() throws Exception {
-    numJettys = 3;
+
     createCollection(COLLECTION, 4,  1);
     final int numRuns = TEST_NIGHTLY ? 10 : 1;
     populateIndex(numRuns);
