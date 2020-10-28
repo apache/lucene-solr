@@ -173,6 +173,8 @@ Bug Fixes
 * SOLR-14969: Prevent creating multiple cores with the same name which leads to instabilities (race condition)
   (Erick Erickson, Andreas Hubold)
 
+* SOLR-14961: Fix for deleting zookeeper nodes with same path length. Only the first zk-node was removed. (Michael Aleythe via Mike Drob)
+
 Other Changes
 ---------------------
 
