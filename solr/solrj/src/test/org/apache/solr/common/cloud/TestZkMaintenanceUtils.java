@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.util;
+package org.apache.solr.common.cloud;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,9 +26,11 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -54,6 +58,45 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
     if (null != zkDir) {
       FileUtils.deleteDirectory(zkDir.toFile());
       zkDir = null;
+    }
+  }
+
+  /**
+   * This test reproduces the issue of trying to delete zk-nodes that have the same length. (SOLR-14961).
+   *
+   * @throws InterruptedException when having trouble creating test nodes
+   * @throws KeeperException error when talking to zookeeper
+   * @throws SolrServerException when having trouble connecting to solr
+   * @throws UnsupportedEncodingException when getBytes() uses unknown encoding
+   *
+   */
+  @Test
+  public void testClean() throws KeeperException, InterruptedException, SolrServerException, UnsupportedEncodingException {
+    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)){
+      /* PREPARE */
+      String path = "/myPath/isTheBest";
+      String data1 = "myStringData1";
+      String data2 = "myStringData2";
+      String longData = "myLongStringData";
+      // create zk nodes that have the same path length
+      zkClient.create("/myPath", null, CreateMode.PERSISTENT, true);
+      zkClient.create(path, null, CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/nothing.txt", null, CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/some_longer_file2.txt", longData.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+
+      /* RUN */
+      // delete all nodes that contain "file"
+      ZkMaintenanceUtils.clean(zkClient,path, node -> node.contains("file"));
+
+      /* CHECK */
+      String listZnode = zkClient.listZnode(path, false);
+      // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
+      assertFalse(listZnode.contains("file1"));
+      assertFalse(listZnode.contains("file2"));
+      assertFalse(listZnode.contains("some_longer_file2"));
+      assertTrue(listZnode.contains("nothing"));
     }
   }
 
