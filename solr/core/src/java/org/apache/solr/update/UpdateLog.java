@@ -51,6 +51,7 @@ import com.codahale.metrics.Meter;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
@@ -502,6 +503,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * change the implementation of the transaction log.
    */
   public TransactionLog newTransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+    if (isClosed || uhandler.core.isClosing()) {
+      throw new AlreadyClosedException();
+    }
     return new TransactionLog(tlogFile, globalStrings, openExisting);
   }
 

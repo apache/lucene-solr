@@ -53,6 +53,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
   public void test() throws Exception {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String coll = "deletenodetest_coll";
+    cloudClient.getZkStateReader().forciblyRefreshAllClusterStateSlow();
     ClusterState state = cloudClient.getZkStateReader().getClusterState();
     Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);

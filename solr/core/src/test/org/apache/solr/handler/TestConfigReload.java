@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -52,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 
+@LuceneTestCase.Nightly
 public class TestConfigReload extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -105,7 +107,7 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
     HashSet<String> succeeded = new HashSet<>();
 
     while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds){
-      Thread.sleep(500);
+      Thread.sleep(250);
       for (String url : urls) {
         MapWriter respMap = getAsMap(url + uri);
         if (String.valueOf(newVersion).equals(respMap._getStr(asList(name, "znodeVersion"), null))) {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -35,6 +36,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.Nightly // slow
 public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   protected int NUM_SERVERS = 5;
   protected int NUM_SHARDS = 2;

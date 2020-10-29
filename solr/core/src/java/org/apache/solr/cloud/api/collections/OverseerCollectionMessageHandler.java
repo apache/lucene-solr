@@ -844,8 +844,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (overseer.isClosed()) {
         throw new AlreadyClosedException();
       }
+      boolean success = false;
+      for (int i = 0; i < 5; i++) {
+        if (overseer.isClosed() || overseer.getCoreContainer().isShutDown()) {
+          break;
+        }
+         success = latch.await(3, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+      }
 
-      boolean success = latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+
       if (!success) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + asyncPathToWaitOn);
       }
