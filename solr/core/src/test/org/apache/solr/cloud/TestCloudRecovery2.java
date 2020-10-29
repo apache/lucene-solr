@@ -48,7 +48,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 1,2)
-        .setMaxShardsPerNode(2)
+        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
   }
 
@@ -59,8 +59,6 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     try (Http2SolrClient client1 = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl().toString())) {
 
       node2.stop();
-      cluster.waitForJettyToStop(node2);
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
@@ -69,8 +67,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       req.commit(client1, COLLECTION);
 
       node2.start();
-      cluster.waitForNode(node2, 10);
-      waitForState("", COLLECTION, clusterShape(1, 2));
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
@@ -91,8 +89,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       //
       node2.stop();
-      cluster.waitForJettyToStop(node2);
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
+
 
       new UpdateRequest().add("id", "1", "num", "20")
           .commit(client1, COLLECTION);
@@ -100,7 +97,9 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       assertEquals("20", v.toString());
 
       node2.start();
-      cluster.waitForNode(node2, 10);
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 2);
+
       waitForState("", COLLECTION, clusterShape(1, 2));
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
@@ -108,8 +107,6 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       }
 
       node2.stop();
-      cluster.waitForJettyToStop(node2);
-      waitForState("", COLLECTION, (liveNodes, collectionState) -> liveNodes.size() == 1);
 
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
@@ -117,8 +114,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       SolrTestCaseJ4.      assertEquals("30", v.toString());
 
       node2.start();
-      cluster.waitForNode(node2, 10);
-      waitForState("", COLLECTION, clusterShape(1, 2));
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
@@ -129,15 +126,15 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     }
 
     node1.stop();
-    cluster.waitForJettyToStop(node1);
     waitForState("", COLLECTION, (liveNodes, collectionState) -> {
       Replica leader = collectionState.getLeader("shard1");
       return leader != null && leader.getNodeName().equals(node2.getNodeName());
     });
 
     node1.start();
-    cluster.waitForNode(node1, 10);
-    waitForState("", COLLECTION, clusterShape(1, 2));
+
+    cluster.waitForActiveCollection(COLLECTION, 1, 2);
+
     try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl().toString())) {
       Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       assertEquals("30", v.toString());

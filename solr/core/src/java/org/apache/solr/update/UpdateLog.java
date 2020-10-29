@@ -203,8 +203,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
-  protected int maxNumLogsToKeep;
-  protected int numVersionBuckets; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
+  protected volatile int maxNumLogsToKeep;
+  protected volatile int numVersionBuckets = 65536; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
   protected Long maxVersionFromIndex = null;
   protected boolean existOldBufferLog = false;
 

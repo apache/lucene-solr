@@ -17,17 +17,13 @@
 
 package org.apache.solr.cloud;
 
-import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -62,10 +58,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
     String collectionName = "testLeaderUnloaded";
     CollectionAdminRequest.createCollection(collectionName, 1, 2)
+        .setMaxShardsPerNode(100)
         .process(solrClient);
-
-    waitForState("Expected collection: testLeaderUnloaded to be live with 1 shard and 2 replicas",
-        collectionName, clusterShape(1, 2));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
 
@@ -97,6 +91,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
     String collectionName = "testLeaderNotResponding";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
+        .setMaxShardsPerNode(100)
         .process(solrClient);
 
     TestInjection.prepRecoveryOpPauseForever = "true:100";

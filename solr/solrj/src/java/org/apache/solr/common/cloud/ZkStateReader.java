@@ -838,14 +838,6 @@ public class ZkStateReader implements SolrCloseable {
       } catch (NullPointerException e) {
         // okay
       }
-      if (notifications != null) {
-        try {
-          boolean success = notifications.awaitTermination(1, TimeUnit.SECONDS);
-          if (!success) notifications.shutdownNow();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-      }
 
     } finally {
       assert ObjectReleaseTracker.release(this);

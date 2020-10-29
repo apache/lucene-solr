@@ -920,10 +920,14 @@ public class MiniSolrCloudCluster {
     }
     throw new SolrException(ErrorCode.NOT_FOUND, "No open Overseer found");
   }
-  
+
   public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
+    waitForActiveCollection(collection, wait, unit, shards, totalReplicas, false);
+  }
+
+  public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas, boolean exact) {
     log.info("waitForActiveCollection: {}", collection);
-    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas, false);
+    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas, exact);
 
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
@@ -944,7 +948,11 @@ public class MiniSolrCloudCluster {
   public void waitForActiveCollection(String collection, int shards, int totalReplicas) {
     waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas);
   }
-  
+
+  public void waitForActiveCollection(String collection, int shards, int totalReplicas, boolean exact) {
+    waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas, exact);
+  }
+
   public void waitForRemovedCollection(String collection) {
     try {
       getSolrClient().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {

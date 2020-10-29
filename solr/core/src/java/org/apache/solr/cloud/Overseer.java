@@ -252,7 +252,7 @@ public class Overseer implements SolrCloseable {
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 try {
-                  processQueueItem(message, clusterState, zkStateWriter, false, null);
+                  processQueueItem(message, reader.getClusterState(), zkStateWriter, false, null);
                 } catch (InterruptedException | AlreadyClosedException e) {
                   ParWork.propagateInterrupt(e);
                   return;
@@ -306,12 +306,7 @@ public class Overseer implements SolrCloseable {
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
 
-            long wait = 10000;
-//            if (zkStateWriter.getUpdatesToWrite().isEmpty()) {
-//              wait = 100;
-//            } else {
-//              wait = 0;
-//            }
+            long wait = 5000;
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
           } catch (AlreadyClosedException e) {
             if (isClosed()) {
@@ -358,14 +353,9 @@ public class Overseer implements SolrCloseable {
                 return;
               }
               // if an event comes in the next *ms batch it together
-              int wait = 0;
-//              if (zkStateWriter.getUpdatesToWrite().isEmpty()) {
-//                wait = 10000;
-//              } else {
-//                wait = 0;
-//              }
+              int wait = 10;
               queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> !processedNodes.contains(node)));
-              if (loopCnt >= 3) {
+              if (loopCnt >= 1) {
                 break;
               }
               loopCnt++;

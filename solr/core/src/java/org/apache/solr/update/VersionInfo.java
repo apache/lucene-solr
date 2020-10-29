@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.LeafReader;
@@ -199,35 +200,33 @@ public class VersionInfo {
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
     int slot;
-    buckUpdateLock.readLock().lock();
-    VersionBucket bucket;
+    buckUpdateLock.writeLock().lock();
     try {
+      VersionBucket bucket;
+
       slot = hash & (buckets.length - 1);
       bucket = buckets[slot];
-    } finally {
-      buckUpdateLock.readLock().unlock();
-    }
 
-    if (bucket == null) {
-      buckUpdateLock.writeLock().lock();
-      try {
+      if (bucket == null) {
+
         bucket = buckets[slot];
         if (bucket == null) {
 
           if (versionBucketLockTimeoutMs > 0) {
-            bucket= new TimedVersionBucket();
+            bucket = new TimedVersionBucket();
           } else {
-            bucket= new VersionBucket();
+            bucket = new VersionBucket();
           }
           bucket.updateHighest(highestVersion);
           buckets[slot] = bucket;
         }
-      } finally {
-        buckUpdateLock.writeLock().unlock();
-      }
-    }
 
-    return bucket;
+      }
+
+      return bucket;
+    } finally {
+      buckUpdateLock.writeLock().unlock();
+    }
   }
 
   public Long lookupVersion(BytesRef idBytes) {

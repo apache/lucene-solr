@@ -914,7 +914,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
                    // NOTE: don't use our stale_client for this -- don't tip it off of a collection change
                    .process(cluster.getSolrClient()).getStatus());
 
-      cluster.waitForActiveCollection(COL, 1, 1);
+      cluster.waitForActiveCollection(COL, 1, 1, true);
       
       // attempt a (direct) update that should succeed in spite of cached cluster state
       // pointing solely to a node that's no longer part of our collection...

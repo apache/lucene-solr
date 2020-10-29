@@ -478,9 +478,7 @@ public class ZkDistributedQueue implements DistributedQueue {
             break;
           }
 
-          TreeSet<String> existingChildren = knownChildren;
-
-          while (existingChildren == knownChildren && existingChildren.size() == 0) {
+          while (foundChildren.size() == 0) {
             try {
               changed.await(250, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
@@ -490,6 +488,13 @@ public class ZkDistributedQueue implements DistributedQueue {
             if (timeout.hasTimedOut() || zookeeper.isClosed() || !zookeeper.isConnected()) {
               return Collections.emptyList();
             }
+
+            for (String child : knownChildren) {
+              if (acceptFilter.test(child)) {
+                foundChildren.add(child);
+              }
+            }
+
           }
         } finally {
           if (updateLock.isHeldByCurrentThread()) {

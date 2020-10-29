@@ -16,10 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,10 +24,12 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slow
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
@@ -41,11 +39,6 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-  }
-
-  @Before
-  public void deleteCollections() throws Exception {
-    cluster.deleteAllCollections();
   }
 
   @Test

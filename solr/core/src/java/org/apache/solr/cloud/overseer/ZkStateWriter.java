@@ -297,7 +297,7 @@ public class ZkStateWriter {
                 //              }
 
                 if (col != null && col.getZNodeVersion() > finalPrevVersion) {
-                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion());
+                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
                   // System.out.println("found the version");
                   return true;
                 }
@@ -315,6 +315,7 @@ public class ZkStateWriter {
 
 
       if (failedUpdates.size() > 0) {
+        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException);
         failedUpdates.clear();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException);
       }
