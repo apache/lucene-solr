@@ -56,8 +56,8 @@ public class TestVectorUtil extends LuceneTestCase {
     assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), 1e-5);
   }
 
-  private float l2(float[] v) {
-    float l2 = 0;
+  private double l2(float[] v) {
+    double l2 = 0.0;
     for (float x : v) {
       l2 += x * x;
     }

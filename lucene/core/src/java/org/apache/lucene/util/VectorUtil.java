@@ -25,47 +25,22 @@ public final class VectorUtil {
   private VectorUtil() {
   }
 
-  public static float dotProduct(float[] a, float[] b) {
-    float res = 0f;
-    /*
-     * If length of vector is larger than 8, we use unrolled dot product to accelerate the
-     * calculation.
-     */
-    int i;
-    for (i = 0; i < a.length % 8; i++) {
-      res += b[i] * a[i];
+  public static double dotProduct(float[] a, float[] b) {
+    assert a.length == b.length;
+    double result = 0;
+    int dim = a.length;
+    for (int i = 0; i < dim; i++) {
+      result += a[i] * b[i];
     }
-    if (a.length < 8) {
-      return res;
-    }
-    float s0 = 0f;
-    float s1 = 0f;
-    float s2 = 0f;
-    float s3 = 0f;
-    float s4 = 0f;
-    float s5 = 0f;
-    float s6 = 0f;
-    float s7 = 0f;
-    for (; i + 7 < a.length; i += 8) {
-      s0 += b[i] * a[i];
-      s1 += b[i + 1] * a[i + 1];
-      s2 += b[i + 2] * a[i + 2];
-      s3 += b[i + 3] * a[i + 3];
-      s4 += b[i + 4] * a[i + 4];
-      s5 += b[i + 5] * a[i + 5];
-      s6 += b[i + 6] * a[i + 6];
-      s7 += b[i + 7] * a[i + 7];
-    }
-    res += s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7;
-    return res;
+    return result;
   }
 
-  public static float squareDistance(float[] v1, float[] v2) {
+  public static double squareDistance(float[] v1, float[] v2) {
     assert v1.length == v2.length;
-    float squareSum = 0.0f;
+    double squareSum = 0.0;
     int dim = v1.length;
     for (int i = 0; i < dim; i++) {
-      float diff = v1[i] - v2[i];
+      double diff = v1[i] - v2[i];
       squareSum += diff * diff;
     }
     return squareSum;
