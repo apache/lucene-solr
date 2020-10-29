@@ -345,7 +345,7 @@ public class Overseer implements SolrCloseable {
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
                 // The callback always be called on this thread
-                  processQueueItem(message, getZkStateReader().getClusterState(), zkStateWriter, true, () -> {
+                  processQueueItem(message, reader.getClusterState(), zkStateWriter, true, () -> {
                   stateUpdateQueue.remove(processedNodes);
                   processedNodes.clear();
                 });

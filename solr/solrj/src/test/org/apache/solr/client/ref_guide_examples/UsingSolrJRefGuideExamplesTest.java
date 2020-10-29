@@ -68,7 +68,6 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     CollectionAdminResponse response = CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("techproducts", 1, 1);
   }
 
   @Before

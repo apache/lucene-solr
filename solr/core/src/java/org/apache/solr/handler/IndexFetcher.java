@@ -597,9 +597,15 @@ public class IndexFetcher {
             terminateAndWaitFsyncService();
             if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
+              if (!successfulInstall) {
+                log.error("Modify index props failed");
+              }
               if (successfulInstall) deleteTmpIdxDir = false;
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+              if (!successfulInstall) {
+                log.error("Move index files failed");
+              }
             }
             if (successfulInstall) {
               logReplicationTimeAndConfFiles(modifiedConfFiles,
@@ -648,8 +654,6 @@ public class IndexFetcher {
               reloadCore);
           successfulInstall = fetchLatestIndex(true, reloadCore).getSuccessful();
         }
-
-        markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
         log.error("User aborted Replication");
@@ -692,6 +696,7 @@ public class IndexFetcher {
         // we only track replication success in SolrCloud mode
         core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
       }
+    } finally {
 
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       markReplicationStop();
@@ -702,7 +707,7 @@ public class IndexFetcher {
       fsyncServiceFuture = null;
       stop = false;
       fsyncException = null;
-    } finally {
+
       // order below is important
       try {
         if (tmpIndexDir != null && deleteTmpIdxDir) {

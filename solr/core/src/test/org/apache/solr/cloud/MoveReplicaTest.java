@@ -108,7 +108,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
-    create.setMaxShardsPerNode(3);
+    create.setMaxShardsPerNode(100);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -149,16 +149,14 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         break;
       }
       assertNotSame(rsp.getRequestStatus(), RequestStatusState.FAILED);
-      Thread.sleep(500);
+      Thread.sleep(250);
     }
     assertTrue(success);
     assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
     assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
-    Thread.sleep(500);
-
     // wait for recovery
-    cluster.waitForActiveCollection(coll, 2, 4);
+    cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
 
     Thread.sleep(500);
 
@@ -168,8 +166,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
     checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
-    // wait for recovery - TODO: flakey, we end up with no leader for one shard but all replicas ACTIVE
-    // cluster.waitForActiveCollection(coll, 2, 4);
+
+    cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
