@@ -359,7 +359,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
 
-    try (ParWork worker = new ParWork(this)) {
+    try (ParWork worker = new ParWork(this, false, true)) {
       worker.collect("createControlJetty", () -> {
         try {
           controlJetty = createControlJetty();
@@ -435,15 +435,16 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private volatile boolean destroyServersCalled = false;
   protected void destroyServers() throws Exception {
-    System.out.println("DESTROYSERVERS");
 //    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
 //    destroyServersCalled = true;
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(controlClient, clients, jettys, controlJetty);
     }
     
     clients.clear();
     jettys.clear();
+    controlClient = null;
+    controlJetty = null;
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir) throws Exception {

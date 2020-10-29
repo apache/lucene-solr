@@ -72,7 +72,6 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 // NOT mt-safe... create a new processor for each add thread
-// TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   final static String PARAM_WHITELIST_CTX_KEY = DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
@@ -784,7 +783,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // we have to spoof the replicationTracker and set the achieved rf to the number of active replicas.
   //
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-
+    // TODO: parallel
     setupRequest(cmd);
 
     boolean dropCmd = false;
@@ -872,7 +871,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     versionDeleteByQuery(cmd);
 
-    try (ParWork work = new ParWork(this)) {
+    try (ParWork work = new ParWork(this, false, true)) {
       work.collect("localDeleteByQuery", () -> {
         try {
           doLocalDelete(cmd);

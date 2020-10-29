@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.junit.BeforeClass;
 
@@ -25,6 +26,7 @@ import org.junit.BeforeClass;
  *
  * @since solr 1.3
  */
+@LuceneTestCase.Nightly
 public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass

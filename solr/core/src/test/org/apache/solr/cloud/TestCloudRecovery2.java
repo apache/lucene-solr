@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -39,7 +40,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
     configureCluster(2)
@@ -59,6 +60,13 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     try (Http2SolrClient client1 = SolrTestCaseJ4.getHttpSolrClient(node1.getBaseUrl().toString())) {
 
       node2.stop();
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 1, true);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (oldLiveNodes, newLiveNodes) -> newLiveNodes.size() == 1);
+
+      // we need to be sure the jetty has the up to date state, but we are not using a smart client here
+      Thread.sleep(250);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {

@@ -67,7 +67,7 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-
+@LuceneTestCase.Nightly
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
