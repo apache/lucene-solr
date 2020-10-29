@@ -177,7 +177,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         try {
           j1.start();
         } catch (Exception e) {
-          e.printStackTrace();
+          log.error("", e);
         }
       }
     };

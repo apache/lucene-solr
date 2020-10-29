@@ -21,12 +21,18 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * @since solr 1.3
  */
 public class StartSolrJetty
 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   public static void main( String[] args )
   {
     //System.setProperty("solr.solr.home", "../../../example/solr");
@@ -63,7 +69,7 @@ public class StartSolrJetty
       server.join();
     }
     catch (Exception e) {
-      e.printStackTrace();
+      log.error("", e);
       System.exit(100);
     }
   }

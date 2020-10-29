@@ -17,6 +17,7 @@
 package org.apache.solr.store.hdfs;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
 import java.util.Random;
@@ -42,10 +43,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly // can be a slow test, > 20 seconds
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final int MAX_NUMBER_OF_WRITES = 10000;
   private static final int MIN_FILE_SIZE = 100;
   private static final int MAX_FILE_SIZE = 100000;
@@ -179,7 +183,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
         fsDir.close();
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("", e);
       fail("Test failed on pass [" + i + "]");
     }
   }

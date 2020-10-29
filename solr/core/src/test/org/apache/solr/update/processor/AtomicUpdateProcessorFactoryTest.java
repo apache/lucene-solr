@@ -17,6 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,11 +33,14 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * test class for @see AtomicUpdateProcessorFactory
  */
 public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -245,7 +249,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
             proc.processAdd(cmd);
             proc.close();
           } catch (IOException e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
       };

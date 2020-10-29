@@ -594,7 +594,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         waitingForReplay.release();
         waitingForBufferUpdates.acquire();
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        log.error("", e);
         fail("Test interrupted: " + e.getMessage());
       }
     };

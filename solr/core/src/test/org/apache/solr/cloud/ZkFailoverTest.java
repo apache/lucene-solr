@@ -27,9 +27,14 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 @Ignore // nocommit debug
 public class ZkFailoverTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -57,7 +62,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
         try {
           runner.start();
         } catch (Exception e) {
-          e.printStackTrace();
+          log.error("", e);
         }
         });
       threads[i].start();

@@ -605,9 +605,9 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
     } catch (ExecutionException e) {
-      e.printStackTrace();
+      log.error("", e);
     } catch (TimeoutException e) {
-      e.printStackTrace();
+      log.error("", e);
     }
     return m;
   }

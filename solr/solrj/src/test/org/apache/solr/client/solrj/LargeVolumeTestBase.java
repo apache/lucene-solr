@@ -130,7 +130,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         }
 
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("", e);
         fail( getName() + "---" + e.getMessage() );
       }
     }

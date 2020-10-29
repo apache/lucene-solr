@@ -434,7 +434,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             assertEquals(0, req.process(cloudClient).getStatus());
           }
         } catch (Throwable e) {
-          e.printStackTrace();
+          log.error("", e);
           abort.countDown();
         }
       }

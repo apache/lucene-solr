@@ -1165,7 +1165,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         }
         client.request(createCmd);
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("", e);
         //fail
       }
       return null;
@@ -1260,7 +1260,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           .setCreateNodeSet("")
           .process(cloudClient).getStatus());
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("", e);
       //fails
     }
     final List<SolrClient> collectionClients = new ArrayList<>();
@@ -1277,7 +1277,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
               .setNode(runner.getNodeName())
               .process(cloudClient).isSuccess());
         } catch (Exception e) {
-          e.printStackTrace();
+          log.error("", e);
           //fails
         }
         return null;

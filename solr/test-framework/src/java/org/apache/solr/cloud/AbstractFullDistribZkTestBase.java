@@ -490,11 +490,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 clients.add(client);
                 addReplicas.incrementAndGet();
               } catch (IOException e) {
-                e.printStackTrace();
                 throw new RuntimeException(e);
               } catch (Exception e) {
                 ParWork.propagateInterrupt(e);
-                e.printStackTrace();
                 throw new RuntimeException(e);
               }
             });
@@ -521,11 +519,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                 clients.add(client);
                 addReplicas.incrementAndGet();
               } catch (IOException e) {
-                e.printStackTrace();
                 throw new RuntimeException(e);
               } catch (Exception e) {
                 ParWork.propagateInterrupt(e);
-                e.printStackTrace();
                 throw new RuntimeException(e);
               }
             });
@@ -549,10 +545,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               clients.add(client);
               addReplicas.incrementAndGet();
             } catch (IOException e) {
-              e.printStackTrace();
               throw new RuntimeException(e);
             } catch (Exception e) {
-              e.printStackTrace();
               ParWork.propagateInterrupt(e);
               throw new RuntimeException(e);
             }
@@ -1648,7 +1642,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       try {
         commit();
       } catch (Throwable t) {
-        t.printStackTrace();
+        log.error("", t);
         // we don't care if this commit fails on some nodes
       }
 

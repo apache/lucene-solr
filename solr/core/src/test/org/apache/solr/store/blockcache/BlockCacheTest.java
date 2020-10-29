@@ -16,6 +16,7 @@
  */
 package org.apache.solr.store.blockcache;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,10 +31,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly // this test will spin up tons of netty threads due to HDFS,
 // should run nightly but should also track down the setting for that
 public class BlockCacheTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testBlockCache() {
@@ -158,7 +162,7 @@ public class BlockCacheTest extends SolrTestCase {
 
           } catch (Throwable e) {
             failed.set(true);
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 
@@ -296,7 +300,7 @@ public class BlockCacheTest extends SolrTestCase {
             test(readsPerThread);
           } catch (Throwable e) {
             failed.set(true);
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 

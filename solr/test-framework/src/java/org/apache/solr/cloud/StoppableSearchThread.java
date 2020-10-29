@@ -55,10 +55,9 @@ class StoppableSearchThread extends AbstractFullDistribZkTestBase.StoppableThrea
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         System.err.println("QUERY REQUEST FAILED:");
-        e.printStackTrace();
+        log.error("", e);
         if (e instanceof SolrServerException) {
-          System.err.println("ROOT CAUSE:");
-          ((SolrServerException) e).getRootCause().printStackTrace();
+          log.error("ROOTCAUSE", ((SolrServerException) e).getRootCause());
         }
         queryFails.incrementAndGet();
       }

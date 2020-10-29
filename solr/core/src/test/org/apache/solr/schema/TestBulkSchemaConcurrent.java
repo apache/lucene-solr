@@ -72,7 +72,7 @@ public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
             invokeBulkReplaceCall(finalI, errs);
             invokeBulkDeleteCall(finalI, errs);
           } catch (Exception e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
       };

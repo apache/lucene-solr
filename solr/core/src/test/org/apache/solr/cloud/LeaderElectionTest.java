@@ -501,7 +501,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                 server.expire(sessionId);
               }
             } catch (Exception e) {
-              e.printStackTrace();
+              log.error("", e);
             }
             Thread.sleep(500);
 

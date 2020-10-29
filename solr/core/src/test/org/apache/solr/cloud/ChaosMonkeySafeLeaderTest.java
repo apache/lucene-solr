@@ -26,7 +26,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +37,8 @@ import java.util.concurrent.TimeUnit;
 @Slow
 @Ignore // nocommit debug
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final Integer RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", "-1"));
 
   @BeforeClass
@@ -187,7 +191,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
         break;
       } catch (SolrServerException e) {
         // cluster may not be up yet
-        e.printStackTrace();
+        log.error("", e);
       }
       Thread.sleep(100);
     }

@@ -182,9 +182,9 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
     } catch (ExecutionException e) {
-      e.printStackTrace();
+      log.error("", e);
     } catch (TimeoutException e) {
-      e.printStackTrace();
+      log.error("", e);
     }
   }
 }

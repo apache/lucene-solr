@@ -233,7 +233,7 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
         break;
       } catch (SolrServerException | SolrException e) {
         // cluster may not be up yet
-        e.printStackTrace();
+        log.error("", e);
       }
       Thread.sleep(100);
     }

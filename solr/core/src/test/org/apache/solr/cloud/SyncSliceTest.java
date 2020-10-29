@@ -30,8 +30,11 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +46,8 @@ import java.util.List;
 // nocommit - bridge does not yet have some consistency checks here, finish and back in control client
 @LuceneTestCase.Nightly
 public class SyncSliceTest extends SolrCloudBridgeTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   private boolean success = false;
 
  // @Override
@@ -214,7 +219,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     try {
       commit();
     } catch (Throwable t) {
-      t.printStackTrace();
+      log.error("", t);
     }
     if (shardFailMessage == null) {
       // try again

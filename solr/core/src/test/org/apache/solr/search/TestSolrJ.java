@@ -25,8 +25,11 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +37,7 @@ import java.util.Random;
 
 
 public class TestSolrJ extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testSolrJ() throws Exception {
                           // docs, producers, connections, sleep_time
@@ -81,7 +85,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
             indexDocs(base, docsPerThread, maxSleep);
           } catch (Exception e) {
             //System.out.println("###############################CAUGHT EXCEPTION");
-            e.printStackTrace();
+            log.error("", e);
             ex = e;
           }
         }
@@ -154,7 +158,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           Thread.sleep(sleep);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          e.printStackTrace();
+          log.error("", e);
           throw new RuntimeException(e);
         }
       }

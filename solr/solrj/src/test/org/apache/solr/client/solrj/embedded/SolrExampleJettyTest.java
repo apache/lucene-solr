@@ -31,10 +31,13 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +53,7 @@ import java.util.stream.IntStream;
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   @Ignore // nocommit ~ debug
@@ -141,7 +145,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
         try {
           IOUtils.skip(body, 1024 * 1000);
         } catch (IOException e) {
-          e.printStackTrace();
+          log.error("", e);
         }
         return rsp.getResponse();
       }

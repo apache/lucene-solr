@@ -316,7 +316,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               }
               Thread.sleep(250);
             } catch (NullPointerException | SolrException e) {
-              e.printStackTrace();
+              log.error("", e);
               Thread.sleep(250);
             }
           }
@@ -324,7 +324,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
             fail("Timeout for waiting replica get deleted");
           }
         } catch (Exception e) {
-          e.printStackTrace();
+          log.error("", e);
           fail("Failed to delete replica");
         } finally {
           //avoiding deadlock

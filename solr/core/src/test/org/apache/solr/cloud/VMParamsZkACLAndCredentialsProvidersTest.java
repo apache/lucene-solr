@@ -208,7 +208,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       }
     } catch (NoAuthException nae) {
       if (create) {
-        nae.printStackTrace();
+        log.error("", nae);
         fail("No NoAuthException expected");
       }
       // expected

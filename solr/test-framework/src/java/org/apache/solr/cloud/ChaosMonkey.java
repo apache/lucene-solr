@@ -501,8 +501,7 @@ public class ChaosMonkey {
             //
           } catch (Exception e) {
             ParWork.propagateInterrupt(e);
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("", e);
           }
         }
         monkeyLog("finished");

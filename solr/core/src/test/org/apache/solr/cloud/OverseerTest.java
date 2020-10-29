@@ -916,7 +916,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             q.offer(Utils.toJSON(m));
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 
@@ -927,7 +927,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 1, true, getOpenOverseer());
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 
@@ -945,7 +945,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 Replica.State.RECOVERING, 1, true, getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-             e.printStackTrace();
+            log.error("", e);
           }
         }
 
@@ -958,7 +958,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 1, true, getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 
@@ -972,7 +972,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 1, true, getOpenOverseer());
             break;
           } catch (SolrException | AlreadyClosedException e) {
-            e.printStackTrace();
+            log.error("", e);
           }
         }
 

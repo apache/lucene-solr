@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,8 +38,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile Trap trap;
   private final static BlockingQueue<List<Object>> lastStacktraces = new LinkedBlockingQueue<List<Object>>();
@@ -197,7 +201,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e1) {
-        e1.printStackTrace();
+        log.error("", e1);
       }
     }
   }

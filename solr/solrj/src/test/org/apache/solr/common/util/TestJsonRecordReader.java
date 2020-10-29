@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,9 +29,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RecordingJSONParser;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestJsonRecordReader extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testOneLevelSplit() throws IOException {
     String json = "{\n" +
@@ -727,7 +730,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
       recordReader.streamRecords(parser, (record, path) -> {
       });   /*don't care*/
     } catch (RuntimeException e) {
-      parser.error("").printStackTrace();
+      log.error("", e);
       throw e;
     }
   }

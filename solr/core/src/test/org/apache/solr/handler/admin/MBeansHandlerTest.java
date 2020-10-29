@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,8 +36,11 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MBeansHandlerTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -180,7 +184,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
           bean.getSolrMetricsContext().getMetricsSnapshot();
         } catch (Exception e) {
           runSnapshots = false;
-          e.printStackTrace();
+          log.error("", e);
           fail("Exception getting metrics snapshot: " + e.toString());
         }
         try {

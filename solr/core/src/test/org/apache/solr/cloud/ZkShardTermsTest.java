@@ -221,7 +221,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
               zkShardTerms.setTermEqualsToLeader(replica);
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
-              e.printStackTrace();
+              log.error("", e);
             }
           }
         }
