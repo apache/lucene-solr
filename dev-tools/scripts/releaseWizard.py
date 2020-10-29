@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script is the Release Manager's best friend, ensuring all details of a release is handled correctly.
+# This script is the Release Manager's best friend, ensuring all details of a release are handled correctly.
 # It will walk you through the steps of the release process, asking for decisions or input along the way.
 # CAUTION: You still need to use your head! Please read the HELP section in the main menu.
 #
