@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrSingleThreaded;
 import org.apache.solr.common.cloud.Replica;
@@ -248,34 +249,29 @@ public class HttpShardHandler extends ShardHandler {
     try {
       while (pending.get() > 0) {
         if (httpShardHandlerFactory.isClosed()) {
-          return null;
+          throw new AlreadyClosedException();
         }
 
-        ShardResponse rsp = responses.take();
+        ShardResponse rsp = responses.poll(3, TimeUnit.SECONDS);
         if (rsp == null) {
-          break;
+          continue;
         }
         responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();
-        if (bailOnError && rsp.getException() != null) {
-          responseCancellableMap.clear();
-          return rsp; // if exception, return immediately
-        }
+        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
-          responseCancellableMap.clear();
           return rsp;
         }
       }
     } catch (InterruptedException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    responseCancellableMap.clear();
     return null;
   }
 

@@ -19,14 +19,20 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
 
 import java.io.IOException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -36,16 +42,15 @@ import org.apache.zookeeper.KeeperException;
  */
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
-   public OverseerCollectionConfigSetProcessor(CoreContainer cc, ZkStateReader zkStateReader, String myId,
-                                               final HttpShardHandler shardHandler,
+   public OverseerCollectionConfigSetProcessor(CoreContainer cc, ZkStateReader zkStateReader, String myId, LBHttp2SolrClient overseerLbClient,
                                                String adminPath, Stats stats, Overseer overseer,
                                                OverseerNodePrioritizer overseerNodePrioritizer) throws KeeperException {
     this(cc,
         zkStateReader,
         myId,
-        (HttpShardHandlerFactory) shardHandler.getShardHandlerFactory(),
         adminPath,
         stats,
+        overseerLbClient, (HttpShardHandlerFactory) cc.getShardHandlerFactory(),
         overseer,
         overseerNodePrioritizer,
         overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
@@ -56,9 +61,10 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
   }
 
   protected OverseerCollectionConfigSetProcessor(CoreContainer cc, ZkStateReader zkStateReader, String myId,
-                                        final HttpShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Stats stats,
+                                        LBHttp2SolrClient overseerLbClient,
+                                        HttpShardHandlerFactory shardHandlerFactory,
                                         Overseer overseer,
                                         OverseerNodePrioritizer overseerNodePrioritizer,
                                         OverseerTaskQueue workQueue,
@@ -69,7 +75,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         cc,
         myId,
         stats,
-        getOverseerMessageHandlerSelector(zkStateReader, myId, shardHandlerFactory,
+        getOverseerMessageHandlerSelector(zkStateReader, myId, overseerLbClient, shardHandlerFactory,
             adminPath, stats, overseer, overseerNodePrioritizer),
         overseerNodePrioritizer,
         workQueue,
@@ -81,13 +87,14 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
   private static OverseerMessageHandlerSelector getOverseerMessageHandlerSelector(
       ZkStateReader zkStateReader,
       String myId,
-      final HttpShardHandlerFactory shardHandlerFactory,
+      LBHttp2SolrClient overseerLbClient,
+      HttpShardHandlerFactory shardHandlerFactory,
       String adminPath,
       Stats stats,
       Overseer overseer,
       OverseerNodePrioritizer overseerNodePrioritizer) {
     final OverseerCollectionMessageHandler collMessageHandler = new OverseerCollectionMessageHandler(
-        zkStateReader, myId, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
+        zkStateReader, myId, overseerLbClient, shardHandlerFactory, adminPath, stats, overseer, overseerNodePrioritizer);
     final OverseerConfigSetMessageHandler configMessageHandler = new OverseerConfigSetMessageHandler(
         zkStateReader);
     return new OverseerMessageHandlerSelector() {
@@ -106,5 +113,10 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         return collMessageHandler;
       }
     };
+  }
+
+  @Override
+  public void close(boolean closeAndDone) {
+
   }
 }

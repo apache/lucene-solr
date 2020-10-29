@@ -139,7 +139,7 @@ public class ZkController implements Closeable, Runnable {
   private final int zkClientConnectTimeout;
   private final Supplier<List<CoreDescriptor>> descriptorsSupplier;
   private final ZkACLProvider zkACLProvider;
-  private final LBHttp2SolrClient overseerLbClient;
+
   private CloseTracker closeTracker;
   private boolean closeZkClient = false;
 
@@ -335,7 +335,7 @@ public class ZkController implements Closeable, Runnable {
       this.zkClientConnectTimeout = zkClient.getZkClientTimeout();
       this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
       this.zkClient = zkClient;
-      this.overseerLbClient = new LBHttp2SolrClient(cc.getUpdateShardHandler().getOverseerOnlyClient());
+
       // be forgiving and strip this off leading/trailing slashes
       // this allows us to support users specifying hostContext="/" in
       // solr.xml to indicate the root context, instead of hostContext=""
@@ -466,7 +466,7 @@ public class ZkController implements Closeable, Runnable {
               ParWork.close(overseerElector.getContext());
             }
             overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);
-            ZkController.this.overseer = new Overseer((HttpShardHandler) ((HttpShardHandlerFactory) cc.getShardHandlerFactory()).getShardHandler(overseerLbClient), cc.getUpdateShardHandler(),
+            ZkController.this.overseer = new Overseer(cc.getUpdateShardHandler(),
                     CommonParams.CORES_HANDLER_PATH, zkStateReader, ZkController.this, cloudConfig);
             overseerElector.setup(context);
             overseerElector.joinElection(context, true);
@@ -652,14 +652,13 @@ public class ZkController implements Closeable, Runnable {
 
     this.isClosed = true;
 
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(replicateFromLeaders);
       closer.collect(electionContexts);
       closer.collect(collectionToTerms);
       closer.collect(sysPropsCacher);
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
-      closer.collect(overseerLbClient);
     }
 
     try {
@@ -1127,7 +1126,7 @@ public class ZkController implements Closeable, Runnable {
 
         zkStateReader.createClusterStateWatchersAndUpdate();
 
-        this.overseer = new Overseer((HttpShardHandler) cc.getShardHandlerFactory().getShardHandler(overseerLbClient), cc.getUpdateShardHandler(),
+        this.overseer = new Overseer(cc.getUpdateShardHandler(),
                 CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         this.overseerRunningMap = Overseer.getRunningMap(zkClient);
         this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);

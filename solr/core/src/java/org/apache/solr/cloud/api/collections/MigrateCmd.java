@@ -161,8 +161,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     CompositeIdRouter sourceRouter = (CompositeIdRouter) sourceCollection.getRouter();
     DocRouter.Range keyHashRange = sourceRouter.keyHashRange(splitKey);
 
-    ShardHandlerFactory shardHandlerFactory = ocmh.shardHandlerFactory;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
     log.info("Hash range for split.key: {} is: {}", splitKey, keyHashRange);
     // intersect source range, keyHashRange and target range

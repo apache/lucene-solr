@@ -48,8 +48,6 @@ import org.junit.Test;
 
 public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
 
-  private static JettySolrRunner jetty;
-
   /**
    * Mock endpoint where the CUSS being tested in this class sends requests.
    */
@@ -134,7 +132,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
   
   @Test

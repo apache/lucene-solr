@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -74,14 +76,13 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -92,6 +93,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,6 +153,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String FAILURE_FIELD = "failure";
   public static final String SUCCESS_FIELD = "success";
+  final LBHttp2SolrClient overseerLbClient;
 
   Overseer overseer;
   HttpShardHandlerFactory shardHandlerFactory;
@@ -165,7 +168,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   // This is used for handling mutual exclusion of the tasks.
 
   final private LockTree lockTree = new LockTree();
-  ExecutorService tpe = new PerThreadExecService(ParWork.getRootSharedExecutor(), 15, true, true);
+  ExecutorService tpe = ParWork.getParExecutorService("overseerTPE", 0, 16, 0, new BlockingArrayQueue());
 
   public static final Random RANDOM;
   static {
@@ -184,7 +187,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private volatile boolean isClosed;
 
   public OverseerCollectionMessageHandler(ZkStateReader zkStateReader, String myId,
-                                          final HttpShardHandlerFactory shardHandlerFactory,
+                                          LBHttp2SolrClient overseerLbClient,
+                                          HttpShardHandlerFactory shardHandlerFactory,
                                           String adminPath,
                                           Stats stats,
                                           Overseer overseer,
@@ -193,6 +197,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     // assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
     this.shardHandlerFactory = shardHandlerFactory;
+    this.overseerLbClient = overseerLbClient;
     this.adminPath = adminPath;
     this.myId = myId;
     this.stats = stats;
@@ -335,7 +340,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     sreq.shards = new String[] {baseUrl};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseerLbClient);
     shardHandler.submit(sreq, baseUrl, sreq.params);
   }
 
@@ -715,7 +720,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
     @SuppressWarnings("deprecation")
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseerLbClient);
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
@@ -776,7 +781,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId, String adminPath, ZkStateReader zkStateReader, HttpShardHandlerFactory shardHandlerFactory,
                                                                        Overseer overseer) throws KeeperException, InterruptedException {
-    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.overseerLbClient);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REQUESTSTATUS.toString());
     params.set(CoreAdminParams.REQUESTID, requestId);
@@ -926,7 +931,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     } finally {
       if (tpe != null) {
         if (!tpe.isShutdown()) {
-          tpe.shutdown();
+          tpe.shutdownNow();
           try {
             tpe.awaitTermination(3, TimeUnit.SECONDS);
           } catch (InterruptedException e) {

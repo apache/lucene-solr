@@ -19,11 +19,13 @@ package org.apache.solr.analytics.legacy;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
   static public final int INT = 71;
   static public final int LONG = 36;

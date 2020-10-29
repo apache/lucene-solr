@@ -36,6 +36,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
@@ -645,8 +647,6 @@ public class Overseer implements SolrCloseable {
 
   private final ZkStateReader reader;
 
-  private final HttpShardHandler shardHandler;
-
   private final UpdateShardHandler updateShardHandler;
 
   private final String adminPath;
@@ -662,12 +662,13 @@ public class Overseer implements SolrCloseable {
 
   private final CloudConfig config;
 
+  public volatile Http2SolrClient overseerOnlyClient;
+  public volatile LBHttp2SolrClient overseerLbClient;
+
   // overseer not responsible for closing reader
-  public Overseer(HttpShardHandler shardHandler,
-      UpdateShardHandler updateShardHandler, String adminPath,
+  public Overseer(UpdateShardHandler updateShardHandler, String adminPath,
       final ZkStateReader reader, ZkController zkController, CloudConfig config) {
     this.reader = reader;
-    this.shardHandler = shardHandler;
     this.updateShardHandler = updateShardHandler;
     this.adminPath = adminPath;
     this.zkController = zkController;
@@ -696,7 +697,13 @@ public class Overseer implements SolrCloseable {
 //    } catch (Exception e) {
 //      log.error("", e);
 //    }
+    Http2SolrClient.Builder overseerOnlyClientBuilder = new Http2SolrClient.Builder();
+    overseerOnlyClientBuilder = overseerOnlyClientBuilder.connectionTimeout(15000).idleTimeout(500000);
 
+
+    overseerOnlyClient = overseerOnlyClientBuilder.markInternalRequest().build();
+    overseerOnlyClient.enableCloseLock();
+    this.overseerLbClient = new LBHttp2SolrClient(overseerOnlyClient);
 
     try {
       if (log.isDebugEnabled()) {
@@ -736,7 +743,7 @@ public class Overseer implements SolrCloseable {
 
     // nocommit - I don't know about this guy..
     OverseerNodePrioritizer overseerPrioritizer = null; // new OverseerNodePrioritizer(reader, getStateUpdateQueue(), adminPath, shardHandler.getShardHandlerFactory(), updateShardHandler.getUpdateOnlyHttpClient());
-    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(zkController.getCoreContainer(), reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer);
+    overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(zkController.getCoreContainer(), reader, id, overseerLbClient, adminPath, stats, Overseer.this, overseerPrioritizer);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
 
@@ -936,17 +943,31 @@ public class Overseer implements SolrCloseable {
 
     if (ccThread != null) {
       ((OverseerCollectionConfigSetProcessor) ccThread.getThread()).closing();
+    }
+
+    if (overseerLbClient != null) {
+      overseerLbClient.close();
+      overseerLbClient = null;
+    }
+
+    if (overseerOnlyClient != null) {
+      overseerOnlyClient.disableCloseLock();
+      overseerOnlyClient.close();
+      overseerLbClient = null;
+    }
+
+    if (ccThread != null) {
       ccThread.interrupt();
       ((OverseerCollectionConfigSetProcessor) ccThread.getThread()).close(closeAndDone);
     }
 
     if (updaterThread != null) {
       updaterThread.interrupt();
-      IOUtils.closeQuietly(updaterThread);
-    }
-
-    if (closeAndDone) {
-      shardHandler.cancelAll();
+      try {
+        updaterThread.getThread().close();
+      } catch (Exception e) {
+        log.warn("", e);
+      }
     }
 
     if (ccThread != null) {

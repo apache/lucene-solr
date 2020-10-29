@@ -62,9 +62,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient recoveryOnlyClient;
 
-  private final Http2SolrClient overseerOnlyClient;
-
-
   private final CloseableHttpClient defaultClient;
 
   private ExecutorService recoveryExecutor;
@@ -136,12 +133,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     searchOnlyClient = recoveryOnlyClientBuilder.markInternalRequest().build();
     searchOnlyClient.enableCloseLock();
 
-    Http2SolrClient.Builder overseerOnlyClientBuilder = new Http2SolrClient.Builder();
-    overseerOnlyClientBuilder = overseerOnlyClientBuilder.connectionTimeout(5000).idleTimeout(500000);
-
-
-    overseerOnlyClient = overseerOnlyClientBuilder.markInternalRequest().build();
-    overseerOnlyClient.enableCloseLock();
 
 //    ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
 //    if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -228,9 +219,6 @@ public class UpdateShardHandler implements SolrInfoBean {
   public Http2SolrClient getSearchOnlyClient() {
     return searchOnlyClient;
   }
-  public Http2SolrClient getOverseerOnlyClient() {
-    return overseerOnlyClient;
-  }
 
 
   public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
@@ -250,7 +238,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     if (recoveryOnlyClient != null) recoveryOnlyClient.disableCloseLock();
     if (searchOnlyClient != null) searchOnlyClient.disableCloseLock();
-    if (overseerOnlyClient != null) overseerOnlyClient.disableCloseLock();
+
 
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect("", () -> {
@@ -261,7 +249,6 @@ public class UpdateShardHandler implements SolrInfoBean {
       closer.collect(recoveryOnlyClient);
       closer.collect(searchOnlyClient);
       closer.collect(updateOnlyClient);
-      closer.collect(overseerOnlyClient);
       closer.collect(defaultConnectionManager);
       closer.collect("SolrInfoBean", () -> {
         SolrInfoBean.super.close();

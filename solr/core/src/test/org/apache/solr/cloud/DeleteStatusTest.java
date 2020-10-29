@@ -51,7 +51,7 @@ public class DeleteStatusTest extends SolrCloudTestCase {
       if (state == RequestStatusState.COMPLETED)
         break;
     //  assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
-      TimeUnit.MILLISECONDS.sleep(10);
+      TimeUnit.MILLISECONDS.sleep(100);
     }
     //assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
     return state;

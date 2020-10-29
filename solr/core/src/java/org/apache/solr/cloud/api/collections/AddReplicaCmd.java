@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -179,7 +178,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new IllegalStateException("Did not get enough positions to cover new replicas");
     }
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);

@@ -364,6 +364,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       log.debug("close() - start");
     }
     isClosed = true;
+
+
+    IOUtils.closeQuietly(selector);
+
+
     if (closeAndDone) {
       for (Future future : taskFutures.values()) {
         future.cancel(false);
@@ -380,7 +385,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
 
-    IOUtils.closeQuietly(selector);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {

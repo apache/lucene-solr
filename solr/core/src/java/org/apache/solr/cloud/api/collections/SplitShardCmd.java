@@ -27,16 +27,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -66,7 +63,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.TestInjection;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -197,7 +193,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
 
       @SuppressWarnings("deprecation")
-      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
 
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {

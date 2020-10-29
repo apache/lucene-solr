@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -88,6 +89,48 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
   public ShardHandler getShardHandler() {
     final ShardHandlerFactory factory = this;
     final ShardHandler wrapped = super.getShardHandler();
+    return new HttpShardHandler((HttpShardHandlerFactory) factory) {
+      @Override
+      public void prepDistributed(ResponseBuilder rb) {
+        wrapped.prepDistributed(rb);
+      }
+
+      @Override
+      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {
+        synchronized (TrackingShardHandlerFactory.this) {
+          if (isTracking()) {
+            queue.offer(new ShardRequestAndParams(sreq, shard, params));
+          }
+        }
+        wrapped.submit(sreq, shard, params);
+      }
+
+      @Override
+      public ShardResponse takeCompletedIncludingErrors() {
+        return wrapped.takeCompletedIncludingErrors();
+      }
+
+      @Override
+      public ShardResponse takeCompletedOrError() {
+        return wrapped.takeCompletedOrError();
+      }
+
+      @Override
+      public void cancelAll() {
+        wrapped.cancelAll();
+      }
+
+      @Override
+      public ShardHandlerFactory getShardHandlerFactory() {
+        return factory;
+      }
+    };
+  }
+
+  @Override
+  public ShardHandler getShardHandler(LBHttp2SolrClient lbClient) {
+    final ShardHandlerFactory factory = this;
+    final ShardHandler wrapped = super.getShardHandler(lbClient);
     return new HttpShardHandler((HttpShardHandlerFactory) factory) {
       @Override
       public void prepDistributed(ResponseBuilder rb) {

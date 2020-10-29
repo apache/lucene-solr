@@ -272,7 +272,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getOverseerOnlyClient(), isClosed));
+      // nocommit - make a general http2 client that is not also for updates, for now we use recovery client
+      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient(), isClosed));
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
 
     if (log.isInfoEnabled()) {
@@ -393,9 +394,8 @@ public final class ManagedIndexSchema extends IndexSchema {
               if (isClosed.isClosed()) {
                 return -1;
               }
-              // rather than waiting and re-polling, let's be proactive and tell the replica
-              // to refresh its schema from ZooKeeper, if that fails, then the
-              Thread.sleep(10); // slight delay before requesting version again
+
+              Thread.sleep(50); // slight delay before requesting version again
               log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }

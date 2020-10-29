@@ -916,7 +916,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
 
         this.closed = true;
 
-        int threads = getThreads() * 3;
+        int threads = getThreads() * 10;
         BlockingQueue<Runnable> jobs = (BlockingQueue<Runnable>) getQueue();
 
         // Fill the job queue with noop jobs to wakeup idle threads.

@@ -40,6 +40,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -100,11 +101,11 @@ public class SolrZkClient implements Closeable {
 
   // TODO: this is less efficient now, only using a single thread - allowing multiple threads leaves room for out of order cluster state updates
   // TODO: we want to allow more parralel for sure, but make sure state updates per collection are serial
-  final ExecutorService zkCallbackSerialExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 10000, new BlockingArrayQueue());
+  final ExecutorService zkCallbackSerialExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 0, new BlockingArrayQueue());
 
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 12, 10000, new BlockingArrayQueue());
+  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 12, 0, new BlockingArrayQueue());
 
-  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 10000, new BlockingArrayQueue());
+  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 0, new BlockingArrayQueue());
 
   private volatile boolean isClosed = false;
 
