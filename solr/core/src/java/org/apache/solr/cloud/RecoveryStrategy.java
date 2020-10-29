@@ -196,7 +196,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     try {
-      try (ParWork closer = new ParWork(this, true)) {
+      try (ParWork closer = new ParWork(this, true, true)) {
         closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
           try {
             prevSendPreRecoveryHttpUriRequest.cancel();

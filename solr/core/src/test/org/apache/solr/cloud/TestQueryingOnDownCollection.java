@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -29,6 +30,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -121,6 +123,18 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster.getZkClient().setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState)
         , true);
+
+    cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION_NAME, 10, TimeUnit.SECONDS, (l, c) -> {
+      if (c == null) return false;
+      for (Slice slice : c.getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          if (replica.getState() != Replica.State.DOWN) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
   }
 
   protected static final String STD_CONF = "{\n" +

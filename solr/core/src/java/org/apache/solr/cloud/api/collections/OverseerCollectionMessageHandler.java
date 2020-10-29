@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +58,7 @@ import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrCloseable;
@@ -779,6 +781,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     success.add(key, value);
   }
 
+  private static Set<CountDownLatch> latches = ConcurrentHashMap.newKeySet();
+
   private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(String nodeName, String requestId, String adminPath, ZkStateReader zkStateReader, HttpShardHandlerFactory shardHandlerFactory,
                                                                        Overseer overseer) throws KeeperException, InterruptedException {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler(overseer.overseerLbClient);
@@ -796,49 +800,58 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     sreq.actualShards = sreq.shards;
     sreq.params = params;
     CountDownLatch latch = new CountDownLatch(1);
+    latches.add(latch);
+    try {
+      // mn- from DistributedMap
+      final String asyncPathToWaitOn = Overseer.OVERSEER_ASYNC_IDS + "/mn-" + requestId;
 
-    // mn- from DistributedMap
-    final String asyncPathToWaitOn = Overseer.OVERSEER_ASYNC_IDS + "/mn-" + requestId;
+      Watcher waitForAsyncId = new Watcher() {
+        @Override
+        public void process(WatchedEvent event) {
+          if (Watcher.Event.EventType.None.equals(event.getType())) {
+            return;
+          }
+          if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
+            latch.countDown();
+          } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
+            latch.countDown();
+            return;
+          }
 
-    Watcher waitForAsyncId = new Watcher() {
-      @Override
-      public void process(WatchedEvent event) {
-        if (Watcher.Event.EventType.None.equals(event.getType())) {
-          return;
-        }
-        if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
-          latch.countDown();
-        } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
-          latch.countDown();
-          return;
-        }
+          Stat rstats2 = null;
+          try {
+            rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
+          } catch (KeeperException e) {
+            log.error("ZooKeeper exception", e);
+            return;
+          } catch (InterruptedException e) {
+            log.info("interrupted");
+            return;
+          }
+          if (rstats2 != null) {
+            latch.countDown();
+          }
 
-        Stat rstats2 = null;
-        try {
-          rstats2 = zkStateReader.getZkClient().exists(asyncPathToWaitOn, this);
-        } catch (KeeperException e) {
-          log.error("ZooKeeper exception", e);
-          return;
-        } catch (InterruptedException e) {
-          log.info("interrupted");
-          return;
         }
-        if (rstats2 != null) {
-          latch.countDown();
-        }
+      };
 
+      Stat rstats = zkStateReader.getZkClient().exists(asyncPathToWaitOn, waitForAsyncId);
+
+      if (rstats != null) {
+        latch.countDown();
       }
-    };
 
-    Stat rstats = zkStateReader.getZkClient().exists(asyncPathToWaitOn, waitForAsyncId);
+      if (overseer.isClosed()) {
+        throw new AlreadyClosedException();
+      }
 
-    if (rstats != null) {
-      latch.countDown();
-    }
+      boolean success = latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+      if (!success) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + asyncPathToWaitOn);
+      }
 
-    boolean success = latch.await(15, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
-    if (!success) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + asyncPathToWaitOn);
+    } finally {
+      latches.remove(latch);
     }
 
     shardHandler.submit(sreq, replica, sreq.params);
@@ -929,6 +942,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     } catch (NullPointerException e) {
       // okay
     } finally {
+      latches.forEach(countDownLatch -> countDownLatch.countDown());
+
       if (tpe != null) {
         if (!tpe.isShutdown()) {
           tpe.shutdownNow();

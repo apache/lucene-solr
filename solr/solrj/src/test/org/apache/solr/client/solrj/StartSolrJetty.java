@@ -32,7 +32,7 @@ import java.lang.invoke.MethodHandles;
 public class StartSolrJetty
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static void main( String[] args )
   {
     //System.setProperty("solr.solr.home", "../../../example/solr");
