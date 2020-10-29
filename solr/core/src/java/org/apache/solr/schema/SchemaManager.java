@@ -114,15 +114,6 @@ public class SchemaManager {
     schemaUpdateLock.lockInterruptibly();
     DistributedLock lock = null;
     try {
-      if (core.getCoreContainer().isZooKeeperAware()) {
-        SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
-        String lockPath = "/collections/" + core.getCoreDescriptor().getCollectionName() + "/schema_lock";
-        lock = new DistributedLock(zkClient, lockPath, zkClient.getZkACLProvider().getACLsToAdd(lockPath));
-        if (log.isDebugEnabled()) log.debug("get cluster lock");
-        while (!lock.lock()) {
-          Thread.sleep(250);
-        }
-      }
 
       while (!timeOut.hasTimedOut() && !req.getCore().getCoreContainer().isShutDown()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
@@ -181,9 +172,6 @@ public class SchemaManager {
     } finally {
       if (schemaUpdateLock.isHeldByCurrentThread()) {
         schemaUpdateLock.unlock();
-      }
-      if (core.getCoreContainer().isZooKeeperAware()) {
-        if (lock != null && lock.isOwner()) lock.unlock();
       }
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {

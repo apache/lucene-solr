@@ -82,7 +82,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
@@ -99,9 +98,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   protected volatile URLClassLoader resourceClassLoader;
   private final Path instanceDir;
 
-  private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(256);
-  private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(256);
-  private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(256);
+  private final Set<SolrCoreAware> waitingForCore = ConcurrentHashMap.newKeySet(64);
+  private final Set<SolrInfoBean> infoMBeans = ConcurrentHashMap.newKeySet(64);
+  private final Set<ResourceLoaderAware> waitingForResources = ConcurrentHashMap.newKeySet(64);
 
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to
@@ -647,7 +646,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(SolrCore core) {
     while (waitingForCore.size() > 0) {
-      try (ParWork worker = new ParWork(this)) {
+      try (ParWork worker = new ParWork(this, false, true)) {
         waitingForCore.forEach(aware -> {
           worker.collect("informSolrCore", ()-> {
             try {
@@ -668,7 +667,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(ResourceLoader loader) throws IOException {
     while (waitingForResources.size() > 0) {
-      try (ParWork worker = new ParWork(this)) {
+      try (ParWork worker = new ParWork(this, false, true)) {
         waitingForResources.forEach(r -> {
           worker.collect("informResourceLoader", ()-> {
             try {
@@ -695,7 +694,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     while (infoMBeans.size() > 0) {
 
-      try (ParWork worker = new ParWork(this)) {
+      try (ParWork worker = new ParWork(this, false, true)) {
         infoMBeans.forEach(imb -> {
           worker.collect("informInfoRegistry", ()-> {
               try {

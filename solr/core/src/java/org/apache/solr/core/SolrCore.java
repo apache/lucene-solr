@@ -196,9 +196,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
   private final CoreDescriptor coreDescriptor;
   private volatile String name;
+
   private String logid; // used to show what name is set
 
   private final Object closeAndWait = new Object();
+
+  private volatile boolean closing = false;
 
   private volatile boolean isReloaded = false;
 
@@ -1584,10 +1587,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
     }
     log.info("{} CLOSING SolrCore {}", logid, this);
-
+    this.closing = true;
     searcherReadyLatch.countDown();
 
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       List<Callable<Object>> closeHookCalls = new ArrayList<>();
 
       if (closeHooks != null) {
@@ -1761,6 +1764,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public boolean isClosed() {
     return refCount.get() < 0;
   }
+
+  public boolean isClosing() {
+    return closing;
+  }
+
 
   private final Collection<CloseHook> closeHooks = ConcurrentHashMap.newKeySet(128);
 
@@ -3186,7 +3194,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       //some files in conf directory may have  other than managedschema, overlay, params
-      try (ParWork worker = new ParWork("ConfListeners", false)) {
+      try (ParWork worker = new ParWork("ConfListeners", false, true)) {
 
           if (core.isClosed() || cc.isShutDown()) return;
           for (Runnable listener : core.confListeners) {

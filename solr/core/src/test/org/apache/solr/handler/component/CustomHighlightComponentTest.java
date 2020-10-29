@@ -112,7 +112,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     final int numShards = 3;
     final int numReplicas = 2;
     final int maxShardsPerNode = 100;
-    final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+    final int nodeCount = numShards*numReplicas;
 
     // create and configure cluster
     configureCluster(nodeCount)

@@ -74,6 +74,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   @Test
   @Ignore // nocommit - hmm, finding 0 docs return instead of 2? strange ...
   public void testSimpleQuery() throws Exception {
+
     //3 shards. 3rd shard won't have any data.
     createCollection("onecollection", "conf1", ImplicitDocRouter.NAME);
     createCollection("onecollection_local", "conf2", ImplicitDocRouter.NAME);
@@ -157,6 +158,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     // But should be different when querying across collection1_local and collection2_local
     // since the idf is calculated per shard
 
+    assertEquals(3, solrCluster.getSolrClient().getZkStateReader().getLiveNodes().size());
+
     createCollection("collection1", "conf1");
     createCollection("collection1_local", "conf2");
     createCollection("collection2", "conf1");
@@ -205,12 +208,10 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollectionWithImplicitRouter(name,config,"a,b,c",1);
       create.setMaxShardsPerNode(100);
       response = create.process(solrCluster.getSolrClient());
-      solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
       CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
       create.setMaxShardsPerNode(100);
       response = create.process(solrCluster.getSolrClient());
-      solrCluster.waitForActiveCollection(name, 2, 2);
     }
 
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {

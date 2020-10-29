@@ -807,7 +807,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public void close() throws IOException {
     log.debug("closing {}", this);
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(commitTracker);
       closer.collect(softCommitTracker);
     }

@@ -95,7 +95,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
                         CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0)
                         //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
     );
-    create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(3);
+    create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(100);
     cloudClient.request(create);
     
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
@@ -105,14 +105,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync(asyncId0, cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId0);
     boolean success = false;
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 60; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
         break;
       }
       assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
-      Thread.sleep(500);
+      Thread.sleep(250);
     }
     assertTrue(success);
     Http2SolrClient coreclient = cloudClient.getHttpClient();

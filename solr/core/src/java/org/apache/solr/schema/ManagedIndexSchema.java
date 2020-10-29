@@ -187,78 +187,61 @@ public final class ManagedIndexSchema extends IndexSchema {
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
 
-    DistributedLock lock = null;
-    if (collection != null) {
-      String lockPath = "/collections/" + collection + "/schema_lock";
-      lock = new DistributedLock(zkClient, lockPath, zkClient.getZkACLProvider().getACLsToAdd(lockPath));
-      if (log.isDebugEnabled()) log.debug("get cluster lock");
-      try {
-        while (!lock.lock()) {
-          Thread.sleep(50);
-        }
-      } catch (KeeperException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
+    final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+    boolean success = true;
+    boolean schemaChangedInZk = false;
     try {
 
-      final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
-      boolean success = true;
-      boolean schemaChangedInZk = false;
-      try {
-        // Persist the managed schema
-        StringWriter writer = new StringWriter();
-        persist(writer);
+      // Persist the managed schema
+      StringWriter writer = new StringWriter();
+      persist(writer);
 
-        final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
-        if (createOnly) {
-          try {
-            zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-            schemaZkVersion = 1;
-            log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
-          } catch (KeeperException.NodeExistsException e) {
-            // This is okay - do nothing and fall through
-            Stat stat = new Stat();
-            zkClient.getData(managedSchemaPath, null, stat, true);
-            log.info("Managed schema znode at {} already exists - no need to create it version at {}", managedSchemaPath, stat.getVersion());
-            schemaZkVersion = stat.getVersion();
-          }
-        } else {
-          try {
-            // Assumption: the path exists
-            Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
-            schemaZkVersion = stat.getVersion();
-            log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
-          } catch (KeeperException.BadVersionException e) {
-            if (schemaZkVersion == 1) {
-              try {
-                Stat stat = zkClient.setData(managedSchemaPath, data, 0, true);
-                schemaZkVersion = stat.getVersion();
-                log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
-              } catch (KeeperException.BadVersionException e1) {
-                Stat stat = new Stat();
-                zkClient.getData(managedSchemaPath, null, stat, true);
-
-                log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
-
-                success = false;
-                schemaChangedInZk = true;
-              }
-            } else {
+      final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
+      if (createOnly) {
+        try {
+          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
+          schemaZkVersion = 0;
+          log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
+        } catch (KeeperException.NodeExistsException e) {
+          // This is okay - do nothing and fall through
+          Stat stat = new Stat();
+          zkClient.getData(managedSchemaPath, null, stat, true);
+          log.info("Managed schema znode at {} already exists - no need to create it version at {}", managedSchemaPath, stat.getVersion());
+          schemaZkVersion = stat.getVersion();
+        }
+      } else {
+        try {
+          // Assumption: the path exists
+          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
+          schemaZkVersion = stat.getVersion();
+          log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
+        } catch (KeeperException.BadVersionException e) {
+          if (schemaZkVersion == 0) {
+            try {
+              Stat stat = zkClient.setData(managedSchemaPath, data, 1, true);
+              schemaZkVersion = stat.getVersion();
+              log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
+            } catch (KeeperException.BadVersionException e1) {
               Stat stat = new Stat();
               zkClient.getData(managedSchemaPath, null, stat, true);
 
-              log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
+              log.info("Bad version when trying to persist schema using {} found {}", 1, stat.getVersion());
 
               success = false;
               schemaChangedInZk = true;
             }
+          } else {
+            Stat stat = new Stat();
+            zkClient.getData(managedSchemaPath, null, stat, true);
+
+            log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
+
+            success = false;
+            schemaChangedInZk = true;
           }
         }
-      } catch (Exception e) {
+      }
+    } catch (Exception e) {
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt(); // Restore the interrupted status
         }
@@ -273,17 +256,14 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
 
       return success;
-    } finally {
-      if (lock != null && lock.isOwner()) lock.unlock();
-    }
+
   }
 
   /**
    * Block up to a specified maximum time until we see agreement on the schema
    * version in ZooKeeper across all replicas for a collection.
    */
-  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed)
-  {
+  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed) {
     if (zkController.getCoreContainer().isShutDown()) {
       throw new AlreadyClosedException();
     }
@@ -293,66 +273,56 @@ public final class ManagedIndexSchema extends IndexSchema {
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
       concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getOverseerOnlyClient(), isClosed));
-    if (concurrentTasks.isEmpty())
-      return; // nothing to wait for ...
-
+    if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
 
     if (log.isInfoEnabled()) {
-      log.info("Waiting up to {} secs for {} replicas to apply schema update version {} for collection {}"
-          , maxWaitSecs, concurrentTasks.size(), schemaZkVersion, collection);
+      log.info("Waiting up to {} secs for {} replicas to apply schema update version {} for collection {}", maxWaitSecs, concurrentTasks.size(), schemaZkVersion, collection);
     }
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
-    try {
-      List<Future<Integer>> results = new ArrayList<>(concurrentTasks.size());
-      for (GetZkSchemaVersionCallable call : concurrentTasks) {
-        results.add(ParWork.getRootSharedExecutor().submit(call));
-      }
 
-      // determine whether all replicas have the update
-      List<String> failedList = null; // lazily init'd
-      for (int f=0; f < results.size(); f++) {
-        int vers = -1;
-        Future<Integer> next = results.get(f);
-        // looks to have finished, but need to check the version value too
-        if (zkController.getCoreContainer().isShutDown()) {
-          for (int j=0; j < results.size(); j++) {
-            Future<Integer> fut = results.get(j);
-            fut.cancel(false);
-          }
-          throw new AlreadyClosedException();
+    List<Future<Integer>> results = new ArrayList<>(concurrentTasks.size());
+    for (GetZkSchemaVersionCallable call : concurrentTasks) {
+      results.add(ParWork.getRootSharedExecutor().submit(call));
+    }
+
+    // determine whether all replicas have the update
+    List<String> failedList = null; // lazily init'd
+    for (int f = 0; f < results.size(); f++) {
+      int vers = -1;
+      Future<Integer> next = results.get(f);
+      // looks to have finished, but need to check the version value too
+      if (zkController.getCoreContainer().isShutDown()) {
+        for (int j = 0; j < results.size(); j++) {
+          Future<Integer> fut = results.get(j);
+          fut.cancel(false);
         }
+        throw new AlreadyClosedException();
+      }
+      if (!next.isCancelled()) {
         try {
           vers = next.get();
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
           log.warn("", e);
           // shouldn't happen since we checked isCancelled
         }
-
-        if (vers == -1) {
-          String coreUrl = concurrentTasks.get(f).coreUrl;
-          log.warn("Core {} version mismatch! Expected {} but got {}", coreUrl, schemaZkVersion, vers);
-          if (failedList == null) failedList = new ArrayList<>();
-          failedList.add(coreUrl);
-        }
       }
 
-      // if any tasks haven't completed within the specified timeout, it's an error
-      if (failedList != null)
-        throw new SolrException(ErrorCode.SERVER_ERROR, failedList.size()+" out of "+(concurrentTasks.size() + 1)+
-            " replicas failed to update their schema to version "+schemaZkVersion+" within "+
-            maxWaitSecs+" seconds! Failed cores: "+failedList);
-
-    } catch (InterruptedException ie) {
-      log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
-          , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
-      ParWork.propagateInterrupt(ie);
-      throw new AlreadyClosedException();
+      if (vers == -1) {
+        String coreUrl = concurrentTasks.get(f).coreUrl;
+        log.warn("Core {} version mismatch! Expected {} but got {}", coreUrl, schemaZkVersion, vers);
+        if (failedList == null) failedList = new ArrayList<>();
+        failedList.add(coreUrl);
+      }
     }
 
+    // if any tasks haven't completed within the specified timeout, it's an error
+    if (failedList != null) throw new SolrException(ErrorCode.SERVER_ERROR,
+        failedList.size() + " out of " + (concurrentTasks.size() + 1) + " replicas failed to update their schema to version " + schemaZkVersion + " within " + maxWaitSecs + " seconds! Failed cores: "
+            + failedList);
+
     if (log.isInfoEnabled()) {
-      log.info("Took {}ms for {} replicas to apply schema update version {} for collection {}",
-          timer.getTime(), concurrentTasks.size(), schemaZkVersion, collection);
+      log.info("Took {}ms for {} replicas to apply schema update version {} for collection {}", timer.getTime(), concurrentTasks.size(), schemaZkVersion, collection);
     }
   }
 
@@ -361,7 +331,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     ZkStateReader zkStateReader = zkController.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection, true);
+    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
       final Slice[] activeSlices = docCollection.getActiveSlicesArr();
       for (Slice next : activeSlices) {
@@ -425,7 +395,7 @@ public final class ManagedIndexSchema extends IndexSchema {
               }
               // rather than waiting and re-polling, let's be proactive and tell the replica
               // to refresh its schema from ZooKeeper, if that fails, then the
-              Thread.sleep(50); // slight delay before requesting version again
+              Thread.sleep(10); // slight delay before requesting version again
               log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }

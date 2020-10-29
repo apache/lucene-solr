@@ -29,6 +29,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -63,9 +64,12 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
 
-    cloudClient.getZkStateReader().getZkClient().makePath("/configs/_default/solrconfig.snippet.randomindexconfig.xml",
-        TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(), false);
-
+    try {
+      cloudClient.getZkStateReader().getZkClient()
+          .makePath("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(), false);
+    } catch (KeeperException.NodeExistsException e) {
+      // okay
+    }
     createCollection(testCollectionName, 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 

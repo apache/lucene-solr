@@ -83,7 +83,7 @@ public class HttpShardHandler extends ShardHandler {
     this.lbClient = httpShardHandlerFactory.loadbalancer;
     this.pending = new AtomicInteger(0);
     this.responses = new LinkedBlockingQueue<>();
-    this.responseCancellableMap = new ConcurrentHashMap<>();
+    this.responseCancellableMap = new ConcurrentHashMap<>(32);
 
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
@@ -252,6 +252,9 @@ public class HttpShardHandler extends ShardHandler {
         }
 
         ShardResponse rsp = responses.take();
+        if (rsp == null) {
+          break;
+        }
         responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();

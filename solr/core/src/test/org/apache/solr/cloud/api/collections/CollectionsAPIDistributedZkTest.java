@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -98,7 +99,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
   @Test
   public void testNoConfigSetExist() throws Exception {
-    expectThrows(Exception.class, () -> {
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
               .process(cluster.getSolrClient());
     });

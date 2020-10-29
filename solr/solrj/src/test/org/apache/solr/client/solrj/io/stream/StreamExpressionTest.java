@@ -67,6 +67,7 @@ import org.junit.Test;
 @Slow
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+
 public class StreamExpressionTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";
@@ -83,7 +84,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    useAlias = random().nextBoolean();
+    // nocommit
+    useAlias = false; //random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
     } else {
@@ -91,14 +93,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     }
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collection, 2, 2);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
 
     // Create a collection for use by the filestream() expression, and place some files there for it to read.
     CollectionAdminRequest.createCollection(FILESTREAM_COLLECTION, "conf", 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(FILESTREAM_COLLECTION, 1, 1);
     final String dataDir = findUserFilesDataDir();
     populateFileStreamData(dataDir);
   }
@@ -3072,8 +3072,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   public void testFeaturesSelectionStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
-    CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection("destinationCollection", 2, 2);
+    CollectionAdminRequest.createCollection("destinationCollection", "ml", 2, 1)
+        .setMaxShardsPerNode(100).process(cluster.getSolrClient());
 
     UpdateRequest updateRequest = new UpdateRequest();
     for (int i = 0; i < 5000; i+=2) {

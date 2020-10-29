@@ -1033,7 +1033,7 @@ public class CoreContainer implements Closeable {
     }
 
 
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
 
       ZkController zkController = getZkController();
       if (zkController != null) {

@@ -258,13 +258,10 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     solrxmlString = "solr.xml";
     numJettys = 3;
     formatZk = true;
-
+    uploadSelectCollection1Config = false;
     sliceCount = 2;
-
     replicationFactor = 1;
-
     enableProxy = false;
-
   }
   
   protected String getBaseUrl(HttpSolrClient client) {

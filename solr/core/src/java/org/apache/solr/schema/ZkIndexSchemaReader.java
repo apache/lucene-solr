@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
@@ -81,7 +82,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
     zkLoader.getZkController().addOnReconnectListener(this);
   }
 
-  public Object getSchemaUpdateLock() { 
+  public ReentrantLock getSchemaUpdateLock() {
     return managedIndexSchemaFactory.getSchemaUpdateLock(); 
   }
 
@@ -163,10 +164,11 @@ public class ZkIndexSchemaReader implements OnReconnect {
   // package visibility for test purposes
   void updateSchema(Watcher watcher, int expectedZkVersion) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
-    synchronized (getSchemaUpdateLock()) {
+    getSchemaUpdateLock().lock();
+    try {
       final ManagedIndexSchema oldSchema = managedIndexSchemaFactory.getSchema();
       if (expectedZkVersion == -1 || oldSchema.schemaZkVersion < expectedZkVersion) {
-        byte[] data = zkClient.getData(managedSchemaPath, watcher, stat);
+        byte[] data = zkClient.getData(managedSchemaPath, watcher, stat, true);
         if (stat.getVersion() != oldSchema.schemaZkVersion) {
           if (log.isInfoEnabled()) {
             log.info("Retrieved schema version {} from Zookeeper", stat.getVersion());
@@ -184,6 +186,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
           log.info("Current schema version {} is already the latest", oldSchema.schemaZkVersion);
         }
       }
+    } finally {
+      getSchemaUpdateLock().unlock();
     }
   }
 
