@@ -70,7 +70,9 @@ public class SplitShardTest extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    cluster.deleteAllCollections();
+    // TODO: we should not do this when not needed, but why does it fail (timeout) in
+    // these kinds of tests very rarely
+    //cluster.deleteAllCollections();
   }
 
   @Test

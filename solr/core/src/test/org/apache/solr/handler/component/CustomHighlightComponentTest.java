@@ -123,7 +123,7 @@ public class CustomHighlightComponentTest extends SolrCloudTestCase {
     CollectionAdminRequest
     .createCollection(COLLECTION, "conf", numShards, numReplicas)
     .setMaxShardsPerNode(maxShardsPerNode)
-    .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    .process(cluster.getSolrClient());
   }
 
   @Test

@@ -158,9 +158,16 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // wait for recovery
     cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
 
-    Thread.sleep(500);
+    for (int i = 0; i < 10; i++) {
+      long cnt = cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound();
+      if (cnt < 100) {
+        Thread.sleep(100);
+      } else {
+        break;
+      }
+    }
 
-    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    assertEquals(100,  cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
