@@ -100,7 +100,8 @@ public static void configureCluster() throws Exception {
       .configure();
 
   String collection;
-  useAlias = random().nextBoolean();
+  // nocommit
+  useAlias = false; //random().nextBoolean();
   if (useAlias) {
     collection = COLLECTIONORALIAS + "_collection";
   } else {

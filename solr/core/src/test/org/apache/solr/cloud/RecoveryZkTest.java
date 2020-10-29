@@ -141,10 +141,10 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     indexThread.join();
     indexThread2.join();
 
+    cluster.waitForActiveCollection(collection, 1, 2);
+
     new UpdateRequest()
         .commit(cluster.getSolrClient(), collection);
-
-    cluster.waitForActiveCollection(collection, 1, 2);
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);
