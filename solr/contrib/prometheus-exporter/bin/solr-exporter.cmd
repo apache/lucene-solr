@@ -73,7 +73,6 @@ if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
 set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\lucene-libs\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*;%BASEDIR%\..\..\server\lib\ext\*
 set EXTRA_JVM_ARGUMENTS=-Dlog4j.configurationFile=file:///%BASEDIR%\..\..\server\resources\log4j2-console.xml
-goto endInit
 
 @REM Convert Environment Variables to Command Line Options
 set EXPORTER_ARGS=
@@ -84,6 +83,7 @@ IF NOT "%SCRAPE_INTERVAL%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -s %SCRAPE_INTE
 IF NOT "%NUM_THREADS%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -n %NUM_THREADS%
 IF NOT "%ZK_HOST%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -z %ZK_HOST%
 IF NOT "%SOLR_URL%"=="" set EXPORTER_ARGS=%EXPORTER_ARGS% -b %SOLR_URL%
+goto endInit
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
