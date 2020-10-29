@@ -40,6 +40,8 @@ Improvements
 
 * SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
 
+* SOLR-14972: Change default port of prometheus exporter to 8989 because it clashed with default embedded zookeeper port (janhoy)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)

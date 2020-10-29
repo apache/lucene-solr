@@ -87,7 +87,7 @@ The parameters in the example start commands shown above:
 Displays command line help and usage.
 
 `-p`, `--port`::
-The port where Prometheus will listen for new data. This port will be used to configure Prometheus. It can be any port not already in use on your server. The default is `9983`.
+The port where Prometheus will listen for new data. This port will be used to configure Prometheus. It can be any port not already in use on your server. The default is `8989`.
 
 `-b`, `--baseurl`::
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode. If you are running Solr in SolrCloud mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
