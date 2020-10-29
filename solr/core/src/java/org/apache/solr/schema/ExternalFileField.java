@@ -51,7 +51,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * <p>If the external file has already been loaded, and it is changed, those changes will not be visible until a commit has been done.
  * <p>The external file may be sorted or unsorted by the key field, but it will be substantially slower (untested) if it isn't sorted.
  * <p>Fields of this type may currently only be used as a ValueSource in a FunctionQuery.
- * <p>You can return the values as a field in the document by wrapping it: <code>fl=id,field(inventory_count)</code>.
+ * <p>You can return the value as a field in the document by wrapping it like so: <code>fl=id,field(inventory_count)</code>.
  *
  * @see ExternalFileFieldReloader
  */
