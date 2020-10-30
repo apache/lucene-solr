@@ -210,7 +210,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.NODE_NAME_PROP, createReplica.node
         ))
         .collect(Collectors.toList());
-    if (asyncId != null && results.get("failure") == null && results.get("exception") == null) {
+    if (results.get("failure") == null && results.get("exception") == null) {
       response.asyncFinalRunner = new Runnable() {
         @Override
         public void run() {

@@ -112,9 +112,12 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     // random create tlog or pull type replicas with nrt
     boolean isTlog = random().nextBoolean();
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 2, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     create.setMaxShardsPerNode(100);
     cloudClient.request(create);
+
+    // wait for recovery
+    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
     addDocs(coll, 100);
 
@@ -147,7 +150,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = false;
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 600; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
@@ -179,7 +182,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     moveReplica.process(cloudClient);
     checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
 
-    cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
+    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
@@ -280,7 +283,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private void checkNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
-    assertEquals(nodeName + " does not have expected number of cores", expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
+    assertTrue(nodeName + " does not have expected number of cores", expectedCores <= getNumOfCores(cloudClient, nodeName, collectionName));
   }
 
   private int getNumOfCores(CloudHttp2SolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {

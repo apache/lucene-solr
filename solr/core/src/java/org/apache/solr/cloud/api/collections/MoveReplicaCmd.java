@@ -293,40 +293,22 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     @SuppressWarnings({"rawtypes"})
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
-    ActiveReplicaWatcher watcher = null;
-    ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
-    if (replica.equals(slice.getLeader()) || waitForFinalState) {
-      watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
-      log.debug("-- registered watcher {}", watcher);
-      ocmh.zkStateReader.registerCollectionStateWatcher(coll.getName(), watcher);
-    }
+
+    AddReplicaCmd.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult, null);
+
     if (addResult.get("failure") != null) {
       String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
           " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
       log.warn(errorString);
       results.add("failure", errorString);
-      if (watcher != null) { // unregister
-        ocmh.zkStateReader.removeCollectionStateWatcher(coll.getName(), watcher);
-      }
       return;
     }
     // wait for the other replica to be active if the source replica was a leader
-    if (watcher != null) {
-      try {
-        log.debug("Waiting for leader's replica to recover.");
-        if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
-          String errorString = String.format(Locale.ROOT, "Timed out waiting for leader's replica to recover, collection=%s shard=%s" +
-              " on node=%s", coll.getName(), slice.getName(), targetNode);
-          log.warn(errorString);
-          results.add("failure", errorString);
-          return;
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("Replica {} is active - deleting the source...", watcher.getActiveReplicas());
-          }
-        }
-      } finally {
-        ocmh.zkStateReader.removeCollectionStateWatcher(coll.getName(), watcher);
+
+    log.debug("Waiting for leader's replica to recover.");
+    if (replica.equals(slice.getLeader()) || waitForFinalState) {
+      if (response != null && response.asyncFinalRunner != null) {
+        response.asyncFinalRunner.run();
       }
     }
 
