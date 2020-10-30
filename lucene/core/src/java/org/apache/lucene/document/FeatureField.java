@@ -66,8 +66,11 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  * 2<sup>-8</sup> = 0.00390625.
  * <p>
  * Given a scoring factor {@code S > 0} and its weight {@code w > 0}, there
- * are three ways that S can be turned into a score:
+ * are four ways that S can be turned into a score:
  * <ul>
+ *   <li>{@link #newLinearQuery w * S}. This is the simplest function
+ *       where no transformation is applied on the feature value, and
+ *       the feature value itself multiplied by weight defines the score.
  *   <li>{@link #newLogQuery w * log(a + S)}, with a &ge; 1. This function
  *       usually makes sense because the distribution of scoring factors
  *       often follows a power law. This is typically the case for pagerank for
@@ -216,6 +219,46 @@ public final class FeatureField extends Field {
     abstract Explanation explain(String field, String feature, float w, int freq);
     FeatureFunction rewrite(IndexReader reader) throws IOException { return this; }
   }
+
+  static final class LinearFunction extends FeatureFunction {
+    @Override
+    SimScorer scorer(float w) {
+      return new SimScorer() {
+        @Override
+        public float score(float freq, long norm) {
+          return (w * decodeFeatureValue(freq));
+        }
+      };
+    }
+
+    @Override
+    Explanation explain(String field, String feature, float w, int freq) {
+      float featureValue = decodeFeatureValue(freq);
+      float score = scorer(w).score(freq, 1L);
+      return Explanation.match(score,
+          "Linear function on the " + field + " field for the " + feature + " feature, computed as w * S from:",
+          Explanation.match(w, "w, weight of this function"),
+          Explanation.match(featureValue, "S, feature value"));
+    }
+
+    @Override
+    public String toString() {
+      return "LinearFunction";
+    }
+
+    @Override
+    public int hashCode() {
+      return getClass().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      return true;
+    }
+  };
 
   static final class LogFunction extends FeatureFunction {
 
@@ -405,6 +448,26 @@ public final class FeatureField extends Field {
    * query-dependent scores.
    */
   private static final float MAX_WEIGHT = Long.SIZE;
+
+
+  /**
+   * Return a new {@link Query} that will score documents as
+   * {@code weight * S} where S is the value of the static feature.
+   * @param fieldName     field that stores features
+   * @param featureName   name of the feature
+   * @param weight        weight to give to this feature, must be in (0,64]
+   * @throws IllegalArgumentException if weight is not in (0,64]
+   */
+  public static Query newLinearQuery(String fieldName, String featureName, float weight) {
+    if (weight <= 0 || weight > MAX_WEIGHT) {
+      throw new IllegalArgumentException("weight must be in (0, " + MAX_WEIGHT + "], got: " + weight);
+    }
+    Query q = new FeatureQuery(fieldName, featureName, new LinearFunction());
+    if (weight != 1f) {
+      q = new BoostQuery(q, weight);
+    }
+    return q;
+  }
 
   /**
    * Return a new {@link Query} that will score documents as
