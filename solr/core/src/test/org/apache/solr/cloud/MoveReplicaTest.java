@@ -160,8 +160,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       Thread.sleep(250);
     }
     assertTrue(success);
-    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
-    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
     // wait for recovery
     cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
@@ -176,6 +174,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
 
     assertEquals(100,  cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+
+    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
+    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
