@@ -225,7 +225,6 @@ The attributes that can be modified are:
 * rule
 * snitch
 * policy
-* withCollection
 * readOnly
 * other custom properties that use a `property.` prefix
 
