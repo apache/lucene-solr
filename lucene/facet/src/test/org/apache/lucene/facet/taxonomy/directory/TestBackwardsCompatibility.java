@@ -70,13 +70,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
 
         int ord1 = reader.getOrdinal(new FacetLabel("a"));
+        assert ord1 != TaxonomyReader.INVALID_ORDINAL;
         // Just asserting ord1 != TaxonomyReader.INVALID_ORDINAL is not enough to check compatibility
         assertNotNull(reader.getPath(ord1));
-        assert ord1 != TaxonomyReader.INVALID_ORDINAL;
 
         int ord2 = reader.getOrdinal(cp_b);
-        assertNotNull(reader.getPath(ord2));
         assert ord2 != TaxonomyReader.INVALID_ORDINAL;
+        assertNotNull(reader.getPath(ord2));
 
         reader.close();
         writer.close();
