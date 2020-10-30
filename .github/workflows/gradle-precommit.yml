@@ -1,4 +1,4 @@
-name: Gradle Tests
+name: Gradle Precommit
 
 on: 
   pull_request:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: gradle tests w/ Java 11
+    name: gradle precommit w/ Java 11
 
     runs-on: ubuntu-latest
 
@@ -20,6 +20,6 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Run all tests with Gradle
-      run: ./gradlew test
+    - name: Build with Gradle
+      run: ./gradlew precommit
     - uses: gradle/wrapper-validation-action@v1
