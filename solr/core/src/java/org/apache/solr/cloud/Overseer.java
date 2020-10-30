@@ -240,6 +240,8 @@ public class Overseer implements SolrCloseable {
         int fallbackQueueSize = Integer.MAX_VALUE;
         ZkDistributedQueue fallbackQueue = workQueue;
         while (!checkClosed()) {
+          if (log.isDebugEnabled()) log.debug("Start of Overseer loop ...");
+
           if (zkStateWriter == null) {
             try {
               zkStateWriter = new ZkStateWriter(reader, stats);
@@ -308,8 +310,8 @@ public class Overseer implements SolrCloseable {
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
 
-            long wait = 5000;
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> true));
+            long wait = 100;
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> false));
           } catch (AlreadyClosedException e) {
             if (isClosed()) {
               log.info("Overseer closed (AlreadyClosedException), exiting loop");
@@ -330,7 +332,7 @@ public class Overseer implements SolrCloseable {
           }
           try {
             Set<String> processedNodes = new HashSet<>();
-            int loopCnt = 0;
+
             while (queue != null && !queue.isEmpty()) {
               if (isClosed()) {
                 log.info("Closing");
@@ -355,12 +357,8 @@ public class Overseer implements SolrCloseable {
                 return;
               }
               // if an event comes in the next *ms batch it together
-              int wait = 10;
-              queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> !processedNodes.contains(node)));
-              if (loopCnt >= 1) {
-                break;
-              }
-              loopCnt++;
+              int wait = 5000;
+              queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> processedNodes.contains(node)));
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there
@@ -485,19 +483,16 @@ public class Overseer implements SolrCloseable {
 
       List<ZkWriteCommand> zkWriteOps = processMessage(prevState, message, operation);
 
-      cs = zkStateWriter.enqueueUpdate(prevState, zkWriteOps, () -> {
-        // log.info("on write callback");
-      });
+      cs = zkStateWriter.enqueueUpdate(prevState, zkWriteOps, callback);
       //  }
-
+      if (log.isDebugEnabled()) log.debug("State update consumed from queue {}", message);
       return cs;
     }
 
     private List<ZkWriteCommand> processMessage(ClusterState clusterState,
                                                 final ZkNodeProps message, final String operation) {
       if (log.isDebugEnabled()) {
-        // nocommit
-      //  log.debug("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
+        log.debug("processMessage(ClusterState clusterState={}, ZkNodeProps message={}, String operation={}) - start", clusterState, message, operation);
       }
 
       CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(operation);

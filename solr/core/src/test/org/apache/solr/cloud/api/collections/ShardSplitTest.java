@@ -117,7 +117,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   Add a replica. Ensure count matches in leader and replica.
    */
   @Test
-  @Ignore // nocommit
+  @Nightly // TODO: look at speeding this up
   public void testSplitStaticIndexReplication() throws Exception {
     doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.REWRITE);
   }
@@ -198,7 +198,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
           fail("We could not find a jetty to kill for replica: " + replica.getCoreUrl());
         }
 
-        cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
+        cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 2));
 
         // add a new replica for the sub-shard
         CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
@@ -209,7 +209,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
           state = addReplica.processAndWait(cloudClient, 30);
        // }
 
-        cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(2, 3));
+        cluster.waitForActiveCollection(collectionName, 30, TimeUnit.SECONDS,2, 3);
 
         if (state == RequestStatusState.COMPLETED)  {
           CountDownLatch newReplicaLatch = new CountDownLatch(1);

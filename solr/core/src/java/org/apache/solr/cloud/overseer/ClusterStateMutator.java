@@ -58,10 +58,10 @@ public class ClusterStateMutator {
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
     if (log.isDebugEnabled()) log.debug("building a new cName: " + cName);
-    if (clusterState.hasCollection(cName)) {
-      log.warn("Collection {} already exists. exit", cName);
-      return ZkStateWriter.NO_OP;
-    }
+//    if (clusterState.hasCollection(cName)) {
+//      log.warn("Collection {} already exists. exit", cName);
+//      return ZkStateWriter.NO_OP;
+//    }
 
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
     String routerName = routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);

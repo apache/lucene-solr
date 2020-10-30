@@ -104,7 +104,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     @Override
     public boolean test(String s) {
       // nocommit
-      return runningTasks.contains(s) || blockedTasks.containsKey(s) || runningZKTasks.contains(s);
+
+      boolean contains = runningTasks.contains(s) || blockedTasks.containsKey(s) || runningZKTasks.contains(s);
+      if (log.isDebugEnabled()) log.debug("test {} against {}, {}, {}  : {}", s, runningTasks, blockedTasks, runningZKTasks, contains);
+      return contains;
     }
 
     @Override
@@ -174,24 +177,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
 
     if (oldestItemInWorkQueue == null) hasLeftOverItems = false;
-    else log.debug(
-        "Found already existing elements in the work-queue. Last element: {}",
-        oldestItemInWorkQueue);
-
-    if (prioritizer != null) {
-      try {
-        prioritizer.prioritizeOverseerNodes(myId);
-      } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        if (e instanceof KeeperException.SessionExpiredException) {
-          return;
-        }
-        if (e instanceof InterruptedException
-            || e instanceof AlreadyClosedException) {
-          return;
-        }
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+    else {
+      if (log.isDebugEnabled()) log.debug("Found already existing elements in the work-queue. Last element: {}", oldestItemInWorkQueue);
     }
 
     while (!this.isClosed()) {
@@ -214,6 +201,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (waited) cleanUpWorkQueue();
 
         ArrayList<QueueEvent> heads = new ArrayList<>(blockedTasks.size() + MAX_PARALLEL_TASKS);
+        if (log.isDebugEnabled()) log.debug("Add {} blocked tasks to process", blockedTasks.size());
         heads.addAll(blockedTasks.values());
         blockedTasks.clear(); // clear it now; may get refilled below.
         //If we have enough items in the blocked tasks already, it makes
@@ -222,21 +210,20 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (heads.size() < MAX_BLOCKED_TASKS) {
           //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
           int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
-          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 1500);
+          if (log.isDebugEnabled()) log.debug("PeekTopN for {} items", toFetch);
+          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 5000);
           if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
           heads.addAll(newTasks);
         }
-
-        if (isClosed) return;
 
         taskBatch.batchId++;
 
         for (QueueEvent head : heads) {
 
-          if (runningZKTasks.contains(head.getId())) {
-            log.warn("Task found in running ZKTasks already, continuing");
-            continue;
-          }
+//          if (runningZKTasks.contains(head.getId())) {
+//            log.warn("Task found in running ZKTasks already, continuing");
+//            continue;
+//          }
 
           final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
           final String asyncId = message.getStr(ASYNC);
@@ -259,7 +246,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           OverseerMessageHandler.Lock lock = null;
           lock = messageHandler.lockTask(message, taskBatch);
           if (lock == null) {
-            log.debug("Exclusivity check failed for [{}]", message.toString());
+            if (log.isDebugEnabled()) log.debug("Exclusivity check failed for [{}]", message.toString());
             // we may end crossing the size of the MAX_BLOCKED_TASKS. They are fine
             if (blockedTasks.size() < MAX_BLOCKED_TASKS) blockedTasks.put(head.getId(), head);
             continue;
@@ -300,23 +287,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   private int runningTasksSize() {
-    if (log.isDebugEnabled()) {
-      log.debug("runningTasksSize() - start");
-    }
-
-    int returnint = runningTasks.size();
-    if (log.isDebugEnabled()) {
-      log.debug("runningTasksSize() - end");
-    }
-    return returnint;
-
+    return runningTasks.size();
   }
 
   private void cleanUpWorkQueue() throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) {
-      log.debug("cleanUpWorkQueue() - start");
-    }
-
     Set<Map.Entry<String, QueueEvent>> entrySet = completedTasks.entrySet();
     AtomicBoolean sessionExpired = new AtomicBoolean();
     AtomicBoolean interrupted = new AtomicBoolean();
@@ -344,10 +318,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     if (sessionExpired.get()) {
       throw new KeeperException.SessionExpiredException();
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug("cleanUpWorkQueue() - end");
     }
   }
 

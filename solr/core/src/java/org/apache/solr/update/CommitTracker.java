@@ -111,7 +111,12 @@ public final class CommitTracker implements Runnable, Closeable {
   
   public void close() {
 
-    lock.lock();
+    try {
+      lock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      return;
+    }
     try {
       this.closed = true;
       try {
@@ -122,7 +127,7 @@ public final class CommitTracker implements Runnable, Closeable {
       pending = null;
       ParWork.close(scheduler);
     } finally {
-      lock.unlock();
+      if (lock.isHeldByCurrentThread()) lock.unlock();
     }
     assert ObjectReleaseTracker.release(this);
   }

@@ -381,6 +381,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 60));//async
     }
 
+    // TODO: the restore call should do better at waiting here for youz
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * (replFactor + numTlogReplicas + numPullReplicas));
+
     //Check the number of results are the same
     DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
     assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
@@ -439,7 +442,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
-      try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(slice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+      try (Http2SolrClient leaderClient = new Http2SolrClient.Builder(slice.getReplicas().iterator().next().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
         long docsInShard = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false"))
             .getResults().getNumFound();
         shardToDocCount.put(shardName, (int) docsInShard);

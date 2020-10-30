@@ -640,7 +640,7 @@ public class ParWork implements Closeable {
       Thread.currentThread().interrupt();
     } else {
       if (infoLogMsg) {
-        log.info(t.getClass().getName() + " " + t.getMessage());
+        log.info(t.getClass().getName() + " " + t.getMessage(), t);
       } else {
         log.warn("Solr ran into an unexpected exception", t);
       }
@@ -656,7 +656,7 @@ public class ParWork implements Closeable {
   }
 
   public static void propagateInterrupt(String msg, Throwable t, boolean infoLogMsg) {
-    if (t instanceof InterruptedException) {
+    if (t != null && t instanceof InterruptedException) {
       log.info("Interrupted", t);
       Thread.currentThread().interrupt();
     } else {
@@ -666,7 +666,7 @@ public class ParWork implements Closeable {
         log.warn(msg, t);
       }
     }
-    if (t instanceof Error) {
+    if (t != null && t instanceof Error) {
       throw (Error) t;
     }
   }

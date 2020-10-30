@@ -2451,7 +2451,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher == null) {
           future = searcherExecutor.submit(() -> {
-            try (ParWork work = new ParWork(this, false)) {
+            try (ParWork work = new ParWork(this, true, true)) {
               for (SolrEventListener listener : firstSearcherListeners) {
                 work.collect("fistSearcherListeners", () -> {
                   listener.newSearcher(newSearcher, null);
@@ -2464,7 +2464,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         if (currSearcher != null) {
           future = searcherExecutor.submit(() -> {
-            try (ParWork work = new ParWork(this, false)) {
+            try (ParWork work = new ParWork(this, true, true)) {
               for (SolrEventListener listener : newSearcherListeners) {
                 work.collect("newSearcherListeners", () -> {
                   listener.newSearcher(newSearcher, null);
@@ -2845,7 +2845,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       m.put("xlsx",
           (QueryResponseWriter) Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter").getConstructor().newInstance());
     } catch (Exception e) {
-      ParWork.propagateInterrupt(e, true);
+      ParWork.propagateInterrupt("XLSXResponseWriter from extraction contrib not found on classpath", null, true);
       //don't worry; solrcell contrib not in class path
     }
   }

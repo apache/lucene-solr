@@ -100,7 +100,7 @@ public class ZkStateWriter {
   public ClusterState enqueueUpdate(ClusterState state, List<ZkWriteCommand> cmds, ZkWriteCallback callback) throws IllegalStateException, Exception {
     if (log.isDebugEnabled()) {
       // nocommit trace?
-      //log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
+      log.debug("enqueueUpdate(ClusterState prevState={}, List<ZkWriteCommand> cmds={}, updates={}, ZkWriteCallback callback={}) - start", state, cmds, updatesToWrite, callback);
     }
     Map<String,DocCollection> updateCmds = new LinkedHashMap<>(cmds.size());
 
@@ -189,6 +189,9 @@ public class ZkStateWriter {
       }
     }
 
+    if (callback != null) {
+      callback.onWrite();
+    }
 
     if (log.isDebugEnabled()) {
       log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");

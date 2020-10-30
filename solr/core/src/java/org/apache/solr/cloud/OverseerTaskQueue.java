@@ -23,7 +23,6 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
@@ -268,15 +267,16 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   public List<QueueEvent> peekTopN(int n, Predicate<String> excludeSet, long waitMillis)
       throws KeeperException, InterruptedException {
+    if (log.isDebugEnabled()) log.debug("peekTopN {} {}", n, excludeSet);
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
-    if (log.isDebugEnabled()) log.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
     Timer.Context time;
     if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
 
     try {
-      for (Pair<String, byte[]> element : peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
+      for (Pair<String, byte[]> element : peekElements(n, waitMillis, excludeSet)) {
+        if (log.isDebugEnabled()) log.debug("Add to topN {}", dir + "/" + element.first());
         topN.add(new QueueEvent(dir + "/" + element.first(),
             element.second(), null));
       }
@@ -305,7 +305,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public String getTailId() throws KeeperException, InterruptedException {
     // TODO: could we use getChildren here?  Unsure what freshness guarantee the caller needs.
-    TreeSet<String> orderedChildren = fetchZkChildren(null);
+    TreeSet<String> orderedChildren = fetchZkChildren(null, null);
 
     for (String headNode : orderedChildren.descendingSet())
       if (headNode != null) {
@@ -346,6 +346,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private volatile  byte[] bytes;
 
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
+      if (log.isDebugEnabled()) log.debug("Create QueueEvent with id {}", id);
       this.id = id;
       this.bytes = bytes;
       this.event = event;

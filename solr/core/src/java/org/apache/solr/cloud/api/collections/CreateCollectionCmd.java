@@ -314,7 +314,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           ShardRequest sreq = e.getValue();
           Replica replica = null;
           for (Replica rep : replicas.values()) {
-            if (rep.getCoreName().equals(sreq.params.get(CoreAdminParams.NAME)) && rep.getBaseUrl().equals(sreq.shards[0])) {
+            log.info("cmp {} {} {} {}", e.getKey(), sreq.shards[0], rep.getCoreName(), rep.getBaseUrl());
+            if (rep.getCoreName().equals(e.getKey()) && rep.getBaseUrl().equals(sreq.shards[0])) {
               sreq.params.set(CoreAdminParams.CORE_NODE_NAME, rep.getName());
               replica = rep;
               break;
@@ -322,8 +323,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           }
 
           if (sreq.params.get(CoreAdminParams.CORE_NODE_NAME) == null || replica == null) {
-            throw new IllegalStateException(
-                "No core node name found for " + e.getKey() + " replica=" + replica + " positions:" + replicaPositions.size() + " cores:" + coresToCreate.size() + " replicas:" + replicas.size());
+             continue;
           }
 
           log.info("Submit request to shard for for replica={}", sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
@@ -794,6 +794,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if (replicas == expectedReplicas) {
+        log.info("Found expected replicas={} {}", expectedReplicas, replicaMap);
         return true;
       }
       return false;

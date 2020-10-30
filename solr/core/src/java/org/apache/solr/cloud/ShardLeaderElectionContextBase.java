@@ -125,7 +125,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           }
         } else {
           try {
-            zkClient.delete(leaderSeqPath, -1);
+            if (leaderSeqPath != null) {
+              zkClient.delete(leaderSeqPath, -1);
+            }
           } catch (NoNodeException e) {
             // fine
           }
