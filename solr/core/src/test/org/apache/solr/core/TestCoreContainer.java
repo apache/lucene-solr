@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.CharacterCodingException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -204,6 +205,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // NOTE: unloading the core closes it too.
       cc.unload(testName, true, true, true);
       cc.create(testName, ImmutableMap.of("configSet", "minimal"));
+      // This call should fail with a different error because the core was
+      // created successfully above.
+      SolrException thrown = expectThrows(SolrException.class, () ->
+          cc.create(testName, ImmutableMap.of("configSet", "minimal")));
+      assertTrue(thrown.getMessage().contains("already exists"));
+
       cc.unload(testName, true, true, true);
     }
     cc.shutdown();

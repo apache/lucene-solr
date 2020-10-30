@@ -1268,7 +1268,7 @@ public class CoreContainer {
       // TODO: There's a race here, isn't there?
       // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
       if (getAllCoreNames().contains(coreName)) {
-        log.warn("Creating a core with existing name is not allowed");
+        log.warn("Creating a core with existing name is not allowed: '{}'", coreName);
         // TODO: Shouldn't this be a BAD_REQUEST?
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
       }
