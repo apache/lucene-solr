@@ -167,7 +167,7 @@ Example: `terms.upper.incl=true`
 
 The response to a terms request is a list of the terms and their document frequency values.
 
-You may also be interested in the {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
+You may also be interested in the {solr-javadocs}/core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
 
 == Terms Component Examples
 

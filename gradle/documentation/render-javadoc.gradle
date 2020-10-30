@@ -150,14 +150,15 @@ configure(project(":lucene:backward-codecs")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing @param tags
     javadocMissingLevel = "method"
-    // TODO: clean up split packages
+    // TODO: fix missing javadocs
     javadocMissingIgnore = [
-        "org.apache.lucene.codecs",
-        "org.apache.lucene.codecs.lucene50",
-        "org.apache.lucene.codecs.lucene60",
-        "org.apache.lucene.codecs.lucene80",
-        "org.apache.lucene.codecs.lucene84",
-        "org.apache.lucene.codecs.lucene86"
+        "org.apache.lucene.backward_codecs",
+        "org.apache.lucene.backward_codecs.lucene50",
+        "org.apache.lucene.backward_codecs.lucene60",
+        "org.apache.lucene.backward_codecs.lucene80",
+        "org.apache.lucene.backward_codecs.lucene84",
+        "org.apache.lucene.backward_codecs.lucene86",
+        "org.apache.lucene.backward_codecs.lucene87"
     ]
   }
 }

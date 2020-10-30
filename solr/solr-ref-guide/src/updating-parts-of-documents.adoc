@@ -416,7 +416,7 @@ For more information, please also see Yonik Seeley's presentation on https://www
 
 Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field.
 However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version.
-In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
+In situations like this the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
 The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
@@ -453,4 +453,4 @@ If `versionField` is specified as a list, then this parameter too must be specif
 `supportMissingVersionOnOldDocs`::
 This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.
 
-Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.
+Please consult the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.

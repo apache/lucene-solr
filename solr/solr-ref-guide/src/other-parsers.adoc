@@ -457,7 +457,7 @@ The graph is built according to linkages between documents based on the terms fo
 
 Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
 
-TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
 for its performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
@@ -1069,7 +1069,7 @@ For full analysis on all fields, including text fields, you may want to use the 
 
 == Ranking Query Parser
 
-The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/solr-core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/core/org/apache/solr/schema/RankField.html[`RankFields`] type.
 
 It allows queries like:
 
@@ -1271,7 +1271,7 @@ An optional parameter used to determine which of several query implementations s
 
 == XML Query Parser
 
-The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
+The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -1303,7 +1303,7 @@ The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQP
 ----
 |===
 
-The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
+The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -1331,7 +1331,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
+You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

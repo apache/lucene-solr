@@ -1228,14 +1228,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
-    parentContext.gauge(() -> {
-      try {
-        return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
-      } catch (IOException e) {
-        // default to spinning
-        return true;
-      }
-    }, true, "spins", Category.CORE.toString(), "fs");
   }
 
   public String getMetricTag() {
@@ -1738,6 +1730,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closeHooks = new ArrayList<>();
     }
     closeHooks.add(hook);
+  }
+
+  /**
+   * Remove a close callback hook
+   */
+  public void removeCloseHook(CloseHook hook) {
+    if (closeHooks != null) {
+      closeHooks.remove(hook);
+    }
+  }
+
+  // Visible for testing
+  public Collection<CloseHook> getCloseHooks() {
+    return Collections.unmodifiableCollection(closeHooks);
   }
 
   /**

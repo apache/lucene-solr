@@ -370,6 +370,13 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
+  public VectorValues getVectorValues(String fieldName) throws IOException {
+    ensureOpen();
+    LeafReader reader = fieldToReader.get(fieldName);
+    return reader == null ? null : reader.getVectorValues(fieldName);
+  }
+
+  @Override
   public void checkIntegrity() throws IOException {
     ensureOpen();
     for (LeafReader reader : completeReaderSet) {

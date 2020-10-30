@@ -23,17 +23,17 @@ Since the more costly ranking from query B is only applied to the top _N_ docume
 
 == Specifying a Ranking Query
 
-A Ranking query can be specified using the `rq` request parameter. The `rq` parameter must specify a query string that when parsed, produces a {solr-javadocs}/solr-core/org/apache/solr/search/RankQuery.html[RankQuery].
+A Ranking query can be specified using the `rq` request parameter. The `rq` parameter must specify a query string that when parsed, produces a {solr-javadocs}/core/org/apache/solr/search/RankQuery.html[RankQuery].
 
-Three rank queries are currently included in the Solr distribution. You can also configure a custom {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
+Three rank queries are currently included in the Solr distribution. You can also configure a custom {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] you have written, but most users can just use a parser provided with Solr.
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
 [cols="30,70",options="header"]
 |===
 |Parser |QParserPlugin class
-|rerank |{solr-javadocs}/solr-core/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]
-|xport |{solr-javadocs}/solr-core/org/apache/solr/search/ExportQParserPlugin.html[ExportQParserPlugin]
+|rerank |{solr-javadocs}/core/org/apache/solr/search/ReRankQParserPlugin.html[ReRankQParserPlugin]
+|xport |{solr-javadocs}/core/org/apache/solr/search/ExportQParserPlugin.html[ExportQParserPlugin]
 |ltr |LTRQParserPlugin
 |===
 
