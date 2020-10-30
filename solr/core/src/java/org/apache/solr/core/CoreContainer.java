@@ -1252,78 +1252,92 @@ public class CoreContainer {
    * @param parameters   the core parameters
    * @return the newly created core
    */
+  List<String> inFlightCreations = new ArrayList<>(); // See SOLR-14969
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
-
-    CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
-
-    // TODO: There's a race here, isn't there?
-    // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
-    if (getAllCoreNames().contains(coreName)) {
-      log.warn("Creating a core with existing name is not allowed");
-      // TODO: Shouldn't this be a BAD_REQUEST?
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
-    }
-
-    // Validate paths are relative to known locations to avoid path traversal
-    assertPathAllowed(cd.getInstanceDir());
-    assertPathAllowed(Paths.get(cd.getDataDir()));
-
-    boolean preExisitingZkEntry = false;
     try {
-      if (getZkController() != null) {
-        if (cd.getCloudDescriptor().getCoreNodeName() == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "coreNodeName missing " + parameters.toString());
+      synchronized (inFlightCreations) {
+        if (inFlightCreations.contains(coreName)) {
+          String msg = "Already creating a core with name '" + coreName + "', call aborted '";
+          log.warn(msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
-        preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
+        inFlightCreations.add(coreName);
+      }
+      CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
+
+      // TODO: There's a race here, isn't there?
+      // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
+      if (getAllCoreNames().contains(coreName)) {
+        log.warn("Creating a core with existing name is not allowed");
+        // TODO: Shouldn't this be a BAD_REQUEST?
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
       }
 
-      // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
-      // first and clean it up if there's an error.
-      coresLocator.create(this, cd);
+      // Validate paths are relative to known locations to avoid path traversal
+      assertPathAllowed(cd.getInstanceDir());
+      assertPathAllowed(Paths.get(cd.getDataDir()));
 
-      SolrCore core = null;
+      boolean preExisitingZkEntry = false;
       try {
-        solrCores.waitAddPendingCoreOps(cd.getName());
-        core = createFromDescriptor(cd, true, newCollection);
-        coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
-      } finally {
-        solrCores.removeFromPendingOps(cd.getName());
-      }
+        if (getZkController() != null) {
+          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "coreNodeName missing " + parameters.toString());
+          }
+          preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
+        }
 
-      return core;
-    } catch (Exception ex) {
-      // First clean up any core descriptor, there should never be an existing core.properties file for any core that
-      // failed to be created on-the-fly.
-      coresLocator.delete(this, cd);
-      if (isZooKeeperAware() && !preExisitingZkEntry) {
+        // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
+        // first and clean it up if there's an error.
+        coresLocator.create(this, cd);
+
+        SolrCore core = null;
         try {
-          getZkController().unregister(coreName, cd);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          SolrException.log(log, null, e);
-        } catch (KeeperException e) {
-          SolrException.log(log, null, e);
-        } catch (Exception e) {
-          SolrException.log(log, null, e);
+          solrCores.waitAddPendingCoreOps(cd.getName());
+          core = createFromDescriptor(cd, true, newCollection);
+          coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
+        } finally {
+          solrCores.removeFromPendingOps(cd.getName());
         }
-      }
 
-      Throwable tc = ex;
-      Throwable c = null;
-      do {
-        tc = tc.getCause();
-        if (tc != null) {
-          c = tc;
+        return core;
+      } catch (Exception ex) {
+        // First clean up any core descriptor, there should never be an existing core.properties file for any core that
+        // failed to be created on-the-fly.
+        coresLocator.delete(this, cd);
+        if (isZooKeeperAware() && !preExisitingZkEntry) {
+          try {
+            getZkController().unregister(coreName, cd);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            SolrException.log(log, null, e);
+          } catch (KeeperException e) {
+            SolrException.log(log, null, e);
+          } catch (Exception e) {
+            SolrException.log(log, null, e);
+          }
         }
-      } while (tc != null);
 
-      String rootMsg = "";
-      if (c != null) {
-        rootMsg = " Caused by: " + c.getMessage();
+        Throwable tc = ex;
+        Throwable c = null;
+        do {
+          tc = tc.getCause();
+          if (tc != null) {
+            c = tc;
+          }
+        } while (tc != null);
+
+        String rootMsg = "";
+        if (c != null) {
+          rootMsg = " Caused by: " + c.getMessage();
+        }
+
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
       }
-
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
+    } finally {
+      synchronized (inFlightCreations) {
+        inFlightCreations.remove(coreName);
+      }
     }
   }
 
@@ -1777,6 +1791,7 @@ public class CoreContainer {
     }
 
     if (cd == null) {
+      log.warn("Cannot unload non-existent core '{}'", name);
       throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
     }
 

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -145,6 +146,67 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     cc.shutdown();
 
+  }
+
+  @Test
+  public void testCreateThreaded() throws Exception {
+    final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
+    SolrCore[] myCore = new SolrCore[1]; // *cough*
+
+    class TestThread extends Thread {
+      final CoreContainer cc;
+      final String coreName;
+      boolean foundExpectedError = false;
+      TestThread(CoreContainer cc, String coreName) {
+        this.cc = cc;
+        this.coreName = coreName;
+      }
+      @Override
+      public void run() {
+        try {
+          myCore[0] = cc.create(coreName, ImmutableMap.of("configSet", "minimal"));
+        } catch (SolrException e) {
+          foundExpectedError = e.getMessage().contains("Already creating a core with name");
+        }
+      }
+      boolean getFoundExpectedError() { return foundExpectedError; }
+    }
+
+    // Try this a few times to increase the chances of failure.
+    for (int idx = 0; idx < 3; ++idx) {
+      TestThread[] threads = new TestThread[2];
+      // Let's add a little stress in here by using the same core name each
+      // time around. The final unload in the loop should delete the core and
+      // allow the next time around to succeed.
+      // This also checks the bookkeeping in CoreContainer.create
+      // that prevents muliple simulatneous creations,
+      // currently "inFlightCreations"
+      String testName = "coreToTest";
+      threads[0] = new TestThread(cc, testName);
+      threads[1] = new TestThread(cc, testName);
+      // One of these should always fail
+      threads[0].start();
+      threads[1].start();
+
+      threads[0].join();
+      threads[1].join();
+
+      // We can't guarantee that which thread failed, so go find it
+      assertTrue("One core creation should have failed",
+          threads[0].getFoundExpectedError() || threads[1].getFoundExpectedError());
+
+      assertTrue("One core creation should have succeeded",
+          threads[0].getFoundExpectedError() == false
+              ||   threads[1].getFoundExpectedError() == false);
+
+      // Check bookkeeping by removing and creating the core again, making sure
+      // we didn't leave the record of trying to create this core around.
+      // NOTE: unloading the core closes it too.
+      cc.unload(testName, true, true, true);
+      cc.create(testName, ImmutableMap.of("configSet", "minimal"));
+      cc.unload(testName, true, true, true);
+    }
+    cc.shutdown();
   }
 
   @Test
