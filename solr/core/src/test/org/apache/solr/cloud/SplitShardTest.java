@@ -115,7 +115,7 @@ public class SplitShardTest extends SolrCloudTestCase {
     try {
       splitShard.process(cluster.getSolrClient());
       fail("An exception should have been thrown");
-    } catch (SolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       expectedException = true;
     }
     assertTrue("Expected SolrException but it didn't happen", expectedException);

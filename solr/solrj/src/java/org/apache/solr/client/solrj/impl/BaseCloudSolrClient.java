@@ -1477,7 +1477,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
-      if (expectedReplicas == 0) {
+      if (expectedReplicas == 0 && !exact) {
         return true;
       }
 

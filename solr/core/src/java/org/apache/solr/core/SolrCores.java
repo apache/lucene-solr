@@ -150,9 +150,6 @@ class SolrCores implements Closeable {
   // Returns the old core if there was a core of the same name.
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
-    if (isClosed()) {
-      throw new AlreadyClosedException();
-    }
     if (cd.isTransient()) {
       if (getTransientCacheHandler() != null) {
         return getTransientCacheHandler().addCore(cd.getName(), core);
