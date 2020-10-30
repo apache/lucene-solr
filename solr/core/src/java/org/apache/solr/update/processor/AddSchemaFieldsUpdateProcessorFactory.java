@@ -398,7 +398,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       // use the cmd's schema rather than the latest, because the schema
       // can be updated during processing.  Using the cmd's schema guarantees
       // this will be detected and the cmd's schema updated.
-      IndexSchema oldSchema = cmd.getReq().getSchema();
+      IndexSchema oldSchema;
       for (;;) {
         if (cmd.getReq().getCore().isClosing()) {
           throw new AlreadyClosedException();
@@ -407,6 +407,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
+        oldSchema = cmd.getReq().getSchema();
         FieldNameSelector selector = buildSelector(oldSchema);
         Map<String,List<SolrInputField>> unknownFields = new HashMap<>();
         getUnknownFields(selector, doc, unknownFields);
@@ -432,7 +433,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           final String message = "This ConfigSet is immutable.";
           throw new SolrException(BAD_REQUEST, message);
         }
-        if (log.isDebugEnabled()) {
+        if (log.isTraceEnabled()) {
           StringBuilder builder = new StringBuilder(1024);
           builder.append("\nFields to be added to the schema: [");
           boolean isFirst = true;
@@ -459,7 +460,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             builder.append("}");
           }
           builder.append("]");
-          if (log.isDebugEnabled()) log.debug("{}", builder);
+          if (log.isTraceEnabled()) log.trace("{}", builder);
         }
         // Need to hold the lock during the entire attempt to ensure that
         // the schema on the request is the latest
