@@ -154,6 +154,8 @@ Improvements
 * SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
   (Cao Manh Dat, Mike Drob, hossman, shalin)
 
+* SOLR-14955: Add env var options for the Prometheus Exporter bin scripts (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
