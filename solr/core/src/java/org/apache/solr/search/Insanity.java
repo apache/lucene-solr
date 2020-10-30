@@ -68,7 +68,7 @@ public class Insanity {
           filteredInfos.add(new FieldInfo(fi.name, fi.number, fi.hasVectors(), fi.omitsNorms(),
                                           fi.hasPayloads(), fi.getIndexOptions(), DocValuesType.NONE, -1, Collections.emptyMap(),
                                           fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
-                                          fi.getVectorDimension(), fi.getVectorScoreFunction(), fi.isSoftDeletesField()));
+                                          fi.getVectorDimension(), fi.getVectorSearchStrategy(), fi.isSoftDeletesField()));
         } else {
           filteredInfos.add(fi);
         }
