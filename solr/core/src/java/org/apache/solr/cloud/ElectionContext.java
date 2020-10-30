@@ -44,6 +44,7 @@ public abstract class ElectionContext implements Closeable {
   }
 
   public void close() {
+    leaderSeqPath = null;
     assert ObjectReleaseTracker.release(this);
   }
 

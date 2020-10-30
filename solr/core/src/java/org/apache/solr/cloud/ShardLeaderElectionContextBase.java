@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 class ShardLeaderElectionContextBase extends ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final SolrZkClient zkClient;
-  private volatile boolean closed;
+  protected volatile boolean closed;
   private volatile Integer leaderZkNodeParentVersion;
 
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
@@ -62,6 +62,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       log.error("Exception canceling election", e);
+    } finally {
+      leaderZkNodeParentVersion = null;
     }
   }
 
@@ -137,7 +139,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         zkClient.getData(Paths.get(leaderPath).getParent().toString(), null, stat);
         log.error("Exception trying to cancel election {} {} {}", stat.getVersion(), e.getClass().getName(), e.getMessage(), e);
       }
-
+      leaderZkNodeParentVersion = null;
   }
 
   @Override

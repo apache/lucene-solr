@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -128,6 +129,7 @@ public class DeleteReplicaCmd implements Cmd {
     }
 
     deleteCore(slice, collectionName, replicaName, message, shard, results, onComplete);
+    waitForCoreNodeGone(collectionName, shard, replicaName, 30000);
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
@@ -197,7 +199,10 @@ public class DeleteReplicaCmd implements Cmd {
         // callDeleteReplica on all replicas
         for (String replica : replicas) {
           if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-          worker.collect("deleteCore", () -> { deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete); return replica; });
+          worker.collect("deleteCore", () -> {
+            deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete); return replica;
+
+          });
         }
         results.add("shard_id", shardId);
         results.add("replicas_deleted", replicas);
@@ -289,6 +294,14 @@ public class DeleteReplicaCmd implements Cmd {
     params.set(CoreAdminParams.DELETE_METRICS_HISTORY, message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true));
 
     boolean isLive = ocmh.zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
+
+    try {
+      ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      results.add("failure", "Could not complete delete " + e.getMessage());
+    }
+
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
     if (isLive) {
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
@@ -300,11 +313,17 @@ public class DeleteReplicaCmd implements Cmd {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
           // try and ensure core info is removed from cluster state
         }
-        ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
+
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         results.add("failure", "Could not complete delete " + e.getMessage());
       } finally {
+        try {
+          ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
+        } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
+          results.add("failure", "Could not complete delete " + e.getMessage());
+        }
         if (onComplete != null) onComplete.run();
       }
     } catch (Exception ex) {

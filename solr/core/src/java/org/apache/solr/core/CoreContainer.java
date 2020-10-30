@@ -66,8 +66,10 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.PerThreadExecService;
@@ -77,6 +79,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -247,7 +250,7 @@ public class CoreContainer implements Closeable {
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
- // private Set<Future> zkRegFutures = zkRegFutures = ConcurrentHashMap.newKeySet();
+  // private Set<Future> zkRegFutures = zkRegFutures = ConcurrentHashMap.newKeySet();
 
 
   // Bits for the state variable.
@@ -372,7 +375,7 @@ public class CoreContainer implements Closeable {
 
       work.collect("",() -> {
         shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(),
-                loader, updateShardHandler);
+            loader, updateShardHandler);
         if (shardHandlerFactory instanceof SolrMetricProducer) {
           SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
           metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
@@ -389,17 +392,17 @@ public class CoreContainer implements Closeable {
 
     solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(32, Runtime.getRuntime().availableProcessors()),
         false, false);
-//    if (solrCoreLoadExecutor == null) {
-//      synchronized (CoreContainer.class) {
-//        if (solrCoreLoadExecutor == null) {
-////          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
-////                  2, TimeUnit.SECOND,
-////                  new BlockingArrayQueue<>(100, 10),
-////                  new SolrNamedThreadFactory("SolrCoreLoader"));
-//          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
-//        }
-//      }
-   // }
+    //    if (solrCoreLoadExecutor == null) {
+    //      synchronized (CoreContainer.class) {
+    //        if (solrCoreLoadExecutor == null) {
+    ////          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
+    ////                  2, TimeUnit.SECOND,
+    ////                  new BlockingArrayQueue<>(100, 10),
+    ////                  new SolrNamedThreadFactory("SolrCoreLoader"));
+    //          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
+    //        }
+    //      }
+    // }
 
   }
 
@@ -898,17 +901,17 @@ public class CoreContainer implements Closeable {
     }
     if (isZooKeeperAware()) {
 
-//      if (isZooKeeperAware()) {
-//        for (Future<SolrCore> future : zkRegFutures) {
-//          try {
-//            future.get();
-//          } catch (InterruptedException e) {
-//            ParWork.propagateInterrupt(e);
-//          } catch (ExecutionException e) {
-//            log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
-//          }
-//        }
-//      }
+      //      if (isZooKeeperAware()) {
+      //        for (Future<SolrCore> future : zkRegFutures) {
+      //          try {
+      //            future.get();
+      //          } catch (InterruptedException e) {
+      //            ParWork.propagateInterrupt(e);
+      //          } catch (ExecutionException e) {
+      //            log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
+      //          }
+      //        }
+      //      }
 
       zkSys.getZkController().checkOverseerDesignate();
       // initialize this handler here when SolrCloudManager is ready
@@ -977,10 +980,10 @@ public class CoreContainer implements Closeable {
   private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
       log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
-          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
-          "external.  See https://s.apache.org/solrsecurity for more info",
-            (authenticationPlugin != null) ? "enabled" : "disabled",
-            (authorizationPlugin != null) ? "enabled" : "disabled");
+              "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+              "external.  See https://s.apache.org/solrsecurity for more info",
+          (authenticationPlugin != null) ? "enabled" : "disabled",
+          (authorizationPlugin != null) ? "enabled" : "disabled");
     }
 
     if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
@@ -1013,8 +1016,8 @@ public class CoreContainer implements Closeable {
     isShutDown = true;
 
     if (solrCores != null) {
-       solrCores.closing();
-     }
+      solrCores.closing();
+    }
 
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
@@ -1038,8 +1041,8 @@ public class CoreContainer implements Closeable {
 
       ZkController zkController = getZkController();
       if (zkController != null) {
-         OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
-         overseerCollectionQueue.allowOverseerPendingTasksToComplete();
+        OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
+        overseerCollectionQueue.allowOverseerPendingTasksToComplete();
       }
 
       closer.collect("replayUpdateExec", () -> {
@@ -1175,10 +1178,10 @@ public class CoreContainer implements Closeable {
       throw new RuntimeException("Can not register a null core.");
     }
 
-//    if (isShutDown) {
-//      core.close();
-//      throw new IllegalStateException("This CoreContainer has been closed");
-//    }
+    //    if (isShutDown) {
+    //      core.close();
+    //      throw new IllegalStateException("This CoreContainer has been closed");
+    //    }
     SolrCore old = solrCores.putCore(cd, core);
     /*
      * set both the name of the descriptor and the name of the
@@ -1242,14 +1245,14 @@ public class CoreContainer implements Closeable {
     boolean preExisitingZkEntry = false;
     try {
       if (getZkController() != null) {
-// in some rare case in TestTolerantUpdateProcessorRandomCloud, this happens with
-// non legacy and picking and removing this check makes it pass
-//        if (!Overseer.isLegacy(getZkController().getZkStateReader())) {
-//          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
-//            throw new SolrException(ErrorCode.SERVER_ERROR, "non legacy mode coreNodeName missing " + parameters.toString());
-//
-//          }
-//        }
+        // in some rare case in TestTolerantUpdateProcessorRandomCloud, this happens with
+        // non legacy and picking and removing this check makes it pass
+        //        if (!Overseer.isLegacy(getZkController().getZkStateReader())) {
+        //          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+        //            throw new SolrException(ErrorCode.SERVER_ERROR, "non legacy mode coreNodeName missing " + parameters.toString());
+        //
+        //          }
+        //        }
         preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
       }
 
@@ -1626,12 +1629,12 @@ public class CoreContainer implements Closeable {
         // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
         // CoreDescriptor and we need to reload it from the disk files
         CoreDescriptor cd = core.getCoreDescriptor();
-//        if (core.getDirectoryFactory().isPersistent()) {
-//          cd = reloadCoreDescriptor(core.getCoreDescriptor());
-//        } else {
-//          cd = core.getCoreDescriptor();
-//        }
-//        solrCores.addCoreDescriptor(cd);
+        //        if (core.getDirectoryFactory().isPersistent()) {
+        //          cd = reloadCoreDescriptor(core.getCoreDescriptor());
+        //        } else {
+        //          cd = core.getCoreDescriptor();
+        //        }
+        //        solrCores.addCoreDescriptor(cd);
         Closeable oldCore = null;
         boolean success = false;
         try {
@@ -1747,6 +1750,17 @@ public class CoreContainer implements Closeable {
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
 
     if (name != null) {
+      if (isZooKeeperAware() && cd != null && cd.getCloudDescriptor() != null) {
+        CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+        cloudDesc.getCoreNodeName();
+        try {
+          deleteCoreNode(cloudDesc.getCollectionName(), cloudDesc.getCoreNodeName(), getZkController().getNodeName(), getZkController().getBaseUrl(), name);
+        } catch (Exception e) {
+          log.warn("", e);
+        }
+      }
+
+
       // check for core-init errors first
       CoreLoadFailure loadFailure = coreInitFailures.remove(name);
       if (loadFailure != null) {
@@ -1772,7 +1786,11 @@ public class CoreContainer implements Closeable {
 
     SolrCore core = null;
     try {
+
       core = solrCores.remove(name);
+      if (core != null) {
+        core.closing = true;
+      }
 
       if (cd == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
@@ -1834,6 +1852,17 @@ public class CoreContainer implements Closeable {
         }
       }
     }
+  }
+
+  void deleteCoreNode(String collectionName, String replicaName, String nodeName, String baseUrl, String core) throws Exception {
+    ZkNodeProps m = new ZkNodeProps(
+        Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
+        ZkStateReader.CORE_NAME_PROP, core,
+        ZkStateReader.NODE_NAME_PROP, nodeName,
+        ZkStateReader.COLLECTION_PROP, collectionName,
+        ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
+        ZkStateReader.BASE_URL_PROP, baseUrl);
+    getZkController().getOverseer().offerStateUpdate(Utils.toJSON(m));
   }
 
   public void rename(String name, String toName) {
@@ -1937,9 +1966,9 @@ public class CoreContainer implements Closeable {
     // todo: ensure only transient?
     if (core == null) {
       // nocommit - this does not seem right - should stop a core from loading on startup, before zk reg, not from getCore ...
-//      if (isZooKeeperAware()) {
-//        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
-//      }
+      //      if (isZooKeeperAware()) {
+      //        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
+      //      }
       core = createFromDescriptor(desc, false); // This should throw an error if it fails.
     }
 
@@ -2031,9 +2060,9 @@ public class CoreContainer implements Closeable {
   }
 
   // Primarily for transient cores when a core is aged out.
-//  public void queueCoreToClose(SolrCore coreToClose) {
-//    solrCores.queueCoreToClose(coreToClose);
-//  }
+  //  public void queueCoreToClose(SolrCore coreToClose) {
+  //    solrCores.queueCoreToClose(coreToClose);
+  //  }
 
   /**
    * Gets a solr core descriptor for a core that is not loaded. Note that if the caller calls this on a

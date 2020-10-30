@@ -400,6 +400,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
+    this.isClosed = false;
+    super.closed = false;
     leaderElector.joinElection(this, true);
 
     core.getUpdateHandler().getSolrCoreState().doRecovery(zkController.getCoreContainer(), core.getCoreDescriptor());

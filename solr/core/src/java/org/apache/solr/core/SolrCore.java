@@ -201,7 +201,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private final Object closeAndWait = new Object();
 
-  private volatile boolean closing = false;
+  volatile boolean closing = false;
 
   private volatile boolean isReloaded = false;
 

@@ -1541,6 +1541,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     Set<Long> bufferUpdates = new HashSet<>();
 
     public RecentUpdates(Deque<TransactionLog> logList, int numRecordsToKeep) {
+      log.info("RecentUpdates logList size={}, numRecordsToKeep={}", logList.size(), numRecordsToKeep);
       this.logList = logList;
       this.numRecordsToKeep = numRecordsToKeep;
       boolean success = false;

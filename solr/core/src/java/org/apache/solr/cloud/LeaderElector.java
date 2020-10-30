@@ -98,76 +98,65 @@ public  class LeaderElector {
    */
   private boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
+    log.info("Check if I am leader");
     if (context.isClosed()) {
       throw new AlreadyClosedException();
     }
     context.checkIfIamLeaderFired();
     boolean checkAgain = false;
-    if (!getContext().isClosed()) {
-      // get all other numbers...
-      final String holdElectionPath = context.electionPath + ELECTION_NODE;
-      List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
-      sortSeqs(seqs);
 
-      String leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
-      if (!seqs.contains(leaderSeqNodeName)) {
-        log.warn("Our node is no longer in line to be leader");
-        return false;
+    // get all other numbers...
+    final String holdElectionPath = context.electionPath + ELECTION_NODE;
+    List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
+    sortSeqs(seqs);
+
+    String leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
+    if (!seqs.contains(leaderSeqNodeName)) {
+      log.warn("Our node is no longer in line to be leader");
+      return false;
+    }
+
+    if (leaderSeqNodeName.equals(seqs.get(0))) {
+      // I am the leader
+      log.info("I am the leader");
+
+      runIamLeaderProcess(context, replacement);
+
+    } else {
+      log.info("I am not the leader - watch the node below me");
+      String toWatch = seqs.get(0);
+      for (String node : seqs) {
+        if (leaderSeqNodeName.equals(node)) {
+          break;
+        }
+        toWatch = node;
       }
+      try {
+        String watchedNode = holdElectionPath + "/" + toWatch;
 
-
-      if (leaderSeqNodeName.equals(seqs.get(0))) {
-        // I am the leader
-        try {
-          if (!context.isClosed()) {
-            runIamLeaderProcess(context, replacement);
-          }
-
-        } catch (KeeperException.NodeExistsException e) {
-          log.error("node exists", e);
-          retryElection(context, false);
-          return false;
-        }
-      } else {
-        // I am not the leader - watch the node below me
-        String toWatch = seqs.get(0);
-        for (String node : seqs) {
-          if (leaderSeqNodeName.equals(node)) {
-            break;
-          }
-          toWatch = node;
-        }
-        try {
-          String watchedNode = holdElectionPath + "/" + toWatch;
-
-          ElectionWatcher oldWatcher = watcher;
-          if (oldWatcher != null) oldWatcher.cancel();
-          zkClient.getData(watchedNode,
-                  watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context),
-                  null);
-          if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader", watchedNode);
-        } catch (KeeperException.SessionExpiredException e) {
-          log.error("ZooKeeper session has expired");
-          throw e;
-        } catch (KeeperException.NoNodeException e) {
-          // the previous node disappeared, check if we are the leader again
-          checkAgain = true;
-        } catch (KeeperException e) {
-          // we couldn't set our watch for some other reason, retry
-          log.warn("Failed setting watch", e);
-          checkAgain = true;
-        }
+        ElectionWatcher oldWatcher = watcher;
+        if (oldWatcher != null) oldWatcher.cancel();
+        zkClient.getData(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context), null);
+        if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader", watchedNode);
+      } catch (KeeperException.SessionExpiredException e) {
+        log.error("ZooKeeper session has expired");
+        throw e;
+      } catch (KeeperException.NoNodeException e) {
+        // the previous node disappeared, check if we are the leader again
+        checkAgain = true;
+      } catch (KeeperException e) {
+        // we couldn't set our watch for some other reason, retry
+        log.warn("Failed setting watch", e);
+        checkAgain = true;
       }
     }
+
     return checkAgain;
   }
 
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
-    if (context.isClosed()) {
-      throw new AlreadyClosedException();
-    }
     context.runLeaderProcess(context, weAreReplacement,0);
   }
 
