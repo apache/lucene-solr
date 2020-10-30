@@ -19,10 +19,15 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -193,42 +198,45 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   void doLiveSplitShard(String collectionName, int repFactor, int nThreads) throws Exception {
     final CloudHttp2SolrClient client = createCollection(collectionName, repFactor);
-
+    List<Future> futures = new ArrayList<>();
     final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();  // what the index should contain
     final AtomicBoolean doIndex = new AtomicBoolean(true);
     final AtomicInteger docsIndexed = new AtomicInteger();
-    Thread[] indexThreads = new Thread[nThreads];
+    Callable[] indexThreads = new Callable[nThreads];
     try {
 
       for (int i=0; i<nThreads; i++) {
-        indexThreads[i] = new Thread(() -> {
-          while (doIndex.get()) {
-            try {
-              // Thread.sleep(10);  // cap indexing rate at 100 docs per second per thread
-              int currDoc = docsIndexed.incrementAndGet();
-              String docId = "doc_" + currDoc;
+        indexThreads[i] = new Callable() {
+          @Override
+          public Object call() throws Exception {
+            while (doIndex.get()) {
+              try {
+                // Thread.sleep(10);  // cap indexing rate at 100 docs per second per thread
+                int currDoc = docsIndexed.incrementAndGet();
+                String docId = "doc_" + currDoc;
 
-              // Try all docs in the same update request
-              UpdateRequest updateReq = new UpdateRequest();
-              updateReq.add(SolrTestCaseJ4.sdoc("id", docId));
-              // UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
-              UpdateResponse ursp = updateReq.process(client, collectionName);
-              assertEquals(0, ursp.getStatus());  // for now, don't accept any failures
-              if (ursp.getStatus() == 0) {
-                model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
+                // Try all docs in the same update request
+                UpdateRequest updateReq = new UpdateRequest();
+                updateReq.add(SolrTestCaseJ4.sdoc("id", docId));
+                // UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
+                UpdateResponse ursp = updateReq.process(client, collectionName);
+                assertEquals(0, ursp.getStatus());  // for now, don't accept any failures
+                if (ursp.getStatus() == 0) {
+                  model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
+                }
+              } catch (Exception e) {
+                fail(e.getMessage());
+                break;
               }
-            } catch (Exception e) {
-              fail(e.getMessage());
-              break;
             }
+            return null;
           }
-        });
+        };
       }
 
-      for (Thread thread : indexThreads) {
-        thread.start();
+      for (Callable thread : indexThreads) {
+        futures.add(testExecutor.submit(thread));
       }
-
       Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
       int docCount = model.size();
 
@@ -244,8 +252,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     } finally {
       // shut down the indexers
       doIndex.set(false);
-      for (Thread thread : indexThreads) {
-        thread.join();
+      for (Future future : futures) {
+        future.get();
       }
     }
 
