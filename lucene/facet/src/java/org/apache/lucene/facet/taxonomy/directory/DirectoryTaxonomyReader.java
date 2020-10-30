@@ -333,15 +333,13 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
     FacetLabel ret;
 
-    if (values == null) {
-      // The index uses the older StringField format to store the mapping
+    if (values == null || values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase) == false) {
+      // The index uses the older StoredField format to store the mapping
       // On recreating the index, the values will be stored using the BinaryDocValuesField format
       Document doc = indexReader.document(ordinal);
       ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
     } else {
       // The index uses the BinaryDocValuesField format to store the mapping
-      boolean found = values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase);
-      assert found;
       ret = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
     }
 
