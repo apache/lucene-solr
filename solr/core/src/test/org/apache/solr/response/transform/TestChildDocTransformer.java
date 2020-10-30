@@ -34,7 +34,7 @@ import static org.hamcrest.core.StringContains.containsString;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
-  private static String ID_FIELD = "id";
+  private static final String ID_FIELD = "id";
   private String[] titleVals = new String[2];
 
   @BeforeClass
@@ -44,8 +44,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @After
   public void cleanup() throws Exception {
-    assertU(delQ("*:*"));
-    // TODO: if we followed this with a commit, this test would randomly fail, I think do to not getting a full & good delete
+    clearIndex();
   }
 
   @Test
