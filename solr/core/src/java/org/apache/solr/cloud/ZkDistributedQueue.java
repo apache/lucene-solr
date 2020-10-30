@@ -422,12 +422,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         if (!knownChildren.isEmpty()) {
           return remove ? knownChildren.pollFirst() : knownChildren.first();
         }
-
-        if (knownChildren.isEmpty()) {
-          return null;
-        }
-
-        return remove ? knownChildren.pollFirst() : knownChildren.first();
+        return null;
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();
@@ -623,14 +618,6 @@ public class ZkDistributedQueue implements DistributedQueue {
         String path = dir + "/" + firstChild;
         byte[] result = zookeeper.getData(path, null, null, true);
         zookeeper.delete(path, -1, true);
-        updateLock.lockInterruptibly();
-        try {
-          knownChildren.remove(path);
-        } finally {
-          if (updateLock.isHeldByCurrentThread()) {
-            updateLock.unlock();
-          }
-        }
         return result;
       } catch (KeeperException.NoNodeException e) {
         return null;

@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 
@@ -69,6 +70,8 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -250,6 +253,7 @@ public class Overseer implements SolrCloseable {
               // the state queue, items would have been left in the
               // work queue so let's process those first
               byte[] data = fallbackQueue.peek();
+              // TODO: can we do this with a builk call instead?
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
                 if (log.isDebugEnabled()) log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
@@ -310,7 +314,7 @@ public class Overseer implements SolrCloseable {
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
 
-            long wait = 100;
+            long wait = 5000;
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> false));
           } catch (AlreadyClosedException e) {
             if (isClosed()) {
@@ -332,13 +336,15 @@ public class Overseer implements SolrCloseable {
           }
           try {
             Set<String> processedNodes = new HashSet<>();
-
+            TimeOut timeout = new TimeOut(1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             while (queue != null && !queue.isEmpty()) {
               if (isClosed()) {
                 log.info("Closing");
                 return;
               }
-
+              if (timeout.hasTimedOut()) {
+                break;
+              }
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
@@ -357,7 +363,7 @@ public class Overseer implements SolrCloseable {
                 return;
               }
               // if an event comes in the next *ms batch it together
-              int wait = 5000;
+              int wait = 10;
               queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> processedNodes.contains(node)));
             }
             fallbackQueueSize = processedNodes.size();
