@@ -27,5 +27,4 @@ __pycache__
 *~
 /.caches/
 /eclipse-build/
-/lucene/
-/solr/
+

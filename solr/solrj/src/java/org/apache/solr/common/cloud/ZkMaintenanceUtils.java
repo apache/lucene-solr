@@ -262,7 +262,6 @@ public class ZkMaintenanceUtils {
     }
     
     ArrayList<String> paths = new ArrayList<>();
-//    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
 
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
