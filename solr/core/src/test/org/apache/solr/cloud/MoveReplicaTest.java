@@ -178,14 +178,24 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
     assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
+    targetNode = null;
+    for (String node : liveNodes) {
+      if (!replica.getNodeName().equals(node)) {
+        targetNode = node;
+        break;
+      }
+    }
+    assertNotNull(targetNode);
+
     moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
     moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
-    checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
 
     cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+
+    checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
   }
 
   //Commented out 5-Dec-2017

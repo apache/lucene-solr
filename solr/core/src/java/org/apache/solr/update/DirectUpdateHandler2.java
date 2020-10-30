@@ -896,7 +896,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
 
     try {
-      if (ulog != null) ulog.close(true);
+      if (ulog != null) ulog.close(false);
     } catch (Throwable th) {
       log.error("Error closing log files", th);
       if (th instanceof OutOfMemoryError) {

@@ -361,7 +361,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             if (closed || prepForClose) {
               return;
             }
-            cancelRecovery();
           }
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
@@ -408,8 +407,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
 
         if (recoveryFuture != null) {
-         // recoveryFuture.cancel(false);
-
           try {
             recoveryFuture.get();
           } catch (Exception e) {
@@ -472,8 +469,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void close(IndexWriterCloser closer) {
-
-    cancelRecovery(true, true);
 
     // we can't lock here without
     // a blocking race, we should not need to
