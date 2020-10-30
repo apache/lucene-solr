@@ -139,6 +139,37 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
+==================  8.8.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
+  (Cao Manh Dat, Mike Drob, hossman, shalin)
+
+* SOLR-14955: Add env var options for the Prometheus Exporter bin scripts (Houston Putman)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+* SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used
+  as the client (Munendra S N)
+
+* SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
+
+Other Changes
+---------------------
+
+* SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
