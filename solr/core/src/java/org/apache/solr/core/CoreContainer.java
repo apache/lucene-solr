@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.ImmutableMap;
@@ -78,6 +79,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1752,7 +1754,6 @@ public class CoreContainer implements Closeable {
     if (name != null) {
       if (isZooKeeperAware() && cd != null && cd.getCloudDescriptor() != null) {
         CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-        cloudDesc.getCoreNodeName();
         try {
           deleteCoreNode(cloudDesc.getCollectionName(), cloudDesc.getCoreNodeName(), getZkController().getNodeName(), getZkController().getBaseUrl(), name);
         } catch (Exception e) {
@@ -1849,6 +1850,23 @@ public class CoreContainer implements Closeable {
           FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
         } catch (IOException e) {
           SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
+        }
+      }
+      if (isZooKeeperAware() && cd != null && cd.getCloudDescriptor() != null) {
+        CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+        cloudDesc.getCoreNodeName();
+        try {
+          getZkController().getZkStateReader().waitForState(cloudDesc.getCollectionName(), 5000, TimeUnit.MILLISECONDS, (c) -> {
+            if (c == null)
+              return true;
+            Slice slice = c.getSlice(cloudDesc.getShardId());
+            if(slice == null || slice.getReplica(cloudDesc.getCoreNodeName()) == null) {
+              return true;
+            }
+            return false;
+          });
+        } catch (TimeoutException | InterruptedException e) {
+          ParWork.propagateInterrupt(e);
         }
       }
     }
