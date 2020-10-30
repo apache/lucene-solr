@@ -160,6 +160,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used
+  as the client (Munendra S N)
 
 * SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
 
