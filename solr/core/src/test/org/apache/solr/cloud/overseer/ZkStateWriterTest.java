@@ -134,7 +134,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0));
 
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        writer.writePendingUpdates(reader.getClusterState());
+        writer.writePendingUpdates(reader.getClusterState(), null);
 
         Map map = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null));
         assertNotNull(map.get("c1"));
@@ -210,7 +210,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         }
 
         try {
-          writer.writePendingUpdates(reader.getClusterState());
+          writer.writePendingUpdates(reader.getClusterState(), null);
           fail("writePendingUpdates after BadVersionException should not have succeeded");
         } catch (IllegalStateException e) {
           // expected

@@ -286,7 +286,7 @@ public class ZkDistributedQueue implements DistributedQueue {
     updateLock.lockInterruptibly();
     try {
       for (String path : paths) {
-        knownChildren.remove(dir + "/" + path);
+        knownChildren.remove(path);
       }
     } finally {
       if (updateLock.isHeldByCurrentThread()) {
@@ -451,7 +451,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           if (log.isDebugEnabled()) log.debug("Found child node with improper name: {}", childName);
           continue;
         }
-        if (acceptFilter != null && acceptFilter.test(dir + "/" + childName)) {
+        if (acceptFilter != null && acceptFilter.test(childName)) {
           if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", dir + "/" + childName);
           continue;
         }
@@ -507,7 +507,6 @@ public class ZkDistributedQueue implements DistributedQueue {
               updateLock.unlock();
             }
           }
-          continue;
         }
       }
       return result;
@@ -528,7 +527,7 @@ public class ZkDistributedQueue implements DistributedQueue {
     updateLock.lockInterruptibly();
     try {
       for (String child : knownChildren) {
-        if (acceptFilter == null || !acceptFilter.test(dir + "/" + child)) {
+        if (acceptFilter == null || !acceptFilter.test(child)) {
           foundChildren.add(child);
         }
       }

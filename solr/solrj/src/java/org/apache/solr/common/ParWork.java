@@ -640,7 +640,11 @@ public class ParWork implements Closeable {
       Thread.currentThread().interrupt();
     } else {
       if (infoLogMsg) {
-        log.info(t.getClass().getName() + " " + t.getMessage(), t);
+        if (log.isDebugEnabled()) {
+          log.info(t.getClass().getName() + " " + t.getMessage(), t);
+        } else {
+          log.info(t.getClass().getName() + " " + t.getMessage());
+        }
       } else {
         log.warn("Solr ran into an unexpected exception", t);
       }

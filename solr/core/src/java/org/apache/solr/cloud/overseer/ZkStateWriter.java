@@ -189,9 +189,9 @@ public class ZkStateWriter {
       }
     }
 
-    if (callback != null) {
-      callback.onWrite();
-    }
+//    if (callback != null) {
+//      callback.onWrite();
+//    }
 
     if (log.isDebugEnabled()) {
       log.debug("enqueueUpdate(ClusterState, List<ZkWriteCommand>, ZkWriteCallback) - end");
@@ -219,7 +219,7 @@ public class ZkStateWriter {
    * @throws KeeperException       if any ZooKeeper operation results in an error
    * @throws InterruptedException  if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates(ClusterState state) throws IllegalStateException, KeeperException, InterruptedException {
+  public ClusterState writePendingUpdates(ClusterState state, ZkWriteCallback callback) throws IllegalStateException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("writePendingUpdates() - start updates.size={}", updatesToWrite.size());
     }
@@ -244,33 +244,33 @@ public class ZkStateWriter {
 
         try {
 
-         // if (reader.getClusterState().getCollectionOrNull(c.getName()) != null) {
+          // if (reader.getClusterState().getCollectionOrNull(c.getName()) != null) {
 
-            byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+          byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
 
-            //if (log.isDebugEnabled()) {
-            if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} cs={}", c.getZNodeVersion(), data.length, c);
-            //}
-            // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
-            try {
-              int version = c.getZNodeVersion();
-              Integer v = trackVersions.get(c.getName());
-              if (v != null) {
-                version = v;
-                trackVersions.put(c.getName(), v + 1);
-              } else {
-                trackVersions.put(c.getName(), version + 1);
-              }
-
-              reader.getZkClient().setData(path, data, version, true);
-            } catch (KeeperException.BadVersionException bve) {
-              lastFailedException = bve;
-              failedUpdates.put(c.getName(), c);
-              stat = reader.getZkClient().exists(path, null);
-              // this is a tragic error, we must disallow usage of this instance
-              log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", c.getZNodeVersion(), stat.getVersion(), bve);
+          //if (log.isDebugEnabled()) {
+          if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} cs={}", c.getZNodeVersion(), data.length, c);
+          //}
+          // stat = reader.getZkClient().getCurator().setData().withVersion(prevVersion).forPath(path, data);
+          try {
+            int version = c.getZNodeVersion();
+            Integer v = trackVersions.get(c.getName());
+            if (v != null) {
+              version = v;
+              trackVersions.put(c.getName(), v + 1);
+            } else {
+              trackVersions.put(c.getName(), version + 1);
             }
-            if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", c.getName(), c.getZNodeVersion() + 1);
+
+            reader.getZkClient().setData(path, data, version, true);
+          } catch (KeeperException.BadVersionException bve) {
+            lastFailedException = bve;
+            failedUpdates.put(c.getName(), c);
+            stat = reader.getZkClient().exists(path, null);
+            // this is a tragic error, we must disallow usage of this instance
+            log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", c.getZNodeVersion(), stat.getVersion(), bve);
+          }
+          if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", c.getName(), c.getZNodeVersion() + 1);
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propagateInterrupt(e);
           throw e;
@@ -278,49 +278,51 @@ public class ZkStateWriter {
           throw e;
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Failed processing update=" + c, e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed processing update=" + c, e);
         }
       }
 
+      for (DocCollection c : updatesToWrite.values()) {
+        if (c != null && !failedUpdates.containsKey(c.getName())) {
+          try {
+            //System.out.println("waiting to see state " + prevVersion);
+            Integer v = trackVersions.get(c.getName());
+            int version = v - 1;
 
+            Integer finalPrevVersion = version;
+            reader.waitForState(c.getName(), 15, TimeUnit.SECONDS, (l, col) -> {
 
-        for (DocCollection c : updatesToWrite.values()) {
-          if (c != null && !failedUpdates.containsKey(c.getName())) {
-            try {
-              //System.out.println("waiting to see state " + prevVersion);
-              Integer v = trackVersions.get(c.getName());
-              int version = v - 1;
-              
-              Integer finalPrevVersion = version;
-              reader.waitForState(c.getName(), 15, TimeUnit.SECONDS, (l, col) -> {
+              //              if (col != null) {
+              //                System.out.println("the version " + col.getZNodeVersion());
+              //              }
 
-                //              if (col != null) {
-                //                System.out.println("the version " + col.getZNodeVersion());
-                //              }
-
-                if (col != null && col.getZNodeVersion() > finalPrevVersion) {
-                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
-                  // System.out.println("found the version");
-                  return true;
-                }
-                return false;
-              });
-            } catch (TimeoutException e) {
-              log.warn("Timeout waiting to see written cluster state come back");
-            }
+              if (col != null && col.getZNodeVersion() > finalPrevVersion) {
+                if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
+                // System.out.println("found the version");
+                return true;
+              }
+              return false;
+            });
+          } catch (TimeoutException e) {
+            log.warn("Timeout waiting to see written cluster state come back");
           }
         }
-
+      }
 
       lastUpdatedTime = System.nanoTime();
-
-
 
       if (failedUpdates.size() > 0) {
         log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException);
         failedUpdates.clear();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException);
+      }
+
+      if (callback != null) {
+        try {
+          callback.onWrite();
+        } catch (Exception e) {
+          log.error("", e);
+        }
       }
 
       success = true;

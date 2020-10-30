@@ -289,7 +289,7 @@ public class Overseer implements SolrCloseable {
                 fallbackQueueSize--;
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no op call
-              clusterState = zkStateWriter.writePendingUpdates(clusterState);
+              clusterState = zkStateWriter.writePendingUpdates(clusterState, null);
               // the workQueue is empty now, use stateUpdateQueue as fallback queue
               fallbackQueue = stateUpdateQueue;
               fallbackQueueSize = 0;
@@ -348,15 +348,11 @@ public class Overseer implements SolrCloseable {
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
                 final ZkNodeProps message = ZkNodeProps.load(data);
-                // log.debug("processMessage: queueSize: {}, message = {} current state version: {}", stateUpdateQueue.getZkStats().getQueueLength(), message, clusterState.getZkClusterStateVersion());
-
+                if (log.isDebugEnabled()) log.debug("processMessage: queueSize: {}, message = {}", stateUpdateQueue.getZkStats().getQueueLength(), message);
+                if (log.isDebugEnabled()) log.debug("add processed node: {}, processedNodes = {}", head.first(), stateUpdateQueue.getZkStats().getQueueLength(), processedNodes);
                 processedNodes.add(head.first());
-                fallbackQueueSize = processedNodes.size();
                 // The callback always be called on this thread
-                  processQueueItem(message, reader.getClusterState(), zkStateWriter, true, () -> {
-                  stateUpdateQueue.remove(processedNodes);
-                  processedNodes.clear();
-                });
+                processQueueItem(message, reader.getClusterState(), zkStateWriter, true, null);
               }
               if (isClosed()) {
                 log.info("Overseer closed, exiting loop");
@@ -364,16 +360,18 @@ public class Overseer implements SolrCloseable {
               }
               // if an event comes in the next *ms batch it together
               int wait = 10;
+              if (log.isDebugEnabled()) log.debug("going to peekElements processedNodes={}", processedNodes);
               queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> processedNodes.contains(node)));
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there
             // are more items in the main queue
-            clusterState = zkStateWriter.writePendingUpdates(clusterState);
+            clusterState = zkStateWriter.writePendingUpdates(clusterState,  () -> {
+              if (log.isDebugEnabled()) log.debug("clear processedNodes={}", processedNodes);
+              stateUpdateQueue.remove(processedNodes);
+              processedNodes.clear();
+            });
 
-            // clean work queue
-            stateUpdateQueue.remove(processedNodes);
-            processedNodes.clear();
           } catch (InterruptedException | AlreadyClosedException e) {
             ParWork.propagateInterrupt(e, true);
             return;

@@ -108,7 +108,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       InterruptedException {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
-      String path = event.getId();
+      String path = dir + "/" + event.getId();
       String responsePath = dir + "/" + RESPONSE_PREFIX
           + path.substring(path.lastIndexOf("-") + 1);
 
@@ -277,7 +277,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     try {
       for (Pair<String, byte[]> element : peekElements(n, waitMillis, excludeSet)) {
         if (log.isDebugEnabled()) log.debug("Add to topN {}", dir + "/" + element.first());
-        topN.add(new QueueEvent(dir + "/" + element.first(),
+        topN.add(new QueueEvent(element.first(),
             element.second(), null));
       }
       printQueueEventsListElementIds(topN);
@@ -310,7 +310,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     for (String headNode : orderedChildren.descendingSet())
       if (headNode != null) {
         try {
-          QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
+          QueueEvent queueEvent = new QueueEvent(headNode, zookeeper.getData(dir + "/" + headNode,
               null, null, true), null);
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
