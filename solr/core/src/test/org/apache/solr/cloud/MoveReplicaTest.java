@@ -161,7 +161,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
     // wait for recovery
-    cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
+    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
     for (int i = 0; i < 50; i++) {
       long cnt = cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound();

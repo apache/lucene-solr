@@ -13,7 +13,8 @@ public class SolrThread extends Thread {
 
     Thread createThread = Thread.currentThread();
     if (createThread instanceof SolrThread) {
-      ExecutorService service = ((SolrThread) createThread).getExecutorService();
+      // nocommit - disabled for now
+      ExecutorService service = null;//((SolrThread) createThread).getExecutorService();
       if (service == null) {
         createExecutorService();
       } else {
