@@ -45,6 +45,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.IdUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,9 +61,13 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     return "cloud-dynamic";
   }
 
+  @BeforeClass
+  public static void beforeMoveReplicaTest() throws Exception {
+    useFactory(null);
+  }
+
   @Before
   public void beforeTest() throws Exception {
-    useFactory(null);
     inPlaceMove = true;
 
     configureCluster(4)
