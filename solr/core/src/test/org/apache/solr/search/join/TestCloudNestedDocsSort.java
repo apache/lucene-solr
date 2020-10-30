@@ -44,7 +44,7 @@ import org.junit.Test;
 
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
-  private static ArrayList<String> vals = new ArrayList<>();
+  private static ArrayList<String> vals;
   private static CloudHttp2SolrClient client;
   private static int maxDocs;
   private static String matchingParent;
@@ -52,9 +52,10 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    vals = new ArrayList<>();
     final int numVals = atLeast(10);
     for (int i=0; i < numVals; i++) {
-      vals.add(""+Integer.toString(random().nextInt(1000000), Character.MAX_RADIX));
+      vals.add(""+Integer.toString(random().nextInt(100000), Character.MAX_RADIX));
     }
     
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
@@ -125,6 +126,9 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   public static void cleanUpAfterClass() throws Exception {
     client = null;
     vals = null;
+    maxDocs = 0;
+    matchingParent = null;
+    matchingChild = null;
   }
 
   @Test 

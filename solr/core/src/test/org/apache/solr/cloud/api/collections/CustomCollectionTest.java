@@ -46,6 +46,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    useFactory(null);
     configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
@@ -88,6 +89,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "b")).getResults().getNumFound());
     assertEquals(3, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
 
+    // nocommit: I think this combo can still stall and have issues
     cluster.getSolrClient().deleteByQuery(collection, "*:*");
     cluster.getSolrClient().commit(collection, true, true);
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*")).getResults().getNumFound());
@@ -164,8 +166,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
-    
-    cluster.waitForActiveCollection(collectionName, numShards, numShards * replicationFactor);
 
     new UpdateRequest()
         .add("id", "6", shard_fld, "a")
