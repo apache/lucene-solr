@@ -19,7 +19,7 @@
 [IMPORTANT]
 ====
 The clustering component implementation and API (parameters) have changed significantly
-in version 8.8.0. Please refer to the Solr Guide version matching your Solr release
+in version 9.0. Please refer to the Solr Guide version matching your Solr release
 exactly.
 ====
 
