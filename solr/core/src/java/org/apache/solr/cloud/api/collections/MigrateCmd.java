@@ -74,7 +74,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
     String extTargetCollectionName = message.getStr("target.collection");
@@ -134,6 +134,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
             timeout, results, asyncId, message);
       }
     }
+    return null;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -188,7 +189,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
 
     {
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
       shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
 
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to request node to buffer updates");
@@ -287,7 +288,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     String tempNodeName = sourceLeader.getNodeName();
 
     {
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
       shardRequestTracker.sendShardRequest(tempNodeName, params, shardHandler);
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
     }
@@ -336,7 +337,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params = new ModifiableSolrParams(cmd.getParams());
 
     {
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
       shardRequestTracker.sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler);
 
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create temp collection" +
@@ -351,7 +352,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.SRC_CORE, tempCollectionReplica2);
 
     {
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
     
       shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
     String msg = "MIGRATE failed to merge " + tempCollectionReplica2 + " to "
@@ -364,7 +365,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(CoreAdminParams.NAME, targetLeader.getStr("core"));
 
     {
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
       shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
       shardRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates");
     }

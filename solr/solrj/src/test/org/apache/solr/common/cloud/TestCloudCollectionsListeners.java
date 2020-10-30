@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly // TODO this is oddly slow ...
 public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -131,6 +133,9 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
+
+    cluster.waitForActiveCollection("testcollection1", 4, 1);
+    cluster.waitForActiveCollection("testcollection2", 4, 1);
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();

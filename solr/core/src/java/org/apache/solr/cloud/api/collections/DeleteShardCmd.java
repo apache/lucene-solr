@@ -65,7 +65,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -85,7 +85,10 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
     // TODO: Add check for range gaps on Slice deletion
     final Slice.State state = slice.getState();
-    if (!(slice.getRange() == null || state == Slice.State.INACTIVE || state == Slice.State.RECOVERY
+
+    boolean force = message.getBool("force", false);
+
+    if (!force && !(slice.getRange() == null || state == Slice.State.INACTIVE || state == Slice.State.RECOVERY
         || state == Slice.State.CONSTRUCTION) || state == Slice.State.RECOVERY_FAILED) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The slice: " + slice.getName() + " is currently " + state
           + ". Only non-active (or custom-hashed) slices can be deleted.");
@@ -160,6 +163,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
+    return null;
   }
 
   private List<ZkNodeProps> getReplicasForSlice(String collectionName, Slice slice) {

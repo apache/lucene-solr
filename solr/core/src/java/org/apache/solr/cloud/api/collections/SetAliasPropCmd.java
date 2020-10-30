@@ -47,7 +47,7 @@ public class SetAliasPropCmd implements Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String aliasName = message.getStr(NAME);
 
     final ZkStateReader.AliasesManager aliasesManager = messageHandler.zkStateReader.aliasesManager;
@@ -80,5 +80,6 @@ public class SetAliasPropCmd implements Cmd {
     }
 
     aliasesManager.applyModificationAndExportToZk(aliases1 -> aliases1.cloneWithCollectionAliasProperties(aliasName, properties));
+    return null;
   }
 }

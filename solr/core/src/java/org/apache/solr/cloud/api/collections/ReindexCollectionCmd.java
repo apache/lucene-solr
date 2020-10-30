@@ -167,7 +167,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -210,16 +210,16 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       // check that it's running
       if (state != State.RUNNING) {
         log.debug("Abort requested for collection {} but command is not running: {}", collection, state);
-        return;
+        return null;
       }
       setReindexingState(collection, State.ABORTED, null);
       reindexingState.put(STATE, "aborting");
       results.add(REINDEX_STATUS, reindexingState);
       // if needed the cleanup will be performed by the running instance of the command
-      return;
+      return null;
     } else if (command == Cmd.STATUS) {
       results.add(REINDEX_STATUS, reindexingState);
-      return;
+      return null;
     }
     // command == Cmd.START
 
@@ -293,7 +293,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
       if (maybeAbort(collection)) {
         aborted = true;
-        return;
+        return null;
       }
 
       Map<String, Object> propMap = new HashMap<>();
@@ -365,7 +365,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       }
       if (maybeAbort(collection)) {
         aborted = true;
-        return;
+        return null;
       }
 
       // 1. put the source collection in read-only mode
@@ -379,7 +379,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
       if (maybeAbort(collection)) {
         aborted = true;
-        return;
+        return null;
       }
 
       // 2. copy the documents to target
@@ -424,7 +424,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       waitForDaemon(targetCollection, daemonUrl, collection, targetCollection, reindexingState);
       if (maybeAbort(collection)) {
         aborted = true;
-        return;
+        return null;
       }
       log.debug("- finished copying from {} to {}", collection, targetCollection);
       // fail here or earlier during daemon run
@@ -450,7 +450,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
       if (maybeAbort(collection)) {
         aborted = true;
-        return;
+        return null;
       }
       // 6. delete the checkpoint collection
       log.debug("- deleting {}", chkCollection);
@@ -508,6 +508,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       }
       results.add(REINDEX_STATUS, reindexingState);
     }
+    return null;
   }
 
   private static final String REINDEXING_STATE_PATH = "/.reindexing";

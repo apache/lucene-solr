@@ -63,8 +63,9 @@ public class DeleteReplicaCmd implements Cmd {
   @Override
   @SuppressWarnings("unchecked")
 
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     deleteReplica(clusterState, message, results,null);
+    return null;
   }
 
 
@@ -247,7 +248,7 @@ public class DeleteReplicaCmd implements Cmd {
     params.set(CoreAdminParams.DELETE_METRICS_HISTORY, message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true));
 
     boolean isLive = ocmh.zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
     if (isLive) {
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
     }
@@ -257,7 +258,6 @@ public class DeleteReplicaCmd implements Cmd {
         if (isLive) {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
           // try and ensure core info is removed from cluster state
-
         }
         ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
       } catch (Exception e) {

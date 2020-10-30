@@ -51,7 +51,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
@@ -61,6 +61,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     } else {
       cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
     }
+    return null;
   }
 
   // collect names of replicas that cannot be deleted

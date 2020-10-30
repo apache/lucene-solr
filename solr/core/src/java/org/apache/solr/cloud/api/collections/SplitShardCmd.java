@@ -28,6 +28,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -94,8 +98,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @SuppressWarnings("unchecked")
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     split(state, message,(NamedList<Object>) results);
+    return null;
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -277,6 +282,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       String nodeName = parentShardLeader.getNodeName();
 
       t = timings.sub("createSubSlicesAndLeadersInState");
+      List<Future> firstReplicaFutures = new ArrayList<>();
+      Set<Runnable> firstReplicaRunAfters = ConcurrentHashMap.newKeySet();
       for (int i = 0; i < subRanges.size(); i++) {
         String subSlice = subSlices.get(i);
         String subShardName = subShardNames.get(i);
@@ -319,12 +326,37 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           }
         }
         // add async param
-//        if (asyncId != null) {
-//          propMap.put(ASYNC, asyncId);
-//        }
-        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
+        if (asyncId != null) {
+          propMap.put(ASYNC, asyncId);
+        }
+
+        Map<String,Object> finalPropMap = propMap;
+        ClusterState finalClusterState1 = clusterState;
+        Future<?> future = ocmh.tpe.submit(() -> {
+          AddReplicaCmd.Response response = null;
+          try {
+            response = ocmh.addReplicaWithResp(finalClusterState1, new ZkNodeProps(finalPropMap), results, null);
+          } catch (Exception e) {
+            log.error("", e);
+          }
+          if (response != null && response.asyncFinalRunner != null) {
+            firstReplicaRunAfters.add(response.asyncFinalRunner);
+          }
+        });
+        firstReplicaFutures.add(future);
       }
 
+      firstReplicaFutures.forEach(future -> {
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          log.error("", e);
+        } catch (ExecutionException e) {
+          log.error("", e);
+        }
+      });
+
+      firstReplicaRunAfters.forEach(runnable -> runnable.run());
 
       {
         final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
@@ -335,7 +367,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t.stop();
       t = timings.sub("waitForSubSliceLeadersAlive");
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
         for (String subShardName : subShardNames) {
           // wait for parent leader to acknowledge the sub-shard core
           log.debug("Asking parent leader to wait for: {} to be alive on: {}", subShardName, nodeName);
@@ -378,7 +410,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       t = timings.sub("splitParentCore");
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
         shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
 
         String msgOnError = "SPLITSHARD failed to invoke SPLIT core admin command";
@@ -394,7 +426,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
 
         for (int i = 0; i < subShardNames.size(); i++) {
           String subShardName = subShardNames.get(i);
@@ -489,10 +521,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             propMap.put(key, message.getStr(key));
           }
         }
-//        // add async param
-//        if (asyncId != null) {
-//          propMap.put(ASYNC, asyncId);
-//        }
+        // add async param
+        if (asyncId != null) {
+          propMap.put(ASYNC, asyncId);
+        }
         // special flag param to instruct addReplica not to create the replica in cluster state again
         propMap.put(OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, "true");
 
@@ -564,9 +596,26 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       t = timings.sub("createCoresForReplicas");
+
+      List<Future> replicaFutures = new ArrayList<>();
+      Set<Runnable> replicaRunAfters = ConcurrentHashMap.newKeySet();
+
       // now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
-        ocmh.addReplica(clusterState, new ZkNodeProps(replica), results, null);
+        ClusterState finalClusterState = clusterState;
+        Future<?> future = ocmh.tpe.submit(() -> {
+          AddReplicaCmd.Response response = null;
+          try {
+            response = ocmh.addReplicaWithResp(finalClusterState, new ZkNodeProps(replica), results, null);
+          } catch (Exception e) {
+            log.error("", e);
+          }
+          if (response != null && response.asyncFinalRunner != null) {
+            replicaRunAfters.add(response.asyncFinalRunner);
+          }
+        });
+
+        replicaFutures.add(future);
       }
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
@@ -579,18 +628,15 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       t.stop();
 
-//      zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-//        if (collectionState == null) return false;
-//        for (String subSlice : subSlices) {
-//          if (collectionState.getSlice(subSlice) == null || !collectionState.getSlice(subSlice).getState().equals(Slice.State.ACTIVE)) {
-//            return false;
-//          }
-//        }
-//        if (collectionState.getSlice(slice.get()) != null && !collectionState.getSlice(slice.get()).equals(Slice.State.INACTIVE)) {
-//          return false;
-//        }
-//        return true;
-//      });
+      replicaFutures.forEach(future -> {
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          log.error("", e);
+        } catch (ExecutionException e) {
+          log.error("", e);
+        }
+      });
 
       log.info("Successfully created all replica shards for all sub-slices {}", subSlices);
 
@@ -748,6 +794,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       props.put(Overseer.QUEUE_OPERATION, "deleteshard");
       props.put(COLLECTION_PROP, collectionName);
       props.put(SHARD_ID_PROP, subSlice);
+      props.put("force", "true");
       ZkNodeProps m = new ZkNodeProps(props);
       try {
         ocmh.commandMap.get(DELETESHARD).call(clusterState, m, new NamedList<Object>());

@@ -158,7 +158,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     // wait for recovery
     cluster.waitForActiveCollection(coll, 2, isTlog ? 4 : 2);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
       long cnt = cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound();
       if (cnt < 100) {
         Thread.sleep(100);

@@ -58,13 +58,14 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     Set<String> liveNodes = state.getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
+    // NOTE: must be more than a single nrt replica or it will not let you delete a node
     CollectionAdminRequest.Create create = SolrTestCaseJ4.pickRandom(
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 1, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 1),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 1),
         // check RF=1
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0),
-        CollectionAdminRequest.createCollection(coll, "conf1", 5, 0, 1, 0)
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 0)
         );
     create = create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(20);
     cloudClient.request(create);

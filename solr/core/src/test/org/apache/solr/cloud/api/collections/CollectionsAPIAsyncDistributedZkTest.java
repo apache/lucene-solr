@@ -65,6 +65,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     // we recreate per test - they need to be isolated to be solid
+    useFactory(null);
     configureCluster(2)
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
@@ -81,22 +82,16 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
 
-    RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).setMaxShardsPerNode(3).processAndWait(client, MAX_TIMEOUT_SECONDS);
-    assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
+    CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).setMaxShardsPerNode(200).process(client);
 
-    cluster.waitForActiveCollection("testasynccollectioncreation", 1, 1);
-
-    state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).processAndWait(client, MAX_TIMEOUT_SECONDS);
+    RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
 
     state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "shard1").processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
 
-    cluster.waitForActiveCollection("testasynccollectioncreation", 1, 2);
-
     state = CollectionAdminRequest.splitShard("testasynccollectioncreation").setShardName("shard1").processAndWait(client, MAX_TIMEOUT_SECONDS * 2);
 
-    cluster.waitForActiveCollection("testasynccollectioncreation", 1, 3);
     assertEquals("Shard split did not complete. Last recorded state: " + state, RequestStatusState.COMPLETED, state);
   }
 
@@ -268,6 +263,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       for (Future future : futures) {
         future.get();
       }
+
+      cluster.waitForActiveCollection("testAsyncIdRaceCondition", 1, 1);
 
       assertEquals(1, numSuccess.get());
       assertEquals((TEST_NIGHTLY ? 10 : 3) - 1, numFailure.get());

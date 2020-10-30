@@ -28,6 +28,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit
 public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
 
   private static boolean oldResponseEntries;
@@ -58,8 +59,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     String asyncId =
         createCollection.processAsync(cluster.getSolrClient());
 
-    waitForState("Expected collection 'asynccall' to have "+numShards+" shards and "+
-        numShards*numReplicas+" replica", "asynccall", clusterShape(numShards, numShards*numReplicas));
+    cluster.waitForActiveCollection("asynccall", numShards, numShards * numReplicas);
 
     RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 5, cluster.getSolrClient());
     assertEquals("Unexpected request status: " + state, "completed", state.getKey());
@@ -68,7 +68,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
     if (OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE) {
-      final int actualNumOfElems = 3+(numShards*numReplicas);
+      final int actualNumOfElems = 1+(numShards*numReplicas);
       // responseHeader, success, status, + old responses per every replica  
       assertEquals("Expected "+actualNumOfElems+" elements in the response" + r.jsonStr(),
                actualNumOfElems, r.size());
@@ -82,8 +82,8 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
       final NamedList<?> success = (NamedList<?>)r.get("success");
       assertNotNull("Expected 'success' response" + r, success);
     
-      final int actualSuccessElems = 2*(numShards*numReplicas);
-      // every replica responds once on submit and once on complete
+      final int actualSuccessElems = 2 + (numShards*numReplicas);
+
       assertEquals("Expected "+actualSuccessElems+
         " elements in the success element" + success.jsonStr(), 
           actualSuccessElems, success.size());

@@ -2421,12 +2421,8 @@ public class ZkController implements Closeable, Runnable {
 
   public void throwErrorIfReplicaReplaced(CoreDescriptor desc) {
     ClusterState clusterState = getZkStateReader().getClusterState();
-    if (clusterState != null) {
-      DocCollection collection = clusterState.getCollectionOrNull(desc
-          .getCloudDescriptor().getCollectionName());
-      if (collection != null) {
-        CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
-      }
+    if (clusterState != null && desc  != null) {
+      CloudUtil.checkSharedFSFailoverReplaced(cc, desc);
     }
   }
 

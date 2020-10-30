@@ -57,6 +57,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -1896,29 +1897,38 @@ public class CoreContainer implements Closeable {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name, boolean incRefCount) {
+    SolrCore core = null;
+    CoreDescriptor desc = null;
+    for (int i = 0; i < 2; i++) {
+      // Do this in two phases since we don't want to lock access to the cores over a load.
+      core = solrCores.getCoreFromAnyList(name, incRefCount);
 
-    // Do this in two phases since we don't want to lock access to the cores over a load.
-    SolrCore core = solrCores.getCoreFromAnyList(name, incRefCount);
+      // If a core is loaded, we're done just return it.
+      if (core != null) {
+        return core;
+      }
 
-    // If a core is loaded, we're done just return it.
-    if (core != null) {
-      return core;
+      // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
+      desc = solrCores.getCoreDescriptor(name);
+
+      // if there was an error initializing this core, throw a 500
+      // error with the details for clients attempting to access it.
+      CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
+      if (null != loadFailure) {
+        throw new SolrCoreInitializationException(name, loadFailure.exception);
+      }
+      // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together. For transient cores,
+      // we have to allow them to be created at any time there hasn't been a core load failure (use reload to cure that).
+      // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
+      // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
+      // TestLazyCores
+      if (isZooKeeperAware()) {
+        solrCores.waitForLoadingCoreToFinish(name, 15000);
+      } else {
+        break;
+      }
     }
 
-    // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
-    CoreDescriptor desc = solrCores.getCoreDescriptor(name);
-
-    // if there was an error initializing this core, throw a 500
-    // error with the details for clients attempting to access it.
-    CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
-    if (null != loadFailure) {
-      throw new SolrCoreInitializationException(name, loadFailure.exception);
-    }
-    // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together. For transient cores,
-    // we have to allow them to be created at any time there hasn't been a core load failure (use reload to cure that).
-    // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
-    // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
-    // TestLazyCores
     if (desc == null || isZooKeeperAware()) return null;
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
@@ -1926,11 +1936,15 @@ public class CoreContainer implements Closeable {
 
     // todo: ensure only transient?
     if (core == null) {
-      if (isZooKeeperAware()) {
-        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
-      }
+      // nocommit - this does not seem right - should stop a core from loading on startup, before zk reg, not from getCore ...
+//      if (isZooKeeperAware()) {
+//        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
+//      }
       core = createFromDescriptor(desc, false); // This should throw an error if it fails.
     }
+
+
+
     core.open();
 
 

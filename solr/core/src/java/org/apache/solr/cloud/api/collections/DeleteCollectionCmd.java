@@ -67,7 +67,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.info("delete collection called");
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
@@ -109,7 +109,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just
           // be removed in the finally - we cannot continue, because the below code will error if the collection
           // is not in the clusterstate
-          return;
+          return null;
         }
       }
       // remove collection-level metrics history
@@ -174,6 +174,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         });
       }
     }
+    return null;
   }
 
   // This method returns the single collection aliases to delete, if present, or null

@@ -52,7 +52,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -131,6 +131,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Finished create command on all shards for collection: {}", collectionName);
+    return null;
   }
 
 }

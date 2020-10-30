@@ -61,8 +61,7 @@ public class CloudUtil {
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
-    if (!cc.isSharedFs(desc)) return;
-
+    if (desc.getCloudDescriptor() == null) return;
     ZkController zkController = cc.getZkController();
     String thisCnn = zkController.getCoreNodeName(desc);
     String thisBaseUrl = zkController.getBaseUrl();
@@ -83,9 +82,12 @@ public class CloudUtil {
           if (thisCnn != null && thisCnn.equals(cnn)
               && !thisBaseUrl.equals(baseUrl)) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
-              cc.unload(desc.getName());
+              try {
+                cc.unload(desc.getName());
+              } catch (Exception e ) {
+                log.error("unload exception", e);
+              }
             }
-
             try {
               FileUtils.deleteDirectory(desc.getInstanceDir().toFile());
             } catch (IOException e) {

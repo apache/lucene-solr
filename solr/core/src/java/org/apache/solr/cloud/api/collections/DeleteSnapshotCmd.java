@@ -64,7 +64,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -82,7 +82,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Optional<CollectionSnapshotMetaData> meta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
     if (!meta.isPresent()) { // Snapshot not found. Nothing to do.
-      return;
+      return null;
     }
 
     log.info("Deleting a snapshot for collection={} with commitName={}", collectionName, commitName);
@@ -101,7 +101,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
     log.info("Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
@@ -169,5 +169,6 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Deleted Zookeeper snapshot metdata for collection={} with commitName={}", collectionName, commitName);
       log.info("Successfully deleted snapshot for collection={} with commitName={}", collectionName, commitName);
     }
+    return null;
   }
 }

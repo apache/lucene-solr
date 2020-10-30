@@ -58,7 +58,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map roles = null;
@@ -99,7 +99,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 //      }
 //
 //    }).start();
-
+    return null;
   }
 
 }

@@ -144,6 +144,12 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
+
+          if (newcore == null) {
+            it.handler.coreContainer.waitForLoadingCore(newCoreName, 10000);
+            newcore = it.handler.coreContainer.getCore(newCoreName);
+          }
+
           if (newcore != null) {
             CoreDescriptor ncd = newcore.getCoreDescriptor();
             newCoresMap.put(newcore, ncd);

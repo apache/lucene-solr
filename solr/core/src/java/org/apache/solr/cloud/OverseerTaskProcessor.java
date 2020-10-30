@@ -370,9 +370,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
 
     if (closeAndDone) {
-      for (Future future : taskFutures.values()) {
-        future.cancel(false);
-      }
+      // nocommit
+//      for (Future future : taskFutures.values()) {
+//        future.cancel(false);
+//      }
       for (Future future : taskFutures.values()) {
         try {
           future.get(1, TimeUnit.SECONDS);
@@ -455,14 +456,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
 
     public void run() {
-
+      boolean success = false;
+      final String asyncId = message.getStr(ASYNC);
+      String taskKey = messageHandler.getTaskKey(message);
       try {
         String statsName = messageHandler.getTimerName(operation);
         final Timer.Context timerContext = stats.time(statsName);
-
-        boolean success = false;
-        final String asyncId = message.getStr(ASYNC);
-        String taskKey = messageHandler.getTaskKey(message);
 
         try {
           if (log.isDebugEnabled()) {
@@ -473,16 +472,21 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           timerContext.stop();
           updateStats(statsName);
         }
-
+        if (log.isDebugEnabled()) {
+          log.debug("finished processing message asyncId={}", asyncId);
+        }
         if (asyncId != null) {
           if (response != null && (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)) {
-            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
             if (log.isDebugEnabled()) {
-              log.debug("Updated failed map for task with zkid:[{}]", head.getId());
+              log.debug("Updated failed map for task with id:[{}]", asyncId);
             }
+            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
           } else {
+            if (log.isDebugEnabled()) {
+              log.debug("Updated completed map for task with zkid:[{}]", asyncId);
+            }
             completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
-            log.debug("Updated completed map for task with zkid:[{}]", head.getId());
+
           }
         } else {
           byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
@@ -490,8 +494,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           log.debug("Completed task:[{}] {}", head.getId(), response.getResponse());
         }
 
+        if (log.isDebugEnabled()) log.debug("Marked task [{}] as completed. asyncId={}", head.getId(), asyncId);
         markTaskComplete(head.getId(), asyncId);
-        log.debug("Marked task [{}] as completed.", head.getId());
+
         printTrackingMaps();
 
         log.debug(messageHandler.getName() + ": Message id:" + head.getId() + " complete, response:" + response.getResponse().toString());
@@ -509,6 +514,16 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         log.error("Exception running task", e);
       } finally {
         if (lock != null) lock.unlock();
+        if (!success) {
+          // Reset task from tracking data structures so that it can be retried.
+          try {
+            resetTaskWithException(head.getId(), asyncId, taskKey);
+          } catch(AlreadyClosedException e) {
+
+          } catch (Exception e) {
+            log.error("", e);
+          }
+        }
       }
 
       if (log.isDebugEnabled()) {
@@ -537,7 +552,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
 
-    private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) throws KeeperException, InterruptedException {
+    private void resetTaskWithException(String id, String asyncId, String taskKey) throws KeeperException, InterruptedException {
       log.warn("Resetting task: {}, requestid: {}, taskKey: {}", id, asyncId, taskKey);
         if (asyncId != null) {
           if (!runningMap.remove(asyncId)) {

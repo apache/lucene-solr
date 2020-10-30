@@ -61,7 +61,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -126,7 +126,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
-       // if (async != null) msg.getProperties().put(ASYNC, async);
+        if (async != null) msg.getProperties().put(ASYNC, async);
         final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
             msg, nl, () -> {
               countDownLatch.countDown();
@@ -222,7 +222,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
       cleanupLatch.await(5, TimeUnit.MINUTES);
-      return;
+      return null;
     }
 
 
@@ -230,6 +230,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     //now cleanup the replicas in the source node
     DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, null);
     results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
+    return null;
   }
 
   static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {

@@ -122,7 +122,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
           }
         } else {
-          zkClient.delete(leaderSeqPath, -1);
+          try {
+            zkClient.delete(leaderSeqPath, -1);
+          } catch (NoNodeException e) {
+            // fine
+          }
           log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
         }
       } catch (Exception e) {

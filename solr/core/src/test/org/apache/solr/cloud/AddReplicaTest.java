@@ -87,6 +87,8 @@ public class AddReplicaTest extends SolrCloudTestCase {
         .setPullReplicas(1);
     CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
 
+    cluster.waitForActiveCollection(collection, 1, 2);
+
     // nocommit what happened to success flag?
     // assertTrue(status.isSuccess());
     
@@ -196,15 +198,9 @@ public class AddReplicaTest extends SolrCloudTestCase {
     requestStatus = CollectionAdminRequest.requestStatus(Integer.toString(aid2));
     rsp = requestStatus.process(cloudClient);
 
-
-    // let the client watch fire
-    clusterState = cloudClient.getZkStateReader().getClusterState();
-    coll = clusterState.getCollection(collection);
-    Collection<Replica> reps = coll.getSlice(sliceName).getReplicas();
+    cluster.waitForActiveCollection(collection, 2, 4);
 
     // nocommit - this should be able to wait now, look into basecloudclients wait for cluster state call
-//    for (Replica replica : reps) {
-//      assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
-//    }
+
   }
 }

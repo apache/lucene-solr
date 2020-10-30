@@ -1515,13 +1515,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         throws IOException, SolrServerException, InterruptedException {
       long finishTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
       RequestStatusState state = RequestStatusState.NOT_FOUND;
+      int cnt = 0;
       while (System.nanoTime() < finishTime) {
+        cnt++;
         state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
           deleteAsyncId(requestId).process(client);
           return state;
         }
-        TimeUnit.MILLISECONDS.sleep(500);
+        if (cnt < 10) {
+          TimeUnit.MILLISECONDS.sleep(250);
+        } else {
+          TimeUnit.MILLISECONDS.sleep(1000);
+        }
+
       }
       return state;
     }

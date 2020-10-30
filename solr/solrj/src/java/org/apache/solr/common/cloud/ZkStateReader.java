@@ -670,7 +670,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     if (fire) {
-      try (ParWork worker = new ParWork(this, true)) {
+      try (ParWork worker = new ParWork(this, true, true)) {
         cloudCollectionsListeners.forEach(listener -> {
 
           listener.onChange(oldCollections, newCollections);

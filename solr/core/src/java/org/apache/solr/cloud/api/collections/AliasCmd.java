@@ -34,6 +34,7 @@ import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAM
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Common superclass for commands that maintain or manipulate aliases. In the routed alias parlance, "maintain"
@@ -91,7 +92,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     int numShards = BaseCloudSolrClient.getShardNames(zkProps).size();
-    CollectionsHandler.waitForActiveCollection(createCollName, ocmh.overseer.getCoreContainer(), numShards, numShards * BaseCloudSolrClient.getTotalReplicas(zkProps));
+    BaseCloudSolrClient.waitForActiveCollection(ocmh.zkStateReader, createCollName, 60, TimeUnit.SECONDS, numShards, numShards * BaseCloudSolrClient.getTotalReplicas(zkProps));
     CollectionProperties collectionProperties = new CollectionProperties(ocmh.zkStateReader);
     collectionProperties.setCollectionProperty(createCollName,ROUTED_ALIAS_NAME_CORE_PROP,aliasName);
 

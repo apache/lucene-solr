@@ -108,7 +108,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update();
     }
@@ -232,7 +232,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       //        throw new SolrException(ErrorCode.SERVER_ERROR, "No positions found to place replicas " + replicaPositions);
       //      }
 
-      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async);
+      final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async, message.getStr("operation"));
       if (log.isDebugEnabled()) {
         log.debug(formatString("Creating SolrCores for new collection {0}, shardNames {1} , message : {2}", collectionName, shardNames, message));
       }
@@ -248,6 +248,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (replicas == null || replicas.isEmpty()) {
             ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, withCollection, ZkStateReader.SHARD_ID_PROP, withCollectionShard,
                 "node", nodeName, CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
+            // TODO: prob want too look into this being parallel or always async
             new AddReplicaCmd(ocmh).call(clusterState, props, results);
             clusterState = zkStateReader.getClusterState(); // refresh
           }
@@ -382,6 +383,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       log.error("Exception creating collection", ex);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     }
+    return null;
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,

@@ -87,7 +87,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
@@ -313,14 +313,14 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
       log.error("Restore failed to create initial replicas.");
       ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
-      return;
+      return null;
     }
 
     //refresh the location copy of collection state
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
     {
-      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
       // Copy data from backed up index to each replica
       for (Slice slice : restoreCollection.getSlices()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -334,7 +334,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     {
-      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
 
       for (Slice s : restoreCollection.getSlices()) {
         for (Replica r : s.getReplicas()) {
@@ -437,6 +437,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
+    return null;
   }
 
   private int getInt(ZkNodeProps message, String propertyName, Integer count, int defaultValue) {

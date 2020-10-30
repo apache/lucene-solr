@@ -340,7 +340,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               ParWork.propagateInterrupt(e);
               // let the original exception bubble up
               log.error("Unable to release async ID={}", asyncId, e);
-              SolrZkClient.checkInterrupted(e);
             }
           }
         }
@@ -1354,48 +1353,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
   }
 
-  public static void waitForActiveCollection(String collectionName, CoreContainer cc, int numShards, int totalReplicas)
-          throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) {
-      log.debug("waitForActiveCollection(String collectionName={}, CoreContainer cc={}) - start", collectionName, cc);
-    }
-
-    CloudConfig ccfg = cc.getConfig().getCloudConfig();
-    Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
-    Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
-    log.info("Wait for new collection to be active for at most " + seconds + " seconds. Check all shard "
-            + (checkLeaderOnly ? "leaders" : "replicas"));
-
-    waitForActiveCollection(cc, collectionName, seconds, TimeUnit.SECONDS, numShards, totalReplicas);
-
-    if (log.isDebugEnabled()) {
-      log.debug("waitForActiveCollection(String, CoreContainer, SolrResponse) - end");
-    }
-  }
-
-  public static void waitForActiveCollection(CoreContainer cc , String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
-    log.info("waitForActiveCollection: {}", collection);
-    assert collection != null;
-    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas);
-
-    AtomicReference<DocCollection> state = new AtomicReference<>();
-    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
-    try {
-      cc.getZkController().getZkStateReader().waitForState(collection, wait, unit, (n, c) -> {
-        state.set(c);
-        liveNodesLastSeen.set(n);
-
-        return predicate.matches(n, c);
-      });
-    } catch (TimeoutException e) {
-      throw new RuntimeException("Failed while waiting for active collection" + "\n" + e.getMessage() + " \nShards:" + shards + " Replicas:" + totalReplicas + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray())
-              + "\nLast available state: " + state.get());
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-
-  }
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {
       SolrIdentifierValidator.validateShardName(shard);

@@ -67,8 +67,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     moveReplica(ocmh.zkStateReader.getClusterState(), message, results);
+    return null;
   }
 
   private void moveReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
@@ -288,13 +289,12 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         CoreAdminParams.NAME, newCoreName,
         ZkStateReader.REPLICA_TYPE, replica.getType().name());
 
-    if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
+    if (async != null) addReplicasProps.getProperties().put(ASYNC, async + "-AddReplica-" + Math.abs(System.nanoTime()));
     @SuppressWarnings({"rawtypes"})
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
     ActiveReplicaWatcher watcher = null;
-    ZkNodeProps props = ocmh.addReplica(clusterState, addReplicasProps, addResult, null).get(0);
-    log.debug("props {}", props);
+    ocmh.addReplica(clusterState, addReplicasProps, addResult, null);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher = new ActiveReplicaWatcher(coll.getName(), null, Collections.singletonList(newCoreName), countDownLatch);
       log.debug("-- registered watcher {}", watcher);

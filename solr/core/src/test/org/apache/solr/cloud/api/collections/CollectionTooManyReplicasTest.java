@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slow
+@LuceneTestCase.AwaitsFix(bugUrl = "nocommit - relying on maxshardspernode enforcement, just delete this test")
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @BeforeClass
