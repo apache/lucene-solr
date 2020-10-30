@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,6 +41,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 /**
  * Tests the Custom Sharding API.
  */
+@LuceneTestCase.Nightly // nocommit look into this test sometimes being very slow to finish
 public class CustomCollectionTest extends SolrCloudTestCase {
 
   private static final int NODE_COUNT = 4;

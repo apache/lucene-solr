@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,6 +44,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly // nocommit look into this test sometimes being very slow to finish
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
   protected static int numVersions = 150;  // number of versions to use when syncing
   protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
