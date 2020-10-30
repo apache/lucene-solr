@@ -360,7 +360,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
     } finally {
-      close();
+      core = null;
     }
   }
 

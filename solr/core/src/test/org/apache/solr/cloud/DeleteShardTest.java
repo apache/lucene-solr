@@ -83,9 +83,14 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
+
+    waitForState("Expected 'shard2' to be removed", collection, (n, c) -> {
+      return c != null && c.getSlice("shard2") != null && c.getSlice("shard2").getState() == State.CONSTRUCTION;
+    });
+
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
     waitForState("Expected 'shard2' to be removed", collection, (n, c) -> {
-      return c.getSlice("shard2") == null;
+      return c != null && c.getSlice("shard2") == null;
     });
 
   }
