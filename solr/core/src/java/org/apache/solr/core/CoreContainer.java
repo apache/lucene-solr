@@ -1244,6 +1244,7 @@ public class CoreContainer {
     return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters, false);
   }
 
+  List<String> inFlightCreations = new ArrayList<>(); // See SOLR-14969
   /**
    * Creates a new core in a specified instance directory, publishing the core state to the cluster
    *
@@ -1252,7 +1253,6 @@ public class CoreContainer {
    * @param parameters   the core parameters
    * @return the newly created core
    */
-  List<String> inFlightCreations = new ArrayList<>(); // See SOLR-14969
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
     try {
       synchronized (inFlightCreations) {
