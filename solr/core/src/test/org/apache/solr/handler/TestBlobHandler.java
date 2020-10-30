@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
+@LuceneTestCase.Nightly
 public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

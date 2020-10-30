@@ -852,6 +852,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
  @Test
+ @Nightly
+ // TODO - look into slowness on this
  public void testLukeHandler() throws Exception
   {    
     SolrClient client = getSolrClient(jetty);

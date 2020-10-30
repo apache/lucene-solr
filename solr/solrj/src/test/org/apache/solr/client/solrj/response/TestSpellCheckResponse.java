@@ -106,6 +106,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   }
 
   @Test
+  @Nightly // TODO: look at perf
   public void testSpellCheckCollationResponse() throws Exception {
     getSolrClient();
     client.deleteByQuery("*:*");

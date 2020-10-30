@@ -67,13 +67,13 @@ public class SolrCmdDistributor implements Closeable {
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
     isClosed = null;
   }
 
   public SolrCmdDistributor(UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
     assert ObjectReleaseTracker.track(this);
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).strictEventOrdering(true).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
     this.isClosed = isClosed;
   }
 
