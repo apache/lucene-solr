@@ -164,12 +164,12 @@ public class SliceMutator {
       // TODO: this should only be calculated once and cached somewhere?
       if (log.isDebugEnabled()) log.debug("examine for setting or unsetting as leader replica={}", replica);
 
-      if (replica == oldLeader && !coreNodeName.equals(replica.getName())) {
-        if (log.isDebugEnabled()) log.debug("Unset leader");
-        replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
-      } else if (coreNodeName.equals(replica.getName())) {
+      if (coreNodeName.equals(replica.getName())) {
         if (log.isDebugEnabled()) log.debug("Set leader");
         replica = new ReplicaMutator(cloudManager).setLeader(replica);
+      } else if (replica.getBool("leader", false)) {
+        if (log.isDebugEnabled()) log.debug("Unset leader");
+        replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);

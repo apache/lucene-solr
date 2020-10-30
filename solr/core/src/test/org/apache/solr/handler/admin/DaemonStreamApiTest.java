@@ -42,7 +42,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@ThreadLeakLingering(linger = 2000) // allow a small linger for daemon streams to stop
 //@Ignore // nocommit - need to fix the driver and this test again
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 

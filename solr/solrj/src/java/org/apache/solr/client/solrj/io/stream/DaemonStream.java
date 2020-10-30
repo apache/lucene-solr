@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -41,6 +42,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,7 +291,7 @@ public class DaemonStream extends TupleStream implements Expressible {
 
     // a reference to the Thread that is executing the stream to track its state
     private volatile Thread executingThread;
-    private boolean shutdown;
+    private volatile boolean shutdown;
 
     public StreamRunner(long runInterval, String id) {
       this.runInterval = runInterval;
@@ -391,12 +394,15 @@ public class DaemonStream extends TupleStream implements Expressible {
         }
         iterations.incrementAndGet();
 
-        if (sleepMillis > 0) {
-          try {
-            Thread.sleep(sleepMillis);
-          } catch (InterruptedException e) {
-            log.error("Error in DaemonStream:{}", id, e);
-            break OUTER;
+        if (sleepMillis > 0 && !getShutdown()) {
+          TimeOut timeout = new TimeOut(sleepMillis, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+          while (!timeout.hasTimedOut() && !getShutdown()) {
+            try {
+              Thread.sleep(250);
+            } catch (InterruptedException e) {
+              log.error("Error in DaemonStream:{}", id, e);
+              break;
+            }
           }
         }
       }
