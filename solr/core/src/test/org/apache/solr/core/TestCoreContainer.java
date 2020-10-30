@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.charset.CharacterCodingException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -119,22 +118,27 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
   }
 
+  private static class TestReloadThread extends Thread {
+    private final CoreContainer cc;
+    TestReloadThread(CoreContainer cc) {
+      this.cc = cc;
+    }
+    @Override
+    public void run() {
+      cc.reload("core1");
+    }
+  }
+
   @Test
   public void testReloadThreaded() throws Exception {
     final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
     cc.create("core1", ImmutableMap.of("configSet", "minimal"));
 
-    class TestThread extends Thread {
-      @Override
-      public void run() {
-        cc.reload("core1");
-      }
-    }
 
     List<Thread> threads = new ArrayList<>();
     int numThreads = 4;
     for (int i = 0; i < numThreads; i++) {
-      threads.add(new TestThread());
+      threads.add(new TestReloadThread(cc));
     }
 
     for (Thread thread : threads) {
@@ -149,33 +153,46 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   }
 
+  private static class TestCreateThread extends Thread {
+    final CoreContainer cc;
+    final String coreName;
+    boolean foundExpectedError = false;
+    SolrCore core = null;
+
+    TestCreateThread(CoreContainer cc, String coreName) {
+      this.cc = cc;
+      this.coreName = coreName;
+    }
+    @Override
+    public void run() {
+      try {
+        core = cc.create(coreName, ImmutableMap.of("configSet", "minimal"));
+      } catch (SolrException e) {
+        String msg = e.getMessage();
+        foundExpectedError = msg.contains("Already creating a core with name") || msg.contains("already exists");
+      }
+    }
+
+    int verifyMe() {
+      if (foundExpectedError) {
+        assertNull("failed create should have returned null for core", core);
+        return 0;
+      } else {
+        assertNotNull("Core should not be null if there was no error", core);
+        return 1;
+      }
+    }
+  }
+
   @Test
   public void testCreateThreaded() throws Exception {
     final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
-    SolrCore[] myCore = new SolrCore[1]; // *cough*
+    final int NUM_THREADS = 3;
 
-    class TestThread extends Thread {
-      final CoreContainer cc;
-      final String coreName;
-      boolean foundExpectedError = false;
-      TestThread(CoreContainer cc, String coreName) {
-        this.cc = cc;
-        this.coreName = coreName;
-      }
-      @Override
-      public void run() {
-        try {
-          myCore[0] = cc.create(coreName, ImmutableMap.of("configSet", "minimal"));
-        } catch (SolrException e) {
-          foundExpectedError = e.getMessage().contains("Already creating a core with name");
-        }
-      }
-      boolean getFoundExpectedError() { return foundExpectedError; }
-    }
 
     // Try this a few times to increase the chances of failure.
     for (int idx = 0; idx < 3; ++idx) {
-      TestThread[] threads = new TestThread[2];
+      TestCreateThread[] threads = new TestCreateThread[NUM_THREADS];
       // Let's add a little stress in here by using the same core name each
       // time around. The final unload in the loop should delete the core and
       // allow the next time around to succeed.
@@ -183,22 +200,25 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // that prevents muliple simulatneous creations,
       // currently "inFlightCreations"
       String testName = "coreToTest";
-      threads[0] = new TestThread(cc, testName);
-      threads[1] = new TestThread(cc, testName);
-      // One of these should always fail
-      threads[0].start();
-      threads[1].start();
+      for (int thread = 0; thread < NUM_THREADS; ++thread) {
+        threads[thread] = new TestCreateThread(cc, testName);
+      }
+      // only one of these should succeed.
+      for (int thread = 0; thread < NUM_THREADS; ++thread) {
+        threads[thread].start();
+      }
 
-      threads[0].join();
-      threads[1].join();
+      for (int thread = 0; thread < NUM_THREADS; ++thread) {
+        threads[thread].join();
+      }
 
       // We can't guarantee that which thread failed, so go find it
-      assertTrue("One core creation should have failed",
-          threads[0].getFoundExpectedError() || threads[1].getFoundExpectedError());
+      int goodCount = 0;
+      for (int thread = 0; thread < NUM_THREADS; ++thread) {
+        goodCount += threads[thread].verifyMe();
+      }
+      assertEquals("Only one create should have succeeded", 1, goodCount);
 
-      assertTrue("One core creation should have succeeded",
-          threads[0].getFoundExpectedError() == false
-              ||   threads[1].getFoundExpectedError() == false);
 
       // Check bookkeeping by removing and creating the core again, making sure
       // we didn't leave the record of trying to create this core around.
@@ -206,10 +226,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc.unload(testName, true, true, true);
       cc.create(testName, ImmutableMap.of("configSet", "minimal"));
       // This call should fail with a different error because the core was
-      // created successfully above.
+      // created successfully.
       SolrException thrown = expectThrows(SolrException.class, () ->
           cc.create(testName, ImmutableMap.of("configSet", "minimal")));
-      assertTrue(thrown.getMessage().contains("already exists"));
+      assertTrue("Should have 'already exists' error", thrown.getMessage().contains("already exists"));
 
       cc.unload(testName, true, true, true);
     }

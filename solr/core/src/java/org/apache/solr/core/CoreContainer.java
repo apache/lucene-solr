@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -1244,7 +1245,7 @@ public class CoreContainer {
     return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters, false);
   }
 
-  List<String> inFlightCreations = new ArrayList<>(); // See SOLR-14969
+  Set<String> inFlightCreations = new HashSet<>(); // See SOLR-14969
   /**
    * Creates a new core in a specified instance directory, publishing the core state to the cluster
    *
@@ -1254,18 +1255,20 @@ public class CoreContainer {
    * @return the newly created core
    */
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
+    SolrCore core = null;
+    boolean iAdded = false;
     try {
       synchronized (inFlightCreations) {
-        if (inFlightCreations.contains(coreName)) {
+        if (inFlightCreations.add(coreName)) {
+          iAdded = true;
+        } else {
           String msg = "Already creating a core with name '" + coreName + "', call aborted '";
           log.warn(msg);
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
-        inFlightCreations.add(coreName);
       }
       CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
-      // TODO: There's a race here, isn't there?
       // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
       if (getAllCoreNames().contains(coreName)) {
         log.warn("Creating a core with existing name is not allowed: '{}'", coreName);
@@ -1290,7 +1293,6 @@ public class CoreContainer {
         // first and clean it up if there's an error.
         coresLocator.create(this, cd);
 
-        SolrCore core = null;
         try {
           solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
@@ -1336,7 +1338,9 @@ public class CoreContainer {
       }
     } finally {
       synchronized (inFlightCreations) {
-        inFlightCreations.remove(coreName);
+        if (iAdded) {
+          inFlightCreations.remove(coreName);
+        }
       }
     }
   }
