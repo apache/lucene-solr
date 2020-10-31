@@ -113,7 +113,8 @@ public class PerThreadExecService extends AbstractExecutorService {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (running.get() > 0) {
       if (timeout.hasTimedOut()) {
-        throw new RuntimeException("Timeout");
+        log.warn("return before reaching termination, wait for {} {}, running={}", l, timeout, running);
+        return false;
       }
 
       // System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
