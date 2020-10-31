@@ -52,6 +52,8 @@ import org.apache.lucene.util.FixedBitSet;
  * Similarly, for doc "a b c b a f g", query "c b"~2
  * would get same score as "g f"~2, although "c b"~2 could be matched twice.
  * We may want to fix this in the future (currently not, for performance reasons).
+ *
+ * @lucene.internal
  */
 public final class SloppyPhraseMatcher extends PhraseMatcher {
 

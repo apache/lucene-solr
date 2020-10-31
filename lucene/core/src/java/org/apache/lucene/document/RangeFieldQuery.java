@@ -40,6 +40,7 @@ import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * Query class for searching {@code RangeField} types by a defined {@link Relation}.
+ * @lucene.internal
  */
 public abstract class RangeFieldQuery extends Query {
   /** field name */

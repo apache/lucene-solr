@@ -24,6 +24,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+ * @lucene.internal
  */
 public final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;

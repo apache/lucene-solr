@@ -304,7 +304,9 @@ public class PhraseQuery extends Query {
     v.consumeTerms(this, terms);
   }
 
-  /** Term postings and position information for phrase matching */
+  /** Term postings and position information for phrase matching
+   * @lucene.internal
+   */
   public static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
     final ImpactsEnum impacts;

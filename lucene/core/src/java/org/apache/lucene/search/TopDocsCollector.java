@@ -34,7 +34,9 @@ import org.apache.lucene.util.PriorityQueue;
 public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector {
 
   /** This is used in case topDocs() is called with illegal parameters, or there
-   *  simply aren't (enough) results. */
+   *  simply aren't (enough) results.
+   * @lucene.internal
+   */
   public static final TopDocs EMPTY_TOPDOCS = new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
   
   /**

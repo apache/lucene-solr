@@ -409,6 +409,7 @@ public class MultiPhraseQuery extends Query {
    * Takes the logical union of multiple PostingsEnum iterators.
    * <p>
    * Note: positions are merged during freq()
+   * @lucene.internal
    */
   public static class UnionPostingsEnum extends PostingsEnum {
     /** queue ordered by docid */
@@ -576,7 +577,9 @@ public class MultiPhraseQuery extends Query {
   }
 
   /** Slower version of UnionPostingsEnum that delegates offsets and positions, for
-   use by MatchesIterator */
+   use by MatchesIterator
+   * @lucene.internal
+   */
   public static class UnionFullPostingsEnum extends UnionPostingsEnum {
 
     int freq = -1;

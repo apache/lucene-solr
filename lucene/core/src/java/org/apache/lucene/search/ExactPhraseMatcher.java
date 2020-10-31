@@ -33,7 +33,9 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.PriorityQueue;
 
-/** Expert: Find exact phrases */
+/** Expert: Find exact phrases
+ * @lucene.internal
+ */
 public final class ExactPhraseMatcher extends PhraseMatcher {
 
   private static class PostingsAndPosition {

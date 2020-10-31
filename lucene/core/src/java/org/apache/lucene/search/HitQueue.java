@@ -19,7 +19,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.PriorityQueue;
 
-/** Expert: Priority queue containing hit docs */
+/** Expert: Priority queue containing hit docs
+ * @lucene.internal
+ */
 public final class HitQueue extends PriorityQueue<ScoreDoc> {
 
   /**

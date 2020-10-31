@@ -25,6 +25,7 @@ import java.io.IOException;
  * To find matches on a document, first advance {@link #approximation} to the
  * relevant document, then call {@link #reset()}.  Clients can then call
  * {@link #nextMatch()} to iterate over the matches
+ * @lucene.internal
  */
 public abstract class PhraseMatcher {
 
