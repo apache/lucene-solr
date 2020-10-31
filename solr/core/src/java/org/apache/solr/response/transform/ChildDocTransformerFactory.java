@@ -135,7 +135,8 @@ public class ChildDocTransformerFactory extends TransformerFactory {
       childSolrReturnFields = new SolrReturnFields(req);
     }
 
-    int limit = params.getInt( "limit", 10 );
+    // default to unlimited
+    int limit = params.getInt( "limit", -1 );
 
     return new ChildDocTransformer(field, parentsFilter, childDocSet, childSolrReturnFields, buildHierarchy, limit);
   }
