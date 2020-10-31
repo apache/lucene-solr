@@ -152,7 +152,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
     assertEquals("Expecting no cores but found some: " + status.getCoreStatus(), 0, status.getCoreStatus().size());
 
-    cluster.waitForActiveCollection(coll, 5, create.getNumNrtReplicas().intValue() + create.getNumTlogReplicas().intValue() + create.getNumPullReplicas().intValue());
+    cluster.waitForActiveCollection(coll, 5, 5 * create.getTotaleReplicaCount());
 
     collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     assertEquals(create.getNumShards().intValue(), collection.getSlices().size());

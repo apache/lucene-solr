@@ -120,7 +120,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     cloudClient.request(create);
 
     // wait for recovery
-    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
+    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * create.getTotaleReplicaCount());
 
     addDocs(coll, 100);
 

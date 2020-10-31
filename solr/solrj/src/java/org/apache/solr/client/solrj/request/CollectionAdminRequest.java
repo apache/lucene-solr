@@ -370,7 +370,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numReplicas the replication factor of the collection (same as numNrtReplicas)
    */
   public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
-    return new Create(collection, config, numShards, numReplicas, 0, 0);
+    return new Create(collection, config, numShards, numReplicas, null, null);
   }
 
   /**
@@ -384,7 +384,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numReplicas the replication factor of the collection
    */
   public static Create createCollection(String collection, int numShards, int numReplicas) {
-    return new Create(collection, null, numShards, numReplicas, 0, 0);
+    return new Create(collection, null, numShards, numReplicas, null, null);
   }
 
   /**
@@ -429,11 +429,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String policy;
     protected String shards;
     protected String routerField;
-    protected Integer numShards = 0;
+    protected Integer numShards;
     protected Integer maxShardsPerNode;
-    protected Integer nrtReplicas = 0;
-    protected Integer pullReplicas = 0;
-    protected Integer tlogReplicas = 0;
+    protected Integer nrtReplicas;
+    protected Integer pullReplicas;
+    protected Integer tlogReplicas;
 
     protected Properties properties;
     protected String alias;
@@ -446,7 +446,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     /** Constructor that assumes {@link ImplicitDocRouter#NAME} and an explicit list of <code>shards</code> */
     protected Create(String collection, String config, String shards, int numNrtReplicas) {
-      this(collection, config, ImplicitDocRouter.NAME, 0, checkNotNull("shards",shards), numNrtReplicas, 0, 0);
+      this(collection, config, ImplicitDocRouter.NAME, null, checkNotNull("shards",shards), numNrtReplicas, null, null);
     }
 
     private Create(String collection, String config, String routerName, Integer numShards, String shards, Integer numNrtReplicas, Integer  numTlogReplicas, Integer numPullReplicas) {
@@ -457,11 +457,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       this.configName = config;
       this.routerName = routerName;
-      this.numShards = numShards == 0 ? null : numShards;;
+      this.numShards = numShards;;
       this.setShards(shards);
-      this.nrtReplicas = numNrtReplicas == 0 ? null : numNrtReplicas;
-      this.tlogReplicas = tlogReplicas == 0 ? null : tlogReplicas;
-      this.pullReplicas = pullReplicas == 0 ? null : pullReplicas;
+      this.nrtReplicas = numNrtReplicas;
+      this.tlogReplicas = numTlogReplicas;
+      this.pullReplicas = numPullReplicas;
     }
 
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
@@ -479,6 +479,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setAlias(String alias) {
       this.alias = alias;
       return this;
+    }
+
+    public int getTotaleReplicaCount() {
+      int cnt = (nrtReplicas == null ? 0 : nrtReplicas) + (tlogReplicas == null ? 0 : tlogReplicas) + (pullReplicas == null ? 0 : pullReplicas);
+      return cnt;
     }
 
     public String getConfigName()  { return configName; }
