@@ -457,11 +457,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       this.configName = config;
       this.routerName = routerName;
-      this.numShards = numShards;
+      this.numShards = numShards == 0 ? null : numShards;;
       this.setShards(shards);
-      this.nrtReplicas = numNrtReplicas;
-      this.tlogReplicas = numTlogReplicas;
-      this.pullReplicas = numPullReplicas;
+      this.nrtReplicas = numNrtReplicas == 0 ? null : numNrtReplicas;
+      this.tlogReplicas = tlogReplicas == 0 ? null : tlogReplicas;
+      this.pullReplicas = pullReplicas == 0 ? null : pullReplicas;
     }
 
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
