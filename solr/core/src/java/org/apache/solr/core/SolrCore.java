@@ -3110,14 +3110,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       File dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toFile();
       try {
         FileUtils.deleteDirectory(dataDir);
-      } catch (IOException e) {
+      } catch (Exception e) {
         log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir.getAbsolutePath(), e);
       }
     }
     if (deleteInstanceDir) {
       try {
         FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
-      } catch (IOException e) {
+      } catch (Exception e) {
         log.error("Failed to delete instance dir for unloaded core: {} dir: {}", cd.getName(), cd.getInstanceDir(), e);
       }
     }

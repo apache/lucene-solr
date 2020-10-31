@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -109,7 +111,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
-      CountDownLatch cleanupLatch = new CountDownLatch(replicas.size());
+
       for (ZkNodeProps r : replicas) {
         final ZkNodeProps replica = r.plus(message.getProperties()).plus("parallel", "true").plus(ASYNC, asyncId);
         if (log.isInfoEnabled()) {
@@ -119,7 +121,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         NamedList deleteResult = new NamedList();
         try {
           ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult, () -> {
-            cleanupLatch.countDown();
+
             if (deleteResult.get("failure") != null) {
               synchronized (results) {
                 results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
@@ -136,24 +138,37 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
           });
         } catch (KeeperException e) {
           log.warn("Error deleting replica: {}", r, e);
-          cleanupLatch.countDown();
           throw e;
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           log.warn("Error deleting replica: {}", r, e);
-          cleanupLatch.countDown();
           throw e;
         }
       }
       log.debug("Waiting for delete shard action to complete");
-      cleanupLatch.await(1, TimeUnit.MINUTES);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
       ZkStateReader zkStateReader = ocmh.zkStateReader;
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
-      zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
+
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+      if (results.get("failure") == null && results.get("exception") == null) {
+        response.asyncFinalRunner = new Runnable() {
+          @Override
+          public void run() {
+            try {
+              zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (c) ->  c  != null && c.getSlice(sliceId) == null);
+            } catch (InterruptedException e) {
+              log.warn("",  e);
+            } catch (TimeoutException e) {
+              log.warn("",  e);
+            }
+          }
+        };
+      }
 
       log.info("Successfully deleted collection: {} , shard: {}", collectionName, sliceId);
     } catch (SolrException e) {

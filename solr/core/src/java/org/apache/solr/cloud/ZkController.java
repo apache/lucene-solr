@@ -2728,7 +2728,7 @@ public class ZkController implements Closeable, Runnable {
       if (replicaRemoved) {
         try {
           log.info("Replica {} removed from clusterstate, remove it.", coreName);
-          // getCoreContainer().unload(coreName, true, true, true); // nocommit - this causes bad things in tests
+          getCoreContainer().unload(coreName, true, true, true); // nocommit - this causes bad things in tests
         } catch (SolrException e) {
           if (!e.getMessage().contains("Cannot unload non-existent core")) {
             // no need to log if the core was already unloaded

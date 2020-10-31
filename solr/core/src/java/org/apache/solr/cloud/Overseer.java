@@ -253,7 +253,7 @@ public class Overseer implements SolrCloseable {
               // if there were any errors while processing
               // the state queue, items would have been left in the
               // work queue so let's process those first
-              byte[] data = fallbackQueue.peek();
+              byte[] data = fallbackQueue.peek(null);
               // TODO: can we do this with a builk call instead?
               while (fallbackQueueSize > 0 && data != null) {
                 final ZkNodeProps message = ZkNodeProps.load(data);
@@ -275,7 +275,7 @@ public class Overseer implements SolrCloseable {
                       log.warn(
                               "Exception when process message = {}, consider as bad message and poll out from the queue",
                               message);
-                      fallbackQueue.poll();
+                      fallbackQueue.poll(null);
                     }
                   } catch (InterruptedException e1) {
                     ParWork.propagateInterrupt(e);
@@ -285,8 +285,8 @@ public class Overseer implements SolrCloseable {
                   }
                   throw exp;
                 }
-                fallbackQueue.poll(); // poll-ing removes the element we got by peek-ing
-                data = fallbackQueue.peek();
+                fallbackQueue.poll(null); // poll-ing removes the element we got by peek-ing
+                data = fallbackQueue.peek(null);
                 fallbackQueueSize--;
               }
               // force flush at the end of the loop, if there are no pending updates, this is a no op call
@@ -337,27 +337,36 @@ public class Overseer implements SolrCloseable {
           }
           try {
             Set<String> processedNodes = new HashSet<>();
-            TimeOut timeout = new TimeOut(1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+            TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             while (queue != null && !queue.isEmpty()) {
               if (isClosed()) {
                 log.info("Closing");
                 return;
               }
-              if (timeout.hasTimedOut()) {
-                break;
-              }
               for (Pair<String, byte[]> head : queue) {
                 byte[] data = head.second();
-                final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) log.debug("processMessage: queueSize: {}, message = {}", stateUpdateQueue.getZkStats().getQueueLength(), message);
-                if (log.isDebugEnabled()) log.debug("add processed node: {}, processedNodes = {}", head.first(), stateUpdateQueue.getZkStats().getQueueLength(), processedNodes);
-                processedNodes.add(new File(head.first()).getName());
-                // The callback always be called on this thread
-                processQueueItem(message, reader.getClusterState(), zkStateWriter, true, null);
+
+                if (log.isDebugEnabled()) log.debug("look at node {} data={}", head.first(), head.second() == null ? null : head.second().length);
+                if (head.second() != null && head.second().length > 0) {
+                  final ZkNodeProps message = ZkNodeProps.load(data);
+                  if (log.isDebugEnabled()) log.debug("processMessage: queueSize: {}, message = {}", stateUpdateQueue.getZkStats().getQueueLength(), message);
+                  if (log.isDebugEnabled()) log.debug("add processed node: {}, processedNodes = {}", head.first(), stateUpdateQueue.getZkStats().getQueueLength(), processedNodes);
+                  processedNodes.add(new File(head.first()).getName());
+                  // The callback always be called on this thread
+                  processQueueItem(message, reader.getClusterState(), zkStateWriter, true, null);
+                } else {
+                  log.warn("Found queue item with no data, removing it {} : {}", head.first(), new File(head.first()).getName());
+                  processedNodes.add(new File(head.first()).getName());
+                }
               }
               if (isClosed()) {
                 log.info("Overseer closed, exiting loop");
                 return;
+              }
+
+              if (timeout.hasTimedOut()) {
+                if (log.isDebugEnabled()) log.debug("timeout, skipping out on tight loop {}", timeout.getInterval(TimeUnit.MILLISECONDS));
+                break;
               }
               // if an event comes in the next *ms batch it together
               int wait = 10;

@@ -98,8 +98,8 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Contains the last set of children fetched from ZK. Elements are removed from the head of
    * this in-memory set as they are consumed from the queue.  Due to the distributed nature
    * of the queue, elements may appear in this set whose underlying nodes have been consumed in ZK.
-   * Therefore, methods like {@link #peek()} have to double-check actual node existence, and methods
-   * like {@link #poll()} must resolve any races by attempting to delete the underlying node.
+   * Therefore, methods like {@link #peek(Predicate<String>)} have to double-check actual node existence, and methods
+   * like {@link #poll(Predicate<String>)} must resolve any races by attempting to delete the underlying node.
    */
   protected volatile TreeMap<String,byte[]> knownChildren;
 
@@ -158,10 +158,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek() throws KeeperException, InterruptedException {
+  public byte[] peek(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_peek");
     try {
-      return firstElement();
+      return firstElement(acceptFilter);
     } finally {
       time.stop();
     }
@@ -175,8 +175,8 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek(boolean block) throws KeeperException, InterruptedException {
-    return block ? peek(Long.MAX_VALUE) : peek();
+  public byte[] peek(Predicate<String> acceptFilter, boolean block) throws KeeperException, InterruptedException {
+    return block ? peek(acceptFilter, Long.MAX_VALUE) : peek(acceptFilter);
   }
 
   /**
@@ -187,7 +187,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek(long wait) throws KeeperException, InterruptedException {
+  public byte[] peek(Predicate<String> acceptFilter, long wait) throws KeeperException, InterruptedException {
     byte[] result = null;
 
     Timer.Context time;
@@ -199,7 +199,7 @@ public class ZkDistributedQueue implements DistributedQueue {
 
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
 
-    result = firstElement();
+    result = firstElement(acceptFilter);
     if (result != null) {
       return result;
     }
@@ -208,17 +208,17 @@ public class ZkDistributedQueue implements DistributedQueue {
     TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, null);
 
     if (foundChildren.size() > 0) {
-      result = firstElement();
+      result = firstElement(acceptFilter);
       return result;
     }
 
     TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
 
-    waitForChildren(null, foundChildren, waitNanos, timeout, watcher);
+    waitForChildren(null, foundChildren, timeout, watcher);
     if (foundChildren.size() == 0) {
       return null;
     }
-    result = firstElement();
+    result = firstElement(acceptFilter);
     return result;
 
   }
@@ -230,10 +230,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return Head of the queue or null.
    */
   @Override
-  public byte[] poll() throws KeeperException, InterruptedException {
+  public byte[] poll(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_poll");
     try {
-      return removeFirst();
+      return removeFirst(acceptFilter);
     } finally {
       time.stop();
     }
@@ -245,10 +245,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return The former head of the queue
    */
   @Override
-  public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
+  public byte[] remove(Predicate<String> acceptFilter) throws NoSuchElementException, KeeperException{
     Timer.Context time = stats.time(dir + "_remove");
     try {
-      byte[] result = removeFirst();
+      byte[] result = removeFirst(acceptFilter);
       if (result == null) {
         throw new NoSuchElementException();
       }
@@ -306,29 +306,29 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return The former head of the queue
    */
   @Override
-  public byte[] take() throws KeeperException, InterruptedException {
+  public byte[] take(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
     Timer.Context timer = stats.time(dir + "_take");
     updateLock.lockInterruptibly();
     try {
       long waitNanos = TimeUnit.MILLISECONDS.toNanos(60000);
 
-      byte[] result = removeFirst();
+      byte[] result = removeFirst(acceptFilter);
       if (result != null) {
         return result;
       }
 
       ChildWatcher watcher = new ChildWatcher();
-      TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, null);
+      TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, acceptFilter);
 
       TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
 
-      waitForChildren(null, foundChildren, waitNanos, timeout, watcher);
+      waitForChildren( s -> s.startsWith(PREFIX) || acceptFilter.test(s), foundChildren, timeout, watcher);
       if (foundChildren.size() == 0) {
         return null;
       }
 
-      result = removeFirst();
+      result = removeFirst(acceptFilter);
       if (result != null) {
         return result;
       }
@@ -348,6 +348,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   @Override
   public void offer(byte[] data) throws KeeperException {
     Timer.Context time = stats.time(dir + "_offer");
+    if (log.isDebugEnabled()) log.debug("Over item to queue {}", dir);
     try {
       try {
         if (maxQueueSize > 0) {
@@ -417,22 +418,38 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Returns the name if the first known child node, or {@code null} if the queue is empty.
    * @return
    */
-  private Map.Entry<String,byte[]> firstChild(boolean remove) {
+  private Map.Entry<String,byte[]> firstChild(boolean remove, Predicate<String> acceptFilter) {
     try {
       updateLock.lockInterruptibly();
       try {
         // We always return from cache first, the cache will be cleared if the node is not exist
         if (!knownChildren.isEmpty()) {
-          return remove ? knownChildren.pollFirstEntry() : knownChildren.firstEntry();
+          for (Map.Entry<String,byte[]> entry : knownChildren.entrySet()) {
+            if (acceptFilter != null && acceptFilter.test(entry.getKey())) {
+              continue;
+            }
+            if (remove) {
+              knownChildren.remove(entry.getKey());
+              try {
+                zookeeper.delete(dir + "/" + entry.getKey(), -1);
+              } catch (KeeperException.NoNodeException e) {
+                if (log.isDebugEnabled()) log.debug("No node found for {}", entry.getKey());
+              }
+              return entry;
+            }
+          }
+          return null;
         }
-
-        return null;
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();
         }
       }
-    } catch (InterruptedException e) {
+
+      fetchZkChildren(null, acceptFilter);
+
+      return null;
+    } catch (InterruptedException | KeeperException e) {
       ParWork.propagateInterrupt(e);
       throw new AlreadyClosedException(e);
     }
@@ -442,7 +459,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Return the current set of children from ZK; does not change internal state.
    */
   TreeMap<String,byte[]> fetchZkChildren(Watcher watcher, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
-
+    if (log.isDebugEnabled()) log.debug("fetchZkChildren");
     TreeMap<String,byte[]> orderedChildren = new TreeMap<>();
     updateLock.lockInterruptibly();
     try {
@@ -454,14 +471,14 @@ public class ZkDistributedQueue implements DistributedQueue {
           if (!childName.startsWith(PREFIX)) {
 
             // responses can be written to same queue with different naming scheme
-            if (log.isDebugEnabled()) log.debug("Found child node with improper name: {}, prefix={}", childName, PREFIX);
+            if (log.isDebugEnabled()) log.debug("Filtering child out by prefix name=: {}, prefix={}", childName, PREFIX);
             continue;
           }
           if (acceptFilter != null && acceptFilter.test(childName)) {
             if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", dir + "/" + childName);
             continue;
           }
-
+          if (log.isDebugEnabled()) log.debug("found: {}", childName);
           orderedChildren.put(childName, entry.getValue());
         }
       }
@@ -472,31 +489,33 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
 
     if (!orderedChildren.isEmpty()) {
+      if (log.isDebugEnabled()) log.debug("found children from fetch {}", orderedChildren.size());
       return orderedChildren;
     }
-
+    if (log.isDebugEnabled()) log.debug("found no children to fetch");
     TreeMap<String,byte[]> remoteKnownChildren = new TreeMap<>();
     try {
       List<String> childNames = zookeeper.getChildren(dir, watcher, true);
       stats.setQueueLength(childNames.size());
       for (String childName : childNames) {
-        if (log.isDebugEnabled()) log.debug("Examine child: {} out of {} {}", childName, childNames.size(), acceptFilter);
-        remoteKnownChildren.put(childName, null);
+        if (log.isDebugEnabled()) log.debug("Examine child: {} out of children={} acceptFilter={}", childName, childNames.size(), acceptFilter);
         // Check format
-        if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-
+        if (!childName.startsWith(PREFIX)) {
           // responses can be written to same queue with different naming scheme
-          if (log.isDebugEnabled()) log.debug("Found child node with improper name: {}", childName);
+          if (log.isDebugEnabled()) log.debug("Excluding child by prefix: {}", childName);
           continue;
         }
+        remoteKnownChildren.put(childName, null);
         if (acceptFilter != null && acceptFilter.test(childName)) {
-          if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", dir + "/" + childName);
+          if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", childName);
           continue;
         }
         if (log.isDebugEnabled()) log.debug("Add child to fetched children: {}", childName);
         orderedChildren.put(childName, null);
       }
+      if (log.isDebugEnabled()) log.debug("found {} remote children", remoteKnownChildren.size());
       updateKnownChildren(remoteKnownChildren);
+      if (log.isDebugEnabled()) log.debug("returning {} matched children", orderedChildren.size());
       return orderedChildren;
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
@@ -505,20 +524,20 @@ public class ZkDistributedQueue implements DistributedQueue {
   }
 
   private void updateKnownChildren(TreeMap<String,byte[]> children) {
+    if (log.isDebugEnabled()) log.debug("Update known children size={}", children.size());
+    TreeMap<String,byte[]> newKnownChildren = new TreeMap<>();
     updateLock.lock();
     try {
       Set<Map.Entry<String,byte[]>> entrySet = children.entrySet();
       for (Map.Entry<String,byte[]> entry : entrySet) {
         String childName = entry.getKey();
-        byte[] data = knownChildren == null ? null : knownChildren.get(childName);
-        if (data != null) {
-          if (childName.startsWith("/")) {
-            throw new IllegalArgumentException(childName);
-          }
-          children.put(childName, data);
+        byte[] data = entry.getValue();
+        if (data == null) {
+          data = knownChildren == null ? null : knownChildren.get(childName);
         }
+        newKnownChildren.put(childName, data);
       }
-      knownChildren = children;
+      knownChildren = newKnownChildren;
     } catch (Exception e) {
       log.error("", e);
     } finally {
@@ -542,12 +561,14 @@ public class ZkDistributedQueue implements DistributedQueue {
     TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
     try {
       if (foundChildren.size() == 0) {
-        waitForChildren(acceptFilter, foundChildren, waitNanos, timeout, watcher);
+        if (log.isDebugEnabled()) log.debug("found no children, watch for them  excludeFilter={}", acceptFilter);
+        waitForChildren(acceptFilter, foundChildren, timeout, watcher);
       }
 
       // Technically we could restart the method if we fasil to actually obtain any valid children
       // from ZK, but this is a super rare case, and the latency of the ZK fetches would require
       // much more sophisticated waitNanos tracking.
+      if (log.isDebugEnabled()) log.debug("found children to process {}", foundChildren.size());
       result = Collections.synchronizedList(new ArrayList<>(foundChildren.size()));
       Set<String> dataPaths = new HashSet<>();
       for (Map.Entry<String,byte[]> child : foundChildren.entrySet()) {
@@ -555,13 +576,15 @@ public class ZkDistributedQueue implements DistributedQueue {
           break;
         }
 
-        byte[] data;
-        updateLock.lockInterruptibly();
-        try {
-          data = knownChildren.get(child.getKey());
-        } finally {
-          if (updateLock.isHeldByCurrentThread()) {
-            updateLock.unlock();
+        byte[] data = child.getValue();
+        if (data == null) {
+          updateLock.lockInterruptibly();
+          try {
+            data = knownChildren.get(child.getKey());
+          } finally {
+            if (updateLock.isHeldByCurrentThread()) {
+              updateLock.unlock();
+            }
           }
         }
 
@@ -570,20 +593,20 @@ public class ZkDistributedQueue implements DistributedQueue {
           dataPaths.add(dir + "/" + child.getKey());
           if (log.isDebugEnabled()) log.debug("get data for child={}", child.getKey());
         } else {
+          if (log.isDebugEnabled()) log.debug("found data locally already {}", child.getKey());
           result.add(new Pair<>(child.getKey(), data));
         }
       }
 
+      if (log.isDebugEnabled()) log.debug("fetch data for paths {}", dataPaths);
       Map<String,byte[]> dataMap = zookeeper.getData(dataPaths);
       updateLock.lockInterruptibly();
+      List<Pair<String,byte[]>> finalResult = result;
       try {
-        List<Pair<String,byte[]>> finalResult = result;
         dataMap.forEach((k, bytes) -> {
           finalResult.add(new Pair<>(k, bytes));
           if (bytes != null) {
             knownChildren.put(new File(k).getName(), bytes);
-          } else {
-            knownChildren.remove(new File(k).getName());
           }
         });
       } finally {
@@ -591,78 +614,76 @@ public class ZkDistributedQueue implements DistributedQueue {
           updateLock.unlock();
         }
       }
-
-      return new ArrayList<>(result);
+      if (log.isDebugEnabled()) log.debug("peek elements returning {} nodes", finalResult.size());
+      return new ArrayList<>(finalResult);
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new AlreadyClosedException(e);
     }
   }
 
-  private void waitForChildren(Predicate<String> acceptFilter, TreeMap<String,byte[]> foundChildren, long waitNanos, TimeOut timeout, ChildWatcher watcher) throws InterruptedException, KeeperException {
-    if (log.isDebugEnabled()) log.debug("wait for children ... {}", waitNanos);
+  private void waitForChildren(Predicate<String> acceptFilter, TreeMap<String,byte[]> foundChildren, TimeOut timeout, ChildWatcher watcher) throws InterruptedException, KeeperException {
+    if (log.isDebugEnabled()) log.debug("wait for children ... {}ms", timeout.getInterval(TimeUnit.MILLISECONDS));
+
+    updateLock.lockInterruptibly();
     try {
+      for (Map.Entry<String,byte[]> child : knownChildren.entrySet()) {
+        if (!child.getKey().startsWith(PREFIX) && (acceptFilter == null || !acceptFilter.test(child.getKey()))) {
+          foundChildren.put(child.getKey(), child.getValue());
+        }
+      }
+    } finally {
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
+    }
+    if (!foundChildren.isEmpty()) {
+      if (log.isDebugEnabled()) log.debug("Found new children ... {}", foundChildren.size());
+      return;
+    }
+    if (timeout.hasTimedOut()) {
+      if (log.isDebugEnabled()) log.debug("0 wait time and no children found, return");
+      return;
+    }
+    TreeMap<String,byte[]> fc = null;
+    while (fc == null || fc.isEmpty()) {
+      fc = fetchZkChildren(watcher, acceptFilter);
+      if (!fc.isEmpty()) {
+        foundChildren.putAll(fc);
+        return;
+      }
       updateLock.lockInterruptibly();
       try {
+        try {
+          changed.await(Math.min(timeout.getInterval(TimeUnit.MILLISECONDS), 5000), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        }
+        if (zookeeper.isClosed() || !zookeeper.isConnected()) {
+          throw new AlreadyClosedException();
+        }
+        if (timeout.hasTimedOut()) {
+          return;
+        }
         for (Map.Entry<String,byte[]> child : knownChildren.entrySet()) {
           if (acceptFilter == null || !acceptFilter.test(child.getKey())) {
             foundChildren.put(child.getKey(), child.getValue());
           }
         }
+        if (!foundChildren.isEmpty()) {
+          try {
+            if (log.isDebugEnabled()) log.debug("Remove watches for {}");
+            zookeeper.getSolrZooKeeper().removeAllWatches(dir, Watcher.WatcherType.Children, false);
+          } catch (Exception e) {
+            log.info(e.getMessage());
+          }
+          return;
+        }
+
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();
         }
-      }
-      if (!foundChildren.isEmpty()) {
-        return;
-      }
-      if (waitNanos <= 0) {
-        if (log.isDebugEnabled()) log.debug("0 wait time and no children found, return");
-        return;
-      }
-      TreeMap<String,byte[]> fc = null;
-      while (fc == null || fc.isEmpty()) {
-        if (watcher.fired) {
-          watcher.fired = false;
-          fc = fetchZkChildren(watcher, acceptFilter);
-          if (!fc.isEmpty()) {
-            foundChildren.putAll(fc);
-            return;
-          }
-        }
-        updateLock.lockInterruptibly();
-        try {
-          try {
-            changed.await(10, TimeUnit.MILLISECONDS);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-          }
-          if (zookeeper.isClosed() || !zookeeper.isConnected()) {
-            throw new AlreadyClosedException();
-          }
-          if (timeout.hasTimedOut()) {
-            return;
-          }
-          for (Map.Entry<String,byte[]> child : knownChildren.entrySet()) {
-            if (acceptFilter == null || !acceptFilter.test(child.getKey())) {
-              foundChildren.put(child.getKey(), child.getValue());
-            }
-          }
-          if (!foundChildren.isEmpty()) {
-            return;
-          }
-        } finally {
-          if (updateLock.isHeldByCurrentThread()) {
-            updateLock.unlock();
-          }
-        }
-      }
-    } finally {
-      try {
-        zookeeper.getSolrZooKeeper().removeAllWatches(dir, Watcher.WatcherType.Children, false);
-      } catch (Exception e) {
-        log.info(e.getMessage());
       }
     }
   }
@@ -672,10 +693,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    *
    * @return the data at the head of the queue.
    */
-  private byte[] firstElement() throws KeeperException {
+  private byte[] firstElement(Predicate<String> acceptFilter) throws KeeperException {
     try {
 
-      Map.Entry<String,byte[]> firstChild = firstChild(false);
+      Map.Entry<String,byte[]> firstChild = firstChild(false, acceptFilter);
       if (firstChild == null) {
         return null;
       }
@@ -724,9 +745,9 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  private byte[] removeFirst() throws KeeperException {
+  private byte[] removeFirst(Predicate<String> acceptFilter) throws KeeperException {
     try {
-      Map.Entry<String,byte[]> firstChild = firstChild(true);
+      Map.Entry<String,byte[]> firstChild = firstChild(true, acceptFilter);
       if (firstChild == null) {
         return null;
       }
@@ -734,10 +755,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       byte[] data;
       updateLock.lockInterruptibly();
       try {
-        data = knownChildren.get(firstChild.getKey());
-        if (data != null) {
-          return data;
-        }
+        data = knownChildren.remove(firstChild.getKey());
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();
@@ -746,7 +764,9 @@ public class ZkDistributedQueue implements DistributedQueue {
 
       try {
         String path = dir + "/" + firstChild.getKey();
-        byte[] result = zookeeper.getData(path, null, null, true);
+        if (data == null) {
+          data = zookeeper.getData(path, null, null, true);
+        }
         zookeeper.delete(path, -1, true);
         updateLock.lockInterruptibly();
         try {
@@ -757,7 +777,7 @@ public class ZkDistributedQueue implements DistributedQueue {
             updateLock.unlock();
           }
         }
-        return result;
+        return data;
       } catch (KeeperException.NoNodeException e) {
         return null;
       }
@@ -772,7 +792,6 @@ public class ZkDistributedQueue implements DistributedQueue {
   }
 
   @VisibleForTesting class ChildWatcher implements Watcher {
-    volatile boolean fired = false;
 
     @Override
     public void process(WatchedEvent event) {
@@ -787,13 +806,14 @@ public class ZkDistributedQueue implements DistributedQueue {
         updateLock.lock();
         try {
           fetchZkChildren(null, null);
-          fired = true;
           changed.signalAll();
         } catch (KeeperException | InterruptedException e) {
           log.error("", e);
         } finally {
           updateLock.unlock();
         }
+      } else {
+
       }
     }
   }

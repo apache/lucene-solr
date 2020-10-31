@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -53,6 +54,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -75,7 +78,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTIO
  * @since solr 4.5
  */
 public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport, MapWriter {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   /**
    * The set of modifiable collection properties
    */
@@ -452,12 +455,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Create(String collection, String config, String routerName, Integer numShards, String shards, Integer numNrtReplicas, Integer  numTlogReplicas, Integer numPullReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is required by the server
-      if ((null != shards) && (null != numShards && numShards != 0)) {
+      if ((null != shards) && (null != numShards)) {
         throw new IllegalArgumentException("Can not specify both a numShards and a list of shards");
       }
       this.configName = config;
       this.routerName = routerName;
-      this.numShards = numShards;;
+      this.numShards = numShards;
       this.setShards(shards);
       this.nrtReplicas = numNrtReplicas;
       this.tlogReplicas = numTlogReplicas;
@@ -482,6 +485,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     public int getTotaleReplicaCount() {
+      log.info("nrtReplicas={} tlogReplicas={} pullReplicas={}", nrtReplicas, tlogReplicas, pullReplicas);
       int cnt = (nrtReplicas == null ? 0 : nrtReplicas) + (tlogReplicas == null ? 0 : tlogReplicas) + (pullReplicas == null ? 0 : pullReplicas);
       return cnt;
     }

@@ -132,13 +132,6 @@ public class ZkStateWriter {
 
           reader.getZkClient().clean(path);
 
-          TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-          timeout.waitFor("", () -> {
-            DocCollection rc = reader.getClusterState().getCollectionOrNull(name);
-            if (rc == null) return true;
-            return false;
-          });
-
           LinkedHashMap<String,ClusterState.CollectionRef> collStates = new LinkedHashMap<>(prevState.getCollectionStates());
           collStates.remove(name);
           prevState = new ClusterState(prevState.getLiveNodes(), collStates, prevState.getZNodeVersion());

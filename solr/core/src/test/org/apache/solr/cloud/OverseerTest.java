@@ -842,14 +842,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while(!timeOut.hasTimedOut()) {
-        if (q.peek() == null) {
+        if (q.peek(null) == null) {
           break;
         }
         Thread.sleep(50);
       }
 
-      assertTrue(showQpeek(workQueue), workQueue.peek() == null);
-      assertTrue(showQpeek(q),  q.peek() == null);
+      assertTrue(showQpeek(workQueue), workQueue.peek(null) == null);
+      assertTrue(showQpeek(q),  q.peek(null) == null);
     } finally {
       close(overseerClient);
       close(reader);
@@ -860,7 +860,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     if (q == null) {
       return "";
     }
-    byte[] bytes = q.peek();
+    byte[] bytes = q.peek(null);
     if (bytes == null) {
       return "";
     }

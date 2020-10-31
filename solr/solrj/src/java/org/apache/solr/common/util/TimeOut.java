@@ -26,11 +26,13 @@ public class TimeOut {
 
   private final long timeoutAt, startTime;
   private final TimeSource timeSource;
+  private final long interval;
 
   public TimeOut(long interval, TimeUnit unit, TimeSource timeSource) {
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
-    this.timeoutAt = startTime + NANOSECONDS.convert(interval, unit);
+    this.interval = NANOSECONDS.convert(interval, unit);
+    this.timeoutAt = startTime + interval;
   }
 
   public boolean hasTimedOut() {
@@ -39,6 +41,10 @@ public class TimeOut {
 
   public void sleep(long ms) throws InterruptedException {
     timeSource.sleep(ms);
+  }
+
+  public long getInterval(TimeUnit unit) {
+    return unit.convert(interval, NANOSECONDS);
   }
 
   public long timeLeft(TimeUnit unit) {
