@@ -156,6 +156,9 @@ Improvements
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
   from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
+  and rename to DirectIODirectory (Zach Chen).
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 

@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Provides JNI access to native methods such as madvise() for
- * {@link NativeUnixDirectory}
+ * {@link DirectIODirectory}
  */
 public final class NativePosixUtil {
   public final static int NORMAL = 0;
@@ -39,6 +39,7 @@ public final class NativePosixUtil {
   private static native int posix_fadvise(FileDescriptor fd, long offset, long len, int advise) throws IOException;
   public static native int posix_madvise(ByteBuffer buf, int advise) throws IOException;
   public static native int madvise(ByteBuffer buf, int advise) throws IOException;
+  // TODO: To be removed together?
   public static native FileDescriptor open_direct(String filename, boolean read) throws IOException;
   public static native long pread(FileDescriptor fd, long pos, ByteBuffer byteBuf) throws IOException;
 

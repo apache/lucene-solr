@@ -102,6 +102,7 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1fadvi
 }
 #endif
 
+// TODO: To be removed together?
 /*
  * Class:     org_apache_lucene_store_NativePosixUtil
  * Method:    open_direct
