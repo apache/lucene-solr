@@ -369,13 +369,17 @@ enum CoreAdminOperation implements CoreAdminOp {
   public void execute(CallInfo it) throws Exception {
     try {
       fun.execute(it);
-    } catch (InterruptedException e) {
+    } catch (SolrException | InterruptedException e) {
       ParWork.propagateInterrupt(e);
       // No need to re-wrap; throw as-is.
       throw e;
     } catch (Exception e) {
       log.error("", e);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling '" + action.name() + "' action. " + e.getMessage(), e);
+      if (action == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling CoreAdmin action. " + e.getMessage(), e);
+      } else {
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error handling '" + action.name() + "' action. " + e.getMessage(), e);
+      }
     }
   }
 }
