@@ -98,8 +98,8 @@ public class ZkDistributedQueue implements DistributedQueue {
    * Contains the last set of children fetched from ZK. Elements are removed from the head of
    * this in-memory set as they are consumed from the queue.  Due to the distributed nature
    * of the queue, elements may appear in this set whose underlying nodes have been consumed in ZK.
-   * Therefore, methods like {@link #peek(Predicate<String>)} have to double-check actual node existence, and methods
-   * like {@link #poll(Predicate<String>)} must resolve any races by attempting to delete the underlying node.
+   * Therefore, methods like peek have to double-check actual node existence, and methods
+   * like poll must resolve any races by attempting to delete the underlying node.
    */
   protected volatile TreeMap<String,byte[]> knownChildren;
 
