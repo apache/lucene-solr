@@ -292,7 +292,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     for (CollectionAdminRequest.Create create : createRequests) {
       if (create == null) continue;
       try {
-        cluster.waitForActiveCollection(create.getCollectionName(), create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumTlogReplicas() + create.getNumPullReplicas()));
+        cluster.waitForActiveCollection(create.getCollectionName(), create.getNumShards(), create.getNumShards() * create.getTotaleReplicaCount());
       } catch(Exception e) {
         throw new RuntimeException(create.getParams().toString(), e);
       }
