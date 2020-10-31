@@ -167,6 +167,9 @@ Bug Fixes
 
 * SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
 
+* SOLR-14969: Prevent creating multiple cores with the same name which leads to instabilities (race condition)
+  (Erick Erickson, Andreas Hubold)
+
 Other Changes
 ---------------------
 
