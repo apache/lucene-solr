@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -315,7 +316,7 @@ public class Overseer implements SolrCloseable {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
 
             long wait = 5000;
-            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> false));
+            queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> x.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)));
           } catch (AlreadyClosedException e) {
             if (isClosed()) {
               log.info("Overseer closed (AlreadyClosedException), exiting loop");
@@ -350,7 +351,7 @@ public class Overseer implements SolrCloseable {
                 final ZkNodeProps message = ZkNodeProps.load(data);
                 if (log.isDebugEnabled()) log.debug("processMessage: queueSize: {}, message = {}", stateUpdateQueue.getZkStats().getQueueLength(), message);
                 if (log.isDebugEnabled()) log.debug("add processed node: {}, processedNodes = {}", head.first(), stateUpdateQueue.getZkStats().getQueueLength(), processedNodes);
-                processedNodes.add(head.first());
+                processedNodes.add(new File(head.first()).getName());
                 // The callback always be called on this thread
                 processQueueItem(message, reader.getClusterState(), zkStateWriter, true, null);
               }
@@ -361,7 +362,7 @@ public class Overseer implements SolrCloseable {
               // if an event comes in the next *ms batch it together
               int wait = 10;
               if (log.isDebugEnabled()) log.debug("going to peekElements processedNodes={}", processedNodes);
-              queue = new LinkedList<>(stateUpdateQueue.peekElements(10, wait, node -> processedNodes.contains(node)));
+              queue = new LinkedList<>(stateUpdateQueue.peekElements(10, wait, node -> processedNodes.contains(node) || node.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)));
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there

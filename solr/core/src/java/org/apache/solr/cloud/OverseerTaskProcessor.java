@@ -100,10 +100,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   // This is an optimization to ensure that we do not read the same tasks
   // again and again from ZK.
   final private Map<String, QueueEvent> blockedTasks = new ConcurrentSkipListMap<>();
-  final private Predicate<String> excludedTasks = new Predicate<String>() {
+  final private Predicate<String> excludedTasks = new Predicate<>() {
     @Override
     public boolean test(String s) {
       // nocommit
+      if (s.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)) {
+        if (log.isDebugEnabled()) log.debug("exclude {} due to prefix {}", s, OverseerTaskQueue.RESPONSE_PREFIX);
+        return true;
+      }
 
       boolean contains = runningTasks.contains(s) || blockedTasks.containsKey(s) || runningZKTasks.contains(s);
       if (log.isDebugEnabled()) log.debug("test {} against {}, {}, {}  : {}", s, runningTasks, blockedTasks, runningZKTasks, contains);
@@ -220,17 +224,22 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         for (QueueEvent head : heads) {
 
-//          if (runningZKTasks.contains(head.getId())) {
-//            log.warn("Task found in running ZKTasks already, continuing");
-//            continue;
-//          }
+          if (runningZKTasks.contains(head.getId())) {
+            log.warn("Task found in running ZKTasks already, continuing");
+            continue;
+          }
+
+          if (head.getBytes() == null) {
+            log.info("Found empty entry id={} event={}", head.getId(), head.getWatchedEvent());
+            continue;
+          }
 
           final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
           final String asyncId = message.getStr(ASYNC);
           if (hasLeftOverItems) {
             if (head.getId().equals(oldestItemInWorkQueue)) hasLeftOverItems = false;
             if (asyncId != null && (completedMap.contains(asyncId) || failureMap.contains(asyncId))) {
-              log.debug("Found already processed task in workQueue, cleaning up. AsyncId [{}]", asyncId);
+              if (log.isDebugEnabled()) log.debug("Found already processed task in workQueue, cleaning up. AsyncId [{}]", asyncId);
               workQueue.remove(head);
               continue;
             }
@@ -294,9 +303,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     Set<Map.Entry<String, QueueEvent>> entrySet = completedTasks.entrySet();
     AtomicBoolean sessionExpired = new AtomicBoolean();
     AtomicBoolean interrupted = new AtomicBoolean();
+    // TODO: async
     try (ParWork work = new ParWork(this, true, true)) {
       for (Map.Entry<String, QueueEvent> entry : entrySet) {
-        work.collect("cleanWorkQueue", ()->{
+        work.collect("cleanWorkQueue", () -> {
           try {
             workQueue.remove(entry.getValue());
           } catch (KeeperException.SessionExpiredException e) {
@@ -304,11 +314,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           } catch (InterruptedException e) {
             interrupted.set(true);
           } catch (KeeperException e) {
-           log.error("Exception removing item from workQueue", e);
+            log.error("Exception removing item from workQueue", e);
           }
-          runningTasks.remove(entry.getKey());});
-          completedTasks.remove(entry.getKey());
+          runningTasks.remove(entry.getKey());
+        });
       }
+
     }
 
     if (interrupted.get()) {

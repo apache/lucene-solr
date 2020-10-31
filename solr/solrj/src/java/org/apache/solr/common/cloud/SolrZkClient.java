@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
@@ -725,6 +726,43 @@ public class SolrZkClient implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("mkDirs(String) - end");
     }
+  }
+
+  public Map<String,byte[]> getData(Set<String> paths) {
+
+    Map<String,byte[]> dataMap = new ConcurrentHashMap<>(paths.size());
+    CountDownLatch latch = new CountDownLatch(paths.size());
+
+    for (String path : paths) {
+      ZooKeeper keeper = connManager.getKeeper();
+      assert keeper != null;
+      keeper.getData(path, false, (rc, path1, ctx, data, stat) -> {
+        if (rc != 0) {
+          final KeeperException.Code keCode = KeeperException.Code.get(rc);
+          if (keCode == KeeperException.Code.NONODE) {
+            if (log.isDebugEnabled()) log.debug("No node found for {}", path1);
+          }
+        }
+
+        dataMap.put(path1, data);
+        latch.countDown();
+      }, null);
+    }
+
+    boolean success;
+    try {
+      success = latch.await(15, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      log.error("mkDirs(String=" + paths + ")", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+
+    if (!success) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
+    }
+
+    return dataMap;
   }
 
   // Calls setData for a list of existing paths in parallel

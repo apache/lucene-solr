@@ -16,9 +16,13 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -48,7 +52,7 @@ import org.slf4j.LoggerFactory;
 public class OverseerTaskQueue extends ZkDistributedQueue {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String RESPONSE_PREFIX = "qnr-" ;
+  public static final String RESPONSE_PREFIX = "qnr-" ;
 
   private final LongAdder pendingResponses = new LongAdder();
 
@@ -76,27 +80,46 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public boolean containsTaskWithRequestId(String requestIdKey, String requestId)
       throws KeeperException, InterruptedException {
+    Set<String> childNames;
+        updateLock.lockInterruptibly();
+    try {
 
-    List<String> childNames = zookeeper.getChildren(dir, null, true);
-    stats.setQueueLength(childNames.size());
-    for (String childName : childNames) {
-      if (childName != null && childName.startsWith(PREFIX)) {
-        try {
-          byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
-          if (data != null) {
-            ZkNodeProps message = ZkNodeProps.load(data);
-            if (message.containsKey(requestIdKey)) {
-              if (log.isDebugEnabled()) {
-                log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+     childNames = knownChildren.keySet();
+
+
+      stats.setQueueLength(childNames.size());
+      for (String childName : childNames) {
+        if (childName != null && childName.startsWith(PREFIX)) {
+          try {
+            byte[] data = knownChildren.get(childName);
+            if (data == null) {
+              data = zookeeper.getData(dir + "/" + childName, null, null, true);
+              if (data != null) {
+                knownChildren.put(childName, data);
               }
-              if(message.get(requestIdKey).equals(requestId)) return true;
             }
+            if (data != null) {
+              ZkNodeProps message = ZkNodeProps.load(data);
+              if (message.containsKey(requestIdKey)) {
+                if (log.isDebugEnabled()) {
+                  log.debug("Looking for {}, found {}", message.get(requestIdKey), requestId);
+                }
+                if(message.get(requestIdKey).equals(requestId)) return true;
+              }
+            }
+          } catch (KeeperException.NoNodeException e) {
+            knownChildren.remove(childName);
           }
-        } catch (KeeperException.NoNodeException e) {
-          // Another client removed the node first, try next
         }
       }
+
+    } finally {
+      if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
     }
+
+
 
     return false;
   }
@@ -109,8 +132,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = dir + "/" + event.getId();
-      String responsePath = dir + "/" + RESPONSE_PREFIX
+      String responseId = RESPONSE_PREFIX
           + path.substring(path.lastIndexOf("-") + 1);
+      String responsePath = dir + "/" + responseId;
 
       try {
         zookeeper.setData(responsePath, event.getBytes(), true);
@@ -121,6 +145,16 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         zookeeper.delete(path, -1, true);
       } catch (KeeperException.NoNodeException ignored) {
+      }
+
+      updateLock.lockInterruptibly();
+      try {
+        knownChildren.remove(event.getId());
+        knownChildren.put(responseId, event.getBytes());
+      } finally {
+        if (updateLock.isHeldByCurrentThread()) {
+          updateLock.unlock();
+        }
       }
     } finally {
       time.stop();
@@ -277,7 +311,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     try {
       for (Pair<String, byte[]> element : peekElements(n, waitMillis, excludeSet)) {
         if (log.isDebugEnabled()) log.debug("Add to topN {}", dir + "/" + element.first());
-        topN.add(new QueueEvent(element.first(),
+        topN.add(new QueueEvent(new File(element.first()).getName(),
             element.second(), null));
       }
       printQueueEventsListElementIds(topN);
@@ -305,16 +339,44 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public String getTailId() throws KeeperException, InterruptedException {
     // TODO: could we use getChildren here?  Unsure what freshness guarantee the caller needs.
-    TreeSet<String> orderedChildren = fetchZkChildren(null, null);
+    TreeMap<String,byte[]> orderedChildren = fetchZkChildren(null, null);
 
-    for (String headNode : orderedChildren.descendingSet())
+    for (Map.Entry<String,byte[]>  headNode : orderedChildren.entrySet())
       if (headNode != null) {
         try {
-          QueueEvent queueEvent = new QueueEvent(headNode, zookeeper.getData(dir + "/" + headNode,
-              null, null, true), null);
+          byte[] data;
+          updateLock.lockInterruptibly();
+          try {
+            data = knownChildren.get(headNode.getKey());
+          } finally {
+            if (updateLock.isHeldByCurrentThread()) {
+              updateLock.unlock();
+            }
+          }
+          if (data == null) {
+            data = zookeeper.getData(dir + "/" + headNode.getKey(), null, null, true);
+          }
+          QueueEvent queueEvent = new QueueEvent(headNode.getKey(), data, null);
+
+          updateLock.lockInterruptibly();
+          try {
+            knownChildren.put(headNode.getKey(), data);
+          } finally {
+            if (updateLock.isHeldByCurrentThread()) {
+              updateLock.unlock();
+            }
+          }
+
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
-          // Another client removed the node first, try next
+          updateLock.lockInterruptibly();
+          try {
+            knownChildren.remove(headNode.getKey());
+          } finally {
+            if (updateLock.isHeldByCurrentThread()) {
+              updateLock.unlock();
+            }
+          }
         }
       }
     return null;
@@ -346,7 +408,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private volatile  byte[] bytes;
 
     QueueEvent(String id, byte[] bytes, WatchedEvent event) {
-      if (log.isDebugEnabled()) log.debug("Create QueueEvent with id {}", id);
+      if (log.isDebugEnabled()) log.debug("Create QueueEvent with id {} {} {}", id, bytes != null ? bytes.length : 0, event);
       this.id = id;
       this.bytes = bytes;
       this.event = event;
