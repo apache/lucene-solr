@@ -813,49 +813,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  public void testExceptionWhenFlushClusterState() throws Exception {
-
-    SolrZkClient overseerClient = null;
-    ZkStateReader reader = null;
-
-    try {
-
-      ZkController.createClusterZkNodes(zkClient);
-
-      reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
-
-      // We did not create /collections/collection1 -> this message will cause exception when Overseer tries to flush
-      // the collection state
-      ZkNodeProps badMessage = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
-          "name", "collection1",
-          ZkStateReader.REPLICATION_FACTOR, "1",
-          ZkStateReader.NUM_SHARDS_PROP, "1",
-          "createNodeSet", "");
-      ZkDistributedQueue workQueue = Overseer.getInternalWorkQueue(zkClient, new Stats());
-      workQueue.offer(Utils.toJSON(badMessage));
-      overseerClient = electNewOverseer(server.getZkAddress());
-
-      ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
-      q.offer(Utils.toJSON(badMessage));
-
-      TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      while(!timeOut.hasTimedOut()) {
-        if (q.peek(null) == null) {
-          break;
-        }
-        Thread.sleep(50);
-      }
-
-      assertTrue(showQpeek(workQueue), workQueue.peek(null) == null);
-      assertTrue(showQpeek(q),  q.peek(null) == null);
-    } finally {
-      close(overseerClient);
-      close(reader);
-    }
-  }
-
   private String showQpeek(ZkDistributedQueue q) throws KeeperException, InterruptedException {
     if (q == null) {
       return "";
@@ -1181,75 +1138,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void close(MockZKController mockController) {
     if (mockController != null) {
       mockController.close();
-    }
-  }
-
-
-  @Test
-  public void testReplay() throws Exception{
-
-    SolrZkClient overseerClient = null;
-    ZkStateReader reader = null;
-
-    try {
-
-      ZkController.createClusterZkNodes(zkClient);
-
-      reader = new ZkStateReader(zkClient);
-      reader.createClusterStateWatchersAndUpdate();
-      //prepopulate work queue with some items to emulate previous overseer died before persisting state
-      DistributedQueue queue = Overseer.getInternalWorkQueue(zkClient, new Stats());
-
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, false, true);
-
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
-          "name", COLLECTION,
-          ZkStateReader.REPLICATION_FACTOR, "1",
-          ZkStateReader.NUM_SHARDS_PROP, "1",
-          "createNodeSet", "");
-      queue.offer(Utils.toJSON(m));
-      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
-          ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.COLLECTION_PROP, COLLECTION,
-          ZkStateReader.CORE_NAME_PROP, "core1",
-          ZkStateReader.ROLES_PROP, "",
-          ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
-      queue.offer(Utils.toJSON(m));
-      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
-          ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.COLLECTION_PROP, COLLECTION,
-          ZkStateReader.CORE_NAME_PROP, "core2",
-          ZkStateReader.ROLES_PROP, "",
-          ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
-      queue.offer(Utils.toJSON(m));
-
-      overseerClient = electNewOverseer(server.getZkAddress());
-
-      //submit to proper queue
-      queue = overseers.get(0).getStateUpdateQueue();
-      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
-          ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.COLLECTION_PROP, COLLECTION,
-          ZkStateReader.CORE_NAME_PROP, "core3",
-          ZkStateReader.ROLES_PROP, "",
-          ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
-      queue.offer(Utils.toJSON(m));
-
-      reader.waitForState(COLLECTION, 1000, TimeUnit.MILLISECONDS,
-          (liveNodes, collectionState) -> collectionState != null && collectionState.getSlice("shard1") != null
-              && collectionState.getSlice("shard1").getReplicas().size() == 3);
-
-      assertNotNull(reader.getClusterState().getCollection(COLLECTION).getSlice("shard1"));
-      assertEquals(3, reader.getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicasMap().size());
-    } finally {
-      close(overseerClient);
-      close(reader);
     }
   }
 

@@ -627,7 +627,6 @@ public class ZkTestServer implements Closeable {
       }
     }
 
-   // zooThread.interrupt();
     timer.cancel();
     ParWork.close(chRootClient);
 
@@ -635,13 +634,14 @@ public class ZkTestServer implements Closeable {
 
     startupWait = new CountDownLatch(1);
     if (zooThread != null) {
+      // zooThread.interrupt();
+      zooThread.join(10000);
+      if (zooThread.isAlive()) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper thread still running");
+      }
       assert ObjectReleaseTracker.release(zooThread);
     }
-   // zooThread.interrupt();
-    zooThread.join(10000);
-    if (zooThread.isAlive()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper thread still running");
-    }
+
     zooThread = null;
     assert ObjectReleaseTracker.release(this);
 

@@ -200,17 +200,12 @@ public class Overseer implements SolrCloseable {
     private final String myId;
     //queue where everybody can throw tasks
     private final ZkDistributedQueue stateUpdateQueue;
-    //TODO remove in 9.0, we do not push message into this queue anymore
-    //Internal queue where overseer stores events that have not yet been published into cloudstate
-    //If Overseer dies while extracting the main queue a new overseer will start from this queue
-    private final ZkDistributedQueue workQueue;
 
     private volatile boolean isClosed = false;
 
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
       this.stateUpdateQueue = getStateUpdateQueue(zkStats);
-      this.workQueue = getInternalWorkQueue(zkClient, zkStats);
       this.myId = myId;
       this.reader = reader;
     }
@@ -226,7 +221,7 @@ public class Overseer implements SolrCloseable {
 
       log.info("Starting to work on the main queue : {}", LeaderElector.getNodeName(myId));
 
-        ZkStateWriter zkStateWriter = null;
+        ZkStateWriter zkStateWriter = new ZkStateWriter(reader, stats);;
         try {
           reader.forciblyRefreshAllClusterStateSlow();
         } catch (KeeperException e) {
@@ -239,83 +234,15 @@ public class Overseer implements SolrCloseable {
         ClusterState clusterState = reader.getClusterState();
         assert clusterState != null;
 
-        // we write updates in batch, but if an exception is thrown when writing new clusterstate,
-        // we do not sure which message is bad message, therefore we will re-process node one by one
-        int fallbackQueueSize = Integer.MAX_VALUE;
-        ZkDistributedQueue fallbackQueue = workQueue;
+
         while (!checkClosed()) {
           if (log.isDebugEnabled()) log.debug("Start of Overseer loop ...");
-
-          if (zkStateWriter == null) {
-            try {
-              zkStateWriter = new ZkStateWriter(reader, stats);
-            //  clusterState = reader.getClusterState();
-              // if there were any errors while processing
-              // the state queue, items would have been left in the
-              // work queue so let's process those first
-              byte[] data = fallbackQueue.peek(null);
-              // TODO: can we do this with a builk call instead?
-              while (fallbackQueueSize > 0 && data != null) {
-                final ZkNodeProps message = ZkNodeProps.load(data);
-                if (log.isDebugEnabled()) log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
-                // force flush to ZK after each message because there is no fallback if workQueue items
-                // are removed from workQueue but fail to be written to ZK
-                try {
-                  processQueueItem(message, reader.getClusterState(), zkStateWriter, false, null);
-                } catch (InterruptedException | AlreadyClosedException e) {
-                  ParWork.propagateInterrupt(e);
-                  return;
-                } catch (KeeperException.SessionExpiredException e) {
-                  log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
-                  return;
-                } catch (Exception e) {
-                  SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-                  try {
-                    if (isBadMessage(e)) {
-                      log.warn(
-                              "Exception when process message = {}, consider as bad message and poll out from the queue",
-                              message);
-                      fallbackQueue.poll(null);
-                    }
-                  } catch (InterruptedException e1) {
-                    ParWork.propagateInterrupt(e);
-                    return;
-                  } catch (Exception e1) {
-                    exp.addSuppressed(e1);
-                  }
-                  throw exp;
-                }
-                fallbackQueue.poll(null); // poll-ing removes the element we got by peek-ing
-                data = fallbackQueue.peek(null);
-                fallbackQueueSize--;
-              }
-              // force flush at the end of the loop, if there are no pending updates, this is a no op call
-              clusterState = zkStateWriter.writePendingUpdates(clusterState, null);
-              // the workQueue is empty now, use stateUpdateQueue as fallback queue
-              fallbackQueue = stateUpdateQueue;
-              fallbackQueueSize = 0;
-            } catch (KeeperException.SessionExpiredException e) {
-              log.error("run()", e);
-
-              log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
-              return;
-            } catch (InterruptedException | AlreadyClosedException e) {
-              ParWork.propagateInterrupt(e, true);
-              return;
-            } catch (Exception e) {
-              log.error("Unexpected error in Overseer state update loop", e);
-              return;
-//              if (!isClosed()) {
-//                continue;
-//              }
-            }
-          }
 
           LinkedList<Pair<String, byte[]>> queue = null;
           try {
             // We do not need to filter any nodes here cause all processed nodes are removed once we flush clusterstate
 
-            long wait = 5000;
+            long wait = 1000;
             queue = new LinkedList<>(stateUpdateQueue.peekElements(1000, wait, (x) -> x.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)));
           } catch (AlreadyClosedException e) {
             if (isClosed()) {
@@ -373,9 +300,7 @@ public class Overseer implements SolrCloseable {
               if (log.isDebugEnabled()) log.debug("going to peekElements processedNodes={}", processedNodes);
               queue = new LinkedList<>(stateUpdateQueue.peekElements(10, wait, node -> processedNodes.contains(node) || node.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)));
             }
-            fallbackQueueSize = processedNodes.size();
-            // we should force write all pending updates because the next iteration might sleep until there
-            // are more items in the main queue
+
             clusterState = zkStateWriter.writePendingUpdates(clusterState,  () -> {
               if (log.isDebugEnabled()) log.debug("clear processedNodes={}", processedNodes);
               stateUpdateQueue.remove(processedNodes);
@@ -1042,24 +967,9 @@ public class Overseer implements SolrCloseable {
     });
   }
 
-  /**
-   * Internal overseer work queue. This should not be used outside of Overseer.
-   * <p>
-   * This queue is used to store overseer operations that have been removed from the
-   * state update queue but are being executed as part of a batch. Once
-   * the result of the batch is persisted to zookeeper, these items are removed from the
-   * work queue. If the overseer dies while processing a batch then a new overseer always
-   * operates from the work queue first and only then starts processing operations from the
-   * state update queue.
-   * This method will create the /overseer znode in ZooKeeper if it does not exist already.
-   *
-   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
-   * @param zkStats  a {@link Stats} object which tracks statistics for all zookeeper operations performed by this queue
-   * @return a {@link ZkDistributedQueue} object
-   */
-  static ZkDistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
-    return new ZkDistributedQueue(zkClient, "/overseer/queue-work", zkStats);
-  }
+//  static ZkDistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
+//    return new ZkDistributedQueue(zkClient, "/overseer/queue-work", zkStats);
+//  }
 
   /* Internal map for failed tasks, not to be used outside of the Overseer */
   static DistributedMap getRunningMap(final SolrZkClient zkClient) throws KeeperException {

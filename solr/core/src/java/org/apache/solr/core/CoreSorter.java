@@ -94,6 +94,10 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
   private final Map<String, CountsForEachShard> shardsVsReplicaCounts = new HashMap<>();
 
   CoreSorter init(ZkController zkController, Collection<CoreDescriptor> coreDescriptors) {
+
+    assert zkController != null;
+    assert zkController.getCoreContainer() != null;
+    assert zkController.getCoreContainer().getNodeConfig() != null;
     String myNodeName = zkController.getCoreContainer().getNodeConfig().getNodeName();
     ClusterState state = zkController.getCoreContainer().getZkController().getClusterState();
     for (CoreDescriptor coreDescriptor : coreDescriptors) {

@@ -742,9 +742,9 @@ public class SolrZkClient implements Closeable {
           if (keCode == KeeperException.Code.NONODE) {
             if (log.isDebugEnabled()) log.debug("No node found for {}", path1);
           }
+        } else {
+          dataMap.put(path1, data);
         }
-
-        dataMap.put(path1, data);
         latch.countDown();
       }, null);
     }

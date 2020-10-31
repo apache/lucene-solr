@@ -139,7 +139,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       try {
         zookeeper.setData(responsePath, event.getBytes(), true);
       } catch (KeeperException.NoNodeException ignored) {
-        // this will often not exist or have been removed
+        // this will often not exist or have been removed - nocommit - debug this response stuff
         if (log.isDebugEnabled()) log.debug("Response ZK path: {} doesn't exist.", responsePath);
       }
       try {
@@ -150,7 +150,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       updateLock.lockInterruptibly();
       try {
         knownChildren.remove(event.getId());
-        knownChildren.put(responseId, event.getBytes());
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();

@@ -197,7 +197,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
         while (runningTasksSize() > MAX_PARALLEL_TASKS) {
           synchronized (waitLock) {
-            waitLock.wait(1000);//wait for 1000 ms or till a task is complete
+            waitLock.wait(250);
           }
           waited = true;
         }
@@ -208,14 +208,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (log.isDebugEnabled()) log.debug("Add {} blocked tasks to process", blockedTasks.size());
         heads.addAll(blockedTasks.values());
         blockedTasks.clear(); // clear it now; may get refilled below.
-        //If we have enough items in the blocked tasks already, it makes
-        // no sense to read more items from the work queue. it makes sense
-        // to clear out at least a few items in the queue before we read more items
+
         if (heads.size() < MAX_BLOCKED_TASKS) {
           //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
           int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasksSize());
           if (log.isDebugEnabled()) log.debug("PeekTopN for {} items", toFetch);
-          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 5000);
+          List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 10);
           if (log.isDebugEnabled()) log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks);
           heads.addAll(newTasks);
         }

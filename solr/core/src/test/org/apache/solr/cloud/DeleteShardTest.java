@@ -86,10 +86,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
     });
 
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
-    waitForState("Expected 'shard2' to be removed", collection, (n, c) -> {
-      return c != null && c.getSlice("shard2") == null;
-    });
-
   }
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {

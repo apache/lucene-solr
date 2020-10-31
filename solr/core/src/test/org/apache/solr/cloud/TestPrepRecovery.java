@@ -70,6 +70,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .setNode(newNodeName)
         .process(solrClient);
 
+    cluster.waitForActiveCollection(collectionName, 1, 3);
+
     // now delete the leader
     Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1");
     CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
@@ -80,12 +82,10 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(newNodeName)
         .process(solrClient);
-
-    // in the absence of the fixes made in SOLR-10914, this statement will timeout after 90s
-    cluster.waitForActiveCollection(collectionName, 1, 3);
   }
 
   @Test
+  @Nightly
   public void testLeaderNotResponding() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 

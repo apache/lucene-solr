@@ -54,6 +54,7 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
+@LuceneTestCase.Nightly
 public class JdbcTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "collection1";

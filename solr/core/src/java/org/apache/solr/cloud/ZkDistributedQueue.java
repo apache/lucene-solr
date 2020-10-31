@@ -204,7 +204,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       return result;
     }
 
-    ChildWatcher watcher = new ChildWatcher();
+    ChildWatcher watcher = new ChildWatcher(acceptFilter);
     TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, null);
 
     if (foundChildren.size() > 0) {
@@ -318,7 +318,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         return result;
       }
 
-      ChildWatcher watcher = new ChildWatcher();
+      ChildWatcher watcher = new ChildWatcher(acceptFilter);
       TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, acceptFilter);
 
       TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
@@ -555,7 +555,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
     if (log.isDebugEnabled()) log.debug("peekElements {} {}", max, acceptFilter);
     List<Pair<String,byte[]>> result = null;
-    ChildWatcher watcher = new ChildWatcher();
+    ChildWatcher watcher = new ChildWatcher(acceptFilter);
     TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, acceptFilter);
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
     TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
@@ -793,6 +793,12 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   @VisibleForTesting class ChildWatcher implements Watcher {
 
+    private final Predicate<String> acceptFilter;
+
+    public ChildWatcher(Predicate<String> acceptFilter) {
+      this.acceptFilter = acceptFilter;
+    }
+
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher; except for Expired
@@ -805,8 +811,12 @@ public class ZkDistributedQueue implements DistributedQueue {
       if (event.getType() == Event.EventType.NodeChildrenChanged) {
         updateLock.lock();
         try {
-          fetchZkChildren(null, null);
-          changed.signalAll();
+          TreeMap<String,byte[]> found = fetchZkChildren(null, acceptFilter);
+          if (!found.isEmpty()) {
+            changed.signalAll();
+          } else {
+            fetchZkChildren(this, acceptFilter);
+          }
         } catch (KeeperException | InterruptedException e) {
           log.error("", e);
         } finally {

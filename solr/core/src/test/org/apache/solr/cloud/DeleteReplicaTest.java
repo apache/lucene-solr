@@ -391,7 +391,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     final String collectionName = "deleteReplicaOnIndexing";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, 1, 2);
+
     AtomicBoolean closed = new AtomicBoolean(false);
     List<Future> futures = new ArrayList<>(TEST_NIGHTLY ? 50 : 5);
     Thread[] threads = new Thread[TEST_NIGHTLY ? 50 : 5];

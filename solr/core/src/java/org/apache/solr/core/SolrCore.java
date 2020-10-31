@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -3107,16 +3109,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public static void deleteUnloadedCore(CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
     if (deleteDataDir) {
       log.info("Removing SolrCore dataDir on unload {}", cd.getInstanceDir().resolve(cd.getDataDir()));
-      File dataDir = cd.getInstanceDir().resolve(cd.getDataDir()).toFile();
+      Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
       try {
-        FileUtils.deleteDirectory(dataDir);
+
+        Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+
       } catch (Exception e) {
-        log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir.getAbsolutePath(), e);
+        log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir, e);
       }
     }
     if (deleteInstanceDir) {
       try {
-        FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
+        Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
       } catch (Exception e) {
         log.error("Failed to delete instance dir for unloaded core: {} dir: {}", cd.getName(), cd.getInstanceDir(), e);
       }

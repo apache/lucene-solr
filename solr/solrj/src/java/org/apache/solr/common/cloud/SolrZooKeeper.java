@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -32,21 +33,20 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // we use this class to expose nasty stuff for tests
 @SuppressWarnings({"try"})
 public class SolrZooKeeper extends ZooKeeper {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final Set<Thread> spawnedThreads = ConcurrentHashMap.newKeySet();
   private CloseTracker closeTracker;
 
-  // for test debug
-  //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
-
-  public SolrZooKeeper(String connectString, int sessionTimeout,
-      Watcher watcher) throws IOException {
+  public SolrZooKeeper(String connectString, int sessionTimeout, Watcher watcher) throws IOException {
     super(connectString, sessionTimeout, watcher);
     assert (closeTracker = new CloseTracker()) != null;
-    //clients.put(this, new RuntimeException());
   }
 
   public ClientCnxn getConnection() {
@@ -62,8 +62,7 @@ public class SolrZooKeeper extends ZooKeeper {
       @Override
       public void run() {
         try {
-          AccessController.doPrivileged(
-              (PrivilegedAction<Void>) this::closeZookeeperChannel);
+          AccessController.doPrivileged((PrivilegedAction<Void>) this::closeZookeeperChannel);
         } finally {
           spawnedThreads.remove(this);
         }
@@ -75,13 +74,11 @@ public class SolrZooKeeper extends ZooKeeper {
 
         synchronized (cnxn) {
           try {
-            final Field sendThreadFld = cnxn.getClass()
-                .getDeclaredField("sendThread");
+            final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
             sendThreadFld.setAccessible(true);
             Object sendThread = sendThreadFld.get(cnxn);
             if (sendThread != null) {
-              Method method = sendThread.getClass()
-                  .getDeclaredMethod("testableCloseSocket");
+              Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
               method.setAccessible(true);
               try {
                 method.invoke(sendThread);
@@ -91,8 +88,7 @@ public class SolrZooKeeper extends ZooKeeper {
             }
           } catch (Exception e) {
             ParWork.propagateInterrupt(e);
-            throw new RuntimeException("Closing Zookeeper send channel failed.",
-                e);
+            throw new RuntimeException("Closing Zookeeper send channel failed.", e);
           }
         }
         return null; // Void
@@ -105,23 +101,26 @@ public class SolrZooKeeper extends ZooKeeper {
   @Override
   public void close() {
     assert closeTracker.close();
-    try (ParWork closer = new ParWork(this)) {
-      closer.collect("zookeeper", ()->{
-        try {
-          SolrZooKeeper.super.close();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-      });
-//      closer.collect("keep send thread from sleeping", ()->{
-//       // ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
-//
-//      //  zk.interruptSendThread();
-//       // zk.interruptEventThread();
-//      });
+    //    try (ParWork closer = new ParWork(this)) {
+    //      closer.collect("zookeeper", ()->{
+    //        try {
+    //          SolrZooKeeper.super.close();
+    //        } catch (InterruptedException e) {
+    //          ParWork.propagateInterrupt(e);
+    //        }
+    //      });
+    ////      closer.collect("keep send thread from sleeping", ()->{
+    ////       // ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
+    ////
+    ////      //  zk.interruptSendThread();
+    ////       // zk.interruptEventThread();
+    ////      });
+    try {
+      SolrZooKeeper.super.close();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e, true);
     }
-
-
   }
 
 }
+

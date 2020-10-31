@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -37,6 +38,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /** Tests CurrencyField and CurrencyFieldType. */
+@LuceneTestCase.Nightly
 public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
   private final String fieldName;
   private final Class<? extends ExchangeRateProvider> expectedProviderClass;

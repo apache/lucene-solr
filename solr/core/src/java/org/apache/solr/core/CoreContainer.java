@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -352,8 +353,9 @@ public class CoreContainer implements Closeable {
 
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
 
-    this.replayUpdatesExecutor = new OrderedExecutor( cfg.getReplayUpdatesThreads(),
-        ParWork.getExecutorService(cfg.getReplayUpdatesThreads()));
+    this.replayUpdatesExecutor = new OrderedExecutor(cfg.getReplayUpdatesThreads(),
+        ParWork.getParExecutorService("replayUpdatesExecutor", cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(),
+            0, new LinkedBlockingQueue<>(cfg.getReplayUpdatesThreads())));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -394,18 +396,6 @@ public class CoreContainer implements Closeable {
 
     solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(32, Runtime.getRuntime().availableProcessors()),
         false, false);
-    //    if (solrCoreLoadExecutor == null) {
-    //      synchronized (CoreContainer.class) {
-    //        if (solrCoreLoadExecutor == null) {
-    ////          solrCoreLoadExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(0, Math.max(3, Runtime.getRuntime().availableProcessors() / 2),
-    ////                  2, TimeUnit.SECOND,
-    ////                  new BlockingArrayQueue<>(100, 10),
-    ////                  new SolrNamedThreadFactory("SolrCoreLoader"));
-    //          solrCoreLoadExecutor = new ParWorkExecutor("SolrCoreLoader", Math.max(3, Runtime.getRuntime().availableProcessors() / 2));
-    //        }
-    //      }
-    // }
-
   }
 
   @SuppressWarnings({"unchecked"})

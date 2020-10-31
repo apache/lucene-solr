@@ -187,8 +187,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     moveReplica.setInPlaceMove(inPlaceMove);
     moveReplica.process(cloudClient);
 
-    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
-
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
     checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);

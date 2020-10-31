@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
+@LuceneTestCase.Nightly
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

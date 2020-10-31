@@ -32,12 +32,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
 
@@ -50,8 +52,9 @@ public class OrderedExecutorTest extends SolrTestCase {
   @Test
   public void testExecutionInOrder() {
     IntBox intBox = new IntBox();
-    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
+    OrderedExecutor orderedExecutor = new OrderedExecutor(10,
+        ParWork.getParExecutorService("replayUpdatesExecutor", 10, 10,
+            0, new LinkedBlockingQueue<>(10)));
 
     for (int i = 0; i < 100; i++) {
       orderedExecutor.submit(1, () -> intBox.value.incrementAndGet());
@@ -62,8 +65,9 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testLockWhenQueueIsFull() throws ExecutionException {
-    final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (TEST_NIGHTLY ? 10 : 3, ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3));
+    OrderedExecutor orderedExecutor = new OrderedExecutor(10,
+        ParWork.getParExecutorService("replayUpdatesExecutor", 10, 10,
+            0, new LinkedBlockingQueue<>(10)));
     
     try {
       // AAA and BBB events will both depend on the use of the same lockId
@@ -108,8 +112,9 @@ public class OrderedExecutorTest extends SolrTestCase {
   public void testRunInParallel() throws ExecutionException, InterruptedException {
     final int parallelism = atLeast(3);
 
-    final OrderedExecutor orderedExecutor = new OrderedExecutor
-      (parallelism, ParWork.getExecutorService(parallelism));
+    OrderedExecutor orderedExecutor = new OrderedExecutor(parallelism,
+        ParWork.getParExecutorService("replayUpdatesExecutor", parallelism, parallelism,
+            0, new LinkedBlockingQueue<>(parallelism)));
 
     try {
       // distinct lockIds should be able to be used in parallel, up to the size of the executor,
@@ -121,7 +126,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       List<Future> futures = new ArrayList<>();
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
-        futures.add(testExecutor.submit(() -> {
+        futures.add(ParWork.getRootSharedExecutor().submit(() -> {
             orderedExecutor.submit(lockId, () -> {
                 try {
                   log.info("Worker #{} starting", lockId);
@@ -212,8 +217,9 @@ public class OrderedExecutorTest extends SolrTestCase {
       base.put(i, i);
       run.put(i, i);
     }
-    OrderedExecutor orderedExecutor = new OrderedExecutor(TEST_NIGHTLY ? 10 : 3,
-        ParWork.getExecutorService(TEST_NIGHTLY ? 10 : 3, true, true));
+    OrderedExecutor orderedExecutor = new OrderedExecutor(10,
+        ParWork.getParExecutorService("replayUpdatesExecutor", 10, 10,
+            0, new LinkedBlockingQueue<>(10)));
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 55); i++) {
         int key = random().nextInt(N);
