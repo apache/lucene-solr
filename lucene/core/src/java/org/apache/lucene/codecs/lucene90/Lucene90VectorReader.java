@@ -372,14 +372,14 @@ public final class Lucene90VectorReader extends VectorReader {
         Neighbor n = results.pop();
         float score;
         if (reversed) {
-          score = (float) Math.exp(- n.score / vector.length);
+          score = (float) Math.exp(- n.score() / vector.length);
         } else {
-          score = n.score;
+          score = n.score();
         }
-        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node], score);
+        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node()], score);
       }
       // always return >= the case where we can assert == is only when there are fewer than topK vectors in the index
-      return new TopDocs(new TotalHits(scoreDocs.length, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
+      return new TopDocs(new TotalHits(results.visitedCount(), TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
     }
 
     class OffHeapRandomAccess implements RandomAccessVectorValues {

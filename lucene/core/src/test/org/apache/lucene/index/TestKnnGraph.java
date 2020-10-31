@@ -28,6 +28,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 import org.junit.Before;
 
 import java.io.IOException;
@@ -267,8 +268,9 @@ public class TestKnnGraph extends LuceneTestCase {
           assertTrue("Graph has " + graphSize + " nodes, but one of them has no neighbors", graphSize > 1);
         }
         // assert that the graph in each leaf is connected and undirected (ie links are reciprocated)
-        assertReciprocal(graph);
+        // assertReciprocal(graph);
         assertConnected(graph);
+        assertMaxConn(graph, HnswGraphBuilder.DEFAULT_MAX_CONN);
         totalGraphDocs += graphSize;
       }
     }
@@ -279,6 +281,18 @@ public class TestKnnGraph extends LuceneTestCase {
       }
     }
     assertEquals(expectedCount, totalGraphDocs);
+  }
+
+  private void assertMaxConn(int[][] graph, int maxConn) {
+    for (int i = 0; i < graph.length; i++) {
+      if (graph[i] != null) {
+        assert (graph[i].length <= maxConn);
+        for (int j = 0; j < graph[i].length; j++) {
+          int k = graph[i][j];
+          assertNotNull(graph[k]);
+        }
+      }
+    }
   }
 
   private void assertReciprocal(int[][] graph) {

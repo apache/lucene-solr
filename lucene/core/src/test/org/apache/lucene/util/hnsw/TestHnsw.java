@@ -103,10 +103,41 @@ public class TestHnsw extends LuceneTestCase {
         Neighbors nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw.getGraphValues(), random());
         int sum = 0;
         for (Neighbor n : nn) {
-            sum += n.node;
+            sum += n.node();
         }
         // We expect to get approximately 100% recall; the lowest docIds are closest to zero; sum(0,9) = 45
         assertTrue("sum(result docs)=" + sum, sum < 75);
+    }
+
+    public void testMaxConnections() throws Exception {
+        // verify that maxConnections is observed, and that the retained arcs point to the best-scoring neighbors
+        HnswGraph graph = new HnswGraph(1, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW);
+        graph.connectNodes(0, 1, 1);
+        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        graph.connectNodes(0, 2, 2);
+        assertArrayEquals(new int[]{2}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
+        graph.connectNodes(2, 3, 1);
+        assertArrayEquals(new int[]{2}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
+        assertArrayEquals(new int[]{2}, graph.getNeighbors(3));
+
+        graph = new HnswGraph(1, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
+        graph.connectNodes(0, 1, 1);
+        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        graph.connectNodes(0, 2, 2);
+        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
+        graph.connectNodes(2, 3, 1);
+        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        assertArrayEquals(new int[]{3}, graph.getNeighbors(2));
+        assertArrayEquals(new int[]{2}, graph.getNeighbors(3));
     }
 
     /** Returns vectors evenly distributed around the unit circle.
@@ -227,19 +258,19 @@ public class TestHnsw extends LuceneTestCase {
         assertNull(nn.insertWithOverflow(b));
         assertNull(nn.insertWithOverflow(a));
         assertSame(a, nn.insertWithOverflow(c));
-        assertEquals(20, (int) nn.top().score);
-        assertEquals(20, (int) nn.pop().score);
-        assertEquals(30, (int) nn.top().score);
-        assertEquals(30, (int) nn.pop().score);
+        assertEquals(20, (int) nn.top().score());
+        assertEquals(20, (int) nn.pop().score());
+        assertEquals(30, (int) nn.top().score());
+        assertEquals(30, (int) nn.pop().score());
 
         Neighbors fn = Neighbors.create(2, true);
         assertNull(fn.insertWithOverflow(b));
         assertNull(fn.insertWithOverflow(a));
         assertSame(c, fn.insertWithOverflow(c));
-        assertEquals(20, (int) fn.top().score);
-        assertEquals(20, (int) fn.pop().score);
-        assertEquals(10, (int) fn.top().score);
-        assertEquals(10, (int) fn.pop().score);
+        assertEquals(20, (int) fn.top().score());
+        assertEquals(20, (int) fn.pop().score());
+        assertEquals(10, (int) fn.top().score());
+        assertEquals(10, (int) fn.pop().score());
     }
 
     @SuppressWarnings("SelfComparison")

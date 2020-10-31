@@ -73,6 +73,7 @@ public class KnnGraphTester {
   private Path indexPath;
   private boolean quiet;
   private boolean reindex;
+  private int reindexTimeMsec;
 
   @SuppressForbidden(reason="uses Random()")
   private KnnGraphTester() {
@@ -128,6 +129,12 @@ public class KnnGraphTester {
           }
           HnswGraphBuilder.DEFAULT_MAX_CONN = Integer.parseInt(args[++iarg]);
           break;
+        case "-dim":
+          if (iarg == args.length - 1) {
+            throw new IllegalArgumentException("-dim requires a following number");
+          }
+          dim = Integer.parseInt(args[++iarg]);
+          break;
         case "-ndoc":
           if (iarg == args.length - 1) {
             throw new IllegalArgumentException("-ndoc requires a following number");
@@ -158,7 +165,7 @@ public class KnnGraphTester {
       usage();
     }
     if (reindex) {
-      createIndex(Paths.get(docVectorsPath), indexPath);
+      reindexTimeMsec = createIndex(Paths.get(docVectorsPath), indexPath);
     }
     switch (operation) {
       case "-search":
@@ -242,7 +249,7 @@ public class KnnGraphTester {
   @SuppressForbidden(reason="Prints stuff")
   private void testSearch(Path indexPath, Path queryPath, int[][] nn) throws IOException {
     TopDocs[] results = new TopDocs[numIters];
-    long elapsed, totalCpuTime;
+    long elapsed, totalCpuTime, totalVisited = 0;
     try (FileChannel q = FileChannel.open(queryPath)) {
       FloatBuffer targets = q.map(FileChannel.MapMode.READ_ONLY, 0, numIters * dim * Float.BYTES)
         .order(ByteOrder.LITTLE_ENDIAN)
@@ -271,11 +278,12 @@ public class KnnGraphTester {
         }
         totalCpuTime = (bean.getCurrentThreadCpuTime() - cpuTimeStartNs) / 1_000_000;
         elapsed = (System.nanoTime() - start) / 1_000_000; // ns -> ms
-          for (int i = 0; i < numIters; i++) {
-              for (ScoreDoc doc : results[i].scoreDocs) {
-                  doc.doc = Integer.parseInt(reader.document(doc.doc).get("id"));
-              }
+        for (int i = 0; i < numIters; i++) {
+          totalVisited += results[i].totalHits.value;
+          for (ScoreDoc doc : results[i].scoreDocs) {
+            doc.doc = Integer.parseInt(reader.document(doc.doc).get("id"));
           }
+        }
       }
       if (quiet == false) {
         System.out.println("completed " + numIters + " searches in " + elapsed + " ms: " + ((1000 * numIters) / elapsed) + " QPS "
@@ -286,9 +294,10 @@ public class KnnGraphTester {
       System.out.println("checking results");
     }
     float recall = checkResults(results, nn);
+    totalVisited /= numIters;
     if (quiet) {
-      System.out.printf(Locale.ROOT, "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\n", recall, totalCpuTime / (float) numIters,
-          numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH);
+      System.out.printf(Locale.ROOT, "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n", recall, totalCpuTime / (float) numIters,
+          numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH, totalVisited, reindexTimeMsec);
     }
   }
 
@@ -350,7 +359,7 @@ public class KnnGraphTester {
 
   private int[][] getNN(Path docPath, Path queryPath) throws IOException {
     // look in working directory for cached nn file
-    String nnFileName = "nn-" + numDocs + "-" + numIters + "-" + topK + ".bin";
+    String nnFileName = "nn-" + numDocs + "-" + numIters + "-" + topK + "-" + dim + ".bin";
     Path nnPath = Paths.get(nnFileName);
     if (Files.exists(nnPath)) {
       return readNN(nnPath);
@@ -420,7 +429,7 @@ public class KnnGraphTester {
           result[i] = new int[topK];
           for (int k = topK - 1; k >= 0; k--) {
             Neighbor n = queue.pop();
-            result[i][k] = n.node;
+            result[i][k] = n.node();
             //System.out.print(" " + n);
           }
           if (quiet == false && (i + 1) % 10 == 0) {
@@ -433,7 +442,7 @@ public class KnnGraphTester {
     return result;
   }
 
-  private void createIndex(Path docsPath, Path indexPath) throws IOException {
+  private int createIndex(Path docsPath, Path indexPath) throws IOException {
     IndexWriterConfig iwc = new IndexWriterConfig()
       .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     // iwc.setMergePolicy(NoMergePolicy.INSTANCE);
@@ -444,7 +453,8 @@ public class KnnGraphTester {
     }
     long start = System.nanoTime();
     long totalBytes = (long) numDocs * dim * Float.BYTES, offset = 0;
-    try (FSDirectory dir = FSDirectory.open(indexPath); IndexWriter iw = new IndexWriter(dir, iwc)) {
+    try (FSDirectory dir = FSDirectory.open(indexPath);
+         IndexWriter iw = new IndexWriter(dir, iwc)) {
       int blockSize = (int) Math.min(totalBytes, (Integer.MAX_VALUE / (dim * Float.BYTES)) * (dim * Float.BYTES));
       float[] vector = new float[dim];
       try (FileChannel in = FileChannel.open(docsPath)) {
@@ -467,11 +477,12 @@ public class KnnGraphTester {
           System.out.println("Done indexing " + numDocs + " documents; now flush");
         }
       }
-      long elapsed = System.nanoTime() - start;
-      if (quiet == false) {
-        System.out.println("Indexed " + numDocs + " documents in " + elapsed / 1_000_000_000 + "s");
-      }
     }
+    long elapsed = System.nanoTime() - start;
+    if (quiet == false) {
+      System.out.println("Indexed " + numDocs + " documents in " + elapsed / 1_000_000_000 + "s");
+    }
+    return (int) (elapsed / 1_000_000);
   }
 
   private static void usage() {

@@ -20,9 +20,9 @@ package org.apache.lucene.util.hnsw;
 /** A neighbor node in the HNSW graph; holds the node ordinal and its distance score. */
 public class Neighbor implements Comparable<Neighbor> {
 
-  final public int node;
+  private int node;
 
-  final public float score;
+  private float score;
 
   public Neighbor(int node, float score) {
     this.node = node;
@@ -31,6 +31,15 @@ public class Neighbor implements Comparable<Neighbor> {
 
   public int node() {
     return node;
+  }
+
+  public float score() {
+    return score;
+  }
+
+  void update(int node, float score) {
+    this.node = node;
+    this.score = score;
   }
 
   @Override

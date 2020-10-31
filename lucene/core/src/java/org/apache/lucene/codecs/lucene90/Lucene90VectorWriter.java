@@ -18,6 +18,7 @@
 package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.VectorWriter;
@@ -143,6 +144,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
       // write graph
       offsets[ord] = graphData.getFilePointer() - graphDataOffset;
       int[] arcs = graph.getNeighbors(ord);
+      Arrays.sort(arcs);
       graphData.writeInt(arcs.length);
       int lastArc = -1;         // to make the assertion work?
       for (int arc : arcs) {

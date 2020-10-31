@@ -32,6 +32,9 @@ public abstract class Neighbors extends PriorityQueue<Neighbor> {
 
   public abstract boolean reversed();
 
+  // Used to track the number of neighbors visited during a single graph traversal
+  private int visitedCount;
+
   private Neighbors(int maxSize) {
     super(maxSize);
   }
@@ -43,10 +46,10 @@ public abstract class Neighbors extends PriorityQueue<Neighbor> {
 
     @Override
     protected boolean lessThan(Neighbor a, Neighbor b) {
-      if (a.score == b.score) {
-        return a.node > b.node;
+      if (a.score() == b.score()) {
+        return a.node() > b.node();
       }
-      return a.score < b.score;
+      return a.score() < b.score();
     }
 
     @Override
@@ -60,14 +63,22 @@ public abstract class Neighbors extends PriorityQueue<Neighbor> {
 
     @Override
     protected boolean lessThan(Neighbor a, Neighbor b) {
-      if (a.score == b.score) {
-        return a.node > b.node;
+      if (a.score() == b.score()) {
+        return a.node() > b.node();
       }
-      return b.score < a.score;
+      return b.score() < a.score();
     }
 
     @Override
     public boolean reversed() { return true; }
+  }
+
+  void setVisitedCount(int visitedCount) {
+    this.visitedCount = visitedCount;
+  }
+
+  public int visitedCount() {
+    return visitedCount;
   }
 
   @Override

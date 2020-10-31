@@ -19,6 +19,7 @@ package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -64,12 +65,15 @@ import static org.apache.lucene.util.VectorUtil.squareDistance;
  */
 public final class HnswGraph {
 
-  // each entry lists the neighbors of a node, in node order
-  private final List<List<Neighbor>> graph;
+  private final int maxConn;
 
-  HnswGraph() {
+  // each entry lists the top maxConn neighbors of a node
+  private final List<Neighbors> graph;
+
+  HnswGraph(int maxConn, VectorValues.SearchStrategy searchStrategy) {
     graph = new ArrayList<>();
-    graph.add(new ArrayList<>());
+    graph.add(Neighbors.create(maxConn, isReversed(searchStrategy)));
+    this.maxConn = maxConn;
   }
 
   /**
@@ -102,23 +106,23 @@ public final class HnswGraph {
     Set<Integer> visited = new HashSet<>();
     // TODO: use PriorityQueue's sentinel optimization
     Neighbors results = Neighbors.create(topK, scoreReversed);
-    for (Neighbor c :candidates) {
-      visited.add(c.node);
+    for (Neighbor c : candidates) {
+      visited.add(c.node());
       results.insertWithOverflow(c);
     }
     // Set the bound to the worst current result and below reject any newly-generated candidates failing
     // to exceed this bound
     BoundsChecker bound = BoundsChecker.create(scoreReversed);
-    bound.bound = results.top().score;
+    bound.bound = results.top().score();
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
       Neighbor c = candidates.pollLast();
       if (results.size() >= topK) {
-        if (bound.check(c.score)) {
+        if (bound.check(c.score())) {
           break;
         }
       }
-      graphValues.seek(c.node);
+      graphValues.seek(c.node());
       int friendOrd;
       while ((friendOrd = graphValues.nextArc()) != NO_MORE_DOCS) {
         if (visited.contains(friendOrd)) {
@@ -130,47 +134,55 @@ public final class HnswGraph {
           Neighbor n = new Neighbor(friendOrd, score);
           candidates.add(n);
           results.insertWithOverflow(n);
-          bound.bound = results.top().score;
+          bound.bound = results.top().score();
         }
       }
     }
+    results.setVisitedCount(visited.size());
     return results;
   }
 
   /**
-   * Returns the nodes connected to the given node by its outgoing arcs.
+   * Returns the nodes connected to the given node by its outgoing arcs in an unpredictable order.
    * @param node the node whose friends are returned
    */
   public int[] getNeighbors(int node) {
-    return graph.get(node).stream().mapToInt(Neighbor::node).toArray();
+    Neighbors neighbors = graph.get(node);
+    int[] result = new int[neighbors.size()];
+    int i = 0;
+    for (Neighbor n : neighbors) {
+      result[i++] = n.node();
+    }
+    return result;
   }
 
-  /** Connects two nodes symmetrically.
+  /** Connects two nodes symmetrically, limiting the maximum number of connections from either node.
    * node1 must be less than node2 and must already have been inserted to the graph */
-  void connectNodes(int node1, int node2, float score, int maxConnections) {
+  void connectNodes(int node1, int node2, float score) {
     assert node1 >= 0 && node2 >= 0;
     assert node1 < node2;
-    List<Neighbor> arcs1 = graph.get(node1);
+    Neighbors arcs1 = graph.get(node1);
     assert arcs1 != null;
-    assert arcs1.isEmpty() || arcs1.get(arcs1.size() - 1).node < node2;
-    arcs1.add(new Neighbor(node2, score));
-    List<Neighbor> arcs2;
+    assert arcs1.size() == 0 || arcs1.top().node() < node2;
+    if (arcs1.size() == maxConn) {
+      Neighbor top = arcs1.top();
+      if (score < top.score() == arcs1.reversed()) {
+        top.update(node2, score);
+        arcs1.updateTop();
+      }
+    } else {
+      arcs1.add(new Neighbor(node2, score));
+    }
+    Neighbors arcs2;
     if (node2 < graph.size()) {
       arcs2 = graph.get(node2);
-      assert arcs2.get(arcs2.size() - 1).node < node1;
     } else {
       assert node2 == graph.size();
-      arcs2 = new ArrayList<>();
+      arcs2 = Neighbors.create(maxConn, arcs1.reversed());
       graph.add(arcs2);
     }
+    assert arcs2.size() < maxConn;
     arcs2.add(new Neighbor(node1, score));
-
-    // ensure #arcs <= maxConnections
-    /*
-    if (maxConnections > 0) {
-      shrink(node2, maxConnections);
-    }
-     */
   }
 
   /**
@@ -221,6 +233,7 @@ public final class HnswGraph {
     public void seek(int targetNode) {
       arcUpTo = 0;
       arcs = HnswGraph.this.getNeighbors(targetNode);
+      Arrays.sort(arcs);
     }
 
     @Override

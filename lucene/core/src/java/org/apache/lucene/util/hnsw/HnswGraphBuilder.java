@@ -44,7 +44,7 @@ public final class HnswGraphBuilder {
   // since the indexing API doesn't provide any control over them.
 
   // default max connections per node
-  static int DEFAULT_MAX_CONN = 16;
+  public static int DEFAULT_MAX_CONN = 16;
 
   // default candidate list size
   static int DEFAULT_BEAM_WIDTH = 16;
@@ -105,7 +105,7 @@ public final class HnswGraphBuilder {
     this.maxConn = maxConn;
     this.beamWidth = beamWidth;
     boundedVectors = new BoundedVectorValues(vectors);
-    this.hnsw = new HnswGraph();
+    this.hnsw = new HnswGraph(maxConn, searchStrategy);
     random = new Random(seed);
   }
 
@@ -126,16 +126,9 @@ public final class HnswGraphBuilder {
     for (Neighbor n : results) {
       nn.insertWithOverflow(n);
     }
-    // Sort by node id, ascending
-    List<Neighbor> sortedByNodeId = new ArrayList<>();
+    // connect the near neighbors to the just inserted node
     for (Neighbor n : nn) {
-      sortedByNodeId.add(n);
-    }
-    sortedByNodeId.sort(Comparator.comparingInt(Neighbor::node));
-    // add arcs
-    for (Neighbor n : sortedByNodeId) {
-      // TODO: experiment with shrinking to maintain a fixed maxConn
-      hnsw.connectNodes(n.node, boundedVectors.size, n.score, 0);
+      hnsw.connectNodes(n.node(), boundedVectors.size, n.score());
     }
   }
 
