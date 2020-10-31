@@ -793,7 +793,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             replicas++;
         }
       }
-      if (replicas == expectedReplicas) {
+      if (replicas >= expectedReplicas) {
         log.info("Found expected replicas={} {}", expectedReplicas, replicaMap);
         return true;
       }

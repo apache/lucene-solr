@@ -1034,7 +1034,7 @@ public class ZkController implements Closeable, Runnable {
         DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"));
         if (log.isDebugEnabled()) log.debug("get cluster lock");
         while (!lock.lock()) {
-          Thread.sleep(50);
+          Thread.sleep(150);
         }
         try {
 
@@ -1113,7 +1113,7 @@ public class ZkController implements Closeable, Runnable {
 
         } finally {
           if (log.isDebugEnabled()) log.debug("release cluster lock");
-          lock.unlock();
+          if (lock.isOwner()) lock.unlock();
         }
         if (!createdClusterNodes) {
           // wait?
@@ -1138,7 +1138,7 @@ public class ZkController implements Closeable, Runnable {
         this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(),
                 getNodeName(), zkStateReader);
 
-        try (ParWork worker = new ParWork((this))) {
+        try (ParWork worker = new ParWork(this, false, true)) {
           // start the overseer first as following code may need it's processing
           worker.collect("startOverseer", () -> {
             LeaderElector overseerElector = new LeaderElector(zkClient, new ContextKey("overseer", "overseer"), overseerContexts);

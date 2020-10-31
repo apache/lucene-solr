@@ -411,7 +411,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
               CoreAdminParams.CORE, "non-existent-core")
           , resp);
     });
-    assertEquals("Expected error message for non-existent core.", "No such core: non-existent-core", e.getMessage());
+    assertTrue("Expected error message for non-existent core: " + e.getMessage(), e.getMessage().contains("No such core: non-existent-core"));
 
     // test null core
     e = expectThrows(SolrException.class, () -> {
@@ -420,7 +420,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
               CoreAdminParams.CoreAdminAction.RELOAD.toString())
           , resp);
     });
-    assertEquals("Expected error message for non-existent core.", "Missing required parameter: core", e.getMessage());
+    assertTrue("Expected error message for non-existent core.",  e.getMessage().contains("Missing required parameter: core"));
     admin.close();
   }
 }

@@ -361,7 +361,7 @@ public class Overseer implements SolrCloseable {
               // if an event comes in the next *ms batch it together
               int wait = 10;
               if (log.isDebugEnabled()) log.debug("going to peekElements processedNodes={}", processedNodes);
-              queue = new LinkedList<>(stateUpdateQueue.peekElements(100, wait, node -> processedNodes.contains(node)));
+              queue = new LinkedList<>(stateUpdateQueue.peekElements(10, wait, node -> processedNodes.contains(node)));
             }
             fallbackQueueSize = processedNodes.size();
             // we should force write all pending updates because the next iteration might sleep until there

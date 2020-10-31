@@ -370,7 +370,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * @param numReplicas the replication factor of the collection (same as numNrtReplicas)
    */
   public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
-    return new Create(collection, config, numShards, numReplicas, null, null);
+    return new Create(collection, config, numShards, numReplicas, 0, 0);
   }
 
   /**
@@ -429,11 +429,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String policy;
     protected String shards;
     protected String routerField;
-    protected Integer numShards;
+    protected Integer numShards = 0;
     protected Integer maxShardsPerNode;
-    protected Integer nrtReplicas;
-    protected Integer pullReplicas;
-    protected Integer tlogReplicas;
+    protected Integer nrtReplicas = 0;
+    protected Integer pullReplicas = 0;
+    protected Integer tlogReplicas = 0;
 
     protected Properties properties;
     protected String alias;
@@ -446,13 +446,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     /** Constructor that assumes {@link ImplicitDocRouter#NAME} and an explicit list of <code>shards</code> */
     protected Create(String collection, String config, String shards, int numNrtReplicas) {
-      this(collection, config, ImplicitDocRouter.NAME, null, checkNotNull("shards",shards), numNrtReplicas, null, null);
+      this(collection, config, ImplicitDocRouter.NAME, 0, checkNotNull("shards",shards), numNrtReplicas, 0, 0);
     }
 
     private Create(String collection, String config, String routerName, Integer numShards, String shards, Integer numNrtReplicas, Integer  numTlogReplicas, Integer numPullReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is required by the server
-      if ((null != shards) && (null != numShards)) {
+      if ((null != shards) && (null != numShards && numShards != 0)) {
         throw new IllegalArgumentException("Can not specify both a numShards and a list of shards");
       }
       this.configName = config;

@@ -110,7 +110,12 @@ public  class LeaderElector {
     List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
     sortSeqs(seqs);
 
-    String leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
+    String leaderSeqNodeName;
+    try {
+      leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
+    } catch (NullPointerException e) {
+      return false;
+    }
     if (!seqs.contains(leaderSeqNodeName)) {
       log.warn("Our node is no longer in line to be leader");
       return false;

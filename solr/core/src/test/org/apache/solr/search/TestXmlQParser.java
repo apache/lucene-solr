@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.lucene.queryparser.xml.CoreParser;
@@ -23,6 +24,7 @@ import org.apache.lucene.queryparser.xml.CoreParser;
 import org.apache.lucene.queryparser.xml.TestCoreParser;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,15 @@ public class TestXmlQParser extends TestCoreParser {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreParser solrCoreParser;
+
+  @BeforeClass
+  public static void beforeTestXmlQParser() throws Exception {
+    String resource = "PointRangeQueryWithoutLowerTerm.xml";
+    try(InputStream xmlStream = TestCoreParser.class.getResourceAsStream(resource)) {
+      assumeTrue("Test XML file " + resource + " cannot be found - "
+          + "these resources are in a lucene module and some IDE's or test runners may not find them", xmlStream != null);
+    }
+  }
 
   @AfterClass
   public static void shutdownLogger() throws Exception {

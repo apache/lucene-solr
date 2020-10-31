@@ -543,19 +543,20 @@ public class ZkDistributedQueue implements DistributedQueue {
       if (log.isDebugEnabled()) log.debug("0 wait time and no children found, return");
       return;
     }
-
-    while (foundChildren.size() == 0) {
+    TreeSet<String> fc = null;
+    while (fc == null || fc.isEmpty()) {
       if (watcher.fired) {
         watcher.fired = false;
-        foundChildren = fetchZkChildren(watcher, acceptFilter);
-        if (!foundChildren.isEmpty()) {
-          break;
+        fc = fetchZkChildren(watcher, acceptFilter);
+        if (!fc.isEmpty()) {
+          foundChildren.addAll(fc);
+          return;
         }
       }
       updateLock.lockInterruptibly();
       try {
         try {
-          changed.await(250, TimeUnit.MILLISECONDS);
+          changed.await(10, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
         }
@@ -566,19 +567,18 @@ public class ZkDistributedQueue implements DistributedQueue {
           return;
         }
         for (String child : knownChildren) {
-          if (acceptFilter == null || !acceptFilter.test(dir + "/" + child)) {
+          if (acceptFilter == null || !acceptFilter.test(child)) {
             foundChildren.add(child);
           }
+        }
+        if (!foundChildren.isEmpty()) {
+          return;
         }
       } finally {
         if (updateLock.isHeldByCurrentThread()) {
           updateLock.unlock();
         }
       }
-      if (!foundChildren.isEmpty()) {
-        break;
-      }
-
     }
   }
 

@@ -616,7 +616,7 @@ public class MiniSolrCloudCluster {
       try {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       } catch (BaseHttpSolrClient.RemoteSolrException e) {
-        if (!e.getMessage().contains("Could not find")) {
+        if (!e.getMessage().contains("Could not find") && !e.getMessage().contains("Error handling 'UNLOAD' action")) {
           errors.put(collection, e);
         }
       } catch (Exception e) {
@@ -946,6 +946,7 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForActiveCollection(String collection, int shards, int totalReplicas) {
+    if (collection == null) throw new IllegalArgumentException("null collection");
     waitForActiveCollection(collection,  10, TimeUnit.SECONDS, shards, totalReplicas);
   }
 

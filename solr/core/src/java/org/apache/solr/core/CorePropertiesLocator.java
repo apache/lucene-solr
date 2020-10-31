@@ -63,10 +63,6 @@ public class CorePropertiesLocator implements CoresLocator {
   public void create(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
       Path propertiesFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
-      if (Files.exists(propertiesFile))
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                "Could not create a new core in " + cd.getInstanceDir()
-                              + " as another core is already defined there");
       writePropertiesFile(cd, propertiesFile);
     }
   }

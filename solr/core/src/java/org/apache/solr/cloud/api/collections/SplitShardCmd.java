@@ -854,21 +854,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     } else {
       parentSlice = collection.getSlice(slice.get());
-      int tryCnt = 0;
-      // TODO use zkStateReader#waitFor
-      while (parentSlice.getState() != Slice.State.ACTIVE && tryCnt < 500) {
-        tryCnt++;
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-        clusterState = zkStateReader.getClusterState();
-        collection = clusterState.getCollection(collectionName);
-
-        parentSlice = collection.getSlice(slice.get());
-      }
-
     }
 
     if (parentSlice == null) {
