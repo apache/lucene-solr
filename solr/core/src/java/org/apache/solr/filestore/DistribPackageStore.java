@@ -62,7 +62,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 @SolrThreadUnsafe
-
 public class DistribPackageStore implements PackageStore {
   static final long MAX_PKG_SIZE = Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
   /**
