@@ -35,7 +35,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class FuzzyLikeThisQueryTest extends LuceneTestCase {
+public class TestFuzzyLikeThisQuery extends LuceneTestCase {
   private Directory directory;
   private IndexSearcher searcher;
   private IndexReader reader;
