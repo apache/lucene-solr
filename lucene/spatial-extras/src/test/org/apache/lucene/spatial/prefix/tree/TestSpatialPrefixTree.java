@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SpatialPrefixTreeTest extends SpatialTestCase {
+public class TestSpatialPrefixTree extends SpatialTestCase {
 
   //TODO plug in others and test them
   private SpatialContext ctx;

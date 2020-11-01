@@ -44,7 +44,7 @@ import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.atMost;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
-public class HeatmapFacetCounterTest extends StrategyTestCase {
+public class TestHeatmapFacetCounter extends StrategyTestCase {
 
   SpatialPrefixTree grid;
   ShapeFactory shapeFactory;

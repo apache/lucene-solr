@@ -37,11 +37,11 @@ import org.junit.Test;
 import java.text.ParseException;
 import java.util.HashMap;
 
-public class JtsPolygonTest extends StrategyTestCase {
+public class TestJtsPolygon extends StrategyTestCase {
 
   private static final double LUCENE_4464_distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;//DEFAULT 2.5%
 
-  public JtsPolygonTest() {
+  public TestJtsPolygon() {
     try {
       HashMap<String, String> args = new HashMap<>();
       args.put("spatialContextFactory",

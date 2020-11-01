@@ -37,7 +37,7 @@ import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 
-public class DistanceStrategyTest extends StrategyTestCase {
+public class TestDistanceStrategy extends StrategyTestCase {
   @ParametersFactory(argumentFormatting = "strategy=%s")
   public static Iterable<Object[]> parameters() {
     List<Object[]> ctorArgs = new ArrayList<>();
@@ -75,7 +75,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     return ctorArgs;
   }
 
-  public DistanceStrategyTest(String suiteName, SpatialStrategy strategy) {
+  public TestDistanceStrategy(String suiteName, SpatialStrategy strategy) {
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
   }

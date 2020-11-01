@@ -17,7 +17,7 @@
 package org.apache.lucene.spatial.prefix;
 
 /** Test RandomSpatialOpFuzzyPrefixTreeTest using the PrefixTree index format found in 5.0 and prior. */
-public class RandomSpatialOpFuzzyPrefixTree50Test extends RandomSpatialOpFuzzyPrefixTreeTest {
+public class TestRandomSpatialOpFuzzyPrefixTree50 extends TestRandomSpatialOpFuzzyPrefixTree {
 
   protected RecursivePrefixTreeStrategy newRPT() {
     return new RecursivePrefixTreeStrategy(this.grid, getClass().getSimpleName()) {

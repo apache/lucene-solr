@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.text.ParseException;
 
 //Tests SpatialOperation somewhat too
-public class SpatialArgsParserTest extends LuceneTestCase {
+public class TestSpatialArgsParser extends LuceneTestCase {
 
   private SpatialContext ctx = SpatialContext.GEO;
 

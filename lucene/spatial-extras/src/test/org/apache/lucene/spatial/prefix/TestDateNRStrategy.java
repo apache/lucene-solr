@@ -30,7 +30,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
-public class DateNRStrategyTest extends RandomSpatialOpStrategyTestCase {
+public class TestDateNRStrategy extends RandomSpatialOpStrategyTestCase {
 
   static final int ITERATIONS = 10;
 

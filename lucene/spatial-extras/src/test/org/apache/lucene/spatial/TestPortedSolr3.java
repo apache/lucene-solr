@@ -41,7 +41,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory;
 /**
  * Based off of Solr 3's SpatialFilterTest.
  */
-public class PortedSolr3Test extends StrategyTestCase {
+public class TestPortedSolr3 extends StrategyTestCase {
 
   private ShapeFactory shapeFactory;
 
@@ -74,7 +74,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     return ctorArgs;
   }
 
-  public PortedSolr3Test(String suiteName, SpatialStrategy strategy) {
+  public TestPortedSolr3(String suiteName, SpatialStrategy strategy) {
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
     shapeFactory = ctx.getShapeFactory();

@@ -44,7 +44,7 @@ import org.locationtech.spatial4j.shape.Shape;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
-public class NumberRangeFacetsTest extends StrategyTestCase {
+public class TestNumberRangeFacets extends StrategyTestCase {
 
   DateRangePrefixTree tree;
 

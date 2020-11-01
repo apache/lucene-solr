@@ -30,7 +30,7 @@ import org.locationtech.spatial4j.shape.Point;
 /**
  * Test for S2 Spatial prefix tree.
  */
-public class S2PrefixTreeTest extends LuceneTestCase{
+public class TestS2PrefixTree extends LuceneTestCase{
 
   @Test
   @Repeat(iterations = 10)

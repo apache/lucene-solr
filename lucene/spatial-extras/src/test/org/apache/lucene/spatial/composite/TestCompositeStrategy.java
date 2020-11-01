@@ -37,7 +37,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
-public class CompositeStrategyTest extends RandomSpatialOpStrategyTestCase {
+public class TestCompositeStrategy extends RandomSpatialOpStrategyTestCase {
 
   private SpatialPrefixTree grid;
   private RecursivePrefixTreeStrategy rptStrategy;

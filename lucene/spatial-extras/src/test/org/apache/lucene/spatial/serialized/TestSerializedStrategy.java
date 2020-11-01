@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 
-public class SerializedStrategyTest extends StrategyTestCase {
+public class TestSerializedStrategy extends StrategyTestCase {
 
   @Before
   @Override

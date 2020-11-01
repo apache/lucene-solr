@@ -63,7 +63,7 @@ import static org.locationtech.spatial4j.shape.SpatialRelation.WITHIN;
 
 /** Randomized PrefixTree test that considers the fuzziness of the
  * results introduced by grid approximation. */
-public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
+public class TestRandomSpatialOpFuzzyPrefixTree extends StrategyTestCase {
 
   static final int ITERATIONS = 10;
 
@@ -471,7 +471,7 @@ public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
     final boolean biasContainsThenWithin;
 
     public ShapePair(Shape shape1, Shape shape2, boolean containsThenWithin) {
-      super(Arrays.asList(shape1, shape2), RandomSpatialOpFuzzyPrefixTreeTest.this.ctx);
+      super(Arrays.asList(shape1, shape2), TestRandomSpatialOpFuzzyPrefixTree.this.ctx);
       this.shape1 = shape1;
       this.shape2 = shape2;
       this.shape1_2D = toNonGeo(shape1);

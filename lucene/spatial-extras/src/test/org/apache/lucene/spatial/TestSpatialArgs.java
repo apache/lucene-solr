@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
-public class SpatialArgsTest extends LuceneTestCase {
+public class TestSpatialArgs extends LuceneTestCase {
 
   @Test
   public void calcDistanceFromErrPct() {

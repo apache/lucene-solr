@@ -35,7 +35,7 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
-public class DateRangePrefixTreeTest extends LuceneTestCase {
+public class TestDateRangePrefixTree extends LuceneTestCase {
 
   @ParametersFactory(argumentFormatting = "calendar=%s")
   public static Iterable<Object[]> parameters() {
@@ -47,7 +47,7 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
 
   private final DateRangePrefixTree tree;
 
-  public DateRangePrefixTreeTest(String suiteName, Calendar templateCal) {
+  public TestDateRangePrefixTree(String suiteName, Calendar templateCal) {
     tree = new DateRangePrefixTree(templateCal);
   }
 
