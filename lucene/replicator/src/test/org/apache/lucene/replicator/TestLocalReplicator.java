@@ -37,7 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LocalReplicatorTest extends ReplicatorTestCase {
+public class TestLocalReplicator extends ReplicatorTestCase {
   
   private static final String VERSION_ID = "version";
   

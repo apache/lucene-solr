@@ -41,7 +41,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Before;
 import org.junit.Test;
 
-public class HttpReplicatorTest extends ReplicatorTestCase {
+public class TestHttpReplicator extends ReplicatorTestCase {
   private Path clientWorkDir;
   private Replicator serverReplicator;
   private IndexWriter writer;

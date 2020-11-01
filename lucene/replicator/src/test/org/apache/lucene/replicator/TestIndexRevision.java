@@ -32,7 +32,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
-public class IndexRevisionTest extends ReplicatorTestCase {
+public class TestIndexRevision extends ReplicatorTestCase {
   
   @Test
   public void testNoSnapshotDeletionPolicy() throws Exception {

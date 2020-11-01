@@ -57,7 +57,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
+public class TestIndexAndTaxonomyReplicationClient extends ReplicatorTestCase {
   
   private static class IndexAndTaxonomyReadyCallback implements Callable<Boolean>, Closeable {
     

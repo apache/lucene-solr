@@ -31,7 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
-public class SessionTokenTest extends ReplicatorTestCase {
+public class TestSessionToken extends ReplicatorTestCase {
   
   @Test
   public void testSerialization() throws IOException {

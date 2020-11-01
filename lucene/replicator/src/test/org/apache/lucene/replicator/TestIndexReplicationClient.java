@@ -38,7 +38,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class IndexReplicationClientTest extends ReplicatorTestCase {
+public class TestIndexReplicationClient extends ReplicatorTestCase {
   
   private static class IndexReadyCallback implements Callable<Boolean>, Closeable {
     

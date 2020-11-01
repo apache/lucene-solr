@@ -37,7 +37,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
-public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
+public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
   
   private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
     FacetsConfig config = new FacetsConfig();

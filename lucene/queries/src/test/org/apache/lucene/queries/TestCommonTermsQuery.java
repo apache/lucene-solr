@@ -56,7 +56,7 @@ import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-public class CommonTermsQueryTest extends LuceneTestCase {
+public class TestCommonTermsQuery extends LuceneTestCase {
   
   public void testBasics() throws IOException {
     Directory dir = newDirectory();
@@ -403,7 +403,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     LeafReader wrapper = getOnlyLeafReader(reader);
     String field = "body";
     Terms terms = wrapper.terms(field);
-    PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(
+    PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<TestCommonTermsQuery.TermAndFreq>(
         5) {
       
       @Override
@@ -412,7 +412,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       }
       
     };
-    PriorityQueue<TermAndFreq> highFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(
+    PriorityQueue<TermAndFreq> highFreqQueue = new PriorityQueue<TestCommonTermsQuery.TermAndFreq>(
         5) {
       
       @Override
