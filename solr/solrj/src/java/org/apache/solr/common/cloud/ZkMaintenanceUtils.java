@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -268,7 +267,7 @@ public class ZkMaintenanceUtils {
     });
     
     // sort the list in descending order to ensure that child entries are deleted first
-    Collections.sort(paths, Comparator.comparingInt(String::length).reversed());
+    paths.sort(Comparator.comparingInt(String::length).reversed());
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {

@@ -25,6 +25,3 @@ __pycache__
 
 # Emacs backup
 *~
-/.caches/
-/eclipse-build/
-

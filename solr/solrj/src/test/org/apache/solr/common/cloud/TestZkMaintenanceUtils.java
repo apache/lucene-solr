@@ -16,65 +16,55 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class TestZkMaintenanceUtils extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
-  protected ZkTestServer zkServer;
-  private SolrZkClient defaultClient;
-  private CloudSolrClient solrClient;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    configureCluster(1)
-        .addConfig("_default", new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
-        .configure();
-    solrClient = getCloudSolrClient(cluster.getZkServer().getZkAddress());
+  protected static ZkTestServer zkServer;
+  private static Path zkDir;
 
-    Path zkDir = createTempDir();
-    log.info("ZooKeeper dataDir:{}", zkDir);
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    zkDir = createTempDir("TestZkMaintenanceUtils");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
+  }
 
-    try (SolrZkClient client = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      // Set up chroot
-      client.makePath("/solr", false, true);
+  @AfterClass
+  public static void tearDownClass() throws IOException, InterruptedException {
+
+    if (zkServer != null) {
+      zkServer.shutdown();
+      zkServer = null;
     }
-
-    defaultClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
-
+    if (null != zkDir) {
+      FileUtils.deleteDirectory(zkDir.toFile());
+      zkDir = null;
+    }
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    defaultClient.close();
-    zkServer.shutdown();
-    solrClient.close();
-    cluster.shutdown();
-    super.tearDown();
-  }
-
+  
   /**
    * This test reproduces the issue of trying to delete zk-nodes that have the same length. (SOLR-14961). 
    * 
-   * @throws InterruptedException when having troublke creating test nodes
+   * @throws InterruptedException when having trouble creating test nodes
    * @throws KeeperException error when talking to zookeeper
    * @throws SolrServerException when having trouble connecting to solr 
    * @throws UnsupportedEncodingException when getBytes() uses unknown encoding
@@ -82,33 +72,87 @@ public class TestZkMaintenanceUtils extends SolrCloudTestCase {
    */
   @Test
   public void testClean() throws KeeperException, InterruptedException, SolrServerException, UnsupportedEncodingException {
-    /* PREPARE */
-    String path = "/myPath/isTheBest";
-    String data1 = "myStringData1";
-    String data2 = "myStringData2";
-    String longData = "myLongStringData";
-    // create zk nodes that have the same path length
-    defaultClient.create("/myPath", null, CreateMode.PERSISTENT, true);
-    defaultClient.create(path, null, CreateMode.PERSISTENT, true);
-    defaultClient.create(path +"/file1.txt", data1.getBytes("UTF-8"), CreateMode.PERSISTENT, true);
-    defaultClient.create(path +"/nothing.txt", null, CreateMode.PERSISTENT, true);
-    defaultClient.create(path +"/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-    defaultClient.create(path +"/some_longer_file2.txt", longData.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-    
-    String listZnode = defaultClient.listZnode(path, false);
-    log.info(listZnode);
-    
-    /* RUN */
-    // delete all nodes that contain "file"
-    ZkMaintenanceUtils.clean(defaultClient,path, node -> node.contains("file"));
-    
-    /* CHECK */
-    listZnode = defaultClient.listZnode(path, false);
-    log.info(listZnode);
-    // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
-    assertFalse(listZnode.contains("file1"));
-    assertFalse(listZnode.contains("file2"));
-    assertFalse(listZnode.contains("some_longer_file2"));
-    assertTrue(listZnode.contains("nothing"));
+    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)){
+      /* PREPARE */      
+      String path = "/myPath/isTheBest";
+      String data1 = "myStringData1";
+      String data2 = "myStringData2";
+      String longData = "myLongStringData";
+      // create zk nodes that have the same path length
+      zkClient.create("/myPath", null, CreateMode.PERSISTENT, true);
+      zkClient.create(path, null, CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/nothing.txt", null, CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      zkClient.create(path +"/some_longer_file2.txt", longData.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+      
+      /* RUN */
+      // delete all nodes that contain "file"
+      ZkMaintenanceUtils.clean(zkClient,path, node -> node.contains("file"));
+      
+      /* CHECK */
+      String listZnode = zkClient.listZnode(path, false);
+      // list of node must not contain file1, file2 or some_longer_file2 because they where deleted
+      assertFalse(listZnode.contains("file1"));
+      assertFalse(listZnode.contains("file2"));
+      assertFalse(listZnode.contains("some_longer_file2"));
+      assertTrue(listZnode.contains("nothing"));
+    }
+  }
+
+  @Test
+  public void testPaths() {
+    assertEquals("Unexpected path construction"
+        , ""
+        , ZkMaintenanceUtils.getZkParent(null));
+
+    assertEquals("Unexpected path construction"
+        , "this/is/a"
+        , ZkMaintenanceUtils.getZkParent("this/is/a/path"));
+
+    assertEquals("Unexpected path construction"
+        , "/root"
+        , ZkMaintenanceUtils.getZkParent("/root/path/"));
+
+    assertEquals("Unexpected path construction"
+        , ""
+        , ZkMaintenanceUtils.getZkParent("/"));
+
+    assertEquals("Unexpected path construction"
+        , ""
+        , ZkMaintenanceUtils.getZkParent(""));
+
+    assertEquals("Unexpected path construction"
+        , ""
+        , ZkMaintenanceUtils.getZkParent("noslashesinstring"));
+
+    assertEquals("Unexpected path construction"
+        , ""
+        , ZkMaintenanceUtils.getZkParent("/leadingslashonly"));
+
+  }
+
+  @Test
+  public void testTraverseZkTree() throws Exception {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+      zkClient.makePath("/testTraverseZkTree/1/1", true, true);
+      zkClient.makePath("/testTraverseZkTree/1/2", false, true);
+      zkClient.makePath("/testTraverseZkTree/2", false, true);
+      assertEquals(Arrays.asList("/testTraverseZkTree", "/testTraverseZkTree/1", "/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/2"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_PRE));
+      assertEquals(Arrays.asList("/testTraverseZkTree/1/1", "/testTraverseZkTree/1/2", "/testTraverseZkTree/1", "/testTraverseZkTree/2", "/testTraverseZkTree"), getTraverseedZNodes(zkClient, "/testTraverseZkTree", ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST));
+
+    }
+  }
+
+  private List<String> getTraverseedZNodes(SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder) throws KeeperException, InterruptedException {
+    List<String> result = new ArrayList<>();
+    ZkMaintenanceUtils.traverseZkTree(zkClient, path, visitOrder, new ZkMaintenanceUtils.ZkVisitor() {
+
+      @Override
+      public void visit(String path) throws InterruptedException, KeeperException {
+        result.add(path);
+      }
+    });
+    return result;
   }
 }
