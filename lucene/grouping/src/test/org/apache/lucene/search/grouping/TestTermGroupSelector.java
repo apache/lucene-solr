@@ -18,42 +18,43 @@
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
-import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 
-public class DoubleRangeGroupSelectorTest extends BaseGroupSelectorTestCase<DoubleRange> {
+public class TestTermGroupSelector extends BaseGroupSelectorTestCase<BytesRef> {
 
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
       return;   // missing value
     }
-    // numbers between 0 and 1000, groups are 100 wide from 100 to 900
-    double value = random().nextDouble() * 1000;
-    document.add(new DoublePoint("double", value));
-    document.add(new NumericDocValuesField("double", Double.doubleToLongBits(value)));
+    String groupValue = "group" + random().nextInt(10);
+    document.add(new SortedDocValuesField("groupField", new BytesRef(groupValue)));
+    document.add(new TextField("groupField", groupValue, Field.Store.NO));
   }
 
   @Override
-  protected GroupSelector<DoubleRange> getGroupSelector() {
-    return new DoubleRangeGroupSelector(DoubleValuesSource.fromDoubleField("double"),
-        new DoubleRangeFactory(100, 100, 900));
+  protected GroupSelector<BytesRef> getGroupSelector() {
+    return new TermGroupSelector("groupField");
   }
 
   @Override
-  protected Query filterQuery(DoubleRange groupValue) {
+  protected Query filterQuery(BytesRef groupValue) {
     if (groupValue == null) {
       return new BooleanQuery.Builder()
           .add(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER)
-          .add(new DocValuesFieldExistsQuery("double"), BooleanClause.Occur.MUST_NOT)
+          .add(new DocValuesFieldExistsQuery("groupField"), BooleanClause.Occur.MUST_NOT)
           .build();
     }
-    return DoublePoint.newRangeQuery("double", groupValue.min, Math.nextDown(groupValue.max));
+    return new TermQuery(new Term("groupField", groupValue));
   }
 }

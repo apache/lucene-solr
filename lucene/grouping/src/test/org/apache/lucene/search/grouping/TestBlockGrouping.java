@@ -40,7 +40,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
-public class BlockGroupingTest extends AbstractGroupingTestCase {
+public class TestBlockGrouping extends AbstractGroupingTestCase {
 
   public void testSimple() throws IOException {
 

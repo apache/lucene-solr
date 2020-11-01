@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
+public class TestDistinctValuesCollector extends AbstractGroupingTestCase {
 
   private final static NullComparator nullComparator = new NullComparator();
   

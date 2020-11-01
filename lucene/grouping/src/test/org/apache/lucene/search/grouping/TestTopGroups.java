@@ -21,7 +21,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TopGroupsTest extends LuceneTestCase {
+public class TestTopGroups extends LuceneTestCase {
 
   public void testAllGroupsEmptyInSecondPass() {
     narrativeMergeTestImplementation(false, false, false, false);

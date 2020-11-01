@@ -18,43 +18,42 @@
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.BytesRef;
 
-public class TermGroupSelectorTest extends BaseGroupSelectorTestCase<BytesRef> {
+public class TestLongRangeGroupSelector extends BaseGroupSelectorTestCase<LongRange> {
 
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
-      return;   // missing value
+      return; // missing value
     }
-    String groupValue = "group" + random().nextInt(10);
-    document.add(new SortedDocValuesField("groupField", new BytesRef(groupValue)));
-    document.add(new TextField("groupField", groupValue, Field.Store.NO));
+    // numbers between 0 and 1000, groups are 100 wide from 100 to 900
+    long value = random().nextInt(1000);
+    document.add(new LongPoint("long", value));
+    document.add(new NumericDocValuesField("long", value));
   }
 
   @Override
-  protected GroupSelector<BytesRef> getGroupSelector() {
-    return new TermGroupSelector("groupField");
+  protected GroupSelector<LongRange> getGroupSelector() {
+    return new LongRangeGroupSelector(LongValuesSource.fromLongField("long"),
+        new LongRangeFactory(100, 100, 900));
   }
 
   @Override
-  protected Query filterQuery(BytesRef groupValue) {
+  protected Query filterQuery(LongRange groupValue) {
     if (groupValue == null) {
       return new BooleanQuery.Builder()
           .add(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER)
-          .add(new DocValuesFieldExistsQuery("groupField"), BooleanClause.Occur.MUST_NOT)
+          .add(new DocValuesFieldExistsQuery("long"), BooleanClause.Occur.MUST_NOT)
           .build();
     }
-    return new TermQuery(new Term("groupField", groupValue));
+    return LongPoint.newRangeQuery("long", groupValue.min, groupValue.max - 1);
   }
 }

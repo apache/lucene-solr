@@ -56,7 +56,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-public class AllGroupHeadsCollectorTest extends LuceneTestCase {
+public class TestAllGroupHeadsCollector extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     final String groupField = "author";

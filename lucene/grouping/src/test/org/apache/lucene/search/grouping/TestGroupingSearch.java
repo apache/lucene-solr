@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class GroupingSearchTest extends LuceneTestCase {
+public class TestGroupingSearch extends LuceneTestCase {
 
   // Tests some very basic usages...
   public void testBasic() throws Exception {

@@ -18,42 +18,42 @@
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
-import org.apache.lucene.search.LongValuesSource;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 
-public class LongRangeGroupSelectorTest extends BaseGroupSelectorTestCase<LongRange> {
+public class TestDoubleRangeGroupSelector extends BaseGroupSelectorTestCase<DoubleRange> {
 
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
-      return; // missing value
+      return;   // missing value
     }
     // numbers between 0 and 1000, groups are 100 wide from 100 to 900
-    long value = random().nextInt(1000);
-    document.add(new LongPoint("long", value));
-    document.add(new NumericDocValuesField("long", value));
+    double value = random().nextDouble() * 1000;
+    document.add(new DoublePoint("double", value));
+    document.add(new NumericDocValuesField("double", Double.doubleToLongBits(value)));
   }
 
   @Override
-  protected GroupSelector<LongRange> getGroupSelector() {
-    return new LongRangeGroupSelector(LongValuesSource.fromLongField("long"),
-        new LongRangeFactory(100, 100, 900));
+  protected GroupSelector<DoubleRange> getGroupSelector() {
+    return new DoubleRangeGroupSelector(DoubleValuesSource.fromDoubleField("double"),
+        new DoubleRangeFactory(100, 100, 900));
   }
 
   @Override
-  protected Query filterQuery(LongRange groupValue) {
+  protected Query filterQuery(DoubleRange groupValue) {
     if (groupValue == null) {
       return new BooleanQuery.Builder()
           .add(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER)
-          .add(new DocValuesFieldExistsQuery("long"), BooleanClause.Occur.MUST_NOT)
+          .add(new DocValuesFieldExistsQuery("double"), BooleanClause.Occur.MUST_NOT)
           .build();
     }
-    return LongPoint.newRangeQuery("long", groupValue.min, groupValue.max - 1);
+    return DoublePoint.newRangeQuery("double", groupValue.min, Math.nextDown(groupValue.max));
   }
 }

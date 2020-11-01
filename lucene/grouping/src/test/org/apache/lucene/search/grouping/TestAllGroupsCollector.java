@@ -34,7 +34,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class AllGroupsCollectorTest extends LuceneTestCase {
+public class TestAllGroupsCollector extends LuceneTestCase {
 
   public void testTotalGroupCount() throws Exception {
 

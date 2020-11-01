@@ -49,7 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
 
-public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
+public class TestGroupFacetCollector extends AbstractGroupingTestCase {
 
   public void testSimple() throws Exception {
     final String groupField = "hotel";

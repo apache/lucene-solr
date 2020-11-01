@@ -30,7 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
 
-public class ValueSourceGroupSelectorTest extends BaseGroupSelectorTestCase<MutableValue> {
+public class TestValueSourceGroupSelector extends BaseGroupSelectorTestCase<MutableValue> {
 
   @Override
   protected void addGroupField(Document document, int id) {
