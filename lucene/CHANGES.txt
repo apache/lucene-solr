@@ -218,6 +218,12 @@ Improvements
 * LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
   check before calling next(). (Zach Chen via Bruno Roustant)
 
+Optimizations
+---------------------
+
+* LUCENE-9536: Reduced memory usage for OrdinalMap when a segment has all
+  values. (Julie Tibshirani via Adrien Grand)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
