@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 /**
  * This is a simplified version of org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter to prevent
- * a dependency on analyzers-common.jar.
+ * a dependency on analysis-common.jar.
  */
 final class LimitTokenOffsetFilter extends TokenFilter {
 

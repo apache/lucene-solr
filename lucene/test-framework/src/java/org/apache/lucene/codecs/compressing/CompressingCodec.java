@@ -37,7 +37,7 @@ public abstract class CompressingCodec extends FilterCodec {
    * Create a random instance.
    */
   public static CompressingCodec randomInstance(Random random, int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockShift) {
-    switch (random.nextInt(4)) {
+    switch (random.nextInt(6)) {
     case 0:
       return new FastCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 1:
@@ -46,6 +46,10 @@ public abstract class CompressingCodec extends FilterCodec {
       return new HighCompressionCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     case 3:
       return new DummyCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
+    case 4:
+      return new DeflateWithPresetCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
+    case 5:
+      return new LZ4WithPresetCompressingCodec(chunkSize, maxDocsPerChunk, withSegmentSuffix, blockShift);
     default:
       throw new AssertionError();
     }
@@ -56,7 +60,7 @@ public abstract class CompressingCodec extends FilterCodec {
    * suffix
    */
   public static CompressingCodec randomInstance(Random random) {
-    final int chunkSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1 << 15);
+    final int chunkSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 10, 100) : RandomNumbers.randomIntBetween(random, 10, 1 << 15);
     final int chunkDocs = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 64, 1024);
     final int blockSize = random.nextBoolean()
         ? RandomNumbers.randomIntBetween(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, 10)

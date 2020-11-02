@@ -18,7 +18,7 @@
 
 Several query parsers share supported query parameters.
 
-The following sections describe Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#searchhandlers,Search RequestHandlers>>.
+The following sections describe Solr's common query parameters, which are supported by the <<requesthandlers-and-searchcomponents-in-solrconfig#search-handlers,Search RequestHandlers>>.
 
 == defType Parameter
 
@@ -240,7 +240,7 @@ As this check is periodically performed, the actual time for which a request can
 
 This parameter may be set to either `true` or `false`.
 
-If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
+If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 
@@ -307,11 +307,13 @@ The `echoParams` parameter controls what information about request parameters is
 
 The `echoParams` parameter accepts the following values:
 
-* `explicit`: This is the default value. Only parameters included in the actual request, plus the `_` parameter (which is a 64-bit numeric timestamp) will be added to the `params` section of the response header.
+* `explicit`: Only parameters included in the actual request will be added to the `params` section of the response header.
 * `all`: Include all request parameters that contributed to the query. This will include everything defined in the request handler definition found in `solrconfig.xml` as well as parameters included with the request, plus the `_` parameter. If a parameter is included in the request handler definition AND the request, it will appear multiple times in the response header.
 * `none`: Entirely removes the `params` section of the response header. No information about the request parameters will be available in the response.
 
-Here is an example of a JSON response where the echoParams parameter was not included, so the default of `explicit` is active. The request URL that created this response included three parameters - `q`, `wt`, and `indent`:
+The default value is `none`, though many `solrconfig.xml` handlers set default to be `explicit`.
+Here is an example of a JSON response where the echoParams parameter was set in that SearchHandler's default,
+so it itself was not echoed, but only three parameters from the request itself - `q`, `wt`, and `indent`:
 
 [source,json]
 ----

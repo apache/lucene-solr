@@ -204,16 +204,24 @@ public abstract class Weight implements SegmentCacheable {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
       DocIdSetIterator collectorIterator = collector.competitiveIterator();
-      // if possible filter scorerIterator to keep only competitive docs as defined by collector
-      DocIdSetIterator filteredIterator = collectorIterator == null ? scorerIterator :
-          ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
-      if (scorer.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
+      DocIdSetIterator filteredIterator;
+      if (collectorIterator == null) {
+        filteredIterator = scorerIterator;
+      } else {
+        if (scorerIterator.docID() != -1) {
+          // Wrap ScorerIterator to start from -1 for conjunction 
+          scorerIterator = new StartDISIWrapper(scorerIterator);
+        }
+        // filter scorerIterator to keep only competitive docs as defined by collector
+        filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+      }
+      if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
         return DocIdSetIterator.NO_MORE_DOCS;
       } else {
-        int doc = scorer.docID();
+        int doc = filteredIterator.docID();
         if (doc < min) {
-          doc = scorerIterator.advance(min);
+          doc = filteredIterator.advance(min);
         }
         return scoreRange(collector, filteredIterator, twoPhase, acceptDocs, doc, max);
       }
@@ -234,12 +242,11 @@ public abstract class Weight implements SegmentCacheable {
         }
         return currentDoc;
       } else {
-        final DocIdSetIterator approximation = twoPhase.approximation();
         while (currentDoc < end) {
           if ((acceptDocs == null || acceptDocs.get(currentDoc)) && twoPhase.matches()) {
             collector.collect(currentDoc);
           }
-          currentDoc = approximation.nextDoc();
+          currentDoc = iterator.nextDoc();
         }
         return currentDoc;
       }
@@ -258,14 +265,51 @@ public abstract class Weight implements SegmentCacheable {
         }
       } else {
         // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
-        final DocIdSetIterator approximation = twoPhase.approximation();
-        for (int doc = approximation.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = approximation.nextDoc()) {
+        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
           if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
             collector.collect(doc);
           }
         }
       }
     }
+  }
+
+  /**
+   * Wraps an internal docIdSetIterator for it to start with docID = -1
+   */
+  protected static class StartDISIWrapper extends DocIdSetIterator {
+    private final DocIdSetIterator in;
+    private final int min;
+    private int docID = -1;
+
+    public StartDISIWrapper(DocIdSetIterator in) {
+      this.in = in;
+      this.min = in.docID();
+    }
+
+    @Override
+    public int docID() {
+      return docID;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(docID + 1);
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      if (target <= min) {
+        return docID = min;
+      }
+      return docID = in.advance(target);
+    }
+
+    @Override
+    public long cost() {
+      return in.cost();
+    }
+
   }
 
 }

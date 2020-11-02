@@ -30,7 +30,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -50,8 +49,6 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/LUCENE-6036)",
-      new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     tempDir = createTempDir("jrecrash");
   }
   

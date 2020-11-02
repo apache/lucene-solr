@@ -24,9 +24,9 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapanesePartOfSpeechStopFilter}.
@@ -53,6 +53,9 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   public JapanesePartOfSpeechStopFilterFactory(Map<String,String> args) {
     super(args);
     stopTagFiles = get(args, "tags");
+    if (stopTagFiles == null) {
+      stopTags = JapaneseAnalyzer.getDefaultStopTags();
+    }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -65,13 +68,15 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    stopTags = null;
-    CharArraySet cas = getWordSet(loader, stopTagFiles, false);
-    if (cas != null) {
-      stopTags = new HashSet<>();
-      for (Object element : cas) {
-        char chars[] = (char[]) element;
-        stopTags.add(new String(chars));
+    if (stopTagFiles != null) {
+      stopTags = null;
+      CharArraySet cas = getWordSet(loader, stopTagFiles, false);
+      if (cas != null) {
+        stopTags = new HashSet<>();
+        for (Object element : cas) {
+          char chars[] = (char[]) element;
+          stopTags.add(new String(chars));
+        }
       }
     }
   }

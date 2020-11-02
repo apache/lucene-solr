@@ -54,6 +54,9 @@ public final class FieldInfo {
   private int pointIndexDimensionCount;
   private int pointNumBytes;
 
+  private int vectorDimension;  // if it is a positive value, it means this field indexes vectors
+  private VectorValues.SearchStrategy vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
+
   // whether this field is used as the soft-deletes field
   private final boolean softDeletesField;
 
@@ -64,7 +67,8 @@ public final class FieldInfo {
    */
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, boolean storePayloads,
                    IndexOptions indexOptions, DocValuesType docValues, long dvGen, Map<String,String> attributes,
-                   int pointDimensionCount, int pointIndexDimensionCount, int pointNumBytes, boolean softDeletesField) {
+                   int pointDimensionCount, int pointIndexDimensionCount, int pointNumBytes,
+                   int vectorDimension, VectorValues.SearchStrategy vectorSearchStrategy, boolean softDeletesField) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
@@ -83,6 +87,8 @@ public final class FieldInfo {
     this.pointDimensionCount = pointDimensionCount;
     this.pointIndexDimensionCount = pointIndexDimensionCount;
     this.pointNumBytes = pointNumBytes;
+    this.vectorDimension = vectorDimension;
+    this.vectorSearchStrategy = vectorSearchStrategy;
     this.softDeletesField = softDeletesField;
     this.checkConsistency();
   }
@@ -135,6 +141,14 @@ public final class FieldInfo {
     
     if (dvGen != -1 && docValuesType == DocValuesType.NONE) {
       throw new IllegalStateException("field '" + name + "' cannot have a docvalues update generation without having docvalues");
+    }
+
+    if (vectorDimension < 0) {
+      throw new IllegalStateException("vectorDimension must be >=0; got " + vectorDimension);
+    }
+
+    if (vectorDimension == 0 && vectorSearchStrategy != VectorValues.SearchStrategy.NONE) {
+      throw new IllegalStateException("vector search strategy must be NONE when dimension = 0; got " + vectorSearchStrategy);
     }
 
     return true;
@@ -230,6 +244,40 @@ public final class FieldInfo {
   /** Return number of bytes per dimension */
   public int getPointNumBytes() {
     return pointNumBytes;
+  }
+
+  /** Record that this field is indexed with vectors, with the specified num of dimensions and distance function */
+  public void setVectorDimensionAndSearchStrategy(int dimension, VectorValues.SearchStrategy searchStrategy) {
+    if (dimension < 0) {
+      throw new IllegalArgumentException("vector dimension must be >= 0; got " + dimension);
+    }
+    if (dimension > VectorValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("vector dimension must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + dimension);
+    }
+    if (dimension == 0 && searchStrategy != VectorValues.SearchStrategy.NONE) {
+      throw new IllegalArgumentException("vector search strategy must be NONE when the vector dimension = 0; got " + searchStrategy);
+    }
+    if (vectorDimension != 0 && vectorDimension != dimension) {
+      throw new IllegalArgumentException("cannot change vector dimension from " + vectorDimension + " to " + dimension + " for field=\"" + name + "\"");
+    }
+    if (vectorSearchStrategy != VectorValues.SearchStrategy.NONE && vectorSearchStrategy != searchStrategy) {
+      throw new IllegalArgumentException("cannot change vector search strategy from " + vectorSearchStrategy + " to " + searchStrategy + " for field=\"" + name + "\"");
+    }
+
+    this.vectorDimension = dimension;
+    this.vectorSearchStrategy = searchStrategy;
+
+    assert checkConsistency();
+  }
+
+  /** Returns the number of dimensions of the vector value */
+  public int getVectorDimension() {
+    return vectorDimension;
+  }
+
+  /** Returns {@link VectorValues.SearchStrategy} for the field */
+  public VectorValues.SearchStrategy getVectorSearchStrategy() {
+    return vectorSearchStrategy;
   }
 
   /** Record that this field is indexed with docvalues, with the specified type */
@@ -335,6 +383,13 @@ public final class FieldInfo {
    */
   public boolean hasVectors() {
     return storeTermVector;
+  }
+
+  /**
+   * Returns whether any (numeric) vector values exist for this field
+   */
+  public boolean hasVectorValues() {
+    return vectorDimension > 0;
   }
   
   /**

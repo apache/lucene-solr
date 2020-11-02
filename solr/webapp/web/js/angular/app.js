@@ -130,14 +130,6 @@ solrAdminApp.config([
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
       }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
@@ -167,14 +159,6 @@ solrAdminApp.config([
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/schema', {
         templateUrl: 'partials/schema.html',
@@ -331,12 +315,17 @@ solrAdminApp.config([
                   var treeConfig = {
                     'core' : {
                       'animation' : 0,
-                      'data': scope.data,
                       'worker': false
                     }
                   };
 
                   var tree = $(element).jstree(treeConfig);
+
+                  // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
+                  // Putting the data in the treeConfig makes it stack and doesn't update.
+                  $(element).jstree(true).settings.core.data = scope.data;
+                  $(element).jstree(true).refresh();
+
                   $(element).jstree('open_node','li:first');
                   if (tree) {
                       element.bind("select_node.jstree", function (event, data) {

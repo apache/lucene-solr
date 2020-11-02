@@ -76,7 +76,8 @@ import org.slf4j.LoggerFactory;
 public class FileUtil {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileUtil.class);
+  // Apparently the Hadoop code expectes upper-case LOG, so...
+  private static final Logger LOG = LoggerFactory.getLogger(FileUtil.class); //nowarn
 
   /* The error code is defined in winutils to indicate insufficient
    * privilege to create symbolic links. This value need to keep in
@@ -597,12 +598,7 @@ public class FileUtil {
       File[] allFiles = dir.listFiles();
       if(allFiles != null) {
         for (int i = 0; i < allFiles.length; i++) {
-          boolean isSymLink;
-          try {
-            isSymLink = org.apache.commons.io.FileUtils.isSymlink(allFiles[i]);
-          } catch(IOException ioe) {
-            isSymLink = true;
-          }
+          boolean isSymLink = org.apache.commons.io.FileUtils.isSymlink(allFiles[i]);
           if(!isSymLink) {
             size += getDU(allFiles[i]);
           }

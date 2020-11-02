@@ -31,8 +31,8 @@ public class PayloadObj<T> extends CommandOperation {
     final SolrQueryRequest req;
     final SolrQueryResponse rsp;
 
-    public PayloadObj(String operationName, Object metaData, T obj, SolrQueryRequest req, SolrQueryResponse rsp) {
-        super(operationName, metaData);
+    public PayloadObj(String operationName, Object originalMetadata, T obj, SolrQueryRequest req, SolrQueryResponse rsp) {
+        super(operationName, originalMetadata);
         this.obj = obj;
         this.req = req;
         this.rsp = rsp;

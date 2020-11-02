@@ -145,7 +145,7 @@ public class PackedInts {
       this.id = id;
     }
 
-    public int id;
+    public final int id;
 
     /**
      * Returns the ID of the format.

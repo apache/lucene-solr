@@ -1414,7 +1414,7 @@ public class TestIndexWriter extends LuceneTestCase {
           IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         if (file.lastIndexOf('.') < 0
             // don't count stored fields and term vectors in, or any temporary files they might
-            || !Arrays.asList("fdt", "tvd", "tmp").contains(file.substring(file.lastIndexOf('.') + 1))) {
+            || !Arrays.asList("fdm", "fdt", "tvm", "tvd", "tmp").contains(file.substring(file.lastIndexOf('.') + 1))) {
           ++computedExtraFileCount;
         }
       }
@@ -1533,7 +1533,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, new StringSplitAnalyzer());
 
-    char[] chars = new char[DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8];
+    char[] chars = new char[IndexWriter.MAX_TERM_LENGTH];
     Arrays.fill(chars, 'x');
     Document hugeDoc = new Document();
     final String bigTerm = new String(chars);
@@ -3385,7 +3385,7 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = new FilterDirectory(newDirectory()) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+        if (callStackContains(IndexingChain.class, "flush")) {
           try {
             inFlush.countDown();
             latch.await();
@@ -3717,8 +3717,6 @@ public class TestIndexWriter extends LuceneTestCase {
           states.add(state::unlock);
           state.deleteQueue.getNextSequenceNumber();
         }
-      } catch (IOException e) {
-        throw new AssertionError(e);
       } finally {
         IOUtils.closeWhileHandlingException(states);
       }
@@ -4206,7 +4204,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testMergeOnCommitKeepFullyDeletedSegments() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setMaxCommitMergeWaitMillis(30 * 1000);
+    iwc.setMaxFullFlushMergeWaitMillis(30 * 1000);
     iwc.mergePolicy = new FilterMergePolicy(newMergePolicy()) {
       @Override
       public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
@@ -4239,5 +4237,25 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(1, reader.numDocs());
     }
     IOUtils.close(w, dir);
+  }
+
+  public void testPendingNumDocs() throws Exception {
+    try (Directory dir = newDirectory()) {
+      int numDocs = random().nextInt(100);
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        for (int i = 0; i < numDocs; i++) {
+          Document d = new Document();
+          d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+          writer.addDocument(d);
+          assertEquals(i + 1L, writer.getPendingNumDocs());
+        }
+        assertEquals(numDocs, writer.getPendingNumDocs());
+        writer.flush();
+        assertEquals(numDocs, writer.getPendingNumDocs());
+      }
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        assertEquals(numDocs, writer.getPendingNumDocs());
+      }
+    }
   }
 }

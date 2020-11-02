@@ -80,6 +80,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     // create control core & client
     System.setProperty("solr.statsCache", getImplementationName());
     System.setProperty("solr.similarity", CustomSimilarityFactory.class.getName());
