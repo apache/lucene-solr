@@ -32,7 +32,6 @@ import org.noggit.JSONWriter;
 
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
-import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class Replica extends ZkNodeProps implements MapWriter {
@@ -132,7 +131,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public Replica(String name, Map<String,Object> map, String collection, String shard) {
     super(new HashMap<>());
     propMap.putAll(map);
-    updateUrlScheme(this.propMap);
+    this.baseUrl = initBaseUrlFromStoredProps(map);
     this.collection = collection;
     this.shard = shard;
     this.name = name;
@@ -150,6 +149,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     super(new HashMap<>());
     this.name = name;
     this.node = node;
+    this.baseUrl = node != null ? UrlScheme.INSTANCE.getBaseUrlForNodeName(node) : null;
     this.state = state;
     this.type = type;
     this.collection = collection;
@@ -157,7 +157,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.core = core;
     if (props != null) {
       this.propMap.putAll(props);
-      updateUrlScheme(this.propMap);
     }
     validate();
   }
@@ -180,7 +179,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(details.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     state = State.getState(String.valueOf(details.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     this.propMap.putAll(details);
-    updateUrlScheme(this.propMap); // we know propMap is mutable but map may not be
+    this.baseUrl = initBaseUrlFromStoredProps(details);
     validate();
   }
 
@@ -237,11 +236,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getStr(BASE_URL_PROP), core);
+    return ZkCoreNodeProps.getCoreUrl(baseUrl, core);
   }
 
   public String getBaseUrl() {
-    return getStr(BASE_URL_PROP);
+    return baseUrl;
   }
 
   /** SolrCore name. */
@@ -297,8 +296,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public Object clone() {
-    return new Replica(name, node, collection, shard, core, state, type,
-        propMap);
+    return new Replica(name, node, collection, shard, core, state, type, propMap);
   }
 
   @Override
@@ -316,15 +314,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
       // propMap takes precedence because it's mutable and we can't control its
       // contents, so a third party may override some declared fields
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        writer.put(e.getKey(), e.getValue(), p);
-      }
-
-      // store the base_url with a replaceable parameter for the scheme
-      if (propMap.containsKey(BASE_URL_PROP)) {
-        String baseUrl = (String)propMap.get(BASE_URL_PROP);
-        final int at = baseUrl != null ? baseUrl.indexOf("://") : -1;
-        if (at != -1) {
-          writer.put(BASE_URL_PROP, SCHEME_VAR + baseUrl.substring(at+3)); // +3 for the ://
+        final String key = e.getKey();
+        // don't store the base_url as we can compute it from the node_name
+        if (!BASE_URL_PROP.equals(key)) {
+          writer.put(e.getKey(), e.getValue(), p);
         }
       }
 

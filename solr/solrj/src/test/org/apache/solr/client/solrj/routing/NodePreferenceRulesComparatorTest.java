@@ -35,11 +35,11 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     List<Replica> replicas = getBasicReplicaList();
 
     // replicaLocation rule
-    List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983");
+    List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://node2:8983");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
     replicas.sort(comparator);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
+    assertEquals("node2", getHost(replicas.get(0).getNodeName()));
+    assertEquals("node1", getHost(replicas.get(1).getNodeName()));
 
   }
 
@@ -51,8 +51,8 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
 
     replicas.sort(comparator);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node2", replicas.get(1).getNodeName());
+    assertEquals("node1", getHost(replicas.get(0).getNodeName()));
+    assertEquals("node2", getHost(replicas.get(1).getNodeName()));
 
     // reversed rule
     rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
@@ -60,8 +60,8 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     comparator = new NodePreferenceRulesComparator(rules, null);
 
     replicas.sort(comparator);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
+    assertEquals("node2", getHost(replicas.get(0).getNodeName()));
+    assertEquals("node1", getHost(replicas.get(1).getNodeName()));
   }
 
   @SuppressWarnings("unchecked")
@@ -73,8 +73,8 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
         new Replica(
             "node4",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
-                ZkStateReader.NODE_NAME_PROP, "node4",
+                ZkStateReader.BASE_URL_PROP, "http://node4:8983/solr",
+                ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
             ),"collection1","shard1"
@@ -84,14 +84,14 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
     List<PreferenceRule> rules = PreferenceRule.from(
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
             ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
-            ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2");
+            ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://node4");
     NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
 
     replicas.sort(comparator);
-    assertEquals("node1", replicas.get(0).getNodeName());
-    assertEquals("node4", replicas.get(1).getNodeName());
-    assertEquals("node2", replicas.get(2).getNodeName());
-    assertEquals("node3", replicas.get(3).getNodeName());
+    assertEquals("node1", getHost(replicas.get(0).getNodeName()));
+    assertEquals("node4", getHost(replicas.get(1).getNodeName()));
+    assertEquals("node2", getHost(replicas.get(2).getNodeName()));
+    assertEquals("node3", getHost(replicas.get(3).getNodeName()));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -119,13 +119,14 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
     UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
+
     List<Replica> replicas = new ArrayList<Replica>();
     replicas.add(
         new Replica(
             "node1",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host1:8983/solr",
-                ZkStateReader.NODE_NAME_PROP, "node1",
+                ZkStateReader.BASE_URL_PROP, "http://node1:8983/solr",
+                ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT"
             ),"collection1","shard1"
@@ -135,8 +136,8 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
         new Replica(
             "node2",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2:8983/solr",
-                ZkStateReader.NODE_NAME_PROP, "node2",
+                ZkStateReader.BASE_URL_PROP, "http://node2:8983/solr",
+                ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
             ),"collection1","shard1"
@@ -146,13 +147,18 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
         new Replica(
             "node3",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
-                ZkStateReader.NODE_NAME_PROP, "node3",
+                ZkStateReader.BASE_URL_PROP, "http://node3:8983/solr",
+                ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
             ),"collection1","shard1"
         )
     );
     return replicas;
+  }
+
+  private String getHost(final String nodeName) {
+    final int colonAt = nodeName.indexOf(':');
+    return colonAt != -1 ? nodeName.substring(0,colonAt) : nodeName.substring(0, nodeName.indexOf('_'));
   }
 }

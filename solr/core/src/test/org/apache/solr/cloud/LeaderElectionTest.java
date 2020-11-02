@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -211,7 +212,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         "shard2", "collection1", "dummynode1", props, zkController);
     elector.setup(context);
     elector.joinElection(context, false);
-    assertEquals("http://127.0.0.1/solr/",
+    assertEquals(UrlScheme.INSTANCE.getUrlScheme()+"://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
 
@@ -227,7 +228,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     first.joinElection(firstContext, false);
 
     Thread.sleep(1000);
-    assertEquals("original leader was not registered", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+
+    String url1 = UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/1/");
+    String url2 = UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/2/");
+
+    assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
     LeaderElector second = new LeaderElector(zkClient);
     props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
@@ -238,10 +243,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     second.setup(context);
     second.joinElection(context, false);
     Thread.sleep(1000);
-    assertEquals("original leader should have stayed leader", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+    assertEquals("original leader should have stayed leader", url1, getLeaderUrl("collection2", "slice1"));
     firstContext.cancelElection();
     Thread.sleep(1000);
-    assertEquals("new leader was not registered", "http://127.0.0.1/solr/2/", getLeaderUrl("collection2", "slice1"));
+    assertEquals("new leader was not registered", url2, getLeaderUrl("collection2", "slice1"));
   }
 
   private String getLeaderUrl(final String collection, final String slice)

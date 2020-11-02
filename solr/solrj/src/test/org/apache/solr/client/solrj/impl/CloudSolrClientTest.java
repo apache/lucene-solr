@@ -319,7 +319,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        String baseURL = replica.getBaseUrl();
         requestCountsMap.put(baseURL, getNumRequests(baseURL, "routing_collection"));
       }
     }
@@ -330,8 +330,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Set<String> expectedBaseURLs = Sets.newHashSet();
     for (Slice expectedSlice : expectedSlices) {
       for (Replica replica : expectedSlice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
-        expectedBaseURLs.add(baseURL);
+        expectedBaseURLs.add(replica.getBaseUrl());
       }
     }
 
@@ -377,7 +376,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        String baseURL = replica.getBaseUrl();
 
         Long prevNumRequests = requestCountsMap.get(baseURL);
         Long curNumRequests = getNumRequests(baseURL, "routing_collection");
@@ -692,7 +691,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
+    final String url = r.getBaseUrl() + "/" + COLLECTION;
     try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
@@ -719,7 +718,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Set<String> allNodesOfColl = new HashSet<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        allNodesOfColl.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
+        allNodesOfColl.add(replica.getBaseUrl());
       }
     }
     String theNode = null;

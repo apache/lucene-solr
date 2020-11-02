@@ -1071,7 +1071,7 @@ public class HttpSolrCall {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getStr(BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
+          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }

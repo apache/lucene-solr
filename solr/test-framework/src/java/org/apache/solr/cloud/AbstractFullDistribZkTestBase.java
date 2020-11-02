@@ -777,7 +777,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
-    String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
     assertNotNull(replicaBaseUrl);
 
     List<JettySolrRunner> runners = new ArrayList<>(jettys);
@@ -839,7 +839,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           int port = new URI(((HttpSolrClient) client).getBaseURL())
               .getPort();
 
-          if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
+          if (replica.getBaseUrl().contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
@@ -865,7 +865,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         Set<Entry<String,Replica>> entries = slice.getReplicasMap().entrySet();
         for (Entry<String,Replica> entry : entries) {
           Replica replica = entry.getValue();
-          if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
+          if (replica.getBaseUrl().contains(":" + port)) {
             List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
             if (list == null) {
               list = new ArrayList<>();
@@ -877,6 +877,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             cjr.info = replica;
             cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = entry.getKey();
+            // TODO: no trailing slash on end desired, so replica.getCoreUrl is not applicable here
             cjr.url = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);

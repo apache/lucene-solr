@@ -22,14 +22,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
 
-import static org.apache.solr.common.cloud.UrlScheme.SCHEME_VAR;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -38,12 +36,16 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 public class ZkNodeProps implements JSONWriter.Writable {
 
   protected final Map<String,Object> propMap;
+  protected transient String baseUrl;
 
   /**
    * Construct ZKNodeProps from map.
    */
   public ZkNodeProps(Map<String,Object> propMap) {
-    this.propMap = updateUrlScheme(propMap);
+    this.propMap = propMap;
+
+    // compute the baseUrl from the node_name instead of storing it in ZK
+    this.baseUrl = initBaseUrlFromStoredProps(propMap);
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -112,26 +114,28 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    Map<String,Object> outputMap = propMap;
-
-    // write out the base_url and node_name without the urlScheme
-    final String baseUrl = (String)propMap.get(ZkStateReader.BASE_URL_PROP);
-    if (baseUrl != null && !baseUrl.startsWith(SCHEME_VAR)) {
-      final int at = baseUrl.indexOf("://");
-      if (at != -1) {
-        final String updatedUrl = SCHEME_VAR + baseUrl.substring(at+3);
-        outputMap = new LinkedHashMap<>(propMap);
-        outputMap.put(ZkStateReader.BASE_URL_PROP, updatedUrl);
-      }
+    // don't write out the base_url if we have a node_name
+    if (propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      final Map<String,Object> filtered = new HashMap<>();
+      propMap.forEach((key, value) -> {
+        if (!ZkStateReader.BASE_URL_PROP.equals(key)) {
+          filtered.put(key, value);
+        }
+      });
+      jsonWriter.write(filtered);
+    } else {
+      jsonWriter.write(propMap);
     }
-
-    jsonWriter.write(outputMap);
   }
   
   /**
    * Get a string property value.
    */
   public String getStr(String key) {
+    if (ZkStateReader.BASE_URL_PROP.equals(key)) {
+      return baseUrl;
+    }
+
     Object o = propMap.get(key);
     return o == null ? null : o.toString();
   }
@@ -148,12 +152,16 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Get a string property value.
    */
   public String getStr(String key,String def) {
+    if (ZkStateReader.BASE_URL_PROP.equals(key)) {
+      return baseUrl;
+    }
+
     Object o = propMap.get(key);
     return o == null ? def : o.toString();
   }
 
   public Object get(String key) {
-    return propMap.get(key);
+    return ZkStateReader.BASE_URL_PROP.equals(key) ? baseUrl : propMap.get(key);
   }
 
   @Override
@@ -168,22 +176,19 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return propMap.containsKey(key);
   }
 
-  protected Map<String,Object> updateUrlScheme(Map<String,Object> map) {
-    final String baseUrl = (String)map.get(ZkStateReader.BASE_URL_PROP);
-    if (baseUrl != null) {
-      Optional<String> maybeUpdatedUrl = UrlScheme.INSTANCE.applyUrlScheme(baseUrl);
-      if (maybeUpdatedUrl.isPresent()) {
-        if (map instanceof HashMap) {
-          map.put(ZkStateReader.BASE_URL_PROP, maybeUpdatedUrl.get());
-        } else {
-          // assume map is not mutable, so copy it over to the return value
-          Map<String,Object> modMap = new LinkedHashMap<>(map);
-          modMap.put(ZkStateReader.BASE_URL_PROP, maybeUpdatedUrl.get());
-          map = modMap;
-        }
-      } // else url didn't change, no update to the map needed
+  protected String initBaseUrlFromStoredProps(final Map<String,Object> map) {
+    String baseUrl = null;
+    // most times, we have a node name and there's a 1-to-1 mapping to base_url from node_name, so prefer that
+    Object prop = map.get(ZkStateReader.NODE_NAME_PROP);
+    if (prop != null) {
+      baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
+    } else {
+      prop = map.get(ZkStateReader.BASE_URL_PROP);
+      if (prop != null) {
+        baseUrl = UrlScheme.INSTANCE.applyUrlScheme((String)prop);
+      }
     }
-    return map;
+    return baseUrl;
   }
 
   public boolean getBool(String key, boolean b) {

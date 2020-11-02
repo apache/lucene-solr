@@ -426,10 +426,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
-        ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
+        ZkStateReader.NODE_NAME_PROP, replica.getNodeName(),
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
-        ZkStateReader.BASE_URL_PROP, replica.getStr(ZkStateReader.BASE_URL_PROP));
+        ZkStateReader.BASE_URL_PROP, replica.getBaseUrl());
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 

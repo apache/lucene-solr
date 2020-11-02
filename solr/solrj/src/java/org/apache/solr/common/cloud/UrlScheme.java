@@ -19,12 +19,14 @@ package org.apache.solr.common.cloud;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
@@ -77,42 +79,49 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
     this.useLiveNodesUrlScheme = useLiveNodesUrlScheme;
   }
 
+  public String getBaseUrlForNodeName(String nodeName) {
+    Objects.requireNonNull(nodeName,"node_name should not be null");
+    if (nodeName.indexOf('_') == -1) {
+      nodeName += '_'; // underscore required to indicate context
+    }
+    return Utils.getBaseUrlForNodeName(nodeName, getUrlSchemeForNodeName(nodeName));
+  }
+
+  public String getUrlSchemeForNodeName(final String nodeName) {
+    return useLiveNodesUrlScheme ? getSchemeFromLiveNode(nodeName).orElse(urlScheme) : urlScheme;
+  }
+
   /**
    * Given a URL with a replaceable parameter for the scheme, return a new URL with the correct scheme applied.
    * @param url A URL to change the scheme (http|https)
-   * @return A new URL with the correct scheme or null if the supplied url remains unchanged.
+   * @return A new URL with the correct scheme
    */
-  public Optional<String> applyUrlScheme(final String url) {
-    if (url == null || url.isEmpty())
-      return Optional.empty();
+  public String applyUrlScheme(final String url) {
+    Objects.requireNonNull(url, "URL must not be null!");
 
+    String updatedUrl;
     if (useLiveNodesUrlScheme && liveNodes != null) {
-      String updatedUrl = applyUrlSchemeFromLiveNodes(url);
+      updatedUrl = applyUrlSchemeFromLiveNodes(url);
       if (updatedUrl != null) {
-        return Optional.of(updatedUrl);
+        return updatedUrl;
       }
     }
 
     // not able to resolve the urlScheme using live nodes ... use the global!
-
-    Optional<String> maybeUpdatedUrl;
     if (url.startsWith(SCHEME_VAR)) {
       // replace ${scheme} with actual scheme
-      maybeUpdatedUrl = Optional.of(urlScheme + url.substring(SCHEME_VAR.length()-3)); // keep the ://
+      updatedUrl = urlScheme + url.substring(SCHEME_VAR.length()-3); // keep the ://
     } else {
       // heal an incorrect scheme if needed, otherwise return null indicating no change
       final int at = url.indexOf("://");
       if (at == -1) {
-        maybeUpdatedUrl = Optional.of(urlScheme + "://" + url);
-      } else if (urlScheme.equals(url.substring(0,at))) {
-        // url already has the correct scheme on it, no change
-        maybeUpdatedUrl = Optional.empty();
+        updatedUrl = urlScheme + "://" + url;
       } else {
         // change the stored scheme to match the global
-        maybeUpdatedUrl = Optional.of(urlScheme + url.substring(at));
+        updatedUrl = urlScheme + url.substring(at);
       }
     }
-    return maybeUpdatedUrl;
+    return updatedUrl;
   }
 
   public String getUrlScheme() {
@@ -128,7 +137,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   private String applyUrlSchemeFromLiveNodes(final String url) {
     String updatedUrl = null;
-    Optional<String> maybeFromLiveNode = getSchemeFromLiveNodesEntry(getNodeNameFromUrl(url));
+    Optional<String> maybeFromLiveNode = getSchemeFromLiveNode(getNodeNameFromUrl(url));
     if (maybeFromLiveNode.isPresent()) {
       final int at = url.indexOf("://");
       // replace the scheme on the url with the one from the matching live node entry
@@ -138,9 +147,8 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   }
 
   // Gets the urlScheme from the matching live node entry for this URL
-  private Optional<String> getSchemeFromLiveNodesEntry(final String nodeNameFromUrl) {
-    return (liveNodes != null && liveNodes.contains(nodeNameFromUrl))
-        ? Optional.ofNullable(getSchemeForLiveNode(nodeNameFromUrl)) : Optional.empty();
+  private Optional<String> getSchemeFromLiveNode(final String nodeName) {
+    return (liveNodes != null && liveNodes.contains(nodeName)) ? Optional.ofNullable(getSchemeForLiveNode(nodeName)) : Optional.empty();
   }
 
   private String getNodeNameFromUrl(String url) {

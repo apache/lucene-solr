@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -38,103 +37,87 @@ public class UrlSchemeTest extends SolrTestCase {
 
   @Test
   public void testApplyUrlScheme() throws Exception {
+    final UrlScheme t = UrlScheme.INSTANCE;
+    
     String liveNode1 = "192.168.1.1:8983_solr";
     String liveNode2 = "127.0.0.1:8983_solr";
     String liveNode3 = "127.0.0.1_";
+    String liveNode4 = "127.0.0.1:61631_l_%2Fig";
 
     SolrZkClient zkClient = mock(SolrZkClient.class);
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode1, null, null, true)).thenReturn("https".getBytes(UTF_8));
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode2, null, null, true)).thenReturn("http".getBytes(UTF_8));
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode3, null, null, true)).thenReturn("https".getBytes(UTF_8));
-    UrlScheme.INSTANCE.setZkClient(zkClient);
+    when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode4, null, null, true)).thenReturn("https".getBytes(UTF_8));
+    t.setZkClient(zkClient);
 
-    UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
+    t.setUrlScheme(UrlScheme.HTTPS);
+
+    assertEquals("https://192.168.1.1:8983/solr", t.getBaseUrlForNodeName(liveNode1));
+    assertEquals("https://127.0.0.1", t.getBaseUrlForNodeName(liveNode3));
+
     SortedSet<String> liveNodes = new TreeSet<>();
     liveNodes.add("192.168.1.1:8983_solr");
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
+    t.onChange(null, liveNodes);
 
     // global https applies, no match in live nodes
-    Optional<String> opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("https://127.0.0.1:8983/solr", opt.get());
+    assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
 
     // global http applies, no match in live nodes
-    UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1:8983/solr", opt.get());
+    t.setUrlScheme(UrlScheme.HTTP);
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
 
     // live node's http scheme takes precedent over global https
-    UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
-    UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(true);
+    t.setUrlScheme(UrlScheme.HTTPS);
+    t.setUseLiveNodesUrlScheme(true);
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1:8983_solr");
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1:8983/solr", opt.get());
+    t.onChange(null, liveNodes);
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
 
     // no scheme in the stored_url
-    opt = UrlScheme.INSTANCE.applyUrlScheme("127.0.0.1:8983/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1:8983/solr", opt.get());
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
 
-    UrlScheme.INSTANCE.onChange(Collections.singletonMap(URL_SCHEME, "https"));
-    UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(true);
+    t.onChange(Collections.singletonMap(URL_SCHEME, "https"));
+    t.setUseLiveNodesUrlScheme(true);
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1:8983_solr");
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
+    t.onChange(null, liveNodes);
     // http because the live node entry doesn't have https
-    assertEquals("http://127.0.0.1:8983/solr", opt.get());
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
 
-    UrlScheme.INSTANCE.onChange(Collections.singletonMap(URL_SCHEME, "http"));
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1/solr");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1/solr", opt.get());
+    t.onChange(Collections.singletonMap(URL_SCHEME, "http"));
+    assertEquals("http://127.0.0.1/solr", t.applyUrlScheme("${scheme}://127.0.0.1/solr"));
 
     // Change to using https
-    UrlScheme.INSTANCE.onChange(Collections.singletonMap(URL_SCHEME, "https"));
-    UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(true);
+    t.onChange(Collections.singletonMap(URL_SCHEME, "https"));
+    t.setUseLiveNodesUrlScheme(true);
     liveNodes = new TreeSet<>();
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983/");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("https://127.0.0.1:8983/", opt.get());
+    t.onChange(null, liveNodes);
+    assertEquals("https://127.0.0.1:8983/", t.applyUrlScheme("${scheme}://127.0.0.1:8983/"));
 
     // back to http
     Map<String,Object> clusterProps = new HashMap<>();
     clusterProps.put(URL_SCHEME, "http");
     clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
-    UrlScheme.INSTANCE.onChange(clusterProps);
+    t.onChange(clusterProps);
     liveNodes = new TreeSet<>();
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
+    t.onChange(null, liveNodes);
 
-    opt = UrlScheme.INSTANCE.applyUrlScheme("${scheme}://127.0.0.1:8983");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1:8983", opt.get());
-
-    opt = UrlScheme.INSTANCE.applyUrlScheme("127.0.0.1:8983");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("http://127.0.0.1:8983", opt.get());
+    assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("${scheme}://127.0.0.1:8983"));
+    assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("127.0.0.1:8983"));
 
     // live node has https and global urlScheme is http, so expect https
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1_");
-    UrlScheme.INSTANCE.onChange(null, liveNodes);
-    opt = UrlScheme.INSTANCE.applyUrlScheme("127.0.0.1");
-    assertNotNull(opt);
-    assertTrue(opt.isPresent());
-    assertEquals("https://127.0.0.1", opt.get());
+    t.onChange(null, liveNodes);
+    assertEquals("https://127.0.0.1", t.applyUrlScheme("127.0.0.1"));
+
+    // 127.0.0.1:61463_xkdn%2Fpp
+    liveNodes = new TreeSet<>();
+    liveNodes.add("127.0.0.1:61631_l_%2Fig");
+    t.onChange(null, liveNodes);
+    assertEquals("https://127.0.0.1:61631/l_/ig", t.applyUrlScheme("127.0.0.1:61631/l_/ig"));
+    assertEquals("http://127.0.0.1:61632/l_/ig", t.applyUrlScheme("127.0.0.1:61632/l_/ig"));
   }
 }
