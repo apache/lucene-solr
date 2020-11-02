@@ -40,6 +40,8 @@ Improvements
 
 * SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
 
+* SOLR-14972: Change default port of prometheus exporter to 8989 because it clashed with default embedded zookeeper port (janhoy)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -154,14 +156,21 @@ Improvements
 * SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
   (Cao Manh Dat, Mike Drob, hossman, shalin)
 
+* SOLR-14955: Add env var options for the Prometheus Exporter bin scripts (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
 
 Bug Fixes
 ---------------------
+* SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used
+  as the client (Munendra S N)
 
 * SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
+
+* SOLR-14969: Prevent creating multiple cores with the same name which leads to instabilities (race condition)
+  (Erick Erickson, Andreas Hubold)
 
 * SOLR-14971: AtomicUpdate 'remove' operations now works on numeric fields in uncommitted docs (Jason Gerlowski)
 
