@@ -182,15 +182,15 @@ public class XYDocValuesField extends Field {
   }
 
   /**
-   * Create a query for matching points within the supplied geometries.
+   * Create a query for matching points within the supplied geometries. XYLine geometries are not supported.
    * This query is usually slow as it does not use an index structure and needs
    * to verify documents one-by-one in order to know whether they match. It is
    * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
    * {@link XYPointField#newGeometryQuery(String, XYGeometry...)}.
    * @param field field name. must not be null.
-   * @param geometries array of XY geoemtries. must not be null or empty.
+   * @param geometries array of XY geometries. must not be null or empty.
    * @return query matching points within the given geometries.
-   * @throws IllegalArgumentException if {@code field} is null or geometries is empty or contain a null geometry.
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null, empty or contains a null or XYLine geometry.
    */
   public static Query newSlowGeometryQuery(String field, XYGeometry... geometries) {
     return new XYDocValuesPointInGeometryQuery(field, geometries);

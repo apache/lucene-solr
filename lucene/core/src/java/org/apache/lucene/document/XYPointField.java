@@ -172,11 +172,11 @@ public class XYPointField extends Field {
     return newGeometryQuery(field, polygons);
   }
 
-  /** create a query to find all indexed shapes that intersect a provided geometry collection.
+  /** create a query to find all indexed shapes that intersect a provided geometry collection. XYLine geometries are not supported.
    * @param field field name. must not be null.
-   * @param xyGeometries array of Geometries. must not be null or empty and cannot contain a {@link org.apache.lucene.geo.XYLine} geometry.
+   * @param xyGeometries array of geometries. must not be null or empty.
    * @return query matching points within this geometry collection.
-   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null or empty or contains a XYLine geometries.
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null, empty or contains a null or XYLine geometry.
    * @see XYGeometry
    **/
   public static Query newGeometryQuery(String field, XYGeometry... xyGeometries) {
