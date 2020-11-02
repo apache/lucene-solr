@@ -68,7 +68,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
    * Create a {@link ClusterEventProducer} based on the current plugin configurations.
    * <p>NOTE: this method can only be called once because it has side-effects, such as
    * transferring the initially collected listeners to the resulting producer's instance, and
-   * installing a {@link ContainerPluginsRegistry.PluginRegistryListener}.
+   * installing a {@link org.apache.solr.api.ContainerPluginsRegistry.PluginRegistryListener}.
    * Calling this method more than once will result in an exception.</p>
    * @param plugins current plugin configurations
    * @return configured instance of cluster event producer (with side-effects, see above)

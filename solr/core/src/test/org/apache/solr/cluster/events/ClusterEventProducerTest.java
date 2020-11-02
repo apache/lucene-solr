@@ -185,16 +185,22 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     @Override
     public void onEvent(ClusterEvent event) {
       if (state != State.RUNNING) {
-        log.debug("skipped event, not running: {}", event);
+        if (log.isDebugEnabled()) {
+          log.debug("skipped event, not running: {}", event);
+        }
         return;
       }
       if (event.getType() == ClusterEvent.EventType.COLLECTIONS_ADDED ||
           event.getType() == ClusterEvent.EventType.COLLECTIONS_REMOVED) {
-        log.debug("recorded event {}", Utils.toJSONString(event));
+        if (log.isDebugEnabled()) {
+          log.debug("recorded event {}", Utils.toJSONString(event));
+        }
         lastEvent = event;
         dummyEventLatch.countDown();
       } else {
-        log.debug("skipped event, wrong type: {}", event.getType());
+        if (log.isDebugEnabled()) {
+          log.debug("skipped event, wrong type: {}", event.getType());
+        }
       }
     }
 
@@ -205,7 +211,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
     @Override
     public void start() throws Exception {
-      log.debug("starting {}", Integer.toHexString(hashCode()));
+      if (log.isDebugEnabled()) {
+        log.debug("starting {}", Integer.toHexString(hashCode()));
+      }
       state = State.RUNNING;
     }
 
@@ -216,7 +224,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
     @Override
     public void stop() {
-      log.debug("stopping {}", Integer.toHexString(hashCode()));
+      if (log.isDebugEnabled()) {
+        log.debug("stopping {}", Integer.toHexString(hashCode()));
+      }
       state = State.STOPPED;
     }
   }
