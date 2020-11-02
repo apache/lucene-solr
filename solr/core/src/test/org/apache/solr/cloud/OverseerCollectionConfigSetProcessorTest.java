@@ -183,6 +183,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
+    solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
   
   @AfterClass
@@ -207,6 +208,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
+    solrMetricsContextMock = null;
   }
   
   @Before
@@ -236,6 +238,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
+    reset(solrMetricsContextMock);
 
     zkClientData.clear();
     collectionsSet.clear();
@@ -496,7 +499,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           }}).when(distribStateManagerMock).makePath(anyString());
 
     zkClientData.put("/configs/myconfig", new byte[1]);
-    
+
+    when(solrMetricsContextMock.getChildContext(any(Object.class))).thenReturn(solrMetricsContextMock);
+
     return liveNodes;
   }
 
