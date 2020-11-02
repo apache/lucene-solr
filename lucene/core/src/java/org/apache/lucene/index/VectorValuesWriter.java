@@ -90,7 +90,7 @@ class VectorValuesWriter {
    * @throws IOException if there is an error writing the field and its values
    */
   public void flush(Sorter.DocMap sortMap, VectorWriter vectorWriter) throws IOException {
-    VectorValues vectorValues = new BufferedVectorValues(docsWithField, vectors, fieldInfo.getVectorDimension(), fieldInfo.getVectorScoreFunction());
+    VectorValues vectorValues = new BufferedVectorValues(docsWithField, vectors, fieldInfo.getVectorDimension(), fieldInfo.getVectorSearchStrategy());
     if (sortMap != null) {
       vectorWriter.writeField(fieldInfo, new SortingVectorValues(vectorValues, sortMap));
     } else {
@@ -98,7 +98,7 @@ class VectorValuesWriter {
     }
   }
 
-  private static class SortingVectorValues extends VectorValues {
+  static class SortingVectorValues extends VectorValues {
 
     private final VectorValues delegate;
     private final VectorValues.RandomAccess randomAccess;
@@ -167,8 +167,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public ScoreFunction scoreFunction() {
-      return delegate.scoreFunction();
+    public SearchStrategy searchStrategy() {
+      return delegate.searchStrategy();
     }
 
     @Override
@@ -197,8 +197,8 @@ class VectorValuesWriter {
         }
 
         @Override
-        public ScoreFunction scoreFunction() {
-          return delegate.scoreFunction();
+        public SearchStrategy searchStrategy() {
+          return delegate.searchStrategy();
         }
 
         @Override
@@ -225,7 +225,7 @@ class VectorValuesWriter {
 
     // These are always the vectors of a VectorValuesWriter, which are copied when added to it
     final List<float[]> vectors;
-    final VectorValues.ScoreFunction scoreFunction;
+    final SearchStrategy searchStrategy;
     final int dimension;
 
     final ByteBuffer buffer;
@@ -236,11 +236,11 @@ class VectorValuesWriter {
     DocIdSetIterator docsWithFieldIter;
     int ord = -1;
 
-    BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectors, int dimension, VectorValues.ScoreFunction scoreFunction) {
+    BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectors, int dimension, SearchStrategy searchStrategy) {
       this.docsWithField = docsWithField;
       this.vectors = vectors;
       this.dimension = dimension;
-      this.scoreFunction = scoreFunction;
+      this.searchStrategy = searchStrategy;
       buffer = ByteBuffer.allocate(dimension * Float.BYTES);
       binaryValue = new BytesRef(buffer.array());
       raBuffer = ByteBuffer.allocate(dimension * Float.BYTES);
@@ -264,8 +264,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public VectorValues.ScoreFunction scoreFunction() {
-      return scoreFunction;
+    public SearchStrategy searchStrategy() {
+      return searchStrategy;
     }
 
     @Override

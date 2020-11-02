@@ -102,11 +102,11 @@ public final class Lucene90VectorReader extends VectorReader {
       if (info == null) {
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
       }
-      int scoreFunctionId = meta.readInt();
-      if (scoreFunctionId < 0 || scoreFunctionId >= VectorValues.ScoreFunction.values().length) {
-        throw new CorruptIndexException("Invalid score function id: " + scoreFunctionId, meta);
+      int searchStrategyId = meta.readInt();
+      if (searchStrategyId < 0 || searchStrategyId >= VectorValues.SearchStrategy.values().length) {
+        throw new CorruptIndexException("Invalid search strategy id: " + searchStrategyId, meta);
       }
-      VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.values()[scoreFunctionId];
+      VectorValues.SearchStrategy searchStrategy = VectorValues.SearchStrategy.values()[searchStrategyId];
       long vectorDataOffset = meta.readVLong();
       long vectorDataLength = meta.readVLong();
       int dimension = meta.readInt();
@@ -116,7 +116,7 @@ public final class Lucene90VectorReader extends VectorReader {
         int doc = meta.readVInt();
         ordToDoc[i] = doc;
       }
-      FieldEntry fieldEntry = new FieldEntry(dimension, scoreFunction, maxDoc, vectorDataOffset, vectorDataLength,
+      FieldEntry fieldEntry = new FieldEntry(dimension, searchStrategy, maxDoc, vectorDataOffset, vectorDataLength,
                                               ordToDoc);
       fields.put(info.name, fieldEntry);
     }
@@ -173,17 +173,17 @@ public final class Lucene90VectorReader extends VectorReader {
   private static class FieldEntry {
 
     final int dimension;
-    final VectorValues.ScoreFunction scoreFunction;
+    final VectorValues.SearchStrategy searchStrategy;
     final int maxDoc;
 
     final long vectorDataOffset;
     final long vectorDataLength;
     final int[] ordToDoc;
 
-    FieldEntry(int dimension, VectorValues.ScoreFunction scoreFunction, int maxDoc,
+    FieldEntry(int dimension, VectorValues.SearchStrategy searchStrategy, int maxDoc,
                long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
       this.dimension = dimension;
-      this.scoreFunction = scoreFunction;
+      this.searchStrategy = searchStrategy;
       this.maxDoc = maxDoc;
       this.vectorDataOffset = vectorDataOffset;
       this.vectorDataLength = vectorDataLength;
@@ -231,8 +231,8 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public ScoreFunction scoreFunction() {
-      return fieldEntry.scoreFunction;
+    public SearchStrategy searchStrategy() {
+      return fieldEntry.searchStrategy;
     }
 
     @Override
@@ -312,8 +312,8 @@ public final class Lucene90VectorReader extends VectorReader {
       }
 
       @Override
-      public VectorValues.ScoreFunction scoreFunction() {
-        return fieldEntry.scoreFunction;
+      public SearchStrategy searchStrategy() {
+        return fieldEntry.searchStrategy;
       }
 
       @Override

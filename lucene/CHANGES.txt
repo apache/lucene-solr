@@ -212,6 +212,12 @@ New Features
 * LUCENE-9572: TypeAsSynonymFilter has been enhanced support ignoring some types, and to allow
   the generated synonyms to copy some or all flags from the original token (Gus Heck).
 
+Improvements
+---------------------
+
+* LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
+  check before calling next(). (Zach Chen via Bruno Roustant)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes

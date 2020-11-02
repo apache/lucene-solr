@@ -46,7 +46,7 @@ public class FieldType implements IndexableFieldType  {
   private int indexDimensionCount;
   private int dimensionNumBytes;
   private int vectorDimension;
-  private VectorValues.ScoreFunction vectorScoreFunction = VectorValues.ScoreFunction.NONE;
+  private VectorValues.SearchStrategy vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
   private Map<String, String> attributes;
 
   /**
@@ -66,7 +66,7 @@ public class FieldType implements IndexableFieldType  {
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
     this.vectorDimension = ref.vectorDimension();
-    this.vectorScoreFunction = ref.vectorScoreFunction();
+    this.vectorSearchStrategy = ref.vectorSearchStrategy();
     if (ref.getAttributes() != null) {
       this.attributes = new HashMap<>(ref.getAttributes());
     }
@@ -357,7 +357,7 @@ public class FieldType implements IndexableFieldType  {
     return dimensionNumBytes;
   }
 
-  void setVectorDimensionsAndScoreFunction(int numDimensions, VectorValues.ScoreFunction distFunc) {
+  void setVectorDimensionsAndSearchStrategy(int numDimensions, VectorValues.SearchStrategy distFunc) {
     checkIfFrozen();
     if (numDimensions <= 0) {
       throw new IllegalArgumentException("vector numDimensions must be > 0; got " + numDimensions);
@@ -366,7 +366,7 @@ public class FieldType implements IndexableFieldType  {
       throw new IllegalArgumentException("vector numDimensions must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + numDimensions);
     }
     this.vectorDimension = numDimensions;
-    this.vectorScoreFunction = distFunc;
+    this.vectorSearchStrategy = distFunc;
   }
 
   @Override
@@ -375,8 +375,8 @@ public class FieldType implements IndexableFieldType  {
   }
 
   @Override
-  public VectorValues.ScoreFunction vectorScoreFunction() {
-    return vectorScoreFunction;
+  public VectorValues.SearchStrategy vectorSearchStrategy() {
+    return vectorSearchStrategy;
   }
 
   /**
