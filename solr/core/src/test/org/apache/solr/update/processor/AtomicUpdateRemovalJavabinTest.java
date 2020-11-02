@@ -92,11 +92,35 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
     ensureFieldHasValues("1", "count_is", 2);
   }
 
+  // see SOLR-14971
+  @Test
+  public void testAtomicUpdateRemovalOfUncommittedIntField() throws Exception {
+    final SolrInputDocument doc1 = sdoc("id", "2", "count_is", 1, "count_is", 2);
+    final UpdateRequest req = new UpdateRequest()
+            .add(doc1);
+    req.process(cluster.getSolrClient(), COLLECTION);
+
+    atomicRemoveValueFromField("2", "count_is", 2);
+    ensureFieldHasValues("2", "count_is", 1);
+  }
+
   @Test
   public void testAtomicUpdateRemovalOfDoubleField() throws Exception {
     ensureFieldHasValues("1", "count_md", 1.0, 2.0);
     atomicRemoveValueFromField("1", "count_md", 1.0);
     ensureFieldHasValues("1", "count_md", 2.0);
+  }
+
+  // see SOLR-14971
+  @Test
+  public void testAtomicUpdateRemovalOfUncommittedDoubleField() throws Exception {
+    final SolrInputDocument doc1 = sdoc("id", "2", "count_md", 1.0, "count_md", 2.0);
+    final UpdateRequest req = new UpdateRequest()
+            .add(doc1);
+    req.process(cluster.getSolrClient(), COLLECTION);
+
+    atomicRemoveValueFromField("2", "count_md", 2.0);
+    ensureFieldHasValues("2", "count_md", 1.0);
   }
 
   @Test

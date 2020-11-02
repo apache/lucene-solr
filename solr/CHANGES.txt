@@ -163,6 +163,8 @@ Bug Fixes
 
 * SOLR-14940: ReplicationHandler memory leak through SolrCore.closeHooks with unstable ZK connection. (Anver Sotnikov, Mike Drob)
 
+* SOLR-14971: AtomicUpdate 'remove' operations now works on numeric fields in uncommitted docs (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
