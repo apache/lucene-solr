@@ -18,7 +18,7 @@
 package org.apache.solr;
 
 /** Test the test */
-public class TestSolrTestCaseJ4 extends SolrTestCaseJ4 {
+public class SolrTestCaseJ4DeleteCoreTest extends SolrTestCaseJ4 {
 
   public void testDeleteCore() throws Exception {
     initCore("solrconfig.xml","schema.xml");
