@@ -200,15 +200,15 @@ public class LatLonDocValuesField extends Field {
   }
 
   /**
-   * Create a query for matching points within the supplied geometries.
+   * Create a query for matching points within the supplied geometries. Line geometries are not supported.
    * This query is usually slow as it does not use an index structure and needs
    * to verify documents one-by-one in order to know whether they match. It is
    * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
    * {@link LatLonPoint#newGeometryQuery(String, LatLonGeometry...)}.
    * @param field field name. must not be null.
-   * @param latLonGeometries array of geometries. must not be null or empty.
+   * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
    * @return query matching points within the given polygons.
-   * @throws IllegalArgumentException if {@code field} is null or polygons is empty or contain a null polygon.
+   * @throws IllegalArgumentException if {@code field} is null, {@code latLonGeometries} is null, empty or contain a null or line geometry.
    */
   public static Query newSlowGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
     if (latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {

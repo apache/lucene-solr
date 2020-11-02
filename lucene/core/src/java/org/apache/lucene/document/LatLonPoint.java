@@ -259,11 +259,11 @@ public class LatLonPoint extends Field {
   }
 
   /**
-   * Create a query for matching one or more geometries.
+   * Create a query for matching one or more geometries. Line geometries are not supported.
    * @param field field name. must not be null.
-   * @param latLonGeometries array of LatLonGeometries. must not be null or empty or contains a {@link org.apache.lucene.geo.Line} geoemtry.
+   * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
    * @return query matching points within at least one geometry.
-   * @throws IllegalArgumentException if {@code field} is null, {@code latLonGeometries} is null or empty or contains a Line geometry.
+   * @throws IllegalArgumentException  if {@code field} is null, {@code latLonGeometries} is null, empty or contain a null or line geometry.
    * @see LatLonGeometry
    */
   public static Query newGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
