@@ -248,3 +248,9 @@
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+
+# Solr can attempt to take a heap dump on out of memory errors. To enable this, specify a directory
+# where the heap dumps should be saved. The filename pattern will be solr-[timestamp]-pid[###].hprof
+# When using this feature, it is recommended to have an external service monitoring the given dir.
+# If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
+#SOLR_HEAP_DUMP_DIR=/var/log/dumps

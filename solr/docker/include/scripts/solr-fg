@@ -15,9 +15,6 @@ if [[ -z "${OOM:-}" ]]; then
   OOM='none'
 fi
 case "$OOM" in
-  'script')
-    EXTRA_ARGS+=(-a '-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh')
-    ;;
   'exit')
     # recommended
     EXTRA_ARGS+=(-a '-XX:+ExitOnOutOfMemoryError')
@@ -25,11 +22,12 @@ case "$OOM" in
   'crash')
     EXTRA_ARGS+=(-a '-XX:+CrashOnOutOfMemoryError')
     ;;
-  'none'|'')
+  'script'|'none'|'')
+    # Default behaviour by bin/solr is to run the oom killer script
     ;;
   *)
-   echo "Unsupported value in OOM=$OOM"
-   exit 1
+    echo "Unsupported value in OOM=$OOM"
+    exit 1
 esac
 
 echo "Starting Solr $SOLR_VERSION"
