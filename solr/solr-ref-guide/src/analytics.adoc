@@ -57,7 +57,7 @@ For these changes to take effect, restart Solr or reload the core or collection.
 == Request Syntax
 
 An Analytics request is passed to Solr with the parameter `analytics` in a request sent to the
-<<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,Search Handler>>.
+<<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,Search Handler>>.
 Since the analytics request is sent inside of a search handler request, it will compute results based on the result set determined by the search handler.
 
 For example, this curl command encodes and POSTs a simple analytics request to the the search handler:

@@ -86,6 +86,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -408,26 +409,6 @@ public class HttpSolrCall {
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-
-      if (handler == null) {
-        //may be a restlet path
-        // Handle /schema/* paths via Restlet
-        if (path.equals("/schema") || path.startsWith("/schema/")) {
-          solrReq = parser.parse(core, path, req);
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
-          mustClearSolrRequestInfo = true;
-          if (path.equals(req.getServletPath())) {
-            // avoid endless loop - pass through to Restlet via webapp
-            action = PASSTHROUGH;
-          } else {
-            // forward rewritten URI (without path prefix and core/collection name) to Restlet
-            action = FORWARD;
-          }
-          SolrRequestInfo.getRequestInfo().setAction(action);
-          return;
-        }
-      }
-
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
@@ -493,7 +474,7 @@ public class HttpSolrCall {
     }
     if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
       if (log.isDebugEnabled()) {
-        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // logOk
+        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // nowarn
       }
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
@@ -503,7 +484,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // logOk
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // nowarn
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {
@@ -571,39 +552,57 @@ public class HttpSolrCall {
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
-          final Method reqMethod = Method.getMethod(req.getMethod());
-          HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
-          // unless we have been explicitly told not to, do cache validation
-          // if we fail cache validation, execute the query
-          if (config.getHttpCachingConfig().isNever304() ||
-              !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
-            SolrQueryResponse solrRsp = new SolrQueryResponse();
+          /*
+           We track update requests so that we can preserve consistency by waiting for them to complete
+           on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
+           See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
+
+           Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
+           other kinds of requests.
+          */
+          if (handler instanceof UpdateRequestHandler && !core.getSolrCoreState().registerInFlightUpdate()) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + core.getName());
+          }
+          try {
+            final Method reqMethod = Method.getMethod(req.getMethod());
+            HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
+            // unless we have been explicitly told not to, do cache validation
+            // if we fail cache validation, execute the query
+            if (config.getHttpCachingConfig().isNever304() ||
+                    !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
+              SolrQueryResponse solrRsp = new SolrQueryResponse();
               /* even for HEAD requests, we need to execute the handler to
                * ensure we don't get an error (and to make sure the correct
                * QueryResponseWriter is selected and we get the correct
                * Content-Type)
                */
-            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
-            mustClearSolrRequestInfo = true;
-            execute(solrRsp);
-            if (shouldAudit()) {
-              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-              if (shouldAudit(eventType)) {
-                cores.getAuditLoggerPlugin().doAudit(
-                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+              mustClearSolrRequestInfo = true;
+              execute(solrRsp);
+              if (shouldAudit()) {
+                EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+                if (shouldAudit(eventType)) {
+                  cores.getAuditLoggerPlugin().doAudit(
+                          new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+                }
               }
+              HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
+              Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
+              while (headers.hasNext()) {
+                Map.Entry<String, String> entry = headers.next();
+                resp.addHeader(entry.getKey(), entry.getValue());
+              }
+              QueryResponseWriter responseWriter = getResponseWriter();
+              if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
+              writeResponse(solrRsp, responseWriter, reqMethod);
             }
-            HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
-            Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
-            while (headers.hasNext()) {
-              Map.Entry<String, String> entry = headers.next();
-              resp.addHeader(entry.getKey(), entry.getValue());
+            return RETURN;
+          } finally {
+            if (handler instanceof UpdateRequestHandler) {
+              // every registered request must also be de-registered
+              core.getSolrCoreState().deregisterInFlightUpdate();
             }
-            QueryResponseWriter responseWriter = getResponseWriter();
-            if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
-            writeResponse(solrRsp, responseWriter, reqMethod);
           }
-          return RETURN;
         default: return action;
       }
     } catch (Throwable ex) {

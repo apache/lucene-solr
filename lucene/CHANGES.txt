@@ -5,6 +5,10 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 9.0.0 =======================
 
+New Features
+
+* LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
+
 System Requirements
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
@@ -12,8 +16,9 @@ System Requirements
 
 API Changes
 
-* LUCENE-9317: Clean up package name conflicts between core and analyzers-common.
-  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+* LUCENE-9562: All binary analysis packages (and corresponding
+  Maven artifacts) with names containing '-analyzers-' have been renamed
+  to '-analysis-'. (Dawid Weiss)
 
 * LUCENE-8474: RAMDirectory and associated deprecated classes have been
   removed. (Dawid Weiss)
@@ -68,7 +73,18 @@ API Changes
   in Lucenes IndexWriter. The interface is not sufficient to efficiently
   replace the functionality with reasonable efforts. (Simon Willnauer)
 
+* LUCENE-9317 LUCENE-9318 LUCENE-9558: Clean up package name conflicts between modules.
+  See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
+
 Improvements
+
+* LUCENE-9576: Improve ConcurrentMergeScheduler settings by default, assuming modern I/O.
+  Previously Lucene was too conservative, jumping through hoops to detect if disks were SSD-backed.
+  In many common modern cases (VMs, RAID arrays, containers, encrypted mounts, non-Linux OS),
+  the pessimistic heuristics were wrong, resulting in slower indexing performance. Heuristics were
+  also complex and would trigger JDK issues even on unrelated mount points. Merge scheduler defaults
+  are now modernized and the heuristics removed. Users with spinning disks that want to maximize I/O
+  performance should tweak ConcurrentMergeScheduler. (Robert Muir)
 
 * LUCENE-9463: Query match region retrieval component, passage scoring and formatting
   for building custom highlighters. (Alan Woodward, Dawid Weiss)
@@ -186,6 +202,22 @@ Other
 
 * LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
 
+======================= Lucene 8.8.0 =======================
+
+New Features
+---------------------
+
+* LUCENE-9574 A token filter to drop tokens that match all specified flags. (Gus Heck, Uwe Schindler)
+
+* LUCENE-9572: TypeAsSynonymFilter has been enhanced support ignoring some types, and to allow
+  the generated synonyms to copy some or all flags from the original token (Gus Heck).
+
+Improvements
+---------------------
+
+* LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
+  check before calling next(). (Zach Chen via Bruno Roustant)
+
 ======================= Lucene 8.7.0 =======================
 
 API Changes
@@ -283,6 +315,14 @@ Bug Fixes
 
 * LUCENE-9401: Include field in ComplexPhraseQuery's toString() (Thomas Hecker via Munendra S N)
 
+* LUCENE-9578: Fix TermRangeQuery when there is no upper bound and the lower
+  bound is the empty string excluded. This would previously match no strings at
+  all while it should match all non-empty strings.
+  (Christoph Buescher via Adrien Grand)
+
+* LUCENE-9524: Fix NPE in SpanWeight#explain when no scoring is required and
+  SpanWeight has null Similarity.SimScorer. (Zach Chen)
+
 Documentation
 ---------------------
 
@@ -309,6 +349,12 @@ Other
 Build
 
 * Upgrade forbiddenapis to version 3.1.  (Uwe Schindler)
+
+======================= Lucene 8.6.3 =======================
+
+Bug Fixes
+---------------------
+(No changes)
 
 ======================= Lucene 8.6.2 =======================
 

@@ -42,13 +42,13 @@ import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.JmxUtil;
-import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -500,7 +500,18 @@ public class SolrXmlConfig {
 
   private static MetricsConfig getMetricsConfig(XmlConfigFile config) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    Node node = config.getNode("solr/metrics", false);
+    // enabled by default
+    boolean enabled = true;
+    if (node != null) {
+      enabled = Boolean.parseBoolean(DOMUtil.getAttrOrDefault(node, "enabled", "true"));
+    }
+    builder.setEnabled(enabled);
+    if (!enabled) {
+      log.info("Metrics collection is disabled.");
+      return builder.build();
+    }
+    node = config.getNode("solr/metrics/suppliers/counter", false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
     }

@@ -19,19 +19,13 @@ package org.apache.solr.metrics;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
-import com.codahale.metrics.Clock;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.ExponentiallyDecayingReservoir;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Reservoir;
-import com.codahale.metrics.SlidingTimeWindowReservoir;
-import com.codahale.metrics.SlidingWindowReservoir;
-import com.codahale.metrics.Timer;
-import com.codahale.metrics.UniformReservoir;
+import com.codahale.metrics.*;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SolrPluginUtils;
@@ -197,17 +191,21 @@ public class MetricSuppliers {
       return new SlidingWindowReservoir(size);
     } else { // custom reservoir
       Reservoir reservoir;
-      try {
-        reservoir = loader.newInstance(clazz, Reservoir.class);
-        if (reservoir instanceof PluginInfoInitialized) {
-          ((PluginInfoInitialized)reservoir).init(info);
-        } else {
-          SolrPluginUtils.invokeSetters(reservoir, info.initArgs, true);
-        }
-        return reservoir;
-      } catch (Exception e) {
-        log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
+      if (loader == null) {
         return new ExponentiallyDecayingReservoir(size, alpha, clk);
+      } else {
+        try {
+          reservoir = loader.newInstance(clazz, Reservoir.class);
+          if (reservoir instanceof PluginInfoInitialized) {
+            ((PluginInfoInitialized)reservoir).init(info);
+          } else {
+            SolrPluginUtils.invokeSetters(reservoir, info.initArgs, true);
+          }
+          return reservoir;
+        } catch (Exception e) {
+          log.warn("Error initializing custom Reservoir implementation (will use default): {}", info, e);
+          return new ExponentiallyDecayingReservoir(size, alpha, clk);
+        }
       }
     }
   }
@@ -282,13 +280,19 @@ public class MetricSuppliers {
     if (info == null || info.className == null || info.className.trim().isEmpty()) {
       return new DefaultCounterSupplier();
     }
-
+    if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
+      return NoOpCounterSupplier.INSTANCE;
+    }
     MetricRegistry.MetricSupplier<Counter> supplier;
-    try {
-      supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-    } catch (Exception e) {
-      log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
+    if (loader == null) {
       supplier = new DefaultCounterSupplier();
+    } else {
+      try {
+        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+      } catch (Exception e) {
+        log.warn("Error creating custom Counter supplier (will use default): {}", info, e);
+        supplier = new DefaultCounterSupplier();
+      }
     }
     if (supplier instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized)supplier).init(info);
@@ -310,11 +314,18 @@ public class MetricSuppliers {
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultMeterSupplier();
     } else {
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
+      if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
+        return NoOpMeterSupplier.INSTANCE;
+      }
+      if (loader == null) {
         supplier = new DefaultMeterSupplier();
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Meter supplier (will use default): {}",info, e);
+          supplier = new DefaultMeterSupplier();
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -337,11 +348,18 @@ public class MetricSuppliers {
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultTimerSupplier(loader);
     } else {
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
-        supplier = new DefaultTimerSupplier(loader);
+      if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
+        return NoOpTimerSupplier.INSTANCE;
+      }
+      if (loader == null) {
+        supplier = new DefaultTimerSupplier(null);
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Timer supplier (will use default): {}", info, e);
+          supplier = new DefaultTimerSupplier(loader);
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -363,11 +381,18 @@ public class MetricSuppliers {
     if (info == null || info.className == null || info.className.isEmpty()) {
       supplier = new DefaultHistogramSupplier(loader);
     } else {
-      try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
-      } catch (Exception e) {
-        log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
-        supplier = new DefaultHistogramSupplier(loader);
+      if (MetricsConfig.NOOP_IMPL_CLASS.equals(info.className)) {
+        return NoOpHistogramSupplier.INSTANCE;
+      }
+      if (loader == null) {
+        supplier = new DefaultHistogramSupplier(null);
+      } else {
+        try {
+          supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        } catch (Exception e) {
+          log.warn("Error creating custom Histogram supplier (will use default): {}", info, e);
+          supplier = new DefaultHistogramSupplier(loader);
+        }
       }
     }
     if (supplier instanceof PluginInfoInitialized) {
@@ -376,5 +401,167 @@ public class MetricSuppliers {
       SolrPluginUtils.invokeSetters(supplier, info.initArgs, true);
     }
     return supplier;
+  }
+
+  // NO-OP implementations. These can be used to effectively "turn off" the metrics
+  // collection, or rather eliminate the overhead of the metrics accounting and their
+  // memory footprint.
+
+  /**
+   * Marker interface for all no-op metrics.
+   */
+  public interface NoOpMetric {
+
+  }
+
+  /**
+   * No-op implementation of {@link Counter} supplier.
+   */
+  public static final class NoOpCounterSupplier implements MetricRegistry.MetricSupplier<Counter> {
+    public static final NoOpCounterSupplier INSTANCE = new NoOpCounterSupplier();
+
+    private static final class NoOpCounter extends Counter implements NoOpMetric {
+      @Override
+      public void inc() {
+        // no-op
+      }
+
+      @Override
+      public void inc(long n) {
+        // no-op
+      }
+
+      @Override
+      public void dec() {
+        // no-op
+      }
+
+      @Override
+      public void dec(long n) {
+        // no-op
+      }
+    }
+
+    private static final Counter METRIC = new NoOpCounter();
+
+    @Override
+    public Counter newMetric() {
+      return METRIC;
+    }
+  }
+
+  /**
+   * No-op implementation of {@link Histogram} supplier.
+   */
+  public static final class NoOpHistogramSupplier implements MetricRegistry.MetricSupplier<Histogram> {
+    public static final NoOpHistogramSupplier INSTANCE = new NoOpHistogramSupplier();
+
+    private static final class NoOpHistogram extends Histogram implements NoOpMetric {
+
+      public NoOpHistogram() {
+        super(new UniformReservoir(1));
+      }
+
+      @Override
+      public void update(int value) {
+        // no-op
+      }
+
+      @Override
+      public void update(long value) {
+        // no-op
+      }
+    }
+
+    private static final NoOpHistogram METRIC = new NoOpHistogram();
+
+    @Override
+    public Histogram newMetric() {
+      return METRIC;
+    }
+  }
+
+  /**
+   * No-op implementation of {@link Meter} supplier.
+   */
+  public static final class NoOpMeterSupplier implements MetricRegistry.MetricSupplier<Meter> {
+    public static final NoOpMeterSupplier INSTANCE = new NoOpMeterSupplier();
+
+    private static final class NoOpMeter extends Meter implements NoOpMetric {
+      @Override
+      public void mark() {
+        // no-op
+      }
+
+      @Override
+      public void mark(long n) {
+        // no-op
+      }
+    }
+
+    private static final NoOpMeter METRIC = new NoOpMeter();
+
+    @Override
+    public Meter newMetric() {
+      return METRIC;
+    }
+  }
+
+  /**
+   * No-op implementation of {@link Timer} supplier.
+   */
+  public static final class NoOpTimerSupplier implements MetricRegistry.MetricSupplier<Timer> {
+    public static final NoOpTimerSupplier INSTANCE = new NoOpTimerSupplier();
+
+    private static final class NoOpTimer extends Timer implements NoOpMetric {
+      @Override
+      public void update(long duration, TimeUnit unit) {
+        // no-op
+      }
+
+      @Override
+      public void update(Duration duration) {
+        // no-op
+      }
+
+      @Override
+      public <T> T time(Callable<T> event) throws Exception {
+        return event.call();
+      }
+
+      @Override
+      public <T> T timeSupplier(Supplier<T> event) {
+        return event.get();
+      }
+
+      @Override
+      public void time(Runnable event) {
+        event.run();
+      }
+    }
+
+    private static final NoOpTimer METRIC = new NoOpTimer();
+
+    @Override
+    public Timer newMetric() {
+      return METRIC;
+    }
+  }
+
+  /**
+   * No-op implementation of {@link Gauge}.
+   */
+  public static final class NoOpGauge implements Gauge<Object>, NoOpMetric {
+    public static final NoOpGauge INSTANCE = new NoOpGauge();
+
+    @Override
+    public Object getValue() {
+      return null;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> Gauge<T> getNoOpGauge(Gauge<T> actual) {
+    return (Gauge<T>) NoOpGauge.INSTANCE;
   }
 }

@@ -79,6 +79,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
+import static org.apache.solr.core.SolrResourceLoader.informAware;
+
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
 
@@ -1324,7 +1326,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     for (CharFilterFactory next : charFilters) {
       if (next instanceof ResourceLoaderAware) {
         try {
-          ((ResourceLoaderAware) next).inform(loader);
+          informAware(loader, (ResourceLoaderAware) next);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
@@ -1334,7 +1336,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
     if (tokenizerFactory instanceof ResourceLoaderAware) {
       try {
-        ((ResourceLoaderAware) tokenizerFactory).inform(loader);
+        informAware(loader, (ResourceLoaderAware) tokenizerFactory);
       } catch (IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
@@ -1343,13 +1345,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     TokenFilterFactory[] filters = chain.getTokenFilterFactories();
     for (TokenFilterFactory next : filters) {
       if (next instanceof ResourceLoaderAware) {
-        SolrResourceLoader.CURRENT_AWARE.set((ResourceLoaderAware) next);
         try {
-          ((ResourceLoaderAware) next).inform(loader);
+          informAware(loader, (ResourceLoaderAware) next);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        } finally {
-          SolrResourceLoader.CURRENT_AWARE.remove();
         }
       }
     }

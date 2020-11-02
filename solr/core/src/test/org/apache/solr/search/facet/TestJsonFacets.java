@@ -1104,7 +1104,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testStatsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doStats( client, params() );
   }
 
@@ -2960,7 +2960,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testOverrequest() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
 
     List<SolrClient> clients = client.getClientProvider().all();
     assertTrue(clients.size() >= 3);
@@ -3458,7 +3458,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testFacetValueTypesDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doFacetValueTypeValidation(client);
   }
 

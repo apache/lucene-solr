@@ -648,18 +648,23 @@ public class ZkController implements Closeable {
 
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
-    customThreadPool.submit(() -> Collections.singleton(overseerElector.getContext()).parallelStream().forEach(IOUtils::closeQuietly));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(overseerElector.getContext()));
 
-    customThreadPool.submit(() -> Collections.singleton(overseer).parallelStream().forEach(IOUtils::closeQuietly));
+    customThreadPool.submit(() -> IOUtils.closeQuietly(overseer));
 
     try {
-      customThreadPool.submit(() -> electionContexts.values().parallelStream().forEach(IOUtils::closeQuietly));
+      customThreadPool.submit(() -> {
+        Collection<ElectionContext> values = electionContexts.values();
+        synchronized (electionContexts) {
+          values.forEach(IOUtils::closeQuietly);
+        }
+      });
 
     } finally {
 
       sysPropsCacher.close();
-      customThreadPool.submit(() -> Collections.singleton(cloudSolrClient).parallelStream().forEach(IOUtils::closeQuietly));
-      customThreadPool.submit(() -> Collections.singleton(cloudManager).parallelStream().forEach(IOUtils::closeQuietly));
+      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudSolrClient));
+      customThreadPool.submit(() -> IOUtils.closeQuietly(cloudManager));
 
       try {
         try {
@@ -1297,7 +1302,7 @@ public class ZkController implements Closeable {
     return replica;
   }
 
-  public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) throws InterruptedException {
+  public void startReplicationFromLeader(String coreName, boolean switchTransactionLog) {
     log.info("{} starting background replication from leader", coreName);
     ReplicateFromLeader replicateFromLeader = new ReplicateFromLeader(cc, coreName);
     synchronized (replicateFromLeader) { // synchronize to prevent any stop before we finish the start
@@ -1835,6 +1840,28 @@ public class ZkController implements Closeable {
         error = "coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
             ", ignore the exception if the replica was deleted";
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    }
+  }
+
+  /**
+   * Attempts to cancel all leader elections. This method should be called on node shutdown.
+   */
+  public void tryCancelAllElections() {
+    if (zkClient.isClosed()) {
+      return;
+    }
+    Collection<ElectionContext> values = electionContexts.values();
+    synchronized (electionContexts) {
+      values.forEach(context -> {
+        try {
+          context.cancelElection();
+          context.close();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } catch (KeeperException e) {
+          log.warn("Error on cancelling elections of {}", context.leaderPath, e);
+        }
+      });
     }
   }
 

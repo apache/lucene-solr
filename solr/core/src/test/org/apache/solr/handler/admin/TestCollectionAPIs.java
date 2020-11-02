@@ -173,10 +173,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}"
     );
 
-    compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : ['replica:*, cores:<5']} }", null,
-        "{collection: collName, operation : modifycollection , rule : [{replica: '*', cores : '<5' }]}"
-    );
     compareOutput(apiBag, "/cluster", POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }", null,
         "{operation : addrole ,role : overseer, node : 'localhost_8978'}"

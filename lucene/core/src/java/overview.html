@@ -72,7 +72,7 @@ an enumeration of token {@link org.apache.lucene.util.Attribute Attribute}s.&nbs
 A TokenStream can be composed by applying {@link org.apache.lucene.analysis.TokenFilter TokenFilter}s
 to the output of a {@link org.apache.lucene.analysis.Tokenizer Tokenizer}.&nbsp;
 Tokenizers and TokenFilters are strung together and applied with an {@link org.apache.lucene.analysis.Analyzer Analyzer}.&nbsp;
-<a href="../analysis/common/overview-summary.html">analyzers-common</a> provides a number of Analyzer implementations, including
+<a href="../analysis/common/overview-summary.html">analysis-common</a> provides a number of Analyzer implementations, including
 <a href="../analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html">StopAnalyzer</a>
 and the grammar-based <a href="org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.</li>
 
@@ -147,11 +147,11 @@ index for all the files contained in a directory.</li>
 queries and searches an index.</li>
 </ul>
 To demonstrate these, try something like:
-<blockquote><code>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.IndexFiles -index index -docs rec.food.recipes/soups</b></code>
+<blockquote><code>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analysis-common.jar org.apache.lucene.demo.IndexFiles -index index -docs rec.food.recipes/soups</b></code>
 <br><code>adding rec.food.recipes/soups/abalone-chowder</code>
 <br><code>&nbsp; </code>[ ... ]
 
-<p><code>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-queryparser.jar:lucene-analyzers-common.jar org.apache.lucene.demo.SearchFiles</b></code>
+<p><code>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-queryparser.jar:lucene-analysis-common.jar org.apache.lucene.demo.SearchFiles</b></code>
 <br><code>Query: <b>chowder</b></code>
 <br><code>Searching for: chowder</code>
 <br><code>34 total matching documents</code>

@@ -26,5 +26,3 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
 }
-
-

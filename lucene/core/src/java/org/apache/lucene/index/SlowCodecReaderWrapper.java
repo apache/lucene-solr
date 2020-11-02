@@ -24,6 +24,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -76,6 +77,12 @@ public final class SlowCodecReaderWrapper {
         public DocValuesProducer getDocValuesReader() {
           reader.ensureOpen();
           return readerToDocValuesProducer(reader);
+        }
+
+        @Override
+        public VectorReader getVectorReader() {
+          reader.ensureOpen();
+          return readerToVectorReader(reader);
         }
 
         @Override
@@ -158,6 +165,29 @@ public final class SlowCodecReaderWrapper {
         return 0;
       }
 
+    };
+  }
+
+  private static VectorReader readerToVectorReader(LeafReader reader) {
+    return new VectorReader() {
+      @Override
+      public VectorValues getVectorValues(String field) throws IOException {
+        return reader.getVectorValues(field);
+      }
+
+      @Override
+      public void checkIntegrity() {
+        // We already checkIntegrity the entire reader up front
+      }
+
+      @Override
+      public void close() {
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
     };
   }
   

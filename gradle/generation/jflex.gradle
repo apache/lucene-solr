@@ -149,7 +149,7 @@ configure(project(":lucene:analysis:common")) {
       def target = file('src/java/org/apache/lucene/analysis/charfilter/HTMLCharacterEntities.jflex')
       target.withOutputStream { output ->
         project.exec {
-          executable = project.externalTool("python2")
+          executable = project.externalTool("python3")
           workingDir = target.parentFile
           standardOutput = output
           args += [

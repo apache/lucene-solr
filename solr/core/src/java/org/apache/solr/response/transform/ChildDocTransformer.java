@@ -32,6 +32,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitSet;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -89,6 +90,7 @@ class ChildDocTransformer extends DocTransformer {
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
       final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
+      final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
 
       if (segParentsBitSet == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -117,9 +119,16 @@ class ChildDocTransformer extends DocTransformer {
       int matches = 0;
       // Loop each child ID up to the parent (exclusive).
       for (int docId = firstChildId; docId < rootDocId; ++docId) {
+        final int segDocId = docId - segBaseId;
+
+        // check whether doc is "live"
+        if (liveDocs != null && !liveDocs.get(segDocId)) {
+          // doc is not "live"; return fast
+          continue;
+        }
 
         // get the path.  (note will default to ANON_CHILD_KEY if schema is not nested or empty string if blank)
-        final String fullDocPath = getPathByDocId(docId - segBaseId, segPathDocValues);
+        final String fullDocPath = getPathByDocId(segDocId, segPathDocValues);
 
         if (isNestedSchema && !fullDocPath.startsWith(rootDocPath)) {
           // is not a descendant of the transformed doc; return fast.
