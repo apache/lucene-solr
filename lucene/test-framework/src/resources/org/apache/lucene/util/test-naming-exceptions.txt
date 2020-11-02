@@ -91,7 +91,6 @@
 !org.apache.lucene.search.highlight.OffsetLimitTokenFilterTest
 !org.apache.lucene.search.highlight.TokenSourcesTest
 !org.apache.lucene.search.LongHashSetTests
-!org.apache.lucene.search.MultiCollectorTest
 !org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggesterTest
 !org.apache.lucene.search.suggest.analyzing.AnalyzingSuggesterTest
 !org.apache.lucene.search.suggest.analyzing.BlendedInfixSuggesterTest
@@ -401,7 +400,6 @@
 !org.apache.solr.cloud.CollectionPropsTest
 !org.apache.solr.cloud.CollectionsAPISolrJTest
 !org.apache.solr.cloud.CollectionStateZnodeTest
-!org.apache.solr.cloud.ConfigSetsAPITest
 !org.apache.solr.cloud.ConnectionManagerTest
 !org.apache.solr.cloud.CreateCollectionCleanupTest
 !org.apache.solr.cloud.CreateRoutedAliasTest
@@ -503,6 +501,7 @@
 !org.apache.solr.core.CachingDirectoryFactoryTest
 !org.apache.solr.core.ConfigureRecoveryStrategyTest
 !org.apache.solr.core.CoreSorterTest
+!org.apache.solr.core.DirectoryFactoriesTest
 !org.apache.solr.core.DirectoryFactoryTest
 !org.apache.solr.core.ExitableDirectoryReaderTest
 !org.apache.solr.core.HdfsDirectoryFactoryTest
@@ -714,6 +713,7 @@
 !org.apache.solr.servlet.ResponseHeaderTest
 !org.apache.solr.servlet.SolrRequestParserTest
 !org.apache.solr.SolrInfoBeanTest
+!org.apache.solr.SolrTestCaseJ4DeleteCoreTest
 !org.apache.solr.SolrTestCaseJ4Test
 !org.apache.solr.spelling.ConjunctionSolrSpellCheckerTest
 !org.apache.solr.spelling.DirectSolrSpellCheckerTest
