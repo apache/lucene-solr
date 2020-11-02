@@ -89,7 +89,7 @@ Displays command line help and usage.
 
 `-p`, `--port`, `$PORT`::
 The port where Prometheus will listen for new data. This port will be used to configure Prometheus.
-It can be any port not already in use on your server. The default is `9983`.
+It can be any port not already in use on your server. The default is `8989`.
 
 `-b`, `--baseurl`, `$SOLR_URL`::
 The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode.

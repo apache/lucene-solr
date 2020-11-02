@@ -50,7 +50,7 @@ public class SolrExporter {
   private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
   private static final String ARG_PORT_METAVAR = "PORT";
   private static final String ARG_PORT_DEST = "port";
-  private static final int ARG_PORT_DEFAULT = 9983;
+  private static final int ARG_PORT_DEFAULT = 8989;
   private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + ARG_PORT_DEFAULT + ".";
 
   private static final String[] ARG_BASE_URL_FLAGS = {"-b", "--baseurl"};
