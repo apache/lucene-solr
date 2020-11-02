@@ -231,9 +231,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
-    int entryCount = 0;
+    boolean hasEntry = false;
     while ((zipEntry = zis.getNextEntry()) != null) {
-      entryCount++;
+      hasEntry = true;
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
       if (filePathInZk.endsWith("/")) {
         filesToDelete.remove(filePathInZk.substring(0, filePathInZk.length() -1));
@@ -247,11 +247,11 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
             IOUtils.toByteArray(zis));
       }
     }
-    if (entryCount == 0) {
+    zis.close();
+    if (!hasEntry) {
       throw new SolrException(ErrorCode.BAD_REQUEST,
               "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
     }
-    zis.close();
     deleteUnusedFiles(zkClient, filesToDelete);
 
     // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true, cleanup=true), then trust the configSet.
