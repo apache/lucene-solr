@@ -56,7 +56,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -178,7 +178,7 @@ public class CoreContainer {
    */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
-  private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
+  private final ContainerPluginsRegistry containerPluginsRegistry =  new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -678,8 +678,8 @@ public class CoreContainer {
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
-    customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
-    customContainerPlugins.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
+    containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
+    containerPluginsRegistry.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
@@ -889,14 +889,14 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
-      customContainerPlugins.refresh();
-      getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
+      containerPluginsRegistry.refresh();
+      getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
 
       // create target ClusterEventProducer (possibly from plugins)
-      clusterEventProducer = clusterEventProducerFactory.create(customContainerPlugins);
+      clusterEventProducer = clusterEventProducerFactory.create(containerPluginsRegistry);
 
       // init ClusterSingleton-s
 
@@ -2130,8 +2130,8 @@ public class CoreContainer {
     return tragicException != null;
   }
 
-  public CustomContainerPlugins getCustomContainerPlugins(){
-    return customContainerPlugins;
+  public ContainerPluginsRegistry getContainerPluginsRegistry() {
+    return containerPluginsRegistry;
   }
 
   public ClusterSingletons getClusterSingletons() {

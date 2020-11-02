@@ -65,7 +65,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * for additional functionality by {@link PluginRegistryListener}-s registered with
  * this class.</p>
  */
-public class CustomContainerPlugins implements ClusterPropertiesListener, MapWriter {
+public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -90,7 +90,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     listeners.remove(listener);
   }
 
-  public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
+  public ContainerPluginsRegistry(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
   }

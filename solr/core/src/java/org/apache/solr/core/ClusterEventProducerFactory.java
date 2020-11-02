@@ -1,6 +1,6 @@
 package org.apache.solr.core;
 
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -18,15 +18,15 @@ import java.util.Set;
  */
 public class ClusterEventProducerFactory implements ClusterEventProducer {
   private Map<ClusterEvent.EventType, Set<ClusterEventListener>> initialListeners = new HashMap<>();
-  private CustomContainerPlugins.PluginRegistryListener initialPluginListener;
+  private ContainerPluginsRegistry.PluginRegistryListener initialPluginListener;
   private final CoreContainer cc;
   private boolean created = false;
 
   public ClusterEventProducerFactory(CoreContainer cc) {
     this.cc = cc;
-    initialPluginListener = new CustomContainerPlugins.PluginRegistryListener() {
+    initialPluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
-      public void added(CustomContainerPlugins.ApiInfo plugin) {
+      public void added(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -37,7 +37,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
       }
 
       @Override
-      public void deleted(CustomContainerPlugins.ApiInfo plugin) {
+      public void deleted(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -48,7 +48,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
       }
 
       @Override
-      public void modified(CustomContainerPlugins.ApiInfo old, CustomContainerPlugins.ApiInfo replacement) {
+      public void modified(ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
         added(replacement);
         deleted(old);
       }
@@ -60,7 +60,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
    * freshly loaded listener plugins before the final cluster event producer is created.
    * @return initial listener
    */
-  public CustomContainerPlugins.PluginRegistryListener getPluginRegistryListener() {
+  public ContainerPluginsRegistry.PluginRegistryListener getPluginRegistryListener() {
     return initialPluginListener;
   }
 
@@ -68,17 +68,17 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
    * Create a {@link ClusterEventProducer} based on the current plugin configurations.
    * <p>NOTE: this method can only be called once because it has side-effects, such as
    * transferring the initially collected listeners to the resulting producer's instance, and
-   * installing a {@link org.apache.solr.api.CustomContainerPlugins.PluginRegistryListener}.
+   * installing a {@link ContainerPluginsRegistry.PluginRegistryListener}.
    * Calling this method more than once will result in an exception.</p>
    * @param plugins current plugin configurations
    * @return configured instance of cluster event producer (with side-effects, see above)
    */
-  public ClusterEventProducer create(CustomContainerPlugins plugins) {
+  public ClusterEventProducer create(ContainerPluginsRegistry plugins) {
     if (created) {
       throw new RuntimeException("this factory can be called only once!");
     }
     final ClusterEventProducer clusterEventProducer;
-    CustomContainerPlugins.ApiInfo clusterEventProducerInfo = plugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
+    ContainerPluginsRegistry.ApiInfo clusterEventProducerInfo = plugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
     if (clusterEventProducerInfo != null) {
       // the listener in ClusterSingletons already registered it
       clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
@@ -91,9 +91,9 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
     // transfer those listeners that were already registered to the initial impl
     transferListeners(clusterEventProducer, plugins);
     // install plugin registry listener
-    CustomContainerPlugins.PluginRegistryListener pluginListener = new CustomContainerPlugins.PluginRegistryListener() {
+    ContainerPluginsRegistry.PluginRegistryListener pluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
-      public void added(CustomContainerPlugins.ApiInfo plugin) {
+      public void added(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -105,7 +105,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
       }
 
       @Override
-      public void deleted(CustomContainerPlugins.ApiInfo plugin) {
+      public void deleted(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -117,7 +117,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
       }
 
       @Override
-      public void modified(CustomContainerPlugins.ApiInfo old, CustomContainerPlugins.ApiInfo replacement) {
+      public void modified(ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
         added(replacement);
         deleted(old);
       }
@@ -127,7 +127,7 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
     return clusterEventProducer;
   }
 
-  private void transferListeners(ClusterEventProducer target, CustomContainerPlugins plugins) {
+  private void transferListeners(ClusterEventProducer target, ContainerPluginsRegistry plugins) {
     // stop capturing listener plugins
     plugins.unregisterListener(initialPluginListener);
     // transfer listeners that are already registered
