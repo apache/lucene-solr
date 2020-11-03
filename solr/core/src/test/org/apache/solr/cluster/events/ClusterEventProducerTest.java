@@ -24,8 +24,10 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 /**
  *
  */
+@LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   private AllEventsListener eventsListener;
@@ -57,6 +61,15 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     configureCluster(3)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+    PluginMeta plugin = new PluginMeta();
+    plugin.klass = DefaultClusterEventProducer.class.getName();
+    plugin.name = ClusterEventProducer.PLUGIN_NAME;
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+        .withMethod(POST)
+        .withPayload(Collections.singletonMap("add", plugin))
+        .build();
+    V2Response rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp);
   }
 
   @Before

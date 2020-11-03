@@ -1,14 +1,16 @@
-package org.apache.solr.core;
+package org.apache.solr.cluster.events.impl;
 
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
+import org.apache.solr.cluster.events.ClusterEventProducerBase;
+import org.apache.solr.cluster.events.NoOpProducer;
+import org.apache.solr.core.CoreContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.lang.invoke.MethodHandles;
 import java.util.Set;
 
 /**
@@ -16,14 +18,14 @@ import java.util.Set;
  * when both the final {@link ClusterEventProducer} implementation and listeners
  * are configured using plugins.
  */
-public class ClusterEventProducerFactory implements ClusterEventProducer {
-  private Map<ClusterEvent.EventType, Set<ClusterEventListener>> initialListeners = new HashMap<>();
+public class ClusterEventProducerFactory extends ClusterEventProducerBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private ContainerPluginsRegistry.PluginRegistryListener initialPluginListener;
-  private final CoreContainer cc;
   private boolean created = false;
 
   public ClusterEventProducerFactory(CoreContainer cc) {
-    this.cc = cc;
+    super(cc);
     initialPluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
       public void added(ContainerPluginsRegistry.ApiInfo plugin) {
@@ -55,6 +57,11 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
     };
   }
 
+  @Override
+  public Set<ClusterEvent.EventType> getSupportedEventTypes() {
+    return NoOpProducer.ALL_EVENT_TYPES;
+  }
+
   /**
    * This method returns an initial plugin registry listener that helps to capture the
    * freshly loaded listener plugins before the final cluster event producer is created.
@@ -73,20 +80,19 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
    * @param plugins current plugin configurations
    * @return configured instance of cluster event producer (with side-effects, see above)
    */
-  public ClusterEventProducer create(ContainerPluginsRegistry plugins) {
+  public DelegatingClusterEventProducer create(ContainerPluginsRegistry plugins) {
     if (created) {
       throw new RuntimeException("this factory can be called only once!");
     }
-    final ClusterEventProducer clusterEventProducer;
+    final DelegatingClusterEventProducer clusterEventProducer = new DelegatingClusterEventProducer(cc);
+    // since this is a ClusterSingleton, register it as such
+    cc.getClusterSingletons().getSingletons().put(ClusterEventProducer.PLUGIN_NAME +"_delegate", clusterEventProducer);
     ContainerPluginsRegistry.ApiInfo clusterEventProducerInfo = plugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
     if (clusterEventProducerInfo != null) {
       // the listener in ClusterSingletons already registered it
-      clusterEventProducer = (ClusterEventProducer) clusterEventProducerInfo.getInstance();
+      clusterEventProducer.setDelegate((ClusterEventProducer) clusterEventProducerInfo.getInstance());
     } else {
-      // create the default impl
-      clusterEventProducer = new DefaultClusterEventProducer(cc);
-      // since this is a ClusterSingleton, register it as such
-      cc.getClusterSingletons().getSingletons().put(ClusterEventProducer.PLUGIN_NAME, clusterEventProducer);
+      // use the default NoOp impl
     }
     // transfer those listeners that were already registered to the initial impl
     transferListeners(clusterEventProducer, plugins);
@@ -101,6 +107,15 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
         if (instance instanceof ClusterEventListener) {
           ClusterEventListener listener = (ClusterEventListener) instance;
           clusterEventProducer.registerListener(listener);
+        } else if (instance instanceof ClusterEventProducer) {
+          // replace the existing impl
+          if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
+            ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
+                .setDelegate((ClusterEventProducer) instance);
+          } else {
+            log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
+                " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+          }
         }
       }
 
@@ -113,6 +128,15 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
         if (instance instanceof ClusterEventListener) {
           ClusterEventListener listener = (ClusterEventListener) instance;
           clusterEventProducer.unregisterListener(listener);
+        } else if (instance instanceof ClusterEventProducer) {
+          // replace the existing impl with NoOp
+          if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
+            ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
+                .setDelegate(new NoOpProducer(cc));
+          } else {
+            log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
+                " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+          }
         }
       }
 
@@ -131,45 +155,19 @@ public class ClusterEventProducerFactory implements ClusterEventProducer {
     // stop capturing listener plugins
     plugins.unregisterListener(initialPluginListener);
     // transfer listeners that are already registered
-    initialListeners.forEach((type, listeners) -> {
-      listeners.forEach(listener -> target.registerListener(listener, type));
+    listeners.forEach((type, listenersSet) -> {
+      listenersSet.forEach(listener -> target.registerListener(listener, type));
     });
-    initialListeners.clear();
-    initialListeners = null;
-  }
-
-  // ClusterEventProducer API, parts needed to register initial listeners.
-
-  @Override
-  public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    if (eventTypes == null || eventTypes.length == 0) {
-      eventTypes = ClusterEvent.EventType.values();
-    }
-    for (ClusterEvent.EventType type : eventTypes) {
-      initialListeners.computeIfAbsent(type, t -> new HashSet<>())
-          .add(listener);
-    }
-  }
-
-  @Override
-  public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    throw new UnsupportedOperationException("unregister listener not implemented");
+    listeners.clear();
   }
 
   @Override
   public void start() throws Exception {
-    throw new UnsupportedOperationException("start not implemented");
-  }
-
-  @Override
-  public State getState() {
-    return State.STOPPED;
+    state = State.RUNNING;
   }
 
   @Override
   public void stop() {
-    throw new UnsupportedOperationException("stop not implemented");
+    state = State.STOPPED;
   }
-
-
 }

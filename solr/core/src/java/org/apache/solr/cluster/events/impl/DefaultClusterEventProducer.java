@@ -19,20 +19,16 @@ package org.apache.solr.cluster.events.impl;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.events.ClusterEventProducerBase;
 import org.apache.solr.cluster.events.ClusterPropertiesChangedEvent;
 import org.apache.solr.cluster.events.ClusterEvent;
-import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
-import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.events.CollectionsAddedEvent;
 import org.apache.solr.cluster.events.CollectionsRemovedEvent;
 import org.apache.solr.cluster.events.NodesDownEvent;
@@ -51,16 +47,13 @@ import org.slf4j.LoggerFactory;
  * (not in parallel) and in arbitrary order. This means that if any listener blocks the
  * processing other listeners may be invoked much later or not at all.</p>
  */
-public class DefaultClusterEventProducer implements ClusterEventProducer, ClusterSingleton {
+public class DefaultClusterEventProducer extends ClusterEventProducerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<ClusterEvent.EventType, Set<ClusterEventListener>> listeners = new HashMap<>();
-  private CoreContainer coreContainer;
   private LiveNodesListener liveNodesListener;
   private CloudCollectionsListener cloudCollectionsListener;
   private ClusterPropertiesListener clusterPropertiesListener;
   private ZkController zkController;
-  private State state = State.STOPPED;
 
   private final Set<ClusterEvent.EventType> supportedEvents =
       new HashSet<>(Arrays.asList(
@@ -71,22 +64,29 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
           ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED
       ));
 
-  public DefaultClusterEventProducer(CoreContainer coreContainer) {
-    this.coreContainer = coreContainer;
+  public DefaultClusterEventProducer(CoreContainer cc) {
+    super(cc);
   }
 
   // ClusterSingleton lifecycle methods
   @Override
-  public void start() {
-    if (coreContainer == null) {
+  public synchronized void start() {
+    if (log.isDebugEnabled()) {
+      log.debug("-- starting DCEP", new Exception(Integer.toHexString(hashCode())));
+    }
+    if (cc == null) {
       liveNodesListener = null;
       cloudCollectionsListener = null;
       clusterPropertiesListener = null;
       state = State.STOPPED;
       return;
     }
+    if (state == State.RUNNING) {
+      log.warn("Double start() invoked on {}, ignoring", this);
+      return;
+    }
     state = State.STARTING;
-    this.zkController = this.coreContainer.getZkController();
+    this.zkController = this.cc.getZkController();
 
     // clean up any previous instances
     doStop();
@@ -198,18 +198,16 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
     state = State.RUNNING;
   }
 
-  private void fireEvent(ClusterEvent event) {
-    listeners.getOrDefault(event.getType(), Collections.emptySet())
-        .forEach(listener -> listener.onEvent(event));
+  @Override
+  public Set<ClusterEvent.EventType> getSupportedEventTypes() {
+    return supportedEvents;
   }
 
   @Override
-  public State getState() {
-    return state;
-  }
-
-  @Override
-  public void stop() {
+  public synchronized void stop() {
+    if (log.isDebugEnabled()) {
+      log.debug("-- stopping DCEP {}", Integer.toHexString(hashCode()));
+    }
     state = State.STOPPING;
     doStop();
     state = State.STOPPED;
@@ -228,45 +226,5 @@ public class DefaultClusterEventProducer implements ClusterEventProducer, Cluste
     liveNodesListener = null;
     cloudCollectionsListener = null;
     clusterPropertiesListener = null;
-  }
-
-  @Override
-  public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    if (eventTypes == null || eventTypes.length == 0) {
-      eventTypes = ClusterEvent.EventType.values();
-    }
-    for (ClusterEvent.EventType type : eventTypes) {
-      if (!supportedEvents.contains(type)) {
-        log.warn("event type {} not supported yet.", type);
-        continue;
-      }
-      // to avoid removing no-longer empty set in unregister
-      synchronized (listeners) {
-        listeners.computeIfAbsent(type, t -> ConcurrentHashMap.newKeySet())
-            .add(listener);
-      }
-    }
-  }
-
-  @Override
-  public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    if (eventTypes == null || eventTypes.length == 0) {
-      eventTypes = ClusterEvent.EventType.values();
-    }
-    synchronized (listeners) {
-      for (ClusterEvent.EventType type : eventTypes) {
-        Set<ClusterEventListener> perType = listeners.get(type);
-        if (perType != null) {
-          perType.remove(listener);
-          if (perType.isEmpty()) {
-            listeners.remove(type);
-          }
-        }
-      }
-    }
-  }
-
-  public Map<ClusterEvent.EventType, Set<ClusterEventListener>> getEventListeners() {
-    return listeners;
   }
 }

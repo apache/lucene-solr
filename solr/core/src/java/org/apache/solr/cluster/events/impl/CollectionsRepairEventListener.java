@@ -25,8 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -53,6 +56,8 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PLUGIN_NAME = "collectionsRepairListener";
+  public static final int DEFAULT_WAIT_FOR_SEC = 30;
+
   private static final String ASYNC_ID_PREFIX = "_async_" + PLUGIN_NAME;
   private static final AtomicInteger counter = new AtomicInteger();
 
@@ -61,9 +66,16 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   private State state = State.STOPPED;
 
+  private int waitForSecond = DEFAULT_WAIT_FOR_SEC;
+
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
+  }
+
+  @VisibleForTesting
+  public void setWaitForSecond(int waitForSecond) {
+    this.waitForSecond = waitForSecond;
   }
 
   @Override
@@ -86,19 +98,39 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
     }
   }
 
+  private Map<String, Long> nodeNameVsTimeRemoved = new ConcurrentHashMap<>();
+
   private void handleNodesDown(NodesDownEvent event) {
+
+    // tracking for the purpose of "waitFor" delay
+
+    // have any nodes that we were tracking been added to the cluster?
+    // if so, remove them from the tracking map
+    Set<String> trackingKeySet = nodeNameVsTimeRemoved.keySet();
+    trackingKeySet.removeAll(solrCloudManager.getClusterStateProvider().getLiveNodes());
+    event.getNodeNames().forEachRemaining(lostNode -> {
+      nodeNameVsTimeRemoved.computeIfAbsent(lostNode, n -> solrCloudManager.getTimeSource().getTimeNs());
+    });
+
+    Set<String> reallyLostNodes = new HashSet<>();
+    nodeNameVsTimeRemoved.forEach((lostNode, timeRemoved) -> {
+      long now = solrCloudManager.getTimeSource().getTimeNs();
+      long te = TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS);
+      if (te >= waitForSecond) {
+        reallyLostNodes.add(lostNode);
+      }
+    });
+
     // collect all lost replicas
     // collection / positions
     Map<String, List<ReplicaPosition>> newPositions = new HashMap<>();
     try {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      Set<String> lostNodeNames = new HashSet<>();
-      event.getNodeNames().forEachRemaining(lostNodeNames::add);
       clusterState.forEachCollection(coll -> {
         // shard / type / count
         Map<String, Map<Replica.Type, AtomicInteger>> lostReplicas = new HashMap<>();
         coll.forEachReplica((shard, replica) -> {
-          if (lostNodeNames.contains(replica.getNodeName())) {
+          if (reallyLostNodes.contains(replica.getNodeName())) {
             lostReplicas.computeIfAbsent(shard, s -> new HashMap<>())
                 .computeIfAbsent(replica.type, t -> new AtomicInteger())
                 .incrementAndGet();
@@ -136,6 +168,9 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
       log.warn("Exception getting cluster state", e);
       return;
     }
+
+    // remove from the tracking set
+    nodeNameVsTimeRemoved.keySet().removeAll(reallyLostNodes);
 
     // send ADDREPLICA admin requests for each lost replica
     // XXX should we use 'async' for that, to avoid blocking here?

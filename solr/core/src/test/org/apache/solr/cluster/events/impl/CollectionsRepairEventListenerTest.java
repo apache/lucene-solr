@@ -19,18 +19,25 @@ package org.apache.solr.cluster.events.impl;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.events.AllEventsListener;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
+import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 /**
  *
@@ -44,6 +51,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
     CollectionsRepairWrapperListener(CoreContainer cc) throws Exception {
       delegate = new CollectionsRepairEventListener(cc);
+      delegate.setWaitForSecond(0);
     }
 
     @Override
@@ -83,6 +91,15 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     configureCluster(NUM_NODES)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+    PluginMeta plugin = new PluginMeta();
+    plugin.klass = DefaultClusterEventProducer.class.getName();
+    plugin.name = ClusterEventProducer.PLUGIN_NAME;
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+        .withMethod(POST)
+        .withPayload(Collections.singletonMap("add", plugin))
+        .build();
+    V2Response rsp = req.process(cluster.getSolrClient());
+    assertNotNull(rsp);
     CoreContainer cc = cluster.getOpenOverseer().getCoreContainer();
     cc.getClusterEventProducer()
         .registerListener(eventsListener, ClusterEvent.EventType.values());

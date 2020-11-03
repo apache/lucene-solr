@@ -16,39 +16,36 @@
  */
 package org.apache.solr.cluster.events;
 
+import org.apache.solr.core.CoreContainer;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
- * No-op implementation of {@link ClusterEventProducer}. This implementation is always in
- * RUNNING state.
+ * No-op implementation of {@link ClusterEventProducer}. This implementation doesn't
+ * generate any events.
  */
-public final class NoOpProducer implements ClusterEventProducer {
+public final class NoOpProducer extends ClusterEventProducerBase {
 
-  @Override
-  public void registerListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    // no-op
+  public static final Set<ClusterEvent.EventType> ALL_EVENT_TYPES = new HashSet<>(Arrays.asList(ClusterEvent.EventType.values()));
+
+  public NoOpProducer(CoreContainer cc) {
+    super(cc);
   }
 
   @Override
-  public void unregisterListener(ClusterEventListener listener, ClusterEvent.EventType... eventTypes) {
-    // no-op
-  }
-
-  @Override
-  public String getName() {
-    return ClusterEventProducer.PLUGIN_NAME;
+  public Set<ClusterEvent.EventType> getSupportedEventTypes() {
+    return ALL_EVENT_TYPES;
   }
 
   @Override
   public void start() throws Exception {
-    // no-op
-  }
-
-  @Override
-  public State getState() {
-    return State.RUNNING;
+    state = State.RUNNING;
   }
 
   @Override
   public void stop() {
-    // no-op
+    state = State.STOPPED;
   }
 }
