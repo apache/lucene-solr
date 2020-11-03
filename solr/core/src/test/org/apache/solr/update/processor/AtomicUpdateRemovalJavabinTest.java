@@ -42,6 +42,8 @@ import org.junit.Test;
  * after unmarshalling, so the test duplication is now necessary.  See SOLR-13331 for an example.
  */
 public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
+  private static final String COMMITTED_DOC_ID = "1";
+  private static final String UNCOMMITTED_DOC_ID = "2";
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 1;
@@ -59,75 +61,84 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
 
-    final SolrInputDocument doc1 = sdoc(
-        "id", "1",
+    final SolrInputDocument committedDoc = sdoc(
+        "id", COMMITTED_DOC_ID,
         "title_s", "title_1", "title_s", "title_2",
         "tv_mv_text", "text_1", "tv_mv_text", "text_2",
         "count_is", 1, "count_is", 2,
         "count_md", 1.0, "count_md", 2.0,
         "timestamps_mdt", DATE_1, "timestamps_mdt", DATE_2);
-    final UpdateRequest req = new UpdateRequest()
-        .add(doc1);
-    req.commit(cluster.getSolrClient(), COLLECTION);
+    final UpdateRequest committedRequest = new UpdateRequest()
+        .add(committedDoc);
+    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+
+    // Upload a copy of id:1 that's uncommitted to test how atomic-updates modify values in the tlog
+    // See SOLR-14971 for an example of why this case needs tested separately
+    final SolrInputDocument uncommittedDoc = sdoc(
+            "id", UNCOMMITTED_DOC_ID,
+            "title_s", "title_1", "title_s", "title_2",
+            "tv_mv_text", "text_1", "tv_mv_text", "text_2",
+            "count_is", 1, "count_is", 2,
+            "count_md", 1.0, "count_md", 2.0,
+            "timestamps_mdt", DATE_1, "timestamps_mdt", DATE_2);
+    final UpdateRequest uncommittedRequest = new UpdateRequest()
+            .add(uncommittedDoc);
+    uncommittedRequest.process(cluster.getSolrClient(), COLLECTION);
   }
 
   @Test
   public void testAtomicUpdateRemovalOfStrField() throws Exception {
-    ensureFieldHasValues("1", "title_s", "title_1", "title_2");
-    atomicRemoveValueFromField("1", "title_s", "title_1");
-    ensureFieldHasValues("1", "title_s", "title_2");
+    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "title_1", "title_2");
+    atomicRemoveValueFromField(COMMITTED_DOC_ID, "title_s", "title_1");
+    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "title_2");
+
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "title_1", "title_2");
+    atomicRemoveValueFromField(UNCOMMITTED_DOC_ID, "title_s", "title_1");
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "title_2");
   }
 
   @Test
   public void testAtomicUpdateRemovalOfTextField() throws Exception {
-    ensureFieldHasValues("1", "tv_mv_text", "text_1", "text_2");
-    atomicRemoveValueFromField("1", "tv_mv_text", "text_1");
-    ensureFieldHasValues("1", "tv_mv_text", "text_2");
+    ensureFieldHasValues(COMMITTED_DOC_ID, "tv_mv_text", "text_1", "text_2");
+    atomicRemoveValueFromField(COMMITTED_DOC_ID, "tv_mv_text", "text_1");
+    ensureFieldHasValues(COMMITTED_DOC_ID, "tv_mv_text", "text_2");
+
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "tv_mv_text", "text_1", "text_2");
+    atomicRemoveValueFromField(UNCOMMITTED_DOC_ID, "tv_mv_text", "text_1");
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "tv_mv_text", "text_2");
   }
 
   @Test
   public void testAtomicUpdateRemovalOfIntField() throws Exception {
-    ensureFieldHasValues("1", "count_is", 1, 2);
-    atomicRemoveValueFromField("1", "count_is", 1);
-    ensureFieldHasValues("1", "count_is", 2);
-  }
+    ensureFieldHasValues(COMMITTED_DOC_ID, "count_is", 1, 2);
+    atomicRemoveValueFromField(COMMITTED_DOC_ID, "count_is", 1);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "count_is", 2);
 
-  // see SOLR-14971
-  @Test
-  public void testAtomicUpdateRemovalOfUncommittedIntField() throws Exception {
-    final SolrInputDocument doc1 = sdoc("id", "2", "count_is", 1, "count_is", 2);
-    final UpdateRequest req = new UpdateRequest()
-            .add(doc1);
-    req.process(cluster.getSolrClient(), COLLECTION);
-
-    atomicRemoveValueFromField("2", "count_is", 2);
-    ensureFieldHasValues("2", "count_is", 1);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "count_is", 1, 2);
+    atomicRemoveValueFromField(UNCOMMITTED_DOC_ID, "count_is", 1);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "count_is", 2);
   }
 
   @Test
   public void testAtomicUpdateRemovalOfDoubleField() throws Exception {
-    ensureFieldHasValues("1", "count_md", 1.0, 2.0);
-    atomicRemoveValueFromField("1", "count_md", 1.0);
-    ensureFieldHasValues("1", "count_md", 2.0);
-  }
+    ensureFieldHasValues(COMMITTED_DOC_ID, "count_md", 1.0, 2.0);
+    atomicRemoveValueFromField(COMMITTED_DOC_ID, "count_md", 1.0);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "count_md", 2.0);
 
-  // see SOLR-14971
-  @Test
-  public void testAtomicUpdateRemovalOfUncommittedDoubleField() throws Exception {
-    final SolrInputDocument doc1 = sdoc("id", "2", "count_md", 1.0, "count_md", 2.0);
-    final UpdateRequest req = new UpdateRequest()
-            .add(doc1);
-    req.process(cluster.getSolrClient(), COLLECTION);
-
-    atomicRemoveValueFromField("2", "count_md", 2.0);
-    ensureFieldHasValues("2", "count_md", 1.0);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "count_md", 1.0, 2.0);
+    atomicRemoveValueFromField(UNCOMMITTED_DOC_ID, "count_md", 1.0);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "count_md", 2.0);
   }
 
   @Test
   public void testAtomicUpdateRemovalOfDateField() throws Exception {
-    ensureFieldHasValues("1", "timestamps_mdt", DATE_1, DATE_2);
-    atomicRemoveValueFromField("1", "timestamps_mdt", DATE_1);
-    ensureFieldHasValues("1", "timestamps_mdt", DATE_2);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "timestamps_mdt", DATE_1, DATE_2);
+    atomicRemoveValueFromField(COMMITTED_DOC_ID, "timestamps_mdt", DATE_1);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "timestamps_mdt", DATE_2);
+
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "timestamps_mdt", DATE_1, DATE_2);
+    atomicRemoveValueFromField(UNCOMMITTED_DOC_ID, "timestamps_mdt", DATE_1);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "timestamps_mdt", DATE_2);
   }
 
   private void atomicRemoveValueFromField(String docId, String fieldName, Object value) throws Exception {
