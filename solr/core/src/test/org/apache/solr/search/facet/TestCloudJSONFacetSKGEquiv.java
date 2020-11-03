@@ -48,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import static org.apache.solr.search.facet.FacetField.FacetMethod;
-import static org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc.SWEEP_COLLECTION_DEBUG_KEY;
+import static org.apache.solr.search.facet.SlotAcc.SweepCoordinator.SWEEP_COLLECTION_DEBUG_KEY;
 
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;

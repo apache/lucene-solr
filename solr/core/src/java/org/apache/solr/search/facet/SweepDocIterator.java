@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
@@ -79,6 +80,21 @@ abstract class SweepDocIterator implements DocIterator, SweepCountAware {
   @Override
   public Integer next() {
     throw new UnsupportedOperationException("Not supported.");
+  }
+
+  /**
+   * updates top-level caches. nocommit: flesh this out? move it to SweepCountAware?
+   */
+  static void updateTopLevel(SweepCountAccStruct base, List<SweepCountAccStruct> others) {
+    CacheUpdater updater;
+    if (base != null && (updater = base.cacheUpdater) != null) {
+      updater.updateTopLevel();
+    }
+    for (SweepCountAccStruct other : others) {
+      if ((updater = other.cacheUpdater) != null) {
+        updater.updateTopLevel();
+      }
+    }
   }
 
   @Override

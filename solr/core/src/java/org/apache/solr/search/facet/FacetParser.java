@@ -543,6 +543,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         facet.allBuckets = getBoolean(m, "allBuckets", facet.allBuckets);
         facet.method = FacetField.FacetMethod.fromString(getString(m, "method", null));
         facet.cacheDf = (int)getLong(m, "cacheDf", facet.cacheDf);
+        facet.countCacheDf = (int)getLong(m, "countCacheDf", facet.countCacheDf);
 
         // TODO: pull up to higher level?
         facet.refine = FacetRequest.RefineMethod.fromObj(m.get("refine"));

@@ -187,6 +187,14 @@ This cache is used for filters for unordered sets of all documents that match a 
 
 You can get the statistics shown in the table below with an API request such as `\http://localhost:8983/solr/admin/metrics?group=core&prefix=CACHE.searcher.filterCache`.
 
+=== Term Facet Cache
+
+This cache is used for arrays containing term facet counts keyed on particular domain filters.
+
+*Registry and Path:* `solr.<core>:CACHE.searcher.termFacetCache`
+
+You can get the statistics shown in the table below with an API request such as `\http://localhost:8983/solr/admin/metrics?group=core&prefix=CACHE.searcher.termFacetCache`.
+
 === Statistics for Caches
 
 The following statistics are available for each of the caches mentioned above:

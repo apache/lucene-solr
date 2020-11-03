@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
@@ -34,8 +35,10 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.TermFacetCache;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +60,8 @@ public class RelatednessAgg extends AggValueSource {
   private static final String FG_POP = "foreground_popularity";
   private static final String BG_POP = "background_popularity";
   public static final String SWEEP_COLLECTION = "sweep_collection";
+  public static final String FG_COUNT_CACHE_DF = "fg_count_cache_df";
+  public static final String BG_COUNT_CACHE_DF = "bg_count_cache_df";
 
   // needed for distrib calculation
   private static final String FG_SIZE = "foreground_size";
@@ -68,9 +73,12 @@ public class RelatednessAgg extends AggValueSource {
   final protected Query bgQ;
   protected double min_pop = 0.0D;
   private Boolean useSweep;
+  private int fgCountCacheDf = COUNT_CACHE_DF_UNINITIALIZED;
+  private int bgCountCacheDf = COUNT_CACHE_DF_UNINITIALIZED;
   
   public static final String NAME = RELATEDNESS;
   private static final boolean DEFAULT_SWEEP_COLLECTION = true;
+  private static final int COUNT_CACHE_DF_UNINITIALIZED = Integer.MIN_VALUE;
 
   public RelatednessAgg(Query fgQ, Query bgQ) {
     super(NAME); 
@@ -95,6 +103,8 @@ public class RelatednessAgg extends AggValueSource {
       this.useSweep = DEFAULT_SWEEP_COLLECTION;
     } else {
       this.useSweep = opts.getBool(SWEEP_COLLECTION, DEFAULT_SWEEP_COLLECTION);
+      this.fgCountCacheDf = opts.getInt(FG_COUNT_CACHE_DF, COUNT_CACHE_DF_UNINITIALIZED);
+      this.bgCountCacheDf = opts.getInt(BG_COUNT_CACHE_DF, COUNT_CACHE_DF_UNINITIALIZED);
       if (!isShard) { // ignore min_pop if this is a shard request
         this.min_pop = opts.getDouble("min_popularity", 0.0D);
       }
@@ -159,12 +169,15 @@ public class RelatednessAgg extends AggValueSource {
         break;
       }
     }
-    
     DocSet fgSet = fcontext.searcher.getDocSet(fgFilters);
     DocSet bgSet = fcontext.searcher.getDocSet(bgQ);
-    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet);
+    return new SKGSlotAcc(this, fcontext, numSlots, fgSet, bgSet, fgFilters, fgCountCacheDf, bgCountCacheDf);
   }
 
+  private static int resolveCountCacheDf(int spec, int contextDefault) {
+    int tmpCountCacheDf = spec == COUNT_CACHE_DF_UNINITIALIZED ? contextDefault : spec;
+    return (tmpCountCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (tmpCountCacheDf < 0 ? Integer.MAX_VALUE : tmpCountCacheDf));
+  }
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
     return new Merger(this);
@@ -295,14 +308,21 @@ public class RelatednessAgg extends AggValueSource {
     private BucketData[] slotvalues;
     private final DocSet fgSet;
     private final DocSet bgSet;
+    private final List<Query> fgFilters;
     private final long fgSize;
     private final long bgSize;
+    private final int fgCountCacheDf;
+    private final int bgCountCacheDf;
     public SKGSlotAcc(final RelatednessAgg agg, final FacetContext fcontext, final int numSlots,
-                      final DocSet fgSet, final DocSet bgSet) throws IOException {
+                      final DocSet fgSet, final DocSet bgSet, final List<Query> fgFilters,
+                      final int fgCountCacheDf, final int bgCountCacheDf) throws IOException {
       super(fcontext);
       this.agg = agg;
       this.fgSet = fgSet;
       this.bgSet = bgSet;
+      this.fgFilters = fgFilters;
+      this.fgCountCacheDf = fgCountCacheDf;
+      this.bgCountCacheDf = bgCountCacheDf;
       // cache the set sizes for frequent re-use on every slot
       this.fgSize = fgSet.size();
       this.bgSize = bgSet.size();
@@ -317,15 +337,16 @@ public class RelatednessAgg extends AggValueSource {
      * @returns null if any SweepingAccs were registered since no other collection is needed for relatedness
      */
     @Override
-    public SKGSlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
+    public SKGSlotAcc registerSweepingAccs(SweepCoordinator sweepCoordinator) {
       if (!this.agg.useSweep) {
         return this;
       } else {
-        final ReadOnlyCountSlotAcc fgCount = baseSweepingAcc.add(key + "!fg", fgSet, slotvalues.length);
-        final ReadOnlyCountSlotAcc bgCount = baseSweepingAcc.add(key + "!bg", bgSet, slotvalues.length);
+        final int ctxCountCacheDf = ((FacetField)fcontext.processor.freq).countCacheDf; // safe cast b/c sweep only applicable for FacetField
+        final ReadOnlyCountSlotAcc fgCount = sweepCoordinator.add(key + "!fg", fgSet, slotvalues.length, new QueryResultKey(null, fgFilters, null, 0), resolveCountCacheDf(fgCountCacheDf, ctxCountCacheDf));
+        final ReadOnlyCountSlotAcc bgCount = sweepCoordinator.add(key + "!bg", bgSet, slotvalues.length, new QueryResultKey(null, Collections.singletonList(agg.bgQ), null, 0), resolveCountCacheDf(bgCountCacheDf, ctxCountCacheDf));
         SweepSKGSlotAcc readOnlyReplacement = new SweepSKGSlotAcc(agg.min_pop, fcontext, slotvalues.length, fgSize, bgSize, fgCount, bgCount);
         readOnlyReplacement.key = key;
-        baseSweepingAcc.registerMapping(this, readOnlyReplacement);
+        sweepCoordinator.registerMapping(this, readOnlyReplacement);
         return null;
       }
     }

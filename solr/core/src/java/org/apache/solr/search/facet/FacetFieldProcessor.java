@@ -17,6 +17,8 @@
 
 package org.apache.solr.search.facet;
 
+import com.carrotsearch.hppc.IntObjectMap;
+import com.carrotsearch.hppc.IntObjectScatterMap;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import org.apache.lucene.index.IndexReader.CacheKey;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
@@ -37,10 +40,23 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.request.TermFacetCache;
+import org.apache.solr.request.TermFacetCache.CacheUpdater;
+import org.apache.solr.request.TermFacetCache.FacetCacheKey;
+import org.apache.solr.request.TermFacetCache.SegmentCacheEntry;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.Filter;
+import org.apache.solr.search.QueryResultKey;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.facet.SlotAcc.CacheState;
+import org.apache.solr.search.facet.SlotAcc.CountSlotAcc;
+import org.apache.solr.search.facet.SlotAcc.CountSlotArrAcc;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinationPoint;
+import org.apache.solr.search.facet.SlotAcc.SweepCoordinator;
+import org.apache.solr.search.facet.SlotAcc.SweepCountAccStruct;
 import org.apache.solr.search.facet.SlotAcc.SweepableSlotAcc;
 import org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc;
 
@@ -107,6 +123,99 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       }
     }
     assert null != this.sort;
+    @SuppressWarnings("unchecked")
+    final SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache = fcontext.searcher.getCache(TermFacetCache.NAME);
+    if (facetCache != null && facetCache.getMaxSize() > 0 && this instanceof FacetFieldProcessorByArray && (freq.prefix == null || freq.prefix.isEmpty())) {
+      CacheKey topLevelKey = fcontext.searcher.getIndexReader().getReaderCacheHelper().getKey();
+      cachingCountSlotAccFactory = new CachingCountSlotAccFactory(facetCache, topLevelKey, freq.field);
+    } else {
+      cachingCountSlotAccFactory = null;
+    }
+  }
+
+  private final IntObjectMap<List<SweepCountAccStruct>> trackSweepCountAccs = new IntObjectScatterMap<>();
+  private final Map<QueryResultKey, SweepCountAccStruct> trackSweepCountAccsQRK = new HashMap<>();
+  List<SweepCountAccStruct> sweepCountAccs = new ArrayList<>();
+
+  /**
+   * Provides a hook for subclasses of FacetFieldProcessor to register custom implementations of CountSlotAcc.
+   * Also allows caller of <code>getSweepCountAcc</code> control over whether to accept a particular cached
+   * instance of CountSlotAcc.
+   */
+  protected static interface CountSlotAccFactory {
+    SweepCountAccStruct newInstance(QueryResultKey qKey, DocSet docs, boolean isBase, FacetFieldProcessor processor, int numSlots, boolean includeMissingCount);
+  }
+
+  protected static final CountSlotAccFactory DEFAULT_COUNT_ACC_FACTORY = new CountSlotAccFactory() {
+
+    @Override
+    public SweepCountAccStruct newInstance(QueryResultKey qKey, DocSet docs, boolean isBase, FacetFieldProcessor processor, int numSlots, boolean includeMissingCount) {
+      if (isBase) {
+        return new SweepingCountSlotAcc(numSlots, processor, docs, qKey).getSweepCoordinator().base;
+      } else {
+        CountSlotAcc count = new CountSlotArrAcc(processor.fcontext, numSlots);
+        return new SweepCountAccStruct(docs, isBase, count, qKey, CacheState.DO_NOT_CACHE, null, null);
+      }
+    }
+  };
+
+  private final CountSlotAccFactory cachingCountSlotAccFactory;
+
+  SweepCountAccStruct getSweepCountAcc(String key, QueryResultKey qKey, DocSet docs, boolean isBase, int numSlots, int countCacheDf) {
+    final int size = docs.size();
+    final SweepCountAccStruct qrkCandidate;
+    if (qKey != null && (qrkCandidate = trackSweepCountAccsQRK.get(qKey)) != null) {
+      return new SweepCountAccStruct(qrkCandidate, key);
+    }
+    List<SweepCountAccStruct> extantSameSize = trackSweepCountAccs.get(size);
+    if (extantSameSize != null) {
+      for (SweepCountAccStruct candidate : extantSameSize) {
+        if (docs.intersectionSize(candidate.docSet) == size) {
+          if (qKey != null) {
+            trackSweepCountAccsQRK.put(qKey, candidate);
+          }
+          return new SweepCountAccStruct(candidate, key);
+        }
+      }
+    } else {
+      extantSameSize = new ArrayList<>(4); // will likely be *very* small
+      trackSweepCountAccs.put(size, extantSameSize);
+    }
+    final CountSlotAccFactory factory;
+    if (cachingCountSlotAccFactory == null || size < countCacheDf) {
+      factory = DEFAULT_COUNT_ACC_FACTORY;
+    } else {
+      factory = cachingCountSlotAccFactory;
+    }
+    final boolean cacheIncludesMissingCount = this instanceof FacetFieldProcessorByArrayDV;
+    final SweepCountAccStruct ret = factory.newInstance(qKey, docs, isBase, this, numSlots, cacheIncludesMissingCount);
+    ret.countAcc.key = key;
+    extantSameSize.add(ret);
+    sweepCountAccs.add(ret);
+    if (qKey != null) {
+      trackSweepCountAccsQRK.put(qKey, ret);
+    }
+    return ret;
+  }
+
+  static boolean shortcircuit(SweepCountAccStruct base, List<SweepCountAccStruct> others) {
+    if (base != null) {
+      // we need to collect whether or not base is CACHED
+      return false;
+    }
+    for (SweepCountAccStruct other : others) {
+      if (other.cacheState != CacheState.CACHED) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  protected CountSlotAcc createBaseCountAcc(int slotCount) {
+    QueryResultKey baseQKey = fcontext.baseFilters == null ? null : new QueryResultKey(null, Arrays.asList(fcontext.baseFilters), null, 0);
+    final int countCacheDf = (freq.countCacheDf == 0 ? TermFacetCache.DEFAULT_THRESHOLD : (freq.countCacheDf < 0 ? Integer.MAX_VALUE : freq.countCacheDf));
+    SweepCountAccStruct struct = getSweepCountAcc("count", baseQKey, fcontext.base, true, slotCount, countCacheDf);
+    return struct.countAcc;
   }
 
   /** This is used to create accs for second phase (or to create accs for all aggs) */
@@ -293,7 +402,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   /** Processes the collected data to finds the top slots, and composes it in the response NamedList. */
-  SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
+  SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality, final int missingSlot,
                                         @SuppressWarnings("rawtypes") IntFunction<Comparable> bucketValFromSlotNumFunc,
                                         @SuppressWarnings("rawtypes") Function<Comparable, String> fieldQueryValFunc) throws IOException {
     assert this.sortAcc != null;
@@ -460,8 +569,18 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     if (freq.missing) {
+      //nocommit I think the below TODO is addressed by the inline missing bucket collection part of this PR?
       // TODO: it would be more efficient to build up a missing DocSet if we need it here anyway.
-      fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
+      if (missingSlot < 0) {
+        fillBucket(missingBucket, getFieldMissingQuery(fcontext.searcher, freq.field), null, false, null);
+      } else {
+        Slot missingSlotEntry = new Slot();
+        missingSlotEntry.slot = missingSlot;
+        if (needFilter) {
+          missingSlotEntry.bucketFilter = getFieldMissingQuery(fcontext.searcher, freq.field);
+        }
+        fillBucketFromSlot(missingBucket, missingSlotEntry, null);
+      }
     }
 
     return res;
@@ -745,13 +864,13 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     }
 
     @Override
-    public SlotAcc registerSweepingAccs(SweepingCountSlotAcc baseSweepingAcc) {
+    public SlotAcc registerSweepingAccs(SweepCoordinator sweepCoordinator) {
       final FacetFieldProcessor p = (FacetFieldProcessor) fcontext.processor;
       int j = 0;
       for (int i = 0; i < subAccs.length; i++) {
         final SlotAcc acc = subAccs[i];
         if (acc instanceof SweepableSlotAcc) {
-          SlotAcc replacement = ((SweepableSlotAcc<?>)acc).registerSweepingAccs(baseSweepingAcc);
+          SlotAcc replacement = ((SweepableSlotAcc<?>)acc).registerSweepingAccs(sweepCoordinator);
           if (replacement == null) {
             // drop acc, do not increment j
             continue;
@@ -792,12 +911,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * @see SweepingCountSlotAcc
    */
   protected boolean registerSweepingAccIfSupportedByCollectAcc() {
-    if (countAcc instanceof SweepingCountSlotAcc && collectAcc instanceof SweepableSlotAcc) {
-      final SweepingCountSlotAcc sweepingCountAcc = (SweepingCountSlotAcc)countAcc;
-      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepingCountAcc);
+    final SweepCoordinator sweepCoordinator;
+    if (countAcc instanceof SweepCoordinationPoint
+        && (sweepCoordinator = ((SweepCoordinationPoint)countAcc).getSweepCoordinator()) != null
+        && collectAcc instanceof SweepableSlotAcc) {
+      collectAcc = ((SweepableSlotAcc<?>)collectAcc).registerSweepingAccs(sweepCoordinator);
       if (allBucketsAcc != null) {
         allBucketsAcc.collectAcc = collectAcc;
-        allBucketsAcc.sweepingCountAcc = sweepingCountAcc;
+        allBucketsAcc.sweepCoordinator = sweepCoordinator;
       }
       return true;
     }
@@ -827,7 +948,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     int collectAccSlot;
     int otherAccsSlot;
     long count;
-    SweepingCountSlotAcc sweepingCountAcc; // null unless/until sweeping is initialized
+    SweepCoordinator sweepCoordinator; // null unless/until sweeping is initialized
 
     SpecialSlotAcc(FacetContext fcontext, SlotAcc collectAcc, int collectAccSlot, SlotAcc[] otherAccs, int otherAccsSlot) {
       super(fcontext);
@@ -884,8 +1005,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     @Override
     public void setValues(SimpleOrderedMap<Object> bucket, int slotNum) throws IOException {
-      if (sweepingCountAcc != null) {
-        sweepingCountAcc.setSweepValues(bucket, collectAccSlot);
+      if (sweepCoordinator != null) {
+        sweepCoordinator.setSweepValues(bucket, collectAccSlot);
       }
       if (collectAcc != null) {
         collectAcc.setValues(bucket, collectAccSlot);
@@ -1019,6 +1140,52 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     @Override
     public int getNewSlot(int oldSlot) {
       return 0;
+    }
+  }
+
+  private static class CachingCountSlotAccFactory implements CountSlotAccFactory {
+
+    private final SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache;
+    private final CacheKey topLevelKey;
+    private final String field;
+
+    public CachingCountSlotAccFactory(SolrCache<FacetCacheKey, Map<CacheKey, SegmentCacheEntry>> facetCache,
+        CacheKey topLevelKey, String field) {
+      this.facetCache = facetCache;
+      this.topLevelKey = topLevelKey;
+      this.field = field;
+    }
+
+    @Override
+    public SweepCountAccStruct newInstance(QueryResultKey qKey, DocSet docs, boolean isBase, FacetFieldProcessor processor, int numSlots, boolean includeMissingCount) {
+      final FacetContext fcontext = processor.fcontext;
+      FacetCacheKey facetCacheKey = new FacetCacheKey(qKey, field);
+      final Map<CacheKey, SegmentCacheEntry> segmentCache = facetCache.get(facetCacheKey);
+      final Map<CacheKey, SegmentCacheEntry> newSegmentCache;
+      SegmentCacheEntry topLevelEntry;
+      final CacheState cacheState;
+      if (segmentCache == null) {
+        // no cache presence; initialize.
+        cacheState = CacheState.NOT_CACHED;
+        newSegmentCache = new HashMap<>(fcontext.searcher.getIndexReader().leaves().size() + 1);
+      } else if (segmentCache.containsKey(topLevelKey)) {
+        topLevelEntry = segmentCache.get(topLevelKey);
+        if (includeMissingCount && !topLevelEntry.hasMissingSlot) {
+          // it is possible in some cases to have cached counts that do not incorporate "missing" count. If "missing" count
+          // has been requested, it's far simpler to simply re-initialize the cache entry to include "missing" count.
+          cacheState = CacheState.NOT_CACHED;
+          newSegmentCache = new HashMap<>(fcontext.searcher.getIndexReader().leaves().size() + 1);
+        } else {
+          return CachedCountSlotAcc.create(qKey, docs, isBase, processor, topLevelEntry.topLevelCounts);
+        }
+      } else {
+        // defensive copy, since cache entries are shared across threads
+        cacheState = CacheState.PARTIALLY_CACHED;
+        newSegmentCache = new HashMap<>(fcontext.searcher.getIndexReader().leaves().size() + 1);
+        newSegmentCache.putAll(segmentCache);
+      }
+      return CacheUpdateCountSlotAcc.create(processor, numSlots, newSegmentCache, topLevelKey, facetCache, facetCacheKey, includeMissingCount,
+          qKey, isBase, docs, cacheState);
     }
   }
 }
