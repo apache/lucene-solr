@@ -47,7 +47,7 @@ import org.apache.lucene.util.bkd.BKDConfig;
  *   <tr><td>{@code float}</td><td>{@link FloatPoint}</td></tr>
  *   <tr><td>{@code double}</td><td>{@link DoublePoint}</td></tr>
  *   <tr><td>{@code byte[]}</td><td>{@link BinaryPoint}</td></tr>
- *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
+ *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/sandbox/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
  *   <tr><td>{@link InetAddress}</td><td><a href="{@docRoot}/../misc/org/apache/lucene/document/InetAddressPoint.html">InetAddressPoint</a>*</td></tr>
  * </table>
  * * in the <i>lucene-sandbox</i> jar<br>
