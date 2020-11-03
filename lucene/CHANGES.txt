@@ -212,6 +212,8 @@ New Features
 * LUCENE-9572: TypeAsSynonymFilter has been enhanced support ignoring some types, and to allow
   the generated synonyms to copy some or all flags from the original token (Gus Heck).
 
+* LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
+
 Improvements
 ---------------------
 
