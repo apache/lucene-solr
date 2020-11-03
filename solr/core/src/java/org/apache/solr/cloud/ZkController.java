@@ -1115,6 +1115,8 @@ public class ZkController implements Closeable {
 
     byte[] schemeData = null;
     if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
+      // a bit hacky ... we don't really care if the cluster prop scheme is set to "https" if we're not configured
+      // to accept https connections, so set our live node znode data to https if we're really configured to accept https
       String activeUrlScheme = System.getProperty(UrlScheme.HTTPS_PORT_PROP) != null ? HTTPS : HTTP;
       schemeData = activeUrlScheme.getBytes(StandardCharsets.UTF_8);
     }
