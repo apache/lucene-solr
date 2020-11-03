@@ -73,7 +73,7 @@ API Changes
   in Lucenes IndexWriter. The interface is not sufficient to efficiently
   replace the functionality with reasonable efforts. (Simon Willnauer)
 
-* LUCENE-9317 LUCENE-9318 LUCENE-9558: Clean up package name conflicts between modules.
+* LUCENE-9317 LUCENE-9318 LUCENE-9319 LUCENE-9558 : Clean up package name conflicts between modules.
   See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
 Improvements
