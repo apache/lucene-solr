@@ -5836,7 +5836,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * Returns accurate {@link DocStats} form this writer. The numDoc for instance can change after maxDoc is fetched
+   * Returns accurate {@link DocStats} for this writer. The numDoc for instance can change after maxDoc is fetched
    * that causes numDocs to be greater than maxDoc which makes it hard to get accurate document stats from IndexWriter.
    */
   public synchronized DocStats getDocStats() {

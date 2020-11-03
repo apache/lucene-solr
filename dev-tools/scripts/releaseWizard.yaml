@@ -16,7 +16,7 @@
 #
 
 # =====================================================================
-# This file contains the definition TODO steps and commands to run for the
+# This file contains the definition TO-DO steps and commands to run for the
 # releaseWizard.py script. It also contains Jinja2 templates for use in those
 # definitions. See documentation for "groups" below the templates.
 # Edit this file with an editor with YAML support, such as Sublime Text
@@ -54,11 +54,6 @@ templates:
           still many manual steps and it is also important that the RM validates
           and QAs the process, validating that the right commands are run, and that
           the output from scripts are correct before proceeding.
-
-    DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
-                faulty commands, commands that won't work on your OS or with all
-                versions of tooling etc. So please keep the old ReleaseTODO handy
-                for cross-checking for now :)
   vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
