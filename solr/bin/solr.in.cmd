@@ -80,7 +80,6 @@ REM start command line as-is, in ADDITION to other options. If you specify the
 REM -a option on start script, those options will be appended as well. Examples:
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
 
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml

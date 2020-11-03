@@ -286,7 +286,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("jetty.testMode", "true");
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-    System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();

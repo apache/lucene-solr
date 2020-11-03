@@ -22,8 +22,6 @@ import java.util.Objects;
 
 /**
  * This class represents a cluster of Solr Docs .
- * The cluster is produced from a set of Solr documents from the results.
- * It is a direct mapping for the Json object Solr is returning.
  */
 public class Cluster {
 

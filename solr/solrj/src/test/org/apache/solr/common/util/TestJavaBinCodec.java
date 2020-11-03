@@ -53,7 +53,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   private static final String BIN_FILE_LOCATION_CHILD_DOCS = "./solr/solrj/src/test-files/solrj/javabin_backcompat_child_docs.bin";
 
   private static final String SOLRJ_DOCS_1 = "/solrj/docs1.xml";
-  private static final String SOLRJ_DOCS_2 = "/solrj/sampleClusteringResponse.xml";
 
   public void testStrings() throws Exception {
     for (int i = 0; i < 10000 * RANDOM_MULTIPLIER; i++) {
@@ -300,15 +299,8 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     Map.Entry<Object, Object> entryFromTextDoc1 = getMapFromJavaBinCodec(SOLRJ_DOCS_1);
     Map.Entry<Object, Object> entryFromTextDoc1_clone = getMapFromJavaBinCodec(SOLRJ_DOCS_1);
 
-    Map.Entry<Object, Object> entryFromTextDoc2 = getMapFromJavaBinCodec(SOLRJ_DOCS_2);
-    Map.Entry<Object, Object> entryFromTextDoc2_clone = getMapFromJavaBinCodec(SOLRJ_DOCS_2);
-
     // exactly same document read twice should have same content
     assertEquals ("text-doc1 exactly same document read twice should have same content",entryFromTextDoc1,entryFromTextDoc1_clone);
-    // doc1 and doc2 are 2 text files with different content on line 1
-    assertNotEquals ("2 text streams with 2 different contents should be unequal",entryFromTextDoc2,entryFromTextDoc1);
-    // exactly same document read twice should have same content
-    assertEquals ("text-doc2 exactly same document read twice should have same content",entryFromTextDoc2,entryFromTextDoc2_clone);
   }
 
   @Test

@@ -170,7 +170,6 @@ Many of the other useful components are described in sections of this Guide for 
 * `QueryElevationComponent`, described in the section <<the-query-elevation-component.adoc#the-query-elevation-component,The Query Elevation Component>>.
 * `TermsComponent`, described in the section <<the-terms-component.adoc#the-terms-component,The Terms Component>>.
 * `RealTimeGetComponent`, described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>.
-* `ClusteringComponent`, described in the section <<result-clustering.adoc#result-clustering,Result Clustering>>.
 * `SuggestComponent`, described in the section <<suggester.adoc#suggester,Suggester>>.
 * `AnalyticsComponent`, described in the section <<analytics.adoc#analytics,Analytics>>.
 

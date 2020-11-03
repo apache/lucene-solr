@@ -38,7 +38,7 @@ A search query can request that certain terms be highlighted in the search respo
 
 Search responses can also be configured to include *snippets* (document excerpts) featuring highlighted text. Popular search engines such as Google and Yahoo! return snippets in their search results: 3-4 lines of text offering a description of a search result.
 
-To help users zero in on the content they're looking for, Solr supports two special ways of grouping search results to aid further exploration: faceting and clustering.
+To help users zero in on the content they're looking for, Solr supports grouping search results to aid further exploration.
 
 <<faceting.adoc#faceting,*Faceting*>> is the arrangement of search results into categories (which are based on indexed terms). Within each category, Solr reports on the number of hits for relevant term, which is called a facet constraint. Faceting makes it easy for users to explore search results on sites such as movie sites and product review sites, where there are many categories and many items within a category.
 
@@ -47,8 +47,6 @@ The screen shot below shows an example of faceting from the CNET Web site (CBS I
 image::images/overview-of-searching-in-solr/worddav88969a784fb8a63d8c46e9c043f5f953.png[image,width=600,height=300]
 
 Faceting makes use of fields defined when the search applications were indexed. In the example above, these fields include categories of information that are useful for describing digital cameras: manufacturer, resolution, and zoom range.
-
-*Clustering* groups search results by similarities discovered when a search is executed, rather than when content is indexed. The results of clustering often lack the neat hierarchical organization found in faceted search results, but clustering can be useful nonetheless. It can reveal unexpected commonalities among search results, and it can help users rule out content that isn't pertinent to what they're really searching for.
 
 Solr also supports a feature called <<morelikethis.adoc#morelikethis,MoreLikeThis>>, which enables users to submit new queries that focus on particular terms returned in an earlier query. MoreLikeThis queries can make use of faceting or clustering to provide additional aid to users.
 
