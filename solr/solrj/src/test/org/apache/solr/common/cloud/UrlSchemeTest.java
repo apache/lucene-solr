@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.cloud.UrlScheme.USE_LIVENODES_URL_SCHEME;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODES_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
@@ -37,6 +38,8 @@ public class UrlSchemeTest extends SolrTestCase {
 
   @Test
   public void testApplyUrlScheme() throws Exception {
+    assumeWorkingMockito();
+
     final UrlScheme t = UrlScheme.INSTANCE;
     
     String liveNode1 = "192.168.1.1:8983_solr";
@@ -113,7 +116,6 @@ public class UrlSchemeTest extends SolrTestCase {
     t.onChange(null, liveNodes);
     assertEquals("https://127.0.0.1", t.applyUrlScheme("127.0.0.1"));
 
-    // 127.0.0.1:61463_xkdn%2Fpp
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1:61631_l_%2Fig");
     t.onChange(null, liveNodes);
