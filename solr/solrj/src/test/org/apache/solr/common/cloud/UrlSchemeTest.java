@@ -24,10 +24,14 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
 import static org.apache.solr.common.cloud.UrlScheme.USE_LIVENODES_URL_SCHEME;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODES_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
@@ -41,73 +45,82 @@ public class UrlSchemeTest extends SolrTestCase {
     assumeWorkingMockito();
 
     final UrlScheme t = UrlScheme.INSTANCE;
-    
+
+    //  mock a SolrZkClient with some live nodes and cluster props set.
     String liveNode1 = "192.168.1.1:8983_solr";
     String liveNode2 = "127.0.0.1:8983_solr";
     String liveNode3 = "127.0.0.1_";
     String liveNode4 = "127.0.0.1:61631_l_%2Fig";
+    Map<String,Object> clusterProps = Collections.singletonMap(URL_SCHEME, HTTPS);
 
     SolrZkClient zkClient = mock(SolrZkClient.class);
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode1, null, null, true)).thenReturn("https".getBytes(UTF_8));
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode2, null, null, true)).thenReturn("http".getBytes(UTF_8));
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode3, null, null, true)).thenReturn("https".getBytes(UTF_8));
     when(zkClient.getData(LIVE_NODES_ZKNODE + "/" + liveNode4, null, null, true)).thenReturn("https".getBytes(UTF_8));
-    t.setZkClient(zkClient);
+    when(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)).thenReturn(Utils.toJSON(clusterProps));
 
-    t.setUrlScheme(UrlScheme.HTTPS);
+    // in a live cluster, this gets called during ZkController initialization and then it is expected that the urlScheme does not change
+    t.initFromClusterProps(zkClient);
+    assertTrue(t.isOnServer());
+
+    try {
+      t.setUrlScheme(HTTP);
+      fail("Shouldn't be able to change the urlScheme once set!");
+    } catch (IllegalStateException expected) {
+      // expected
+    }
 
     assertEquals("https://192.168.1.1:8983/solr", t.getBaseUrlForNodeName(liveNode1));
     assertEquals("https://127.0.0.1", t.getBaseUrlForNodeName(liveNode3));
 
     SortedSet<String> liveNodes = new TreeSet<>();
-    liveNodes.add("192.168.1.1:8983_solr");
+    liveNodes.add("192.168.1.1:8983_solr"); // uses https, see mock ^
     t.onChange(null, liveNodes);
 
     // global https applies, no match in live nodes
-    assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
+    assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
+    assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("http://127.0.0.1:8983/solr"));
 
     // global http applies, no match in live nodes
-    t.setUrlScheme(UrlScheme.HTTP);
-    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
+    t.onChange(Collections.singletonMap(URL_SCHEME, HTTP)); // server is http now
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("https://127.0.0.1:8983/solr"));
 
-    // live node's http scheme takes precedent over global https
-    t.setUrlScheme(UrlScheme.HTTPS);
-    t.setUseLiveNodesUrlScheme(true);
+    clusterProps = new HashMap<>();
+    clusterProps.put(URL_SCHEME, HTTPS);
+    clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
+    t.onChange(clusterProps);
+
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1:8983_solr");
     t.onChange(null, liveNodes);
-    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
-
-    // no scheme in the stored_url
+    // live node's http scheme takes precedent over global https
+    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("https://127.0.0.1:8983/solr"));
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
 
-    t.onChange(Collections.singletonMap(URL_SCHEME, "https"));
-    t.setUseLiveNodesUrlScheme(true);
-    liveNodes = new TreeSet<>();
-    liveNodes.add("127.0.0.1:8983_solr");
-    t.onChange(null, liveNodes);
-    // http because the live node entry doesn't have https
-    assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("${scheme}://127.0.0.1:8983/solr"));
-
     t.onChange(Collections.singletonMap(URL_SCHEME, "http"));
-    assertEquals("http://127.0.0.1/solr", t.applyUrlScheme("${scheme}://127.0.0.1/solr"));
+    assertEquals("http://127.0.0.2/solr", t.applyUrlScheme("127.0.0.2/solr"));
 
     // Change to using https
-    t.onChange(Collections.singletonMap(URL_SCHEME, "https"));
-    t.setUseLiveNodesUrlScheme(true);
-    liveNodes = new TreeSet<>();
-    t.onChange(null, liveNodes);
-    assertEquals("https://127.0.0.1:8983/", t.applyUrlScheme("${scheme}://127.0.0.1:8983/"));
-
-    // back to http
-    Map<String,Object> clusterProps = new HashMap<>();
-    clusterProps.put(URL_SCHEME, "http");
+    clusterProps = new HashMap<>();
+    clusterProps.put(URL_SCHEME, HTTPS);
     clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
     t.onChange(clusterProps);
     liveNodes = new TreeSet<>();
     t.onChange(null, liveNodes);
+    assertEquals("https://127.0.0.1:8983/", t.applyUrlScheme("127.0.0.1:8983/"));
 
-    assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("${scheme}://127.0.0.1:8983"));
+    // back to http
+    clusterProps = new HashMap<>();
+    clusterProps.put(URL_SCHEME, "http");
+    clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
+    t.onChange(clusterProps);
+    liveNodes = new TreeSet<>();
+    t.onChange(null, liveNodes); // test node not in live nodes, which is ok
+
+    assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("http://127.0.0.1:8983"));
+    assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("https://127.0.0.1:8983"));
     assertEquals("http://127.0.0.1:8983", t.applyUrlScheme("127.0.0.1:8983"));
 
     // live node has https and global urlScheme is http, so expect https

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -25,9 +27,12 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
@@ -38,20 +43,53 @@ import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   INSTANCE;
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String HTTP = "http";
   public static final String HTTPS = "https";
-  public static final String SCHEME_VAR = "${scheme}://";
   public static final String HTTPS_PORT_PROP = "solr.jetty.https.port";
-  public static final String USE_LIVENODES_URL_SCHEME = "useLiveNodesUrlScheme";
+  public static final String USE_LIVENODES_URL_SCHEME = "ext.useLiveNodesUrlScheme";
 
   private String urlScheme = HTTP;
   private boolean useLiveNodesUrlScheme = false;
   private SortedSet<String> liveNodes = null;
-  private SolrZkClient zkClient;
+  private SolrZkClient zkClient = null;
   private final ConcurrentMap<String,String> nodeSchemeCache = new ConcurrentHashMap<>();
 
-  public void setZkClient(SolrZkClient client) {
+  /**
+   * Called during ZkController initialization to set the urlScheme based on cluster properties.
+   * @param client The SolrZkClient needed to read cluster properties from ZK.
+   * @throws IOException If a connection or other I/O related error occurs while reading from ZK.
+   */
+  public synchronized void initFromClusterProps(final SolrZkClient client) throws IOException {
+    //if (this.zkClient != null) {
+    //  throw new IllegalStateException("Global, immutable 'urlScheme' state already initialized for this node!");
+    //}
+
     this.zkClient = client;
+
+    // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
+    ClusterProperties clusterProps = new ClusterProperties(client);
+    this.useLiveNodesUrlScheme =
+      "true".equals(clusterProps.getClusterProperty(UrlScheme.USE_LIVENODES_URL_SCHEME, "false"));
+    setUrlSchemeFromClusterProps(clusterProps.getClusterProperties());
+  }
+
+  private void setUrlSchemeFromClusterProps(Map<String,Object> props) {
+    // Set the global urlScheme from cluster prop or if that is not set, look at the urlScheme sys prop
+    final String scheme = (String)props.get(ZkStateReader.URL_SCHEME);
+    if (StringUtils.isNotEmpty(scheme)) {
+      // track the urlScheme in a global so we can use it during ZK read / write operations for cluster state objects
+      this.urlScheme = HTTPS.equals(scheme) ? HTTPS : HTTP;
+    } else {
+      String urlSchemeFromSysProp = System.getProperty(URL_SCHEME, HTTP);
+      if (HTTPS.equals(urlSchemeFromSysProp)) {
+        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'. " +
+            "You should set the cluster property and restart all nodes for consistency.");
+      }
+      // TODO: We may not want this? See: https://issues.apache.org/jira/browse/SOLR-10202
+      this.urlScheme = HTTPS.equals(urlSchemeFromSysProp) ? HTTPS : HTTP;
+    }
   }
 
   public boolean isOnServer() {
@@ -63,7 +101,11 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
    * the value on-the-fly.
    * @param urlScheme The new URL scheme, either http or https.
    */
-  public void setUrlScheme(final String urlScheme) {
+  public synchronized void setUrlScheme(final String urlScheme) {
+    if (!this.urlScheme.equals(urlScheme) && this.zkClient != null) {
+      throw new IllegalStateException("Global, immutable 'urlScheme' already set for this node!");
+    }
+
     if (HTTP.equals(urlScheme) || HTTPS.equals(urlScheme)) {
       this.urlScheme = urlScheme;
     } else {
@@ -73,10 +115,6 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   public boolean useLiveNodesUrlScheme() {
     return useLiveNodesUrlScheme;
-  }
-
-  public void setUseLiveNodesUrlScheme(boolean useLiveNodesUrlScheme) {
-    this.useLiveNodesUrlScheme = useLiveNodesUrlScheme;
   }
 
   public String getBaseUrlForNodeName(String nodeName) {
@@ -107,21 +145,9 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
       }
     }
 
-    // not able to resolve the urlScheme using live nodes ... use the global!
-    if (url.startsWith(SCHEME_VAR)) {
-      // replace ${scheme} with actual scheme
-      updatedUrl = urlScheme + url.substring(SCHEME_VAR.length()-3); // keep the ://
-    } else {
-      // heal an incorrect scheme if needed, otherwise return null indicating no change
-      final int at = url.indexOf("://");
-      if (at == -1) {
-        updatedUrl = urlScheme + "://" + url;
-      } else {
-        // change the stored scheme to match the global
-        updatedUrl = urlScheme + url.substring(at);
-      }
-    }
-    return updatedUrl;
+    // heal an incorrect scheme if needed, otherwise return null indicating no change
+    final int at = url.indexOf("://");
+    return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
   }
 
   public String getUrlScheme() {
@@ -190,7 +216,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
       nodeSchemeCache.clear();
       liveNodes = null;
     }
-    setUrlScheme((String)properties.getOrDefault(URL_SCHEME, HTTP));
+    setUrlSchemeFromClusterProps(properties);
     return false;
   }
 
@@ -216,5 +242,16 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
       }
     }
     return scheme;
+  }
+
+  /**
+   * Resets the global singleton back to initial state; only visible for testing!
+   */
+  public synchronized void reset() {
+    this.zkClient = null;
+    this.urlScheme = HTTP;
+    this.useLiveNodesUrlScheme = false;
+    this.liveNodes = null;
+    this.nodeSchemeCache.clear();
   }
 }

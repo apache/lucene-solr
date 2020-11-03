@@ -451,7 +451,7 @@ public class ZkController implements Closeable {
       }});
 
     // setup the scheme before updating cluster state
-    setGlobalUrlSchemeFromClusterProps(zkClient);
+    UrlScheme.INSTANCE.initFromClusterProps(zkClient);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -933,8 +933,6 @@ public class ZkController implements Closeable {
       if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
         zkStateReader.registerLiveNodesListener(UrlScheme.INSTANCE);
       } // else we don't want to use url scheme from live nodes ...
-      // TODO: listen for cluster property changes?
-      // zkr.registerClusterPropertiesListener(UrlScheme.INSTANCE);
 
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
@@ -2732,32 +2730,6 @@ public class ZkController implements Closeable {
         }
         newestSearcher.decref();
       }
-    }
-  }
-
-  private void setGlobalUrlSchemeFromClusterProps(SolrZkClient client) throws IOException {
-    UrlScheme.INSTANCE.setZkClient(client);
-    // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
-    ClusterProperties clusterProps = new ClusterProperties(client);
-    UrlScheme.INSTANCE.setUseLiveNodesUrlScheme(
-        "true".equals(clusterProps.getClusterProperty(UrlScheme.USE_LIVENODES_URL_SCHEME, "false")));
-
-    // Set the global urlScheme from cluster prop or if that is not set, look at the urlScheme sys prop
-    final String urlScheme = clusterProps.getClusterProperty(ZkStateReader.URL_SCHEME, null);
-    if (StringUtils.isNotEmpty(urlScheme)) {
-      // track the urlScheme in a global so we can use it during ZK read / write operations for cluster state objects
-      UrlScheme.INSTANCE.setUrlScheme(urlScheme);
-    } else {
-      final String urlSchemeFromSysProp = System.getProperty(URL_SCHEME, HTTP);
-      if (HTTPS.equals(urlSchemeFromSysProp)) {
-        log.warn("Cluster property 'urlScheme' not set but system property is set to 'https'. " +
-            "You should set the cluster property and restart all nodes for consistency.");
-      }
-
-      // TODO: We may want this? See: https://issues.apache.org/jira/browse/SOLR-10202
-      // Right now, the code only uses the cluster property at startup to determine the urlScheme on the server-side
-      //UrlScheme.INSTANCE.setUrlScheme(urlSchemeFromSysProp);
-      UrlScheme.INSTANCE.setUrlScheme(HTTP);
     }
   }
 }
