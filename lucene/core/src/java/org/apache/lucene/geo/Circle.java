@@ -35,9 +35,6 @@ public final class Circle extends LatLonGeometry {
   private final double lon;
   /** radius in meters */
   private final double radiusMeters;
-  /** Max radius allowed, half of the earth mean radius.*/
-  public static double MAX_RADIUS = GeoUtils.EARTH_MEAN_RADIUS_METERS / 2.0;
-
 
   /**
    * Creates a new circle from the supplied latitude/longitude center and a radius in meters..
@@ -45,11 +42,8 @@ public final class Circle extends LatLonGeometry {
   public Circle(double lat, double lon, double radiusMeters) {
     GeoUtils.checkLatitude(lat);
     GeoUtils.checkLongitude(lon);
-    if (radiusMeters <= 0) {
-       throw new IllegalArgumentException("radius must be bigger than 0, got " + radiusMeters);
-    }
-    if (radiusMeters < MAX_RADIUS == false) {
-      throw new IllegalArgumentException("radius must be lower than " + MAX_RADIUS + ", got " + radiusMeters);
+    if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
+      throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");
     }
     this.lat = lat;
     this.lon = lon;

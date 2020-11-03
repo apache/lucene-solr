@@ -41,15 +41,15 @@ public class TestCircle extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new Circle(43.5, 45.23, -1000);
     });
-    assertTrue(expected.getMessage().contains("radius must be bigger than 0, got -1000.0"));
+    assertTrue(expected.getMessage().contains("radiusMeters: '-1000.0' is invalid"));
   }
 
-  /** radius must be lower than 3185504.3857 */
+  /** radius must cannot be infinite */
   public void testInfiniteRadius() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new Circle(43.5, 45.23, Double.POSITIVE_INFINITY);
     });
-    assertTrue(expected.getMessage().contains("radius must be lower than 3185504.3857, got Infinity"));
+    assertTrue(expected.getMessage().contains("radiusMeters: 'Infinity' is invalid"));
   }
 
   /** equals and hashcode */

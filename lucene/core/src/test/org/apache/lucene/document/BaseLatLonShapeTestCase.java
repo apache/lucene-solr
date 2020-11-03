@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -109,7 +110,8 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Circle nextCircle() {
-    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAX_RADIUS);
+    final double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
+    return new Circle(nextLatitude(), nextLongitude(), radiusMeters);
   }
 
   @Override

@@ -178,37 +178,23 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
     EncodedRectangle(double minLat, double maxLat, double minLon, double maxLon) {
       this.bbox = new byte[4 * BYTES];
-      int minXenc = encodeLongitudeCeil(minLon);
-      int maxXenc = encodeLongitude(maxLon);
-      int minYenc = encodeLatitudeCeil(minLat);
-      int maxYenc = encodeLatitude(maxLat);
-      if (minYenc > maxYenc) {
-        minYenc = maxYenc;
+      if (minLon == 180.0 && minLon > maxLon) {
+        minLon = -180;
       }
-      this.minY = minYenc;
-      this.maxY = maxYenc;
-
-      if (minLon > maxLon == true) {
-        this.crossesDateline = true;
+      this.minX = encodeLongitudeCeil(minLon);
+      this.maxX = encodeLongitude(maxLon);
+      this.minY  = encodeLatitudeCeil(minLat);
+      this.maxY = encodeLatitude(maxLat);
+      this.crossesDateline = minLon > maxLon;
+      if (this.crossesDateline) {
         // crossing dateline is split into east/west boxes
         this.west = new byte[4 * BYTES];
-        this.minX = minXenc;
-        this.maxX = maxXenc;
         encode(MIN_LON_ENCODED, this.maxX, this.minY, this.maxY, this.west);
         encode(this.minX, MAX_LON_ENCODED, this.minY, this.maxY, this.bbox);
       } else {
-        this.crossesDateline = false;
-        // encodeLongitudeCeil may cause minX to be > maxX iff
-        // the delta between the longitude < the encoding resolution
-        if (minXenc > maxXenc) {
-          minXenc = maxXenc;
-        }
         this.west = null;
-        this.minX = minXenc;
-        this.maxX = maxXenc;
         encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
       }
-
     }
 
     /**
