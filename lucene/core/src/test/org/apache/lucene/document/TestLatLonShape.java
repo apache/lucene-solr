@@ -22,6 +22,7 @@ import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -433,7 +434,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // search by same point
-    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
+    Query q = LatLonShape.newPointQuery(FIELDNAME, QueryRelation.INTERSECTS, new double[] {p.lat, p.lon});
     assertEquals(1, s.count(q));
     IOUtils.close(r, dir);
   }
@@ -777,10 +778,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     double lat = GeoTestUtil.nextLatitude();
     double lon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-    }
+    final double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
     Circle circle = new Circle(lat, lon, radiusMeters);
     Component2D circle2D = LatLonGeometry.create(circle);
     int expected;

@@ -13,6 +13,8 @@ New Features
 ---------------------
 (No changes)
 
+* LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
+
 Improvements
 ---------------------
 
