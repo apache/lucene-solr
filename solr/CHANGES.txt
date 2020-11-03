@@ -42,6 +42,13 @@ Improvements
 
 * SOLR-14972: Change default port of prometheus exporter to 8989 because it clashed with default embedded zookeeper port (janhoy)
 
+* SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering contrib. This issue upgrades
+  the clustering contrib to the new Carrot2 4.x line, dropping several CVE-prone dependencies along the way.
+  The parameters and configuration of the contrib extensions have changed. The documentation in Solr ref guide
+  has been rewritten from scratch to be up to date. Clustering code has been rewritten from scratch to work
+  properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
+  and simplified. (Dawid Weiss)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
