@@ -41,7 +41,7 @@ Other Changes
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
-* SOLR-14981: RemoveD search results clustering contrib from 8x (due to Carrot2 incompatibility with Java 1.8). 
+* SOLR-14981: Removed search results clustering contrib from 8x (due to Carrot2 incompatibility with Java 1.8). 
   (Dawid Weiss)
 
 ==================  8.7.0 ==================
