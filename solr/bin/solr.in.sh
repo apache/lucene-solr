@@ -249,8 +249,11 @@
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
 
-# Solr can attempt to take a heap dump on out of memory errors. To enable this, specify a directory
-# where the heap dumps should be saved. The filename pattern will be solr-[timestamp]-pid[###].hprof
+# Solr can attempt to take a heap dump on out of memory errors. To enable this, uncomment the line setting
+# SOLR_HEAP_DUMP below. Heap dumps will be saved to SOLR_LOG_DIR/dumps by default. Alternatively, you can specify any
+# other directory, which will implicitly enable heap dumping. Dump name pattern will be solr-[timestamp]-pid[###].hprof
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
+# See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
+#SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
