@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
@@ -49,6 +52,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
+ *   <li>{@link #newGeometryQuery newGeometryQuery()} for matching points within an arbitrary geometry collection.
  * </ul>
  * <p>
  * If you also need per-document operations such as sort by distance, add a separate {@link LatLonDocValuesField} instance.
@@ -251,7 +255,29 @@ public class LatLonPoint extends Field {
    * @see Polygon
    */
   public static Query newPolygonQuery(String field, Polygon... polygons) {
-    return new LatLonPointInPolygonQuery(field, polygons);
+    return newGeometryQuery(field, polygons);
+  }
+
+  /**
+   * Create a query for matching one or more geometries. Line geometries are not supported.
+   * @param field field name. must not be null.
+   * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
+   * @return query matching points within at least one geometry.
+   * @throws IllegalArgumentException  if {@code field} is null, {@code latLonGeometries} is null, empty or contain a null or line geometry.
+   * @see LatLonGeometry
+   */
+  public static Query newGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
+    if (latLonGeometries.length == 1) {
+      if (latLonGeometries[0] instanceof Rectangle) {
+        final Rectangle rect = (Rectangle) latLonGeometries[0];
+        return newBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      }
+      if (latLonGeometries[0] instanceof Circle) {
+        final Circle circle = (Circle) latLonGeometries[0];
+        return newDistanceQuery(field, circle.getLat(), circle.getLon(), circle.getRadius());
+      }
+    }
+    return new LatLonPointInGeometryQuery(field, latLonGeometries);
   }
 
   /**
