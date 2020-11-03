@@ -75,9 +75,6 @@
   <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-cell-\d.*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
-
   <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
 
@@ -1030,8 +1027,6 @@
       <str>tvComponent</str>
     </arr>
   </requestHandler>
-
-  <!-- Clustering Component. (Omitted here. See the default Solr example for a typical configuration.) -->
 
   <!-- Terms Component
 

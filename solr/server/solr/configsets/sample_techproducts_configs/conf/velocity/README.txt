@@ -86,8 +86,8 @@ Search Results, General:
                             edit results_list.vm to enable this
 
 
-Search Results, Facets & Clusters:
-  facets.vm               - calls the 4 facet and 1 cluster template
+Search Results, Facets:
+  facets.vm               - calls the other templates
   facet_fields.vm         - display facets based on field values
                             e.g.: fields specified by &facet.field=
   facet_queries.vm        - display facets based on specific facet queries
@@ -96,6 +96,3 @@ Search Results, Facets & Clusters:
                             e.g.: ranges specified by &facet.range=
   facet_pivot.vm          - display pivot based facets
                             e.g.: facets specified by &facet.pivot=
-  cluster.vm              - if clustering is available
-                            then call cluster_results.vm
-  cluster_results.vm      - actual rendering of clusters

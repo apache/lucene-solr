@@ -16,7 +16,6 @@
   pagination-of-results, +
   collapse-and-expand-results, +
   result-grouping, +
-  result-clustering, +
   spatial-search, +
   the-terms-component, +
   the-term-vector-component, +
@@ -75,7 +74,6 @@ This section describes how Solr works with search requests. It covers the follow
 * <<morelikethis.adoc#morelikethis,MoreLikeThis>>: Detailed information about Solr's similar results query component.
 * <<pagination-of-results.adoc#pagination-of-results,Pagination of Results>>: Detailed information about fetching paginated results for display in a UI, or for fetching all documents matching a query.
 * <<result-grouping.adoc#result-grouping,Result Grouping>>: Detailed information about grouping results based on common field values.
-* <<result-clustering.adoc#result-clustering,Result Clustering>>: Detailed information about grouping search results based on cluster analysis applied to text fields. A bit like "unsupervised" faceting.
 * <<spatial-search.adoc#spatial-search,Spatial Search>>: How to use Solr's spatial search capabilities.
 * <<the-terms-component.adoc#the-terms-component,The Terms Component>>: Detailed information about accessing indexed terms and the documents that include them.
 * <<the-term-vector-component.adoc#the-term-vector-component,The Term Vector Component>>: How to get term information about specific documents.
