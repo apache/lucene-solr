@@ -2172,6 +2172,11 @@ function start_solr() {
     SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
+# If a heap dump directory is specified, enable it in SOLR_OPTS
+if [[ -z "$SOLR_HEAP_DUMP_DIR" ]] && [[ "$SOLR_HEAP_DUMP" == "true" ]]; then
+  SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
+fi
+
   # If a heap dump directory is specified, enable it in SOLR_OPTS
   if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
     SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
