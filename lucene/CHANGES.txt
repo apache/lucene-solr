@@ -214,6 +214,8 @@ New Features
 
 * LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
 
+* LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)  
+
 Improvements
 ---------------------
 
