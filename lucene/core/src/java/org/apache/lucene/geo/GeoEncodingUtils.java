@@ -178,16 +178,16 @@ public final class GeoEncodingUtils {
         lat, lon, distanceSortKey);
   }
 
-  /** Create a predicate that checks whether points are within a polygon.
+  /** Create a predicate that checks whether points are within a geometry.
    *  It works the same way as {@link #createDistancePredicate}.
    *  @lucene.internal */
-  public static PolygonPredicate createComponentPredicate(Component2D tree) {
+  public static Component2DPredicate createComponentPredicate(Component2D tree) {
     final Rectangle boundingBox = new Rectangle(tree.getMinY(), tree.getMaxY(), tree.getMinX(), tree.getMaxX());
     final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
         box.minLon, box.maxLon, box.minLat, box.maxLat);
     final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
 
-    return new PolygonPredicate(
+    return new Component2DPredicate(
         subBoxes.latShift, subBoxes.lonShift,
         subBoxes.latBase, subBoxes.lonBase,
         subBoxes.maxLatDelta, subBoxes.maxLonDelta,
@@ -342,12 +342,12 @@ public final class GeoEncodingUtils {
     }
   }
 
-  /** A predicate that checks whether a given point is within a polygon. */
-  public static class PolygonPredicate extends Grid {
+  /** A predicate that checks whether a given point is within a component2D geometry. */
+  public static class Component2DPredicate extends Grid {
 
     private final Component2D tree;
 
-    private PolygonPredicate(
+    private Component2DPredicate(
         int latShift, int lonShift,
         int latBase, int lonBase,
         int maxLatDelta, int maxLonDelta,

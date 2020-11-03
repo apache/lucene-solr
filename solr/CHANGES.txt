@@ -149,7 +149,8 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
 
 Improvements
 ---------------------
@@ -171,6 +172,8 @@ Bug Fixes
 
 * SOLR-14969: Prevent creating multiple cores with the same name which leads to instabilities (race condition)
   (Erick Erickson, Andreas Hubold)
+
+* SOLR-14961: Fix for deleting zookeeper nodes with same path length. Only the first zk-node was removed. (Michael Aleythe via Mike Drob)
 
 Other Changes
 ---------------------
