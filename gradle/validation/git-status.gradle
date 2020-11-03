@@ -17,9 +17,15 @@
 
 // This verifies local git repository's status.
 
-import org.eclipse.jgit.api.*;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.errors.*;
+import org.eclipse.jgit.api.*
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.errors.*
+
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
 
 buildscript {
   repositories {
@@ -60,9 +66,29 @@ configure(rootProject) {
     doFirst {
       def status = rootProject.ext.gitStatus
       if (status == null) {
-        // Ignore the check. This isn't a git checkout.
-        logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${rootProject.projectDir}")
+        if (file("${rootProject.projectDir}/.git").exists()) {
+          // Ignore git worktree branches until jgit supports them.
+          logger.warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
+        } else {
+          // Ignore the check. This isn't a git checkout.
+          logger.warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
+        }
       } else {
+        // git ignores any folders which are empty (this includes folders with recursively empty sub-folders).
+        def untrackedNonEmptyFolders = status.untrackedFolders.findAll { path ->
+          File location = file("${rootProject.projectDir}/${path}")
+          boolean hasFiles = false
+          Files.walkFileTree(location.toPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+              hasFiles = true
+              // Terminate early.
+              return FileVisitResult.TERMINATE
+            }
+          })
+          return hasFiles
+        }
+
         def offenders = [
             // Exclude staged changes. These are fine in precommit.
             // "(added)": status.added,
@@ -71,7 +97,8 @@ configure(rootProject) {
             "(conflicting)": status.conflicting,
             "(missing)": status.missing,
             "(modified)": status.modified,
-            "(untracked)": [status.untracked, status.untrackedFolders].flatten()
+            "(untracked)": status.untracked,
+            "(untracked non-empty dir)": untrackedNonEmptyFolders
         ].collectMany { fileStatus, files ->
           files.collect {file -> "  - ${file} ${fileStatus}" }
         }.sort()
