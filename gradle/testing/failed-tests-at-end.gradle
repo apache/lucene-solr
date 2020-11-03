@@ -29,7 +29,7 @@ allprojects {
             "name": "${desc.className}.${desc.name}",
             "project": "${test.project.path}",
             "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc.parent)}"),
-            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}\" ${task.project.testOptionsForReproduceLine}"
+            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}.${desc.name}\" ${task.project.testOptionsForReproduceLine}"
         ]
       }
     }
