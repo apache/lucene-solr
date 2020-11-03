@@ -1,5 +1,13 @@
 # Apache Lucene Migration Guide
 
+## Packages in sandbox module are renamed (LUCENE-9319)
+
+Following package names in sandbox module are renamed.
+
+- o.a.l.codecs is renamed to o.a.l.sandbox.codecs
+- o.a.l.document is renamed to o.a.l.sandbox.document
+- o.a.l.search is renamed to o.a.l.sandbox.search
+
 ## Backward codecs are renamed (LUCENE-9318)
 
 o.a.l.codecs package in `lucene-backward-codecs` module is renamed to o.a.l.backward_codecs.

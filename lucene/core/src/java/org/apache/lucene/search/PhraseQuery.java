@@ -304,13 +304,17 @@ public class PhraseQuery extends Query {
     v.consumeTerms(this, terms);
   }
 
-  static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
+  /** Term postings and position information for phrase matching
+   * @lucene.internal
+   */
+  public static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
     final ImpactsEnum impacts;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
+    /** Creates PostingsAndFreq instance */
     public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, Term... terms) {
       this.postings = postings;
       this.impacts = impacts;
@@ -413,7 +417,7 @@ public class PhraseQuery extends Query {
    *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
-  static float termPositionsCost(TermsEnum termsEnum) throws IOException {
+  public static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
     long totalTermFreq = termsEnum.totalTermFreq();

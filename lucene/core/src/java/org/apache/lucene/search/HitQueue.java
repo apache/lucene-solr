@@ -19,7 +19,10 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.PriorityQueue;
 
-final class HitQueue extends PriorityQueue<ScoreDoc> {
+/** Expert: Priority queue containing hit docs
+ * @lucene.internal
+ */
+public final class HitQueue extends PriorityQueue<ScoreDoc> {
 
   /**
    * Creates a new instance with <code>size</code> elements. If
@@ -59,7 +62,7 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
    * @param prePopulate
    *          specifies whether to pre-populate the queue with sentinel values.
    */
-  HitQueue(int size, boolean prePopulate) {
+  public HitQueue(int size, boolean prePopulate) {
     super(size, () -> {
       if (prePopulate) {
         // Always set the doc Id to MAX_VALUE so that it won't be favored by
