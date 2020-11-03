@@ -42,7 +42,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
         // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
         try {
-          Tessellator.tessellate(p);
+          Tessellator.tessellate(p, random().nextBoolean());
           //polygons are disjoint so CONTAINS works. Note that if we intersect
           //any shape then contains return false.
           if (isDisjoint(polygons, p)) {
@@ -83,7 +83,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     Polygon[] polygons = (Polygon[]) o;
     List<Field> allFields = new ArrayList<>();
     for (Polygon polygon : polygons) {
-      Field[] fields = LatLonShape.createIndexableFields(name, polygon);
+      Field[] fields = LatLonShape.createIndexableFields(name, polygon, random().nextBoolean());
       for (Field field : fields) {
         allFields.add(field);
       }
