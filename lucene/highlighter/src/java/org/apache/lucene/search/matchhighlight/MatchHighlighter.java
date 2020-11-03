@@ -135,9 +135,10 @@ public class MatchHighlighter {
   /**
    * Always fetch the given set of fields for all input documents.
    */
-  public void alwaysFetchFields(String field, String... otherFields) {
-    Stream.concat(Stream.of(field), Stream.of(otherFields))
-        .forEach(fld -> fieldsAlwaysReturned.add(Objects.requireNonNull(fld)));
+  public void alwaysFetchFields(String... fields) {
+    for (String fld : fields) {
+      fieldsAlwaysReturned.add(Objects.requireNonNull(fld));
+    }
   }
 
   /**

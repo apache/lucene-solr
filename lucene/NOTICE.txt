@@ -91,7 +91,7 @@ and Edmond Nolan.
 The Polish analyzer (stempel) comes with a default
 stopword list that is BSD-licensed created by the Carrot2 project. The file resides
 in stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
-See http://project.carrot2.org/license.html.
+See https://project.carrot2.org/license.html.
 
 The SmartChineseAnalyzer source code (smartcn) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.

@@ -14,19 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/**
- * A {@link org.apache.solr.handler.component.SearchComponent} for dynamic,
- * unsupervised grouping of
- * search results based on the content of their text fields or contextual
- * snippets around query-matching regions.
- *
- * <p>
- * The default implementation uses clustering algorithms from the
- * <a href="https://project.carrot2.org">Carrot<sup>2</sup> project</a>.
- */
 package org.apache.solr.handler.clustering;
 
+import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
+/**
+ * SPI provider of {@link EchoClusteringAlgorithm}.
+ */
+public class EchoClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
+  @Override
+  public String name() {
+    return EchoClusteringAlgorithm.class.getSimpleName();
+  }
 
-
+  @Override
+  public EchoClusteringAlgorithm get() {
+    return new EchoClusteringAlgorithm();
+  }
+}
