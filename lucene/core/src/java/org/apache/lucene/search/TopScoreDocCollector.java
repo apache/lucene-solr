@@ -38,9 +38,10 @@ import org.apache.lucene.search.MaxScoreAccumulator.DocAndScore;
  */
 public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
-  abstract static class ScorerLeafCollector implements LeafCollector {
+  /** Scorable leaf collector */
+  public abstract static class ScorerLeafCollector implements LeafCollector {
 
-    Scorable scorer;
+    protected Scorable scorer;
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
