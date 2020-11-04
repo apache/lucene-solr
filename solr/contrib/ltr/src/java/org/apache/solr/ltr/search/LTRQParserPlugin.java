@@ -58,7 +58,7 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
-  public static final String ORIGINAL_RANKING = "_OriginalRanking_";
+  private static final String ORIGINAL_RANKING = "_OriginalRanking_";
   private static Query defaultQuery = new MatchAllDocsQuery();
 
   // params for setting custom external info that features can use, like query
@@ -182,7 +182,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             rerankingQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
           }
         }else{
-          rerankingQuery = new OriginalRankingLTRScoringQuery();
+          rerankingQuery = new OriginalRankingLTRScoringQuery(ORIGINAL_RANKING);
         }
 
         // External features

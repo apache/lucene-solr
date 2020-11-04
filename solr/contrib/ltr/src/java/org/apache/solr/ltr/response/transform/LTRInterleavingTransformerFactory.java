@@ -21,15 +21,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.LTRScoringQuery;
-import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.util.SolrPluginUtils;
-
-import static org.apache.solr.ltr.search.LTRQParserPlugin.ORIGINAL_RANKING;
 
 public class LTRInterleavingTransformerFactory extends TransformerFactory {
   
@@ -109,11 +106,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
       if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
         rerankingQuery = rerankingQueries[1];
       }
-      if (rerankingQuery instanceof OriginalRankingLTRScoringQuery) {
-        doc.addField(name, ORIGINAL_RANKING);
-      } else {
-        doc.addField(name, rerankingQuery.getScoringModel().getName());
-      }
+      doc.addField(name, rerankingQuery.getScoringModelName());
     }
   }
 

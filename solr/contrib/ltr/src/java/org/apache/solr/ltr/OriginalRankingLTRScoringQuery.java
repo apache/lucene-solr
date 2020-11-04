@@ -21,8 +21,16 @@ package org.apache.solr.ltr;
  */
 public final class OriginalRankingLTRScoringQuery extends LTRScoringQuery {
 
-  public OriginalRankingLTRScoringQuery() {
+  private final String originalRankingModelName;
+
+  public OriginalRankingLTRScoringQuery(String originalRankingModelName) {
     super(null /* LTRScoringModel */);
+    this.originalRankingModelName = originalRankingModelName;
+  }
+
+  @Override
+  public String getScoringModelName() {
+    return this.originalRankingModelName;
   }
 
 }
