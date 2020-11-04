@@ -2133,6 +2133,19 @@ if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
 
+function mk_writable_dir() {
+  local DIRNAME="$1"
+  local DESCRIPTION="$2"
+  if ! mkdir -p "$DIRNAME" ; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME could not be created. Exiting"
+    exit 1
+  fi
+  if [ ! -w "$DIRNAME" ]; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME is not writable. Exiting"
+    exit 1
+  fi
+}
+
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
 
@@ -2179,7 +2192,6 @@ function start_solr() {
   if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
     SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
     SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
-    mkdir -p "$SOLR_HEAP_DUMP_DIR" 2>/dev/null
   fi
 
   if $verbose ; then
@@ -2240,15 +2252,8 @@ function start_solr() {
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
-  mkdir -p "$SOLR_LOGS_DIR" 2>/dev/null
-  if [ $? -ne 0 ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR could not be created. Exiting"
-    exit 1
-  fi
-  if [ ! -w "$SOLR_LOGS_DIR" ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is not writable. Exiting"
-    exit 1
-  fi
+  mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
+  mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
   case "$SOLR_LOGS_DIR" in
     contexts|etc|lib|modules|resources|scripts|solr|solr-webapp)
       echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is invalid. Reserved for the system. Exiting"
