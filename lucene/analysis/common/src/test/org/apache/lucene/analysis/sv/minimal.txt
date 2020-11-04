@@ -62,8 +62,7 @@ ba	ba
 nnn	nnn
 ttt	ttt
 eee	eee
-# KAI-1200 examples that are handled with the new stemmer:
-# åre != årets
+# Some common examples that SwedishLightStemmer do stem but this one don't
 åre	åre
 årets	året
 grann	gran
@@ -72,7 +71,7 @@ starar	star
 start	start
 måsar	mås
 måste	måst
-# KAI-1200 examples that still needs fixing with protwords
+# Some examples that will still clash and must be handled with e.g. protwords
 villa	vill
 vill	vill
 timmer	timm
