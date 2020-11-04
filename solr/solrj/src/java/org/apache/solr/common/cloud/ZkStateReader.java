@@ -804,7 +804,7 @@ public class ZkStateReader implements SolrCloseable {
 
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
     Replica replica = getLeaderRetry(collection, shard, timeout);
-    if (replica == null) {
+    if (replica == null || replica.getBaseUrl() == null) {
       return null;
     }
     ZkCoreNodeProps props = new ZkCoreNodeProps(replica);

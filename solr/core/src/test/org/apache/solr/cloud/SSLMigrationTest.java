@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -76,6 +82,21 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
   private static final String clusterPropAction = CollectionAction.CLUSTERPROP.toString().toLowerCase(Locale.ROOT);
 
+  private class HttpAndHttpsProvider extends HttpClientUtil.SocketFactoryRegistryProvider {
+    private final SSLConnectionSocketFactory sslConnectionFactory;
+
+    HttpAndHttpsProvider(SSLConnectionSocketFactory sslConnectionFactory) {
+      this.sslConnectionFactory = sslConnectionFactory;
+    }
+
+    @Override
+    public Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
+      return RegistryBuilder.<ConnectionSocketFactory>create()
+          .register("http", PlainConnectionSocketFactory.getSocketFactory())
+          .register("https", sslConnectionFactory).build();
+    }
+  }
+
   @Test
   public void test() throws Exception {
     // Migrate from HTTP -> HTTPS with rolling restart, relying on UrlScheme.USE_LIVENODES_URL_SCHEME cluster prop
@@ -87,25 +108,50 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
   private void doTestMigrateSSLRollingRestart() throws Exception {
     final ZkStateReader zkr = cloudClient.getZkStateReader();
 
-    // only go from http -> https for this test ... going the other way is unsupported, 
-    // users will just have to restart all nodes and hope for the best
-    SSLTestConfig sslConfig = new SSLTestConfig(true, false);
-    setUrlScheme(HTTPS);
-    setUseLiveNodesUrlScheme(true);
+    DocCollection coll = zkr.getClusterState().getCollection(DEFAULT_COLLECTION);
+    Replica leader = coll.getLeader("shard1");
+    assertNotNull(leader);
+    URL leaderUrl = new URL(leader.getBaseUrl());
+    final int leaderPort = leaderUrl.getPort();
 
-    HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
-
-    // tricky ~ the ZkController relies on this property during init to determine if the node has TLS enabled
-    System.setProperty(UrlScheme.HTTPS_PORT_PROP, "SOME PORT");
-    
     // the control jetty doesn't get restarted as part of this test, so ignore it
     final String controlJettyPort = ":"+controlJetty.getLocalPort()+"_";
     Set<String> expectedLiveNodesSet = zkr.getClusterState().getLiveNodes().stream()
         .filter(n -> !n.contains(controlJettyPort)).collect(Collectors.toSet());
 
+    // only go from http -> https for this test ... going the other way is unsupported,
+    // users will just have to restart all nodes and hope for the best
+    SSLTestConfig sslConfig = new SSLTestConfig(true, false);
+    setUrlScheme(HTTPS);
+    setUseLiveNodesUrlScheme(true);
+
+    // tricky ~ The built-in provider created by sslConfig doesn't allow both
+    // types of connections but we need that to test our migration
+    HttpClientUtil.setSocketFactoryRegistryProvider(new HttpAndHttpsProvider(sslConfig.buildClientSSLConnectionSocketFactory()));
+
+    // also tricky ~ the ZkController relies on this property during init to determine if the node has TLS enabled
+    System.setProperty(UrlScheme.HTTPS_PORT_PROP, "SOME PORT");
+
     // do a rolling restart of each Jetty node and then verify each comes back with https:// enabled in a reasonable time
-    for (int i = 0; i < this.jettys.size(); i++) {
-      JettySolrRunner runner = jettys.get(i);
+    List<JettySolrRunner> sortedJettys = new ArrayList<>(jettys);
+
+    // restart the node hosting the shard1 leader last so
+    // that we can prove replicas can still talk to the leader
+    // using http after they restarted in with TLS enabled
+    sortedJettys.sort((j1, j2) -> {
+      if (j1.getLocalPort() == leaderPort) {
+        return 1;
+      } else if (j2.getLocalPort() == leaderPort) {
+        return -1;
+      } else {
+        return j1.getLocalPort() - j2.getLocalPort();
+      }
+    });
+
+    this.jettys.clear();
+
+    for (int i = 0; i < sortedJettys.size(); i++) {
+      JettySolrRunner runner = sortedJettys.get(i);
       runner.stop();
 
       try {
@@ -132,7 +178,11 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
       JettySolrRunner newRunner = new JettySolrRunner(runner.getSolrHome(), props, config);
       newRunner.start();
-      jettys.set(i, newRunner);
+      jettys.add(newRunner); // for proper shutdown
+
+      // now, wait until all the replicas on the node we restarted have recovered,
+      // which proves that replicas on the restarted can still talk to the leader using http!
+      waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkr, false, true, 15, SECONDS);
     }
 
     // poll to see all restarted nodes come back with https

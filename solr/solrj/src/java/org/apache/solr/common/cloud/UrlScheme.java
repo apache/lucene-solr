@@ -50,10 +50,11 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   public static final String HTTPS_PORT_PROP = "solr.jetty.https.port";
   public static final String USE_LIVENODES_URL_SCHEME = "ext.useLiveNodesUrlScheme";
 
-  private String urlScheme = HTTP;
-  private boolean useLiveNodesUrlScheme = false;
-  private SortedSet<String> liveNodes = null;
-  private SolrZkClient zkClient = null;
+  private volatile String urlScheme = HTTP;
+  private volatile boolean useLiveNodesUrlScheme = false;
+  private volatile SortedSet<String> liveNodes = null;
+  private volatile SolrZkClient zkClient = null;
+
   private final ConcurrentMap<String,String> nodeSchemeCache = new ConcurrentHashMap<>();
 
   /**
@@ -61,7 +62,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
    * @param client The SolrZkClient needed to read cluster properties from ZK.
    * @throws IOException If a connection or other I/O related error occurs while reading from ZK.
    */
-  public synchronized void initFromClusterProps(final SolrZkClient client) throws IOException {
+  public void initFromClusterProps(final SolrZkClient client) throws IOException {
     this.zkClient = client;
 
     // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
@@ -97,7 +98,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
    * the value on-the-fly.
    * @param urlScheme The new URL scheme, either http or https.
    */
-  public synchronized void setUrlScheme(final String urlScheme) {
+  public void setUrlScheme(final String urlScheme) {
     if (!this.urlScheme.equals(urlScheme) && this.zkClient != null) {
       throw new IllegalStateException("Global, immutable 'urlScheme' already set for this node!");
     }
@@ -151,7 +152,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   }
 
   @Override
-  public synchronized boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+  public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
     if (useLiveNodesUrlScheme) {
       liveNodes = newLiveNodes;
       if (liveNodes != null) {
@@ -258,7 +259,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   /**
    * Resets the global singleton back to initial state; only visible for testing!
    */
-  public synchronized void reset() {
+  public void reset() {
     this.zkClient = null;
     this.urlScheme = HTTP;
     this.useLiveNodesUrlScheme = false;

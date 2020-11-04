@@ -171,7 +171,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Check if property key exists.
    */
   public boolean containsKey(String key) {
-    return propMap.containsKey(key);
+    return propMap.containsKey(key) || (ZkStateReader.BASE_URL_PROP.equals(key) && getBaseUrlLazy() != null);
   }
 
   protected String getBaseUrlLazy() {
