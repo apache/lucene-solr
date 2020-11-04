@@ -2253,7 +2253,9 @@ function start_solr() {
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
-  mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
+  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+    mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
+  fi
   case "$SOLR_LOGS_DIR" in
     contexts|etc|lib|modules|resources|scripts|solr|solr-webapp)
       echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is invalid. Reserved for the system. Exiting"
