@@ -255,5 +255,6 @@
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
 # See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
+# You can test this behaviour by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps

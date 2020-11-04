@@ -2179,6 +2179,7 @@ function start_solr() {
   if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
     SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
     SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
+    mkdir -p "$SOLR_HEAP_DUMP_DIR" 2>/dev/null
   fi
 
   if $verbose ; then
