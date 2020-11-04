@@ -1,5 +1,5 @@
 # This file was created from the carrot2 project and is distributed under the BSD license.
-# See http://project.carrot2.org/license.html
+# See https://project.carrot2.org/license.html
 # Also see http://www.opensource.org/licenses/bsd-license.html
 # From trunk/core/carrot2-util-text/src-resources/stopwords.pl
 vol
