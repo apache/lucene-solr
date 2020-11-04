@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
@@ -76,7 +77,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   private final CoreContainer coreContainer;
   private final ApiBag containerApiBag;
 
-  private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
+  private final Map<String, ApiInfo> currentPlugins = new ConcurrentHashMap<>();
 
   @Override
   public boolean onChange(Map<String, Object> properties) {
