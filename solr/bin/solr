@@ -2136,7 +2136,7 @@ fi
 function mk_writable_dir() {
   local DIRNAME="$1"
   local DESCRIPTION="$2"
-  if ! mkdir -p "$DIRNAME" ; then
+  if ! mkdir -p "$DIRNAME" 2> /dev/null ; then
     echo -e "\nERROR: $DESCRIPTION directory $DIRNAME could not be created. Exiting"
     exit 1
   fi
