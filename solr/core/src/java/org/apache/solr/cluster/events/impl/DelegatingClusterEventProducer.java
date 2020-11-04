@@ -21,16 +21,18 @@ import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.cluster.events.ClusterEventProducerBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 
 /**
- * This implementation allows Solr to dynamically change the underlying implementation in
- * response to the changed plugin configuration.
+ * This implementation allows Solr to dynamically change the underlying implementation
+ * of {@link ClusterEventProducer} in response to the changed plugin configuration.
  */
 public final class DelegatingClusterEventProducer extends ClusterEventProducerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -40,6 +42,15 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
     delegate = new NoOpProducer(cc);
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (log.isDebugEnabled()) {
+      log.debug("--closing delegate for CC-{}: {}", Integer.toHexString(cc.hashCode()), delegate);
+    }
+    IOUtils.closeQuietly(delegate);
+    super.close();
   }
 
   public void setDelegate(ClusterEventProducer newDelegate) {

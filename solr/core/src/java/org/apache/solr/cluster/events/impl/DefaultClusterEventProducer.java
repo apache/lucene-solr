@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Arrays;
@@ -71,9 +72,6 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
   // ClusterSingleton lifecycle methods
   @Override
   public synchronized void start() {
-    if (log.isDebugEnabled()) {
-      log.debug("-- starting DCEP", new Exception(Integer.toHexString(hashCode())));
-    }
     if (cc == null) {
       liveNodesListener = null;
       cloudCollectionsListener = null;
@@ -205,9 +203,6 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
 
   @Override
   public synchronized void stop() {
-    if (log.isDebugEnabled()) {
-      log.debug("-- stopping DCEP {}", Integer.toHexString(hashCode()));
-    }
     state = State.STOPPING;
     doStop();
     state = State.STOPPED;
@@ -226,5 +221,11 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
     liveNodesListener = null;
     cloudCollectionsListener = null;
     clusterPropertiesListener = null;
+  }
+
+  @Override
+  public void close() throws IOException {
+    stop();
+    super.close();
   }
 }

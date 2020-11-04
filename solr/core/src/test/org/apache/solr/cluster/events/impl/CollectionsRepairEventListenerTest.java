@@ -29,10 +29,12 @@ import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +44,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 /**
  *
  */
+@LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
   public static class CollectionsRepairWrapperListener implements ClusterEventListener, ClusterSingleton {
@@ -49,9 +52,9 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
     CountDownLatch completed = new CountDownLatch(1);
 
-    CollectionsRepairWrapperListener(CoreContainer cc) throws Exception {
+    CollectionsRepairWrapperListener(CoreContainer cc, int waitFor) throws Exception {
       delegate = new CollectionsRepairEventListener(cc);
-      delegate.setWaitForSecond(0);
+      delegate.setWaitForSecond(waitFor);
     }
 
     @Override
@@ -79,12 +82,18 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     public void stop() {
       delegate.stop();
     }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
   }
 
   private static AllEventsListener eventsListener = new AllEventsListener();
   private static CollectionsRepairWrapperListener repairListener;
 
   private static int NUM_NODES = 3;
+  private static int waitFor;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -100,10 +109,13 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
         .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertNotNull(rsp);
+
+    waitFor = 1 + random().nextInt(9);
+
     CoreContainer cc = cluster.getOpenOverseer().getCoreContainer();
     cc.getClusterEventProducer()
         .registerListener(eventsListener, ClusterEvent.EventType.values());
-    repairListener = new CollectionsRepairWrapperListener(cc);
+    repairListener = new CollectionsRepairWrapperListener(cc, waitFor);
     cc.getClusterEventProducer()
         .registerListener(repairListener, ClusterEvent.EventType.NODES_DOWN);
     repairListener.start();
@@ -139,6 +151,8 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     cluster.waitForJettyToStop(nonOverseerJetty);
     eventsListener.waitForExpectedEvent(10);
     cluster.waitForActiveCollection(collection, 1, 2);
+
+    Thread.sleep(TimeUnit.MILLISECONDS.convert(waitFor, TimeUnit.SECONDS));
 
     // wait for completed processing in the repair listener
     boolean await = repairListener.completed.await(60, TimeUnit.SECONDS);

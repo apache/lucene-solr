@@ -19,6 +19,7 @@ package org.apache.solr.cluster.events;
 
 import org.junit.Assert;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,5 +53,9 @@ public class AllEventsListener implements ClusterEventListener {
     if (!await) {
       Assert.fail("Timed out waiting for expected event " + expectedType);
     }
+  }
+
+  public void close() throws IOException {
+
   }
 }

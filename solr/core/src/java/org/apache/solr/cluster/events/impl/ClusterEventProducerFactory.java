@@ -26,6 +26,8 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
 
   public ClusterEventProducerFactory(CoreContainer cc) {
     super(cc);
+    // this initial listener is used only for capturing plugin registrations
+    // done by other nodes while this CoreContainer is still loading
     initialPluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
       public void added(ContainerPluginsRegistry.ApiInfo plugin) {
@@ -85,18 +87,20 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
       throw new RuntimeException("this factory can be called only once!");
     }
     final DelegatingClusterEventProducer clusterEventProducer = new DelegatingClusterEventProducer(cc);
-    // since this is a ClusterSingleton, register it as such
+    // since this is a ClusterSingleton, register it as such, under unique name
     cc.getClusterSingletons().getSingletons().put(ClusterEventProducer.PLUGIN_NAME +"_delegate", clusterEventProducer);
     ContainerPluginsRegistry.ApiInfo clusterEventProducerInfo = plugins.getPlugin(ClusterEventProducer.PLUGIN_NAME);
     if (clusterEventProducerInfo != null) {
-      // the listener in ClusterSingletons already registered it
+      // the listener in ClusterSingletons already registered this instance
       clusterEventProducer.setDelegate((ClusterEventProducer) clusterEventProducerInfo.getInstance());
     } else {
       // use the default NoOp impl
     }
     // transfer those listeners that were already registered to the initial impl
     transferListeners(clusterEventProducer, plugins);
-    // install plugin registry listener
+
+    // install plugin registry listener that maintains plugin-based listeners in
+    // the event producer impl
     ContainerPluginsRegistry.PluginRegistryListener pluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
       public void added(ContainerPluginsRegistry.ApiInfo plugin) {
@@ -152,13 +156,15 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
   }
 
   private void transferListeners(ClusterEventProducer target, ContainerPluginsRegistry plugins) {
-    // stop capturing listener plugins
-    plugins.unregisterListener(initialPluginListener);
-    // transfer listeners that are already registered
-    listeners.forEach((type, listenersSet) -> {
-      listenersSet.forEach(listener -> target.registerListener(listener, type));
-    });
-    listeners.clear();
+    synchronized (listeners) {
+      // stop capturing listener plugins
+      plugins.unregisterListener(initialPluginListener);
+      // transfer listeners that are already registered
+      listeners.forEach((type, listenersSet) -> {
+        listenersSet.forEach(listener -> target.registerListener(listener, type));
+      });
+      listeners.clear();
+    }
   }
 
   @Override

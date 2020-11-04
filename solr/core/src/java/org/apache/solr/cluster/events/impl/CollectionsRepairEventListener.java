@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,18 +44,22 @@ import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is an illustration how to re-implement the combination of 8x
- * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replication factor.
- * <p>NOTE: there's no support for 'waitFor' yet.</p>
- * <p>NOTE 2: this functionality would be probably more reliable when executed also as a
+ * This is an illustration how to re-implement the combination of Solr 8x
+ * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replicas when
+ * nodes are lost.
+ * <p>The notion of <code>waitFor</code> delay between detection and repair action is
+ * implemented as a scheduled execution of the repair method, which is called every 1 sec
+ * to check whether there are any lost nodes that exceeded their <code>waitFor</code> period.</p>
+ * <p>NOTE: this functionality would be probably more reliable when executed also as a
  * periodically scheduled check - both as a reactive (listener) and proactive (scheduled) measure.</p>
  */
-public class CollectionsRepairEventListener implements ClusterEventListener, ClusterSingleton {
+public class CollectionsRepairEventListener implements ClusterEventListener, ClusterSingleton, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PLUGIN_NAME = "collectionsRepairListener";
@@ -68,6 +75,8 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   private int waitForSecond = DEFAULT_WAIT_FOR_SEC;
 
+  private ScheduledThreadPoolExecutor waitForExecutor;
+
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
@@ -75,6 +84,9 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   @VisibleForTesting
   public void setWaitForSecond(int waitForSecond) {
+    if (log.isDebugEnabled()) {
+      log.debug("-- setting waitFor={}", waitForSecond);
+    }
     this.waitForSecond = waitForSecond;
   }
 
@@ -108,10 +120,20 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
     // if so, remove them from the tracking map
     Set<String> trackingKeySet = nodeNameVsTimeRemoved.keySet();
     trackingKeySet.removeAll(solrCloudManager.getClusterStateProvider().getLiveNodes());
+    // add any new lost nodes (old lost nodes are skipped)
     event.getNodeNames().forEachRemaining(lostNode -> {
       nodeNameVsTimeRemoved.computeIfAbsent(lostNode, n -> solrCloudManager.getTimeSource().getTimeNs());
     });
+  }
 
+  private void runRepair() {
+    if (nodeNameVsTimeRemoved.isEmpty()) {
+      // nothing to do
+      return;
+    }
+    if (log.isDebugEnabled()) {
+      log.debug("-- runRepair for {} lost nodes", nodeNameVsTimeRemoved.size());
+    }
     Set<String> reallyLostNodes = new HashSet<>();
     nodeNameVsTimeRemoved.forEach((lostNode, timeRemoved) -> {
       long now = solrCloudManager.getTimeSource().getTimeNs();
@@ -120,7 +142,16 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
         reallyLostNodes.add(lostNode);
       }
     });
-
+    if (reallyLostNodes.isEmpty()) {
+      if (log.isDebugEnabled()) {
+        log.debug("--- skipping repair, {} nodes are still in waitFor period", nodeNameVsTimeRemoved.size());
+      }
+      return;
+    } else {
+      if (log.isDebugEnabled()) {
+        log.debug("--- running repair for nodes that are still lost after waitFor: {}", reallyLostNodes);
+      }
+    }
     // collect all lost replicas
     // collection / positions
     Map<String, List<ReplicaPosition>> newPositions = new HashMap<>();
@@ -169,7 +200,7 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
       return;
     }
 
-    // remove from the tracking set
+    // remove all nodes with expired waitFor from the tracking set
     nodeNameVsTimeRemoved.keySet().removeAll(reallyLostNodes);
 
     // send ADDREPLICA admin requests for each lost replica
@@ -191,12 +222,16 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
         log.warn("Exception calling ADDREPLICA {}: {}", addReplica.getParams().toQueryString(), e);
       }
     });
-
-    // ... and DELETERPLICA for lost ones?
   }
 
   @Override
   public void start() throws Exception {
+    state = State.STARTING;
+    waitForExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
+        new SolrNamedThreadFactory("collectionsRepair_waitFor"));
+    waitForExecutor.setRemoveOnCancelPolicy(true);
+    waitForExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+    waitForExecutor.scheduleAtFixedRate(() -> runRepair(), 0, waitForSecond, TimeUnit.SECONDS);
     state = State.RUNNING;
   }
 
@@ -207,6 +242,23 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   @Override
   public void stop() {
+    state = State.STOPPING;
+    waitForExecutor.shutdownNow();
+    try {
+      waitForExecutor.awaitTermination(60, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      log.warn("Failed to shut down the waitFor executor - interrupted...");
+      Thread.currentThread().interrupt();
+    }
+    waitForExecutor = null;
     state = State.STOPPED;
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (log.isDebugEnabled()) {
+      log.debug("-- close() called");
+    }
+    stop();
   }
 }

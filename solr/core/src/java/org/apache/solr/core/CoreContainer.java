@@ -1130,6 +1130,9 @@ public class CoreContainer {
       if (solrClientCache != null) {
         solrClientCache.close();
       }
+      if (containerPluginsRegistry != null) {
+        IOUtils.closeQuietly(containerPluginsRegistry);
+      }
 
     } finally {
       try {

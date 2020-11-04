@@ -39,6 +39,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
@@ -65,7 +66,7 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * for additional functionality by {@link PluginRegistryListener}-s registered with
  * this class.</p>
  */
-public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter {
+public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
@@ -98,6 +99,15 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     currentPlugins.forEach(ew.getBiConsumer());
+  }
+
+  @Override
+  public void close() throws IOException {
+    currentPlugins.values().forEach(apiInfo -> {
+      if (apiInfo.instance instanceof Closeable) {
+        IOUtils.closeQuietly((Closeable) apiInfo.instance);
+      }
+    });
   }
 
   public synchronized ApiInfo getPlugin(String name) {

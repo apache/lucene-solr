@@ -18,10 +18,12 @@ package org.apache.solr.cluster.events;
 
 import org.apache.solr.cloud.ClusterSingleton;
 
+import java.io.Closeable;
+
 /**
  * Component that produces {@link ClusterEvent} instances.
  */
-public interface ClusterEventProducer extends ClusterSingleton {
+public interface ClusterEventProducer extends ClusterSingleton, Closeable {
 
   /** Unique name for the registration of a plugin-based implementation. */
   String PLUGIN_NAME = "cluster-event-producer";
