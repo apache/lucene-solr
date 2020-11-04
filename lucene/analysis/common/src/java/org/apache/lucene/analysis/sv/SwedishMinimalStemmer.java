@@ -67,16 +67,30 @@ public class SwedishMinimalStemmer {
         (endsWith(s, len, "arne") ||
          endsWith(s, len, "erna") ||
          endsWith(s, len, "arna") ||
-         endsWith(s, len, "orna")))
+         endsWith(s, len, "orna") ||
+         endsWith(s, len, "aren")))
       return len - 4;
+
+    if (len > 5 &&
+        (endsWith(s, len, "are")))
+      return len - 3;
 
     if (len > 4 &&
       (endsWith(s, len, "ar") ||
+       endsWith(s, len, "at") ||
        endsWith(s, len, "er") ||
+       endsWith(s, len, "et") ||
        endsWith(s, len, "or") ||
        endsWith(s, len, "en")))
       return len - 2;
-    
-    return len;
+
+    if (len > 3)
+      switch(s[len-1]) {
+          case 'a':
+          case 'e':
+          case 'n': return len - 1;
+      }
+
+      return len;
   }
 }

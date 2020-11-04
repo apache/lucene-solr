@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.sv;
 
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -50,10 +49,10 @@ public class TestSwedishMinimalStemFilter extends BaseTokenStreamTestCase {
     super.tearDown();
   }
 
-    /** Test against a Bokmål vocabulary file */
-    public void testVocabulary() throws IOException {
-        assertVocabulary(analyzer, Files.newInputStream(getDataPath("minimal.txt")));
-    }
+  /** Test against vocabulary file */
+  public void testVocabulary() throws IOException {
+      assertVocabulary(analyzer, Files.newInputStream(getDataPath("minimal.txt")));
+  }
 
   public void testKeyword() throws IOException {
     final CharArraySet exclusionSet = new CharArraySet( asSet("jaktkarlens"), false);
