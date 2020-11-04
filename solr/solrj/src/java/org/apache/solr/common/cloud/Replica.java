@@ -131,7 +131,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public Replica(String name, Map<String,Object> map, String collection, String shard) {
     super(new HashMap<>());
     propMap.putAll(map);
-    this.baseUrl = initBaseUrlFromStoredProps(map);
+    getBaseUrlLazy();
     this.collection = collection;
     this.shard = shard;
     this.name = name;
@@ -179,7 +179,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     type = Replica.Type.valueOf(String.valueOf(details.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
     state = State.getState(String.valueOf(details.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     this.propMap.putAll(details);
-    this.baseUrl = initBaseUrlFromStoredProps(details);
+    getBaseUrlLazy();
     validate();
   }
 

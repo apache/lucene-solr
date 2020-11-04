@@ -43,9 +43,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
-
-    // compute the baseUrl from the node_name instead of storing it in ZK
-    this.baseUrl = initBaseUrlFromStoredProps(propMap);
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -117,6 +114,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
     // don't write out the base_url if we have a node_name
     if (propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
       final Map<String,Object> filtered = new HashMap<>();
+      // stream / collect is no good here as the Collector doesn't like null values
       propMap.forEach((key, value) -> {
         if (!ZkStateReader.BASE_URL_PROP.equals(key)) {
           filtered.put(key, value);
@@ -133,7 +131,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public String getStr(String key) {
     if (ZkStateReader.BASE_URL_PROP.equals(key)) {
-      return baseUrl;
+      return getBaseUrlLazy();
     }
 
     Object o = propMap.get(key);
@@ -153,7 +151,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public String getStr(String key,String def) {
     if (ZkStateReader.BASE_URL_PROP.equals(key)) {
-      return baseUrl;
+      return getBaseUrlLazy();
     }
 
     Object o = propMap.get(key);
@@ -161,7 +159,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   }
 
   public Object get(String key) {
-    return ZkStateReader.BASE_URL_PROP.equals(key) ? baseUrl : propMap.get(key);
+    return ZkStateReader.BASE_URL_PROP.equals(key) ? getBaseUrlLazy() : propMap.get(key);
   }
 
   @Override
@@ -176,16 +174,20 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return propMap.containsKey(key);
   }
 
-  protected String initBaseUrlFromStoredProps(final Map<String,Object> map) {
-    String baseUrl = null;
-    // most times, we have a node name and there's a 1-to-1 mapping to base_url from node_name, so prefer that
-    Object prop = map.get(ZkStateReader.NODE_NAME_PROP);
-    if (prop != null) {
-      baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
-    } else {
-      prop = map.get(ZkStateReader.BASE_URL_PROP);
+  protected String getBaseUrlLazy() {
+    // no need to synchronize this access as it's cheap to compute
+    // but we don't want to compute the baseUrl until it is needed
+    // for instance, the downnode ZkNodeProps has a node_name set but we don't need a base_url for that
+    if (baseUrl == null) {
+      // most times, we have a node name and there's a 1-to-1 mapping to base_url from node_name, so prefer that
+      Object prop = propMap.get(ZkStateReader.NODE_NAME_PROP);
       if (prop != null) {
-        baseUrl = UrlScheme.INSTANCE.applyUrlScheme((String)prop);
+        baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
+      } else {
+        prop = propMap.get(ZkStateReader.BASE_URL_PROP);
+        if (prop != null) {
+          baseUrl = UrlScheme.INSTANCE.applyUrlScheme((String)prop);
+        }
       }
     }
     return baseUrl;

@@ -931,6 +931,7 @@ public class ZkController implements Closeable {
 
       if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
         zkStateReader.registerLiveNodesListener(UrlScheme.INSTANCE);
+        zkStateReader.registerClusterPropertiesListener(UrlScheme.INSTANCE); // so operators can turn this off
       } // else we don't want to use url scheme from live nodes ...
 
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);

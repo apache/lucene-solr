@@ -62,10 +62,6 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
    * @throws IOException If a connection or other I/O related error occurs while reading from ZK.
    */
   public synchronized void initFromClusterProps(final SolrZkClient client) throws IOException {
-    //if (this.zkClient != null) {
-    //  throw new IllegalStateException("Global, immutable 'urlScheme' state already initialized for this node!");
-    //}
-
     this.zkClient = client;
 
     // Have to go directly to the cluster props b/c this needs to happen before ZkStateReader does its thing
@@ -156,9 +152,24 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   @Override
   public synchronized boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
-    this.liveNodes = useLiveNodesUrlScheme ? newLiveNodes : null;
-    this.nodeSchemeCache.clear();
-    return false;
+    if (useLiveNodesUrlScheme) {
+      liveNodes = newLiveNodes;
+      if (liveNodes != null) {
+        // we only need to clear the cached HTTP entries, keep the HTTPS
+        // as we don't really support a graceful downgrade from HTTPS -> HTTP
+        liveNodes.forEach(n -> {
+          if (HTTP.equals(nodeSchemeCache.get(n))) {
+            nodeSchemeCache.remove(n, HTTP);
+          }
+        });
+      } else {
+        nodeSchemeCache.clear();
+      }
+    } else {
+      nodeSchemeCache.clear();
+      liveNodes = null;
+    }
+    return !useLiveNodesUrlScheme;
   }
 
   private String applyUrlSchemeFromLiveNodes(final String url) {
@@ -217,7 +228,7 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
       liveNodes = null;
     }
     setUrlSchemeFromClusterProps(properties);
-    return false;
+    return !useLiveNodesUrlScheme; // if not using live nodes, no need to keep watching cluster props
   }
 
   private String getSchemeForLiveNode(String liveNode) {
