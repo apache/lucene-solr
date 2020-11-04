@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.ltr.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -102,9 +103,16 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     }
 
     private void implTransform(SolrDocument doc, int docid) {
-      LTRScoringQuery rerankingQuery = rerankingQueries[0];
-      if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
-        rerankingQuery = rerankingQueries[1];
+      LTRScoringQuery rerankingQuery = null;
+      if (rerankingQueries.length == 1) {
+        rerankingQuery = rerankingQueries[0];
+      } else {
+        for (LTRScoringQuery query : rerankingQueries) {
+          if (((LTRInterleavingScoringQuery)query).getPickedInterleavingDocIds().contains(docid)) {
+            rerankingQuery = query;
+            break;
+          }
+        }
       }
       doc.addField(name, rerankingQuery.getScoringModelName());
     }

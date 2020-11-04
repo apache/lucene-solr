@@ -39,10 +39,10 @@ import org.apache.solr.ltr.interleaving.TeamDraftInterleaving;
  * */
 public class LTRInterleavingRescorer extends LTRRescorer {
   
-  LTRScoringQuery[] rerankingQueries;
+  LTRInterleavingScoringQuery[] rerankingQueries;
   Interleaving interleavingAlgorithm = new TeamDraftInterleaving();
   
-  public LTRInterleavingRescorer(LTRScoringQuery[] rerankingQueries) {
+  public LTRInterleavingRescorer(LTRInterleavingScoringQuery[] rerankingQueries) {
     this.rerankingQueries = rerankingQueries;
   }
 
