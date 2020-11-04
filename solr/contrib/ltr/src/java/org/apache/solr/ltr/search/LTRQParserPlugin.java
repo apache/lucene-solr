@@ -34,6 +34,7 @@ import org.apache.solr.ltr.LTRInterleavingRescorer;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
+import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
@@ -181,7 +182,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
             rerankingQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
           }
         }else{
-          rerankingQuery = new LTRScoringQuery(null);
+          rerankingQuery = new OriginalRankingLTRScoringQuery();
         }
 
         // External features
@@ -201,10 +202,6 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         return new LTRQuery(rerankingQueries, reRankDocs);
       }
     }
-  }
-  
-  public static boolean isOriginalRanking(LTRScoringQuery rerankingQuery){
-    return rerankingQuery.getScoringModel() == null;
   }
 
   /**

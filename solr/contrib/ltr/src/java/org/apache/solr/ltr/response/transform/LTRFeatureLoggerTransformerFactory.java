@@ -34,6 +34,7 @@ import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
+import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.model.LTRScoringModel;
@@ -47,8 +48,6 @@ import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
-
-import static org.apache.solr.ltr.search.LTRQParserPlugin.isOriginalRanking;
 
 /**
  * This transformer will take care to generate and append in the response the
@@ -227,7 +226,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       for (int i = 0; i < rerankingQueries.length; i++) {
         LTRScoringQuery scoringQuery = rerankingQueries[i];
-        if ((scoringQuery == null || !isOriginalRanking(scoringQuery)) && (docsWereNotReranked || (featureStoreName != null && !featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
+        if ((scoringQuery == null || !(scoringQuery instanceof OriginalRankingLTRScoringQuery)) && (docsWereNotReranked || (featureStoreName != null && !featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
           // if store is set in the transformer we should overwrite the logger
 
           final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
@@ -255,7 +254,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           scoringQuery.setOriginalQuery(context.getQuery());
         }
         scoringQuery.setRequest(req);
-        if (!isOriginalRanking(scoringQuery)) {
+        if (!(scoringQuery instanceof OriginalRankingLTRScoringQuery)) {
           if (scoringQuery.getFeatureLogger() == null) {
             scoringQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
           }
@@ -292,7 +291,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
         rerankingQuery = rerankingQueries[1];
       }
-      if (!isOriginalRanking(rerankingQuery)) {
+      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery)) {
         Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
         if (featureVector == null) { // FV for this document was not in the cache
           featureVector = featureLogger.makeFeatureVector(

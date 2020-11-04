@@ -33,8 +33,6 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.search.SolrIndexSearcher;
 
-import static org.apache.solr.ltr.search.LTRQParserPlugin.isOriginalRanking;
-
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their
@@ -250,7 +248,7 @@ public class LTRRescorer extends Rescorer {
     final LeafReaderContext context = leafContexts.get(n);
     final int deBasedDoc = docID - context.docBase;
     Weight rankingWeight;
-    if (isOriginalRanking(rerankingQuery)) {
+    if (rerankingQuery instanceof OriginalRankingLTRScoringQuery) {
       rankingWeight = rerankingQuery.getOriginalQuery().createWeight(searcher, ScoreMode.COMPLETE, 1);
     } else {
       rankingWeight = searcher.createWeight(searcher.rewrite(rerankingQuery),
