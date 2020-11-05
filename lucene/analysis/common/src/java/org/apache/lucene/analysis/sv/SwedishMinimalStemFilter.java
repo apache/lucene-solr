@@ -33,6 +33,7 @@ import java.io.IOException;
  * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
+ * @since 8.8.0
  */
 public final class SwedishMinimalStemFilter extends TokenFilter {
   private final SwedishMinimalStemmer stemmer = new SwedishMinimalStemmer();

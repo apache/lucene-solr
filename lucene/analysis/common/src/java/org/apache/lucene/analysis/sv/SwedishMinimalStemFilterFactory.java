@@ -25,7 +25,7 @@ import java.util.Map;
 /** 
  * Factory for {@link SwedishMinimalStemFilter}.
  * <pre class="prettyprint">
- * &lt;fieldType name="text_svlgtstem" class="solr.TextField" positionIncrementGap="100"&gt;
+ * &lt;fieldType name="text_svminstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;

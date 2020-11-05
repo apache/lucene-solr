@@ -56,6 +56,7 @@ import static org.apache.lucene.analysis.util.StemmerUtil.endsWith;
 
 /**
  * Minimal Stemmer for Swedish.
+ * @since 8.8.0
  */
 public class SwedishMinimalStemmer {
   
