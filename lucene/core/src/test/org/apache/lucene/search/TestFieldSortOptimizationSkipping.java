@@ -510,7 +510,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
         doc.add(new NumericDocValuesField("field1", sortedValues[randomIdxs[i]]));
       }
       writer.addDocument(doc);
-      if (i == 10) {
+      if (i == 30) {
         writer.flush();
       }
     }
@@ -550,6 +550,69 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
+  public void testNumericSortOptimizationMultipleFieldsIndexSort() throws IOException {
+    final Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    boolean reverseSort = randomBoolean();
+    final SortField sortField = new SortField("field1", SortField.Type.LONG, reverseSort);
+    final SortField sortField2 = new SortField("field2", SortField.Type.INT, reverseSort);
+    Sort indexSort = new Sort(sortField, sortField2);
+    iwc.setIndexSort(indexSort);
+    final IndexWriter writer = new IndexWriter(dir, iwc);
+
+    final int numDocs = atLeast(50);
+    for (int i = 0; i < numDocs; i++) {
+      final Document doc = new Document();
+      if (i % 10 != 0) { // to have some missing values
+        doc.add(new NumericDocValuesField("field1", randomIntBetween(0, numDocs)));
+        doc.add(new NumericDocValuesField("field2", randomIntBetween(0, numDocs)));
+      }
+      writer.addDocument(doc);
+      if (i == 30) {
+        writer.flush();
+      }
+    }
+    final IndexReader reader = DirectoryReader.open(writer);
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+    final int numHits = randomIntBetween(1, numDocs - 10);
+    final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
+    {
+      // test that optimization is run when search sort is equal to the index sort
+      TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertTrue(collector.isEarlyTerminated());
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertTrue(topDocs.totalHits.value < numDocs);
+    }
+
+    {
+      // test that optimization is run when search sort is a starting part of the index sort
+      Sort searchSort = new Sort(sortField);
+      TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertTrue(collector.isEarlyTerminated());
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertTrue(topDocs.totalHits.value < numDocs);
+    }
+
+    {
+      // test that optimization is NOT run when search sort is NOT a starting part of the index sort
+      Sort searchSort = new Sort(sortField2);
+      TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
+      searcher.search(new MatchAllDocsQuery(), collector);
+      TopDocs topDocs = collector.topDocs();
+      assertEquals(topDocs.scoreDocs.length, numHits);
+      assertTrue(topDocs.totalHits.value == numDocs); // assert that all docs were collected
+    }
+
+    reader.close();
+    dir.close();
+  }
+
   public void testTermOrdValIndexSort() throws IOException {
     final Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -570,7 +633,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
         doc.add(new SortedDocValuesField("field1", sortedValues[randomIdxs[i]]));
       }
       writer.addDocument(doc);
-      if (i == 10) {
+      if (i == 30) {
         writer.flush();
       }
     }
