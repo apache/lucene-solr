@@ -590,7 +590,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       createCollection(COLLECTION, 1);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "node1_",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.CORE_NAME_PROP, "core1",
@@ -605,7 +605,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       //publish node state (active)
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "node1_",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.CORE_NAME_PROP, "core1",
@@ -1216,7 +1216,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
       queue.offer(Utils.toJSON(m));
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "node1_",
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.CORE_NAME_PROP, "core2",

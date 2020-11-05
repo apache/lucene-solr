@@ -206,7 +206,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void testBasic() throws Exception {
     LeaderElector elector = new LeaderElector(zkClient);
     ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "");
+        UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
         "shard2", "collection1", "dummynode1", props, zkController);
@@ -218,9 +218,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCancelElection() throws Exception {
+    UrlScheme u = UrlScheme.INSTANCE;
     LeaderElector first = new LeaderElector(zkClient);
     ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "1");
+        u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "1");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
         "slice1", "collection2", "dummynode1", props, zkController);
@@ -229,14 +230,14 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     Thread.sleep(1000);
 
-    String url1 = UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/1/");
-    String url2 = UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/2/");
+    String url1 = u.applyUrlScheme("http://127.0.0.1/solr/1/");
+    String url2 = u.applyUrlScheme("http://127.0.0.1/solr/2/");
 
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
     LeaderElector second = new LeaderElector(zkClient);
     props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "2");
+        u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "2");
     zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(second,
         "slice1", "collection2", "dummynode2", props, zkController);

@@ -135,6 +135,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.shard = shard;
     this.name = name;
     this.node = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
+
+    // it's ok to eagerly set the base_url from the node_name for replicas
+    String baseUrl = initBaseUrlFromNodeName();
+    if (baseUrl != null) {
+      propMap.put(BASE_URL_PROP, baseUrl);
+    }
+
     this.core = (String) propMap.get(ZkStateReader.CORE_NAME_PROP);
     this.type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     // default to ACTIVE
@@ -148,7 +155,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     super(new HashMap<>());
     this.name = name;
     this.node = node;
-    this.baseUrl = node != null ? UrlScheme.INSTANCE.getBaseUrlForNodeName(node) : null;
     this.state = state;
     this.type = type;
     this.collection = collection;
@@ -156,6 +162,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.core = core;
     if (props != null) {
       this.propMap.putAll(props);
+    }
+    if (node != null) {
+      propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(node));
     }
     validate();
   }
@@ -234,12 +243,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    String url = getBaseUrlLazy();
-    return url != null ? ZkCoreNodeProps.getCoreUrl(url, core) : null;
+    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
   }
 
   public String getBaseUrl() {
-    return getBaseUrlLazy();
+    return getStr(BASE_URL_PROP);
   }
 
   /** SolrCore name. */

@@ -36,13 +36,20 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 public class ZkNodeProps implements JSONWriter.Writable {
 
   protected final Map<String,Object> propMap;
-  protected transient String baseUrl;
 
   /**
    * Construct ZKNodeProps from map.
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
+
+    // in order to fix stored base_url's, just remove it for now and
+    // re-compute when needed if we have a node_name to work from
+    // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
+    if (this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      this.propMap.remove(ZkStateReader.BASE_URL_PROP);
+    }
+
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -96,7 +103,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   @SuppressWarnings({"unchecked"})
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, Object> props = null;
+    Map<String, Object> props;
     if (bytes[0] == 2) {
       try (JavaBinCodec jbc = new JavaBinCodec()) {
         props = (Map<String, Object>) jbc.unmarshal(bytes);
@@ -130,12 +137,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Get a string property value.
    */
   public String getStr(String key) {
-    if (ZkStateReader.BASE_URL_PROP.equals(key)) {
-      return getBaseUrlLazy();
-    }
-
-    Object o = propMap.get(key);
-    return o == null ? null : o.toString();
+    return getStr(key, null);
   }
 
   /**
@@ -149,17 +151,33 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get a string property value.
    */
-  public String getStr(String key,String def) {
-    if (ZkStateReader.BASE_URL_PROP.equals(key)) {
-      return getBaseUrlLazy();
-    }
-
-    Object o = propMap.get(key);
+  public String getStr(String key, String def) {
+    Object o = get(key);
     return o == null ? def : o.toString();
   }
 
   public Object get(String key) {
-    return ZkStateReader.BASE_URL_PROP.equals(key) ? getBaseUrlLazy() : propMap.get(key);
+    Object v = propMap.get(key);
+
+    // init the base_url on-the-fly if not already set,
+    // we don't want to compute it eagerly b/c some of the Overseer
+    // message objects have a node_name but never need a base_url
+    // Replica eagerly computes this in the ctor so never hits this code
+    if (v == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
+      v = initBaseUrlFromNodeName();
+    }
+
+    return v;
+  }
+  
+  protected final String initBaseUrlFromNodeName() {
+    String v = null;
+    final Object prop = propMap.get(ZkStateReader.NODE_NAME_PROP);
+    if (prop != null) {
+      v = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
+      propMap.put(ZkStateReader.BASE_URL_PROP, v);
+    }
+    return v;
   }
 
   @Override
@@ -171,28 +189,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Check if property key exists.
    */
   public boolean containsKey(String key) {
-    return propMap.containsKey(key) || (ZkStateReader.BASE_URL_PROP.equals(key) && getBaseUrlLazy() != null);
+    return propMap.containsKey(key);
   }
-
-  protected String getBaseUrlLazy() {
-    // no need to synchronize this access as it's cheap to compute
-    // but we don't want to compute the baseUrl until it is needed
-    // for instance, the downnode ZkNodeProps has a node_name set but we don't need a base_url for that
-    if (baseUrl == null) {
-      // most times, we have a node name and there's a 1-to-1 mapping to base_url from node_name, so prefer that
-      Object prop = propMap.get(ZkStateReader.NODE_NAME_PROP);
-      if (prop != null) {
-        baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
-      } else {
-        prop = propMap.get(ZkStateReader.BASE_URL_PROP);
-        if (prop != null) {
-          baseUrl = UrlScheme.INSTANCE.applyUrlScheme((String)prop);
-        }
-      }
-    }
-    return baseUrl;
-  }
-
+  
   public boolean getBool(String key, boolean b) {
     Object o = propMap.get(key);
     if (o == null) return b;
