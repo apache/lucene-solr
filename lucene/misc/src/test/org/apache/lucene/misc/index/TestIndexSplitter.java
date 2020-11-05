@@ -67,9 +67,9 @@ public class TestIndexSplitter extends LuceneTestCase {
       iw.addDocument(doc);
     }
     iw.commit();
-    //DirectoryReader iwReader = iw.getReader();
-    //assertEquals(3, iwReader.leaves().size());
-    //iwReader.close();
+    DirectoryReader iwReader = DirectoryReader.open(iw);
+    assertEquals(3, iwReader.leaves().size());
+    iwReader.close();
     iw.close();
     // we should have 2 segments now
     IndexSplitter is = new IndexSplitter(dir);
