@@ -83,14 +83,19 @@ public class UrlSchemeTest extends SolrTestCase {
     assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("http://127.0.0.1:8983/solr"));
 
     // global http applies, no match in live nodes
-    t.onChange(Collections.singletonMap(URL_SCHEME, HTTP)); // server is http now
+    when(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true))
+        .thenReturn(Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTP)));
+    t.initFromClusterProps(zkClient);
+
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("https://127.0.0.1:8983/solr"));
 
     clusterProps = new HashMap<>();
     clusterProps.put(URL_SCHEME, HTTPS);
     clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
-    t.onChange(clusterProps);
+    when(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true))
+        .thenReturn(Utils.toJSON(clusterProps));
+    t.initFromClusterProps(zkClient);
 
     liveNodes = new TreeSet<>();
     liveNodes.add("127.0.0.1:8983_solr");
@@ -99,23 +104,19 @@ public class UrlSchemeTest extends SolrTestCase {
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("https://127.0.0.1:8983/solr"));
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
 
-    t.onChange(Collections.singletonMap(URL_SCHEME, "http"));
-    assertEquals("http://127.0.0.2/solr", t.applyUrlScheme("127.0.0.2/solr"));
-
-    // Change to using https
-    clusterProps = new HashMap<>();
-    clusterProps.put(URL_SCHEME, HTTPS);
-    clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
-    t.onChange(clusterProps);
     liveNodes = new TreeSet<>();
     t.onChange(null, liveNodes);
+    // no match in live nodes, so global https applies
     assertEquals("https://127.0.0.1:8983/", t.applyUrlScheme("127.0.0.1:8983/"));
 
     // back to http
     clusterProps = new HashMap<>();
     clusterProps.put(URL_SCHEME, "http");
     clusterProps.put(USE_LIVENODES_URL_SCHEME, "true");
-    t.onChange(clusterProps);
+    when(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true))
+        .thenReturn(Utils.toJSON(clusterProps));
+    t.initFromClusterProps(zkClient);
+
     liveNodes = new TreeSet<>();
     t.onChange(null, liveNodes); // test node not in live nodes, which is ok
 

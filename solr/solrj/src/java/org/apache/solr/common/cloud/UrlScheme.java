@@ -22,13 +22,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -37,8 +35,11 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
- * Singleton access to global vars in persisted state, such as the urlScheme, which although is stored in ZK as a cluster property
+ * Singleton access to global urlScheme, which although is stored in ZK as a cluster property
  * really should be treated like a static global that is set at initialization and not altered after.
+ *
+ * Client applications should not use this class directly; it is only included in SolrJ because Replica
+ * and ZkNodeProps depend on it.
  */
 public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
   INSTANCE;
@@ -116,27 +117,24 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   public String getBaseUrlForNodeName(String nodeName) {
     Objects.requireNonNull(nodeName,"node_name should not be null");
-    if (nodeName.indexOf('_') == -1) {
-      nodeName += '_'; // underscore required to indicate context
-    }
     return Utils.getBaseUrlForNodeName(nodeName, getUrlSchemeForNodeName(nodeName));
   }
 
   public String getUrlSchemeForNodeName(final String nodeName) {
-    return useLiveNodesUrlScheme ? getSchemeFromLiveNode(nodeName).orElse(urlScheme) : urlScheme;
+    String scheme = useLiveNodesUrlScheme ? getSchemeForLiveNode(nodeName) : urlScheme;
+    return scheme != null ? scheme : urlScheme;
   }
 
   /**
-   * Given a URL with a replaceable parameter for the scheme, return a new URL with the correct scheme applied.
+   * Given a URL string with or without a scheme, return a new URL with the correct scheme applied.
    * @param url A URL to change the scheme (http|https)
    * @return A new URL with the correct scheme
    */
   public String applyUrlScheme(final String url) {
     Objects.requireNonNull(url, "URL must not be null!");
 
-    String updatedUrl;
     if (useLiveNodesUrlScheme && liveNodes != null) {
-      updatedUrl = applyUrlSchemeFromLiveNodes(url);
+      String updatedUrl = applyUrlSchemeFromLiveNodes(url);
       if (updatedUrl != null) {
         return updatedUrl;
       }
@@ -175,18 +173,14 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
 
   private String applyUrlSchemeFromLiveNodes(final String url) {
     String updatedUrl = null;
-    Optional<String> maybeFromLiveNode = getSchemeFromLiveNode(getNodeNameFromUrl(url));
-    if (maybeFromLiveNode.isPresent()) {
+    final String nodeName = getNodeNameFromUrl(url);
+    String schemeFromLiveNode = liveNodes.contains(nodeName) ? getSchemeForLiveNode(nodeName) : null;
+    if (schemeFromLiveNode != null) {
       final int at = url.indexOf("://");
       // replace the scheme on the url with the one from the matching live node entry
-      updatedUrl = maybeFromLiveNode.get() + ((at != -1) ? url.substring(at) : "://" + url);
+      updatedUrl = schemeFromLiveNode + ((at != -1) ? url.substring(at) : "://" + url);
     }
     return updatedUrl;
-  }
-
-  // Gets the urlScheme from the matching live node entry for this URL
-  private Optional<String> getSchemeFromLiveNode(final String nodeName) {
-    return (liveNodes != null && liveNodes.contains(nodeName)) ? Optional.ofNullable(getSchemeForLiveNode(nodeName)) : Optional.empty();
   }
 
   private String getNodeNameFromUrl(String url) {
@@ -228,29 +222,26 @@ public enum UrlScheme implements LiveNodesListener, ClusterPropertiesListener {
       nodeSchemeCache.clear();
       liveNodes = null;
     }
-    setUrlSchemeFromClusterProps(properties);
     return !useLiveNodesUrlScheme; // if not using live nodes, no need to keep watching cluster props
   }
 
-  private String getSchemeForLiveNode(String liveNode) {
+  // Read from ZK if not cached ... but don't fail on ZK error as this behavior is best effort only to
+  // help with a more graceful rolling restart to upgrade the cluster
+  private String getSchemeForLiveNode(final String liveNode) {
     String scheme = nodeSchemeCache.get(liveNode);
     if (scheme == null) {
       final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + liveNode;
       try {
         byte[] data = zkClient.getData(nodePath, null, null, true);
-        if (data != null) {
-          scheme = new String(data, StandardCharsets.UTF_8);
-        } else {
-          scheme = HTTP;
-        }
+        scheme = (data != null) ? new String(data, StandardCharsets.UTF_8) : HTTP;
         nodeSchemeCache.put(liveNode, scheme);
       } catch (KeeperException.NoNodeException e) {
         // safe to ignore ...
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to read scheme for liveNode: "+liveNode, e);
+        log.error("Unable to read scheme for node: {}", liveNode, e); // don't fail ... this is best-effort only
       } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to read scheme for liveNode: "+liveNode, e);
+        log.error("Unable to read scheme for node: {}", liveNode, e); // don't fail ... this is best-effort only
       }
     }
     return scheme;
