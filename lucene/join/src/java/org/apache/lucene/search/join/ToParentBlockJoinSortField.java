@@ -32,7 +32,7 @@ import org.apache.lucene.search.comparators.DoubleComparator;
 import org.apache.lucene.search.comparators.FloatComparator;
 import org.apache.lucene.search.comparators.IntComparator;
 import org.apache.lucene.search.comparators.LongComparator;
-import org.apache.lucene.search.comparators.TermOrdValComparator;
+import org.apache.lucene.search.FieldComparator.TermOrdValComparator;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.NumericUtils;
 

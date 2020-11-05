@@ -25,7 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.comparators.TermOrdValComparator;
+import org.apache.lucene.search.FieldComparator.TermOrdValComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 

@@ -25,7 +25,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.comparators.TermOrdValComparator;
+import org.apache.lucene.search.FieldComparator.TermOrdValComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 

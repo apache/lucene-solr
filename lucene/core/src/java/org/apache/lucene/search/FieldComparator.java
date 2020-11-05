@@ -233,15 +233,22 @@ public abstract class FieldComparator<T> {
    *  does most comparisons using the ordinals.  For medium
    *  to large results, this comparator will be much faster
    *  than {@link org.apache.lucene.search.FieldComparator.TermValComparator}.  For very small
-   *  result sets it may be slower. */
-  public static class TermOrdValComparator extends FieldComparator<BytesRef> implements LeafFieldComparator {
+   *  result sets it may be slower.
+   *
+   *  The comparator provides an iterator that can efficiently skip
+   *  documents when search sort is done according to the index sort.
+   */
+  public static class TermOrdValComparator extends FieldComparator<BytesRef> {
+    private final String field;
+    private final boolean reverse;
+
     /* Ords for each slot.
        @lucene.internal */
-    final int[] ords;
+    private final int[] ords;
 
     /* Values for each slot.
        @lucene.internal */
-    final BytesRef[] values;
+    private final BytesRef[] values;
     private final BytesRefBuilder[] tempBRs;
 
     /* Which reader last copied a value into the slot. When
@@ -254,12 +261,6 @@ public abstract class FieldComparator<T> {
     /* Gen of current reader we are on.
        @lucene.internal */
     int currentReaderGen = -1;
-
-    /* Current reader's doc ord/values.
-       @lucene.internal */
-    SortedDocValues termsIndex;
-
-    private final String field;
 
     /* Bottom slot, or -1 if queue isn't full yet
        @lucene.internal */
@@ -292,20 +293,19 @@ public abstract class FieldComparator<T> {
     /** Which ordinal to use for a missing value. */
     final int missingOrd;
 
-    /** Creates this, sorting missing values first. */
-    public TermOrdValComparator(int numHits, String field) {
-      this(numHits, field, false);
-    }
+    protected boolean hitsThresholdReached;
 
     /** Creates this, with control over how missing values
      *  are sorted.  Pass sortMissingLast=true to put
      *  missing values at the end. */
-    public TermOrdValComparator(int numHits, String field, boolean sortMissingLast) {
+    public TermOrdValComparator(int numHits, String field, boolean sortMissingLast, boolean reverse) {
+      this.field = field;
+      this.reverse = reverse;
       ords = new int[numHits];
       values = new BytesRef[numHits];
       tempBRs = new BytesRefBuilder[numHits];
       readerGen = new int[numHits];
-      this.field = field;
+
       if (sortMissingLast) {
         missingSortCmp = 1;
         missingOrd = Integer.MAX_VALUE;
@@ -315,12 +315,9 @@ public abstract class FieldComparator<T> {
       }
     }
 
-    private int getOrdForDoc(int doc) throws IOException {
-      if (termsIndex.advanceExact(doc)) {
-        return termsIndex.ordValue();
-      } else {
-        return -1;
-      }
+    @Override
+    public void setTopValue(BytesRef value) {
+      topValue = value;
     }
 
     @Override
@@ -341,44 +338,6 @@ public abstract class FieldComparator<T> {
       }
       return val1.compareTo(val2);
     }
-
-    @Override
-    public int compareBottom(int doc) throws IOException {
-      assert bottomSlot != -1;
-      int docOrd = getOrdForDoc(doc);
-      if (docOrd == -1) {
-        docOrd = missingOrd;
-      }
-      if (bottomSameReader) {
-        // ord is precisely comparable, even in the equal case
-        return bottomOrd - docOrd;
-      } else if (bottomOrd >= docOrd) {
-        // the equals case always means bottom is > doc
-        // (because we set bottomOrd to the lower bound in
-        // setBottom):
-        return 1;
-      } else {
-        return -1;
-      }
-    }
-
-    @Override
-    public void copy(int slot, int doc) throws IOException {
-      int ord = getOrdForDoc(doc);
-      if (ord == -1) {
-        ord = missingOrd;
-        values[slot] = null;
-      } else {
-        assert ord >= 0;
-        if (tempBRs[slot] == null) {
-          tempBRs[slot] = new BytesRefBuilder();
-        }
-        tempBRs[slot].copyBytes(termsIndex.lookupOrd(ord));
-        values[slot] = tempBRs[slot].get();
-      }
-      ords[slot] = ord;
-      readerGen[slot] = currentReaderGen;
-    }
     
     /** Retrieves the SortedDocValues for the field in this segment */
     protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
@@ -387,97 +346,12 @@ public abstract class FieldComparator<T> {
     
     @Override
     public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-      termsIndex = getSortedDocValues(context, field);
-      currentReaderGen++;
-
-      if (topValue != null) {
-        // Recompute topOrd/SameReader
-        int ord = termsIndex.lookupTerm(topValue);
-        if (ord >= 0) {
-          topSameReader = true;
-          topOrd = ord;
-        } else {
-          topSameReader = false;
-          topOrd = -ord-2;
-        }
-      } else {
-        topOrd = missingOrd;
-        topSameReader = true;
-      }
-      //System.out.println("  getLeafComparator topOrd=" + topOrd + " topSameReader=" + topSameReader);
-
-      if (bottomSlot != -1) {
-        // Recompute bottomOrd/SameReader
-        setBottom(bottomSlot);
-      }
-
-      return this;
-    }
-    
-    @Override
-    public void setBottom(final int bottom) throws IOException {
-      bottomSlot = bottom;
-
-      bottomValue = values[bottomSlot];
-      if (currentReaderGen == readerGen[bottomSlot]) {
-        bottomOrd = ords[bottomSlot];
-        bottomSameReader = true;
-      } else {
-        if (bottomValue == null) {
-          // missingOrd is null for all segments
-          assert ords[bottomSlot] == missingOrd;
-          bottomOrd = missingOrd;
-          bottomSameReader = true;
-          readerGen[bottomSlot] = currentReaderGen;
-        } else {
-          final int ord = termsIndex.lookupTerm(bottomValue);
-          if (ord < 0) {
-            bottomOrd = -ord - 2;
-            bottomSameReader = false;
-          } else {
-            bottomOrd = ord;
-            // exact value match
-            bottomSameReader = true;
-            readerGen[bottomSlot] = currentReaderGen;            
-            ords[bottomSlot] = bottomOrd;
-          }
-        }
-      }
-    }
-
-    @Override
-    public void setTopValue(BytesRef value) {
-      // null is fine: it means the last doc of the prior
-      // search was missing this value
-      topValue = value;
-      //System.out.println("setTopValue " + topValue);
+      return new TermOrdValLeafComparator(context);
     }
 
     @Override
     public BytesRef value(int slot) {
       return values[slot];
-    }
-
-    @Override
-    public int compareTop(int doc) throws IOException {
-
-      int ord = getOrdForDoc(doc);
-      if (ord == -1) {
-        ord = missingOrd;
-      }
-
-      if (topSameReader) {
-        // ord is precisely comparable, even in the equal
-        // case
-        //System.out.println("compareTop doc=" + doc + " ord=" + ord + " ret=" + (topOrd-ord));
-        return topOrd - ord;
-      } else if (ord <= topOrd) {
-        // the equals case always means doc is < value
-        // (because we set lastOrd to the lower bound)
-        return 1;
-      } else {
-        return -1;
-      }
     }
 
     @Override
@@ -493,19 +367,204 @@ public abstract class FieldComparator<T> {
       return val1.compareTo(val2);
     }
 
-    @Override
-    public void setScorer(Scorable scorer) {}
+    /**
+     * Leaf comparator for {@link TermOrdValComparator} that provides skipping functionality when index is sorted
+     */
+    public class TermOrdValLeafComparator implements LeafFieldComparator {
+      private final SortedDocValues termsIndex;
+      private boolean indexSort = false; // true if a query sort is a part of the index sort
+      private DocIdSetIterator competitiveIterator;
+      private boolean collectedAllCompetitiveHits = false;
+      private boolean iteratorUpdated = false;
+
+      public TermOrdValLeafComparator(LeafReaderContext context) throws IOException {
+        termsIndex = getSortedDocValues(context, field);
+        currentReaderGen++;
+        if (topValue != null) {
+          // Recompute topOrd/SameReader
+          int ord = termsIndex.lookupTerm(topValue);
+          if (ord >= 0) {
+            topSameReader = true;
+            topOrd = ord;
+          } else {
+            topSameReader = false;
+            topOrd = -ord-2;
+          }
+        } else {
+          topOrd = missingOrd;
+          topSameReader = true;
+        }
+        if (bottomSlot != -1) {
+          // Recompute bottomOrd/SameReader
+          setBottom(bottomSlot);
+        }
+        this.competitiveIterator = DocIdSetIterator.all(context.reader().maxDoc());
+      }
+
+      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+        return DocValues.getSorted(context.reader(), field);
+      }
+
+      @Override
+      public void setBottom(final int slot) throws IOException {
+        bottomSlot = slot;
+        bottomValue = values[bottomSlot];
+        if (currentReaderGen == readerGen[bottomSlot]) {
+          bottomOrd = ords[bottomSlot];
+          bottomSameReader = true;
+        } else {
+          if (bottomValue == null) {
+            // missingOrd is null for all segments
+            assert ords[bottomSlot] == missingOrd;
+            bottomOrd = missingOrd;
+            bottomSameReader = true;
+            readerGen[bottomSlot] = currentReaderGen;
+          } else {
+            final int ord = termsIndex.lookupTerm(bottomValue);
+            if (ord < 0) {
+              bottomOrd = -ord - 2;
+              bottomSameReader = false;
+            } else {
+              bottomOrd = ord;
+              // exact value match
+              bottomSameReader = true;
+              readerGen[bottomSlot] = currentReaderGen;
+              ords[bottomSlot] = bottomOrd;
+            }
+          }
+        }
+      }
+
+      @Override
+      public int compareBottom(int doc) throws IOException {
+        assert bottomSlot != -1;
+        int docOrd = getOrdForDoc(doc);
+        if (docOrd == -1) {
+          docOrd = missingOrd;
+        }
+        int result;
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          result = bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in setBottom):
+          result = 1;
+        } else {
+          result = -1;
+        }
+        // for the index sort case, if we encounter a first doc that is non-competitive,
+        // and the hits threshold is reached, we can update the iterator to skip the rest of docs
+        if (indexSort && (reverse ? result >= 0 : result <= 0)) {
+          collectedAllCompetitiveHits = true;
+          if (hitsThresholdReached && iteratorUpdated == false) {
+            competitiveIterator = DocIdSetIterator.empty();
+            iteratorUpdated = true;
+          }
+        }
+        return result;
+      }
+
+      @Override
+      public int compareTop(int doc) throws IOException {
+        int ord = getOrdForDoc(doc);
+        if (ord == -1) {
+          ord = missingOrd;
+        }
+        if (topSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return topOrd - ord;
+        } else if (ord <= topOrd) {
+          // the equals case always means doc is < value (because we set lastOrd to the lower bound)
+          return 1;
+        } else {
+          return -1;
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) throws IOException {
+        int ord = getOrdForDoc(doc);
+        if (ord == -1) {
+          ord = missingOrd;
+          values[slot] = null;
+        } else {
+          assert ord >= 0;
+          if (tempBRs[slot] == null) {
+            tempBRs[slot] = new BytesRefBuilder();
+          }
+          tempBRs[slot].copyBytes(termsIndex.lookupOrd(ord));
+          values[slot] = tempBRs[slot].get();
+        }
+        ords[slot] = ord;
+        readerGen[slot] = currentReaderGen;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {}
+
+      @Override
+      public void usesIndexSort() {
+        indexSort = true;
+      }
+
+      @Override
+      public void setHitsThresholdReached() {
+        hitsThresholdReached = true;
+        // for the index sort case, if we collected collected all competitive hits
+        // we can update the iterator to skip the rest of docs
+        if (indexSort && collectedAllCompetitiveHits && iteratorUpdated == false) {
+          competitiveIterator = DocIdSetIterator.empty();
+          iteratorUpdated = true;
+        }
+      }
+
+      @Override
+      public DocIdSetIterator competitiveIterator() {
+        if (indexSort == false) return null;
+        return new DocIdSetIterator() {
+          private int docID = -1;
+
+          @Override
+          public int nextDoc() throws IOException {
+            return advance(docID + 1);
+          }
+
+          @Override
+          public int docID() {
+            return docID;
+          }
+
+          @Override
+          public long cost() {
+            return competitiveIterator.cost();
+          }
+
+          @Override
+          public int advance(int target) throws IOException {
+            return docID = competitiveIterator.advance(target);
+          }
+        };
+      }
+
+      private int getOrdForDoc(int doc) throws IOException {
+        if (termsIndex.advanceExact(doc)) {
+          return termsIndex.ordValue();
+        } else {
+          return -1;
+        }
+      }
+    }
   }
   
   /** Sorts by field's natural Term sort order.  All
    *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
    *  very fast for very small results sets. */
-  public static class TermValComparator extends FieldComparator<BytesRef> implements LeafFieldComparator {
+  public static class TermValComparator extends FieldComparator<BytesRef> {
     
     private final BytesRef[] values;
     private final BytesRefBuilder[] tempBRs;
-    private BinaryDocValues docTerms;
     private final String field;
     private BytesRef bottom;
     private BytesRef topValue;
@@ -519,14 +578,6 @@ public abstract class FieldComparator<T> {
       missingSortCmp = sortMissingLast ? 1 : -1;
     }
 
-    private BytesRef getValueForDoc(int doc) throws IOException {
-      if (docTerms.advanceExact(doc)) {
-        return docTerms.binaryValue();
-      } else {
-        return null;
-      }
-    }
-
     @Override
     public int compare(int slot1, int slot2) {
       final BytesRef val1 = values[slot1];
@@ -535,39 +586,8 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public int compareBottom(int doc) throws IOException {
-      final BytesRef comparableBytes = getValueForDoc(doc);
-      return compareValues(bottom, comparableBytes);
-    }
-
-    @Override
-    public void copy(int slot, int doc) throws IOException {
-      final BytesRef comparableBytes = getValueForDoc(doc);
-      if (comparableBytes == null) {
-        values[slot] = null;
-      } else {
-        if (tempBRs[slot] == null) {
-          tempBRs[slot] = new BytesRefBuilder();
-        }
-        tempBRs[slot].copyBytes(comparableBytes);
-        values[slot] = tempBRs[slot].get();
-      }
-    }
-
-    /** Retrieves the BinaryDocValues for the field in this segment */
-    protected BinaryDocValues getBinaryDocValues(LeafReaderContext context, String field) throws IOException {
-      return DocValues.getBinary(context.reader(), field);
-    }
-
-    @Override
     public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-      docTerms = getBinaryDocValues(context, field);
-      return this;
-    }
-    
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = values[bottom];
+      return new TermValLeafComparator(context);
     }
 
     @Override
@@ -596,12 +616,55 @@ public abstract class FieldComparator<T> {
       return val1.compareTo(val2);
     }
 
-    @Override
-    public int compareTop(int doc) throws IOException {
-      return compareValues(topValue, getValueForDoc(doc));
-    }
+    /**
+     * Leaf comparator for {@link TermValComparator}
+     */
+    public class TermValLeafComparator implements LeafFieldComparator {
+      private final BinaryDocValues docTerms;
 
-    @Override
-    public void setScorer(Scorable scorer) {}
+      public TermValLeafComparator(LeafReaderContext context) throws IOException {
+        docTerms = DocValues.getBinary(context.reader(), field);
+      }
+
+      @Override
+      public void setBottom(int slot) {
+        bottom = values[slot];
+      }
+
+      @Override
+      public int compareBottom(int doc) throws IOException {
+        return compareValues(bottom, getValueForDoc(doc));
+      }
+
+      @Override
+      public int compareTop(int doc) throws IOException {
+        return compareValues(topValue, getValueForDoc(doc));
+      }
+
+      @Override
+      public void copy(int slot, int doc) throws IOException {
+        final BytesRef comparableBytes = getValueForDoc(doc);
+        if (comparableBytes == null) {
+          values[slot] = null;
+        } else {
+          if (tempBRs[slot] == null) {
+            tempBRs[slot] = new BytesRefBuilder();
+          }
+          tempBRs[slot].copyBytes(comparableBytes);
+          values[slot] = tempBRs[slot].get();
+        }
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) {}
+
+      private BytesRef getValueForDoc(int doc) throws IOException {
+        if (docTerms.advanceExact(doc)) {
+          return docTerms.binaryValue();
+        } else {
+          return null;
+        }
+      }
+    }
   }
 }
