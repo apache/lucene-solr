@@ -81,34 +81,44 @@ $ ./bin/solr-exporter -p 9854 -z localhost:2181/solr -f ./conf/solr-exporter-con
 
 === Command Line Parameters
 
-The parameters in the example start commands shown above:
+The list of available parameters for the Prometheus Exporter.
+All parameters can be provided via an environment variable, instead of through the command line.
 
 `h`, `--help`::
 Displays command line help and usage.
 
-`-p`, `--port`::
-The port where Prometheus will listen for new data. This port will be used to configure Prometheus. It can be any port not already in use on your server. The default is `9983`.
+`-p`, `--port`, `$PORT`::
+The port where Prometheus will listen for new data. This port will be used to configure Prometheus.
+It can be any port not already in use on your server. The default is `8989`.
 
-`-b`, `--baseurl`::
-The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode. If you are running Solr in SolrCloud mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
+`-b`, `--baseurl`, `$SOLR_URL`::
+The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running in Standalone mode.
+If you are running Solr in SolrCloud mode, do not specify this parameter.
+If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
-`-z`, `--zkhost`::
-The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode. If you are running Solr in Standalone mode, do not specify this parameter. If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
+`-z`, `--zkhost`, `$ZK_HOST`::
+The ZooKeeper connect string (such as `localhost:9983`, or `localhost:2181/solr`) when Solr is running in SolrCloud mode.
+If you are running Solr in Standalone mode, do not specify this parameter.
+If neither the `-b` parameter nor the `-z` parameter are defined, the `-b` parameter default is used.
 
-`-f`, `--config-file`::
+`-f`, `--config-file`, `$CONFIG_FILE`::
 The path to the configuration file that defines the Solr metrics to read. The default is `contrib/prometheus-exporter/conf/solr-exporter-config.xml`.
 
-`-n`, `--num-threads`::
+`-n`, `--num-threads`, `$NUM_THREADS`::
 The number of threads. The `solr-exporter` creates thread pools for requests to Solr. Request latency can be improved by increasing the number of threads. The default is `1`.
 
-`-s`, `--scrape-interval`::
-The number of seconds between collecting metrics from Solr. The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting. These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool. The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr. The default value is 60 seconds.
+`-s`, `--scrape-interval`, `$SCRAPE_INTERVAL`::
+The number of seconds between collecting metrics from Solr.
+The `solr-exporter` collects metrics from Solr every few seconds controlled by this setting.
+These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
+The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
+The default value is 60 seconds.
 
 The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost:8983/solr/admin/metrics`.
 
 === Environment Variable Options
 
-The start commands provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
+The bin scripts provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
 
 `JAVA_HEAP`::
 Sets the initial (`Xms`) and max (`Xmx`) Java heap size. The default is `512m`.
@@ -122,12 +132,20 @@ Custom Java garbage collection settings. The default is `-XX:+UseG1GC`.
 `JAVA_OPTS`::
 Extra JVM options.
 
+`ZK_CREDS_AND_ACLS`::
+Credentials for connecting to a ZK Host that is protected with ACLs.
+For more information on what to include in this variable, refer to the <<zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts,Solr ZK ACL docs>> or the <<#getting-metrics-from-a-secured-solrcloud,example below>>.
+
 `CLASSPATH_PREFIX`::
 Location of extra libraries to load when starting the `solr-exporter`.
 
+All <<#command-line-parameters,command line parameters>> are able to be provided via environment variables when using the bin scripts.
+
 === Getting Metrics from a Secured SolrCloud
 
-Your SolrCloud might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>. The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>. This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
+Your SolrCloud might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>.
+The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>.
+This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
 
 Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>>, <<enabling-ssl.adoc#enabling-ssl,SSL>> and <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>:
 
@@ -143,7 +161,8 @@ Then you can start the Exporter as follows (Linux).
 [source,bash]
 ----
 $ cd contrib/prometheus-exporter
-$ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
+$ export JAVA_OPTS="-Djavax.net.ssl.trustStore=truststore.p12 -Djavax.net.ssl.trustStorePassword=truststorePassword -Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory -Dsolr.httpclient.config=basicauth.properties"
+$ export ZK_CREDS_AND_ACLS="-DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider -DzkDigestUsername=readonly-user -DzkDigestPassword=zkUserPassword"
 $ export CLASSPATH_PREFIX="../../server/solr-webapp/webapp/WEB-INF/lib/commons-codec-1.11.jar"
 $ ./bin/solr-exporter -p 9854 -z zk1:2181,zk2:2181,zk3:2181 -f ./conf/solr-exporter-config.xml -n 16
 ----

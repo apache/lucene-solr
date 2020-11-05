@@ -32,6 +32,9 @@ A thorough review of the list in Major Changes in Earlier 8.x Versions as well a
 
 _(raw; not yet edited)_
 
+* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar
+  (instead of solr-cell-*). (Dawid Weiss)
+
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
 
@@ -138,6 +141,8 @@ _(raw; not yet edited)_
   should be used instead, such as autoscaling policy or rules-based placement.
 
 * SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
+
+* SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 
 === Upgrade Prerequisites in Solr 9
 
