@@ -40,10 +40,16 @@ import org.apache.solr.ltr.interleaving.TeamDraftInterleaving;
 public class LTRInterleavingRescorer extends LTRRescorer {
   
   LTRInterleavingScoringQuery[] rerankingQueries;
+  private Integer originalRankingIndex = null;
   Interleaving interleavingAlgorithm = new TeamDraftInterleaving();
   
   public LTRInterleavingRescorer(LTRInterleavingScoringQuery[] rerankingQueries) {
     this.rerankingQueries = rerankingQueries;
+    for(int i=0;i<this.rerankingQueries.length;i++){
+      if(this.rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery){
+        this.originalRankingIndex = i;
+      }
+    }
   }
 
   /**
@@ -62,25 +68,16 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     if ((topN == 0) || (firstPassTopDocs.scoreDocs.length == 0)) {
       return firstPassTopDocs;
     }
-    
-    int originalRankingIndex = -1;
-    for(int i=0;i<rerankingQueries.length;i++){
-      if(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery){
-        originalRankingIndex = i;
-      }
-    }
-    boolean interleavingWithOriginalRanking = originalRankingIndex != -1;
 
     ScoreDoc[] firstPassResults = null;
-    if(interleavingWithOriginalRanking) {
+    if(originalRankingIndex != null) {
       firstPassResults = new ScoreDoc[firstPassTopDocs.scoreDocs.length];
       System.arraycopy(firstPassTopDocs.scoreDocs, 0, firstPassResults, 0, firstPassTopDocs.scoreDocs.length);
     }
     topN = Math.toIntExact(Math.min(topN, firstPassTopDocs.totalHits.value));
-    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
-    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,getFirstPassDocsRanked(firstPassTopDocs),leaves);
-    if (interleavingWithOriginalRanking) {
+    ScoreDoc[][] reRankedPerModel = rerank(searcher,topN,getFirstPassDocsRanked(firstPassTopDocs));
+    if (originalRankingIndex != null) {
       reRankedPerModel[originalRankingIndex] = firstPassResults;
     }
     InterleavingResult interleaved = interleavingAlgorithm.interleave(reRankedPerModel[0], reRankedPerModel[1]);
@@ -93,12 +90,15 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     return new TopDocs(firstPassTopDocs.totalHits, interleavedResults);
   }
 
-  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults, List<LeafReaderContext> leaves) throws IOException {
+  private ScoreDoc[][] rerank(IndexSearcher searcher, int topN, ScoreDoc[] firstPassResults) throws IOException {
     ScoreDoc[][] reRankedPerModel = new ScoreDoc[rerankingQueries.length][topN];
+    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     LTRScoringQuery.ModelWeight[] modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
-    for (int i = 0; i < rerankingQueries.length && !(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery); i++) {
+    for (int i = 0; i < rerankingQueries.length; i++) {
+      if (originalRankingIndex == null || originalRankingIndex != i) {
         modelWeights[i] = (LTRScoringQuery.ModelWeight) searcher
             .createWeight(searcher.rewrite(rerankingQueries[i]), ScoreMode.COMPLETE, 1);
+      }
     }
     scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
@@ -131,12 +131,16 @@ public class LTRInterleavingRescorer extends LTRRescorer {
       // We advanced to another segment
       if (readerContext != null) {
         docBase = readerContext.docBase;
-        for (int i = 0; i < modelWeights.length && !(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery); i++) {
+        for (int i = 0; i < modelWeights.length; i++) {
+          if (modelWeights[i] != null) {
             scorers[i] = modelWeights[i].scorer(readerContext);
+          }
         }
       }
-      for (int i = 0; i < rerankingQueries.length && !(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery); i++) {
+      for (int i = 0; i < rerankingQueries.length; i++) {
+        if (modelWeights[i] != null) {
           scoreSingleHit(indexSearcher, topN, modelWeights[i], docBase, hitUpto, new ScoreDoc(hit.doc, hit.score, hit.shardIndex), docID, rerankingQueries[i], scorers[i], rerankedPerModel[i]);
+        }
       }
       hitUpto++;
     }
