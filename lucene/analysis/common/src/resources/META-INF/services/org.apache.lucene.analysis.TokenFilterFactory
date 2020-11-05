@@ -111,6 +111,7 @@ org.apache.lucene.analysis.shingle.FixedShingleFilterFactory
 org.apache.lucene.analysis.snowball.SnowballPorterFilterFactory
 org.apache.lucene.analysis.sr.SerbianNormalizationFilterFactory
 org.apache.lucene.analysis.sv.SwedishLightStemFilterFactory
+org.apache.lucene.analysis.sv.SwedishMinimalStemFilterFactory
 org.apache.lucene.analysis.synonym.SynonymFilterFactory
 org.apache.lucene.analysis.synonym.SynonymGraphFilterFactory
 org.apache.lucene.analysis.core.FlattenGraphFilterFactory
