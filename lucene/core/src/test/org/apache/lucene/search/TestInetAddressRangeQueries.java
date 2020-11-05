@@ -14,16 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.misc.search;
+package org.apache.lucene.search;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-import org.apache.lucene.misc.document.InetAddressPoint;
-import org.apache.lucene.misc.document.InetAddressRange;
-import org.apache.lucene.search.BaseRangeFieldQueryTestCase;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.document.InetAddressPoint;
+import org.apache.lucene.document.InetAddressRange;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**

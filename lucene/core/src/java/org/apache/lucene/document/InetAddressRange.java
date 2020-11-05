@@ -14,14 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.misc.document;
+package org.apache.lucene.document;
 
 import java.net.InetAddress;
 import java.util.Arrays;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.RangeFieldQuery;
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
