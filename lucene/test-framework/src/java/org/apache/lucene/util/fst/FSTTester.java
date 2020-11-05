@@ -95,7 +95,7 @@ public class FSTTester<T> {
     return br;
   }
 
-  static String getRandomString(Random random) {
+  public static String getRandomString(Random random) {
     final String term;
     if (random.nextBoolean()) {
       term = TestUtil.randomRealisticUnicodeString(random);
@@ -121,7 +121,7 @@ public class FSTTester<T> {
     return new String(buffer, 0, end);
   }
 
-  static IntsRef toIntsRef(String s, int inputMode) {
+  public static IntsRef toIntsRef(String s, int inputMode) {
     return toIntsRef(s, inputMode, new IntsRefBuilder());
   }
 
