@@ -101,9 +101,10 @@ public class TestOrdinalMap extends LuceneTestCase {
    */
   public void testOneSegmentWithAllValues() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(
-            TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()))
+        .setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()))
+        .setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter iw = new IndexWriter(dir, cfg);
 
     int numTerms = 1000;
     for (int i = 0; i < numTerms; ++i) {
