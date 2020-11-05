@@ -234,7 +234,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
+    String url = getBaseUrlLazy();
+    return url != null ? ZkCoreNodeProps.getCoreUrl(url, core) : null;
   }
 
   public String getBaseUrl() {
