@@ -93,13 +93,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
           .build();
       expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
 
-      //test with an invalid class
-      // XXX (ab) in order to support ClusterSingleton we allow adding
-      // plugins without Api EndPoints
-
-//      plugin.klass = C1.class.getName();
-//      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
-
       //test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
       req.process(cluster.getSolrClient());
