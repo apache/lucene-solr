@@ -213,7 +213,7 @@ public class KnnGraphTester {
     for (int node = 0; node < numDocs; node++) {
       knnValues.seek(node);
       int n = 0;
-      while (knnValues.nextArc() != NO_MORE_DOCS) {
+      while (knnValues.nextNeighbor() != NO_MORE_DOCS) {
         ++n;
       }
       ++leafHist[n];
@@ -420,10 +420,10 @@ public class KnnGraphTester {
             .order(ByteOrder.LITTLE_ENDIAN)
             .asFloatBuffer();
           offset += blockSize;
-          Neighbors queue = Neighbors.create(topK, HnswGraph.isReversed(SEARCH_STRATEGY));
+          Neighbors queue = Neighbors.create(topK, SEARCH_STRATEGY.reversed);
           for (; j < numDocs && vectors.hasRemaining(); j++) {
             vectors.get(vector);
-            float d = HnswGraph.compare(query, vector, SEARCH_STRATEGY);
+            float d = SEARCH_STRATEGY.compare(query, vector);
             queue.insertWithOverflow(new Neighbor(j, d));
           }
           result[i] = new int[topK];

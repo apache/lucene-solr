@@ -38,7 +38,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -230,10 +232,16 @@ public class TestHnsw extends LuceneTestCase {
         for (int node = 0; node < size; node ++) {
             g.seek(node);
             h.seek(node);
-            for (int arc = g.nextArc(); arc != NO_MORE_DOCS; arc = g.nextArc()) {
-                assertEquals("arcs differ for node " + node, arc, h.nextArc());
-            }
+            assertEquals("arcs differ for node " + node, getNeighbors(g), getNeighbors(h));
         }
+    }
+
+    private Set<Integer> getNeighbors(KnnGraphValues g) throws IOException {
+        Set<Integer> neighbors = new HashSet<>();
+        for (int n = g.nextNeighbor(); n != NO_MORE_DOCS; n = g.nextNeighbor()) {
+            neighbors.add(n);
+        }
+        return neighbors;
     }
 
     private void assertVectorsEqual(VectorValues u, VectorValues v) throws IOException {

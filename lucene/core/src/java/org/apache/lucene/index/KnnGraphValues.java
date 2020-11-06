@@ -22,8 +22,8 @@ import java.io.IOException;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
- * Access to per-document friends lists in a (hierarchical) knn search graph.
- * TODO: replace with SortedNumericDocValues??
+ * Access to per-document neighbor lists in a (hierarchical) knn search graph.
+ * @lucene.experimental
  */
 public abstract class KnnGraphValues {
 
@@ -31,7 +31,7 @@ public abstract class KnnGraphValues {
   protected KnnGraphValues() {}
 
   /** Move the pointer to exactly {@code target}, the id of a node in the graph.
-   *  After this method returns, call {@link #nextArc()} to return successive (ordered) connected node ordinals.
+   *  After this method returns, call {@link #nextNeighbor()} to return successive (ordered) connected node ordinals.
    * @param target must be a valid node in the graph, ie. &ge; 0 and &lt; {@link VectorValues#size()}.
    */
   public abstract void seek(int target) throws IOException;
@@ -41,20 +41,18 @@ public abstract class KnnGraphValues {
    * NO_MORE_DOCS without calling {@link #seek(int)}, which resets the iterator.
    * @return a node ordinal in the graph, or NO_MORE_DOCS if the iteration is complete.
    */
-  public abstract int nextArc() throws IOException ;
+  public abstract int nextNeighbor() throws IOException;
 
   /** Empty graph value */
   public static KnnGraphValues EMPTY = new KnnGraphValues() {
 
     @Override
-    public int nextArc() {
+    public int nextNeighbor() {
       return NO_MORE_DOCS;
     }
 
     @Override
     public void seek(int target) {
     }
-
   };
-
 }

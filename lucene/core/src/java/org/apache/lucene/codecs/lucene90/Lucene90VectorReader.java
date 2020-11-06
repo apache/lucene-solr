@@ -48,7 +48,6 @@ import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.Neighbor;
 import org.apache.lucene.util.hnsw.Neighbors;
 
-import static org.apache.lucene.codecs.lucene90.Lucene90VectorFormat.isHnswStrategy;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
@@ -196,7 +195,6 @@ public final class Lucene90VectorReader extends VectorReader {
     return new OffHeapVectorValues(fieldEntry, bytesSlice);
   }
 
-  // exposed for testing
   public KnnGraphValues getGraphValues(String field) throws IOException {
     FieldInfo info = fieldInfos.fieldInfo(field);
     if (info == null) {
@@ -211,7 +209,7 @@ public final class Lucene90VectorReader extends VectorReader {
   }
 
   private KnnGraphValues getGraphValues(FieldEntry entry) throws IOException {
-    if (isHnswStrategy(entry.searchStrategy)) {
+    if (entry.searchStrategy.isHnsw()) {
       HnswGraphFieldEntry graphEntry = (HnswGraphFieldEntry) entry;
       IndexInput bytesSlice = vectorIndex.slice("graph-data", entry.indexDataOffset, entry.indexDataLength);
       return new IndexedKnnGraphReader(graphEntry, bytesSlice);
@@ -367,7 +365,7 @@ public final class Lucene90VectorReader extends VectorReader {
       }
       int i = 0;
       ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
-      boolean reversed = HnswGraph.isReversed(searchStrategy());
+      boolean reversed = searchStrategy().reversed;
       while (results.size() > 0) {
         Neighbor n = results.pop();
         float score;
@@ -461,7 +459,7 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public int nextArc() throws IOException {
+    public int nextNeighbor() throws IOException {
       if (arcUpTo >= arcCount) {
         return NO_MORE_DOCS;
       }

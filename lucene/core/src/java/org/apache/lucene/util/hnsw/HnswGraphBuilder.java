@@ -18,9 +18,6 @@
 package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.KnnGraphValues;
@@ -122,7 +119,7 @@ public final class HnswGraphBuilder {
     Neighbors results = HnswGraph.search(value, beamWidth, 2 * beamWidth, boundedVectors, graphValues, random);
 
     // Get the best maxConn nodes
-    Neighbors nn = Neighbors.create(maxConn, HnswGraph.isReversed(searchStrategy));
+    Neighbors nn = Neighbors.create(maxConn, searchStrategy.reversed);
     for (Neighbor n : results) {
       nn.insertWithOverflow(n);
     }

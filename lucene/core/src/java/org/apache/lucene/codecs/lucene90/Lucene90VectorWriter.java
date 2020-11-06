@@ -33,7 +33,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 
-import static org.apache.lucene.codecs.lucene90.Lucene90VectorFormat.isHnswStrategy;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
@@ -92,7 +91,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
     long[] offsets = new long[count];
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
     long vectorIndexOffset = vectorIndex.getFilePointer();
-    if (isHnswStrategy(vectors.searchStrategy())) {
+    if (vectors.searchStrategy().isHnsw()) {
       if (vectors instanceof RandomAccessVectorValuesProducer) {
         writeGraph(vectorIndex, (RandomAccessVectorValuesProducer) vectors, vectorIndexOffset, offsets, count);
       } else {
@@ -102,7 +101,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
     long vectorIndexLength = vectorIndex.getFilePointer() - vectorIndexOffset;
     if (vectorDataLength > 0) {
       writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, vectorIndexOffset, vectorIndexLength, count, docIds);
-      if (isHnswStrategy(vectors.searchStrategy())) {
+      if (vectors.searchStrategy().isHnsw()) {
         writeGraphOffsets(meta, offsets);
       }
     }

@@ -19,7 +19,6 @@ package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -32,8 +31,6 @@ import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.VectorValues;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-import static org.apache.lucene.util.VectorUtil.dotProduct;
-import static org.apache.lucene.util.VectorUtil.squareDistance;
 
 /**
  * Navigable Small-world graph. Provides efficient approximate nearest neighbor
@@ -41,11 +38,7 @@ import static org.apache.lucene.util.VectorUtil.squareDistance;
  * neighbor algorithm based on navigable small world graphs [2014]</a> and <a
  * href="https://arxiv.org/abs/1603.09320">this paper [2018]</a> for details.
  *
- * This implementation is actually more like the one in the same authors' earlier 2014 paper in that
- * there is no hierarchy (just one layer), and no fanout restriction on the graph: nodes are allowed to accumulate
- * an unbounded number of outbound links, but it does incorporate some of the innovations of the later paper, like
- * using a priority queue to perform a beam search while traversing the graph. The nomenclature is a bit different
- * here from what's used in those papers:
+ * The nomenclature is a bit different here from what's used in those papers:
  *
  * <h3>Hyperparameters</h3>
  * <ul>
@@ -67,12 +60,13 @@ public final class HnswGraph {
 
   private final int maxConn;
 
-  // each entry lists the top maxConn neighbors of a node
+  // Each entry lists the top maxConn neighbors of a node. The nodes correspond to vectors added to HnswBuilder, and the
+  // node values are the ordinals of those vectors.
   private final List<Neighbors> graph;
 
   HnswGraph(int maxConn, VectorValues.SearchStrategy searchStrategy) {
     graph = new ArrayList<>();
-    graph.add(Neighbors.create(maxConn, isReversed(searchStrategy)));
+    graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
     this.maxConn = maxConn;
   }
 
@@ -89,9 +83,8 @@ public final class HnswGraph {
   public static Neighbors search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
-    boolean scoreReversed = isReversed(searchStrategy);
     TreeSet<Neighbor> candidates;
-    if (scoreReversed) {
+    if (searchStrategy.reversed) {
       candidates = new TreeSet<>(Comparator.reverseOrder());
     } else {
       candidates = new TreeSet<>();
@@ -99,20 +92,19 @@ public final class HnswGraph {
     int size = vectors.size();
     for (int i = 0; i < numSeed && i < size; i++) {
       int entryPoint = random.nextInt(size);
-      candidates.add(new Neighbor(entryPoint, compare(query, vectors.vectorValue(entryPoint), searchStrategy)));
+      candidates.add(new Neighbor(entryPoint, searchStrategy.compare(query, vectors.vectorValue(entryPoint))));
     }
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
-    //IntHashSet visited = new IntHashSet();
     Set<Integer> visited = new HashSet<>();
     // TODO: use PriorityQueue's sentinel optimization
-    Neighbors results = Neighbors.create(topK, scoreReversed);
+    Neighbors results = Neighbors.create(topK, searchStrategy.reversed);
     for (Neighbor c : candidates) {
       visited.add(c.node());
       results.insertWithOverflow(c);
     }
     // Set the bound to the worst current result and below reject any newly-generated candidates failing
     // to exceed this bound
-    BoundsChecker bound = BoundsChecker.create(scoreReversed);
+    BoundsChecker bound = BoundsChecker.create(searchStrategy.reversed);
     bound.bound = results.top().score();
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
@@ -124,12 +116,12 @@ public final class HnswGraph {
       }
       graphValues.seek(c.node());
       int friendOrd;
-      while ((friendOrd = graphValues.nextArc()) != NO_MORE_DOCS) {
+      while ((friendOrd = graphValues.nextNeighbor()) != NO_MORE_DOCS) {
         if (visited.contains(friendOrd)) {
           continue;
         }
         visited.add(friendOrd);
-        float score = compare(query, vectors.vectorValue(friendOrd), searchStrategy);
+        float score = searchStrategy.compare(query, vectors.vectorValue(friendOrd));
         if (results.size() < topK || bound.check(score) == false) {
           Neighbor n = new Neighbor(friendOrd, score);
           candidates.add(n);
@@ -143,7 +135,8 @@ public final class HnswGraph {
   }
 
   /**
-   * Returns the nodes connected to the given node by its outgoing arcs in an unpredictable order.
+   * Returns the nodes connected to the given node by its outgoing neighborNodes in an unpredictable order. Each node inserted
+   * by HnswGraphBuilder corresponds to a vector, and the node is the vector's ordinal.
    * @param node the node whose friends are returned
    */
   public int[] getNeighbors(int node) {
@@ -185,38 +178,6 @@ public final class HnswGraph {
     arcs2.add(new Neighbor(node1, score));
   }
 
-  /**
-   * Calculates a similarity score between the two vectors with a specified function.
-   * @param v1 a vector
-   * @param v2 another vector, of the same dimension
-   * @return the value of the strategy's score function applied to the two vectors
-   */
-  public static float compare(float[] v1, float[] v2, VectorValues.SearchStrategy searchStrategy) {
-    switch (searchStrategy) {
-      case EUCLIDEAN_HNSW:
-        return squareDistance(v1, v2);
-      case DOT_PRODUCT_HNSW:
-        return dotProduct(v1, v2);
-      default:
-        throw new IllegalStateException("invalid search strategy: " + searchStrategy);
-    }
-  }
-
-  /**
-   * Return whether the given strategy returns lower values for nearer vectors
-   * @param searchStrategy the strategy
-   */
-  public static boolean isReversed(VectorValues.SearchStrategy searchStrategy) {
-    switch (searchStrategy) {
-      case EUCLIDEAN_HNSW:
-        return true;
-      case DOT_PRODUCT_HNSW:
-        return false;
-      default:
-        throw new IllegalStateException("invalid search strategy: " + searchStrategy);
-    }
-  }
-
   KnnGraphValues getGraphValues() {
     return new HnswGraphValues();
   }
@@ -227,20 +188,20 @@ public final class HnswGraph {
   private class HnswGraphValues extends KnnGraphValues {
 
     private int arcUpTo;
-    private int[] arcs;
+    private int[] neighborNodes;
 
     @Override
     public void seek(int targetNode) {
       arcUpTo = 0;
-      arcs = HnswGraph.this.getNeighbors(targetNode);
+      neighborNodes = HnswGraph.this.getNeighbors(targetNode);
     }
 
     @Override
-    public int nextArc() {
-      if (arcUpTo >= arcs.length) {
+    public int nextNeighbor() {
+      if (arcUpTo >= neighborNodes.length) {
         return NO_MORE_DOCS;
       }
-      return arcs[arcUpTo++];
+      return neighborNodes[arcUpTo++];
     }
 
   }

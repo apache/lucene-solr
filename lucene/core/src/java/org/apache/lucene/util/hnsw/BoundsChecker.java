@@ -41,7 +41,7 @@ abstract class BoundsChecker {
 
     static class Max extends BoundsChecker {
         Max() {
-            bound = -Float.MAX_VALUE;
+            bound = Float.NEGATIVE_INFINITY;
         }
 
         void update(float sample) {
@@ -58,7 +58,7 @@ abstract class BoundsChecker {
     static class Min extends BoundsChecker {
 
         Min() {
-            bound = Float.MAX_VALUE;
+            bound = Float.POSITIVE_INFINITY;
         }
 
         void update(float sample) {

@@ -244,7 +244,7 @@ public class TestKnnGraph extends LuceneTestCase {
           // We collect neighbors for analysis below
           List<Integer> friends = new ArrayList<>();
           int arc;
-          while ((arc = graphValues.nextArc()) != NO_MORE_DOCS) {
+          while ((arc = graphValues.nextNeighbor()) != NO_MORE_DOCS) {
             friends.add(arc);
           }
           if (friends.size() == 0) {

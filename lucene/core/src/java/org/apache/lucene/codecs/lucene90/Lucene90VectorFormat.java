@@ -24,11 +24,11 @@ import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.VectorValues;
 
 /**
  * Lucene 9.0 vector format, which encodes dense numeric vector values.
- * TODO: add support for approximate KNN search.
+ *
+ * @lucene.experimental
  */
 public final class Lucene90VectorFormat extends VectorFormat {
 
@@ -43,7 +43,7 @@ public final class Lucene90VectorFormat extends VectorFormat {
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor */
-  Lucene90VectorFormat() {
+  public Lucene90VectorFormat() {
   }
 
   @Override
@@ -55,11 +55,5 @@ public final class Lucene90VectorFormat extends VectorFormat {
   public VectorReader fieldsReader(SegmentReadState state) throws IOException {
     return new Lucene90VectorReader(state);
   }
-
-  static boolean isHnswStrategy(VectorValues.SearchStrategy searchStrategy) {
-    return searchStrategy == VectorValues.SearchStrategy.DOT_PRODUCT_HNSW ||
-        searchStrategy == VectorValues.SearchStrategy.EUCLIDEAN_HNSW;
-  }
-
 
 }
