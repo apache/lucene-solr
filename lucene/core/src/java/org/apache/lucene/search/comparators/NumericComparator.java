@@ -237,7 +237,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         @Override
         public DocIdSetIterator competitiveIterator() {
-            if (enableSkipping == false && indexSort == false) return null;
+            if (enableSkipping == false && indexSort == false) {
+                return null;
+            }
             return new DocIdSetIterator() {
                 private int docID = -1;
 

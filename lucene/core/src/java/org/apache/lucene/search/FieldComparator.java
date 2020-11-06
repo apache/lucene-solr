@@ -375,7 +375,6 @@ public abstract class FieldComparator<T> {
       private boolean indexSort = false; // true if a query sort is a part of the index sort
       private DocIdSetIterator competitiveIterator;
       private boolean collectedAllCompetitiveHits = false;
-      private boolean iteratorUpdated = false;
 
       public TermOrdValLeafComparator(LeafReaderContext context) throws IOException {
         termsIndex = getSortedDocValues(context, field);
@@ -457,9 +456,8 @@ public abstract class FieldComparator<T> {
         // and the hits threshold is reached, we can update the iterator to skip the rest of docs
         if (indexSort && (reverse ? result >= 0 : result <= 0)) {
           collectedAllCompetitiveHits = true;
-          if (hitsThresholdReached && iteratorUpdated == false) {
+          if (hitsThresholdReached) {
             competitiveIterator = DocIdSetIterator.empty();
-            iteratorUpdated = true;
           }
         }
         return result;
@@ -513,9 +511,8 @@ public abstract class FieldComparator<T> {
         hitsThresholdReached = true;
         // for the index sort case, if we collected collected all competitive hits
         // we can update the iterator to skip the rest of docs
-        if (indexSort && collectedAllCompetitiveHits && iteratorUpdated == false) {
+        if (indexSort && collectedAllCompetitiveHits) {
           competitiveIterator = DocIdSetIterator.empty();
-          iteratorUpdated = true;
         }
       }
 

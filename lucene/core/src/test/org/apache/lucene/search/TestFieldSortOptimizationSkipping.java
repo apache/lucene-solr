@@ -492,185 +492,176 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
   }
 
   public void testNumericSortOptimizationIndexSort() throws IOException {
-    final Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     boolean reverseSort = randomBoolean();
     final SortField sortField = new SortField("field1", SortField.Type.LONG, reverseSort);
     Sort indexSort = new Sort(sortField);
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setIndexSort(indexSort);
-    final IndexWriter writer = new IndexWriter(dir, iwc);
 
-    final int numDocs = atLeast(50);
-    int[] sortedValues = initializeNumericValues(numDocs, reverseSort, 0);
-    int[] randomIdxs = randomIdxs(numDocs);
-
-    for (int i = 0; i < numDocs; i++) {
-      final Document doc = new Document();
-      if (sortedValues[randomIdxs[i]] > 0) {
-        doc.add(new NumericDocValuesField("field1", sortedValues[randomIdxs[i]]));
+    try (
+      Directory dir = newDirectory();
+      IndexWriter writer = new IndexWriter(dir, iwc)
+    ) {
+      final int numDocs = atLeast(50);
+      int[] sortedValues = initializeNumericValues(numDocs, reverseSort, 0);
+      int[] randomIdxs = randomIdxs(numDocs);
+      for (int i = 0; i < numDocs; i++) {
+        final Document doc = new Document();
+        if (sortedValues[randomIdxs[i]] > 0) {
+          doc.add(new NumericDocValuesField("field1", sortedValues[randomIdxs[i]]));
+        }
+        writer.addDocument(doc);
+        if (i == 30) {
+          writer.flush();
+        }
       }
-      writer.addDocument(doc);
-      if (i == 30) {
-        writer.flush();
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        IndexSearcher searcher = newSearcher(reader);
+        final int numHits = randomIntBetween(1, numDocs - 10);
+        final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
+        // test that optimization is run when search sort is equal to the index sort
+        TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        TopDocs topDocs = collector.topDocs();
+        assertTrue(collector.isEarlyTerminated());
+        assertEquals(topDocs.scoreDocs.length, numHits);
+        assertTrue(topDocs.totalHits.value < numDocs);
+        for (int i = 0; i < numHits; i++) {
+          assertEquals(sortedValues[i], ((Long) ((FieldDoc) topDocs.scoreDocs[i]).fields[0]).intValue());
+        }
+
+        // test that search_after works correctly
+        int afterIdx = randomIntBetween(0, numHits - 1);
+        FieldDoc after = (FieldDoc) topDocs.scoreDocs[afterIdx];
+        final int numHits2 = randomIntBetween(1, 5);
+        final int totalHitsThreshold2 = randomIntBetween(1, 5);
+        collector = TopFieldCollector.create(indexSort, numHits2, after, totalHitsThreshold2);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        topDocs = collector.topDocs();
+        assertEquals(topDocs.scoreDocs.length, numHits2);
+        for (int i = 0; i < numHits2; i++) {
+          assertEquals(sortedValues[afterIdx + 1 + i], ((Long) ((FieldDoc) topDocs.scoreDocs[i]).fields[0]).intValue());
+        }
       }
     }
-    final IndexReader reader = DirectoryReader.open(writer);
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(reader);
-    final int numHits = randomIntBetween(1, numDocs - 10);
-    final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
-    {
-      // test that optimization is run when search sort is equal to the index sort
-      TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      TopDocs topDocs = collector.topDocs();
-      assertTrue(collector.isEarlyTerminated());
-      assertEquals(topDocs.scoreDocs.length, numHits);
-      assertTrue(topDocs.totalHits.value < numDocs);
-      for (int i = 0; i < numHits; i++) {
-        assertEquals(sortedValues[i], ((Long)((FieldDoc) topDocs.scoreDocs[i]).fields[0]).intValue());
-      }
-
-      // test that search_after works correctly
-      int afterIdx = randomIntBetween(0, numHits - 1);
-      FieldDoc after = (FieldDoc) topDocs.scoreDocs[afterIdx];
-      final int numHits2 = randomIntBetween(1, 5);
-      final int totalHitsThreshold2 = randomIntBetween(1, 5);
-      collector = TopFieldCollector.create(indexSort, numHits2, after, totalHitsThreshold2);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      topDocs = collector.topDocs();
-      assertEquals(topDocs.scoreDocs.length, numHits2);
-      for (int i = 0; i < numHits2; i++) {
-        assertEquals(sortedValues[afterIdx + 1 + i], ((Long)((FieldDoc) topDocs.scoreDocs[i]).fields[0]).intValue());
-      }
-    }
-
-    reader.close();
-    dir.close();
   }
 
   public void testNumericSortOptimizationMultipleFieldsIndexSort() throws IOException {
-    final Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     boolean reverseSort = randomBoolean();
     final SortField sortField = new SortField("field1", SortField.Type.LONG, reverseSort);
     final SortField sortField2 = new SortField("field2", SortField.Type.INT, reverseSort);
     Sort indexSort = new Sort(sortField, sortField2);
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setIndexSort(indexSort);
-    final IndexWriter writer = new IndexWriter(dir, iwc);
 
-    final int numDocs = atLeast(50);
-    for (int i = 0; i < numDocs; i++) {
-      final Document doc = new Document();
-      if (i % 10 != 0) { // to have some missing values
-        doc.add(new NumericDocValuesField("field1", randomIntBetween(0, numDocs)));
-        doc.add(new NumericDocValuesField("field2", randomIntBetween(0, numDocs)));
+    try (
+      Directory dir = newDirectory();
+      IndexWriter writer = new IndexWriter(dir, iwc)
+    ) {
+      final int numDocs = atLeast(50);
+      for (int i = 0; i < numDocs; i++) {
+        final Document doc = new Document();
+        if (i % 10 != 0) { // to have some missing values
+          doc.add(new NumericDocValuesField("field1", randomIntBetween(0, numDocs)));
+          doc.add(new NumericDocValuesField("field2", randomIntBetween(0, numDocs)));
+        }
+        writer.addDocument(doc);
+        if (i == 30) {
+          writer.flush();
+        }
       }
-      writer.addDocument(doc);
-      if (i == 30) {
-        writer.flush();
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        IndexSearcher searcher = newSearcher(reader);
+        final int numHits = randomIntBetween(1, numDocs - 10);
+        final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
+        {
+          // test that optimization is run when search sort is equal to the index sort
+          TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
+          searcher.search(new MatchAllDocsQuery(), collector);
+          TopDocs topDocs = collector.topDocs();
+          assertTrue(collector.isEarlyTerminated());
+          assertEquals(topDocs.scoreDocs.length, numHits);
+          assertTrue(topDocs.totalHits.value < numDocs);
+        }
+
+        {
+          // test that optimization is run when search sort is a starting part of the index sort
+          Sort searchSort = new Sort(sortField);
+          TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
+          searcher.search(new MatchAllDocsQuery(), collector);
+          TopDocs topDocs = collector.topDocs();
+          assertTrue(collector.isEarlyTerminated());
+          assertEquals(topDocs.scoreDocs.length, numHits);
+          assertTrue(topDocs.totalHits.value < numDocs);
+        }
+
+        {
+          // test that optimization is NOT run when search sort is NOT a starting part of the index sort
+          Sort searchSort = new Sort(sortField2);
+          TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
+          searcher.search(new MatchAllDocsQuery(), collector);
+          TopDocs topDocs = collector.topDocs();
+          assertEquals(topDocs.scoreDocs.length, numHits);
+          assertTrue(topDocs.totalHits.value == numDocs); // assert that all docs were collected
+        }
       }
     }
-    final IndexReader reader = DirectoryReader.open(writer);
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(reader);
-    final int numHits = randomIntBetween(1, numDocs - 10);
-    final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
-    {
-      // test that optimization is run when search sort is equal to the index sort
-      TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      TopDocs topDocs = collector.topDocs();
-      assertTrue(collector.isEarlyTerminated());
-      assertEquals(topDocs.scoreDocs.length, numHits);
-      assertTrue(topDocs.totalHits.value < numDocs);
-    }
-
-    {
-      // test that optimization is run when search sort is a starting part of the index sort
-      Sort searchSort = new Sort(sortField);
-      TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      TopDocs topDocs = collector.topDocs();
-      assertTrue(collector.isEarlyTerminated());
-      assertEquals(topDocs.scoreDocs.length, numHits);
-      assertTrue(topDocs.totalHits.value < numDocs);
-    }
-
-    {
-      // test that optimization is NOT run when search sort is NOT a starting part of the index sort
-      Sort searchSort = new Sort(sortField2);
-      TopFieldCollector collector = TopFieldCollector.create(searchSort, numHits, null, totalHitsThreshold);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      TopDocs topDocs = collector.topDocs();
-      assertEquals(topDocs.scoreDocs.length, numHits);
-      assertTrue(topDocs.totalHits.value == numDocs); // assert that all docs were collected
-    }
-
-    reader.close();
-    dir.close();
   }
 
   public void testTermOrdValIndexSort() throws IOException {
-    final Directory dir = newDirectory();
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     boolean reverseSort = randomBoolean();
     final SortField sortField = new SortField("field1", SortField.Type.STRING, reverseSort);
     sortField.setMissingValue(SortField.STRING_LAST);
     Sort indexSort = new Sort(sortField);
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setIndexSort(indexSort);
-    final IndexWriter writer = new IndexWriter(dir, iwc);
 
-    final int numDocs = atLeast(50);
-    BytesRef[] sortedValues = initializeStringValues(numDocs, reverseSort);
-    int[] randomIdxs = randomIdxs(numDocs);
-
-    for (int i = 0; i < numDocs; i++) {
-      final Document doc = new Document();
-      if (sortedValues[randomIdxs[i]] != null) {
-        doc.add(new SortedDocValuesField("field1", sortedValues[randomIdxs[i]]));
+    try (
+      Directory dir = newDirectory();
+      IndexWriter writer = new IndexWriter(dir, iwc)
+    ) {
+      final int numDocs = atLeast(50);
+      BytesRef[] sortedValues = initializeStringValues(numDocs, reverseSort);
+      int[] randomIdxs = randomIdxs(numDocs);
+      for (int i = 0; i < numDocs; i++) {
+        final Document doc = new Document();
+        if (sortedValues[randomIdxs[i]] != null) {
+          doc.add(new SortedDocValuesField("field1", sortedValues[randomIdxs[i]]));
+        }
+        writer.addDocument(doc);
+        if (i == 30) {
+          writer.flush();
+        }
       }
-      writer.addDocument(doc);
-      if (i == 30) {
-        writer.flush();
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        IndexSearcher searcher = newSearcher(reader);
+        final int numHits = randomIntBetween(1, numDocs - 10);
+        final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
+        // test that optimization is run when search sort is equal to the index sort
+        TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        TopDocs topDocs = collector.topDocs();
+        assertTrue(collector.isEarlyTerminated());
+        assertEquals(topDocs.scoreDocs.length, numHits);
+        assertTrue(topDocs.totalHits.value < numDocs);
+        for (int i = 0; i < numHits; i++) {
+          assertEquals(sortedValues[i], ((FieldDoc) topDocs.scoreDocs[i]).fields[0]);
+        }
+
+        // test that search_after works correctly
+        int afterIdx = randomIntBetween(0, numHits - 1);
+        FieldDoc after = (FieldDoc) topDocs.scoreDocs[afterIdx];
+        final int numHits2 = randomIntBetween(1, 5);
+        final int totalHitsThreshold2 = randomIntBetween(1, 5);
+        collector = TopFieldCollector.create(indexSort, numHits2, after, totalHitsThreshold2);
+        searcher.search(new MatchAllDocsQuery(), collector);
+        topDocs = collector.topDocs();
+        assertEquals(topDocs.scoreDocs.length, numHits2);
+        for (int i = 0; i < numHits2; i++) {
+          assertEquals(sortedValues[afterIdx + 1 + i], ((FieldDoc) topDocs.scoreDocs[i]).fields[0]);
+        }
       }
     }
-    final IndexReader reader = DirectoryReader.open(writer);
-    writer.close();
-
-    IndexSearcher searcher = newSearcher(reader);
-    final int numHits = randomIntBetween(1, numDocs - 10);
-    final int totalHitsThreshold = randomIntBetween(1, numDocs - 10);
-    {
-      // test that optimization is run when search sort is equal to the index sort
-      TopFieldCollector collector = TopFieldCollector.create(indexSort, numHits, null, totalHitsThreshold);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      TopDocs topDocs = collector.topDocs();
-      assertTrue(collector.isEarlyTerminated());
-      assertEquals(topDocs.scoreDocs.length, numHits);
-      assertTrue(topDocs.totalHits.value < numDocs);
-      for (int i = 0; i < numHits; i++) {
-        assertEquals(sortedValues[i], ((FieldDoc) topDocs.scoreDocs[i]).fields[0]);
-      }
-
-      // test that search_after works correctly
-      int afterIdx = randomIntBetween(0, numHits - 1);
-      FieldDoc after = (FieldDoc) topDocs.scoreDocs[afterIdx];
-      final int numHits2 = randomIntBetween(1, 5);
-      final int totalHitsThreshold2 = randomIntBetween(1, 5);
-      collector = TopFieldCollector.create(indexSort, numHits2, after, totalHitsThreshold2);
-      searcher.search(new MatchAllDocsQuery(), collector);
-      topDocs = collector.topDocs();
-      assertEquals(topDocs.scoreDocs.length, numHits2);
-      for (int i = 0; i < numHits2; i++) {
-        assertEquals(sortedValues[afterIdx + 1 + i], ((FieldDoc) topDocs.scoreDocs[i]).fields[0]);
-      }
-    }
-
-    reader.close();
-    dir.close();
   }
 
   // initialize sorted values with some 0 (missing) and repeated values

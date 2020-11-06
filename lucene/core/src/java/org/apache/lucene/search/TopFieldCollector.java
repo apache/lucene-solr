@@ -140,7 +140,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      if (canEarlyTerminate) comparator.usesIndexSort();
+      if (canEarlyTerminate) {
+        comparator.usesIndexSort();
+      }
       super.setScorer(scorer);
       minCompetitiveScore = 0f;
       updateMinCompetitiveScore(scorer);
