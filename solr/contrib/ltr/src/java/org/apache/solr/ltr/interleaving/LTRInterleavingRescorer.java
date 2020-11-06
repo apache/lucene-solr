@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr;
+package org.apache.solr.ltr.interleaving;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,9 +27,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
-import org.apache.solr.ltr.interleaving.Interleaving;
-import org.apache.solr.ltr.interleaving.InterleavingResult;
-import org.apache.solr.ltr.interleaving.TeamDraftInterleaving;
+import org.apache.solr.ltr.LTRRescorer;
+import org.apache.solr.ltr.LTRScoringQuery;
+import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their

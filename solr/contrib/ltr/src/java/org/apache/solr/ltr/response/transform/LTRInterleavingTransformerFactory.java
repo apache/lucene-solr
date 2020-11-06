@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.ltr.LTRInterleavingScoringQuery;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -49,7 +49,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     final private String name;
     final private SolrQueryRequest req;
     
-    private LTRScoringQuery[] rerankingQueries;
+    private LTRInterleavingScoringQuery[] rerankingQueries;
 
     /**
      * @param name
@@ -76,7 +76,7 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
       if (context.getRequest() == null) {
         return;
       }
-      rerankingQueries = SolrQueryRequestContextUtils.getScoringQueries(req);
+      rerankingQueries = (LTRInterleavingScoringQuery[])SolrQueryRequestContextUtils.getScoringQueries(req);
       for (int i = 0; i < rerankingQueries.length; i++) {
         LTRScoringQuery scoringQuery = rerankingQueries[i];
 
@@ -103,16 +103,9 @@ public class LTRInterleavingTransformerFactory extends TransformerFactory {
     }
 
     private void implTransform(SolrDocument doc, int docid) {
-      LTRScoringQuery rerankingQuery = null;
-      if (rerankingQueries.length == 1) {
-        rerankingQuery = rerankingQueries[0];
-      } else {
-        for (LTRScoringQuery query : rerankingQueries) {
-          if (((LTRInterleavingScoringQuery)query).getPickedInterleavingDocIds().contains(docid)) {
-            rerankingQuery = query;
-            break;
-          }
-        }
+      LTRScoringQuery rerankingQuery = rerankingQueries[0];
+      if (rerankingQueries.length > 1 && rerankingQueries[1].getPickedInterleavingDocIds().contains(docid)) {
+        rerankingQuery = rerankingQueries[1];
       }
       doc.addField(name, rerankingQuery.getScoringModelName());
     }

@@ -31,7 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.CSVFeatureLogger;
 import org.apache.solr.ltr.FeatureLogger;
-import org.apache.solr.ltr.LTRInterleavingScoringQuery;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
@@ -289,16 +289,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
       LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
-
-      if (rerankingQueries.length > 1) {
-        for (int i=0; i<rerankingQueries.length; i++) {
-          LTRInterleavingScoringQuery interleavingQuery = (LTRInterleavingScoringQuery)rerankingQueries[i];
-          if (interleavingQuery.getPickedInterleavingDocIds().contains(docid)) {
-            rerankingQuery = interleavingQuery;
-            rerankingModelWeight = modelWeights[i]; 
-            break;
-          }
-        }
+      if (rerankingQueries.length > 1 && ((LTRInterleavingScoringQuery)rerankingQueries[1]).getPickedInterleavingDocIds().contains(docid)) {
+        rerankingQuery = rerankingQueries[1];
+        rerankingModelWeight = modelWeights[1];
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery)) {
         Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);

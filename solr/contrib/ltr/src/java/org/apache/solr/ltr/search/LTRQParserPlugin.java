@@ -17,37 +17,32 @@
 package org.apache.solr.ltr.search;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.LTRInterleavingRescorer;
-import org.apache.solr.ltr.LTRInterleavingScoringQuery;
-import org.apache.solr.ltr.LTRRescorer;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.interleaving.Interleaving;
+import org.apache.solr.ltr.interleaving.LTRInterleavingQuery;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
-import org.apache.solr.search.AbstractReRankQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -61,7 +56,6 @@ import org.apache.solr.util.SolrPluginUtils;
 public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAware, ManagedResourceObserver {
   public static final String NAME = "ltr";
   private static final String ORIGINAL_RANKING = "_OriginalRanking_";
-  private static Query defaultQuery = new MatchAllDocsQuery();
 
   // params for setting custom external info that features can use, like query
   // intent
@@ -219,107 +213,5 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       }
     }
   }
-
-  /**
-   * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
-   * of the documents.
-   **/
-  public class LTRQuery extends AbstractReRankQuery {
-    private final LTRScoringQuery scoringQuery;
-
-    public LTRQuery(LTRScoringQuery scoringQuery, int reRankDocs) {
-      this(scoringQuery, reRankDocs, new LTRRescorer(scoringQuery));
-    }
-
-    protected LTRQuery(LTRScoringQuery scoringQuery, int reRankDocs, LTRRescorer rescorer) {
-      super(defaultQuery, reRankDocs, rescorer);
-      this.scoringQuery = scoringQuery;
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * classHash() + (mainQuery.hashCode() + scoringQuery.hashCode() + reRankDocs);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return sameClassAs(o) && equalsTo(getClass().cast(o));
-    }
-
-    private boolean equalsTo(LTRQuery other) {
-      return (mainQuery.equals(other.mainQuery)
-          && scoringQuery.equals(other.scoringQuery) && (reRankDocs == other.reRankDocs));
-    }
-
-    @Override
-    public RankQuery wrap(Query _mainQuery) {
-      super.wrap(_mainQuery);
-      if (scoringQuery != null) {
-        scoringQuery.setOriginalQuery(_mainQuery);
-      }
-      return this;
-    }
-
-    @Override
-    public String toString(String field) {
-      return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
-          + scoringQuery.toString() + "' reRankDocs=" + reRankDocs + "}";
-    }
-
-    @Override
-    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new LTRQuery(scoringQuery, reRankDocs).wrap(rewrittenMainQuery);
-    }
-  }
-
-  /**
-   * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
-   * of the documents.
-   **/
-  public class LTRInterleavingQuery extends LTRQuery {
-    private final LTRInterleavingScoringQuery[] rerankingQueries;
-    private final Interleaving interlavingAlgorithm;
-
-    public LTRInterleavingQuery(Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries, int rerankDocs) {
-      super(null /* scoringQuery */, rerankDocs, new LTRInterleavingRescorer(interleavingAlgorithm, rerankingQueries));
-      this.rerankingQueries = rerankingQueries;
-      this.interlavingAlgorithm = interleavingAlgorithm;
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * classHash() + (mainQuery.hashCode() + rerankingQueries.hashCode() + reRankDocs);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      return sameClassAs(o) && equalsTo(getClass().cast(o));
-    }
-
-    private boolean equalsTo(LTRInterleavingQuery other) {
-      return (mainQuery.equals(other.mainQuery)
-          && rerankingQueries.equals(other.rerankingQueries) && (reRankDocs == other.reRankDocs));
-    }
-
-    @Override
-    public RankQuery wrap(Query _mainQuery) {
-      super.wrap(_mainQuery);
-      for(LTRInterleavingScoringQuery rerankingQuery: rerankingQueries){
-        rerankingQuery.setOriginalQuery(_mainQuery);
-      }
-      return this;
-    }
-
-    @Override
-    public String toString(String field) {
-      return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
-          + Arrays.toString(rerankingQueries) + "' reRankDocs=" + reRankDocs + "}";
-    }
-
-    @Override
-    protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new LTRInterleavingQuery(interlavingAlgorithm, rerankingQueries, reRankDocs).wrap(rewrittenMainQuery);
-    }
-  }
-
+  
 }

@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr; // TODO: move to org.apache.solr.ltr.interleaving ?
+package org.apache.solr.ltr.interleaving; // TODO: move to org.apache.solr.ltr.interleaving ?
 
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.ltr.LTRScoringQuery;
+import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.model.LTRScoringModel;
 
 public class LTRInterleavingScoringQuery extends LTRScoringQuery {

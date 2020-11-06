@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr; // TODO: move to org.apache.solr.ltr.interleaving ?
 
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
+
 /**
  * TODO
  */
