@@ -784,18 +784,18 @@ public class CoreContainer {
 
     // initialize gauges for reporting the number of cores and disk total/free
 
-    solrMetricsContext.gauge(() -> solrCores.getCores().size(),
+    solrMetricsContext.gauge(solrCores::getNumLoadedPermanentCores,
         true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
+    solrMetricsContext.gauge(solrCores::getNumLoadedTransientCores,
         true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
+    solrMetricsContext.gauge(solrCores::getNumUnloadedCores,
         true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(() -> dataHome.toString(),
+    solrMetricsContext.gauge(dataHome::toString,
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
@@ -1286,7 +1286,7 @@ public class CoreContainer {
       CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
       // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
-      if (getAllCoreNames().contains(coreName)) {
+      if (getCoreDescriptor(coreName) != null) {
         log.warn("Creating a core with existing name is not allowed: '{}'", coreName);
         // TODO: Shouldn't this be a BAD_REQUEST?
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
@@ -1568,31 +1568,47 @@ public class CoreContainer {
   }
 
   /**
-   * @return a Collection of registered SolrCores
+   * Gets the permanent (non-transient) cores that are currently loaded.
+   *
+   * @return An unsorted collection.
    */
   public Collection<SolrCore> getCores() {
     return solrCores.getCores();
   }
 
   /**
-   * Gets the cores that are currently loaded, i.e. cores that have
+   * Gets the permanent and transient cores that are currently loaded, i.e. cores that have
    * 1: loadOnStartup=true and are either not-transient or, if transient, have been loaded and have not been aged out
    * 2: loadOnStartup=false and have been loaded but are either non-transient or have not been aged out.
    * <p>
    * Put another way, this will not return any names of cores that are lazily loaded but have not been called for yet
    * or are transient and either not loaded or have been swapped out.
+   * <p>
+   * For efficiency, prefer to check {@link #isLoaded(String)} instead of {@link #getLoadedCoreNames()}.contains(coreName).
+   *
+   * @return An unsorted collection.
    */
   public Collection<String> getLoadedCoreNames() {
     return solrCores.getLoadedCoreNames();
   }
 
   /**
-   * get a list of all the cores that are currently known, whether currently loaded or not
+   * Gets a collection of all the cores, permanent and transient, that are currently known, whether they are loaded or not.
+   * <p>
+   * For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link #getAllCoreNames()}.contains(coreName).
    *
-   * @return a list of all the available core names in either permanent or transient cores
+   * @return An unsorted collection.
    */
   public Collection<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
+  }
+
+  /**
+   * Gets the total number of cores, including permanent and transient cores, loaded and unloaded cores.
+   * Faster equivalent for {@link #getAllCoreNames()}.size().
+   */
+  public int getNumAllCores() {
+    return solrCores.getNumAllCores();
   }
 
   /**

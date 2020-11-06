@@ -18,9 +18,11 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -288,7 +290,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
             if (core == null) {
               if (log.isDebugEnabled()) {
-                log.debug("SolrCore not found: {} in {}", coreName, cc.getLoadedCoreNames());
+                Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
+                String truncatedCoreNames = loadedCoreNames.stream().limit(20).collect(Collectors.toList())
+                        + (loadedCoreNames.size() > 20 ? "...(truncated from " + loadedCoreNames.size() + " cores)" : "");
+                log.debug("SolrCore not found: {} in {}", coreName, truncatedCoreNames);
               }
               return;
             }

@@ -18,6 +18,8 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
@@ -69,7 +71,10 @@ public class ReplicateFromLeader {
         if (cc.isShutDown()) {
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
+          Collection<String> loadedCoreNames = cc.getLoadedCoreNames();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in "
+                  + loadedCoreNames.stream().limit(20).collect(Collectors.toList())
+                  + (loadedCoreNames.size() > 20 ? "...(truncated from " + loadedCoreNames.size() + " cores)" : ""));
         }
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();

@@ -81,7 +81,7 @@ public class CloudUtil {
 
           if (thisCnn != null && thisCnn.equals(cnn)
               && !thisBaseUrl.equals(baseUrl)) {
-            if (cc.getLoadedCoreNames().contains(desc.getName())) {
+            if (cc.isLoaded(desc.getName())) {
               cc.unload(desc.getName());
             }
 
