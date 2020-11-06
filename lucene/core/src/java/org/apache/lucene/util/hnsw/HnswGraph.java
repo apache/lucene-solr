@@ -233,7 +233,6 @@ public final class HnswGraph {
     public void seek(int targetNode) {
       arcUpTo = 0;
       arcs = HnswGraph.this.getNeighbors(targetNode);
-      Arrays.sort(arcs);
     }
 
     @Override
