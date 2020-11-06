@@ -27,6 +27,6 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
   testImplementation project(':lucene:queries')
-  // https://mvnrepository.com/artifact/org.apache.lucene/lucene-codecs
+  // Required for opening older indexes for backward compatibility tests
   testCompile group: 'org.apache.lucene', name: 'lucene-codecs', version: '8.6.3'
 }
