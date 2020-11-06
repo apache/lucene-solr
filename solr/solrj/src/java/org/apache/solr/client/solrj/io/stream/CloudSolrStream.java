@@ -334,11 +334,6 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   public static Slice[] getSlices(String collectionName, ZkStateReader zkStateReader, boolean checkAlias) throws IOException {
     ClusterState clusterState = zkStateReader.getClusterState();
 
-    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
-
-    //TODO we should probably split collection by comma to query more than one
-    //  which is something already supported in other parts of Solr
-
     // check for alias or collection
 
     List<String> allCollections = new ArrayList<>();
@@ -352,7 +347,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     // Lookup all actives slices for these collections
     List<Slice> slices = allCollections.stream()
-        .map(collectionsMap::get)
+        .map(c -> clusterState.getCollectionOrNull(c, true))
         .filter(Objects::nonNull)
         .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
         .collect(Collectors.toList());
@@ -360,7 +355,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       return slices.toArray(new Slice[slices.size()]);
     }
 
+    // TODO: why do we try to accommodate a bad user request here?
     // Check collection case insensitive
+    Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
     for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
       if(entry.getKey().equalsIgnoreCase(collectionName)) {
         return entry.getValue().getActiveSlicesArr();
@@ -379,9 +376,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       mParams.set(DISTRIB, "false"); // We are the aggregator.
 
       List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
-
       for(String shardUrl : shardUrls) {
-        SolrStream solrStream = new SolrStream(shardUrl, mParams);
+        // for cloud, we can assume the urls have the core at the end
+        SolrStream solrStream = new SolrStream(shardUrl, mParams, getCoreFromShardUrl(shardUrl));
         if(streamContext != null) {
           solrStream.setStreamContext(streamContext);
           if (streamContext.isLocal()) {
@@ -394,6 +391,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     } catch (Exception e) {
       throw new IOException(e);
     }
+  }
+
+  private String getCoreFromShardUrl(String shardUrl) {
+    final int len = shardUrl.length();
+    if (shardUrl.charAt(len-1) == '/') {
+      shardUrl = shardUrl.substring(0, len-1);
+    }
+    int slashAt = shardUrl.lastIndexOf('/');
+    return shardUrl.substring(slashAt+1);
   }
 
   private void openStreams() throws IOException {

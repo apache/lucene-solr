@@ -69,6 +69,7 @@ public class SolrStream extends TupleStream {
   private boolean distrib = true;
   private String user;
   private String password;
+  private String core;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -78,6 +79,11 @@ public class SolrStream extends TupleStream {
   public SolrStream(String baseUrl, SolrParams params) {
     this.baseUrl = baseUrl;
     this.params = params;
+  }
+
+  SolrStream(String baseUrl, SolrParams params, String core) {
+    this(baseUrl, params);
+    this.core = core;
   }
 
   public void setFieldMappings(Map<String, String> fieldMappings) {
@@ -109,10 +115,13 @@ public class SolrStream extends TupleStream {
   **/
 
   public void open() throws IOException {
+
+    // Reuse the same client per node vs. having one per replica
+    String url = getNodeUrl();
     if(cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+      client = new HttpSolrClient.Builder(url).build();
     } else {
-      client = cache.getHttpSolrClient(baseUrl);
+      client = cache.getHttpSolrClient(url);
     }
 
     try {
@@ -124,6 +133,17 @@ public class SolrStream extends TupleStream {
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
+  }
+
+  private String getNodeUrl() {
+    String nodeUrl = baseUrl;
+    if (core != null) {
+      int coreAt = nodeUrl.indexOf(core);
+      if (coreAt != -1) {
+        nodeUrl = nodeUrl.substring(0,coreAt);
+      }
+    }
+    return nodeUrl;
   }
 
   /**
@@ -187,7 +207,7 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if(cache == null) {
+    if(cache == null && client != null) {
       client.close();
     }
   }
@@ -280,7 +300,24 @@ public class SolrStream extends TupleStream {
 
     String wt = requestParams.get(CommonParams.WT, "json");
     QueryRequest query = new QueryRequest(requestParams);
-    query.setPath(p);
+
+    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core name in the URL
+    // but if we do that, then we need to add the core to the path for making the request
+    // however, since this method is public, we can't assume the server arg is the same as our client from open!
+    String coreInPath = null;
+    if (server instanceof HttpSolrClient && core != null) {
+      String coreInUrl = "/"+core;
+      if (!((HttpSolrClient) server).getBaseURL().contains(coreInUrl)) {
+        coreInPath = coreInUrl; // core is not in the SolrClient's URL, so we need to add to the request path
+      }
+    }
+
+    if (coreInPath != null) {
+      query.setPath(coreInPath + (p != null ? p : "/select"));
+    } else {
+      query.setPath(p);
+    }
+
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
 
