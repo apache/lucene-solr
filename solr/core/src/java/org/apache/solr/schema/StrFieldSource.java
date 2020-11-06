@@ -20,19 +20,37 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
+import org.apache.lucene.search.SortField;
 
 import java.io.IOException;
 import java.util.Map;
 
 public class StrFieldSource extends FieldCacheSource {
 
+  private final SchemaField sf;
+
   public StrFieldSource(String field) {
     super(field);
+    this.sf = null;
+  }
+
+  public StrFieldSource(SchemaField sf) {
+    super(sf.name);
+    this.sf = sf;
   }
 
   @Override
   public String description() {
     return "str(" + field + ')';
+  }
+
+  @Override
+  public SortField getSortField(boolean reverse) {
+    if (sf == null) {
+      return super.getSortField(reverse);
+    } else {
+      return sf.getSortField(reverse);
+    }
   }
 
   @Override
