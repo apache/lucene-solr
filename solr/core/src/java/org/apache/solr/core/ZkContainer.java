@@ -22,13 +22,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.SolrZkServer;
@@ -125,14 +124,8 @@ public class ZkContainer {
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        Supplier<List<CoreDescriptor>> descriptorsSupplier = () -> {
-          List<CoreDescriptor> descriptors = new ArrayList<>(cc.getLoadedCoreNames().size());
-          Collection<SolrCore> cores = cc.getCores();
-          for (SolrCore core : cores) {
-            descriptors.add(core.getCoreDescriptor());
-          }
-          return descriptors;
-        };
+        Supplier<List<CoreDescriptor>> descriptorsSupplier = () ->
+                cc.getCores().stream().map(SolrCore::getCoreDescriptor).collect(Collectors.toList());
 
         ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 

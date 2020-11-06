@@ -670,6 +670,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
+    assertFalse(cc.isLoaded("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
     SolrException thrown = expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("col_bad");
@@ -691,7 +692,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
+    assertTrue(cc.isLoaded("col_ok"));
     assertTrue("col_bad not found", cores.contains("col_bad"));
+    assertTrue(cc.isLoaded("col_bad"));
 
     // check that we have the failures we expect
     failures = cc.getCoreInitFailures();
