@@ -150,17 +150,26 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
     @Override
     public Query parse() throws SyntaxError {
+      if (threadManager != null) {
+        threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+      }
       // ReRanking Model
       final String[] modelNames = localParams.getParams(LTRQParserPlugin.MODEL);
-      if ((modelNames == null) || modelNames.length==0 || modelNames[0].isEmpty()) {
+      if ((modelNames == null) || modelNames.length==0) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Must provide model in the request");
+            "Must provide at least one model in the request");
       }
       final boolean isInterleaving = (modelNames.length > 1);
-     
+      final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
+      final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
+
       LTRScoringQuery rerankingQuery = null;
       LTRInterleavingScoringQuery[] rerankingQueries = new LTRInterleavingScoringQuery[modelNames.length];
       for (int i = 0; i < modelNames.length; i++) {
+        if (modelNames[i].isEmpty()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "the " + LTRQParserPlugin.MODEL + " "+ i +" is empty");
+        }
         if (!ORIGINAL_RANKING.equals(modelNames[i])) {
           final LTRScoringModel ltrScoringModel = mr.getModel(modelNames[i]);
           if (ltrScoringModel == null) {
@@ -168,13 +177,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
                 "cannot find " + LTRQParserPlugin.MODEL + " " + modelNames[i]);
           }
           final String modelFeatureStoreName = ltrScoringModel.getFeatureStoreName();
-          final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
-          final String fvStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
           // Check if features are requested and if the model feature store and feature-transform feature store are the same
-          final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(fvStoreName) || fvStoreName == null) ? extractFeatures : false;
-          if (threadManager != null) {
-            threadManager.setExecutor(req.getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
-          }
+          final boolean featuresRequestedFromSameStore = (modelFeatureStoreName.equals(tranformerFeatureStoreName) || tranformerFeatureStoreName == null) ? extractFeatures : false;
+          
           if (isInterleaving) {
             rerankingQuery = rerankingQueries[i] = new LTRInterleavingScoringQuery(ltrScoringModel,
                 extractEFIParams(localParams),

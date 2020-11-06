@@ -291,9 +291,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
 
       if (rerankingQueries.length > 1) {
-        for (LTRScoringQuery query : rerankingQueries) {
-          if (((LTRInterleavingScoringQuery)query).getPickedInterleavingDocIds().contains(docid)) {
-            rerankingQuery = query;
+        for (int i=0; i<rerankingQueries.length; i++) {
+          LTRInterleavingScoringQuery interleavingQuery = (LTRInterleavingScoringQuery)rerankingQueries[i];
+          if (interleavingQuery.getPickedInterleavingDocIds().contains(docid)) {
+            rerankingQuery = interleavingQuery;
+            rerankingModelWeight = modelWeights[i]; 
             break;
           }
         }

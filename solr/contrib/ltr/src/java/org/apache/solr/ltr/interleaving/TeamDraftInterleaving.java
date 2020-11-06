@@ -25,6 +25,21 @@ import java.util.Set;
 
 import org.apache.lucene.search.ScoreDoc;
 
+/**
+ * Interleaving was introduced the first time by Joachims in [1, 2].
+ * Team Draft Interleaving is among the most successful and used interleaving approaches[3].
+ * Here the authors implement a method similar to the way in which captains select their players in team-matches.
+ * Team Draft Interleaving produces a fair distribution of ranking models’ elements in the final interleaved list.
+ * It has also proved to overcome an issue of the previous implemented approach, Balanced interleaving, in determining the winning model[4].
+ * <p>
+ * [1] T. Joachims. Optimizing search engines using clickthrough data. KDD (2002)
+ * [2] T.Joachims.Evaluatingretrievalperformanceusingclickthroughdata.InJ.Franke, G. Nakhaeizadeh, and I. Renz, editors,
+ * Text Mining, pages 79–96. Physica/Springer (2003)
+ * [3] F. Radlinski, M. Kurup, and T. Joachims. How does clickthrough data reflect re-
+ * trieval quality? In CIKM, pages 43–52. ACM Press (2008)
+ * [4] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue.
+ * Large-scale validation and analysis of interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
+ */
 public class TeamDraftInterleaving implements Interleaving{
   public static Random RANDOM;
 
@@ -37,9 +52,28 @@ public class TeamDraftInterleaving implements Interleaving{
     } else {
       RANDOM = new Random(seed.hashCode());
     }
-  }  
-  
-  public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB){
+  }
+
+  /**
+   * Team Draft Interleaving considers two ranking models: modelA and modelB.
+   * For a given query, each model returns its ranked list of documents La = (a1,a2,...) and Lb = (b1, b2, ...).
+   * The algorithm creates a unique ranked list I = (i1, i2, ...).
+   * This list is created by interleaving elements from the two lists la and lb as described by Chapelle et al.[1].
+   * Each element Ij is labelled TeamA if it is selected from La and TeamB if it is selected from Lb.
+   * <p>
+   * [1] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue.
+   * Large-scale validation and analysis of interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
+   * <p>
+   * Assumptions:
+   * - rerankedA and rerankedB has the same length.
+   * They contains the same search results, ranked differently by two ranking models
+   * - each reranked list can not contain the same search result more than once.
+   *
+   * @param rerankedA a ranked list of search results produced by a ranking model A
+   * @param rerankedB a ranked list of search results produced by a ranking model B
+   * @return the interleaved ranking list
+   */
+  public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB) {
     LinkedHashSet<ScoreDoc> interleavedResults = new LinkedHashSet<>();
     ScoreDoc[] interleavedResultArray = new ScoreDoc[rerankedA.length];
     ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(2);
@@ -47,8 +81,8 @@ public class TeamDraftInterleaving implements Interleaving{
     Set<Integer> teamB = new HashSet<>();
     int topN = rerankedA.length;
     int indexA = 0, indexB = 0;
-    
-    while(interleavedResults.size()<topN && indexA<rerankedA.length && indexB<rerankedB.length){
+
+    while (interleavedResults.size() < topN && indexA < rerankedA.length && indexB < rerankedB.length) {
       if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && !RANDOM.nextBoolean())){
         indexA = updateIndex(interleavedResults,indexA,rerankedA);
         interleavedResults.add(rerankedA[indexA]);
@@ -64,7 +98,7 @@ public class TeamDraftInterleaving implements Interleaving{
     interleavingPicks.add(teamA);
     interleavingPicks.add(teamB);
     interleavedResultArray = interleavedResults.toArray(interleavedResultArray);
-    
+
     return new InterleavingResult(interleavedResultArray,interleavingPicks);
   }
 
