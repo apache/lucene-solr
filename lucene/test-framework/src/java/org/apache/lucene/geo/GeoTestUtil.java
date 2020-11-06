@@ -394,7 +394,7 @@ public class GeoTestUtil {
   public static Circle nextCircle() {
     double lat = nextLatitude();
     double lon = nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
     return new Circle(lat, lon, radiusMeters);
   }
 

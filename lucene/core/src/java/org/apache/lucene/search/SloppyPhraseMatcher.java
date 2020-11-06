@@ -52,8 +52,10 @@ import org.apache.lucene.util.FixedBitSet;
  * Similarly, for doc "a b c b a f g", query "c b"~2
  * would get same score as "g f"~2, although "c b"~2 could be matched twice.
  * We may want to fix this in the future (currently not, for performance reasons).
+ *
+ * @lucene.internal
  */
-final class SloppyPhraseMatcher extends PhraseMatcher {
+public final class SloppyPhraseMatcher extends PhraseMatcher {
 
   private final PhrasePositions[] phrasePositions;
 
@@ -81,7 +83,7 @@ final class SloppyPhraseMatcher extends PhraseMatcher {
   private boolean positioned;
   private int matchLength;
 
-  SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, ScoreMode scoreMode, SimScorer scorer, float matchCost, boolean captureLeadMatch) {
+  public SloppyPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, int slop, ScoreMode scoreMode, SimScorer scorer, float matchCost, boolean captureLeadMatch) {
     super(matchCost);
     this.slop = slop;
     this.numPostings = postings.length;
