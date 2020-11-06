@@ -22,12 +22,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.CurrentCoreDescriptorProvider;
 import org.apache.solr.cloud.SolrZkServer;
@@ -127,13 +126,7 @@ public class ZkContainer {
 
               @Override
               public List<CoreDescriptor> getCurrentDescriptors() {
-                List<CoreDescriptor> descriptors = new ArrayList<>(
-                    cc.getLoadedCoreNames().size());
-                Collection<SolrCore> cores = cc.getCores();
-                for (SolrCore core : cores) {
-                  descriptors.add(core.getCoreDescriptor());
-                }
-                return descriptors;
+                return cc.getCores().stream().map(SolrCore::getCoreDescriptor).collect(Collectors.toList());
               }
             });
 

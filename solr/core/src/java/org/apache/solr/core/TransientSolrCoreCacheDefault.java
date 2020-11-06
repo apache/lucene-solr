@@ -18,12 +18,7 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -122,12 +117,12 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   @Override
   public Set<String> getAllCoreNames() {
-    return transientDescriptors.keySet();
+    return Collections.unmodifiableSet(transientDescriptors.keySet());
   }
   
   @Override
   public Set<String> getLoadedCoreNames() {
-    return transientCores.keySet();
+    return Collections.unmodifiableSet(transientCores.keySet());
   }
 
   // Remove a core from the internal structures, presumably it 
@@ -162,6 +157,11 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   @Override
   public CoreDescriptor getTransientDescriptor(String name) {
     return transientDescriptors.get(name);
+  }
+
+  @Override
+  public Collection<CoreDescriptor> getTransientDescriptors() {
+    return Collections.unmodifiableCollection(transientDescriptors.values());
   }
 
   @Override
