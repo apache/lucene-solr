@@ -41,10 +41,11 @@ public class LTRInterleavingRescorer extends LTRRescorer {
   
   LTRInterleavingScoringQuery[] rerankingQueries;
   private Integer originalRankingIndex = null;
-  Interleaving interleavingAlgorithm = new TeamDraftInterleaving();
+  Interleaving interleavingAlgorithm;
   
-  public LTRInterleavingRescorer(LTRInterleavingScoringQuery[] rerankingQueries) {
+  public LTRInterleavingRescorer( Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries) {
     this.rerankingQueries = rerankingQueries;
+    this.interleavingAlgorithm = interleavingAlgorithm;
     for(int i=0;i<this.rerankingQueries.length;i++){
       if(this.rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery){
         this.originalRankingIndex = i;

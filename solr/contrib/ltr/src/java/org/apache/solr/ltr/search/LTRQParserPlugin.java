@@ -37,6 +37,7 @@ import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
+import org.apache.solr.ltr.interleaving.Interleaving;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
@@ -214,7 +215,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         return new LTRQuery(rerankingQuery, reRankDocs);
       } else {
         SolrQueryRequestContextUtils.setScoringQueries(req, rerankingQueries);
-        return new LTRInterleavingQuery(rerankingQueries, reRankDocs);
+        return new LTRInterleavingQuery(Interleaving.getImplementation(Interleaving.TEAM_DRAFT),rerankingQueries, reRankDocs);
       }
     }
   }
@@ -277,10 +278,12 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    **/
   public class LTRInterleavingQuery extends LTRQuery {
     private final LTRInterleavingScoringQuery[] rerankingQueries;
+    private final Interleaving interlavingAlgorithm;
 
-    public LTRInterleavingQuery(LTRInterleavingScoringQuery[] rerankingQueries, int rerankDocs) {
-      super(null /* scoringQuery */, rerankDocs, new LTRInterleavingRescorer(rerankingQueries));
+    public LTRInterleavingQuery(Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries, int rerankDocs) {
+      super(null /* scoringQuery */, rerankDocs, new LTRInterleavingRescorer(interleavingAlgorithm, rerankingQueries));
       this.rerankingQueries = rerankingQueries;
+      this.interlavingAlgorithm = interleavingAlgorithm;
     }
 
     @Override
@@ -315,7 +318,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new LTRInterleavingQuery(rerankingQueries, reRankDocs).wrap(rewrittenMainQuery);
+      return new LTRInterleavingQuery(interlavingAlgorithm, rerankingQueries, reRankDocs).wrap(rewrittenMainQuery);
     }
   }
 

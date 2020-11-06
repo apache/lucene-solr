@@ -20,5 +20,16 @@ package org.apache.solr.ltr.interleaving;
 import org.apache.lucene.search.ScoreDoc;
 
 public interface Interleaving {
+
+   String TEAM_DRAFT = "TeamDraft";
+
    InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB);
+
+   static Interleaving getImplementation(String algorithm) {
+      switch(algorithm) {
+         case TEAM_DRAFT:
+         default:
+            return new TeamDraftInterleaving();
+      }
+   }
 }
