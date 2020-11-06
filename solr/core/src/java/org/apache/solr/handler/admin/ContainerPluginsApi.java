@@ -94,7 +94,7 @@ public class ContainerPluginsApi {
           payload.addError(info.name + " already exists");
           return null;
         }
-        map.put(info.name, info);
+        map.put(info.name, payload.getDataMap());
         return map;
       });
     }
@@ -129,7 +129,7 @@ public class ContainerPluginsApi {
     }
   }
 
-  private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) {
+  private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) throws IOException {
     if (info.klass.indexOf(':') > 0) {
       if (info.version == null) {
         payload.addError("Using package. must provide a packageVersion");
@@ -137,7 +137,7 @@ public class ContainerPluginsApi {
       }
     }
     List<String> errs = new ArrayList<>();
-    ContainerPluginsRegistry.ApiInfo apiInfo = coreContainer.getContainerPluginsRegistry().createInfo(info, errs);
+    ContainerPluginsRegistry.ApiInfo apiInfo = coreContainer.getContainerPluginsRegistry().createInfo( payload.getDataMap(),  errs);
     if (!errs.isEmpty()) {
       for (String err : errs) payload.addError(err);
       return;

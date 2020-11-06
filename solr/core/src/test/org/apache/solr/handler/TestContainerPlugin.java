@@ -28,6 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
+import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -41,6 +42,7 @@ import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
@@ -185,6 +187,28 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       assertTrue("ccProvided", C6.ccProvided);
       assertTrue("startCalled", C6.startCalled);
       assertFalse("stopCalled", C6.stopCalled);
+
+      CConfig p = new CConfig();
+      p.boolVal = Boolean.TRUE;
+      p.strVal = "Something";
+      p.longVal = 1234L;
+      p.name = "hello";
+      p.klass = CC.class.getName();
+
+      new V2Request.Builder("/cluster/plugin")
+          .forceV2(true)
+          .withMethod(POST)
+          .withPayload(singletonMap("add", p))
+          .build()
+          .process(cluster.getSolrClient());
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("hello/plugin")
+              .forceV2(true)
+              .withMethod(GET)
+              .build().process(cluster.getSolrClient()),
+          ImmutableMap.of("/config/boolVal", "true", "/config/strVal", "Something","/config/longVal", "1234" ));
+
+
       // kill the Overseer leader
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
         if (!jetty.getCoreContainer().getZkController().getOverseer().isClosed()) {
@@ -310,6 +334,39 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  public static class CC implements ConfigurablePlugin<CConfig> {
+    private CConfig cfg;
+
+
+
+    @Override
+    public void initConfig(CConfig cfg) {
+      this.cfg = cfg;
+
+    }
+
+    @EndPoint(method = GET,
+        path = "/hello/plugin",
+        permission = PermissionNameProvider.Name.READ_PERM)
+    public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("config", cfg);
+    }
+
+  }
+
+  public static class CConfig extends PluginMeta {
+
+    @JsonProperty
+    public String strVal;
+
+    @JsonProperty
+    public Long longVal;
+
+    @JsonProperty
+    public Boolean boolVal;
+
   }
 
   public static class C6 implements ClusterSingleton {

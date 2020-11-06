@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -222,7 +223,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     final String command;
     final MethodHandle method;
     final Object obj;
-    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     int paramsCount;
     @SuppressWarnings({"rawtypes"})
     Class parameterClass;
