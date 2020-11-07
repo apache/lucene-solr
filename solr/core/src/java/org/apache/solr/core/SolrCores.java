@@ -164,16 +164,16 @@ class SolrCores {
   }
 
   /**
+   * @return A list of "permanent" cores, i.e. cores that may not be swapped out and are currently loaded.
    *
-   * @return A list of "permanent" cores, i.e. cores that  may not be swapped out and are currently loaded.
-   * 
    * A core may be non-transient but still lazily loaded. If it is "permanent" and lazy-load _and_
    * not yet loaded it will _not_ be returned by this call.
-   * 
-   * Note: This is one of the places where SolrCloud is incompatible with Transient Cores. This call is used in 
+   *
+   * This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
+   *
+   * Note: This is one of the places where SolrCloud is incompatible with Transient Cores. This call is used in
    * cancelRecoveries, transient cores don't participate.
    */
-
   List<SolrCore> getCores() {
 
     synchronized (modifyLock) {
@@ -189,9 +189,9 @@ class SolrCores {
    * Put another way, this will not return any names of cores that are lazily loaded but have not been called for yet
    * or are transient and either not loaded or have been swapped out.
    *
-   * @return A unsorted collection.
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  Collection<String> getLoadedCoreNames() {
+  List<String> getLoadedCoreNames() {
     synchronized (modifyLock) {
       TransientSolrCoreCache transientCoreCache = getTransientCacheHandler();
       Set<String> transientCoreNames = transientCoreCache == null ? Collections.emptySet() : transientCoreCache.getLoadedCoreNames();
@@ -203,9 +203,9 @@ class SolrCores {
    * Gets a collection of all cores names, loaded and unloaded.
    * For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link #getAllCoreNames()}.contains(String)
    *
-   * @return A unsorted collection.
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<String> getAllCoreNames() {
+  public List<String> getAllCoreNames() {
     synchronized (modifyLock) {
       TransientSolrCoreCache transientCoreCache = getTransientCacheHandler();
       Set<String> transientCoreNames = transientCoreCache == null ? Collections.emptySet() : transientCoreCache.getAllCoreNames();
@@ -215,10 +215,12 @@ class SolrCores {
 
   /**
    * Makes the union of two distinct sets.
+   *
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  private static <T> Collection<T> distinctSetsUnion(Set<T> set1, Set<T> set2) {
+  private static <T> List<T> distinctSetsUnion(Set<T> set1, Set<T> set2) {
     assert areSetsDistinct(set1, set2);
-    Collection<T> union = new ArrayList<>(set1.size() + set2.size());
+    List<T> union = new ArrayList<>(set1.size() + set2.size());
     union.addAll(set1);
     union.addAll(set2);
     return union;

@@ -44,7 +44,7 @@ class StatusOp implements CoreAdminHandler.CoreAdminOp {
       failures.put(failure.getKey(), failure.getValue().exception);
     }
     if (cname == null) {
-      List<String> nameList = new ArrayList<>(it.handler.coreContainer.getAllCoreNames());
+      List<String> nameList = it.handler.coreContainer.getAllCoreNames();
       nameList.sort(null);
       for (String name : nameList) {
         status.add(name, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));

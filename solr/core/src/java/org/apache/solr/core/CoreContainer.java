@@ -1570,9 +1570,9 @@ public class CoreContainer {
   /**
    * Gets the permanent (non-transient) cores that are currently loaded.
    *
-   * @return An unsorted collection.
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<SolrCore> getCores() {
+  public List<SolrCore> getCores() {
     return solrCores.getCores();
   }
 
@@ -1586,9 +1586,9 @@ public class CoreContainer {
    * <p>
    * For efficiency, prefer to check {@link #isLoaded(String)} instead of {@link #getLoadedCoreNames()}.contains(coreName).
    *
-   * @return An unsorted collection.
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<String> getLoadedCoreNames() {
+  public List<String> getLoadedCoreNames() {
     return solrCores.getLoadedCoreNames();
   }
 
@@ -1597,9 +1597,9 @@ public class CoreContainer {
    * <p>
    * For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link #getAllCoreNames()}.contains(coreName).
    *
-   * @return An unsorted collection.
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<String> getAllCoreNames() {
+  public List<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
   }
 
