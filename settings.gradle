@@ -42,7 +42,6 @@ include "lucene:join"
 include "lucene:luke"
 include "lucene:memory"
 include "lucene:misc"
-include "lucene:native"
 include "lucene:monitor"
 include "lucene:queries"
 include "lucene:queryparser"
@@ -54,6 +53,12 @@ include "lucene:suggest"
 include "lucene:test-framework"
 include "lucene:documentation"
 include "lucene:packaging"
+
+def projectProperties = startParameter.getProjectProperties()
+if(projectProperties.containsKey("build.native") &&
+        projectProperties.get("build.native", false).toBoolean()) {
+    include "lucene:native"
+}
 
 include "solr:solrj"
 include "solr:core"

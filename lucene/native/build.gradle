@@ -19,20 +19,34 @@
  * This gets separated out from misc module into a native module due to incompatibility between cpp-library and java-library plugins.
  * For details, please see https://github.com/gradle/gradle-native/issues/352#issuecomment-461724948
  */
-apply plugin: 'cpp-library'
+import org.apache.tools.ant.taskdefs.condition.Os
 
 description = 'Module for native code'
+
+apply plugin: 'cpp-library'
 
 library {
     baseName = 'NativePosixUtil'
 
-    privateHeaders.from file(System.getProperty('java.home') + '/include')
-    privateHeaders.from file(System.getProperty('java.home') + '/include/darwin')
-    privateHeaders.from file(System.getProperty('java.home') + '/../include/solaris')
-    privateHeaders.from file(System.getProperty('java.home') + '/../include/linux')
+    // Native build for Windows platform will be added in later stage
+    targetMachines = [
+        machines.linux.x86_64,
+        machines.macOS.x86_64
+    ]
 }
 
 tasks.withType(CppCompile).configureEach {
+    systemIncludes.from file(System.getProperty('java.home') + "/include")
+
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        systemIncludes.from file(System.getProperty('java.home') + "/include/darwin")
+    }
+    else if(Os.isFamily(Os.FAMILY_UNIX)) {
+        systemIncludes.from file(System.getProperty('java.home') + "/include/linux")
+        systemIncludes.from file(System.getProperty('java.home') + "/include/solaris")
+        systemIncludes.from file(System.getProperty('java.home') + "/include/freebsd")
+    }
+
     compilerArgs.add '-fPIC'
 }
 

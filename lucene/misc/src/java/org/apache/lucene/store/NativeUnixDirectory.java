@@ -49,8 +49,8 @@ import org.apache.lucene.util.SuppressForbidden;
  * NativePosixUtil.cpp (exposes Linux-specific APIs through
  * JNI) for your platform, by running <code>
  * ./gradlew build</code>, and then putting the resulting
- * <code>libNativePosixUtil.so</code> (from
- * <code>lucene/native/build/lib/release</code>) onto your dynamic
+ * <code>libNativePosixUtil.so</code> or <code>libNativePosixUtil.dylib</code>
+ * (from <code>lucene/native/build/lib/release/platform/</code>) onto your dynamic
  * linker search path.
  *
  * <p><b>WARNING</b>: this code is very new and quite easily
