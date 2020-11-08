@@ -95,6 +95,10 @@ public class FSTTester<T> {
     return br;
   }
 
+  /**
+   * [LUCENE-9600] This was made public because a misc module test depends on it.
+   * It is not recommended for generic usecase; consider {@link com.carrotsearch.randomizedtesting.generators.RandomStrings} to generate random strings.
+   */
   public static String getRandomString(Random random) {
     final String term;
     if (random.nextBoolean()) {
