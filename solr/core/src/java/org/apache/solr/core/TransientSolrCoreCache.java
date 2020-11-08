@@ -20,6 +20,7 @@ package org.apache.solr.core;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The base class for custom transient core maintenance. Any custom plugin that want's to take control of transient
@@ -97,6 +98,13 @@ public abstract class TransientSolrCoreCache {
   // method and return the current core descriptor.
   public abstract CoreDescriptor getTransientDescriptor(String name);
 
+  /**
+   * Gets the {@link CoreDescriptor} for all transient cores (loaded and unloaded).
+   */
+  // This method will become abstract in the next major release.
+  public Collection<CoreDescriptor> getTransientDescriptors() {
+    return getAllCoreNames().stream().map(this::getTransientDescriptor).collect(Collectors.toList());
+  }
 
   // Remove the core descriptor from your list of transient descriptors.
   public abstract CoreDescriptor removeTransientDescriptor(String name);

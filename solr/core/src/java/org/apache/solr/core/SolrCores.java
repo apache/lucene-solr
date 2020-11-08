@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 class SolrCores {
@@ -490,21 +492,19 @@ class SolrCores {
   }
 
   /**
-   * Get the CoreDescriptors for every SolrCore managed here
-   * @return a List of CoreDescriptors
+   * Get the CoreDescriptors for every {@link SolrCore} managed here (permanent and transient, loaded and unloaded).
+   *
+   * @return An unordered list copy. This list can be modified by the caller (e.g. sorted).
    */
   public List<CoreDescriptor> getCoreDescriptors() {
-    List<CoreDescriptor> cds = Lists.newArrayList();
     synchronized (modifyLock) {
-      for (String coreName : getAllCoreNames()) {
-        // TODO: This null check is a bit suspicious - it seems that
-        // getAllCoreNames might return deleted cores as well?
-        CoreDescriptor cd = getCoreDescriptor(coreName);
-        if (cd != null)
-          cds.add(cd);
+      Stream<CoreDescriptor> coreDescriptors = residentDescriptors.values().stream();
+      TransientSolrCoreCache transientCoreCache = getTransientCacheHandler();
+      if (transientCoreCache != null) {
+        coreDescriptors = Stream.concat(coreDescriptors, transientCoreCache.getTransientDescriptors().stream());
       }
+      return coreDescriptors.collect(Collectors.toList());
     }
-    return cds;
   }
 
   // cores marked as loading will block on getCore
