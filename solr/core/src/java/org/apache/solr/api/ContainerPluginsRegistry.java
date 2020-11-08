@@ -377,7 +377,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
       if (instance instanceof ConfigurablePlugin) {
-        Class c = getConfigObj(instance);
+        Class c = getConfigClass((ConfigurablePlugin<?>) instance);
         if(c != null) {
           Object initVal =  mapper.readValue(Utils.toJSON(holder.original), c);
           ((ConfigurablePlugin) instance).initConfig(initVal);
@@ -397,19 +397,26 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings("rawtypes")
-    private Class getConfigObj(Object o) {
-      Type[] interfaces = o.getClass().getGenericInterfaces();
+  }
+
+  /**Get the generic type of a {@link ConfigurablePlugin}
+   */
+  @SuppressWarnings("rawtypes")
+  public static Class getConfigClass(ConfigurablePlugin<?> o) {
+    Class klas = o.getClass();
+    do {
+      Type[] interfaces = klas.getGenericInterfaces();
       for (Type type : interfaces) {
         if (type instanceof ParameterizedType) {
           ParameterizedType parameterizedType = (ParameterizedType) type;
-          if(parameterizedType.getRawType() == ConfigurablePlugin.class) {
+          if (parameterizedType.getRawType() == ConfigurablePlugin.class) {
             return (Class) parameterizedType.getActualTypeArguments()[0];
           }
         }
       }
-      return null;
-    }
+      klas = klas.getSuperclass();
+    } while (klas != null && klas != Object.class);
+    return null;
   }
 
   public ApiInfo createInfo(Map<String,Object> info, List<String> errs) throws IOException {

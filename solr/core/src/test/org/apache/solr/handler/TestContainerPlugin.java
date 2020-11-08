@@ -29,6 +29,7 @@ import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.ConfigurablePlugin;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -188,6 +189,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       assertTrue("startCalled", C6.startCalled);
       assertFalse("stopCalled", C6.stopCalled);
 
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC()));
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
+
       CConfig p = new CConfig();
       p.boolVal = Boolean.TRUE;
       p.strVal = "Something";
@@ -336,6 +340,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
+  public static class CC1 extends CC {
+
+  }
+  public static class CC2 extends CC1 {
+
+  }
   public static class CC implements ConfigurablePlugin<CConfig> {
     private CConfig cfg;
 
