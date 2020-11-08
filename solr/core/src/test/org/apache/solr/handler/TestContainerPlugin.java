@@ -191,6 +191,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC()));
       assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC2()));
 
       CConfig p = new CConfig();
       p.boolVal = Boolean.TRUE;
