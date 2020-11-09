@@ -70,7 +70,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     // I think it can be resolved, but for now ...
     if (threadName.startsWith("executeInOrderTest") || threadName.startsWith("testStress") ||
             threadName.startsWith("testLockWhenQueueIsFull_test") || threadName.startsWith("testRunInParallel")
-            ||  threadName.startsWith("testExecutor")) {
+            ||  threadName.startsWith("replayUpdatesExecutor")) {
       return true;
     }
 
