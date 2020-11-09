@@ -180,7 +180,7 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
 
-  public static final int DEFAULT_ZK_SESSION_TIMEOUT = 20000;  // default socket connection timeout in ms
+  public static final int DEFAULT_ZK_SESSION_TIMEOUT = 30000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms
   public static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 15000;
 

@@ -329,6 +329,12 @@ public class LeaderElector implements Closeable {
     boolean tryagain = checkIfIamLeader(context, replacement);
 
     if (tryagain) {
+      Thread.sleep(100);
+      tryagain = checkIfIamLeader(context, replacement);
+    }
+
+    if (tryagain) {
+      Thread.sleep(100);
       checkIfIamLeader(context, replacement);
     }
 
@@ -376,6 +382,12 @@ public class LeaderElector implements Closeable {
         // am I the next leader?
         boolean tryagain = checkIfIamLeader(context, true);
         if (tryagain) {
+          Thread.sleep(100);
+          tryagain = checkIfIamLeader(context, true);
+        }
+
+        if (tryagain) {
+          Thread.sleep(100);
           checkIfIamLeader(context, true);
         }
       } catch (AlreadyClosedException | InterruptedException e) {
