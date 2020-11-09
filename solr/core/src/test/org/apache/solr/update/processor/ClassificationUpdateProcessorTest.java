@@ -31,6 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.mock;
 /**
  * Tests for {@link ClassificationUpdateProcessor}
  */
+@LuceneTestCase.Nightly // in low resource envs, this test can take a LONG time (bayesMonoClass_sampleParams_shouldAssignCorrectClass)
 public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
   /* field names are used in accordance with the solrconfig and schema supplied */
   private static final String ID = "id";
