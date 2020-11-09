@@ -71,6 +71,8 @@ public class ConnectionManager implements Watcher, Closeable {
   private volatile ZkCredentialsProvider zkCredentialsToAddAutomatically;
   private volatile boolean zkCredentialsToAddAutomaticallyUsed;
 
+  private ReentrantLock ourLock = new ReentrantLock(true);
+
 //  private Set<ZkClientConnectionStrategy.DisconnectedListener> disconnectedListeners = ConcurrentHashMap.newKeySet();
 //  private Set<ZkClientConnectionStrategy.ConnectedListener> connectedListeners = ConcurrentHashMap.newKeySet();
 
@@ -143,49 +145,55 @@ public class ConnectionManager implements Watcher, Closeable {
     assert ObjectReleaseTracker.track(this);
   }
 
-  private synchronized void connected() {
-    if (lastConnectedState == 1) {
-      disconnected();
-    }
+  private void connected() {
+    ourLock.lock();
+    try {
+      if (lastConnectedState == 1) {
+        disconnected();
+      }
 
-    connected = true;
-    likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
-    disconnectedLatch = new CountDownLatch(1);
-    lastConnectedState = 1;
-    log.info("Connected, notify any wait");
-    connectedLatch.countDown();
-//    for (ConnectedListener listener : connectedListeners) {
-//      try {
-//        listener.connected();
-//      } catch (Exception e) {
-//        ParWork.propegateInterrupt(e);
-//      }
-//    }
+      connected = true;
+      likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
+      disconnectedLatch = new CountDownLatch(1);
+      lastConnectedState = 1;
+      log.info("Connected, notify any wait");
+      connectedLatch.countDown();
+      //    for (ConnectedListener listener : connectedListeners) {
+      //      try {
+      //        listener.connected();
+      //      } catch (Exception e) {
+      //        ParWork.propegateInterrupt(e);
+      //      }
+      //    }
+    } finally {
+      ourLock.unlock();
+    }
 
   }
 
-  private synchronized void disconnected() {
-    connected = false;
-    // record the time we expired unless we are already likely expired
-    if (!likelyExpiredState.isLikelyExpired(0)) {
-      likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
-    }
-    disconnectedLatch.countDown();
-    connectedLatch = new CountDownLatch(1);
-
-    if (isClosed) {
-      return;
-    }
-
+  private void disconnected() {
+    ourLock.lock();
     try {
-      disconnectListener.disconnected();
-    } catch (NullPointerException e) {
-      // okay
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
-      log.warn("Exception firing disonnectListener");
+      connected = false;
+      // record the time we expired unless we are already likely expired
+      if (!likelyExpiredState.isLikelyExpired(0)) {
+        likelyExpiredState = new LikelyExpiredState(LikelyExpiredState.StateType.TRACKING_TIME, System.nanoTime());
+      }
+      disconnectedLatch.countDown();
+      connectedLatch = new CountDownLatch(1);
+
+      try {
+        disconnectListener.disconnected();
+      } catch (NullPointerException e) {
+        // okay
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        log.warn("Exception firing disonnectListener");
+      }
+      lastConnectedState = 0;
+    } finally {
+      ourLock.unlock();
     }
-    lastConnectedState = 0;
   }
 
   public void start() throws IOException {
@@ -207,58 +215,63 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   @Override
-  public synchronized void process(WatchedEvent event) {
-    if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
-      log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+  public void process(WatchedEvent event) {
+    ourLock.lock();
+    try {
+      if (event.getState() == AuthFailed || event.getState() == Disconnected || event.getState() == Expired) {
+        log.warn("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+      } else {
+        if (log.isInfoEnabled()) {
+          log.info("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
+        }
       }
-    }
 
-//    if (isClosed()) {
-//      log.debug("Client->ZooKeeper status change trigger but we are already closed");
-//      return;
-//    }
+      //    if (isClosed()) {
+      //      log.debug("Client->ZooKeeper status change trigger but we are already closed");
+      //      return;
+      //    }
 
-    KeeperState state = event.getState();
+      KeeperState state = event.getState();
 
-    if (state == KeeperState.SyncConnected) {
-      if (isClosed()) return;
-      log.info("zkClient has connected");
-      // nocommit - maybe use root shared
-      client.zkConnManagerCallbackExecutor.execute(() -> {
-        connected();
-      });
+      if (state == KeeperState.SyncConnected) {
+        if (isClosed()) return;
+        log.info("zkClient has connected");
+        // nocommit - maybe use root shared
+        client.zkConnManagerCallbackExecutor.execute(() -> {
+          connected();
+        });
 
-    } else if (state == Expired) {
-      if (isClosed()) {
-        return;
+      } else if (state == Expired) {
+        if (isClosed()) {
+          return;
+        }
+        // we don't call disconnected here, because we know we are expired
+        connected = false;
+        likelyExpiredState = LikelyExpiredState.EXPIRED;
+
+        log.warn("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
+
+        client.zkConnManagerCallbackExecutor.execute(() -> {
+          reconnect();
+        });
+      } else if (state == KeeperState.Disconnected) {
+        log.info("zkClient has disconnected");
+        client.zkConnManagerCallbackExecutor.execute(() -> {
+          disconnected();
+        });
+      } else if (state == KeeperState.Closed) {
+        log.info("zkClient state == closed");
+        //disconnected();
+        //connectionStrategy.disconnected();
+      } else if (state == KeeperState.AuthFailed) {
+        log.warn("zkClient received AuthFailed");
       }
-      // we don't call disconnected here, because we know we are expired
-      connected = false;
-      likelyExpiredState = LikelyExpiredState.EXPIRED;
-
-      log.warn("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
-
-      client.zkConnManagerCallbackExecutor.execute(() -> {
-        reconnect();
-      });
-    } else if (state == KeeperState.Disconnected) {
-      log.info("zkClient has disconnected");
-      client.zkConnManagerCallbackExecutor.execute(() -> {
-        disconnected();
-      });
-    } else if (state == KeeperState.Closed) {
-      log.info("zkClient state == closed");
-      //disconnected();
-      //connectionStrategy.disconnected();
-    } else if (state == KeeperState.AuthFailed) {
-      log.warn("zkClient received AuthFailed");
+    } finally {
+      ourLock.unlock();
     }
   }
 
-  private synchronized void reconnect() {
+  private void reconnect() {
     if (isClosed()) return;
 
     if (beforeReconnect != null) {
@@ -274,7 +287,6 @@ public class ConnectionManager implements Watcher, Closeable {
 
     keeperLock.lock();
     try {
-      if (isClosed()) return;
       if (keeper != null) {
         // if there was a problem creating the new SolrZooKeeper
         // or if we cannot run our reconnect command, close the keeper

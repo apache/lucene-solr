@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   private static final String ZOOKEEPER_FORCE_SYNC = "zookeeper.forceSync";
   
-  public static final int TIMEOUT = 45000;
+  public static final int TIMEOUT = 40000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

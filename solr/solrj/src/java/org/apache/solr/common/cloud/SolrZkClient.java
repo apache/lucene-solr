@@ -1204,12 +1204,12 @@ public class SolrZkClient implements Closeable {
     @Override
     public void process(final WatchedEvent event) {
       try {
-
-
         if (watcher instanceof ConnectionManager) {
           solrZkClient.zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
         } else {
-          solrZkClient.zkCallbackExecutor.submit(() -> watcher.process(event));
+          if (event.getType() != Event.EventType.None) {
+            solrZkClient.zkCallbackExecutor.submit(() -> watcher.process(event));
+          }
         }
       } catch (RejectedExecutionException e) {
         if (log.isDebugEnabled()) log.debug("Will not process zookeeper update after close");
