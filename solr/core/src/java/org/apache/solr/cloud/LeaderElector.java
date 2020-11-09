@@ -102,7 +102,7 @@ public class LeaderElector implements Closeable {
    *
    * @param replacement has someone else been the leader already?
    */
-  private boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
+  private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
     if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
       if (log.isDebugEnabled()) log.debug("Will not checkIfIamLeader, elector is closed");
@@ -262,7 +262,7 @@ public class LeaderElector implements Closeable {
    *
    * @return sequential node number
    */
-  public boolean joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+  public synchronized boolean joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
       if (log.isDebugEnabled()) log.debug("Will not join election, elector is closed");
       return false;
@@ -438,6 +438,10 @@ public class LeaderElector implements Closeable {
    * Set up any ZooKeeper nodes needed for leader election.
    */
   public void setup(final ElectionContext context) {
+    ElectionContext tmpContext = this.context;
+    if (tmpContext != null) {
+      tmpContext.close();
+    }
     this.context = context;
   }
 
