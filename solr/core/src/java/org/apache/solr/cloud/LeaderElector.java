@@ -119,7 +119,24 @@ public class LeaderElector implements Closeable {
 
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
+    List<String> seqs;
+    try {
+      seqs = zkClient.getChildren(holdElectionPath, null, true);
+    } catch (KeeperException.SessionExpiredException e) {
+      log.error("ZooKeeper session has expired");
+      throw e;
+    } catch (KeeperException.NoNodeException e) {
+      log.info("the election node disappeared, check if we are the leader again");
+      return true;
+    } catch (KeeperException e) {
+      // we couldn't set our watch for some other reason, retry
+      log.info("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
+      return true;
+    } catch (Exception e) {
+      // we couldn't set our watch for some other reason, retry
+      log.info("Failed on election getchildren call {} {}", e.getClass().getName(), e.getMessage());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
     sortSeqs(seqs);
 
     String leaderSeqNodeName;

@@ -616,7 +616,7 @@ public class MiniSolrCloudCluster {
       try {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
       } catch (BaseHttpSolrClient.RemoteSolrException e) {
-        if (!e.getMessage().contains("Could not find") && !e.getMessage().contains("Error handling 'UNLOAD' action")) {
+        if (!e.getMessage().contains("Could not find") && !e.getMessage().contains("Error handling 'UNLOAD' action") && !e.getMessage().contains("Cannot unload non-existent core")) {
           errors.put(collection, e);
         }
       } catch (Exception e) {
