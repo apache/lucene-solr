@@ -30,7 +30,7 @@ import org.apache.lucene.search.ScoreDoc;
  * Team Draft Interleaving is among the most successful and used interleaving approaches[3].
  * Team Draft Interleaving implements a method similar to the way in which captains select their players in team-matches.
  * Team Draft Interleaving produces a fair distribution of ranking models’ elements in the final interleaved list.
- * It has also proved to overcome an issue of the previous implemented approach, Balanced interleaving, in determining the winning model[4].
+ * "Team draft interleaving" has also proved to overcome an issue of the "Balanced interleaving" approach, in determining the winning model[4].
  * <p>
  * [1] T. Joachims. Optimizing search engines using clickthrough data. KDD (2002)
  * [2] T.Joachims.Evaluatingretrievalperformanceusingclickthroughdata.InJ.Franke, G. Nakhaeizadeh, and I. Renz, editors,
