@@ -189,26 +189,29 @@ class VectorValuesWriter {
     @Override
     public RandomAccessVectorValues randomAccess() {
 
+      // Must make a new delegate randomAccess so that we have our own distinct float[]
+      final RandomAccessVectorValues delegateRA = ((RandomAccessVectorValuesProducer) SortingVectorValues.this.delegate).randomAccess();
+
       return new RandomAccessVectorValues() {
 
         @Override
         public int size() {
-          return delegate.size();
+          return delegateRA.size();
         }
 
         @Override
         public int dimension() {
-          return delegate.dimension();
+          return delegateRA.dimension();
         }
 
         @Override
         public SearchStrategy searchStrategy() {
-          return delegate.searchStrategy();
+          return delegateRA.searchStrategy();
         }
 
         @Override
         public float[] vectorValue(int targetOrd) throws IOException {
-          return randomAccess.vectorValue(ordMap[targetOrd]);
+          return delegateRA.vectorValue(ordMap[targetOrd]);
         }
 
         @Override

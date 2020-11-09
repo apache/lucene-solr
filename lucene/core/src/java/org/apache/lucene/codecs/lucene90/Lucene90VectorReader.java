@@ -75,7 +75,6 @@ public final class Lucene90VectorReader extends VectorReader {
   private int readMetadata(SegmentReadState state, String fileExtension) throws IOException {
     String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     int versionMeta = -1;
-    long checksum = -1;
     try (ChecksumIndexInput meta = state.directory.openChecksumInput(metaFileName, state.context)) {
       Throwable priorE = null;
       try {
