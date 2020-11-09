@@ -710,6 +710,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public SolrCore reload(ConfigSet coreConfig) throws IOException {
     log.info("Reload SolrCore");
+
+    if (isClosed || isClosing()) {
+      throw new AlreadyClosedException();
+    }
     // only one reload at a time
     synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
       final SolrCore currentCore;
@@ -992,7 +996,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // Initialize the RestManager
       restManager = initRestManager(cd);
-      
+
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
@@ -1586,9 +1590,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
+    if (getUpdateHandler() != null && getUpdateHandler().getSolrCoreState() != null) {
+      synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
+        doClose();
+      }
+    } else {
+      doClose();
+    }
+  }
+
+  private void doClose() {
     int count = refCount.decrementAndGet();
     if (log.isTraceEnabled()) log.trace("close refcount {} {}", this, count);
-    if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
+    if (count > 0) return;
     if (count < 0) {
       log.warn("Too many close [count:{}] on {}", count, this);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
@@ -1624,7 +1638,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closeCalls.addAll(closeHookCalls);
       if (unregisterMetrics) {
         closeCalls.add(() -> {
-         // IOUtils.closeQuietly(coreMetricManager);
+          // IOUtils.closeQuietly(coreMetricManager);
           return "SolrCoreMetricManager";
         });
       }
@@ -1676,7 +1690,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               searcher.get().close();
             } catch (IOException e) {
               log.error("", e);
-            }          _realtimeSearchers.clear();
+            }
+            _realtimeSearchers.clear();
           }
           _searchers.clear();
           for (RefCounted<SolrIndexSearcher> searcher : _realtimeSearchers) {
@@ -1706,7 +1721,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closer.collect();
 
       assert ObjectReleaseTracker.release(searcherExecutor);
-      closer.collect("", ()->{
+      closer.collect("", () -> {
         if (!searcherExecutor.isTerminated()) {
           searcherExecutor.shutdownNow();
         }
@@ -1742,8 +1757,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       closer.collect("PostCloseHooks", closeHookCalls);
 
-
-
     } finally {
       infoRegistry.clear();
 
@@ -1755,7 +1768,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       assert ObjectReleaseTracker.release(this);
     }
-
   }
 
   /**

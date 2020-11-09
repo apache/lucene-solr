@@ -1626,18 +1626,23 @@ public class CoreContainer implements Closeable {
           solrCores.waitForLoadingCoreToFinish(name, 15000);
           ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
           log.info("Reloading SolrCore '{}' using configuration from {}", name, coreConfig.getName());
-          newCore = core.reload(coreConfig);
-
           DocCollection docCollection = null;
-          if (getZkController() != null) {
-            docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
-            // turn off indexing now, before the new core is registered
-            if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
-              newCore.readOnly = true;
-            }
-          }
+          newCore = core.reload(coreConfig);
+         try {
+           if (getZkController() != null) {
+             docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+             // turn off indexing now, before the new core is registered
+             if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+               newCore.readOnly = true;
+             }
+           }
 
-          registerCore(cd, newCore, false, false);
+           registerCore(cd, newCore, false, false);
+         } catch (Exception e) {
+           log.error("Exception registering reloaded core", e);
+           newCore.close();
+           throw new SolrException(ErrorCode.SERVER_ERROR, e);
+         }
 
           // force commit on old core if the new one is readOnly and prevent any new updates
           if (newCore.readOnly) {
