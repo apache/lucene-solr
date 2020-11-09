@@ -90,7 +90,9 @@ class SolrCores {
     Collection<SolrCore> coreList = new ArrayList<>();
 
     // Release transient core cache.
-    getTransientCacheHandler().close();
+    synchronized (modifyLock) {
+      getTransientCacheHandler().close();
+    }
 
     // It might be possible for one of the cores to move from one list to another while we're closing them. So
     // loop through the lists until they're all empty. In particular, the core could have moved from the transient
