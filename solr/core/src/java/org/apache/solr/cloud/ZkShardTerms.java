@@ -338,6 +338,10 @@ public class ZkShardTerms implements AutoCloseable{
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, null, stat, true);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
+    } catch (KeeperException.NoNodeException e) {
+      if (log.isDebugEnabled()) log.debug("No node found for refresh terms", e);
+      // we have likely been deleted
+      return;
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);

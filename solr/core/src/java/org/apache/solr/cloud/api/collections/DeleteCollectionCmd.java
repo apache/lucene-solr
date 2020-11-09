@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -38,7 +39,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +63,12 @@ import java.util.stream.Collectors;
 
 public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  static Set<String> okayExceptions = new HashSet<>(1);
+  static {
+    okayExceptions.add(NonExistentCoreException.class.getName());
+  }
+
   private final OverseerCollectionMessageHandler ocmh;
   private final TimeSource timeSource;
 
@@ -77,7 +86,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
     final String extCollection = message.getStr(NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-
+    ShardHandler shardHandler = null;
+    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = null;
     boolean skipFinalStateWork = false;
 
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
@@ -122,8 +132,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       String asyncId = message.getStr(ASYNC);
 
-      Set<String> okayExceptions = new HashSet<>(1);
-      okayExceptions.add(NonExistentCoreException.class.getName());
+
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
@@ -132,8 +141,16 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
 
       clusterState = new ClusterStateMutator(ocmh.cloudManager) .deleteCollection(clusterState, collection);
+
+      shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
+
+      shardRequestTracker =
+          new OverseerCollectionMessageHandler.ShardRequestTracker(asyncId, message.getStr("operation"), ocmh.adminPath, zkStateReader,
+              ocmh.shardHandlerFactory, ocmh.overseer);
+
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions,
+          shardHandler, shardRequestTracker);
 
       if (failedReplicas == null) {
         // TODO: handle this in any special way? more logging?
@@ -161,17 +178,30 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    if (results.get("failure") == null && results.get("exception") == null) {
 
-      response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
-        @Override
-        public AddReplicaCmd.Response call() {
-          // TODO: wait for delete collection?
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-          return response;
+
+    //if (results.get("failure") == null && results.get("exception") == null) {
+
+    ShardHandler finalShardHandler = shardHandler;
+    OverseerCollectionMessageHandler.ShardRequestTracker finalShardRequestTracker = shardRequestTracker;
+    response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
+      @Override
+      public AddReplicaCmd.Response call() {
+        if (finalShardHandler != null && finalShardRequestTracker != null) {
+          try {
+            finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
+            // TODO: wait for delete collection?
+            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
+          } catch (Exception e) {
+            log.error("Exception waiting for results of delete collection cmd", e);
+          }
         }
-      };
-    }
+
+        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+        return response;
+      }
+    };
+    //}
     response.clusterState = clusterState;
     return response;
   }
