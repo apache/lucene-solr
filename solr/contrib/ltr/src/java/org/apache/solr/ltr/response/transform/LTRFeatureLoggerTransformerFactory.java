@@ -31,13 +31,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.ltr.CSVFeatureLogger;
 import org.apache.solr.ltr.FeatureLogger;
-import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
 import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.search.LTRQParserPlugin;
@@ -81,6 +81,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
+  private LoggingModel loggingModel = null;
 
   public void setFvCacheName(String fvCacheName) {
     this.fvCacheName = fvCacheName;
@@ -215,35 +216,42 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (threadManager != null) {
         threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
-      
-      // Setup LTRScoringQuery
-      rerankingQueries = SolrQueryRequestContextUtils.getScoringQueries(req);
 
-      docsWereNotReranked = (rerankingQueries == null || rerankingQueries.length == 0);
+      // Setup LTRScoringQuery
+      LTRScoringQuery[] scoringQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
+      docsWereNotReranked = (scoringQueriesFromContext == null || scoringQueriesFromContext.length == 0);
       if (docsWereNotReranked) {
         rerankingQueries = new LTRScoringQuery[]{null};
+      } else {
+        rerankingQueries = new LTRScoringQuery[scoringQueriesFromContext.length];
+        System.arraycopy(scoringQueriesFromContext, 0, rerankingQueries, 0, scoringQueriesFromContext.length);
       }
+
       modelWeights = new LTRScoringQuery.ModelWeight[rerankingQueries.length];
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
       for (int i = 0; i < rerankingQueries.length; i++) {
         LTRScoringQuery scoringQuery = rerankingQueries[i];
-        if ((scoringQuery == null || !(scoringQuery instanceof OriginalRankingLTRScoringQuery)) && (docsWereNotReranked || (featureStoreName != null && !featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
-          // if store is set in the transformer we should overwrite the logger
-
-          final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
-
-          final FeatureStore store = fr.getFeatureStore(featureStoreName);
-          featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
-
-
+        if (docsWereNotReranked ||
+            (featureStoreName != null &&
+                !isModelMatchingFeatureStore(featureStoreName, scoringQuery.getScoringModel()))) {
           try {
-            final LoggingModel lm = new LoggingModel(loggingModelName,
-                featureStoreName, store.getFeatures());
-
-            scoringQuery = new LTRScoringQuery(lm,
-                LTRQParserPlugin.extractEFIParams(localparams),
-                true,
-                threadManager); // request feature weights to be created for all features
+            if (!isModelMatchingFeatureStore(featureStoreName, loggingModel)) {
+              initLoggingModelQuery(featureStoreName);
+            }
+            boolean extractAllFeatures = true;
+            Map<String, String[]> transformerExternalFeatureInfo = LTRQParserPlugin.extractEFIParams(localparams);
+            
+            if (scoringQuery == null) {
+              scoringQuery = new LTRScoringQuery(loggingModel,
+                  transformerExternalFeatureInfo,
+                  extractAllFeatures,
+                  threadManager);
+            } else {
+              scoringQuery.setLtrScoringModel(loggingModel);
+              scoringQuery.setLtrThreadMgr(threadManager);
+              scoringQuery.setExtractAllFeatures(extractAllFeatures);
+              scoringQuery.setEfi(transformerExternalFeatureInfo);
+            }
             rerankingQueries[i] = scoringQuery;
           } catch (final Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -255,7 +263,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           scoringQuery.setOriginalQuery(context.getQuery());
         }
         scoringQuery.setRequest(req);
-        if (!(scoringQuery instanceof OriginalRankingLTRScoringQuery)) {
+
+        if (!(scoringQuery instanceof OriginalRankingLTRScoringQuery) || localparams.get(FV_STORE) != null) {
           if (scoringQuery.getFeatureLogger() == null) {
             scoringQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
           }
@@ -271,6 +280,21 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           }
         }
       }
+    }
+    
+    private boolean isModelMatchingFeatureStore(String featureStoreName, LTRScoringModel model) {
+      return model != null && featureStoreName.equals(model.getFeatureStoreName());
+    }
+    
+    private void initLoggingModelQuery(String featureStoreName) {
+      // if store is set in the transformer we should overwrite the logger
+      final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
+
+      final FeatureStore store = fr.getFeatureStore(featureStoreName);
+      featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
+
+      loggingModel = new LoggingModel(loggingModelName,
+          featureStoreName, store.getFeatures());
     }
 
     @Override
@@ -293,7 +317,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         rerankingQuery = rerankingQueries[1];
         rerankingModelWeight = modelWeights[1];
       }
-      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery)) {
+      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || localparams.get(FV_STORE) != null) {
         Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
         if (featureVector == null) { // FV for this document was not in the cache
           featureVector = featureLogger.makeFeatureVector(

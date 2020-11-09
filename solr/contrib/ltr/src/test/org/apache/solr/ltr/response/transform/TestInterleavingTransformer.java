@@ -69,6 +69,10 @@ public class TestInterleavingTransformer extends TestRerankBase {
         "{\"fq\":[\"{!terms f=popularity}6\"]}");
     loadFeature("featureB2", SolrFeature.class.getName(),
         "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
+    loadFeature("featureC1", SolrFeature.class.getName(),"featureStore2",
+        "{\"fq\":[\"{!terms f=popularity}6\"]}");
+    loadFeature("featureC2", SolrFeature.class.getName(),"featureStore2",
+        "{\"fq\":[\"{!terms f=popularity}1\"]}");
 
     loadModel("modelA", LinearModel.class.getName(),
         new String[]{"featureA1", "featureA2", "featureAB"},
@@ -77,6 +81,10 @@ public class TestInterleavingTransformer extends TestRerankBase {
     loadModel("modelB", LinearModel.class.getName(),
         new String[]{"featureB1", "featureB2", "featureAB"},
         "{\"weights\":{\"featureB1\":2.0, \"featureB2\":4.0, \"featureAB\":8.0}}");
+
+    loadModel("modelC", LinearModel.class.getName(),
+        new String[]{"featureC1", "featureC2"},"featureStore2",
+        "{\"weights\":{\"featureC1\":5.0, \"featureC2\":25.0}}");
   }
 
   @Test
