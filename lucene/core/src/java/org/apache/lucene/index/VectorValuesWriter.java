@@ -98,17 +98,17 @@ class VectorValuesWriter {
     }
   }
 
-  static class SortingVectorValues extends VectorValues {
+  static class SortingVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
 
     private final VectorValues delegate;
-    private final VectorValues.RandomAccess randomAccess;
+    private final RandomAccessVectorValues randomAccess;
     private final int[] docIdOffsets;
     private final int[] ordMap;
     private int docId = -1;
 
     SortingVectorValues(VectorValues delegate, Sorter.DocMap sortMap) throws IOException {
       this.delegate = delegate;
-      randomAccess = delegate.randomAccess();
+      randomAccess = ((RandomAccessVectorValuesProducer) delegate).randomAccess();
       docIdOffsets = new int[sortMap.size()];
 
       int offset = 1; // 0 means no vector for this (field, document)
@@ -181,10 +181,16 @@ class VectorValuesWriter {
       return size();
     }
 
+
     @Override
-    public RandomAccess randomAccess() {
-      RandomAccess ra = delegate.randomAccess();
-      return new RandomAccess() {
+    public TopDocs search(float[] target, int k, int fanout) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RandomAccessVectorValues randomAccess() {
+
+      return new RandomAccessVectorValues() {
 
         @Override
         public int size() {
@@ -203,7 +209,7 @@ class VectorValuesWriter {
 
         @Override
         public float[] vectorValue(int targetOrd) throws IOException {
-          return ra.vectorValue(ordMap[targetOrd]);
+          return randomAccess.vectorValue(ordMap[targetOrd]);
         }
 
         @Override
@@ -211,15 +217,11 @@ class VectorValuesWriter {
           throw new UnsupportedOperationException();
         }
 
-        @Override
-        public TopDocs search(float[] target, int k, int fanout) {
-          throw new UnsupportedOperationException();
-        }
       };
     }
   }
 
-  private static class BufferedVectorValues extends VectorValues implements VectorValues.RandomAccess {
+  private static class BufferedVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final DocsWithFieldSet docsWithField;
 
@@ -249,7 +251,7 @@ class VectorValuesWriter {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public RandomAccessVectorValues randomAccess() {
       return this;
     }
 
