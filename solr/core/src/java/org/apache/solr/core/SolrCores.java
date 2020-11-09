@@ -51,10 +51,8 @@ class SolrCores {
   // to essentially queue them up to be handled via pendingCoreOps.
   private static final List<SolrCore> pendingCloses = new ArrayList<>();
 
-  private TransientSolrCoreCacheFactory transientCoreCache;
+  private TransientSolrCoreCacheFactory transientSolrCoreCacheFactory;
 
-  private TransientSolrCoreCache transientSolrCoreCache = null;
-  
   SolrCores(CoreContainer container) {
     this.container = container;
   }
@@ -80,18 +78,19 @@ class SolrCores {
   }
 
   public void load(SolrResourceLoader loader) {
-    transientCoreCache = TransientSolrCoreCacheFactory.newInstance(loader, container);
+    transientSolrCoreCacheFactory = TransientSolrCoreCacheFactory.newInstance(loader, container);
   }
+
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
   protected void close() {
     waitForLoadingCoresToFinish(30*1000);
     Collection<SolrCore> coreList = new ArrayList<>();
 
-    
-    TransientSolrCoreCache transientSolrCoreCache = getTransientCacheHandler();
-    // Release observer
-    transientSolrCoreCache.close();
+    if (transientSolrCoreCacheFactory != null) {
+      // Release transient core cache.
+      getTransientCacheHandler().close();
+    }
 
     // It might be possible for one of the cores to move from one list to another while we're closing them. So
     // loop through the lists until they're all empty. In particular, the core could have moved from the transient
@@ -102,7 +101,9 @@ class SolrCores {
         // make a copy of the cores then clear the map so the core isn't handed out to a request again
         coreList.addAll(cores.values());
         cores.clear();
-        coreList.addAll(transientSolrCoreCache.prepareForShutdown());
+        if (transientSolrCoreCacheFactory != null) {
+          coreList.addAll(getTransientCacheHandler().prepareForShutdown());
+        }
 
         coreList.addAll(pendingCloses);
         pendingCloses.clear();
@@ -355,15 +356,8 @@ class SolrCores {
 
   protected boolean isLoaded(String name) {
     synchronized (modifyLock) {
-      if (cores.containsKey(name)) {
-        return true;
-      }
-      if (getTransientCacheHandler().containsCore(name)) {
-        return true;
-      }
+      return cores.containsKey(name) || getTransientCacheHandler().containsCore(name);
     }
-    return false;
-
   }
 
   protected CoreDescriptor getUnloadedCoreDescriptor(String cname) {
@@ -532,10 +526,7 @@ class SolrCores {
   }
 
   public boolean isCoreLoading(String name) {
-    if (currentlyLoadingCores.contains(name)) {
-      return true;
-    }
-    return false;
+    return currentlyLoadingCores.contains(name);
   }
 
   public void queueCoreToClose(SolrCore coreToClose) {
@@ -549,7 +540,10 @@ class SolrCores {
    * @return the cache holding the transient cores; never null.
    */
   public TransientSolrCoreCache getTransientCacheHandler() {
-    return transientCoreCache.getTransientSolrCoreCache();
+    if (transientSolrCoreCacheFactory == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, getClass().getName() + " not loaded; call load() before using it");
+    }
+    return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
   }
 
 }
