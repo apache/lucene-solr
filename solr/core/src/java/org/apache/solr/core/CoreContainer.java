@@ -1281,7 +1281,7 @@ public class CoreContainer {
         } else {
           String msg = "Already creating a core with name '" + coreName + "', call aborted '";
           log.warn(msg);
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+          throw new SolrException(ErrorCode.CONFLICT, msg);
         }
       }
       CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
