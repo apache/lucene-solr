@@ -49,6 +49,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrDocumentList;
@@ -1145,7 +1146,10 @@ public class RealTimeGetComponent extends SearchComponent
       rb.rsp.add("sync", success);
 
       if (!success && rb.req.getCore().getCoreContainer().isZooKeeperAware()) {
-        rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
+        ParWork.getRootSharedExecutor().submit(() -> {
+          rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
+        });
+
       }
     } catch (IOException e) {
       log.error("Error while closing", e);

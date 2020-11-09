@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import net.sf.saxon.trans.Err;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
@@ -94,7 +93,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
-    String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    String coreName = leaderProps.getName();
     try {
       try (SolrCore core = cc.getCore(coreName)) {
         if (core != null) {
@@ -124,7 +123,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
           InterruptedException, IOException {
 
-    String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
+    String coreName = leaderProps.getName();
 
     log.info("Run leader process for shard election {}", coreName);
 
@@ -134,6 +133,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         log.error("No SolrCore found, cannot become leader {}", coreName);
         throw new SolrException(ErrorCode.SERVER_ERROR, "No SolrCore found, cannot become leader " + coreName);
       }
+      if (core.isClosing() || core.getCoreContainer().isShutDown()) {
+        log.info("We are closed, will not become leader");
+        return;
+      }
+
       MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
 
@@ -262,7 +266,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         ZkNodeProps zkNodes = ZkNodeProps
             .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
                 leaderProps.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.CORE_NAME_PROP,
-                leaderProps.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
+                leaderProps.getName(), ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
         assert zkController != null;
         assert zkController.getOverseer() != null;
 

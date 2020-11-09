@@ -1620,7 +1620,6 @@ public class ZkController implements Closeable, Runnable {
     Map<String, Object> props = new HashMap<>();
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
-    props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
 
     Replica replica = new Replica(cd.getName(), props, null, null);

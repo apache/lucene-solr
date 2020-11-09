@@ -54,7 +54,7 @@ public abstract class SolrCoreState {
   }
   
   
-  private int solrCoreStateRefCnt = 1;
+  protected int solrCoreStateRefCnt = 1;
 
   public void increfSolrCoreState() {
     synchronized (this) {

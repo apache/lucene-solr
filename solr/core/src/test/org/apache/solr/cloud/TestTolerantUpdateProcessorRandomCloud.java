@@ -142,7 +142,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   public void testRandomUpdates() throws Exception {
-    final int maxDocId = atLeast(10000);
+    final int maxDocId = atLeast(TEST_NIGHTLY ? 10000 : 1000);
     final BitSet expectedDocIds = new BitSet(maxDocId+1);
     
     final int numIters = atLeast(50);

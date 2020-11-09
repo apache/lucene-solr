@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -104,10 +105,7 @@ public class LeaderElector implements Closeable {
    */
   private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
-      if (log.isDebugEnabled()) log.debug("Will not checkIfIamLeader, elector is closed");
-      return false;
-    }
+    if (checkClosed(context)) return false;
 
     log.info("Check if I am leader {}", context.getClass().getSimpleName());
 
@@ -208,6 +206,24 @@ public class LeaderElector implements Closeable {
     return false;
   }
 
+  private boolean checkClosed(ElectionContext context) {
+    if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
+      if (log.isDebugEnabled()) log.debug("Will not checkIfIamLeader, elector is closed");
+      return true;
+    }
+    if (zkController != null) {
+      try (SolrCore core = zkController.getCoreContainer().getCore(context.leaderProps.getName())) {
+        if (core != null) {
+          if (core.isClosing()) {
+            if (log.isDebugEnabled()) log.debug("Will not checkIfIamLeader, SolrCore is closed");
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
@@ -263,10 +279,7 @@ public class LeaderElector implements Closeable {
    * @return sequential node number
    */
   public synchronized boolean joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
-    if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
-      if (log.isDebugEnabled()) log.debug("Will not join election, elector is closed");
-      return false;
-    }
+    if (checkClosed(context)) return false;
 
     ParWork.getRootSharedExecutor().submit(() -> {
       context.joinedElectionFired();

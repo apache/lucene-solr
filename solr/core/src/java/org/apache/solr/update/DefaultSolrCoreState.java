@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -399,10 +400,20 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         }
 
         if (recoveryFuture != null) {
-          try {
-            recoveryFuture.get();
-          } catch (Exception e) {
-            log.error("Exception waiting for previous recovery to finish {}", e.getMessage());
+          while (true) {
+            try {
+              recoveryFuture.get(1, TimeUnit.SECONDS);
+              break;
+            } catch (TimeoutException e) {
+              if (log.isDebugEnabled()) log.debug("1 second timeout hit, waiting on recovery again if not closed");
+              synchronized (this) {
+                if (solrCoreStateRefCnt == 0 || core.getCoreContainer().isShutDown()) {
+                  break;
+                }
+              }
+            } catch (Exception e) {
+              log.error("Exception waiting for previous recovery to finish {}", e.getMessage());
+            }
           }
         }
       } catch (NullPointerException e) {
