@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.XYDocValuesField;
 import org.apache.lucene.geo.BaseXYPointTestCase;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 
 public class TestXYDocValuesQueries extends BaseXYPointTestCase {
@@ -41,5 +42,10 @@ public class TestXYDocValuesQueries extends BaseXYPointTestCase {
   @Override
   protected Query newPolygonQuery(String field, XYPolygon... polygons) {
     return XYDocValuesField.newSlowPolygonQuery(field, polygons);
+  }
+
+  @Override
+  protected Query newGeometryQuery(String field, XYGeometry... geometries) {
+    return XYDocValuesField.newSlowGeometryQuery(field, geometries);
   }
 }

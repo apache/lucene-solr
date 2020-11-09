@@ -277,6 +277,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  public VectorValues getVectorValues(String field) {
+    ensureOpen();
+    return null; // because not supported.  Throw UOE?
+  }
+
+  @Override
   public FieldInfos getFieldInfos() {
     return fieldInfos;
   }

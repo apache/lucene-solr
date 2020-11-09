@@ -93,7 +93,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
+    MetricsMap metricsMap = new MetricsMap(map -> {
       long totalBytes = 0;
       long localBytes = 0;
       int totalCount = 0;

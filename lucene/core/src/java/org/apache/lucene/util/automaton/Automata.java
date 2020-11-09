@@ -85,7 +85,22 @@ final public class Automata {
     a.finishState();
     return a;
   }
-  
+
+  /**
+   * Returns a new (deterministic) automaton that accepts all binary terms except
+   * the empty string.
+   */
+  public static Automaton makeNonEmptyBinary() {
+    Automaton a = new Automaton();
+    int s1 = a.createState();
+    int s2 = a.createState();
+    a.setAccept(s2, true);
+    a.addTransition(s1, s2, 0, 255);
+    a.addTransition(s2, s2, 0, 255);
+    a.finishState();
+    return a;
+  }
+
   /**
    * Returns a new (deterministic) automaton that accepts any single codepoint.
    */
@@ -254,8 +269,12 @@ final public class Automata {
       cmp = min.compareTo(max);
     } else {
       cmp = -1;
-      if (min.length == 0 && minInclusive) {
-        return makeAnyBinary();
+      if (min.length == 0) {
+        if (minInclusive) {
+          return makeAnyBinary();
+        } else {
+          return makeNonEmptyBinary();
+        }
       }
     }
 
@@ -266,7 +285,7 @@ final public class Automata {
         return makeBinary(min);
       }
     } else if (cmp > 0) {
-      // max > min
+      // max < min
       return makeEmpty();
     }
 

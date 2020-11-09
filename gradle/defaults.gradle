@@ -23,9 +23,6 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    maven {
-      url "https://maven.restlet.com"
-    }
   }
 
   // Artifacts will have names after full gradle project path

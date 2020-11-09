@@ -60,7 +60,7 @@ NOTES:
   simple concatenation. This last is something of a style check.
 
 - You can get into some pretty convolued consructs trying to pass some of these
-  checks. Adding //logok, with or without spaces will cause the line to pass
+  checks. Adding //nowarn, with or without spaces will cause the line to pass
   no matter what. Please use this hack sparingly and be conscientious about
   surrounding with 'if (log.is*Enabled)'.
 

@@ -28,7 +28,7 @@ For some of the authentication schemes (e.g., Kerberos), Solr provides a native 
 
 There are two plugin classes:
 
-* `HadoopAuthPlugin`: This can be used with standalone Solr as well as Solrcloud with <<authentication-and-authorization-plugins.adoc#securing-inter-node-requests,PKI authentication>> for internode communication.
+* `HadoopAuthPlugin`: This can be used with standalone Solr as well as SolrCloud with <<authentication-and-authorization-plugins.adoc#securing-inter-node-requests,PKI authentication>> for internode communication.
 * `ConfigurableInternodeAuthHadoopPlugin`: This is an extension of HadoopAuthPlugin that allows you to configure the authentication scheme for internode communication.
 
 [TIP]

@@ -24,8 +24,9 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+ * @lucene.internal
  */
-final class TermScorer extends Scorer {
+public final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;
   private final ImpactsEnum impactsEnum;
   private final DocIdSetIterator iterator;
@@ -35,7 +36,7 @@ final class TermScorer extends Scorer {
   /**
    * Construct a {@link TermScorer} that will iterate all documents.
    */
-  TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
+  public TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
     super(weight);
     iterator = this.postingsEnum = postingsEnum;
     impactsEnum = new SlowImpactsEnum(postingsEnum);
@@ -60,7 +61,8 @@ final class TermScorer extends Scorer {
     return postingsEnum.docID();
   }
 
-  final int freq() throws IOException {
+  /** Returns term frequency in the current document. */
+  public final int freq() throws IOException {
     return postingsEnum.freq();
   }
 

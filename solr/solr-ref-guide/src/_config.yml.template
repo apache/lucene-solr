@@ -7,9 +7,9 @@
 #
 
 # Gems that are included for building the site. jekyll-asciidoc allows Jekyll to use Asciidoctor for variables and settings
-gems: [jekyll-asciidoc]
+plugins: [jekyll-asciidoc]
 
-destination: ../html-site
+destination: '${htmlOutDir}'
 
 # this property is useful for conditional filtering of content that is separate from another format (if any).
 output: web
@@ -68,21 +68,21 @@ asciidoc: {}
 # NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
 # them to the <asciidoctor:convert/> ant task for precommit validation as well.
 solr-attributes: &solr-attributes-ref
-  solr-root-path: "${solrRootPath}"
-  solr-guide-draft-status: "${solrGuideDraftStatus}"
-  solr-guide-version-path: "${solrGuideVersionPath}"
-  solr-docs-version: "${solrDocsVersion}"
-  java-javadocs: "${javadocLink}"
-  solr-javadocs: "${htmlSolrJavadocs}"
-  lucene-javadocs: "${htmlLuceneJavadocs}"
-  build-date: "${buildDate}"
-  build-year: "${buildYear}"
-  ivy-commons-codec-version: "${ivyCommonsCodec}"
-  ivy-dropwizard-version: "${ivyDropwizardMetrics}"
-  ivy-log4j-version: "${ivyLog4j}"
-  ivy-opennlp-version: "${ivyOpennlpTools}"
-  ivy-tika-version: "${ivyTika}"
-  ivy-zookeeper-version: "${ivyZookeeper}"
+  solr-root-path: '${solrRootPath}'
+  solr-guide-draft-status: '${solrGuideDraftStatus}'
+  solr-guide-version-path: '${solrGuideVersionPath}'
+  solr-docs-version: '${solrDocsVersion}'
+  java-javadocs: '${javadocLink}'
+  solr-javadocs: '${htmlSolrJavadocs}'
+  lucene-javadocs: '${htmlLuceneJavadocs}'
+  build-date: '${buildDate}'
+  build-year: '${buildYear}'
+  ivy-commons-codec-version: '${ivyCommonsCodec}'
+  ivy-dropwizard-version: '${ivyDropwizardMetrics}'
+  ivy-log4j-version: '${ivyLog4j}'
+  ivy-opennlp-version: '${ivyOpennlpTools}'
+  ivy-tika-version: '${ivyTika}'
+  ivy-zookeeper-version: '${ivyZookeeper}'
 
 asciidoctor:
   safe: 0

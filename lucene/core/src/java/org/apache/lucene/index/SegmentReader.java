@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -257,6 +258,11 @@ public final class SegmentReader extends CodecReader {
   public DocValuesProducer getDocValuesReader() {
     ensureOpen();
     return docValuesProducer;
+  }
+
+  @Override
+  public VectorReader getVectorReader() {
+    return core.vectorReader;
   }
 
   @Override

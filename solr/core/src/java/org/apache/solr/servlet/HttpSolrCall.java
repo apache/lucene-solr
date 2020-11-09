@@ -86,6 +86,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -408,26 +409,6 @@ public class HttpSolrCall {
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-
-      if (handler == null) {
-        //may be a restlet path
-        // Handle /schema/* paths via Restlet
-        if (path.equals("/schema") || path.startsWith("/schema/")) {
-          solrReq = parser.parse(core, path, req);
-          SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, new SolrQueryResponse()));
-          mustClearSolrRequestInfo = true;
-          if (path.equals(req.getServletPath())) {
-            // avoid endless loop - pass through to Restlet via webapp
-            action = PASSTHROUGH;
-          } else {
-            // forward rewritten URI (without path prefix and core/collection name) to Restlet
-            action = FORWARD;
-          }
-          SolrRequestInfo.getRequestInfo().setAction(action);
-          return;
-        }
-      }
-
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
@@ -493,7 +474,7 @@ public class HttpSolrCall {
     }
     if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
       if (log.isDebugEnabled()) {
-        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // logOk
+        log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage()); // nowarn
       }
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
@@ -503,7 +484,7 @@ public class HttpSolrCall {
       return RETURN;
     }
     if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
-      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // logOk
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage()); // nowarn
       sendError(statusCode,
           "ERROR during authorization, Response code: " + statusCode);
       if (shouldAudit(EventType.ERROR)) {
@@ -571,39 +552,57 @@ public class HttpSolrCall {
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
-          final Method reqMethod = Method.getMethod(req.getMethod());
-          HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
-          // unless we have been explicitly told not to, do cache validation
-          // if we fail cache validation, execute the query
-          if (config.getHttpCachingConfig().isNever304() ||
-              !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
-            SolrQueryResponse solrRsp = new SolrQueryResponse();
+          /*
+           We track update requests so that we can preserve consistency by waiting for them to complete
+           on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
+           See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
+
+           Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
+           other kinds of requests.
+          */
+          if (handler instanceof UpdateRequestHandler && !core.getSolrCoreState().registerInFlightUpdate()) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + core.getName());
+          }
+          try {
+            final Method reqMethod = Method.getMethod(req.getMethod());
+            HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
+            // unless we have been explicitly told not to, do cache validation
+            // if we fail cache validation, execute the query
+            if (config.getHttpCachingConfig().isNever304() ||
+                    !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
+              SolrQueryResponse solrRsp = new SolrQueryResponse();
               /* even for HEAD requests, we need to execute the handler to
                * ensure we don't get an error (and to make sure the correct
                * QueryResponseWriter is selected and we get the correct
                * Content-Type)
                */
-            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
-            mustClearSolrRequestInfo = true;
-            execute(solrRsp);
-            if (shouldAudit()) {
-              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-              if (shouldAudit(eventType)) {
-                cores.getAuditLoggerPlugin().doAudit(
-                    new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+              SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+              mustClearSolrRequestInfo = true;
+              execute(solrRsp);
+              if (shouldAudit()) {
+                EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+                if (shouldAudit(eventType)) {
+                  cores.getAuditLoggerPlugin().doAudit(
+                          new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
+                }
               }
+              HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
+              Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
+              while (headers.hasNext()) {
+                Map.Entry<String, String> entry = headers.next();
+                resp.addHeader(entry.getKey(), entry.getValue());
+              }
+              QueryResponseWriter responseWriter = getResponseWriter();
+              if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
+              writeResponse(solrRsp, responseWriter, reqMethod);
             }
-            HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
-            Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
-            while (headers.hasNext()) {
-              Map.Entry<String, String> entry = headers.next();
-              resp.addHeader(entry.getKey(), entry.getValue());
+            return RETURN;
+          } finally {
+            if (handler instanceof UpdateRequestHandler) {
+              // every registered request must also be de-registered
+              core.getSolrCoreState().deregisterInFlightUpdate();
             }
-            QueryResponseWriter responseWriter = getResponseWriter();
-            if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
-            writeResponse(solrRsp, responseWriter, reqMethod);
           }
-          return RETURN;
         default: return action;
       }
     } catch (Throwable ex) {
@@ -666,19 +665,18 @@ public class HttpSolrCall {
     }
   }
 
-  private String getQuerySting() {
-    int internalRequestCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0);
-    ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
-    updatedQueryParams.set(INTERNAL_REQUEST_COUNT, internalRequestCount + 1);
-    return updatedQueryParams.toQueryString();
-  }
-
   //TODO using Http2Client
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method;
     HttpEntity httpEntity = null;
+
+    ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
+    int forwardCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) + 1;
+    updatedQueryParams.set(INTERNAL_REQUEST_COUNT, forwardCount);
+    String queryStr = updatedQueryParams.toQueryString();
+
     try {
-      String urlstr = coreUrl + getQuerySting();
+      String urlstr = coreUrl + queryStr;
 
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       if ("GET".equals(req.getMethod())) {
@@ -728,7 +726,11 @@ public class HttpSolrCall {
         // encoding issues with Tomcat
         if (header != null && !header.getName().equalsIgnoreCase(TRANSFER_ENCODING_HEADER)
             && !header.getName().equalsIgnoreCase(CONNECTION_HEADER)) {
-          resp.addHeader(header.getName(), header.getValue());
+          
+          // NOTE: explicitly using 'setHeader' instead of 'addHeader' so that
+          // the remote nodes values for any response headers will overide any that
+          // may have already been set locally (ex: by the local jetty's RewriteHandler config)
+          resp.setHeader(header.getName(), header.getValue());
         }
       }
 
@@ -746,7 +748,7 @@ public class HttpSolrCall {
     } catch (IOException e) {
       sendError(new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Error trying to proxy request for url: " + coreUrl, e));
+          "Error trying to proxy request for url: " + coreUrl + " with _forwardCount: " + forwardCount, e));
     } finally {
       Utils.consumeFully(httpEntity);
     }
@@ -984,8 +986,8 @@ public class HttpSolrCall {
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
         final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        for (Slice s : activeCollectionSlices) {
-          slices.add(s);
+        if (activeCollectionSlices != null) {
+          Collections.addAll(slices, activeCollectionSlices);
         }
       }
     } else {
@@ -1015,9 +1017,7 @@ public class HttpSolrCall {
         getSlicesForCollections(clusterState, activeSlices, false);
       }
     } else {
-      for (Slice s : slices) {
-        activeSlices.add(s);
-      }
+      Collections.addAll(activeSlices, slices);
     }
 
     for (Slice s: activeSlices) {
@@ -1033,16 +1033,18 @@ public class HttpSolrCall {
       collectionsList = new ArrayList<>(collectionsList);
       collectionsList.add(collectionName);
     }
-    String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
-        activeSlices, byCoreName, true);
 
     // Avoid getting into a recursive loop of requests being forwarded by
     // stopping forwarding and erroring out after (totalReplicas) forwards
+    if (queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+          "No active replicas found for collection: " + collectionName);
+    }
+
+    String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
+        activeSlices, byCoreName, true);
+
     if (coreUrl == null) {
-      if (queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
-            "No active replicas found for collection: " + collectionName);
-      }
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
           activeSlices, byCoreName, false);
     }

@@ -4238,4 +4238,24 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     IOUtils.close(w, dir);
   }
+
+  public void testPendingNumDocs() throws Exception {
+    try (Directory dir = newDirectory()) {
+      int numDocs = random().nextInt(100);
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        for (int i = 0; i < numDocs; i++) {
+          Document d = new Document();
+          d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
+          writer.addDocument(d);
+          assertEquals(i + 1L, writer.getPendingNumDocs());
+        }
+        assertEquals(numDocs, writer.getPendingNumDocs());
+        writer.flush();
+        assertEquals(numDocs, writer.getPendingNumDocs());
+      }
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        assertEquals(numDocs, writer.getPendingNumDocs());
+      }
+    }
+  }
 }

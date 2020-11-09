@@ -99,7 +99,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   private void logOverseerState() throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("Overseer: {}", getLeaderNode(zkClient()));
-      log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election")); // logOk
+      log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election")); // nowarn
     }
   }
 
