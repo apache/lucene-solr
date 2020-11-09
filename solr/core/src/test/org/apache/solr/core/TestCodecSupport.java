@@ -140,8 +140,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
   
   public void testMixedCompressionMode() throws Exception {
-    assertU(delQ("*:*"));
-    assertU(commit());
     System.setProperty("tests.COMPRESSION_MODE", "BEST_SPEED");
     h.getCoreContainer().reload(h.coreName);
     assertU(add(doc("string_f", "1", "text", "foo bar")));

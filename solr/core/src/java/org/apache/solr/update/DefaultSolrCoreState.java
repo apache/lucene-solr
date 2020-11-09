@@ -193,14 +193,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       } catch (InterruptedException e) {
         log.warn("WARNING - Dangerous interrupt", e);
       }
-
-      // even if we failed to acquire, check if we are closed
-      if (closed) {
-        if (acquired) {
-          lock.unlock();
-        }
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "SolrCoreState already closed.");
-      }
     } while (!acquired);
   }
 

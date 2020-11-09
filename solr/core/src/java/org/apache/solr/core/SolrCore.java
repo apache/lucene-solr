@@ -982,6 +982,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
     try {
+      if (reload) {
+        updateHandler.getSolrCoreState().increfSolrCoreState();
+      }
 
       IndexSchema schema = configSet.getIndexSchema();
 
@@ -1112,10 +1115,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       //if (!reload) { // TODO: reload could move to a different index?
         seedVersionBuckets();
      // }
-
-      if (reload) {
-        updateHandler.getSolrCoreState().increfSolrCoreState();
-      }
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
