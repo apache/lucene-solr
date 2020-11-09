@@ -84,4 +84,11 @@ public abstract class TransientSolrCoreCacheFactory {
   public CoreContainer getCoreContainer() {
     return coreContainer;
   }
+
+  public static final TransientSolrCoreCacheFactory NO_OP = new TransientSolrCoreCacheFactory() {
+    @Override
+    public TransientSolrCoreCache getTransientSolrCoreCache() {
+      return TransientSolrCoreCache.NO_OP;
+    }
+  };
 }

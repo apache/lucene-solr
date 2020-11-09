@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -120,6 +121,80 @@ public abstract class TransientSolrCoreCache {
   // These two methods allow custom implementations to communicate arbitrary information as necessary.
   public abstract int getStatus(String coreName);
   public abstract void setStatus(String coreName, int status);
+
+  /**
+   * No Op cache.
+   */
+  public static final TransientSolrCoreCache NO_OP = new TransientSolrCoreCache() {
+
+    @Override
+    public CoreContainer getContainer() {
+      return null;
+    }
+
+    @Override
+    public SolrCore addCore(String name, SolrCore core) {
+      return null;
+    }
+
+    @Override
+    public Set<String> getAllCoreNames() {
+      return Collections.emptySet();
+    }
+
+    @Override
+    public Set<String> getLoadedCoreNames() {
+      return Collections.emptySet();
+    }
+
+    @Override
+    public SolrCore removeCore(String name) {
+      return null;
+    }
+
+    @Override
+    public SolrCore getCore(String name) {
+      return null;
+    }
+
+    @Override
+    public boolean containsCore(String name) {
+      return false;
+    }
+
+    @Override
+    public Collection<SolrCore> prepareForShutdown() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public void addTransientDescriptor(String rawName, CoreDescriptor cd) {
+    }
+
+    @Override
+    public CoreDescriptor getTransientDescriptor(String name) {
+      return null;
+    }
+
+    @Override
+    public Collection<CoreDescriptor> getTransientDescriptors() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public CoreDescriptor removeTransientDescriptor(String name) {
+      return null;
+    }
+
+    @Override
+    public int getStatus(String coreName) {
+      return 0;
+    }
+
+    @Override
+    public void setStatus(String coreName, int status) {
+    }
+  };
 }
 
 

@@ -51,7 +51,7 @@ class SolrCores {
   // to essentially queue them up to be handled via pendingCoreOps.
   private static final List<SolrCore> pendingCloses = new ArrayList<>();
 
-  private TransientSolrCoreCacheFactory transientSolrCoreCacheFactory;
+  private TransientSolrCoreCacheFactory transientSolrCoreCacheFactory = TransientSolrCoreCacheFactory.NO_OP;
 
   SolrCores(CoreContainer container) {
     this.container = container;
@@ -87,10 +87,8 @@ class SolrCores {
     waitForLoadingCoresToFinish(30*1000);
     Collection<SolrCore> coreList = new ArrayList<>();
 
-    if (transientSolrCoreCacheFactory != null) {
-      // Release transient core cache.
-      getTransientCacheHandler().close();
-    }
+    // Release transient core cache.
+    getTransientCacheHandler().close();
 
     // It might be possible for one of the cores to move from one list to another while we're closing them. So
     // loop through the lists until they're all empty. In particular, the core could have moved from the transient
@@ -101,9 +99,7 @@ class SolrCores {
         // make a copy of the cores then clear the map so the core isn't handed out to a request again
         coreList.addAll(cores.values());
         cores.clear();
-        if (transientSolrCoreCacheFactory != null) {
-          coreList.addAll(getTransientCacheHandler().prepareForShutdown());
-        }
+        coreList.addAll(getTransientCacheHandler().prepareForShutdown());
 
         coreList.addAll(pendingCloses);
         pendingCloses.clear();
@@ -540,9 +536,6 @@ class SolrCores {
    * @return the cache holding the transient cores; never null.
    */
   public TransientSolrCoreCache getTransientCacheHandler() {
-    if (transientSolrCoreCacheFactory == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, getClass().getName() + " not loaded; call load() before using it");
-    }
     return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
   }
 
