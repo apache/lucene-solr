@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -146,11 +147,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   // to the oldNames array.
 
   public void testCreateCFS() throws IOException {
-    createIndex("index.cfs", true, false);
+    createIndex("index.cfs", true, false, null);
   }
 
   public void testCreateNoCFS() throws IOException {
-    createIndex("index.nocfs", false, false);
+    createIndex("index.nocfs", false, false, null);
   }
 
   // These are only needed for the special upgrade test to verify
@@ -159,11 +160,36 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   // "old" segment format, version is unimportant:
 
   public void testCreateSingleSegmentCFS() throws IOException {
-    createIndex("index.singlesegment-cfs", true, true);
+    createIndex("index.singlesegment-cfs", true, true, null);
   }
 
   public void testCreateSingleSegmentNoCFS() throws IOException {
-    createIndex("index.singlesegment-nocfs", false, true);
+    createIndex("index.singlesegment-nocfs", false, true, null);
+  }
+
+  public void testCreateBestCompression() throws Exception {
+    getIndexDir(); // Makes the test ignored if the bwc dir is not set as a side-effect
+
+    Constructor<?> ctor = null;
+    Object arg = null;
+    outer:
+    for (Constructor<?> constructor : Codec.getDefault().getClass().getConstructors()) {
+      Class<?>[] parameterTypes = constructor.getParameterTypes();
+      if (parameterTypes.length == 1 && parameterTypes[0].isEnum()) {
+        for (Object constant : parameterTypes[0].getEnumConstants()) {
+          if (((Enum<?>) constant).name().equals("BEST_COMPRESSION")) {
+            ctor = constructor;
+            arg = constant;
+            break outer;
+          }
+        }
+      }
+    }
+
+    assertNotNull("Could not find a suitable constructor", arg);
+    
+    Codec bestCompressionCodec = (Codec) ctor.newInstance(arg);
+    createIndex("bestcompression", false, false, bestCompressionCodec);
   }
 
   private Path getIndexDir() {
@@ -347,7 +373,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "8.6.2-cfs",
     "8.6.2-nocfs",
     "8.6.3-cfs",
-    "8.6.3-nocfs"
+    "8.6.3-nocfs",
+    "8.7.0-bestcompression"
   };
 
   public static String[] getOldNames() {
@@ -1206,7 +1233,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     reader.close();
   }
 
-  public void createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
+  public void createIndex(String dirName, boolean doCFS, boolean fullyMerged, Codec codec) throws IOException {
     Path indexDir = getIndexDir().resolve(dirName);
     Files.deleteIfExists(indexDir);
     Directory dir = newFSDirectory(indexDir);
@@ -1216,6 +1243,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // TODO: remove randomness
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
       .setMaxBufferedDocs(10).setMergePolicy(NoMergePolicy.INSTANCE);
+    if (codec != null) {
+      conf.setCodec(codec);
+    }
     IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
