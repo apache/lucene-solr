@@ -113,7 +113,7 @@ public class Lucene87Codec extends Codec {
    */
   public Lucene87Codec(Mode mode) {
     super("Lucene87");
-    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode.storedMode));
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
     this.defaultFormat = new Lucene84PostingsFormat();
     this.defaultDVFormat = new Lucene80DocValuesFormat(mode.dvMode);
   }
