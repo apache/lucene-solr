@@ -31,7 +31,9 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -161,7 +163,7 @@ public class LeaderElector implements Closeable {
 
         ElectionWatcher oldWatcher = watcher;
         if (oldWatcher != null) {
-          oldWatcher.cancel();
+          oldWatcher.close();
         }
         zkClient.exists(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath,
             watchedNode, getSeq(context.leaderSeqPath), context));
@@ -344,10 +346,11 @@ public class LeaderElector implements Closeable {
 
   @Override
   public void close() throws IOException {
+    IOUtils.closeQuietly(watcher);
     this.isClosed = true;
   }
 
-  private class ElectionWatcher implements Watcher {
+  private class ElectionWatcher implements Watcher, Closeable {
     final String myNode, watchedNode;
     final ElectionContext context;
 
@@ -357,10 +360,6 @@ public class LeaderElector implements Closeable {
       this.myNode = myNode;
       this.watchedNode = watchedNode;
       this.context = context;
-    }
-
-    void cancel() {
-      canceled = true;
     }
 
     @Override
@@ -387,6 +386,21 @@ public class LeaderElector implements Closeable {
         return;
       }
     }
+
+    @Override
+    public void close() throws IOException {
+      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
+      if (zk != null) {
+        try {
+          zk.removeWatches(context.leaderSeqPath, this, WatcherType.Any, true);
+        } catch (InterruptedException e) {
+          log.info("Interrupted removing leader watch");
+        } catch (KeeperException e) {
+          log.error("Exception removing leader watch", e);
+        }
+      }
+      canceled = true;
+    }
   }
 
   /**
@@ -411,7 +425,7 @@ public class LeaderElector implements Closeable {
         prevContext.close();
       }
     }
-    if (watcher != null) watcher.cancel();
+    if (watcher != null) watcher.close();
     this.context.close();
     this.context = context;
     joinElection(context, true, joinAtHead);
