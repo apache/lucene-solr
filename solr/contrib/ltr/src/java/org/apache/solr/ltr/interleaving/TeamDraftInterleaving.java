@@ -28,7 +28,7 @@ import org.apache.lucene.search.ScoreDoc;
 /**
  * Interleaving was introduced the first time by Joachims in [1, 2].
  * Team Draft Interleaving is among the most successful and used interleaving approaches[3].
- * Here the authors implement a method similar to the way in which captains select their players in team-matches.
+ * Team Draft Interleaving implements a method similar to the way in which captains select their players in team-matches.
  * Team Draft Interleaving produces a fair distribution of ranking models’ elements in the final interleaved list.
  * It has also proved to overcome an issue of the previous implemented approach, Balanced interleaving, in determining the winning model[4].
  * <p>
