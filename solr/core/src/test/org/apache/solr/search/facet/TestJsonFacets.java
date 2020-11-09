@@ -52,6 +52,7 @@ import org.junit.Test;
 //   TestJsonRangeFacets for range facet tests
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
+@LuceneTestCase.Nightly // nocommit - figure out why this test can sometimes take 20 seconds - it's facet executor use?
 public class TestJsonFacets extends SolrTestCaseHS {
   
   private static SolrInstances servers;  // for distributed testing
@@ -2546,11 +2547,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testPrelimSortingSingleNodeExtraStat() throws Exception {
     doTestPrelimSortingSingleNode(true, false);
   }
-  
+
+  @Nightly
   public void testPrelimSortingSingleNodeExtraFacet() throws Exception {
     doTestPrelimSortingSingleNode(false, true);
   }
-  
+
+  @Nightly
   public void testPrelimSortingSingleNodeExtraStatAndFacet() throws Exception {
     doTestPrelimSortingSingleNode(true, true);
   }
@@ -2568,7 +2571,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
       nodes.stop();
     }
   }
-  
+
+  @Nightly
   public void testPrelimSortingDistrib() throws Exception {
     doTestPrelimSortingDistrib(false, false);
   }
@@ -3435,6 +3439,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
+  @Nightly
   public void testFacetValueTypesDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());

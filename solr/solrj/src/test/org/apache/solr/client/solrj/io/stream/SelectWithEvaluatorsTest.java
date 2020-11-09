@@ -54,7 +54,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
+    configureCluster(4).formatZk(true)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
@@ -92,24 +92,15 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
-    streamContext.setSolrClientCache(solrClientCache);
-    
-    StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
-      .withFunctionName("search", CloudSolrStream.class)
-      .withFunctionName("select", SelectStream.class)
-      .withFunctionName("add", AddEvaluator.class)
-      .withFunctionName("if", IfThenElseEvaluator.class)
-      .withFunctionName("gt", GreaterThanEvaluator.class)
-      ;
-    try {
+    try (SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader())) {
+      streamContext.setSolrClientCache(solrClientCache);
+
+      StreamFactory factory = new StreamFactory().withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress()).withFunctionName("search", CloudSolrStream.class)
+          .withFunctionName("select", SelectStream.class).withFunctionName("add", AddEvaluator.class).withFunctionName("if", IfThenElseEvaluator.class)
+          .withFunctionName("gt", GreaterThanEvaluator.class);
+
       // Basic test
-      clause = "select("
-          + "id,"
-          + "add(b_i,c_d) as result,"
-          + "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")"
-          + ")";
+      clause = "select(" + "id," + "add(b_i,c_d) as result," + "search(collection1, q=*:*, fl=\"id,a_s,b_i,c_d,d_b\", sort=\"id asc\")" + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -118,8 +109,6 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
       assertEquals(1, tuples.size());
       assertDouble(tuples.get(0), "result", 4.3);
       assertEquals(4.3, tuples.get(0).get("result"));
-    } finally {
-      solrClientCache.close();
     }
   }
   

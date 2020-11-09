@@ -102,7 +102,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         throw new RuntimeException(e);
       }
     };
-    int succeeded = runCommands(threads, 500, req, versionAddFunc);
+    int succeeded = runCommands(threads, 50, req, versionAddFunc);
     // only one should succeed
     assertThat(succeeded, is(1));
 
@@ -126,7 +126,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       }
     };
 
-    int succeeded = runCommands(threads, 500, req, versionDeleteFunc);
+    int succeeded = runCommands(threads, 50, req, versionDeleteFunc);
     // only one should succeed
     assertThat(succeeded, is(1));
 
@@ -159,7 +159,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
               locked = lock.tryLock(versionBucketLockTimeoutMs, TimeUnit.MILLISECONDS);
               if (locked) {
 
-                Thread.sleep(1000);
+                Thread.sleep(100);
 
                 return function.apply();
               } else {

@@ -405,6 +405,8 @@ public class LeaderElector implements Closeable {
       if (zk != null) {
         try {
           zk.removeWatches(context.leaderSeqPath, this, WatcherType.Any, true);
+        } catch (KeeperException.NoWatcherException e) {
+          // okay
         } catch (InterruptedException e) {
           log.info("Interrupted removing leader watch");
         } catch (KeeperException e) {
