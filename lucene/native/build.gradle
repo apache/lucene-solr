@@ -36,15 +36,16 @@ library {
 }
 
 tasks.withType(CppCompile).configureEach {
-    systemIncludes.from file(System.getProperty('java.home') + "/include")
+    def javaHome = rootProject.ext.runtimeJava.getInstallationDirectory().getAsFile().getPath()
 
+    systemIncludes.from file(javaHome + "/include")
     if (Os.isFamily(Os.FAMILY_MAC)) {
-        systemIncludes.from file(System.getProperty('java.home') + "/include/darwin")
+        systemIncludes.from file(javaHome + "/include/darwin")
     }
     else if(Os.isFamily(Os.FAMILY_UNIX)) {
-        systemIncludes.from file(System.getProperty('java.home') + "/include/linux")
-        systemIncludes.from file(System.getProperty('java.home') + "/include/solaris")
-        systemIncludes.from file(System.getProperty('java.home') + "/include/freebsd")
+        systemIncludes.from file(javaHome + "/include/linux")
+        systemIncludes.from file(javaHome + "/include/solaris")
+        systemIncludes.from file(javaHome + "/include/freebsd")
     }
 
     compilerArgs.add '-fPIC'
