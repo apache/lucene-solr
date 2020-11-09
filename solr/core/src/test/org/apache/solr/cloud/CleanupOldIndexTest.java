@@ -36,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
+@Ignore // nocommit should get new leader on node stop
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass

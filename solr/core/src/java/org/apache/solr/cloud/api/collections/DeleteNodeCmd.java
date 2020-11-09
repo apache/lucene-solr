@@ -51,7 +51,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
@@ -111,15 +111,8 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
           NamedList deleteResult = new NamedList();
           try {
             if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
-            ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
-              if (deleteResult.get("failure") != null) {
-                synchronized (results) {
-
-                  results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
-                          " on node=%s", coll, shard, node));
-                }
-              }
-            });
+            // nocommit - return results from deleteReplica cmd
+            ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult);
           } catch (KeeperException e) {
             log.warn("Error deleting ", e);
           } catch (InterruptedException e) {

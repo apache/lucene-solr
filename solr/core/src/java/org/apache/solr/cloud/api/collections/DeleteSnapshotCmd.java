@@ -64,7 +64,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -90,7 +90,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     Set<String> existingCores = new HashSet<>();
     for (Slice s : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica r : s.getReplicas()) {
-        existingCores.add(r.getCoreName());
+        existingCores.add(r.getName());
       }
     }
 
@@ -112,7 +112,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
         // Note - when a snapshot is found in_progress state - it is the result of overseer
         // failure while handling the snapshot creation. Since we don't know the exact set of
         // replicas to contact at this point, we try on all replicas.
-        if (meta.get().getStatus() == SnapshotStatus.InProgress || coresWithSnapshot.contains(replica.getCoreName())) {
+        if (meta.get().getStatus() == SnapshotStatus.InProgress || coresWithSnapshot.contains(replica.getName())) {
           String coreName = replica.getStr(CORE_NAME_PROP);
 
           ModifiableSolrParams params = new ModifiableSolrParams();

@@ -188,7 +188,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
     );
-    return new CoreDescriptor(r.getCoreName(), TEST_PATH(), props , null, mock(ZkController.class));
+    return new CoreDescriptor(r.getName(), TEST_PATH(), props , null, mock(ZkController.class));
   }
 
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {

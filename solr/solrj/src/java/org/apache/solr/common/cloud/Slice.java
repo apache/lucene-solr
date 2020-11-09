@@ -60,6 +60,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return replicas.values().iterator();
   }
 
+
   /** The slice's state. */
   public enum State {
 
@@ -119,8 +120,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private final DocRouter.Range range;
   private final Integer replicationFactor;      // FUTURE: optional per-slice override of the collection replicationFactor
   private final Map<String,Replica> replicas;
-  private final Replica leader;
-  private final State state;
+  private Replica leader;
+  private State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
 
@@ -207,7 +208,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
-      if (replica.getStr(LEADER) != null) {
+      if (replica.getStr(LEADER) != null && replica.getState() == Replica.State.ACTIVE) {
         assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT: "Pull replica should not become leader!";
         return replica;
       }
@@ -271,6 +272,17 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public State getState() {
     return state;
+  }
+
+  // only to be used by ZkStateWriter currently
+  public void setState(State state) {
+    this.state = state;
+    propMap.put(ZkStateReader.STATE_PROP, state.toString());
+  }
+
+  // only to be used by ZkStateWriter currently
+  public void setLeader(Replica leader) {
+    this.leader = leader;
   }
 
   public String getParent() {

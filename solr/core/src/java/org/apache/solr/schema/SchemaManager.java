@@ -195,7 +195,7 @@ public class SchemaManager {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Not enough time left to update replicas. However, the schema is updated already.");
       }
-      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getCloudDescriptor().getCoreNodeName(),
+      ManagedIndexSchema.waitForSchemaZkVersionAgreement(collection, cd.getName(),
           latestVersion, core.getCoreContainer().getZkController(), (int) timeOut.timeLeft(TimeUnit.SECONDS), isClosed);
     }
   }

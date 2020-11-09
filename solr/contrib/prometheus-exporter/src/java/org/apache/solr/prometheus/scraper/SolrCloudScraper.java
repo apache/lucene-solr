@@ -65,12 +65,12 @@ public class SolrCloudScraper extends SolrScraper {
 
     List<String> coreNames = replicas
         .stream()
-        .map(Replica::getCoreName)
+        .map(Replica::getName)
         .collect(Collectors.toList());
 
     Map<String, Http2SolrClient> coreToClient = replicas
         .stream()
-        .map(replica -> new Pair<>(replica.getCoreName(), httpSolrClients.get(replica.getBaseUrl())))
+        .map(replica -> new Pair<>(replica.getName(), httpSolrClients.get(replica.getBaseUrl())))
         .collect(Collectors.toMap(Pair::first, Pair::second));
 
     return sendRequestsInParallel(coreNames, core -> {

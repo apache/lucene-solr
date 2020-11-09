@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -93,7 +95,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(LeaderElector leaderElector,
-        String shardId, String collection, String coreNodeName, ZkNodeProps props,
+        String shardId, String collection, String coreNodeName, Replica props,
         ZkController zkController, long runLeaderDelay) {
       super (coreNodeName, "/collections/" + collection,
               "/collections/" + collection + "/leader", props, zkController.getZkClient());
@@ -120,7 +122,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public ElectorSetup(OnReconnect onReconnect) {
       zkClient = server.getZkClient();
       zkStateReader = new ZkStateReader(zkClient);
-      elector = new LeaderElector(zkClient, new ZkController.ContextKey("overseer", "overseer"), new ConcurrentHashMap<>());
+      elector = new LeaderElector(zkController, new ZkController.ContextKey("overseer", "overseer"), new ConcurrentHashMap<>());
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
     }
 
@@ -140,7 +142,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile int seq = -1;
     private volatile boolean stop;
     private volatile boolean electionDone = false;
-    private final ZkNodeProps props;
+    private final Replica replica;
 
     public ClientThread(String shard, int nodeNumber) throws Exception {
       this(null, shard, nodeNumber, 0);
@@ -152,7 +154,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       this.nodeName = shard + nodeNumber;
       this.runLeaderDelay = runLeaderDelay;
 
-      props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, Integer.toString(nodeNumber), ZkStateReader.CORE_NAME_PROP, "");
+      Map<String,Object> props = new HashMap<>();
+      props.put(ZkStateReader.BASE_URL_PROP,      Integer.toString(nodeNumber));
+      props.put(ZkStateReader.CORE_NAME_PROP, "");
+
+      replica = new Replica("", props, "", shard);
 
       this.es = es;
       if (this.es == null) {
@@ -170,9 +176,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       assertNotNull(es);
       TestLeaderElectionContext context = new TestLeaderElectionContext(
           es.elector, shard, "collection1", nodeName,
-          props, es.zkController, runLeaderDelay);
+          replica, es.zkController, runLeaderDelay);
       es.elector.setup(context);
-      seq = es.elector.joinElection(context, false);
+      // nocommit - we have to get the seq another way, now returns if become leader first try
+      //seq = es.elector.joinElection(context, false);
       electionDone = true;
       seqToThread.put(seq, this);
     }
@@ -260,7 +267,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
             ZkNodeProps.load(data));
-        return leaderProps.getCoreUrl();
+        // nocommit
+        Replica replica = new Replica("", leaderProps.getNodeProps().getProperties(), collection, slice);
+
+        return replica.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {
         Thread.sleep(500);
       }

@@ -558,6 +558,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     System.out.println("jetty cnt:" + jettys.size());
 
+    cloudClient.getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (oldLiveNodes, newLiveNodes) -> newLiveNodes.size() >= jettys.size());
+
     try (ParWork closer = new ParWork(this)) {
 
       log.info("creating replicas: " + createReplicaRequests);
@@ -1519,8 +1521,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             SolrQuery query = new SolrQuery("*:*");
             query.set("distrib", false);
             long results = client.query(query).getResults().getNumFound();
-            if (verbose) System.err.println(new ZkCoreNodeProps(props)
-                .getCoreUrl() + " : " + results);
+            if (verbose) System.err.println(props + " : " + results);
             if (verbose) System.err.println("shard:"
                 + props.getStr(ZkStateReader.SHARD_ID_PROP));
             cnt += results;
@@ -2079,7 +2080,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+    String coreName = replica.getName();
     boolean reloadedOk = false;
     try (Http2SolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
@@ -2168,7 +2169,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             }
             
             // Make sure the host is serving the correct version
-            try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getCoreName())) {
+            try (SolrCore core = containers.get(pullReplica.getNodeName()).getCore(pullReplica.getName())) {
               RefCounted<SolrIndexSearcher> ref = core.getRegisteredSearcher();
               try {
                 SolrIndexSearcher searcher = ref.get();

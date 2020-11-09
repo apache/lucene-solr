@@ -36,6 +36,8 @@ dependencies {
 
   api 'com.fasterxml.woodstox:woodstox-core'
 
+  implementation 'org.lz4:lz4-java:1.7.1'
+
   api('org.apache.httpcomponents:httpmime', {
     exclude group: "commons-codec", module: "commons-codec"
     exclude group: "commons-logging", module: "commons-logging"

@@ -78,8 +78,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
     solrClient = cluster.getSolrClient();
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
-        .setMaxShardsPerNode(5).process(solrClient);
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);
     HashSet<String> docFields = new HashSet<>(lastDoc.keySet());
     docFields.add("_version_");
@@ -175,7 +174,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertEquals(0, sampledRsp.getStatus());
     for (int i : Arrays.asList(1, 2)) {
-      NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
+      NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "s" + i, "leader", "segInfos");
       NamedList<Object> rawSize = (NamedList<Object>)segInfos.get("rawSize");
       assertNotNull("rawSize missing", rawSize);
       Map<String, Object> rawSizeMap = rawSize.asMap(10);

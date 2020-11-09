@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit - be back in a sec...
 public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
   protected static final String CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT = "<solr>\n" +
@@ -77,6 +78,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit - be back in a sec...
   public void testCreateCollectionCleanup() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo";

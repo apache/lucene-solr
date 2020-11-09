@@ -263,7 +263,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * Block up to a specified maximum time until we see agreement on the schema
    * version in ZooKeeper across all replicas for a collection.
    */
-  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed) {
+  public static void waitForSchemaZkVersionAgreement(String collection, String coreName, int schemaZkVersion, ZkController zkController, int maxWaitSecs, ConnectionManager.IsClosed isClosed) {
     if (zkController.getCoreContainer().isShutDown()) {
       throw new AlreadyClosedException();
     }
@@ -271,7 +271,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
-    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
+    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, coreName))
       // nocommit - make a general http2 client that is not also for updates, for now we use recovery client
       concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient(), isClosed));
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -327,7 +327,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String localCoreNodeName) {
+  protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String coreName) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -340,11 +340,10 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
-            if (!localCoreNodeName.equals(replica.getName()) &&
+            if (!coreName.equals(replica.getName()) &&
                 replica.getState() == Replica.State.ACTIVE &&
                 liveNodes.contains(replica.getNodeName())) {
-              ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
-              activeReplicaCoreUrls.add(replicaCoreProps.getCoreUrl());
+              activeReplicaCoreUrls.add(replica.getCoreUrl());
             }
           }
         }

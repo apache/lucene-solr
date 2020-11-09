@@ -226,12 +226,12 @@ public class Http2SolrClient extends SolrClient {
       if (sslOnJava8OrLower && !builder.useHttp1_1) {
         log.warn("Create Http2SolrClient with HTTP/1.1 transport since Java 8 or lower versions does not support SSL + HTTP/2");
       } else {
-        log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+        log.info("Create Http2SolrClient with HTTP/1.1 transport");
       }
       SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(2);
-      httpClient = new HttpClient(transport, sslContextFactory);
+      httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     } else {
-      log.debug("Create Http2SolrClient with HTTP/2 transport");
+      log.info("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       http2client.setSelectors(2);
       http2client.setMaxConcurrentPushedStreams(512);
@@ -264,14 +264,19 @@ public class Http2SolrClient extends SolrClient {
       httpClient.start();
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
-      close();
+      try {
+        close();
+      } catch (Exception e1) {
+        e.addSuppressed(e1);
+      }
       throw new RuntimeException(e);
     }
     return httpClient;
   }
 
   public void close() {
-    assert closeTracker.close();
+    log.info("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
+   // assert closeTracker != null ? closeTracker.close() : true;
     asyncTracker.close();
     
     if (closeClient) {
@@ -281,7 +286,7 @@ public class Http2SolrClient extends SolrClient {
         log.error("Exception closing httpClient", e);
       }
     }
-
+    log.info("Done closing {}", this.getClass().getSimpleName());
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -442,7 +447,62 @@ public class Http2SolrClient extends SolrClient {
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                 asyncListener.onFailure(e);
               }
-            } catch (SolrServerException e) {
+            } catch (Exception e) {
+              asyncListener.onFailure(e);
+            } finally {
+              asyncTracker.arrive();
+            }
+          });
+        }
+
+        @Override
+        public void onFailure(Response response, Throwable failure) {
+          try {
+            super.onFailure(response, failure);
+            if (failure != CANCELLED_EXCEPTION) { // avoid retrying on load balanced search requests - keep in mind this
+              // means cancelled requests won't notify the caller of fail or complete
+              asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+            }
+          } finally {
+            asyncTracker.arrive();
+          }
+        }
+      });
+    } catch (Exception e) {
+      asyncListener.onFailure(e);
+      asyncTracker.arrive();
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+    }
+    return () -> {
+      req.abort(CANCELLED_EXCEPTION);
+    };
+  }
+
+  public Cancellable asyncRequestRaw(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection, AsyncListener<InputStream> asyncListener) {
+    Request req;
+    try {
+      req = makeRequest(solrRequest, collection);
+    } catch (SolrServerException | IOException e) {
+      asyncListener.onFailure(e);
+      return FAILED_MAKING_REQUEST_CANCELLABLE;
+    }
+    asyncTracker.register();
+    try {
+      req.send(new InputStreamResponseListener() {
+        @Override
+        public void onHeaders(Response response) {
+          super.onHeaders(response);
+          InputStreamResponseListener listener = this;
+          ParWork.getRootSharedExecutor().execute(() -> {
+            if (log.isDebugEnabled()) log.debug("stream async response ready");
+            InputStream is = listener.getInputStream();
+            try {
+              asyncListener.onSuccess(is);
+            } catch (RemoteSolrException e) {
+              if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
+                asyncListener.onFailure(e);
+              }
+            } catch (Exception e) {
               asyncListener.onFailure(e);
             } finally {
               asyncTracker.arrive();

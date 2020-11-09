@@ -71,7 +71,11 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
-    String cname = params.get(CoreAdminParams.CORE, "");
+    String cname = params.get(CoreAdminParams.CORE, null);
+    log.info("Run split cmd splitkey={} core={} targetCore={}", splitKey, cname, newCoreNames == null ? null : Arrays.asList(newCoreNames), cname);
+    if (cname == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core cannot be null " + params);
+    }
 
     if ( params.getBool(GET_RANGES, false) ) {
       handleGetRanges(it, cname);
@@ -109,6 +113,11 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported value of '" + CommonAdminParams.SPLIT_METHOD + "': " + methodStr);
     }
     SolrCore parentCore = it.handler.coreContainer.getCore(cname);
+
+    if (parentCore == null) {
+      throw new IllegalArgumentException("Parent core could not be found in corecontainer corename=" + cname);
+    }
+
     Map<SolrCore,CoreDescriptor> newCoresMap = null;
     List<SolrCore> newCores = null;
     SolrQueryRequest req = null;
@@ -122,7 +131,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       String routeFieldName = null;
       if (it.handler.coreContainer.isZooKeeperAware()) {
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
-        String collectionName = parentCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+        String collectionName = parentCore.getCoreDescriptor().getCollectionName();
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = collection.getSlice(sliceName);

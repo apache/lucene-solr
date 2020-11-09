@@ -100,7 +100,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     //---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on before calling us
     final String aliasName = message.getStr(NAME);

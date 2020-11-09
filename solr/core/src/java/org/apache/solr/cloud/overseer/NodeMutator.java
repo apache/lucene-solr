@@ -37,8 +37,8 @@ public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public List<ZkWriteCommand> downNode(ClusterState clusterState, ZkNodeProps message) {
-    List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
+  public ClusterState downNode(ClusterState clusterState, ZkNodeProps message) {
+
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
 
     log.debug("DownNode state invoked for node: {}", nodeName);
@@ -76,11 +76,11 @@ public class NodeMutator {
       }
 
       if (needToUpdateCollection) {
-        zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
+        clusterState = clusterState.copyWith(collection, docCollection.copyWithSlices(slicesCopy));
       }
     }
-    log.info("DownNode state done: {}", zkWriteCommands);
-    return zkWriteCommands;
+    log.info("DownNode state done");
+    return clusterState;
   }
 }
 

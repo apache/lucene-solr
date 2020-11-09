@@ -203,7 +203,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         }
         SolrCore core = null;
         try {
-          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
+          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getName());
           assertNotNull(core);
           assertFalse("Update log should not exist for replicas of type Passive but file is present: " + core.getUlogDir(),
               new java.io.File(core.getUlogDir()).exists());

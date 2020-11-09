@@ -313,7 +313,12 @@ public class Utils {
         return makeMap(false, keyVals);
       }
 
-      public static Map<String, Object> makeMap ( boolean skipNulls, Object...keyVals){
+  public static Map<String, Object> makeNonNullMap(Object...keyVals){
+    return makeMap(true, keyVals);
+  }
+
+
+  public static Map<String, Object> makeMap ( boolean skipNulls, Object...keyVals){
         if ((keyVals.length & 0x01) != 0) {
           throw new IllegalArgumentException("arguments should be key,value");
         }
@@ -689,7 +694,7 @@ public class Utils {
           // split "collection1_shard1_1_replica1" into parts
           if (coreName.length() > collectionName.length()) {
             String str = coreName.substring(collectionName.length() + 1);
-            int pos = str.lastIndexOf("_replica");
+            int pos = str.lastIndexOf("_r_[a-z]");
             if (pos == -1) { // ?? no _replicaN part ??
               return str;
             } else {

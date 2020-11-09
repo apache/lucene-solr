@@ -2123,6 +2123,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     SolrIndexSearcher tmp = null;
     RefCounted<SolrIndexSearcher> newestSearcher = null;
     boolean success = false;
+    if (isClosing() || isClosed()) {
+      throw new AlreadyClosedException();
+    }
     openSearcherLock.lock();
     try {
 
@@ -3111,8 +3114,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("Removing SolrCore dataDir on unload {}", cd.getInstanceDir().resolve(cd.getDataDir()));
       Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
       try {
-
-        Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        if (Files.exists(dataDir)) {
+          Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
 
       } catch (Exception e) {
         log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir, e);
@@ -3120,7 +3124,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     if (deleteInstanceDir) {
       try {
-        Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        if (Files.exists(cd.getInstanceDir())) {
+          Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
       } catch (Exception e) {
         log.error("Failed to delete instance dir for unloaded core: {} dir: {}", cd.getName(), cd.getInstanceDir(), e);
       }

@@ -60,9 +60,8 @@ public class CollectionMutator {
     this.stateManager = cloudManager.getDistribStateManager();
   }
 
-  public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState createShard(final ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
@@ -114,17 +113,16 @@ public class CollectionMutator {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
-      return new ZkWriteCommand(collectionName, collection);
+      return clusterState.copyWith(collectionName, collection);
     } else {
       log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
-      return ZkStateWriter.NO_OP;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);
     }
   }
 
-  public ZkWriteCommand deleteShard(final ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState deleteShard(final ClusterState clusterState, ZkNodeProps message) {
     final String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
     log.info("Removing collection: {} shard: {}  from clusterstate", collection, sliceId);
 
@@ -134,11 +132,10 @@ public class CollectionMutator {
     newSlices.remove(sliceId);
 
     DocCollection newCollection = coll.copyWithSlices(newSlices);
-    return new ZkWriteCommand(collection, newCollection);
+    return clusterState.copyWith(collection, newCollection);
   }
 
-  public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+  public ClusterState modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
@@ -168,10 +165,10 @@ public class CollectionMutator {
     }
 
     if (!hasAnyOps) {
-      return ZkStateWriter.NO_OP;
+      return clusterState;
     }
 
-    return new ZkWriteCommand(coll.getName(),
+    return clusterState.copyWith(coll.getName(),
         new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
   }
 

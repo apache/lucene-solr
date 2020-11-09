@@ -101,7 +101,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     // verify doc is on the leader and replica
     final List<Replica> notLeaders = stateReader.getClusterState().getCollection(COLLECTION).getReplicas()
         .stream()
-        .filter(r -> r.getCoreName().equals(leader.getCoreName()) == false)
+        .filter(r -> r.getName().equals(leader.getName()) == false)
         .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);
 
@@ -360,7 +360,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+    String coreName = replica.getName();
     boolean reloadedOk = false;
     try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);

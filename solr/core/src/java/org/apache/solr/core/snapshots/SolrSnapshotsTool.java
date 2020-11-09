@@ -425,7 +425,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   private static boolean isReplicaAvailable (Slice s, String coreName) {
     for (Replica r: s.getReplicas()) {
-      if (coreName.equals(r.getCoreName())) {
+      if (coreName.equals(r.getName())) {
         return true;
       }
     }

@@ -173,7 +173,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile  IndexFetcher pollingIndexFetcher;
 
-  private final ReentrantLock indexFetchLock = new ReentrantLock();
+  private final ReentrantLock indexFetchLock = new ReentrantLock(true);
 
   private final ExecutorService restoreExecutor = ParWork.getMyPerThreadExecutor();
 
@@ -404,16 +404,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private volatile IndexFetcher currentIndexFetcher;
 
   public IndexFetchResult doFetch(SolrParams solrParams, boolean forceReplication) {
-    if (this.closed || core.getCoreContainer().isShutDown()) {
-      throw new AlreadyClosedException("");
-    }
+
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
-    if (!indexFetchLock.tryLock())
-      return IndexFetchResult.LOCK_OBTAIN_FAILED;
-    if (core.getCoreContainer().isShutDown()) {
-      log.warn("I was asked to replicate but CoreContainer is shutting down");
-      return IndexFetchResult.CONTAINER_IS_SHUTTING_DOWN; 
-    }
+
+    indexFetchLock.lock();
+    log.info("Got index fetch lock");
+
     try {
       if (masterUrl != null) {
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
@@ -428,20 +424,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       if (e instanceof AlreadyClosedException) {
         throw (AlreadyClosedException) e;
       }
-
       ParWork.propagateInterrupt("Index fetch failed", e);
-      if (currentIndexFetcher != pollingIndexFetcher) {
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }
       return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
     } finally {
-      if (pollingIndexFetcher != null) {
-       if( currentIndexFetcher != pollingIndexFetcher) {
-         currentIndexFetcher.destroy();
-       }
-        currentIndexFetcher = pollingIndexFetcher;
+
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+        currentIndexFetcher.destroy();
       }
-      indexFetchLock.unlock();
+
+      if (indexFetchLock.isHeldByCurrentThread()) {
+        indexFetchLock.unlock();
+        log.info("Released index fetch lock");
+      }
     }
   }
 

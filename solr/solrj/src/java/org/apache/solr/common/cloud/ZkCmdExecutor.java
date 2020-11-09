@@ -30,13 +30,14 @@ import java.util.concurrent.TimeUnit;
 
 public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final SolrZkClient solrZkClient;
 
   private long retryDelay = 50L;
   private int retryCount;
   private IsClosed isClosed;
   
-  public ZkCmdExecutor(int retryCount) {
-    this(retryCount, null);
+  public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount) {
+    this(solrZkClient, retryCount, null);
   }
   
   /**
@@ -46,9 +47,10 @@ public class ZkCmdExecutor {
    * @param retryCount
    *          number of retries on connectionloss
    */
-  public ZkCmdExecutor(int retryCount, IsClosed isClosed) {
+  public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount, IsClosed isClosed) {
     this.retryCount = retryCount;
     this.isClosed = isClosed;
+    this.solrZkClient = solrZkClient;
   }
   
   public long getRetryDelay() {
@@ -76,7 +78,9 @@ public class ZkCmdExecutor {
         if (exception == null) {
           exception = e;
         }
-
+        if (solrZkClient.isClosed()) {
+          break;
+        }
         retryDelay(tryCnt);
       }
       tryCnt++;

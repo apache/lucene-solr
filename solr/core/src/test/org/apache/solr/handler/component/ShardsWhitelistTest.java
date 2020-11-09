@@ -160,58 +160,58 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
       assertThat("No shards specified, should work in both clusters",
           numDocs("*:*", null, cluster), is(10));
       assertThat("Both shards specified, should work in both clusters",
-          numDocs("*:*", "shard1,shard2", cluster), is(10));
+          numDocs("*:*", "s1,s2", cluster), is(10));
       assertThat("Both shards specified with collection name, should work in both clusters",
-          numDocs("*:*", COLLECTION_NAME + "_shard1", cluster), is(numDocs("*:*", "shard1", cluster)));
+          numDocs("*:*", COLLECTION_NAME + "_s1", cluster), is(numDocs("*:*", "s1", cluster)));
 
       // test using explicit urls from within the cluster
       assertThat("Shards has the full URLs, should be allowed since they are internal. Cluster=" + entry.getKey(),
-          numDocs("*:*", getShardUrl("shard1", cluster) + "," + getShardUrl("shard2", cluster), cluster), is(10));
+          numDocs("*:*", getShardUrl("s1", cluster) + "," + getShardUrl("s2", cluster), cluster), is(10));
       assertThat("Full URL without scheme",
-          numDocs("*:*", getShardUrl("shard1", cluster).replaceAll("http://", "") + ","
-              + getShardUrl("shard2", cluster).replaceAll("http://", ""), cluster),
+          numDocs("*:*", getShardUrl("s1", cluster).replaceAll("http://", "") + ","
+              + getShardUrl("s2", cluster).replaceAll("http://", ""), cluster),
           is(10));
 
       // Mix shards with URLs
       assertThat("Mix URL and cluster state object",
-          numDocs("*:*", "shard1," + getShardUrl("shard2", cluster), cluster), is(10));
+          numDocs("*:*", "s1," + getShardUrl("s2", cluster), cluster), is(10));
       assertThat("Mix URL and cluster state object",
-          numDocs("*:*", getShardUrl("shard1", cluster) + ",shard2", cluster), is(10));
+          numDocs("*:*", getShardUrl("s1", cluster) + ",s2", cluster), is(10));
     }
 
     // explicit whitelist includes all the nodes in both clusters. Requests should be allowed to go through
     assertThat("A request to the explicit cluster with shards that point to the implicit one",
         numDocs(
             "id:implicitCluster*",
-            getShardUrl("shard1", implicitCluster) + "," + getShardUrl("shard2", implicitCluster),
+            getShardUrl("s1", implicitCluster) + "," + getShardUrl("s2", implicitCluster),
             explicitCluster),
         is(10));
 
     assertThat("A request to the explicit cluster with shards that point to the both clusters",
         numDocs(
             "*:*",
-            getShardUrl("shard1", implicitCluster)
-                + "," + getShardUrl("shard2", implicitCluster)
-                + "," + getShardUrl("shard1", explicitCluster)
-                + "," + getShardUrl("shard2", explicitCluster),
+            getShardUrl("s1", implicitCluster)
+                + "," + getShardUrl("s2", implicitCluster)
+                + "," + getShardUrl("s1", explicitCluster)
+                + "," + getShardUrl("s2", explicitCluster),
             explicitCluster),
         is(20));
 
     // Implicit shouldn't allow requests to the other cluster
     assertForbidden("id:explicitCluster*",
-        getShardUrl("shard1", explicitCluster) + "," + getShardUrl("shard2", explicitCluster),
+        getShardUrl("s1", explicitCluster) + "," + getShardUrl("s2", explicitCluster),
         implicitCluster);
 
     assertForbidden("id:explicitCluster*",
-        "shard1," + getShardUrl("shard2", explicitCluster),
+        "s1," + getShardUrl("s2", explicitCluster),
         implicitCluster);
 
     assertForbidden("id:explicitCluster*",
-        getShardUrl("shard1", explicitCluster) + ",shard2",
+        getShardUrl("s1", explicitCluster) + ",s2",
         implicitCluster);
 
     assertForbidden("id:explicitCluster*",
-        getShardUrl("shard1", explicitCluster),
+        getShardUrl("s1", explicitCluster),
         implicitCluster);
 
     assertThat("A typical internal request, should be handled locally",
@@ -220,7 +220,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
             null,
             implicitCluster,
             "distrib", "false",
-            "shard.url", getShardUrl("shard2", explicitCluster),
+            "shard.url", getShardUrl("s2", explicitCluster),
             "shards.purpose", "64",
             "isShard", "true"),
         is(0));

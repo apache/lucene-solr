@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     
     sendDoc(1);
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
 
 
     ArrayList<Replica> notLeaders = new ArrayList<>();
@@ -109,7 +110,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     proxy1.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
 
 
     notLeaders = new ArrayList<>();
@@ -132,7 +133,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
     
     // since maxShardsPerNode is 1, we're safe to kill the leader
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
 
 
     notLeaders = new ArrayList<>();

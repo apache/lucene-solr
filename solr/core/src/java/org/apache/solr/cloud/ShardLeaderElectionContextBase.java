@@ -28,6 +28,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Utils;
@@ -49,7 +50,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   private volatile Integer leaderZkNodeParentVersion;
 
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
-                                        ZkNodeProps props, SolrZkClient zkClient) {
+                                        Replica props, SolrZkClient zkClient) {
     super(coreNodeName, electionPath, leaderPath, props);
     this.zkClient = zkClient;
   }
@@ -90,7 +91,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
             ops.add(Op.delete(leaderSeqPath, -1));
             ops.add(Op.delete(leaderPath, -1));
-            zkClient.multi(ops);
+            zkClient.multi(ops, false);
           } catch (KeeperException e) {
             if (e instanceof NoNodeException) {
               // okay
@@ -153,10 +154,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     List<String> errors = new ArrayList<>();
 
     try {
-      if (isClosed()) {
-        log.info("Bailing on becoming leader, we are closed");
-        return;
+
+      if (leaderSeqPath == null) {
+        throw new IllegalStateException("We have won as leader, but we have no leader election node known to us leaderPath " + leaderPath);
       }
+
       log.info("Creating leader registration node {} after winning as {} parent is {}", leaderPath, leaderSeqPath, parent);
       List<Op> ops = new ArrayList<>(3);
 
@@ -170,7 +172,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ops.add(Op.setData(parent, null, -1));
       List<OpResult> results;
 
-      results = zkClient.multi(ops);
+      results = zkClient.multi(ops, false);
       log.info("Results from call {}", results);
       Iterator<Op> it = ops.iterator();
       for (OpResult result : results) {

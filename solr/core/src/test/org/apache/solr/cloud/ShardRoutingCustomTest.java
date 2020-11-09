@@ -68,7 +68,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
         .setCreateNodeSet("")
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest
-        .addReplicaToShard(collection,"shard1")
+        .addReplicaToShard(collection,"s1")
         .setNode(j.getNodeName())
         .setType(useTlogReplicas()? Replica.Type.TLOG: Replica.Type.NRT)
         .process(cloudClient).isSuccess());

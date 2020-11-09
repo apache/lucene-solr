@@ -65,6 +65,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   }
 
   @Test
+  @AwaitsFix(bugUrl = "overseer does not currently limit")
   public void testAPIExclusivity() throws Exception {
     int trials = 20;
     setupBaseConfigSet(GRANDBASE_CONFIGSET_NAME);

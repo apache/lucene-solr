@@ -39,6 +39,7 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetProperties;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -83,8 +84,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public OverseerConfigSetMessageHandler(ZkStateReader zkStateReader) {
-    this.zkStateReader = zkStateReader;
+  public OverseerConfigSetMessageHandler(CoreContainer cc) {
+    this.zkStateReader = cc.getZkController().getZkStateReader();
     this.configSetWriteWip = new HashSet();
     this.configSetReadWip = new HashSet();
   }
@@ -117,9 +118,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
                   + operation);
       }
     } catch (Exception e) {
-      // interrupt not currently thrown here, but it could be - I
-      // usually like to use a utility everywhere for this reason
-      ParWork.propagateInterrupt(e);
+      log.error("Operation " + operation + " caused exception", e);
 
       String configSetName = message.getStr(NAME);
 

@@ -474,7 +474,7 @@ public class SolrCloudTestCase extends SolrTestCase {
    */
   protected static CoreStatus getCoreStatus(Replica replica) throws IOException, SolrServerException {
     try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).withHttpClient(cluster.getSolrClient().getHttpClient()).build()) {
-      return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
+      return CoreAdminRequest.getCoreStatus(replica.getName(), client);
     }
   }
 

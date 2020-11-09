@@ -72,32 +72,25 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  */
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient httpClient;
-  private final boolean closeClient;
 
   public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
-    this.httpClient = httpClient;
-    this.closeClient = false;
+    this.httpClient = new Http2SolrClient.Builder().withHttpClient(httpClient).markInternalRequest().build();
   }
-
 
   public LBHttp2SolrClient(String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
 
-
-    httpClient = new Http2SolrClient.Builder()
-            // .withResponseParser(responseParser) // nocommit
-            // .allowCompression(compression) // nocommit
-            .build();
-    closeClient = true;
+    this.httpClient = new Http2SolrClient.Builder().markInternalRequest()
+        // .withResponseParser(responseParser) // nocommit
+        // .allowCompression(compression) // nocommit
+        .build();
   }
 
   @Override
   public void close() {
-    if (closeClient) {
-      httpClient.close();
-    }
     super.close();
+    httpClient.close();
   }
 
   @Override

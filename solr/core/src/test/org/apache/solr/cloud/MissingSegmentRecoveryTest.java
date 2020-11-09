@@ -80,8 +80,8 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit();
     
     DocCollection state = getCollectionState(collection);
-    leader = state.getLeader("shard1");
-    replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    leader = state.getLeader("s1");
+    replica = getRandomReplica(state.getSlice("s1"), (r) -> leader != r);
     log.info("leader={} replicaToCorrupt={}", leader.getName(), replica.getName());
   }
   
@@ -119,7 +119,7 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   }
 
   private File[] getSegmentFiles(Replica replica) {
-    try (SolrCore core = cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
+    try (SolrCore core = cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getName())) {
       File indexDir = new File(core.getDataDir(), "index");
       return indexDir.listFiles((File dir, String name) -> {
         return name.startsWith("segments_");

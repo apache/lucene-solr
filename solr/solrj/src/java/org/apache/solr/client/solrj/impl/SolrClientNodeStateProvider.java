@@ -157,7 +157,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       forEachReplica(result, r -> {
         for (String key : keys) {
           if (r.getVariables().containsKey(key)) continue;// it's already collected
-          String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + Utils.parseMetricsReplicaName(r.getCollection(), r.getCore()) + ":";
+          String perReplicaMetricsKey = "solr.core." + r.getCollection() + "." + r.getShard() + "." + r.getName() + ":";
           String perReplicaValue = key;
           perReplicaMetricsKey += perReplicaValue;
           metricsKeyVsTagReplica.put(perReplicaMetricsKey, new Pair<>(key, r));

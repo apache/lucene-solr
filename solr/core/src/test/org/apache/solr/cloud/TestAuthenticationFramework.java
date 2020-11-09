@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
  * Test of the MiniSolrCloudCluster functionality with authentication enabled.
  */
 @LuceneTestCase.Slow
+@Ignore // nocommit
 public class TestAuthenticationFramework extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

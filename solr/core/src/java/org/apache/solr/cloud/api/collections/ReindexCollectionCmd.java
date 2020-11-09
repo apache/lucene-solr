@@ -167,7 +167,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -618,8 +618,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     }
     // build a baseUrl of the replica
     for (Replica r : coll.getReplicas()) {
-      if (replicaName.equals(r.getCoreName())) {
-        return r.getBaseUrl() + "/" + r.getCoreName();
+      if (replicaName.equals(r.getName())) {
+        return r.getBaseUrl() + "/" + r.getName();
       }
     }
     return null;

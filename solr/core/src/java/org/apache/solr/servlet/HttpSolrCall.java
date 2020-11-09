@@ -1034,12 +1034,11 @@ public class HttpSolrCall {
     return null;
   }
 
-  private SolrCore checkProps(ZkNodeProps zkProps) {
+  private SolrCore checkProps(Replica zkProps) {
     String corename;
     SolrCore core = null;
     if (cores.getZkController().getNodeName().equals(zkProps.getStr(NODE_NAME_PROP))) {
-      corename = zkProps.getStr(CORE_NAME_PROP);
-      core = cores.getCore(corename);
+      core = cores.getCore(zkProps.getName());
     }
     return core;
   }

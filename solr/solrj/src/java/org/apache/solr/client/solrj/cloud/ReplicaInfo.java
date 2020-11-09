@@ -38,7 +38,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 
 public class ReplicaInfo implements MapWriter {
   private final String name;
-  private final String core, collection, shard;
+  private final String collection, shard;
   private final Replica.Type type;
   private final String node;
   public final boolean isLeader;
@@ -46,7 +46,6 @@ public class ReplicaInfo implements MapWriter {
 
   public ReplicaInfo(String coll, String shard, Replica r, Map<String, Object> vals) {
     this.name = r.getName();
-    this.core = r.getCoreName();
     this.collection = coll;
     this.shard = shard;
     this.type = r.getType();
@@ -60,7 +59,7 @@ public class ReplicaInfo implements MapWriter {
     validate();
   }
 
-  public ReplicaInfo(String name, String core, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
+  public ReplicaInfo(String name, String coll, String shard, Replica.Type type, String node, Map<String, Object> vals) {
     if (vals == null) vals = Collections.emptyMap();
     this.name = name;
     if (vals != null) {
@@ -70,7 +69,6 @@ public class ReplicaInfo implements MapWriter {
     this.collection = coll;
     this.shard = shard;
     this.type = type;
-    this.core = core;
     this.node = node;
     validate();
   }
@@ -81,7 +79,6 @@ public class ReplicaInfo implements MapWriter {
     details = Utils.getDeepCopy(details, 4);
     this.collection = (String) details.remove("collection");
     this.shard = (String) details.remove("shard");
-    this.core = (String) details.remove("core");
     this.node = (String) details.remove("node_name");
     this.isLeader = Boolean.parseBoolean((String) details.getOrDefault("leader", "false"));
     details.remove("leader");
@@ -93,7 +90,6 @@ public class ReplicaInfo implements MapWriter {
 
   private final void validate() {
     Objects.requireNonNull(this.name, "'name' must not be null");
-    Objects.requireNonNull(this.core, "'core' must not be null");
     Objects.requireNonNull(this.collection, "'collection' must not be null");
     Objects.requireNonNull(this.shard, "'shard' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
@@ -101,7 +97,7 @@ public class ReplicaInfo implements MapWriter {
   }
 
   public Object clone() {
-    return new ReplicaInfo(name, core, collection, shard, type, node, new HashMap<>(variables));
+    return new ReplicaInfo(name, collection, shard, type, node, new HashMap<>(variables));
   }
 
   @Override
@@ -109,7 +105,7 @@ public class ReplicaInfo implements MapWriter {
     BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>())
         .and(NON_NULL_VAL);
     ew.put(name, (MapWriter) ew1 -> {
-      ew1.put(ZkStateReader.CORE_NAME_PROP, core, p)
+      ew1
           .put(ZkStateReader.SHARD_ID_PROP, shard, p)
           .put(ZkStateReader.COLLECTION_PROP, collection, p)
           .put(ZkStateReader.NODE_NAME_PROP, node, p)
@@ -121,11 +117,6 @@ public class ReplicaInfo implements MapWriter {
   /** Replica "coreNode" name. */
   public String getName() {
     return name;
-  }
-
-  /** SolrCore name. */
-  public String getCore() {
-    return core;
   }
 
   public String getCollection() {
@@ -196,7 +187,6 @@ public class ReplicaInfo implements MapWriter {
     if (
         name.equals(other.name) &&
         collection.equals(other.collection) &&
-        core.equals(other.core) &&
         isLeader == other.isLeader &&
         node.equals(other.node) &&
         shard.equals(other.shard) &&

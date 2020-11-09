@@ -52,6 +52,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
+@Ignore // nocommit can leak
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "collection1";
@@ -267,7 +268,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           CoreDescriptor descriptor = new CoreDescriptor(collectionName, TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
           // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
           // when using coreNodeName but usage of core name alone will return immediately
-          descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
+          // nocommit
+          //descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
           return Collections.singletonList(descriptor);
         }
       };

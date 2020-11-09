@@ -62,6 +62,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -168,6 +169,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @AfterClass
   public static void clearSolrDisableShardsWhitelist() throws Exception {
     systemClearPropertySolrDisableShardsWhitelist();
+  }
+
+  @After
+  public void cleanup() throws Exception {
+    try (ParWork closer = new ParWork(this, true, true)) {
+      closer.collect(controlClient, clients, jettys, controlJetty);
+    }
+
+    clients.clear();
+    jettys.clear();
+    controlClient = null;
+    controlJetty = null;
   }
 
   private static String getHostContextSuitableForServletContext() {
@@ -435,16 +448,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   private volatile boolean destroyServersCalled = false;
   protected void destroyServers() throws Exception {
+
 //    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
 //    destroyServersCalled = true;
-    try (ParWork closer = new ParWork(this, true, true)) {
-      closer.collect(controlClient, clients, jettys, controlJetty);
-    }
-    
-    clients.clear();
-    jettys.clear();
-    controlClient = null;
-    controlJetty = null;
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir) throws Exception {

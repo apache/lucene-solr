@@ -25,7 +25,6 @@ import org.junit.Ignore;
  *
  */
 @LogLevel("org.apache.solr.search=DEBUG")
-@Ignore // nocommit - use this test to work out parallel commits waiting for flushed updates
 public class TestLocalStatsCacheCloud extends TestBaseStatsCacheCloud {
 
   @Override

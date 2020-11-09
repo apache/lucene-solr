@@ -21,30 +21,30 @@ import org.apache.solr.common.cloud.DocCollection;
 public class ZkWriteCommand {
   public final String name;
   public final DocCollection collection;
-  public final boolean noop;
+  public final boolean delete ;
 
   public ZkWriteCommand(String name, DocCollection collection) {
     this.name = name;
     this.collection = collection;
-    this.noop = false;
+    this.delete = false;
   }
 
   /**
    * Returns a no-op
    */
-  protected ZkWriteCommand() {
-    this.noop = true;
-    this.name = null;
+  protected ZkWriteCommand(String name) {
+    this.delete = true;
+    this.name = name;
     this.collection = null;
   }
 
-  public static ZkWriteCommand noop() {
-    return new ZkWriteCommand();
+  public static ZkWriteCommand delete(String name) {
+    return new ZkWriteCommand(name);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + ": " + (noop ? "no-op" : name + "=" + collection);
+    return getClass().getSimpleName() + ": " + (delete  ? "delete" : name + "=" + collection);
   }
 }
 

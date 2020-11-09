@@ -124,8 +124,8 @@ public class RecoveryZkTest extends SolrCloudTestCase {
      
     // bring shard replica down
     DocCollection state = getCollectionState(collection);
-    Replica leader = state.getLeader("shard1");
-    Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    Replica leader = state.getLeader("s1");
+    Replica replica = getRandomReplica(state.getSlice("s1"), (r) -> leader != r);
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();
@@ -150,7 +150,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);
-    assertShardConsistency(state.getSlice("shard1"), true);
+    assertShardConsistency(state.getSlice("s1"), true);
 
   }
 

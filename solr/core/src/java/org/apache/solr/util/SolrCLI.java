@@ -1258,12 +1258,12 @@ public class SolrCLI implements CLIO {
           String replicaStatus = null;
           long numDocs = -1L;
 
-          ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
-          String coreUrl = replicaCoreProps.getCoreUrl();
+
+          String coreUrl = r.getCoreUrl();
           boolean isLeader = coreUrl.equals(leaderUrl);
 
           // if replica's node is not live, its status is DOWN
-          String nodeName = replicaCoreProps.getNodeName();
+          String nodeName = r.getNodeName();
           if (nodeName == null || !liveNodes.contains(nodeName)) {
             replicaStatus = Replica.State.DOWN.toString();
           } else {
@@ -1287,7 +1287,7 @@ public class SolrCLI implements CLIO {
               memory = usedMemory+" of "+totalMemory;
 
               // if we get here, we can trust the state
-              replicaStatus = replicaCoreProps.getState();
+              replicaStatus = r.getState().toString();
             } catch (Exception exc) {
               ParWork.propagateInterrupt(exc);
               log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
@@ -1301,7 +1301,7 @@ public class SolrCLI implements CLIO {
           }
 
           replicaList.add(new ReplicaHealth(shardName, r.getName(), coreUrl,
-              replicaStatus, numDocs, isLeader, uptime, memory));
+              replicaStatus.toString(), numDocs, isLeader, uptime, memory));
         }
 
         ShardHealth shardHealth = new ShardHealth(shardName, replicaList);

@@ -87,7 +87,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Runnable call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
@@ -242,8 +242,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         .assignPullReplicas(numPullReplicas)
         .onNodes(nodeList)
         .build();
+
     Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
+    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create();
     List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
 
     CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
@@ -284,25 +285,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       ocmh.addPropertyParams(message, propMap);
       final NamedList addReplicaResult = new NamedList();
-      ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
-        Object addResultFailure = addReplicaResult.get("failure");
-        if (addResultFailure != null) {
-          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-          if (failure == null) {
-            failure = new SimpleOrderedMap();
-            results.add("failure", failure);
-          }
-          failure.addAll((NamedList) addResultFailure);
-        } else {
-          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-          if (success == null) {
-            success = new SimpleOrderedMap();
-            results.add("success", success);
-          }
-          success.addAll((NamedList) addReplicaResult.get("success"));
-        }
-        countDownLatch.countDown();
-      });
+      ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult);
     }
 
     boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
@@ -339,17 +322,17 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice s : restoreCollection.getSlices()) {
         for (Replica r : s.getReplicas()) {
           String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
+          String coreName = r.getName();
           Replica.State stateRep = r.getState();
 
           if (log.isDebugEnabled()) {
-            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreName={}, state={}", nodeName, coreName,
                 stateRep.name());
           }
 
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
+          params.set(CoreAdminParams.NAME, coreName);
 
           shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
         }
@@ -425,7 +408,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           }
           ocmh.addPropertyParams(message, propMap);
 
-          ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
+          ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results);
         }
       }
     }

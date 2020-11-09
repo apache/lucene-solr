@@ -240,7 +240,7 @@ public class SolrLogLayout extends AbstractStringLayout {
   private Map<String, Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     DocCollection collection = zkController.getClusterState().getCollectionOrNull(collectionName);
-    Replica replica = collection.getReplica(zkController.getCoreNodeName(core.getCoreDescriptor()));
+    Replica replica = collection.getReplica(core.getCoreDescriptor().getName());
     if (replica != null) {
       return replica.getProperties();
     }

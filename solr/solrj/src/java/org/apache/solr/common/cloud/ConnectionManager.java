@@ -226,6 +226,7 @@ public class ConnectionManager implements Watcher, Closeable {
     if (state == KeeperState.SyncConnected) {
       if (isClosed()) return;
       log.info("zkClient has connected");
+      // nocommit - maybe use root shared
       client.zkConnManagerCallbackExecutor.execute(() -> {
         connected();
       });
@@ -353,15 +354,12 @@ public class ConnectionManager implements Watcher, Closeable {
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
 
-
-    client.zkCallbackSerialExecutor.shutdown();
     client.zkCallbackExecutor.shutdown();
     client.zkConnManagerCallbackExecutor.shutdown();
     if (keeper != null) {
       keeper.close();
     }
 
-    ExecutorUtil.awaitTermination(client.zkCallbackSerialExecutor);
     ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
     ExecutorUtil.awaitTermination(client.zkConnManagerCallbackExecutor);
 

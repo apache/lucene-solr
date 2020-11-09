@@ -81,23 +81,23 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @Test
   public void monitorZookeeper() throws IOException, SolrServerException, InterruptedException, ExecutionException, TimeoutException {
     String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
-    GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
-    mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
-    NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
+    try (HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+      GenericSolrRequest mntrReq = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
+      mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
-    assertEquals("zkStatus", nl.getName(1));
-    Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
-    assertEquals("green", zkStatus.get("status"));
-    assertEquals("standalone", zkStatus.get("mode"));
-    assertEquals(1L, zkStatus.get("ensembleSize"));
-    List<Object> detailsList = (List<Object>)zkStatus.get("details");
-    assertEquals(1, detailsList.size());
-    Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
-    assertEquals(true, details.get("ok"));
-    int nodeCount = Integer.parseInt((String) details.get("zk_znode_count"));
-    assertTrue("nodeCount=" + nodeCount, nodeCount > 50);
-    solr.close();
+      assertEquals("zkStatus", nl.getName(1));
+      Map<String,Object> zkStatus = (Map<String,Object>) nl.get("zkStatus");
+      assertEquals("green", zkStatus.get("status"));
+      assertEquals("standalone", zkStatus.get("mode"));
+      assertEquals(1L, zkStatus.get("ensembleSize"));
+      List<Object> detailsList = (List<Object>) zkStatus.get("details");
+      assertEquals(1, detailsList.size());
+      Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
+      assertEquals(true, details.get("ok"));
+      int nodeCount = Integer.parseInt((String) details.get("zk_znode_count"));
+      assertTrue("nodeCount=" + nodeCount, nodeCount > 50);
+    }
   }
 
   @Test

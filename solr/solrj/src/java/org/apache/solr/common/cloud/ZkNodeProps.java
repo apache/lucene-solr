@@ -61,11 +61,11 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * key2, value2, ..., keyN, valueN
    */
   public ZkNodeProps(String... keyVals) {
-    this( Utils.makeMap((Object[]) keyVals) );
+    this( Utils.makeMap(true, (Object[]) keyVals) );
   }
 
   public static ZkNodeProps fromKeyVals(Object... keyVals)  {
-    return new ZkNodeProps( Utils.makeMap(keyVals) );
+    return new ZkNodeProps( Utils.makeMap(true, keyVals) );
   }
 
 

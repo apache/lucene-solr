@@ -1357,10 +1357,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
-          ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-          String leaderUrl = zkProps.getBaseUrl() + "/" + zkProps.getCoreName();
+
+          String leaderUrl = leader.getBaseUrl() + "/" + leader.getName();
           leaders.put(leaderUrl, slice.getName());
-          String altLeaderUrl = zkProps.getBaseUrl() + "/" + collection;
+          String altLeaderUrl = leader.getBaseUrl() + "/" + collection;
           leaders.put(altLeaderUrl, slice.getName());
         }
       }
@@ -1441,7 +1441,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     if (numShards == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "numShards" + " is a required param");
     for (int i = 0; i < numShards; i++) {
-      final String sliceName = "shard" + (i + 1);
+      final String sliceName = "s" + (i + 1);
       shardNames.add(sliceName);
     }
 
@@ -1458,58 +1458,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "shards" + " is a required param");
   }
 
-  public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas) {
-    return expectedShardsAndActiveReplicas(expectedShards, expectedReplicas, false);
-  }
-
-  public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas, boolean exact) {
-    return (liveNodes, collectionState) -> {
-      if (collectionState == null)
-        return false;
-
-      if (!exact) {
-        if (collectionState.getActiveSlices().size() < expectedShards) {
-          return false;
-        }
-      } else {
-        if (collectionState.getActiveSlices().size() != expectedShards) {
-          return false;
-        }
-      }
-
-      if (expectedReplicas == 0 && !exact) {
-        return true;
-      }
-
-      int activeReplicas = 0;
-      for (Slice slice : collectionState.getActiveSlices()) {
-        if (!slice.getState().equals(Slice.State.ACTIVE)) {
-          return false;
-        }
-        Replica leader = slice.getLeader();
-        if (leader == null) {
-          return false;
-        }
-        for (Replica replica : slice) {
-          if (replica.isActive(liveNodes)) {
-            activeReplicas++;
-          }
-        }
-      }
-      if (!exact) {
-        if (activeReplicas >= expectedReplicas) {
-          return true;
-        }
-      } else {
-        if (activeReplicas == expectedReplicas) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-  }
-
   public static int getTotalReplicas(ZkNodeProps zkProps) {
     int pullReplicas = zkProps.getInt(ZkStateReader.PULL_REPLICAS, 0);
     int tlogReplicas = zkProps.getInt(TLOG_REPLICAS, 0);
@@ -1522,30 +1470,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       tlogReplicas = 0;
     }
     return pullReplicas + nrtReplicas + tlogReplicas;
-  }
-
-  public static void waitForActiveCollection(ZkStateReader zkStateReader, String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
-    log.info("waitForActiveCollection: {}", collection);
-    assert collection != null;
-    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas);
-
-    AtomicReference<DocCollection> state = new AtomicReference<>();
-    AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
-    try {
-      zkStateReader.waitForState(collection, wait, unit, (n, c) -> {
-        state.set(c);
-        liveNodesLastSeen.set(n);
-
-        return predicate.matches(n, c);
-      });
-    } catch (TimeoutException e) {
-      throw new RuntimeException("Failed while waiting for active collection" + "\n" + e.getMessage() + " \nShards:" + shards + " Replicas:" + totalReplicas + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray())
-          + "\nLast available state: " + state.get());
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new RuntimeException("", e);
-    }
-
   }
 
 }

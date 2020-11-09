@@ -43,8 +43,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
   private static final int numShards = 3;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 2;
-  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+  private static final int maxShardsPerNode = 100;
 
   private static final String id = "id";
 
@@ -52,7 +51,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
 
     // create and configure cluster
-    configureCluster(nodeCount)
+    configureCluster(3)
         .addConfig("conf", configset("cloud-dynamic"))
         .configure();
 

@@ -50,7 +50,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       Replica replica1 = slice1.getReplica("replica1");
       assertNotNull(replica1);
       assertEquals("baseUrl1_", replica1.getNodeName());
-      assertEquals("slice1_replica1", replica1.getCoreName());
+      assertEquals("slice1_replica1", replica1.getName());
       assertEquals("http://baseUrl1", replica1.getBaseUrl());
       assertEquals("http://baseUrl1/slice1_replica1/", replica1.getCoreUrl());
       assertEquals(Replica.State.ACTIVE, replica1.getState());

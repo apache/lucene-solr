@@ -188,7 +188,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
     waitForRecoveriesToFinish("unloadcollection");
 
-    ZkCoreNodeProps leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    Replica leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
 
     Random random = random();
     if (random.nextBoolean()) {
@@ -236,7 +236,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leaderProps.getName());
       ModifiableSolrParams p = (ModifiableSolrParams) unloadCmd.getParams();
 
       collectionClient.request(unloadCmd);
@@ -269,7 +269,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
-      unloadCmd.setCoreName(leaderProps.getCoreName());
+      unloadCmd.setCoreName(leaderProps.getName());
       collectionClient.request(unloadCmd);
     }
 
@@ -279,7 +279,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     TestInjection.skipIndexWriterCommitOnClose = false; // set this back
     assertTrue(CollectionAdminRequest
             .addReplicaToShard("unloadcollection", "shard1")
-            .setCoreName(leaderProps.getCoreName())
+            .setCoreName(leaderProps.getName())
             .setDataDir(core1DataDir)
             .setNode(leaderProps.getNodeName())
             .process(cloudClient).isSuccess());

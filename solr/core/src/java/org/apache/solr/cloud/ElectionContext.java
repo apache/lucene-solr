@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.KeeperException;
@@ -29,12 +30,12 @@ import org.slf4j.LoggerFactory;
 public abstract class ElectionContext implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final String electionPath;
-  protected final ZkNodeProps leaderProps;
+  protected final Replica leaderProps;
   protected final String id;
   protected final String leaderPath;
   protected volatile String leaderSeqPath;
 
-  public ElectionContext(final String id, final String electionPath, final String leaderPath, final ZkNodeProps leaderProps) {
+  public ElectionContext(final String id, final String electionPath, final String leaderPath, final Replica leaderProps) {
     this.id = id;
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
@@ -44,7 +45,6 @@ public abstract class ElectionContext implements Closeable {
   }
 
   public void close() {
-    leaderSeqPath = null;
     assert ObjectReleaseTracker.release(this);
   }
 

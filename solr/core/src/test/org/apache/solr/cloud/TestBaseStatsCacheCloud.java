@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +104,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   @After
-  public void tearDownCluster() {
+  public void tearDownCluster() throws IOException {
+    control.close();
     System.clearProperty("solr.statsCache");
     System.clearProperty("solr.similarity");
   }

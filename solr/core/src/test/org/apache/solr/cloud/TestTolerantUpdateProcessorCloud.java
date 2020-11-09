@@ -157,10 +157,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       }
       assertNotNull("could not find URL for " + shardName + " replica", passiveUrl);
 
-      if (shardName.equals("shard1")) {
+      if (shardName.equals("s1")) {
         S_ONE_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
         S_ONE_NON_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
-      } else if (shardName.equals("shard2")) {
+      } else if (shardName.equals("s2")) {
         S_TWO_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(leaderUrl + "/" + COLLECTION_NAME + "/");
         S_TWO_NON_LEADER_CLIENT = SolrTestCaseJ4.getHttpSolrClient(passiveUrl + "/" + COLLECTION_NAME + "/");
       } else {
@@ -179,27 +179,27 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
     // sanity check that our S_ONE_PRE & S_TWO_PRE really do map to shard1 & shard2 with default routing
     assertEquals(0, CLOUD_CLIENT.add(doc(f("id", S_ONE_PRE + random().nextInt()),
-                                         f("expected_shard_s", "shard1"))).getStatus());
+                                         f("expected_shard_s", "s1"))).getStatus());
     assertEquals(0, CLOUD_CLIENT.add(doc(f("id", S_TWO_PRE + random().nextInt()),
-                                         f("expected_shard_s", "shard2"))).getStatus());
+                                         f("expected_shard_s", "s2"))).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
 
 //    Thread.sleep(100);
 //    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
 
     SolrDocumentList docs = CLOUD_CLIENT.query(params("q", "*:*",
-                                                      "fl","id,expected_shard_s,[shard]")).getResults();
+                                                      "fl","id,expected_shard_s,[s]")).getResults();
 
     assertEquals(2, docs.getNumFound());
     assertEquals(2, docs.size());
     for (SolrDocument doc : docs) {
       String expected = COLLECTION_NAME + "_" + doc.getFirstValue("expected_shard_s") + "_replica";
-      String docShard = doc.getFirstValue("[shard]").toString();
+      String docShard = doc.getFirstValue("[s]").toString();
       assertTrue("shard routing prefixes don't seem to be aligned anymore, " +
                  "did someone change the default routing rules? " +
                  "and/or the the default core name rules? " +
                  "and/or the numShards used by this test? ... " +
-                 "couldn't find " + expected + " as substring of [shard] == '" + docShard +
+                 "couldn't find " + expected + " as substring of [s] == '" + docShard +
                  "' ... for docId == " + doc.getFirstValue("id"),
                  docShard.contains(expected));
     }

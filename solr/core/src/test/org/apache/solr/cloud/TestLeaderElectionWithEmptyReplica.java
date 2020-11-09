@@ -77,14 +77,14 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
     // find the leader node
 
-    JettySolrRunner replicaJetty = cluster.getShardLeaderJetty(COLLECTION_NAME, "shard1");
+    JettySolrRunner replicaJetty = cluster.getShardLeaderJetty(COLLECTION_NAME, "s1");
 
 
     // kill the leader
     replicaJetty.stop();
 
     // add a replica (asynchronously)
-    CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1");
+    CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "s1");
     String asyncId = addReplica.processAsync(solrClient);
 
     //cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
@@ -98,7 +98,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
 
     // now query each replica and check for consistency
-    assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));
+    assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("s1"));
 
     // sanity check that documents still exist
     QueryResponse response = solrClient.query(new SolrQuery("*:*"));

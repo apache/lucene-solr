@@ -24,13 +24,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 /**
  * Tests the connection string part of the JDBC Driver
  **/
-
+@LuceneTestCase.Nightly
 public class JdbcDriverTest extends SolrTestCaseJ4 {
 
   @Test(expected = SQLException.class)

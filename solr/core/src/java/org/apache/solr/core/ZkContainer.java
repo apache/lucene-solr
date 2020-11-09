@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -211,28 +212,19 @@ public class ZkContainer implements Closeable {
                 log.debug("{} pre-zk hook", (didTrigger ? "Ran" : "Skipped"));
               }
             }
-            if (!core.getCoreContainer().isShutDown()) {
-              zkController.register(core.getName(), cd, skipRecovery);
-            }
+
+            zkController.register(core.getName(), cd, false, false, skipRecovery);
+
           } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-            try {
-              if (zkController.isConnected() && !zkController.getCoreContainer().isShutDown()) {
-                zkController.publish(cd, Replica.State.DOWN);
-              }
-            } catch (Exception e1) {
-              ParWork.propagateInterrupt(e);
-              exp.addSuppressed(e1);
-            }
-            throw exp;
+            log.error("Failed trying to register with zookeeper", e);
           }
         } finally {
           MDCLoggingContext.clear();
         }
       };
+    // r.run();
      return ParWork.getRootSharedExecutor().submit(r); // ### expert usage
-
+     //return null;
   }
   
   public ZkController getZkController() {
@@ -240,9 +232,7 @@ public class ZkContainer implements Closeable {
   }
 
   public void close() {
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect(zkController);
-      closer.collect(zkServer);
-    }
+    IOUtils.closeQuietly(zkController);
+    IOUtils.closeQuietly(zkServer);
   }
 }

@@ -357,8 +357,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         baseUrls.add(url);
       }
 

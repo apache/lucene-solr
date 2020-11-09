@@ -24,6 +24,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -33,11 +34,11 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     // the default is 180s and our waitForState times out in 90s
     // so we lower this so that we can still test timeouts
-    System.setProperty("leaderConflictResolveWait", "2000");
+    System.setProperty("leaderConflictResolveWait", "500");
     System.setProperty("prepRecoveryReadTimeoutExtraWait", "0");
 
     
@@ -47,12 +48,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .configure();
   }
 
-  @AfterClass
-  public static void tearCluster() throws Exception {
-    System.clearProperty("leaderConflictResolveWait");
-  }
-
   @Test
+  @Ignore // nocommit
   public void testLeaderUnloaded() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 

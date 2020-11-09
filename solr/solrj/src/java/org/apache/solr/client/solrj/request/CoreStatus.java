@@ -45,4 +45,8 @@ public class CoreStatus {
   public Date getCoreStartTime() {
     return (Date) response.get("startTime");
   }
+
+  public NamedList<Object> getResponse() {
+    return response;
+  }
 }

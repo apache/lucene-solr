@@ -47,21 +47,20 @@
         <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.handler.IndexFetcher" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.CreateCollectionCmd" level="DEBUG"/>
         <!--  <AsyncLogger name="org.apache.solr.common.patterns.DW" level="DEBUG"/> -->
         <AsyncLogger name="org.apache.solr.cloud.overseer.ZkStateWriter" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.Overseer" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.cloud.OverseerTaskProcessor" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.cloud.ZkDistributedQueue" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.cloud.OverseerTaskQueue" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.cloud.ShardLeaderElectionContext" level="DEBUG"/>
+        <!--  <AsyncLogger name="org.apache.solr.cloud.OverseerTaskProcessor" level="DEBUG"/>
+           <AsyncLogger name="org.apache.solr.cloud.ZkDistributedQueue" level="DEBUG"/>
+         <AsyncLogger name="org.apache.solr.cloud.OverseerTaskQueue" level="DEBUG"/>
+         <AsyncLogger name="org.apache.solr.cloud.OverseerTaskExecutorTask" level="DEBUG"/>-->
         <AsyncLogger name="org.apache.solr.cloud.LeaderElector" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.ShardLeaderElectionContextBase" level="DEBUG"/>
 
-        <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/> -->
-        <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>
+        <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>-->
         <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.ZkController" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="DEBUG"/>

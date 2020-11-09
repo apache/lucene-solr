@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,15 +35,18 @@ import java.util.function.Predicate;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
+import org.apache.solr.cloud.overseer.NodeMutator;
+import org.apache.solr.cloud.overseer.ReplicaMutator;
+import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.TimeOut;
-import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -82,6 +83,7 @@ public class ZkDistributedQueue implements DistributedQueue {
    * We only bother setting a child watcher when the queue has no children in ZK.
    */
   private static final Object _IMPLEMENTATION_NOTES = null;
+  public static final byte[] DATA = new byte[0];
 
   final String dir;
 
@@ -92,21 +94,25 @@ public class ZkDistributedQueue implements DistributedQueue {
   /**
    * A lock that guards all of the mutable state that follows.
    */
-  protected final ReentrantLock updateLock = new ReentrantLock();
+  private final ReentrantLock updateLock = new ReentrantLock();
 
   /**
    * Contains the last set of children fetched from ZK. Elements are removed from the head of
    * this in-memory set as they are consumed from the queue.  Due to the distributed nature
    * of the queue, elements may appear in this set whose underlying nodes have been consumed in ZK.
-   * Therefore, methods like peek have to double-check actual node existence, and methods
-   * like poll must resolve any races by attempting to delete the underlying node.
+   * Therefore, methods like {@link #peek()} have to double-check actual node existence, and methods
+   * like {@link #poll()} must resolve any races by attempting to delete the underlying node.
    */
-  protected volatile TreeMap<String,byte[]> knownChildren;
+  private TreeSet<String> knownChildren = new TreeSet<>();
 
   /**
    * Used to wait on ZK changes to the child list; you must hold {@link #updateLock} before waiting on this condition.
    */
   private final Condition changed = updateLock.newCondition();
+
+  private boolean isDirty = true;
+
+  private int watcherCount = 0;
 
   private final int maxQueueSize;
 
@@ -133,22 +139,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     this.zookeeper = zookeeper;
     this.stats = stats;
     this.maxQueueSize = maxQueueSize;
-
-    try {
-      try {
-        updateLock.lockInterruptibly();
-        fetchZkChildren(null, null);
-      } catch (KeeperException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
-    }
   }
 
   /**
@@ -158,10 +148,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
+  public byte[] peek() throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_peek");
     try {
-      return firstElement(acceptFilter);
+      return firstElement();
     } finally {
       time.stop();
     }
@@ -175,8 +165,8 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek(Predicate<String> acceptFilter, boolean block) throws KeeperException, InterruptedException {
-    return block ? peek(acceptFilter, Long.MAX_VALUE) : peek(acceptFilter);
+  public byte[] peek(boolean block) throws KeeperException, InterruptedException {
+    return block ? peek(Long.MAX_VALUE) : peek();
   }
 
   /**
@@ -187,40 +177,29 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return data at the first element of the queue, or null.
    */
   @Override
-  public byte[] peek(Predicate<String> acceptFilter, long wait) throws KeeperException, InterruptedException {
-    byte[] result = null;
-
+  public byte[] peek(long wait) throws KeeperException, InterruptedException {
+    Preconditions.checkArgument(wait > 0);
     Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");
     } else {
       time = stats.time(dir + "_peek_wait" + wait);
     }
-
-    long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
-
-    result = firstElement(acceptFilter);
-    if (result != null) {
-      return result;
-    }
-
-    ChildWatcher watcher = new ChildWatcher(acceptFilter);
-    TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, null);
-
-    if (foundChildren.size() > 0) {
-      result = firstElement(acceptFilter);
-      return result;
-    }
-
-    TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
-
-    waitForChildren(null, foundChildren, timeout, watcher);
-    if (foundChildren.size() == 0) {
+    updateLock.lockInterruptibly();
+    try {
+      long waitNanos = TimeUnit.MILLISECONDS.toNanos(wait);
+      while (waitNanos > 0) {
+        byte[] result = firstElement();
+        if (result != null) {
+          return result;
+        }
+        waitNanos = changed.awaitNanos(waitNanos);
+      }
       return null;
+    } finally {
+      updateLock.unlock();
+      time.stop();
     }
-    result = firstElement(acceptFilter);
-    return result;
-
   }
 
   /**
@@ -230,10 +209,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return Head of the queue or null.
    */
   @Override
-  public byte[] poll(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
+  public byte[] poll() throws KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_poll");
     try {
-      return removeFirst(acceptFilter);
+      return removeFirst();
     } finally {
       time.stop();
     }
@@ -245,10 +224,10 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return The former head of the queue
    */
   @Override
-  public byte[] remove(Predicate<String> acceptFilter) throws NoSuchElementException, KeeperException{
+  public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
     Timer.Context time = stats.time(dir + "_remove");
     try {
-      byte[] result = removeFirst(acceptFilter);
+      byte[] result = removeFirst();
       if (result == null) {
         throw new NoSuchElementException();
       }
@@ -258,32 +237,48 @@ public class ZkDistributedQueue implements DistributedQueue {
     }
   }
 
-  // TODO: use async
+//  public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
+//
+//    if (log.isDebugEnabled()) log.debug("Remove paths from queue dir={} paths={}", dir, paths);
+//
+//    if (paths.isEmpty()) {
+//      if (log.isDebugEnabled()) log.debug("paths is empty, return");
+//      return;
+//    }
+//
+//    List<String> fullPaths = new ArrayList<>(paths.size());
+//    for (String node : paths) {
+//      fullPaths.add(dir + "/" + node);
+//    }
+//
+//
+//    if (log.isDebugEnabled()) log.debug("delete nodes {}", fullPaths);
+//    zookeeper.delete(fullPaths, false);
+//    if (log.isDebugEnabled()) log.debug("after delete nodes");
+//
+//    int cacheSizeBefore = knownChildren.size();
+//    knownChildren.removeAll(paths);
+//    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
+//      stats.setQueueLength(knownChildren.size());
+//    } else {
+//      // There are elements get deleted but not present in the cache,
+//      // the cache seems not valid anymore
+//      knownChildren.clear();
+//      isDirty = true;
+//    }
+//  }
+
   public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) log.debug("Remove paths from queue {} {}", dir, paths);
     if (paths.isEmpty()) return;
-
-    updateLock.lockInterruptibly();
-    try {
-      for (String path : paths) {
-        knownChildren.remove(path);
-      }
-    } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
-    }
-
     List<Op> ops = new ArrayList<>();
     for (String path : paths) {
       ops.add(Op.delete(dir + "/" + path, -1));
     }
     for (int from = 0; from < ops.size(); from += 1000) {
       int to = Math.min(from + 1000, ops.size());
-      List<Op> opList = ops.subList(from, to);
-      if (opList.size() > 0) {
+      if (from < to) {
         try {
-          zookeeper.multi(ops.subList(from, to));
+          zookeeper.multi(ops.subList(from, to), true);
         } catch (KeeperException.NoNodeException e) {
           // don't know which nodes are not exist, so try to delete one by one node
           for (int j = from; j < to; j++) {
@@ -298,6 +293,17 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
       }
     }
+
+    int cacheSizeBefore = knownChildren.size();
+    knownChildren.removeAll(paths);
+    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
+      stats.setQueueLength(knownChildren.size());
+    } else {
+      // There are elements get deleted but not present in the cache,
+      // the cache seems not valid anymore
+      knownChildren.clear();
+      isDirty = true;
+    }
   }
 
   /**
@@ -306,39 +312,30 @@ public class ZkDistributedQueue implements DistributedQueue {
    * @return The former head of the queue
    */
   @Override
-  public byte[] take(Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
+  public byte[] take() throws KeeperException, InterruptedException {
     // Same as for element. Should refactor this.
     Timer.Context timer = stats.time(dir + "_take");
     updateLock.lockInterruptibly();
     try {
-      long waitNanos = TimeUnit.MILLISECONDS.toNanos(60000);
-
-      byte[] result = removeFirst(acceptFilter);
-      if (result != null) {
-        return result;
-      }
-
-      ChildWatcher watcher = new ChildWatcher(acceptFilter);
-      TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, acceptFilter);
-
-      TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
-
-      waitForChildren( s -> s.startsWith(PREFIX) || acceptFilter.test(s), foundChildren, timeout, watcher);
-      if (foundChildren.size() == 0) {
-        return null;
-      }
-
-      result = removeFirst(acceptFilter);
-      if (result != null) {
-        return result;
+      while (true) {
+        byte[] result = removeFirst();
+        if (result != null) {
+          return result;
+        }
+        changed.await();
       }
     } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
+      updateLock.unlock();
       timer.stop();
     }
-    return null;
+  }
+
+  private static Set<String> OPERATIONS = new HashSet<>();
+  static {
+    OPERATIONS.add("state");
+    OPERATIONS.add("leader");
+    OPERATIONS.add("downnode");
+    OPERATIONS.add("updateshardstate");
   }
 
   /**
@@ -346,40 +343,50 @@ public class ZkDistributedQueue implements DistributedQueue {
    * will be immediately visible when this method returns.
    */
   @Override
-  public void offer(byte[] data) throws KeeperException {
-    Timer.Context time = stats.time(dir + "_offer");
-    if (log.isDebugEnabled()) log.debug("Over item to queue {}", dir);
-    try {
-      try {
-        if (maxQueueSize > 0) {
-          if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
-            // If a max queue size is set, check it before creating a new queue item.
-            Stat stat = zookeeper.exists(dir, null, true);
-            if (stat == null) {
-              // jump to the code below, which tries to create dir if it doesn't exist
-              throw new KeeperException.NoNodeException();
-            }
-            int remainingCapacity = maxQueueSize - stat.getNumChildren();
-            if (remainingCapacity <= 0) {
-              throw new IllegalStateException("queue is full");
-            }
+  public void offer(byte[] data) throws KeeperException, InterruptedException {
+    // TODO change to accept json
+    Map json = (Map) Utils.fromJSON(data);
 
-            // Allow this client to push up to 1% of the remaining queue capacity without rechecking.
-            offerPermits.set(remainingCapacity / 100);
+    final String operation = (String) json.get(Overseer.QUEUE_OPERATION);
+//    if (!OPERATIONS.contains(operation)) {
+//      throw new IllegalArgumentException("unknown operation:" + operation + " contents:" + json);
+//    }
+    Timer.Context time = stats.time(dir + "_offer");
+
+    try {
+      while (true) {
+        try {
+          if (maxQueueSize > 0) {
+            if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) { // nocommit review
+              // If a max queue size is set, check it before creating a new queue item.
+              Stat stat = zookeeper.exists(dir, null, true);
+              if (stat == null) {
+                // jump to the code below, which tries to create dir if it doesn't exist
+                throw new KeeperException.NoNodeException();
+              }
+              int remainingCapacity = maxQueueSize - stat.getNumChildren();
+              if (remainingCapacity <= 0) {
+                throw new IllegalStateException("queue is full");
+              }
+
+              // Allow this client to push up to 1% of the remaining queue capacity without rechecking.
+              offerPermits.set(remainingCapacity / 100);
+            }
+          }
+
+          // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
+          // This will get set again when the watcher actually fires, but that's ok.
+          zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
+          isDirty = true;
+          return;
+        } catch (KeeperException.NoNodeException e) {
+          try {
+            zookeeper.create(dir, DATA, CreateMode.PERSISTENT, true);
+          } catch (KeeperException.NodeExistsException ne) {
+            // someone created it
           }
         }
-
-        // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
-        // This will get set again when the watcher actually fires, but that's ok.
-        zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
-        return;
-      } catch (KeeperException.NoNodeException e) {
-        // someone created it
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new AlreadyClosedException(e);
       }
-
     } finally {
       time.stop();
     }
@@ -416,132 +423,72 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   /**
    * Returns the name if the first known child node, or {@code null} if the queue is empty.
-   * @return
+   * This is the only place {@link #knownChildren} is ever updated!
+   * The caller must double check that the actual node still exists, since the in-memory
+   * list is inherently stale.
    */
-  private Map.Entry<String,byte[]> firstChild(boolean remove, Predicate<String> acceptFilter) {
+  private String firstChild(boolean remove, boolean refetchIfDirty) throws KeeperException, InterruptedException {
+    updateLock.lockInterruptibly();
     try {
-      updateLock.lockInterruptibly();
-      try {
-        // We always return from cache first, the cache will be cleared if the node is not exist
-        if (!knownChildren.isEmpty()) {
-          for (Map.Entry<String,byte[]> entry : knownChildren.entrySet()) {
-            if (acceptFilter != null && acceptFilter.test(entry.getKey())) {
-              continue;
-            }
-            if (remove) {
-              knownChildren.remove(entry.getKey());
-              try {
-                zookeeper.delete(dir + "/" + entry.getKey(), -1);
-              } catch (KeeperException.NoNodeException e) {
-                if (log.isDebugEnabled()) log.debug("No node found for {}", entry.getKey());
-              }
-              return entry;
-            }
-          }
-          return null;
-        }
-      } finally {
-        if (updateLock.isHeldByCurrentThread()) {
-          updateLock.unlock();
-        }
+     if (log.isDebugEnabled()) log.debug("firstChild isDirty={}, refetchIfDirty={}, remove={}", isDirty, refetchIfDirty, remove);
+      // We always return from cache first, the cache will be cleared if the node is not exist
+      if (!knownChildren.isEmpty() && !(isDirty && refetchIfDirty)) {
+        if (log.isDebugEnabled()) log.debug("returning first child");
+        return remove ? knownChildren.pollFirst() : knownChildren.first();
       }
 
-      fetchZkChildren(null, acceptFilter);
+      if (!isDirty && knownChildren.isEmpty()) {
+        if (log.isDebugEnabled()) log.debug("isDirty={} knownChildren is empty, returning null", isDirty);
+        return null;
+      }
 
-      return null;
-    } catch (InterruptedException | KeeperException e) {
-      ParWork.propagateInterrupt(e);
-      throw new AlreadyClosedException(e);
+      // Dirty, try to fetch an updated list of children from ZK.
+      // Only set a new watcher if there isn't already a watcher.
+
+      if (log.isDebugEnabled()) log.debug("isDirty={} fetch known children", isDirty);
+      ChildWatcher newWatcher = (watcherCount == 0) ? new ChildWatcher() : null;
+      knownChildren = fetchZkChildren(newWatcher);
+      if (newWatcher != null) {
+        watcherCount++; // watcher was successfully set
+      }
+      isDirty = false;
+      if (knownChildren.isEmpty()) {
+        if (log.isDebugEnabled()) log.debug("known children is empty return null");
+        return null;
+      }
+      if (log.isDebugEnabled()) log.debug("signal all and get first, remove={}", remove);
+      changed.signalAll();
+      return remove ? knownChildren.pollFirst() : knownChildren.first();
+    } finally {
+      updateLock.unlock();
     }
   }
 
   /**
    * Return the current set of children from ZK; does not change internal state.
    */
-  TreeMap<String,byte[]> fetchZkChildren(Watcher watcher, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) log.debug("fetchZkChildren");
-    TreeMap<String,byte[]> orderedChildren = new TreeMap<>();
-    updateLock.lockInterruptibly();
-    try {
-      if (knownChildren != null && !knownChildren.isEmpty()) {
-        Set<Map.Entry<String,byte[]>> entrySet = knownChildren.entrySet();
-        for (Map.Entry<String,byte[]> entry : entrySet) {
-          String childName = entry.getKey();
+  TreeSet<String> fetchZkChildren(Watcher watcher) throws InterruptedException, KeeperException {
+    while (true) {
+      try {
+        TreeSet<String> orderedChildren = new TreeSet<>();
+        if (log.isDebugEnabled()) log.debug("fetchZkChildren {}", dir);
+        List<String> childNames = zookeeper.getChildren(dir, watcher, true);
+        if (log.isDebugEnabled()) log.debug("got {} nodes", childNames);
+        stats.setQueueLength(childNames.size());
+        for (String childName : childNames) {
           // Check format
-          if (!childName.startsWith(PREFIX)) {
-
-            // responses can be written to same queue with different naming scheme
-            if (log.isDebugEnabled()) log.debug("Filtering child out by prefix name=: {}, prefix={}", childName, PREFIX);
+          if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
+            log.debug("Found child node with improper name: {}", childName);
             continue;
           }
-          if (acceptFilter != null && acceptFilter.test(childName)) {
-            if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", dir + "/" + childName);
-            continue;
-          }
-          if (log.isDebugEnabled()) log.debug("found: {}", childName);
-          orderedChildren.put(childName, entry.getValue());
+          orderedChildren.add(childName);
         }
+        if (log.isDebugEnabled()) log.debug("returning {}", orderedChildren);
+        return orderedChildren;
+      } catch (KeeperException.NoNodeException e) {
+        zookeeper.makePath(dir, false, true);
+        // go back to the loop and try again
       }
-    } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
-    }
-
-    if (!orderedChildren.isEmpty()) {
-      if (log.isDebugEnabled()) log.debug("found children from fetch {}", orderedChildren.size());
-      return orderedChildren;
-    }
-    if (log.isDebugEnabled()) log.debug("found no children to fetch");
-    TreeMap<String,byte[]> remoteKnownChildren = new TreeMap<>();
-    try {
-      List<String> childNames = zookeeper.getChildren(dir, watcher, true);
-      stats.setQueueLength(childNames.size());
-      for (String childName : childNames) {
-        if (log.isDebugEnabled()) log.debug("Examine child: {} out of children={} acceptFilter={}", childName, childNames.size(), acceptFilter);
-        // Check format
-        if (!childName.startsWith(PREFIX)) {
-          // responses can be written to same queue with different naming scheme
-          if (log.isDebugEnabled()) log.debug("Excluding child by prefix: {}", childName);
-          continue;
-        }
-        remoteKnownChildren.put(childName, null);
-        if (acceptFilter != null && acceptFilter.test(childName)) {
-          if (log.isDebugEnabled()) log.debug("Found child that matched exclude filter: {}", childName);
-          continue;
-        }
-        if (log.isDebugEnabled()) log.debug("Add child to fetched children: {}", childName);
-        orderedChildren.put(childName, null);
-      }
-      if (log.isDebugEnabled()) log.debug("found {} remote children", remoteKnownChildren.size());
-      updateKnownChildren(remoteKnownChildren);
-      if (log.isDebugEnabled()) log.debug("returning {} matched children", orderedChildren.size());
-      return orderedChildren;
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new AlreadyClosedException(e);
-    }
-  }
-
-  private void updateKnownChildren(TreeMap<String,byte[]> children) {
-    if (log.isDebugEnabled()) log.debug("Update known children size={}", children.size());
-    TreeMap<String,byte[]> newKnownChildren = new TreeMap<>();
-    updateLock.lock();
-    try {
-      Set<Map.Entry<String,byte[]>> entrySet = children.entrySet();
-      for (Map.Entry<String,byte[]> entry : entrySet) {
-        String childName = entry.getKey();
-        byte[] data = entry.getValue();
-        if (data == null) {
-          data = knownChildren == null ? null : knownChildren.get(childName);
-        }
-        newKnownChildren.put(childName, data);
-      }
-      knownChildren = newKnownChildren;
-    } catch (Exception e) {
-      log.error("", e);
-    } finally {
-      updateLock.unlock();
     }
   }
 
@@ -553,139 +500,67 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
-    if (log.isDebugEnabled()) log.debug("peekElements {} {}", max, acceptFilter);
-    List<Pair<String,byte[]>> result = null;
-    ChildWatcher watcher = new ChildWatcher(acceptFilter);
-    TreeMap<String,byte[]> foundChildren = fetchZkChildren(watcher, acceptFilter);
+    List<String> foundChildren = new ArrayList<>();
     long waitNanos = TimeUnit.MILLISECONDS.toNanos(waitMillis);
-    TimeOut timeout = new TimeOut(waitNanos, TimeUnit.NANOSECONDS, TimeSource.NANO_TIME);
-    try {
-      if (foundChildren.size() == 0) {
-        if (log.isDebugEnabled()) log.debug("found no children, watch for them  excludeFilter={}", acceptFilter);
-        waitForChildren(acceptFilter, foundChildren, timeout, watcher);
-      }
+    if (log.isDebugEnabled()) log.debug("peekElements {} {}", max, waitMillis);
+    boolean first = true;
+    while (true) {
+      // Trigger a refresh, but only force it if this is not the first iteration.
+      if (log.isDebugEnabled()) log.debug("call first child {}", !first);
+      firstChild(false, first);
 
-      // Technically we could restart the method if we fasil to actually obtain any valid children
-      // from ZK, but this is a super rare case, and the latency of the ZK fetches would require
-      // much more sophisticated waitNanos tracking.
-      if (log.isDebugEnabled()) log.debug("found children to process {}", foundChildren.size());
-      result = Collections.synchronizedList(new ArrayList<>(foundChildren.size()));
-      Set<String> dataPaths = new HashSet<>();
-      for (Map.Entry<String,byte[]> child : foundChildren.entrySet()) {
-        if (result.size() >= max) {
-          break;
-        }
-
-        byte[] data = child.getValue();
-        if (data == null) {
-          updateLock.lockInterruptibly();
-          try {
-            data = knownChildren.get(child.getKey());
-          } finally {
-            if (updateLock.isHeldByCurrentThread()) {
-              updateLock.unlock();
-            }
-          }
-        }
-
-        if (data == null) {
-          // nocommit - lets not reget what we have in knownChildren, also, use asyncp
-          dataPaths.add(dir + "/" + child.getKey());
-          if (log.isDebugEnabled()) log.debug("get data for child={}", child.getKey());
-        } else {
-          if (log.isDebugEnabled()) log.debug("found data locally already {}", child.getKey());
-          result.add(new Pair<>(child.getKey(), data));
-        }
-      }
-
-      if (log.isDebugEnabled()) log.debug("fetch data for paths {}", dataPaths);
-      Map<String,byte[]> dataMap = zookeeper.getData(dataPaths);
-      updateLock.lockInterruptibly();
-      List<Pair<String,byte[]>> finalResult = result;
-      try {
-        dataMap.forEach((k, bytes) -> {
-          finalResult.add(new Pair<>(k, bytes));
-          if (bytes != null) {
-            knownChildren.put(new File(k).getName(), bytes);
-          }
-        });
-      } finally {
-        if (updateLock.isHeldByCurrentThread()) {
-          updateLock.unlock();
-        }
-      }
-      if (log.isDebugEnabled()) log.debug("peek elements returning {} nodes", finalResult.size());
-      return new ArrayList<>(finalResult);
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new AlreadyClosedException(e);
-    }
-  }
-
-  private void waitForChildren(Predicate<String> acceptFilter, TreeMap<String,byte[]> foundChildren, TimeOut timeout, ChildWatcher watcher) throws InterruptedException, KeeperException {
-    if (log.isDebugEnabled()) log.debug("wait for children ... {}ms", timeout.getInterval(TimeUnit.MILLISECONDS));
-
-    updateLock.lockInterruptibly();
-    try {
-      for (Map.Entry<String,byte[]> child : knownChildren.entrySet()) {
-        if (!child.getKey().startsWith(PREFIX) && (acceptFilter == null || !acceptFilter.test(child.getKey()))) {
-          foundChildren.put(child.getKey(), child.getValue());
-        }
-      }
-    } finally {
-      if (updateLock.isHeldByCurrentThread()) {
-        updateLock.unlock();
-      }
-    }
-    if (!foundChildren.isEmpty()) {
-      if (log.isDebugEnabled()) log.debug("Found new children ... {}", foundChildren.size());
-      return;
-    }
-    if (timeout.hasTimedOut()) {
-      if (log.isDebugEnabled()) log.debug("0 wait time and no children found, return");
-      return;
-    }
-    TreeMap<String,byte[]> fc = null;
-    while (fc == null || fc.isEmpty()) {
-      fc = fetchZkChildren(watcher, acceptFilter);
-      if (!fc.isEmpty()) {
-        foundChildren.putAll(fc);
-        return;
-      }
       updateLock.lockInterruptibly();
       try {
-        try {
-          changed.await(Math.min(timeout.getInterval(TimeUnit.MILLISECONDS), 5000), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-        if (zookeeper.isClosed() || !zookeeper.isConnected()) {
-          throw new AlreadyClosedException();
-        }
-        if (timeout.hasTimedOut()) {
-          return;
-        }
-        for (Map.Entry<String,byte[]> child : knownChildren.entrySet()) {
-          if (acceptFilter == null || !acceptFilter.test(child.getKey())) {
-            foundChildren.put(child.getKey(), child.getValue());
+        for (String child : knownChildren) {
+          if (acceptFilter.test(child)) {
+            foundChildren.add(child);
           }
         }
         if (!foundChildren.isEmpty()) {
-          try {
-            if (log.isDebugEnabled()) log.debug("Remove watches for {}");
-            zookeeper.getSolrZooKeeper().removeAllWatches(dir, Watcher.WatcherType.Children, false);
-          } catch (Exception e) {
-            log.info(e.getMessage());
-          }
-          return;
+          break;
+        }
+        if (waitNanos <= 0) {
+          break;
         }
 
+        // If this is our first time through, force a refresh before waiting.
+        if (first) {
+          first = false;
+          continue;
+        }
+
+        waitNanos = changed.awaitNanos(waitNanos);
       } finally {
-        if (updateLock.isHeldByCurrentThread()) {
+        updateLock.unlock();
+      }
+
+      if (!foundChildren.isEmpty()) {
+        break;
+      }
+    }
+
+    // Technically we could restart the method if we fail to actually obtain any valid children
+    // from ZK, but this is a super rare case, and the latency of the ZK fetches would require
+    // much more sophisticated waitNanos tracking.
+    List<Pair<String, byte[]>> result = new ArrayList<>();
+    for (String child : foundChildren) {
+      if (result.size() >= max) {
+        break;
+      }
+      try {
+        byte[] data = zookeeper.getData(dir + "/" + child, null, null, true);
+        result.add(new Pair<>(child, data));
+      } catch (KeeperException.NoNodeException e) {
+        // Another client deleted the node first, remove the in-memory and continue.
+        updateLock.lockInterruptibly();
+        try {
+          knownChildren.remove(child);
+        } finally {
           updateLock.unlock();
         }
       }
     }
+    return result;
   }
 
   /**
@@ -693,137 +568,96 @@ public class ZkDistributedQueue implements DistributedQueue {
    *
    * @return the data at the head of the queue.
    */
-  private byte[] firstElement(Predicate<String> acceptFilter) throws KeeperException {
-    try {
-
-      Map.Entry<String,byte[]> firstChild = firstChild(false, acceptFilter);
+  private byte[] firstElement() throws KeeperException, InterruptedException {
+    while (true) {
+      if (log.isDebugEnabled()) log.debug("calling firstElement");
+      String firstChild = firstChild(false, false);
       if (firstChild == null) {
+        if (log.isDebugEnabled()) log.debug("return null");
         return null;
       }
-      byte[] data;
-      updateLock.lockInterruptibly();
       try {
-        data = knownChildren.get(firstChild.getKey());
-        if (data != null) {
-          return data;
-        }
-      } finally {
-        if (updateLock.isHeldByCurrentThread()) {
+        if (log.isDebugEnabled()) log.debug("get data {}", dir + "/" + firstChild);
+        return zookeeper.getData(dir + "/" + firstChild, null, null, true);
+      } catch (KeeperException.NoNodeException e) {
+        if (log.isDebugEnabled()) log.debug("no node found {}, clear known children and set dirty", dir + "/" + firstChild);
+        // Another client deleted the node first, remove the in-memory and retry.
+        updateLock.lockInterruptibly();
+        try {
+          // Efficient only for single-consumer
+          knownChildren.clear();
+          isDirty = true;
+        } finally {
           updateLock.unlock();
         }
       }
-
-      try {
-        data = zookeeper.getData(dir + "/" + firstChild.getKey(), null, null, true);
-        if (data != null) {
-          updateLock.lockInterruptibly();
-          try {
-            knownChildren.put(firstChild.getKey(), data);
-          } finally {
-            if (updateLock.isHeldByCurrentThread()) {
-              updateLock.unlock();
-            }
-          }
-        }
-
-        return data;
-      } catch (KeeperException.NoNodeException e) {
-        updateLock.lockInterruptibly();
-        try {
-          knownChildren.remove(firstChild.getKey());
-        } finally {
-          if (updateLock.isHeldByCurrentThread()) {
-            updateLock.unlock();
-          }
-        }
-        return null;
-      }
-
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new AlreadyClosedException(e);
     }
   }
 
-  private byte[] removeFirst(Predicate<String> acceptFilter) throws KeeperException {
-    try {
-      Map.Entry<String,byte[]> firstChild = firstChild(true, acceptFilter);
+  private byte[] removeFirst() throws KeeperException, InterruptedException {
+    while (true) {
+      String firstChild = firstChild(true, false);
       if (firstChild == null) {
         return null;
       }
-
-      byte[] data;
-      updateLock.lockInterruptibly();
       try {
-        data = knownChildren.remove(firstChild.getKey());
-      } finally {
-        if (updateLock.isHeldByCurrentThread()) {
-          updateLock.unlock();
-        }
-      }
-
-      try {
-        String path = dir + "/" + firstChild.getKey();
-        if (data == null) {
-          data = zookeeper.getData(path, null, null, true);
-        }
+        String path = dir + "/" + firstChild;
+        byte[] result = zookeeper.getData(path, null, null, true);
         zookeeper.delete(path, -1, true);
+        stats.setQueueLength(knownChildren.size());
+        return result;
+      } catch (KeeperException.NoNodeException e) {
+        // Another client deleted the node first, remove the in-memory and retry.
         updateLock.lockInterruptibly();
         try {
-          knownChildren.remove(firstChild.getKey());
-
+          // Efficient only for single-consumer
+          knownChildren.clear();
+          isDirty = true;
         } finally {
-          if (updateLock.isHeldByCurrentThread()) {
-            updateLock.unlock();
-          }
+          updateLock.unlock();
         }
-        return data;
-      } catch (KeeperException.NoNodeException e) {
-        return null;
       }
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw new AlreadyClosedException(e);
     }
   }
 
-  @VisibleForTesting long watcherCount() throws InterruptedException {
-    return 0;
+  @VisibleForTesting int watcherCount() throws InterruptedException {
+    updateLock.lockInterruptibly();
+    try {
+      return watcherCount;
+    } finally {
+      updateLock.unlock();
+    }
+  }
+
+  @VisibleForTesting boolean isDirty() throws InterruptedException {
+    updateLock.lockInterruptibly();
+    try {
+
+      if (log.isDebugEnabled()) log.debug("isDirty {}", isDirty);
+      return isDirty;
+    } finally {
+      updateLock.unlock();
+    }
   }
 
   @VisibleForTesting class ChildWatcher implements Watcher {
 
-    private final Predicate<String> acceptFilter;
-
-    public ChildWatcher(Predicate<String> acceptFilter) {
-      this.acceptFilter = acceptFilter;
-    }
-
     @Override
     public void process(WatchedEvent event) {
+
+      if (log.isDebugEnabled()) log.debug("ChildWatcher fired {} {}", event.getType(), event.getPath());
       // session events are not change events, and do not remove the watcher; except for Expired
-      if (Event.EventType.None.equals(event.getType())) {
+      if (Event.EventType.None.equals(event.getType()) && !Event.KeeperState.Expired.equals(event.getState())) {
         return;
       }
-      if (log.isDebugEnabled()) log.debug("DistributedQueue changed {} {}", event.getPath(), event.getType());
-
-      // nocommit - all the nodes are watching this currently instead of just the Overseer
-      if (event.getType() == Event.EventType.NodeChildrenChanged) {
-        updateLock.lock();
-        try {
-          TreeMap<String,byte[]> found = fetchZkChildren(null, acceptFilter);
-          if (!found.isEmpty()) {
-            changed.signalAll();
-          } else {
-            fetchZkChildren(this, acceptFilter);
-          }
-        } catch (KeeperException | InterruptedException e) {
-          log.error("", e);
-        } finally {
-          updateLock.unlock();
-        }
-      } else {
-
+      updateLock.lock();
+      try {
+        isDirty = true;
+        watcherCount--;
+        // optimistically signal any waiters that the queue may not be empty now, so they can wake up and retry
+        changed.signalAll();
+      } finally {
+        updateLock.unlock();
       }
     }
   }

@@ -92,7 +92,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     int numShards = BaseCloudSolrClient.getShardNames(zkProps).size();
-    BaseCloudSolrClient.waitForActiveCollection(ocmh.zkStateReader, createCollName, 60, TimeUnit.SECONDS, numShards, numShards * BaseCloudSolrClient.getTotalReplicas(zkProps));
+    ocmh.zkStateReader.waitForActiveCollection(createCollName, 60, TimeUnit.SECONDS, numShards, numShards * BaseCloudSolrClient.getTotalReplicas(zkProps));
     CollectionProperties collectionProperties = new CollectionProperties(ocmh.zkStateReader);
     collectionProperties.setCollectionProperty(createCollName,ROUTED_ALIAS_NAME_CORE_PROP,aliasName);
 

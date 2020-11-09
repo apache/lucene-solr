@@ -330,7 +330,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     Replica r = cluster.getSolrClient().getZkStateReader().getClusterState()
       .getCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME).getActiveSlices().iterator().next()
       .getReplicas().iterator().next();
-    coreName = r.getCoreName();
+    coreName = r.getName();
     coreClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl());
   }
 

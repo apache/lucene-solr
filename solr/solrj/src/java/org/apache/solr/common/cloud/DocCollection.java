@@ -158,6 +158,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return new DocCollection(getName(), slices, propMap, router, znodeVersion);
   }
 
+  public DocCollection copy(){
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion);
+  }
+
+
   /**
    * Return collection name.
    */
@@ -271,10 +276,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     jsonWriter.write(all);
   }
 
-  public Replica getReplica(String coreNodeName) {
+  public Replica getReplica(String coreName) {
     for (Slice slice : slices.values()) {
-      Replica replica = slice.getReplica(coreNodeName);
+      Replica replica = slice.getReplica(coreName);
       if (replica != null) return replica;
+    }
+    return null;
+  }
+
+  public Slice getSlice(Replica replica) {
+    for (Slice slice : slices.values()) {
+      Replica r = slice.getReplica(replica.getName());
+      if (r != null) return slice;
     }
     return null;
   }
@@ -352,7 +365,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public String getShardId(String nodeName, String coreName) {
     for (Slice slice : this) {
       for (Replica replica : slice) {
-        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
+        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getName(), coreName))
           return slice.getName();
       }
     }

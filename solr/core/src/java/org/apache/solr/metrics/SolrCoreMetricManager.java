@@ -64,12 +64,8 @@ public class SolrCoreMetricManager implements Closeable {
       cloudMode = true;
       collectionName = core.getCoreDescriptor().getCollectionName();
       shardName = cd.getShardId();
-      //replicaName = cd.getCoreNodeName();
       String coreName = core.getName();
-      replicaName = Utils.parseMetricsReplicaName(collectionName, coreName);
-      if (replicaName == null) {
-        replicaName = cd.getCoreNodeName();
-      }
+      replicaName = coreName;
     }
   }
 

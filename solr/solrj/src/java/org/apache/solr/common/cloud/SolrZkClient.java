@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -60,8 +62,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -71,6 +75,7 @@ import org.apache.zookeeper.Op;
 import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
@@ -100,13 +105,10 @@ public class SolrZkClient implements Closeable {
 
   private ZkCmdExecutor zkCmdExecutor;
 
-  // TODO: this is less efficient now, only using a single thread - allowing multiple threads leaves room for out of order cluster state updates
-  // TODO: we want to allow more parralel for sure, but make sure state updates per collection are serial
-  final ExecutorService zkCallbackSerialExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 1, 0, new BlockingArrayQueue());
-
-  final ExecutorService zkCallbackExecutor = ParWork.getParExecutorService("zkCallbackExecutor", 1, 12, 0, new BlockingArrayQueue());
-
-  final ExecutorService zkConnManagerCallbackExecutor = ParWork.getParExecutorService("zkConnManagerCallbackExecutor",1, 1, 0, new BlockingArrayQueue());
+  protected final ExecutorService zkCallbackExecutor =
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
+  protected final ExecutorService zkConnManagerCallbackExecutor =
+      ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
 
@@ -162,7 +164,7 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = zkACLProvider;
     }
 
-    zkCmdExecutor = new ZkCmdExecutor(3, new IsClosed() {
+    zkCmdExecutor = new ZkCmdExecutor(this,3, new IsClosed() {
 
       @Override
       public boolean isClosed() {
@@ -272,10 +274,7 @@ public class SolrZkClient implements Closeable {
   public Watcher wrapWatcher(final Watcher watcher) {
     if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
 
-    if (watcher instanceof ZkStateReader.LiveNodeWatcher || watcher instanceof DocCollectionWatcher) {
-      return new ProcessWatchWithExecutor(watcher, zkCallbackSerialExecutor);
-    }
-    return new ProcessWatchWithExecutor(watcher, zkCallbackExecutor);
+    return new ProcessWatchWithExecutor(watcher, this);
   }
 
   public Stat exists(final String path, final Watcher watcher) throws KeeperException, InterruptedException {
@@ -361,8 +360,12 @@ public class SolrZkClient implements Closeable {
    */
   public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
-      ZooKeeper keeper = connManager.getKeeper();
+    ZooKeeper keeper = connManager.getKeeper();
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
+    } else {
       return keeper.setData(path, data, version);
+    }
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
@@ -515,9 +518,9 @@ public class SolrZkClient implements Closeable {
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
-    log.error("mkdir path={}", path);
-    log.debug("makePath: {}", path);
-
+    ZooKeeper keeper = connManager.getKeeper();
+    log.info("makePath: {}", path);
+    boolean retry = true;
     if (path.startsWith("/")) {
       path = path.substring(1, path.length());
     }
@@ -536,10 +539,11 @@ public class SolrZkClient implements Closeable {
       if (i == paths.length - 1) {
         mode = createMode;
         bytes = data;
+        if (!retryOnConnLoss) retry = false;
       }
-      ZooKeeper keeper = connManager.getKeeper();
+
       try {
-        if (retryOnConnLoss) {
+        if (retry) {
           final CreateMode finalMode = mode;
           final byte[] finalBytes = bytes;
           zkCmdExecutor.retryOperation(() -> {
@@ -728,9 +732,9 @@ public class SolrZkClient implements Closeable {
     }
   }
 
-  public Map<String,byte[]> getData(Set<String> paths) {
+  public Map<String,byte[]> getData(List<String> paths) {
 
-    Map<String,byte[]> dataMap = new ConcurrentHashMap<>(paths.size());
+    Map<String,byte[]> dataMap = Collections.synchronizedSortedMap(new TreeMap<>());
     CountDownLatch latch = new CountDownLatch(paths.size());
 
     for (String path : paths) {
@@ -763,6 +767,60 @@ public class SolrZkClient implements Closeable {
     }
 
     return dataMap;
+  }
+
+  public void delete(Collection<String> paths, boolean wait) {
+    log.info("delete paths {} wait={}", paths, wait);
+    CountDownLatch latch = null;
+    if (wait) {
+      log.info("setup countdown latch {}", paths.size());
+      latch = new CountDownLatch(paths.size());
+    }
+    for (String path : paths) {
+      log.info("process path={} connManager={}", path, connManager);
+      ZooKeeper keeper = connManager.getKeeper();
+      log.info("keeper={}", keeper);
+
+      CountDownLatch finalLatch = latch;
+      keeper.delete(path, -1, (rc, path1, ctx) -> {
+        log.info("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
+        if (rc != 0) {
+          log.error("got zk error {}", rc);
+          final KeeperException.Code keCode = KeeperException.Code.get(rc);
+
+          if (keCode == KeeperException.Code.NONODE) {
+            if (log.isDebugEnabled()) log.debug("Problem removing zk node {}", path1);
+          }
+        }
+        log.info("done with latch countdown wait={}", wait);
+        if (wait) {
+          log.info("latch countdown");
+          finalLatch.countDown();
+        }
+        log.info("after wait &&  latch countdown");
+      }, null);
+    }
+
+    log.info("done with all paths, see if wait ... wait={}", wait);
+    if (wait) {
+      boolean success;
+      try {
+        log.info("watch on countdownlatch {}", "15s");
+        success = latch.await(15, TimeUnit.SECONDS);
+        log.info("done waiting on latch, success={}", success);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+
+      if (!success) {
+        SolrException e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
+        log.error("failed, throw an exception, success={}", success, e);
+        throw e;
+      }
+    }
+    log.error("done with delete {} {}", paths, wait);
   }
 
   // Calls setData for a list of existing paths in parallel
@@ -854,43 +912,14 @@ public class SolrZkClient implements Closeable {
     return setData(path, data, retryOnConnLoss);
   }
 
-  public List<OpResult> multi(final Iterable<Op> ops) throws InterruptedException, KeeperException {
-    List<String> errors = new ArrayList<>();
-    List<OpResult> results;
-    KeeperException ex = null;
-    try {
+
+  public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
       ZooKeeper keeper = connManager.getKeeper();
-      results = keeper.multi(ops);
-    } catch (KeeperException.SessionExpiredException e) {
-      throw e;
-    } catch (KeeperException e) {
-      ex = e;
-      results = e.getResults();
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
+    } else {
+      return keeper.multi(ops);
     }
-
-    if (results == null) {
-      throw new AlreadyClosedException();
-    }
-
-    Iterator<Op> it = ops.iterator();
-    for (OpResult result : results) {
-      Op reqOp = it.next();
-      if (result instanceof OpResult.ErrorResult) {
-        OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
-        if (dresult.getErr() != 0) {
-          errors.add("path=" + reqOp.getPath() + " err=" + dresult.getErr());
-        }
-      }
-    }
-//    if (errors.size() > 0) {
-//      log.error("Errors", errors.toString());
-//      //return results;
-//    }
-
-    if (ex != null) {
-      throw ex;
-    }
-    return results;
   }
 
   /**
@@ -898,19 +927,15 @@ public class SolrZkClient implements Closeable {
    */
   public void printLayout(String path, int indent, StringBuilder string) {
 
-    byte[] data = null;
+    byte[] data;
     Stat stat = new Stat();
-    List<String> children = Collections.emptyList();
+    List<String> children;
     try {
-      data = getData(path, null, stat);
+      data = getData(path, null, stat, true);
 
       children = getChildren(path, null, true);
       Collections.sort(children);
-    } catch (InterruptedException e1) {
-      checkInterrupted(e1);
-      // continue
-    } catch (KeeperException e1) {
-      checkInterrupted(e1);
+    } catch (KeeperException | InterruptedException e1) {
       if (e1 instanceof KeeperException.NoNodeException) {
         // things change ...
         return;
@@ -924,8 +949,14 @@ public class SolrZkClient implements Closeable {
     string.append(dent).append(path).append(" (c=").append(children.size()).append(",v=" + (stat == null ? "?" : stat.getVersion()) + ")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
-      if (!path.endsWith(".txt") && !path.endsWith(".xml")) {
-        string.append(dent).append("DATA:\n").append(dent).append("    ").append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
+      if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && dataString.split("\\r\\n|\\r|\\n").length < 6) || path.endsWith("state.json")) {
+        if (path.endsWith(".xml")) {
+          // this is the cluster state in xml format - lets pretty print
+          dataString = prettyPrint(path, dataString);
+        }
+
+        string.append(dent).append("DATA (" + (stat != null ? stat.getDataLength() : "?") + "b) :\n").append(dent).append("    ")
+            .append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
       } else {
         string.append(dent).append("DATA (" + (stat != null ? stat.getDataLength() : "?") + "b) : ...supressed...").append(NEWL);
       }
@@ -934,7 +965,7 @@ public class SolrZkClient implements Closeable {
     for (String child : children) {
       if (!child.equals("quota")) {
         printLayout(path + (path.equals("/") ? "" : "/") + child, indent,
-                string);
+            string);
       }
     }
   }
@@ -957,7 +988,7 @@ public class SolrZkClient implements Closeable {
     try {
       Files.writeString(file, sb.toString(), StandardOpenOption.CREATE);
     } catch (IOException e) {
-      throw new RuntimeIOException(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
@@ -970,16 +1001,11 @@ public class SolrZkClient implements Closeable {
           return writer.toString();
         }
       } finally {
-        IOUtils.closeQuietly(((StreamSource) xmlInput).getInputStream());
+        ParWork.close(((StreamSource) xmlInput).getInputStream());
       }
     } catch (Exception e) {
       log.error("prettyPrint(path={}, dataString={})", dataString, indent, e);
-
-      if (e instanceof  InterruptedException) {
-        ParWork.propagateInterrupt(e);
-        throw new RuntimeException(e);
-      }
-
+      ParWork.propagateInterrupt(e);
       return "XML Parsing Failure";
     }
   }
@@ -988,7 +1014,6 @@ public class SolrZkClient implements Closeable {
     String returnString = prettyPrint(path, input, 2);
     return returnString;
   }
-
   public void close() {
     log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
 
@@ -1047,7 +1072,7 @@ public class SolrZkClient implements Closeable {
     try {
       Stat stat = new Stat();
       ZooKeeper keeper = connManager.getKeeper();
-     // keeper.sync(ZooDefs.CONFIG_NODE, null, null);
+     keeper.sync(ZooDefs.CONFIG_NODE, null, null);
       byte[] data = keeper.getConfig(false, stat);
       if (data == null || data.length == 0) {
         return "";
@@ -1166,25 +1191,33 @@ public class SolrZkClient implements Closeable {
    */
   private final static class ProcessWatchWithExecutor implements Watcher { // see below for why final.
     private final Watcher watcher;
-    private final ExecutorService executorService;
+    SolrZkClient solrZkClient;
 
-    ProcessWatchWithExecutor(Watcher watcher, ExecutorService executorService) {
+    ProcessWatchWithExecutor(Watcher watcher, SolrZkClient solrZkClient) {
+      this.solrZkClient = solrZkClient;
       if (watcher == null) {
         throw new IllegalArgumentException("Watcher must not be null");
       }
-      this.executorService = executorService;
       this.watcher = watcher;
     }
 
     @Override
     public void process(final WatchedEvent event) {
-      if (event.getType() == Event.EventType.None) return;
-      if (log.isDebugEnabled()) log.debug("Submitting job to respond to event {}", event);
       try {
-        executorService.submit(() -> watcher.process(event));
+
+
+        if (watcher instanceof ConnectionManager) {
+          solrZkClient.zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+        } else {
+          solrZkClient.zkCallbackExecutor.submit(() -> watcher.process(event));
+        }
       } catch (RejectedExecutionException e) {
-        log.info("Rejected from executor", e);
+        if (log.isDebugEnabled()) log.debug("Will not process zookeeper update after close");
       }
+        // If not a graceful shutdown
+//        if (!isClosed()) {
+//          throw e;
+//        }
     }
 
     // These overrides of hashcode/equals ensure that we don't store the same exact watch

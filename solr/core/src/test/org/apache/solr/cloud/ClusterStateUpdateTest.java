@@ -80,18 +80,18 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
       DocCollection docCollection = clusterState2.getCollectionOrNull("testcore");
       slices = docCollection == null ? null : docCollection.getSlicesMap();
       
-      if (slices != null && slices.containsKey("shard1")
-          && slices.get("shard1").getReplicasMap().size() > 0) {
+      if (slices != null && slices.containsKey("s1")
+          && slices.get("s1").getReplicasMap().size() > 0) {
         break;
       }
       Thread.sleep(500);
     }
 
     assertNotNull(slices);
-    assertTrue(slices.containsKey("shard1"));
+    assertTrue(slices.containsKey("s1"));
 
-    Slice slice = slices.get("shard1");
-    assertEquals("shard1", slice.getName());
+    Slice slice = slices.get("s1");
+    assertEquals("s1", slice.getName());
 
     Map<String,Replica> shards = slice.getReplicasMap();
 

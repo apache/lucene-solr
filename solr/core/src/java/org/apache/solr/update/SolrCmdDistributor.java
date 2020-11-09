@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +35,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -390,28 +389,28 @@ public class SolrCmdDistributor implements Closeable {
     public abstract boolean checkRetry();
     public abstract String getCoreName();
     public abstract String getBaseUrl();
-    public abstract ZkCoreNodeProps getNodeProps();
+    public abstract Replica getNodeProps();
     public abstract String getCollection();
     public abstract String getShardId();
     public abstract int getMaxRetries();
   }
 
   public static class StdNode extends Node {
-    protected ZkCoreNodeProps nodeProps;
+    protected Replica nodeProps;
     protected String collection;
     protected String shardId;
     private final boolean retry;
     private final int maxRetries;
 
-    public StdNode(ZkCoreNodeProps nodeProps) {
+    public StdNode(Replica nodeProps) {
       this(nodeProps, null, null, 0);
     }
     
-    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {
+    public StdNode(Replica nodeProps, String collection, String shardId) {
       this(nodeProps, collection, shardId, 0);
     }
     
-    public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId, int maxRetries) {
+    public StdNode(Replica nodeProps, String collection, String shardId, int maxRetries) {
       this.nodeProps = nodeProps;
       this.collection = collection;
       this.shardId = shardId;
@@ -449,7 +448,7 @@ public class SolrCmdDistributor implements Closeable {
 
     @Override
     public String getCoreName() {
-      return nodeProps.getCoreName();
+      return nodeProps.getName();
     }
 
     @Override
@@ -457,7 +456,7 @@ public class SolrCmdDistributor implements Closeable {
       final int prime = 31;
       int result = 1;
       String baseUrl = nodeProps.getBaseUrl();
-      String coreName = nodeProps.getCoreName();
+      String coreName = nodeProps.getName();
       String url = nodeProps.getCoreUrl();
       result = prime * result + ((baseUrl == null) ? 0 : baseUrl.hashCode());
       result = prime * result + ((coreName == null) ? 0 : coreName.hashCode());
@@ -476,14 +475,14 @@ public class SolrCmdDistributor implements Closeable {
       if (this.retry != other.retry) return false;
       if (this.maxRetries != other.maxRetries) return false;
       String baseUrl = nodeProps.getBaseUrl();
-      String coreName = nodeProps.getCoreName();
+      String coreName = nodeProps.getName();
       String url = nodeProps.getCoreUrl();
       if (baseUrl == null) {
         if (other.nodeProps.getBaseUrl() != null) return false;
       } else if (!baseUrl.equals(other.nodeProps.getBaseUrl())) return false;
       if (coreName == null) {
-        if (other.nodeProps.getCoreName() != null) return false;
-      } else if (!coreName.equals(other.nodeProps.getCoreName())) return false;
+        if (other.nodeProps.getName() != null) return false;
+      } else if (!coreName.equals(other.nodeProps.getName())) return false;
       if (url == null) {
         if (other.nodeProps.getCoreUrl() != null) return false;
       } else if (!url.equals(other.nodeProps.getCoreUrl())) return false;
@@ -491,7 +490,7 @@ public class SolrCmdDistributor implements Closeable {
     }
 
     @Override
-    public ZkCoreNodeProps getNodeProps() {
+    public Replica getNodeProps() {
       return nodeProps;
     }
 
@@ -507,7 +506,7 @@ public class SolrCmdDistributor implements Closeable {
     
     private ZkStateReader zkStateReader;
     
-    public ForwardNode(ZkCoreNodeProps nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
+    public ForwardNode(Replica nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
       super(nodeProps, collection, shardId);
       this.zkStateReader = zkStateReader;
       this.collection = collection;
@@ -516,10 +515,10 @@ public class SolrCmdDistributor implements Closeable {
 
     @Override
     public boolean checkRetry() {
-      ZkCoreNodeProps leaderProps;
+      Replica leaderProps;
       try {
-        leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
-            collection, shardId));
+        leaderProps = zkStateReader.getLeaderRetry(
+            collection, shardId);
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
         return false;

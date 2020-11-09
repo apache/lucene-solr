@@ -199,7 +199,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
   public boolean isSnapshotExists(String shardId, Replica r) {
     for (CoreSnapshotMetaData d : replicaSnapshots) {
-      if (d.getShardId().equals(shardId) && d.getCoreName().equals(r.getCoreName())) {
+      if (d.getShardId().equals(shardId) && d.getCoreName().equals(r.getName())) {
         return true;
       }
     }

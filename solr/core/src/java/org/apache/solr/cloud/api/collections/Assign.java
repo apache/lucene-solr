@@ -57,14 +57,6 @@ public class Assign {
 
   private static AtomicInteger REPLICA_CNT = new AtomicInteger(0);
 
-  public static String assignCoreNodeName(DistribStateManager stateManager, DocCollection collection) {
-    // for backward compatibility;
-    int defaultValue = defaultCounterValue(collection, "");
-    String coreNodeName = "core_node" + defaultValue;
-
-    return coreNodeName;
-  }
-
   /**
    * Assign a new unique id up to slices count - then add replicas evenly.
    *
@@ -81,13 +73,13 @@ public class Assign {
     // TODO: now that we create shards ahead of time, is this code needed?  Esp since hash ranges aren't assigned when creating via this method?
 
     if (sliceMap == null) {
-      return "shard1";
+      return "s";
     }
 
     List<String> shardIdNames = new ArrayList<>(sliceMap.keySet());
 
     if (shardIdNames.size() < numShards) {
-      return "shard" + (shardIdNames.size() + 1);
+      return "s" + (shardIdNames.size() + 1);
     }
 
     // TODO: don't need to sort to find shard with fewest replicas!
@@ -109,42 +101,33 @@ public class Assign {
     return returnShardId;
   }
 
-  public static String buildSolrCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
+  private static String buildSolrCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
-    return String.format(Locale.ROOT, "%s_%s_replica_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
+    return String.format(Locale.ROOT, "%s_%s_r_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
   }
 
-  public static int defaultCounterValue(DocCollection collection, String shard) {
-    int defaultValue;
-    if (collection.getSlice(shard) != null && collection.getSlice(shard).getReplicas().isEmpty()) {
-      return REPLICA_CNT.incrementAndGet();
-    } else {
-      defaultValue = collection.getReplicas().size() + REPLICA_CNT.incrementAndGet() * 2;
+  public static int defaultCounterValue(DocCollection coll, String shard) {
+
+    if (coll == null) {
+      throw new NullPointerException("DocCollection cannot be null");
     }
 
-    return defaultValue;
+    if (coll.getSlice(shard) == null) {
+      return 1;
+    }
+
+    if (coll.getSlice(shard).getReplicas() == null) {
+      return 1;
+    }
+
+    return coll.getSlice(shard).getReplicas().size() + 1;
   }
 
-  public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type, boolean newCollection) {
-
-    int defaultValue = defaultCounterValue(collection, shard);
-    String coreName = buildSolrCoreName(collection.getName(), shard, type, defaultValue);
+  public static String buildSolrCoreName(DocCollection coll, String collectionName, String shard, Replica.Type type) {
+    int defaultValue = defaultCounterValue(coll, shard);
+    String coreName = buildSolrCoreName(collectionName, shard, type, defaultValue);
 
     return coreName;
-  }
-
-  public static String buildSolrCoreName(DistribStateManager stateManager, DocCollection collection, String shard, Replica.Type type) {
-    return buildSolrCoreName(stateManager, collection, shard, type, false);
-  }
-
-  private static boolean existCoreName(String coreName, Slice slice) {
-    if (slice == null) return false;
-    for (Replica replica : slice.getReplicas()) {
-      if (coreName.equals(replica.getStr(CORE_NAME_PROP))) {
-        return true;
-      }
-    }
-    return false;
   }
 
   public static List<String> getLiveOrLiveAndCreateNodeSetList(final Collection<String> liveNodes, final ZkNodeProps message, final Random random) {
@@ -188,13 +171,13 @@ public class Assign {
   // Gets a list of candidate nodes to put the required replica(s) on. Throws errors if not enough replicas
   // could be created on live nodes given maxShardsPerNode, Replication factor (if from createShard) etc.
   @SuppressWarnings({"unchecked"})
-  public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
+  public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, DocCollection collection,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
                                                           Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
-    DocCollection coll = clusterState.getCollection(collectionName);
-    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
+
+    //int maxShardsPerNode = collection.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : collection.getMaxShardsPerNode();
     List<String> createNodeList = null;
 
     if (createNodeSet instanceof List) {
@@ -203,23 +186,9 @@ public class Assign {
       // deduplicate
       createNodeList = createNodeSet == null ? null : new ArrayList<>(new LinkedHashSet<>(StrUtils.splitSmart((String) createNodeSet, ",", true)));
     }
+    String collectionName = collection.getName();
+    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, cloudManager.getClusterStateProvider().getClusterState().getLiveNodes(), createNodeList);
 
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, createNodeList);
-
-    if (createNodeList == null) { // We only care if we haven't been told to put new replicas on specific nodes.
-      long availableSlots = 0;
-      for (Map.Entry<String, ReplicaCount> ent : nodeNameVsShardCount.entrySet()) {
-        //ADDREPLICA can put more than maxShardsPerNode on an instance, so this test is necessary.
-        if (maxShardsPerNode > ent.getValue().thisCollectionNodes) {
-          availableSlots += (maxShardsPerNode - ent.getValue().thisCollectionNodes);
-        }
-      }
-      if (availableSlots < nrtReplicas + tlogReplicas + pullReplicas) {
-        throw new AssignmentException(
-            String.format(Locale.ROOT, "Cannot create %d new replicas for collection %s given the current number of eligible live nodes %d and a maxShardsPerNode of %d",
-                nrtReplicas, collectionName, nodeNameVsShardCount.size(), maxShardsPerNode));
-      }
-    }
 
     AssignRequest assignRequest = new AssignRequestBuilder()
         .forCollection(collectionName)
@@ -230,16 +199,15 @@ public class Assign {
         .onNodes(createNodeList)
         .build();
     AssignStrategyFactory assignStrategyFactory = new AssignStrategyFactory(cloudManager);
-    AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, coll);
+    AssignStrategy assignStrategy = assignStrategyFactory.create();
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
-  static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName,
-                                                                       ClusterState clusterState, List<String> createNodeList) {
-    Set<String> nodes = clusterState.getLiveNodes();
+  static HashMap<String, ReplicaCount> getNodeNameVsShardCount(String collectionName, ClusterState clusterState,
+                                                                       Set<String> liveNodes, List<String> createNodeList) {
 
-    List<String> nodeList = new ArrayList<>(nodes.size());
-    nodeList.addAll(nodes);
+    List<String> nodeList = new ArrayList<>(liveNodes.size());
+    nodeList.addAll(liveNodes);
     if (createNodeList != null) nodeList.retainAll(createNodeList);
 
     HashMap<String, ReplicaCount> nodeNameVsShardCount = new HashMap<>(nodeList.size());
@@ -255,8 +223,6 @@ public class Assign {
       return nodeNameVsShardCount;
     }
 
-    DocCollection coll = clusterState.getCollection(collectionName);
-    int maxShardsPerNode = coll.getMaxShardsPerNode() == -1 ? Integer.MAX_VALUE : coll.getMaxShardsPerNode();
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       if (entry.getValue() == null) continue;
@@ -379,7 +345,8 @@ public class Assign {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
       List<String> nodeList = assignRequest.nodes;
 
-      HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = Assign.getNodeNameVsShardCount(assignRequest.collectionName, clusterState, assignRequest.nodes);
+      HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount = Assign.getNodeNameVsShardCount(assignRequest.collectionName,
+          clusterState, solrCloudManager.getClusterStateProvider().getLiveNodes(),assignRequest.nodes);
       if (nodeList == null || nodeList.isEmpty()) {
         ArrayList<Assign.ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
         sortedNodeList.sort(Comparator.comparingInt(Assign.ReplicaCount::weight));
@@ -409,7 +376,7 @@ public class Assign {
       this.solrCloudManager = solrCloudManager;
     }
 
-    public AssignStrategy create(ClusterState clusterState, DocCollection collection) throws IOException, InterruptedException {
+    public AssignStrategy create() throws IOException, InterruptedException {
 
       return new LegacyAssignStrategy();
 

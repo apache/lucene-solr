@@ -26,17 +26,17 @@ import org.apache.solr.common.util.Pair;
  * Distributed queue component. Methods largely follow those in {@link java.util.Queue}.
  */
 public interface DistributedQueue {
-  byte[] peek(Predicate<String> acceptFilter) throws Exception;
+  byte[] peek() throws Exception;
 
-  byte[] peek(Predicate<String> acceptFilter, boolean block) throws Exception;
+  byte[] peek(boolean block) throws Exception;
 
-  byte[] peek(Predicate<String> acceptFilter, long wait) throws Exception;
+  byte[] peek(long wait) throws Exception;
 
-  byte[] poll(Predicate<String> acceptFilter) throws Exception;
+  byte[] poll() throws Exception;
 
-  byte[] remove(Predicate<String> acceptFilter) throws Exception;
+  byte[] remove() throws Exception;
 
-  byte[] take(Predicate<String> acceptFilter) throws Exception;
+  byte[] take() throws Exception;
 
   void offer(byte[] data) throws Exception;
 

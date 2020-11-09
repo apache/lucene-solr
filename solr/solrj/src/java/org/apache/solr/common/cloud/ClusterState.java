@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +28,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
@@ -96,6 +100,11 @@ public class ClusterState implements JSONWriter.Writable {
     return result;
   }
 
+  public ClusterState copy() {
+    ClusterState result = new ClusterState(liveNodes, new LinkedHashMap<>(collectionStates), znodeVersion);
+    return result;
+  }
+
   /**
    * Returns the zNode version that was used to construct this instance.
    */
@@ -119,7 +128,7 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public DocCollection getCollection(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
-    if (coll == null) throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection : " + collection);
+    if (coll == null) throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection : " + collection + " collections=" + collectionStates.keySet());
     return coll;
   }
 
@@ -372,6 +381,7 @@ public class ClusterState implements JSONWriter.Writable {
     });
 
   }
+
   public static class CollectionRef {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
@@ -413,4 +423,48 @@ public class ClusterState implements JSONWriter.Writable {
 
   }
 
+  public static void main(String[] args) throws UnsupportedEncodingException {
+
+
+    LZ4Factory factory = LZ4Factory.fastestInstance();
+
+
+    byte[] data =  json.getBytes("UTF-8");
+    final int decompressedLength = data.length;
+    // compress data
+    LZ4Compressor compressor = factory.fastCompressor();
+
+    int maxCompressedLength = compressor.maxCompressedLength(decompressedLength);
+    byte[] compressed = new byte[maxCompressedLength];
+    int compressedLength = compressor.compress(data, 0, decompressedLength, compressed, 0, maxCompressedLength);
+    System.out.println("decompressed length: "+ data.length);
+    System.out.println("compressed length: "+ compressedLength);
+
+    // decompress data
+    // - method 1: when the decompressed length is known
+    LZ4FastDecompressor decompressor = factory.fastDecompressor();
+    byte[] restored = new byte[decompressedLength];
+    int compressedLength2 = decompressor.decompress(compressed, 0, restored, 0, decompressedLength);
+    // compressedLength == compressedLength2
+
+    System.out.println("restored: "+ new String(restored));
+  }
+
+  private static String json =
+      "{\"MoveReplicaTest_coll_true\":{\n" + "           \"pullReplicas\":\"0\",\n" + "           \"replicationFactor\":\"2\",\n" + "           \"shards\":{\n" + "             \"shard2\":{\n"
+          + "               \"range\":\"0-7fffffff\",\n" + "               \"state\":\"active\",\n" + "               \"replicas\":{\n" + "                 \"core_node95\":{\n"
+          + "                   \"core\":\"MoveReplicaTest_coll_true_shard2_replica_n41\",\n" + "                   \"base_url\":\"http://127.0.0.1:33599/solr\",\n"
+          + "                   \"node_name\":\"127.0.0.1:33599_solr\",\n" + "                   \"state\":\"active\",\n" + "                   \"type\":\"NRT\",\n"
+          + "                   \"force_set_state\":\"false\"},\n" + "                 \"core_node89\":{\n" + "                   \"core\":\"MoveReplicaTest_coll_true_shard2_replica_n43\",\n"
+          + "                   \"base_url\":\"http://127.0.0.1:36945/solr\",\n" + "                   \"node_name\":\"127.0.0.1:36945_solr\",\n" + "                   \"state\":\"active\",\n"
+          + "                   \"type\":\"NRT\",\n" + "                   \"force_set_state\":\"false\",\n" + "                   \"leader\":\"true\",\n"
+          + "                   \"core_node_name\":\"core_node89\"}}},\n" + "             \"shard1\":{\n" + "               \"range\":\"80000000-ffffffff\",\n"
+          + "               \"state\":\"active\",\n" + "               \"replicas\":{\n" + "                 \"core_node100\":{\n"
+          + "                   \"core\":\"MoveReplicaTest_coll_true_shard1_replica_n98\",\n" + "                   \"base_url\":\"http://127.0.0.1:33599/solr\",\n"
+          + "                   \"node_name\":\"127.0.0.1:33599_solr\",\n" + "                   \"state\":\"active\",\n" + "                   \"type\":\"NRT\",\n"
+          + "                   \"force_set_state\":\"false\"},\n" + "                 \"core_node42\":{\n" + "                   \"core\":\"MoveReplicaTest_coll_true_shard1_replica_n39\",\n"
+          + "                   \"base_url\":\"http://127.0.0.1:44477/solr\",\n" + "                   \"node_name\":\"127.0.0.1:44477_solr\",\n" + "                   \"state\":\"active\",\n"
+          + "                   \"type\":\"NRT\",\n" + "                   \"force_set_state\":\"false\",\n" + "                   \"leader\":\"true\",\n"
+          + "                   \"core_node_name\":\"core_node42\"}}}},\n" + "           \"router\":{\"name\":\"compositeId\"},\n" + "           \"maxShardsPerNode\":\"100\",\n"
+          + "           \"nrtReplicas\":\"2\",\n" + "           \"tlogReplicas\":\"0\"}}";
 }

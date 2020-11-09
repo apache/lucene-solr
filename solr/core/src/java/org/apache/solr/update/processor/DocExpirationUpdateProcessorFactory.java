@@ -489,9 +489,9 @@ public final class DocExpirationUpdateProcessorFactory
       return false;
     }
     String leaderInCharge = firstSliceLeader.getName();
-    String myCoreNodeName = desc.getCoreNodeName();
+    String myCoreName = core.getCoreDescriptor().getName();
     
-    boolean inChargeOfDeletesRightNow = leaderInCharge.equals(myCoreNodeName);
+    boolean inChargeOfDeletesRightNow = leaderInCharge.equals(myCoreName);
 
     if (previouslyInChargeOfDeletes && ! inChargeOfDeletesRightNow) {
       // don't spam the logs constantly, just log when we know that we're not the guy

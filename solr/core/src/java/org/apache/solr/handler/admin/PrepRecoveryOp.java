@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,66 +47,39 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
   public void execute(CallInfo it) throws Exception {
-    assert TestInjection.injectPrepRecoveryOpPauseForever();
 
     final SolrParams params = it.req.getParams();
 
-    String cname = params.get(CoreAdminParams.CORE, "");
+    String cname = params.get(CoreAdminParams.CORE, null);
 
+    String collection = params.get("collection");
+
+    if (collection == null) {
+      throw new IllegalArgumentException("collection cannot be null");
+    }
+
+    String shardId = params.get("shardId");
     String nodeName = params.get("nodeName");
-    String coreNodeName = params.get("coreNodeName");
     Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
     Boolean checkLive = params.getBool("checkLive");
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
 
+    log.info(
+        "Going to wait for core: {}, state: {}, checkLive: {}, onlyIfLeader: {}: params={}",
+        cname, waitForState, checkLive, onlyIfLeader, params);
+
+    assert TestInjection.injectPrepRecoveryOpPauseForever();
+
     CoreContainer coreContainer = it.handler.coreContainer;
     // wait long enough for the leader conflict to work itself out plus a little extra
     int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
-    log.info(
-        "Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}: {}",
-        coreNodeName, waitForState, checkLive, onlyIfLeader);
 
-    String collectionName;
-    CloudDescriptor cloudDescriptor;
-    try (SolrCore core = coreContainer.getCore(cname)) {
-      if (core == null) {
-        if (coreContainer.isCoreLoading(cname)) {
-          coreContainer.waitForLoadingCore(cname, 30000);
-          try (SolrCore core2 = coreContainer.getCore(cname)) {
-            collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-            cloudDescriptor = core2.getCoreDescriptor()
-                    .getCloudDescriptor();
-          }
-        } else {
-          coreContainer.waitForLoadingCore(cname, 30000);
-          try (SolrCore core2 = coreContainer.getCore(cname)) {
-            if (core2 == null) {
-              Thread.sleep(2000); // nocommit - wait better
-              try (SolrCore core3 = coreContainer.getCore(cname)) {
-                if (core3 == null) {
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
-                }
-                collectionName = core3.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-                cloudDescriptor = core3.getCoreDescriptor()
-                    .getCloudDescriptor();
-              }
-            } else {
-              collectionName = core2.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-              cloudDescriptor = core2.getCoreDescriptor().getCloudDescriptor();
-            }
-          }
-        }
-      } else {
-        collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-        cloudDescriptor = core.getCoreDescriptor()
-                .getCloudDescriptor();
-      }
-    }
+
     AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collectionName, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
         if (c == null) {
-          log.info("collection not found {}",collectionName);
+          log.info("collection not found {}", collection);
           return false;
         }
 
@@ -113,33 +87,30 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         // to accept updates
         Replica.State state = null;
         boolean live = false;
-        Slice slice = c.getSlice(cloudDescriptor.getShardId());
-        if (slice != null) {
-          final Replica replica = slice.getReplicasMap().get(coreNodeName);
+        final Replica replica = c.getReplica(cname);
+        if (replica != null) {
           if (replica != null) {
             state = replica.getState();
             live = n.contains(nodeName);
 
-            final Replica.State localState = cloudDescriptor.getLastPublished();
-
-            ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
+            ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, c.getSlice(replica).getName());
             // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName)
-                && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
-              // The replica changed it term, then published itself as RECOVERING.
+            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname)
+                && shardTerms.skipSendingUpdatesTo(cname)) {
+              // The replica changed its term, then published itself as RECOVERING.
               // This core already see replica as RECOVERING
               // so it is guarantees that a live-fetch will be enough for this core to see max term published
+              log.info("refresh shard terms for core {}", cname);
               shardTerms.refreshTerms();
             }
 
             if (log.isInfoEnabled()) {
               log.info(
-                  "In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
+                  "In WaitForState(" + waitForState + "): collection=" + collection +
                       ", thisCore=" + cname +
-                      ", isLeader? " + cloudDescriptor.isLeader() +
                       ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
-                      + ", localState=" + localState + ", nodeName=" + nodeName +
-                      ", coreNodeName=" + coreNodeName
+                      + ", nodeName=" + nodeName +
+                      ", core=" + cname
                       + ", nodeProps: " + replica); //LOGOK
             }
 
@@ -159,26 +130,9 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
           }
         }
 
-        if (coreContainer.isShutDown()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Solr is shutting down");
-        }
-
         return false;
       });
 
-      try (SolrCore core = coreContainer.getCore(cname)) {
-        if (core == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core not found:" + cname);
-        if (onlyIfLeader != null && onlyIfLeader) {
-          if (!core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
-            if (coreContainer.isShutDown()) {
-              return;
-            }
-
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "We are not the leader");
-          }
-        }
-      }
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       String error = errorMessage.get();

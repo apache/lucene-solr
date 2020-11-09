@@ -154,7 +154,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   @Override
   public List<OpResult> multi(Iterable<Op> ops) throws BadVersionException, AlreadyExistsException, NoSuchElementException, IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.multi(ops);
+      return zkClient.multi(ops, false);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(ops.toString());
     } catch (KeeperException.NodeExistsException e) {

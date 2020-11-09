@@ -24,15 +24,17 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
+public class TestShortCircuitedRequests extends SolrCloudBridgeTestCase {
 
   public TestShortCircuitedRequests() {
     schemaString = "schema15.xml";      // we need a string id
+    solrconfigString = "solrconfig.xml";      // we need a string id
+    uploadSelectCollection1Config = true;
+    numJettys = 4;
     super.sliceCount = 4;
   }
 
   @Test
-  @ShardsFixed(num = 4)
   public void test() throws Exception {
     index("id", "a!doc1");  // shard3
     index("id", "b!doc1");  // shard1
@@ -43,13 +45,14 @@ public class TestShortCircuitedRequests extends AbstractFullDistribZkTestBase {
     doQuery("a!doc1", "q", "*:*", ShardParams._ROUTE_, "a!"); // can go to any random node
 
     // query shard3 directly with _route_=a! so that we trigger the short circuited request path
-    Replica shard3 = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("shard3");
+    Replica shard3 = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("s3");
     String nodeName = shard3.getNodeName();
-    SolrClient shard3Client = getClient(nodeName);
-    QueryResponse response = shard3Client.query(new SolrQuery("*:*").add(ShardParams._ROUTE_, "a!").add(ShardParams.SHARDS_INFO, "true"));
+    try (SolrClient shard3Client = getClientByNode(DEFAULT_COLLECTION, nodeName)) {
+      QueryResponse response = shard3Client.query(new SolrQuery("*:*").add(ShardParams._ROUTE_, "a!").add(ShardParams.SHARDS_INFO, "true"));
 
-    assertEquals("Could not find doc", 1, response.getResults().getNumFound());
-    NamedList<?> sinfo = (NamedList<?>) response.getResponse().get(ShardParams.SHARDS_INFO);
-    assertNotNull("missing shard info for short circuited request", sinfo);
+      assertEquals("Could not find doc", 1, response.getResults().getNumFound());
+      NamedList<?> sinfo = (NamedList<?>) response.getResponse().get(ShardParams.SHARDS_INFO);
+      assertNotNull("missing shard info for short circuited request", sinfo);
+    }
   }
 }

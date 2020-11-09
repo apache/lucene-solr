@@ -20,9 +20,11 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -64,19 +66,14 @@ public class SyncStrategy implements Closeable {
     public String baseUrl;
   }
   
-  public PeerSync.PeerSyncResult sync(ZkController zkController, SolrCore core, ZkNodeProps leaderProps) {
+  public PeerSync.PeerSyncResult sync(ZkController zkController, SolrCore core, Replica leaderProps) {
     return sync(zkController, core, leaderProps, false);
   }
   
-  public PeerSync.PeerSyncResult sync(ZkController zkController, SolrCore core, ZkNodeProps leaderProps,
+  public PeerSync.PeerSyncResult sync(ZkController zkController, SolrCore core, Replica leaderProps,
       boolean peerSyncOnlyWithActive) {
     if (SKIP_AUTO_RECOVERY) {
       return PeerSync.PeerSyncResult.success();
-    }
-
-    if (isClosed()) {
-      log.warn("Closed, skipping sync up.");
-      return PeerSync.PeerSyncResult.failure();
     }
 
     if (log.isInfoEnabled()) {
@@ -91,16 +88,9 @@ public class SyncStrategy implements Closeable {
     return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
   }
 
-  private boolean isClosed() {
-    return isClosed || (zkController != null && zkController.getCoreContainer().isShutDown());
-  }
-
   private PeerSync.PeerSyncResult syncReplicas(ZkController zkController, SolrCore core,
-      ZkNodeProps leaderProps, boolean peerSyncOnlyWithActive) {
-    if (isClosed()) {
-      log.info("We have been closed, won't sync with replicas");
-      return PeerSync.PeerSyncResult.failure();
-    }
+      Replica leaderProps, boolean peerSyncOnlyWithActive) {
+
     boolean success = false;
     PeerSync.PeerSyncResult result = null;
     assert core != null;
@@ -119,10 +109,6 @@ public class SyncStrategy implements Closeable {
       SolrException.log(log, "Sync Failed", e);
     }
     try {
-      if (isClosed()) {
-        log.info("We have been closed, won't attempt to sync replicas back to leader");
-        return PeerSync.PeerSyncResult.failure();
-      }
       
       if (success) {
         log.info("Sync Success - now sync replicas to me");
@@ -144,13 +130,9 @@ public class SyncStrategy implements Closeable {
   
   private PeerSync.PeerSyncResult syncWithReplicas(ZkController zkController, SolrCore core,
       ZkNodeProps props, String collection, String shardId, boolean peerSyncOnlyWithActive) throws Exception {
-    List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
-        .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
-    
-    if (isClosed()) {
-      log.info("We have been closed, won't sync with replicas");
-      return PeerSync.PeerSyncResult.failure();
-    }
+
+    List<Replica> nodes = zkController.getZkStateReader()
+        .getReplicaProps(collection, shardId,core.getCoreDescriptor().getName());
     
     if (nodes == null) {
       // I have no replicas
@@ -158,7 +140,7 @@ public class SyncStrategy implements Closeable {
     }
     
     List<String> syncWith = new ArrayList<>(nodes.size());
-    for (ZkCoreNodeProps node : nodes) {
+    for (Replica node : nodes) {
       syncWith.add(node.getCoreUrl());
     }
     
@@ -174,20 +156,15 @@ public class SyncStrategy implements Closeable {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-                        String shardId, ZkNodeProps leaderProps, CoreDescriptor cd,
+                        String shardId, Replica leaderProps, CoreDescriptor cd,
                         int nUpdates) {
-    
-    if (isClosed()) {
-      log.info("We have been closed, won't sync replicas to me.");
-      return;
-    }
-    
+
     // sync everyone else
     // TODO: we should do this in parallel at least
-    List<ZkCoreNodeProps> nodes = zkController
+    List<Replica> nodes = zkController
         .getZkStateReader()
         .getReplicaProps(collection, shardId,
-            cd.getCloudDescriptor().getCoreNodeName());
+            cd.getName());
     if (nodes == null) {
       if (log.isInfoEnabled()) {
         log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));
@@ -195,14 +172,14 @@ public class SyncStrategy implements Closeable {
       return;
     }
 
-    ZkCoreNodeProps zkLeader = new ZkCoreNodeProps(leaderProps);
-    for (ZkCoreNodeProps node : nodes) {
+
+    for (Replica node : nodes) {
       try {
         if (log.isInfoEnabled()) {
           log.info("{}: try and ask {} to sync", ZkCoreNodeProps.getCoreUrl(leaderProps), node.getCoreUrl());
         }
         
-        requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName(), nUpdates);
+        requestSync(node.getBaseUrl(), node.getCoreUrl(), leaderProps.getCoreUrl(), node.getName(), nUpdates);
         
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
@@ -210,23 +187,23 @@ public class SyncStrategy implements Closeable {
       }
     }
     
-    
-    for(;;) {
-      ShardResponse srsp = shardHandler.takeCompletedOrError();
-      if (srsp == null) break;
-      boolean success = handleResponse(srsp);
-      if (srsp.getException() != null) {
-        SolrException.log(log, "Sync request error: " + srsp.getException());
-      }
-      
-      if (!success) {
-        if (log.isInfoEnabled()) {
-          log.info("{}: Sync failed - replica ({}) should try to recover."
-              , ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+    if (nodes.size() > 0) {
+      for (; ; ) {
+        ShardResponse srsp = shardHandler.takeCompletedOrError();
+        if (srsp == null) break;
+        boolean success = handleResponse(srsp);
+        if (srsp.getException() != null) {
+          SolrException.log(log, "Sync request error: " + srsp.getException());
         }
-      } else {
-        if (log.isInfoEnabled()) {
-          log.info("{}: sync completed with {}", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+
+        if (!success) {
+          if (log.isInfoEnabled()) {
+            log.info("{}: Sync failed - replica ({}) should try to recover.", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+          }
+        } else {
+          if (log.isInfoEnabled()) {
+            log.info("{}: sync completed with {}", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+          }
         }
       }
     }

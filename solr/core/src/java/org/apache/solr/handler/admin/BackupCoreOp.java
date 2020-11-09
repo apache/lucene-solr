@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.Optional;
 
@@ -27,13 +28,20 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.SnapShooter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+
+    log.info("BackupCore params={}", it.req.getParams());
+
     final SolrParams params = it.req.getParams();
 
     String cname = params.required().get(CoreAdminParams.CORE);

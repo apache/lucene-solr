@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.OverseerTaskProcessor;
@@ -46,16 +47,13 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
     zkStateReader.getZkClient().getData("/overseer/queue",null, stat);
     results.add("overseer_queue_size", stat.getNumChildren());
-    stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat);
-    results.add("overseer_work_queue_size", stat.getNumChildren());
     stat = new Stat();
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
@@ -66,8 +64,6 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList collectionStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList stateUpdateQueueStats = new NamedList();
-    @SuppressWarnings({"rawtypes"})
-    NamedList workQueueStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList collectionQueueStats = new NamedList();
     Stats stats = ocmh.stats;
@@ -93,8 +89,6 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       } else if (key.startsWith("/overseer/queue_"))  {
         stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/queue-work_"))  {
-        workQueueStats.add(key.substring(21), lst);
       } else if (key.startsWith("/overseer/collection-queue-work_"))  {
         collectionQueueStats.add(key.substring(32), lst);
       } else  {
@@ -111,9 +105,13 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
     results.add("overseer_queue", stateUpdateQueueStats);
-    results.add("overseer_internal_queue", workQueueStats);
     results.add("collection_queue", collectionQueueStats);
 
-    return null;
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = clusterState;
+
+    return response;
   }
 }

@@ -119,8 +119,7 @@ public class AnalyticsShardRequestManager {
 
         Collections.shuffle(shuffler, new Random());
         Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         replicaUrls.add(url);
       }
     } catch (Exception e) {

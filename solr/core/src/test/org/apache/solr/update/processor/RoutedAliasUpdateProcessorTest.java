@@ -182,7 +182,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
         if (leaderReplicas != null) {
           for (Replica leaderReplica : leaderReplicas) {
-            leaders.add(leaderReplica.getCoreName());
+            leaders.add(leaderReplica.getName());
           }
         }
       }

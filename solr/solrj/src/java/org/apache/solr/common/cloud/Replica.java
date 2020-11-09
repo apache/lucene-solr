@@ -109,8 +109,7 @@ public class Replica extends ZkNodeProps {
 
   private final String name;
   private final String nodeName;
-  private final String core;
-  private final State state;
+  private State state;
   private final Type type;
   public final String slice, collection;
 
@@ -120,18 +119,20 @@ public class Replica extends ZkNodeProps {
     this.slice = slice;
     this.name = name;
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
-    this.core = (String) propMap.get(ZkStateReader.CORE_NAME_PROP);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
-    Objects.requireNonNull(this.collection, "'collection' must not be null");
-    Objects.requireNonNull(this.slice, "'slice' must not be null");
-    Objects.requireNonNull(this.name, "'name' must not be null");
-    Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
-    Objects.requireNonNull(this.core, "'core' must not be null");
-    Objects.requireNonNull(this.type, "'type' must not be null");
+//    Objects.requireNonNull(this.collection, "'collection' must not be null");
+//    Objects.requireNonNull(this.slice, "'slice' must not be null");
+//    Objects.requireNonNull(this.name, "'name' must not be null");
+//    Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
+//    Objects.requireNonNull(this.type, "'type' must not be null");
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+      if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
+        this.state = (State) propMap.get(ZkStateReader.STATE_PROP);
+      } else {
+        this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+      }
     } else {
-      this.state = State.ACTIVE;                         //Default to ACTIVE
+      this.state = State.DOWN;                         //Default to DOWN
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
   }
@@ -160,15 +161,10 @@ public class Replica extends ZkNodeProps {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getStr(ZkStateReader.BASE_URL_PROP), core);
+    return ZkCoreNodeProps.getCoreUrl(getStr(ZkStateReader.BASE_URL_PROP), name);
   }
   public String getBaseUrl(){
     return getStr(ZkStateReader.BASE_URL_PROP);
-  }
-
-  /** SolrCore name. */
-  public String getCoreName() {
-    return core;
   }
 
   /** The name of the node this replica resides on */
@@ -179,6 +175,12 @@ public class Replica extends ZkNodeProps {
   /** Returns the {@link State} of this replica. */
   public State getState() {
     return state;
+  }
+
+  // only to be used by ZkStateWriter currently
+  public void setState(State state) {
+    this.state = state;
+    propMap.put(ZkStateReader.STATE_PROP, state.toString());
   }
 
   public boolean isActive(Set<String> liveNodes) {

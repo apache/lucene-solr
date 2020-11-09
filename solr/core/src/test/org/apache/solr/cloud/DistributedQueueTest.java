@@ -58,38 +58,38 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     DistributedQueue dq = makeDistributedQueue(dqZNode);
 
     // basic ops
-    assertNull(dq.poll(null));
+    assertNull(dq.poll());
     try {
-      dq.remove(null);
+      dq.remove();
       fail("NoSuchElementException expected");
     } catch (NoSuchElementException expected) {
       // expected
     }
 
     dq.offer(data);
-    assertArrayEquals(dq.peek(null, 100), data);
-    assertArrayEquals(dq.remove(null), data);
-    assertNull(dq.poll(null));
+    assertArrayEquals(dq.peek(100), data);
+    assertArrayEquals(dq.remove(), data);
+    assertNull(dq.poll());
 
     dq.offer(data);
-    assertArrayEquals(dq.take(null), data); // waits for data
-    assertNull(dq.poll(null));
+    assertArrayEquals(dq.take(), data); // waits for data
+    assertNull(dq.poll());
 
     dq.offer(data);
-    dq.peek(null, true); // wait until data is definitely there before calling remove
-    assertArrayEquals(dq.remove(null), data);
-    assertNull(dq.poll(null));
+    dq.peek(true); // wait until data is definitely there before calling remove
+    assertArrayEquals(dq.remove(), data);
+    assertNull(dq.poll());
 
     // should block until the background thread makes the offer
     (new QueueChangerThread(dq, 200)).start();
-    assertNotNull(dq.peek(null, true));
-    assertNotNull(dq.remove(null));
-    assertNull(dq.poll(null));
+    assertNotNull(dq.peek(true));
+    assertNotNull(dq.remove());
+    assertNull(dq.poll());
 
     // timeout scenario ... background thread won't offer until long after the peek times out
     QueueChangerThread qct = new QueueChangerThread(dq, 500);
     qct.start();
-    assertNull(dq.peek(null, 100));
+    assertNull(dq.peek(100));
     qct.join();
   }
 
@@ -105,17 +105,17 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     producer2.offer(data);
     producer.offer(data);
     producer.offer(data);
-    consumer.poll(null);
+    consumer.poll();
 
     assertEquals(2, consumer.getZkStats().getQueueLength());
     producer.offer(data);
     producer2.offer(data);
-    consumer.poll(null);
+    consumer.poll();
 
     // DQ still have elements in their queue, so we should not fetch elements path from Zk
     assertEquals(1, consumer.getZkStats().getQueueLength());
-    consumer.poll(null);
-    consumer.peek(null);
+    consumer.poll();
+    consumer.peek();
     assertEquals(2, consumer.getZkStats().getQueueLength());
   }
 
@@ -127,8 +127,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
     ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
 
-    assertNull(dq.peek(null));
-    Future<String> future = testExecutor.submit(() -> new String(dq.peek(null, true), UTF8));
+    assertNull(dq.peek());
+    Future<String> future = testExecutor.submit(() -> new String(dq.peek(true), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -139,10 +139,10 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // Ultimately trips the watcher, triggering child refresh
     dq.offer(testData.getBytes(UTF8));
     assertEquals(testData, future.get(1000, TimeUnit.MILLISECONDS));
-    assertNotNull(dq.poll(null));
+    assertNotNull(dq.poll());
 
     // After draining the queue, a watcher should be set.
-    assertNull(dq.peek(null, 100));
+    assertNull(dq.peek(100));
     
 
    // assertFalse(dq.isDirty());
@@ -153,7 +153,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
-    future = testExecutor.submit(() -> new String(dq.peek(null, true), UTF8));
+    future = testExecutor.submit(() -> new String(dq.peek(true), UTF8));
     try {
       future.get(1000, TimeUnit.MILLISECONDS);
       fail("TimeoutException expected");
@@ -164,8 +164,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     // Ultimately trips the watcher, triggering child refresh
     dq.offer(testData.getBytes(UTF8));
     assertEquals(testData, future.get(1000, TimeUnit.MILLISECONDS));
-    assertNotNull(dq.poll(null));
-    assertNull(dq.poll(null));
+    assertNotNull(dq.poll());
+    assertNull(dq.poll());
   }
 
   @Test
@@ -176,21 +176,21 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertEquals(1, dq.watcherCount());
     assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
     assertEquals(1, dq.watcherCount());
-    assertNull(dq.peek(null));
+    assertNull(dq.peek());
     assertEquals(1, dq.watcherCount());
-    assertNull(dq.peek(null, 1));
+    assertNull(dq.peek(1));
     assertEquals(1, dq.watcherCount());
 
     dq.offer("hello world".getBytes(UTF8));
-    assertNotNull(dq.peek(null)); // synchronously available
+    assertNotNull(dq.peek()); // synchronously available
     // dirty and watcher state indeterminate here, race with watcher
     Thread.sleep(100); // watcher should have fired now
-    assertNotNull(dq.peek(null));
+    assertNotNull(dq.peek());
     // in case of race condition, childWatcher is kicked off after peek()
     if (dq.watcherCount() == 0) {
-      dq.poll(null);
+      dq.poll();
       dq.offer("hello world".getBytes(UTF8));
-      dq.peek(null);
+      dq.peek();
     }
     assertEquals(1, dq.watcherCount());
     assertFalse(dq.peekElements(1, 1, s -> true).isEmpty());
@@ -205,8 +205,8 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 100; i++) {
       byte[] data = String.valueOf(i).getBytes(UTF8);
       dq.offer(data);
-      assertNotNull(dq.peek(null));
-      dq.poll(null);
+      assertNotNull(dq.peek());
+      dq.poll();
       dq.peekElements(1, 1, s -> true);
     }
   }

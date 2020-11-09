@@ -62,7 +62,7 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
   @Test
   public void test() throws Exception {
     String testCollectionName = "c8n_onreconnect_1x1";
-    String shardId = "shard1";
+    String shardId = "s1";
 
     try {
       cloudClient.getZkStateReader().getZkClient()
@@ -81,7 +81,7 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
     ZkController zkController = cores.getZkController();
     assertNotNull("ZkController is null", zkController);
 
-    String leaderCoreName = leader.getStr(CORE_NAME_PROP);
+    String leaderCoreName = leader.getName();
     String leaderCoreId;
     try (SolrCore leaderCore = cores.getCore(leaderCoreName)) {
       assertNotNull("SolrCore for "+leaderCoreName+" not found!", leaderCore);

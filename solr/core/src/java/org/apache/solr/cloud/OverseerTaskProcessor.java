@@ -125,15 +125,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   protected final OverseerMessageHandlerSelector selector;
 
-  private final OverseerNodePrioritizer prioritizer;
-
   private final String thisNode;
   private Map<Runner,Future> taskFutures = new ConcurrentHashMap<>();
 
   public OverseerTaskProcessor(CoreContainer cc, String myId,
                                         Stats stats,
                                         OverseerMessageHandlerSelector selector,
-                                        OverseerNodePrioritizer prioritizer,
                                         OverseerTaskQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
@@ -141,7 +138,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.myId = myId;
     this.stats = stats;
     this.selector = selector;
-    this.prioritizer = prioritizer;
     this.workQueue = workQueue;
     this.runningMap = runningMap;
     this.completedMap = completedMap;
@@ -350,9 +346,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     if (closeAndDone) {
       // nocommit
-//      for (Future future : taskFutures.values()) {
-//        future.cancel(false);
-//      }
+      //      for (Future future : taskFutures.values()) {
+      //        future.cancel(false);
+      //      }
       for (Future future : taskFutures.values()) {
         try {
           future.get(1, TimeUnit.SECONDS);
@@ -378,8 +374,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public static List<String> getSortedElectionNodes(SolrZkClient zk, String path) throws KeeperException, InterruptedException {
     List<String> children = zk.getChildren(path, null, true);
-      LeaderElector.sortSeqs(children);
-      return children;
+    LeaderElector.sortSeqs(children);
+    return children;
   }
 
   public static String getLeaderNode(SolrZkClient zkClient) throws KeeperException, InterruptedException {
@@ -533,15 +529,15 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     private void resetTaskWithException(String id, String asyncId, String taskKey) throws KeeperException, InterruptedException {
       log.warn("Resetting task: {}, requestid: {}, taskKey: {}", id, asyncId, taskKey);
-        if (asyncId != null) {
-          if (!runningMap.remove(asyncId)) {
-            log.warn("Could not find and remove async call [{}] from the running map.", asyncId);
-          }
+      if (asyncId != null) {
+        if (!runningMap.remove(asyncId)) {
+          log.warn("Could not find and remove async call [{}] from the running map.", asyncId);
         }
+      }
 
-        synchronized (runningTasks) {
-          runningTasks.remove(id);
-        }
+      synchronized (runningTasks) {
+        runningTasks.remove(id);
+      }
 
     }
 

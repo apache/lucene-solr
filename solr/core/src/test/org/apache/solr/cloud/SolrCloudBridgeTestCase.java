@@ -86,7 +86,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   protected static CloudHttp2SolrClient cloudClient;
   
-  protected static final String SHARD1 = "shard1";
+  protected static final String SHARD1 = "s1";
   
   protected String id = "id";
 
@@ -298,6 +298,25 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
         .build();
     newClients.add(client);
     return client;
+  }
+
+  public HttpSolrClient getClientByNode(String collection, String node) {
+    ClusterState cs = cluster.getSolrClient().getZkStateReader().getClusterState();
+    DocCollection coll = cs.getCollection(collection);
+    List<Replica> replicas = coll.getReplicas();
+    for (Replica replica : replicas) {
+      if (replica.getNodeName().equals(node)) {
+        String baseUrl = replica.getBaseUrl() + "/" + collection;
+        HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(15000)
+            .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
+            .build();
+        newClients.add(client);
+        return client;
+      }
+    }
+
+    throw new IllegalArgumentException("Could not find replica with nodename=" + node);
   }
   
   public HttpSolrClient getClient(String collection, String url) {
@@ -572,13 +591,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     waitForRecoveriesToFinish(DEFAULT_COLLECTION);
   }
   
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+  protected Replica getLeaderUrlFromZk(String collection, String slice) {
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-    ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
+    Replica leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
     }
-    return new ZkCoreNodeProps(leader);
+    return leader;
   }
   
   /**
@@ -610,10 +629,10 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   }
   
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
-    String coreName = coreProps.getCoreName();
+
+    String coreName = replica.getName();
     boolean reloadedOk = false;
-    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

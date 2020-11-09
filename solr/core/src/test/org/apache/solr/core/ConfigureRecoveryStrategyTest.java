@@ -21,6 +21,7 @@ import java.lang.reflect.Modifier;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.RecoveryStrategy;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -94,7 +95,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected String getReplicateLeaderUrl(ZkNodeProps leaderprops) {
+    protected String getReplicateLeaderUrl(Replica leaderprops) {
       return ZkCoreNodeProps.getCoreUrl(
           leaderprops.getStr(alternativeBaseUrlProp),
           leaderprops.getStr(ZkStateReader.CORE_NAME_PROP));

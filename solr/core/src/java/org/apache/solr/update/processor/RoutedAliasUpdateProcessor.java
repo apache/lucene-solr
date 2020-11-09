@@ -267,7 +267,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
-    return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
+    return new SolrCmdDistributor.ForwardNode(leader, zkController.getZkStateReader(),
         collection, slice.getName());
   }
 

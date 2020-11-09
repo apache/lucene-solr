@@ -201,7 +201,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
 
   @Test
-  //@Ignore // nocommit - currently we only allow a single watcher per collection .. hmmm, we need to allow multiple observers for one collection
+  @Nightly
   public void testMultipleWatchers() throws InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());

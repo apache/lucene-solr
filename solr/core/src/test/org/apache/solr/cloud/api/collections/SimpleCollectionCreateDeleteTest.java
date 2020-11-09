@@ -33,6 +33,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit
 public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestBase {
 
   public SimpleCollectionCreateDeleteTest() {

@@ -73,10 +73,8 @@ public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
         }
         CloudDescriptor cloudDesc = cd.getCloudDescriptor();
         DocCollection docCollection = state.getCollection(cloudDesc.getCollectionName());
-        String replicaName = Utils.parseMetricsReplicaName(cloudDesc.getCollectionName(), coreName);
-        if (replicaName == null) {
-          replicaName = cloudDesc.getCoreNodeName();
-        }
+        String replicaName = coreName;
+
         String registryName = SolrCoreMetricManager.createRegistryName(true,
             cloudDesc.getCollectionName(), cloudDesc.getShardId(), replicaName, null);
         String leaderRegistryName = SolrCoreMetricManager.createLeaderRegistryName(true,

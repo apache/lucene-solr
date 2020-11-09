@@ -134,7 +134,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(coreCount, allCoreMetrics.size());
 
     for (Map.Entry<String, DocCollection> entry : collectionStates.entrySet()) {
-      String coreName = entry.getValue().getReplicas().get(0).getCoreName();
+      String coreName = entry.getValue().getReplicas().get(0).getName();
       assertTrue(allCoreMetrics.containsKey(coreName));
       List<Collector.MetricFamilySamples> coreMetrics = allCoreMetrics.get(coreName).asList();
       assertEquals(1, coreMetrics.size());
@@ -168,7 +168,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     Collection<Slice> slices = getCollectionState().getSlices();
 
     Set<String> leaderCoreNames = slices.stream()
-        .map(slice -> collection.getLeader(slice.getName()).getCoreName())
+        .map(slice -> collection.getLeader(slice.getName()).getName())
         .collect(Collectors.toSet());
 
     for (Collector.MetricFamilySamples.Sample sample : shardLeaderSamples.samples) {

@@ -186,7 +186,7 @@ public class ZkShardTerms implements AutoCloseable{
     listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
     numListeners = listeners.size();
 
-    return removeTerm(cd.getCloudDescriptor().getCoreNodeName()) || numListeners == 0;
+    return removeTerm(cd.getName()) || numListeners == 0;
   }
 
   // package private for testing, only used by tests

@@ -137,7 +137,7 @@ public class SolrShardReporter extends SolrCoreReporter {
       return;
     }
     // our id is coreNodeName
-    String id = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+    String id = core.getCoreDescriptor().getName();
     // target registry is the leaderRegistryName
     String groupId = core.getCoreMetricManager().getLeaderRegistryName();
     if (groupId == null) {

@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -707,7 +708,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         @Override
         public void sendError(int sc, String msg) throws IOException {
           response.setStatus(sc);
-          response.getWriter().write(msg);
+          PrintWriter writer = new PrintWriter(getOutputStream());
+          writer.write(msg);
         }
 
         @Override

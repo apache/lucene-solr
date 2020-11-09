@@ -2344,7 +2344,7 @@ public void testParallelRankStream() throws Exception {
 
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collName);
     List<Replica> replicas = collection.getReplicas();
-    streamContext.getEntries().put("core",replicas.get(random().nextInt(replicas.size())).getCoreName());
+    streamContext.getEntries().put("core",replicas.get(random().nextInt(replicas.size())).getName());
     SolrClientCache solrClientCache = new SolrClientCache(cluster.getSolrClient().getZkStateReader());
     streamContext.setSolrClientCache(solrClientCache);
     //Basic CloudSolrStream Test with Descending Sort

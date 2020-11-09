@@ -516,7 +516,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
         Replica rep = shuffler.get(random.nextInt(shuffler.size()));
         ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
+        String url = rep.getCoreUrl();
         SolrStream solrStream = new SolrStream(url, localParams);
         solrStream.setSlice(slice.getName());
         solrStream.setCheckpoint(checkpoint);

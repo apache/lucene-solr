@@ -317,6 +317,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
 
     public Builder(SolrZkClient zkClient) {
       ZkStateReader zkStateReader = new ZkStateReader(zkClient);
+
       zkStateReader.createClusterStateWatchersAndUpdate();
       ZkClientClusterStateProvider stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
       this.stateProvider = stateProvider;

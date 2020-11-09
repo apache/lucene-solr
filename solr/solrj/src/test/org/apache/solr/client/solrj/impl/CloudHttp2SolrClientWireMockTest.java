@@ -93,10 +93,10 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
     UpdateRequest ur = buildUpdateRequest(numDocs);
     Map<String,List<String>> urlMap = testClient.buildUrlMap(mockDocCollection, new ShufflingReplicaListTransformer(random()));
     assertEquals(2, urlMap.size());
-    List<String> shard1 = urlMap.get("shard1");
+    List<String> shard1 = urlMap.get("s1");
     assertEquals(1, shard1.size());
     assertEquals(shard1Route, shard1.get(0));
-    List<String> shard2 = urlMap.get("shard2");
+    List<String> shard2 = urlMap.get("s2");
     assertEquals(1, shard2.size());
     assertEquals(shard2Route, shard2.get(0));
 

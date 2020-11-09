@@ -25,12 +25,14 @@ import org.apache.solr.cloud.ClusterStateMockUtil;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * Tests for {@link CloudReplicaSource}
  */
+@Ignore // nocommit
 public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
 
   @BeforeClass

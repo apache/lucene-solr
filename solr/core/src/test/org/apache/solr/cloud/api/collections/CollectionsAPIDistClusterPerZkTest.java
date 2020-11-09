@@ -131,22 +131,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("rawtypes")
-  public void testTooManyReplicas() {
-    CollectionAdminRequest req = CollectionAdminRequest.createCollection("collection", "conf", 2, 10);
-    try {
-      cluster.getSolrClient().request(req);
-      fail("Expected exception");
-    } catch (Exception e) {
-      assertTrue(e instanceof BaseHttpSolrClient.RemoteSolrException);
-      BaseHttpSolrClient.RemoteSolrException rse = (BaseHttpSolrClient.RemoteSolrException)e;
-      assertEquals(400,rse.code());
-      assertTrue(rse.getMessage().contains("maxShardsPerNode"));
-    }
-
-  }
-
-  @Test
   @Ignore // nocommit we can speed this up, TJP ~ WIP: fails
   public void testCreateShouldFailOnExistingCore() throws Exception {
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
@@ -203,18 +187,6 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     ZkNodeProps props = ZkNodeProps.load(data);
     String configName = props.getStr(ZkController.CONFIGNAME_PROP);
     assertEquals("conf2", configName);
-  }
-
-  @Test
-  public void testMaxNodesPerShard() {
-    int numLiveNodes = cluster.getJettySolrRunners().size();
-    int numShards = (numLiveNodes/2) + 1;
-    int replicationFactor = 2;
-
-    expectThrows(SolrException.class, () -> {
-      CollectionAdminRequest.createCollection("oversharded", "conf", numShards, replicationFactor)
-          .process(cluster.getSolrClient());
-    });
   }
 
   @Test
@@ -397,10 +369,10 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     if (collectionState != null) {
       for (Slice shard : collectionState) {
         for (Replica replica : shard) {
-          ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
+          Replica coreProps = replica;
           CoreStatus coreStatus;
           try (Http2SolrClient server = SolrTestCaseJ4.getHttpSolrClient(coreProps.getBaseUrl())) {
-            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
+            coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getName(), false, server);
           }
           long before = coreStatus.getCoreStartTime().getTime();
           urlToTime.put(coreProps.getCoreUrl(), before);
@@ -465,7 +437,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
-    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(nodeList.get(0))
         .process(cluster.getSolrClient());
     Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
@@ -475,33 +447,34 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         newReplica.getStr(ZkStateReader.BASE_URL_PROP));
 
     Path instancePath = createTempDir();
-    response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString())
         .process(cluster.getSolrClient());
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
     try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
-      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
-      NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
+      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getName(), coreclient);
+      NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getName());
       String instanceDirStr = (String) coreStatus.get("instanceDir");
       assertEquals(instanceDirStr, instancePath.toString());
     }
 
     // Check that specifying property.name works. DO NOT remove this when the "name" property is deprecated
     // for ADDREPLICA, this is "property.name". See SOLR-7132
-    response = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .withProperty(CoreAdminParams.NAME, "propertyDotName")
         .process(cluster.getSolrClient());
 
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
-    assertEquals("'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
+    // nocommit do we really want to support this anymore?
+    // assertEquals("'core' should be 'propertyDotName' " + newReplica.getName(), "propertyDotName", newReplica.getName());
   }
 
   private Replica grabNewReplica(CollectionAdminResponse response, DocCollection docCollection) {
     String replicaName = response.getCollectionCoresStatus().keySet().iterator().next();
     Optional<Replica> optional = docCollection.getReplicas().stream()
-        .filter(replica -> replicaName.equals(replica.getCoreName()))
+        .filter(replica -> replicaName.equals(replica.getName()))
         .findAny();
     if (optional.isPresent()) {
       return optional.get();

@@ -87,10 +87,10 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     RequestStatusState state = CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1).processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
 
-    state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "shard1").processAndWait(client, MAX_TIMEOUT_SECONDS);
+    state = CollectionAdminRequest.addReplicaToShard("testasynccollectioncreation", "s1").processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.splitShard("testasynccollectioncreation").setShardName("shard1").processAndWait(client, MAX_TIMEOUT_SECONDS * 2);
+    state = CollectionAdminRequest.splitShard("testasynccollectioncreation").setShardName("s1").processAndWait(client, MAX_TIMEOUT_SECONDS * 2);
 
     assertEquals("Shard split did not complete. Last recorded state: " + state, RequestStatusState.COMPLETED, state);
   }
@@ -103,7 +103,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     RequestStatusState state = CollectionAdminRequest.createCollection(collection,"conf1",1,1)
         .setRouterName("implicit")
-        .setShards("shard1")
+        .setShards("s1")
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
@@ -116,38 +116,38 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     for (int i=0; i<numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", i);
-      doc.addField("_route_", "shard1");
+      doc.addField("_route_", "s1");
       docs.add(doc);
     }
     client.add(collection, docs);
     client.commit(collection);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set("shards", "shard1");
+    query.set("shards", "s1");
     assertEquals(numDocs, client.query(collection, query).getResults().getNumFound());
 
     state = CollectionAdminRequest.reloadCollection(collection)
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("ReloadCollection did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.createShard(collection,"shard2")
+    state = CollectionAdminRequest.createShard(collection,"s2")
         .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
     //Add a doc to shard2 to make sure shard2 was created properly
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", numDocs + 1);
-    doc.addField("_route_", "shard2");
+    doc.addField("_route_", "s2");
     client.add(collection, doc);
     client.commit(collection);
     query = new SolrQuery("*:*");
-    query.set("shards", "shard2");
+    query.set("shards", "s2");
     assertEquals(1, client.query(collection, query).getResults().getNumFound());
 
-    state = CollectionAdminRequest.deleteShard(collection,"shard2").processAndWait(client, MAX_TIMEOUT_SECONDS);
+    state = CollectionAdminRequest.deleteShard(collection,"s2").processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteShard did not complete", RequestStatusState.COMPLETED, state);
 
-    state = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+    state = CollectionAdminRequest.addReplicaToShard(collection, "s1")
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
@@ -155,7 +155,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     client.getZkStateReader().waitForState(collection, 20, TimeUnit.SECONDS, (n, c) -> {
       if (c == null)
         return false;
-      Slice slice = c.getSlice("shard1");
+      Slice slice = c.getSlice("s1");
       if (slice == null) {
         return false;
       }
@@ -172,7 +172,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     assertSame("CreateAlias did not complete", RequestStatusState.COMPLETED, state);
 
     query = new SolrQuery("*:*");
-    query.set("shards", "shard1");
+    query.set("shards", "s1");
     assertEquals(numDocs, client.query("myalias", query).getResults().getNumFound());
 
     state = CollectionAdminRequest.deleteAlias("myalias")
@@ -186,7 +186,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       //expected
     }
     
-    Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
+    Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("s1");
     Replica replica = shard1.getReplicas().iterator().next();
     for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
       if (!replica.getNodeName().equals(liveNode)) {
@@ -197,9 +197,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
       }
     }
 
-    shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("shard1");
+    shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("s1");
     String replicaName = shard1.getReplicas().iterator().next().getName();
-    state = CollectionAdminRequest.deleteReplica(collection, "shard1", replicaName)
+    state = CollectionAdminRequest.deleteReplica(collection, "s1", replicaName)
       .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
@@ -217,7 +217,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     }
     RequestStatusState state = CollectionAdminRequest.createCollection("testAsyncIdRaceCondition","conf1",1,1)
         .setRouterName("implicit")
-        .setShards("shard1")
+        .setShards("s1")
         .processAndWait(cluster.getSolrClient(), MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 

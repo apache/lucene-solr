@@ -63,10 +63,10 @@ public class CloudUtil {
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
     if (desc.getCloudDescriptor() == null) return;
     ZkController zkController = cc.getZkController();
-    String thisCnn = zkController.getCoreNodeName(desc);
+    String coreName = desc.getName();
     String thisBaseUrl = zkController.getBaseUrl();
 
-    log.debug("checkSharedFSFailoverReplaced running for coreNodeName={} baseUrl={}", thisCnn, thisBaseUrl);
+    log.debug("checkSharedFSFailoverReplaced running for coreName={} baseUrl={}", coreName, thisBaseUrl);
 
     // if we see our core node name on a different base url, unload
     final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());
@@ -75,11 +75,11 @@ public class CloudUtil {
       for (Slice slice : slicesMap.values()) {
         for (Replica replica : slice.getReplicas()) {
 
-          String cnn = replica.getName();
+          String replicaName = replica.getName();
           String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-          log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
+          log.debug("compare against coreName={} baseUrl={}", replicaName, baseUrl);
 
-          if (thisCnn != null && thisCnn.equals(cnn)
+          if (coreName != null && coreName.equals(replicaName)
               && !thisBaseUrl.equals(baseUrl)) {
             if (cc.getLoadedCoreNames().contains(desc.getName())) {
               try {
@@ -106,12 +106,12 @@ public class CloudUtil {
     }
   }
 
-  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
+  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreName) {
     DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null) {
       Slice slice = docCollection.getSlice(shard);
       if (slice != null) {
-        return slice.getReplica(coreNodeName) != null;
+        return slice.getReplica(coreName) != null;
       }
     }
     return false;

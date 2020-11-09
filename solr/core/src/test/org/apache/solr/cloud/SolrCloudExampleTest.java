@@ -116,7 +116,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     assertTrue("Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
         cloudClient.getZkStateReader().getClusterState().hasCollection(testCollectionName));
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(2, 4));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(2, 4));
 
     cloudClient.setDefaultCollection(testCollectionName);
 
@@ -282,7 +282,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
         String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";
         Map respMap = getAsMap(cloudClient, uri);
         Long maxTime = (Long) (getObjectByPath(respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
-        ret.put(replica.getCoreName(), maxTime);
+        ret.put(replica.getName(), maxTime);
       }
     }
     return ret;

@@ -236,7 +236,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
       for (Replica replica : shard) {
         coresCompared++;
         assertEquals(shard.getName(), replica.getSlice()); // sanity check
-        final String core = replica.getCoreName();
+        final String core = replica.getName();
         final ReplicaData initData = initReplicaData.get(core);
         final ReplicaData finalData = finalReplicaData.get(core);
         assertNotNull(shard.getName() + ": no init data for core: " + core, initData);
@@ -281,7 +281,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     for (Replica replica : collectionState.getReplicas()) {
 
-      String coreName = replica.getCoreName();
+      String coreName = replica.getName();
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getCoreUrl())) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();

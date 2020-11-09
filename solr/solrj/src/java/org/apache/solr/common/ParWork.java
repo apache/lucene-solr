@@ -563,30 +563,25 @@ public class ParWork implements Closeable {
         exception.set(illegal);
       }
     } catch (Throwable t) {
-
-      if (t instanceof NullPointerException) {
-        log.info("NPE closing " + object == null ? "Null Object" : object.getClass().getName());
+      if (ignoreExceptions) {
+        warns.add(t);
+        log.error("Error handling close for an object: " + ob.label + ": " + object.getClass().getSimpleName(), new ObjectReleaseTracker.ObjectTrackerException(t));
+        if (t instanceof Error && !(t instanceof AssertionError)) {
+          throw (Error) t;
+        }
       } else {
-        if (ignoreExceptions) {
-          warns.add(t);
-          log.error("Error handling close for an object: " + ob.label + ": " + object.getClass().getSimpleName() , new ObjectReleaseTracker.ObjectTrackerException(t));
-          if (t instanceof Error && !(t instanceof AssertionError)) {
-            throw (Error) t;
-          }
+        log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker + ", Label=" + ob.label + ")" + ", Object=" + object + ")", t);
+        propagateInterrupt(t);
+        if (t instanceof Error) {
+          throw (Error) t;
+        }
+        if (t instanceof RuntimeException) {
+          throw (RuntimeException) t;
         } else {
-          log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker   + ", Label=" + ob.label + ")"
-              + ", Object=" + object + ")", t);
-          propagateInterrupt(t);
-          if (t instanceof Error) {
-            throw (Error) t;
-          }
-          if (t instanceof  RuntimeException) {
-            throw (RuntimeException) t;
-          } else {
-            throw new WorkException(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t); // TODO, hmm how do I keep zk session timeout and interrupt in play?
-          }
+          throw new WorkException(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t); // TODO, hmm how do I keep zk session timeout and interrupt in play?
         }
       }
+
     } finally {
       assert subTracker.doneClose(returnObject instanceof String ? (String) returnObject : (returnObject == null ? "" : returnObject.getClass().getName()));
     }
@@ -643,7 +638,7 @@ public class ParWork implements Closeable {
         if (log.isDebugEnabled()) {
           log.info(t.getClass().getName() + " " + t.getMessage(), t);
         } else {
-          log.info(t.getClass().getName() + " " + t.getMessage());
+          log.info(t.getClass().getName() + " " + t.getMessage(), t);
         }
       } else {
         log.warn("Solr ran into an unexpected exception", t);

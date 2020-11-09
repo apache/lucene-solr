@@ -32,7 +32,7 @@ public class TimeOut {
     this.timeSource = timeSource;
     startTime = timeSource.getTimeNs();
     this.interval = NANOSECONDS.convert(interval, unit);
-    this.timeoutAt = startTime + interval;
+    this.timeoutAt = startTime + this.interval;
   }
 
   public boolean hasTimedOut() {

@@ -34,10 +34,10 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  String bucket1 = "shard1";      // shard1: top bits:10  80000000:bfffffff
-  String bucket2 = "shard2";      // shard2: top bits:11  c0000000:ffffffff
-  String bucket3 = "shard3";      // shard3: top bits:00  00000000:3fffffff
-  String bucket4 = "shard4";      // shard4: top bits:01  40000000:7fffffff
+  String bucket1 = "s1";      // shard1: top bits:10  80000000:bfffffff
+  String bucket2 = "s2";      // shard2: top bits:11  c0000000:ffffffff
+  String bucket3 = "s3";      // shard3: top bits:00  00000000:3fffffff
+  String bucket4 = "s4";      // shard4: top bits:01  40000000:7fffffff
 
 
   @BeforeClass
@@ -136,7 +136,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
     commit();
 
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*");
-    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","shard1,shard2,shard3,shard4");
+    doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", "shards","s1,s2,s3,s4");
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4,f1!f2!doc5,f1!f2!doc5/5", "q","*:*", shardKeys,"b!,c!,d!,e!,f1!f2!");
     doQuery("b!doc1", "q","*:*", shardKeys,"b!");
     doQuery("c!doc2", "q","*:*", shardKeys,"c!");

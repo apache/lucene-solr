@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.util.Version;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -41,6 +42,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -66,7 +68,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
@@ -135,7 +137,14 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     backupMgr.downloadCollectionProperties(location, backupName, collectionName);
 
     log.info("Completed backing up ZK data for backupName={}", backupName);
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.results = results;
+
+    // nocommit - we don't change this for this cmd, we should be able to indicate that to caller
+    response.clusterState = clusterState;
+
+    return response;
   }
 
   private Replica selectReplicaWithSnapshot(CollectionSnapshotMetaData snapshotMeta, Slice slice) {
@@ -215,20 +224,18 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
       }
 
-      String coreName = replica.getStr(CORE_NAME_PROP);
-
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString());
       params.set(NAME, slice.getName());
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repoName);
       params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
-      params.set(CORE_NAME_PROP, coreName);
+      params.set(CORE_NAME_PROP, replica.getName());
       if (snapshotMeta.isPresent()) {
         params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
       }
 
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
-      log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
+      log.debug("Sent backup request to core={} for backupName={}", replica.getName(), backupName);
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
 

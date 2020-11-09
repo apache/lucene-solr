@@ -165,25 +165,25 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   }
 
   protected static final String BUILT_IN_MOCK_COLLECTION = "wireMock";
-  protected static final String SHARD1_PATH = "/solr/wireMock_shard1_replica_n1";
-  protected static final String SHARD2_PATH = "/solr/wireMock_shard2_replica_n2";
+  protected static final String SHARD1_PATH = "/solr/wireMock_s1_r_n1";
+  protected static final String SHARD2_PATH = "/solr/wireMock_s2_r_n2";
   protected static final String MOCK_COLLECTION_JSON = "{\n" +
-      "    \"shard2\":{\n" +
+      "    \"s2\":{\n" +
       "      \"range\":\"0-7fffffff\",\n" +
       "      \"state\":\"active\",\n" +
-      "      \"replicas\":{\"core_node9\":{\n" +
-      "        \"core\":\"wireMock_shard2_replica_n2\",\n" +
+      "      \"replicas\":{\"wireMock_s2_r_n2\":{\n" +
+      "        \"core\":\"wireMock_s2_r_n2\",\n" +
       "        \"base_url\":\"http://127.0.0.1:65261/solr\",\n" +
       "        \"node_name\":\"MOCK_SOLR1\",\n" +
       "        \"state\":\"active\",\n" +
       "        \"type\":\"NRT\",\n" +
       "        \"force_set_state\":\"false\",\n" +
       "        \"leader\":\"true\"}}},\n" +
-      "    \"shard1\":{\n" +
+      "    \"s1\":{\n" +
       "      \"range\":\"80000000-ffffffff\",\n" +
       "      \"state\":\"active\",\n" +
-      "      \"replicas\":{\"core_node6\":{\n" +
-      "        \"core\":\"wireMock_shard1_replica_n1\",\n" +
+      "      \"replicas\":{\"wireMock_s1_r_n1\":{\n" +
+      "        \"core\":\"wireMock_s1_r_n1\",\n" +
       "        \"base_url\":\"http://127.0.0.1:65260/solr\",\n" +
       "        \"node_name\":\"MOCK_SOLR1\",\n" +
       "        \"state\":\"active\",\n" +
@@ -194,8 +194,8 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
   protected static DocCollection buildMockDocCollection() throws IOException {
     ObjectMapper mapper = new ObjectMapper();
     JsonNode json = mapper.readTree(MOCK_COLLECTION_JSON);
-    updateReplicaBaseUrl(json, "shard1", "core_node6", mockSolr.baseUrl());
-    updateReplicaBaseUrl(json, "shard2", "core_node9", mockSolr.baseUrl());
+    updateReplicaBaseUrl(json, "s1", "wireMock_s1_r_n1", mockSolr.baseUrl());
+    updateReplicaBaseUrl(json, "s2", "wireMock_s2_r_n2", mockSolr.baseUrl());
     Map<String, Object> slices = mapper.convertValue(json, new TypeReference<Map<String, Object>>() {});
 
     Map<String, Object> props = new HashMap<>();

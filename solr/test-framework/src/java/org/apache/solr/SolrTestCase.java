@@ -459,9 +459,7 @@ public class SolrTestCase extends LuceneTestCase {
     try {
 
       SysStats.getSysStats().stopMonitor();
-      testExecutor.closeLock(false);
-      ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
-      ParWork.shutdownRootSharedExec();
+
 
       AlreadyClosedException lastAlreadyClosedExp = CloseTracker.lastAlreadyClosedEx;
       if (lastAlreadyClosedExp != null) {
@@ -476,6 +474,10 @@ public class SolrTestCase extends LuceneTestCase {
         throw lastIllegalCallerEx;
       }
 
+      if (testExecutor != null) {
+        testExecutor.closeLock(false);
+        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+      }
 
       String object = null;
       // if the tests passed, make sure everything was closed / released
@@ -487,6 +489,8 @@ public class SolrTestCase extends LuceneTestCase {
       String orr = ObjectReleaseTracker.checkEmpty(object);
       ObjectReleaseTracker.clear();
       assertNull(orr, orr);
+
+      ParWork.shutdownRootSharedExec();
 
     } finally {
       ObjectReleaseTracker.clear();

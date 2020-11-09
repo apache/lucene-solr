@@ -245,7 +245,6 @@ public class UpdateShardHandler implements SolrInfoBean {
         HttpClientUtil.close(defaultClient);
         return defaultClient;
       });
-      closer.addCollect();
       closer.collect(recoveryOnlyClient);
       closer.collect(searchOnlyClient);
       closer.collect(updateOnlyClient);

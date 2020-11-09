@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
+import javax.print.Doc;
 
 public class ClusterStateMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -55,7 +56,7 @@ public class ClusterStateMutator {
     this.stateManager = dataProvider.getDistribStateManager();
   }
 
-  public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
     if (log.isDebugEnabled()) log.debug("building a new cName: " + cName);
 //    if (clusterState.hasCollection(cName)) {
@@ -107,6 +108,7 @@ public class ClusterStateMutator {
     }
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
+    // nocommit - lost this
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }
@@ -114,16 +116,17 @@ public class ClusterStateMutator {
     DocCollection newCollection = new DocCollection(cName,
             slices, collectionProps, router, 0);
 
-    return new ZkWriteCommand(cName, newCollection);
+    return clusterState.copyWith(cName, newCollection);
   }
 
-  public ZkWriteCommand deleteCollection(ClusterState clusterState, ZkNodeProps message) {
-    final String collection = message.getStr(NAME);
-    if (!CollectionMutator.checkKeyExistence(message, NAME)) return ZkStateWriter.NO_OP;
-    DocCollection coll = clusterState.getCollectionOrNull(collection);
-    if (coll == null) return ZkStateWriter.NO_OP;
+  public ClusterState deleteCollection(ClusterState clusterState, String collectionName) {
+    return clusterState.copyWith(collectionName, null);
+  }
 
-    return new ZkWriteCommand(coll.getName(), null);
+  public ClusterState deleteCollection(ClusterState clusterState, ZkNodeProps message) {
+    final String collection = message.getStr(NAME);
+
+    return clusterState.copyWith(collection, null);
   }
 
   public static ClusterState newState(ClusterState state, String name, DocCollection collection) {
@@ -151,21 +154,5 @@ public class ClusterStateMutator {
     return null;
   }
 
-  public static String getAssignedCoreNodeName(DocCollection collection, String forNodeName, String forCoreName) {
-    Collection<Slice> slices = collection != null ? collection.getSlices() : null;
-    if (slices != null) {
-      for (Slice slice : slices) {
-        for (Replica replica : slice.getReplicas()) {
-          String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-          String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-
-          if (nodeName.equals(forNodeName) && core.equals(forCoreName)) {
-            return replica.getName();
-          }
-        }
-      }
-    }
-    return null;
-  }
 }
 

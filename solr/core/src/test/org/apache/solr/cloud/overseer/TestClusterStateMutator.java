@@ -49,8 +49,8 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
         "name", "xyz",
         "numShards", "1"
     ));
-    ZkWriteCommand cmd = mutator.createCollection(clusterState, message);
-    DocCollection collection = cmd.collection;
+    ClusterState cmd = mutator.createCollection(clusterState, message);
+    DocCollection collection = cmd.getCollection("xyz");
     assertEquals("xyz", collection.getName());
     assertEquals(1, collection.getSlicesMap().size());
     assertEquals(1, collection.getMaxShardsPerNode());
@@ -65,7 +65,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
         "maxShardsPerNode", "4"
     ));
     cmd = mutator.createCollection(state, message);
-    collection = cmd.collection;
+    collection = cmd.getCollection("abc");
     assertEquals("abc", collection.getName());
     assertEquals(2, collection.getSlicesMap().size());
     assertNotNull(collection.getSlicesMap().get("x"));

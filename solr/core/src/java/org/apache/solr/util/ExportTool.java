@@ -459,7 +459,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         Replica replica = slice.getLeader();
         if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
         CoreHandler coreHandler = new CoreHandler(replica);
-        corehandlers.put(replica.getCoreName(), coreHandler);
+        corehandlers.put(replica.getName(), coreHandler);
       }
     }
 
@@ -503,7 +503,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           throws IOException, SolrServerException {
         HttpSolrClient client = new HttpSolrClient.Builder(baseurl).markInternalRequest().build();
         try {
-          expectedDocs = getDocCount(replica.getCoreName(), client);
+          expectedDocs = getDocCount(replica.getName(), client);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
@@ -528,18 +528,18 @@ public class ExportTool extends SolrCLI.ToolBase {
             if (docsWritten.get() > limit) return true;
             params.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
             request = new GenericSolrRequest(SolrRequest.METHOD.GET,
-                "/" + replica.getCoreName() + "/select", params);
+                "/" + replica.getName() + "/select", params);
             request.setResponseParser(responseParser);
             try {
               NamedList<Object> rsp = client.request(request);
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null)
-                  output.println(StrUtils.formatString("\nExport complete for : {0}, docs : {1}", replica.getCoreName(), receivedDocs.get()));
+                  output.println(StrUtils.formatString("\nExport complete for : {0}, docs : {1}", replica.getName(), receivedDocs.get()));
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
                     output.println(StrUtils.formatString("Could not download all docs for core {0} , expected: {1} , actual",
-                        replica.getCoreName(), expectedDocs, receivedDocs));
+                        replica.getName(), expectedDocs, receivedDocs));
                     return false;
                   }
                 }
@@ -548,7 +548,7 @@ public class ExportTool extends SolrCLI.ToolBase {
               cursorMark = nextCursorMark;
               if (output != null) output.print(".");
             } catch (SolrServerException e) {
-              if(output != null) output.println("Error reading from server "+ replica.getBaseUrl()+"/"+ replica.getCoreName());
+              if(output != null) output.println("Error reading from server "+ replica.getBaseUrl()+"/"+ replica.getName());
               failed = true;
               return false;
             }

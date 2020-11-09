@@ -96,10 +96,6 @@ public class PluginInfo implements MapSerializable {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   public PluginInfo(String type, Map<String,Object> map) {
-    if (type.equals("updateRequestProcessorChain")) {
-      System.out.println("got it");
-    }
-
     LinkedHashMap m = new LinkedHashMap<>(map);
     initArgs = new NamedList();
     for (Map.Entry<String, Object> entry : map.entrySet()) {

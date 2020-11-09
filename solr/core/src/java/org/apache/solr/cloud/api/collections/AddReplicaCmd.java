@@ -21,21 +21,24 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.response.Cluster;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.overseer.ClusterStateMutator;
+import org.apache.solr.cloud.overseer.CollectionMutator;
+import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -60,6 +63,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -82,27 +86,45 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   public static final String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 
   private final OverseerCollectionMessageHandler ocmh;
+  private final boolean onlyUpdateState;
+  private boolean createdShardHandler;
 
   public AddReplicaCmd(OverseerCollectionMessageHandler ocmh) {
+    this.onlyUpdateState = false;
+    this.ocmh = ocmh;
+  }
+
+  public AddReplicaCmd(OverseerCollectionMessageHandler ocmh, boolean onlyUpdateState) {
+    this.onlyUpdateState = onlyUpdateState;
     this.ocmh = ocmh;
   }
 
   @Override
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    Response response = addReplica(state, message, results, null);
-    if (response == null) return null;
-    return response.asyncFinalRunner;
+  public Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+    ShardHandler shardHandler = null;
+    ShardRequestTracker shardRequestTracker = null;
+
+    if (!onlyUpdateState) {
+      final String asyncId = message.getStr(ASYNC);
+      shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
+
+      shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+      createdShardHandler = true;
+    }
+
+    Response response = addReplica(state, message, shardHandler, shardRequestTracker, results);
+    return response;
   }
 
   @SuppressWarnings({"unchecked"})
-  Response addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
+  Response addReplica(ClusterState clusterState, ZkNodeProps message, ShardHandler shardHandler,
+      ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
       throws IOException, InterruptedException, KeeperException {
 
     log.info("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
-    String shard = message.getStr(SHARD_ID_PROP);
 
     final String collectionName;
     if (followAliases) {
@@ -111,19 +133,10 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       collectionName = extCollectionName;
     }
 
-    DocCollection coll = clusterState.getCollection(collectionName);
-    if (coll == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + collectionName + " does not exist");
-    }
-    if (coll.getSlice(shard) == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Collection: " + collectionName + " shard: " + shard + " does not exist");
-    }
-
     // nocommit
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
-    final String asyncId = message.getStr(ASYNC);
+
 
     String node = message.getStr(CoreAdminParams.NODE);
     String createNodeSetStr = message.getStr(ZkStateReader.CREATE_NODE_SET);
@@ -149,83 +162,87 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (node != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'node' parameter is specified");
       }
-      if (message.getStr(CoreAdminParams.CORE_NODE_NAME) != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'coreNodeName' parameter is specified");
+    }
+
+    List<CreateReplica> createReplicas = new ArrayList<>();
+
+    DocCollection collection = clusterState.getCollection(collectionName);
+    List<ReplicaPosition> positions = buildReplicaPositions(ocmh.cloudManager, clusterState, collection, message, replicaTypesVsCount);
+    for (ReplicaPosition replicaPosition : positions) {
+      clusterState = new CollectionMutator(ocmh.cloudManager).modifyCollection(clusterState, message);
+      collection = clusterState.getCollection(collectionName);
+      CreateReplica cr = assignReplicaDetails(collection, message, replicaPosition);
+
+      message = message.plus(ZkStateReader.BASE_URL_PROP, ocmh.zkStateReader.getBaseUrlForNodeName(replicaPosition.node));
+
+      message = message.plus(NODE_NAME_PROP, replicaPosition.node);
+      message = message.plus(ZkStateReader.REPLICA_TYPE, cr.replicaType.name());
+
+
+      clusterState = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, message);
+      createReplicas.add(cr);
+
+     // message.getProperties().put("node_name", cr.node)
+    }
+
+//    createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collection, message, replicaTypesVsCount)
+//        .stream()
+//        .map(replicaPosition -> assignReplicaDetails(collection, message, replicaPosition))
+//        .collect(Collectors.toList());
+
+
+    for (CreateReplica createReplica : createReplicas) {
+
+      ModifiableSolrParams params = getReplicaParams(collection, message, results, skipCreateReplicaInClusterState, shardHandler, createReplica);
+
+      log.info("create replica {} params={}", createReplica, params);
+      if (!onlyUpdateState) {
+        shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
       }
     }
 
-    List<CreateReplica> createReplicas;
-    try {
-      ocmh.zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-        if (collectionState == null) {
-          return false;
-        }
-        if (collectionState.getSlices() == null) {
-          return false;
-        }
-        return true;
-      });
-    } catch (TimeoutException e) {
-      log.warn("Could not find collection with populated shards in clusterstate \n{}", clusterState);
-    }
-    clusterState = ocmh.zkStateReader.getClusterState();
-
-    ClusterState finalClusterState = clusterState;
-    createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount)
-        .stream()
-        .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, finalClusterState, message, replicaPosition))
-        .collect(Collectors.toList());
-
-    if (createReplicas.size() != totalReplicas) {
-      throw new IllegalStateException("Did not get enough positions to cover new replicas");
-    }
-
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
-
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
-    for (CreateReplica createReplica : createReplicas) {
-      assert createReplica.coreName != null;
-      ModifiableSolrParams params = getReplicaParams(clusterState, message, results, collectionName, coll, skipCreateReplicaInClusterState, shardHandler, createReplica);
-      shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
-    }
-
-    try {
-      shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
-      return null;
-    }
-
-    if (onComplete != null) onComplete.run();
-
-    if (onComplete != null) onComplete.run();
-
     Response response = new Response();
-    response.responseProps =  createReplicas.stream()
-        .map(createReplica -> new ZkNodeProps(
-            ZkStateReader.COLLECTION_PROP, createReplica.collectionName,
-            ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
-            ZkStateReader.CORE_NAME_PROP, createReplica.coreName,
-            ZkStateReader.NODE_NAME_PROP, createReplica.node
-        ))
-        .collect(Collectors.toList());
-    if (results.get("failure") == null && results.get("exception") == null) {
-      response.asyncFinalRunner = new Runnable() {
-        @Override
-        public void run() {
-          waitForActiveReplica(shard, collectionName, asyncId, zkStateReader, createReplicas);
-        }
-      };
+
+    if (!onlyUpdateState) {
+      response.responseProps = createReplicas.stream().map(
+          createReplica -> new ZkNodeProps(ZkStateReader.COLLECTION_PROP, createReplica.collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName, ZkStateReader.CORE_NAME_PROP,
+              createReplica.coreName, ZkStateReader.NODE_NAME_PROP, createReplica.node)).collect(Collectors.toList());
+      response.results = results;
+
+        ZkNodeProps finalMessage = message;
+        response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
+          @Override
+          public Response call() {
+            if (!onlyUpdateState && createdShardHandler) {
+              try {
+                log.info("Processs responses");
+                shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
+              } catch (Exception e) {
+                ParWork.propagateInterrupt(e);
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+              }
+            }
+
+            String asyncId = finalMessage.getStr(ASYNC);
+            for (CreateReplica createReplica : createReplicas) {
+              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplicas);
+            }
+            AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+            return response;
+          }
+        };
+
     }
+
+    response.clusterState = clusterState;
 
     return response;
   }
 
   private void waitForActiveReplica(String shard, String collectionName, String asyncId, ZkStateReader zkStateReader, List<CreateReplica> createReplicas) {
-    Set<String> coreNodeNames = ConcurrentHashMap.newKeySet(createReplicas.size());
+    Set<String> coreNames = new HashSet<>(createReplicas.size());
     for (CreateReplica replica : createReplicas) {
-      coreNodeNames.add(ocmh.waitForCoreNodeName(zkStateReader, collectionName, replica.node, replica.coreName));
+      coreNames.add(replica.coreName);
     }
     try {
       zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
@@ -240,14 +257,14 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
         List<Replica> replicas = collectionState.getReplicas();
         int found = 0;
-        for (String name : coreNodeNames) {
+        for (String name : coreNames) {
           for (Replica replica : replicas) {
-            if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE) && liveNodes.contains(replica.getNodeName())) {
+            if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
               found++;
             }
           }
         }
-        if (found == coreNodeNames.size()) {
+        if (found == coreNames.size()) {
           return true;
         }
 
@@ -261,50 +278,43 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
-  private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
-    if (coll.getStr(WITH_COLLECTION) != null) {
-      String withCollectionName = coll.getStr(WITH_COLLECTION);
-      DocCollection withCollection = clusterState.getCollection(withCollectionName);
-      if (withCollection.getActiveSlices().size() > 1)  {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + withCollection.getActiveSlices().size());
-      }
-      String withCollectionShard = withCollection.getActiveSlices().iterator().next().getName();
+  private ModifiableSolrParams getReplicaParams(   DocCollection collection, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results,
+      boolean skipCreateReplicaInClusterState,
+      ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
 
-      List<Replica> replicas = withCollection.getReplicas(createReplica.node);
-      if (replicas == null || replicas.isEmpty()) {
-        // create a replica of withCollection on the identified node before proceeding further
-        ZkNodeProps props = new ZkNodeProps(
-            Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
-            ZkStateReader.COLLECTION_PROP, withCollectionName,
-            ZkStateReader.SHARD_ID_PROP, withCollectionShard,
-            "node", createReplica.node,
-            // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
-            SKIP_NODE_ASSIGNMENT, "true",
-            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
-        addReplica(clusterState, props, results, null);
-      }
-    }
+    // nocommit
+//    if (collection.getStr(WITH_COLLECTION) != null) {
+//      String withCollectionName = collection.getStr(WITH_COLLECTION);
+//      DocCollection withCollection = clusterState.getCollection(withCollectionName);
+//      if (withCollection.getActiveSlices().size() > 1)  {
+//        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + withCollection.getActiveSlices().size());
+//      }
+//      String withCollectionShard = withCollection.getActiveSlices().iterator().next().getName();
+//
+//      List<Replica> replicas = withCollection.getReplicas(createReplica.node);
+//      if (replicas == null || replicas.isEmpty()) {
+//        // create a replica of withCollection on the identified node before proceeding further
+//        ZkNodeProps props = new ZkNodeProps(
+//            Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
+//            ZkStateReader.COLLECTION_PROP, withCollectionName,
+//            ZkStateReader.SHARD_ID_PROP, withCollectionShard,
+//            CORE_NAME_PROP, createReplica.coreName,
+//            "node", createReplica.node,
+//            // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
+//            SKIP_NODE_ASSIGNMENT, "true",
+//            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
+//        addReplica(clusterState, props, results);
+//      }
+//    }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     ZkStateReader zkStateReader = ocmh.zkStateReader;
-
+    String collectionName = collection.getName();
     ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
         ZkStateReader.CORE_NAME_PROP, createReplica.coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP,
         zkStateReader.getBaseUrlForNodeName(createReplica.node), ZkStateReader.NODE_NAME_PROP, createReplica.node, ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
-    if (createReplica.coreNodeName != null) {
-      props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
-    }
-    if (!skipCreateReplicaInClusterState) {
-      try {
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-      } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
-      }
-    }
+
     String coreUrl = ZkCoreNodeProps.getCoreUrl(props.getStr(ZkStateReader.BASE_URL_PROP), createReplica.coreName);
-    ;
-    params.set(CoreAdminParams.CORE_NODE_NAME, ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(coreUrl), false).get(coreUrl).getName());
 
     String configName = zkStateReader.readConfigName(collectionName);
     String routeKey = message.getStr(ShardParams._ROUTE_);
@@ -317,10 +327,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     params.set(COLL_CONF, configName);
     params.set(CoreAdminParams.COLLECTION, collectionName);
     params.set(CoreAdminParams.REPLICA_TYPE, createReplica.replicaType.name());
+
+    log.info("Creating SolrCore with name={}", createReplica.coreName);
     if (createReplica.sliceName != null) {
       params.set(CoreAdminParams.SHARD, createReplica.sliceName);
     } else if (routeKey != null) {
-      Collection<Slice> slices = coll.getRouter().getSearchSlicesSingle(routeKey, null, coll);
+      Collection<Slice> slices = collection.getRouter().getSearchSlicesSingle(routeKey, null, collection);
       if (slices.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No active shard serving _route_=" + routeKey + " found");
       } else {
@@ -338,71 +350,41 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (instanceDir != null) {
       params.set(CoreAdminParams.INSTANCE_DIR, instanceDir);
     }
-    if (createReplica.coreNodeName != null) {
-      params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.coreNodeName);
-    }
+
     ocmh.addPropertyParams(message, params);
 
     return params;
   }
 
-  public static CreateReplica assignReplicaDetails(SolrCloudManager cloudManager, ClusterState clusterState,
+  public static CreateReplica assignReplicaDetails(DocCollection coll,
                                                  ZkNodeProps message, ReplicaPosition replicaPosition) {
+
+    log.info("assignReplicaDetails {} {} {}", message, replicaPosition, coll);
+
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
     String collection = message.getStr(COLLECTION_PROP);
     String node = replicaPosition.node;
     String shard = message.getStr(SHARD_ID_PROP);
-    String coreName = message.getStr(CoreAdminParams.NAME);
-    String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
+    String coreName = message.getStr(CoreAdminParams.CORE);
     Replica.Type replicaType = replicaPosition.type;
 
-    if (StringUtils.isBlank(coreName)) {
-      coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
-    }
+    log.info("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
 
-    log.info("Node Identified {} for creating new replica of shard {} for collection {}", node, shard, collection);
-    if (!clusterState.liveNodesContain(node)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
-    }
-    DocCollection coll = clusterState.getCollection(collection);
     if (coreName == null) {
-      coreName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), coll, shard, replicaType);
-    } else if (!skipCreateReplicaInClusterState) {
-      //Validate that the core name is unique in that collection
-      while (true) {
-        try {
-          clusterState = cloudManager.getClusterStateProvider().getClusterState();
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Node: " + node + " is not live");
-        }
-        coll = clusterState.getCollection(collection);
-        for (Slice slice : coll.getSlices()) {
-          for (Replica replica : slice.getReplicas()) {
-            String replicaCoreName = replica.getStr(CORE_NAME_PROP);
-            if (coreName.equals(replicaCoreName)) {
-              log.info("Another replica with the same core name already exists" +
-                      " for this collection");
-              coreName = Assign.buildSolrCoreName(cloudManager.getDistribStateManager(), coll, shard, replicaType);
-              continue;
-            }
-          }
-        }
-        break;
-      }
+      coreName = Assign.buildSolrCoreName(coll, coll.getName(), shard, replicaType);
     }
-    log.info("Returning CreateReplica command.");
+    log.info("Returning CreateReplica command coreName={}", coreName);
 
-    return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
+    return new CreateReplica(collection, shard, node, replicaType, coreName);
   }
 
-  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
-                                                            String collectionName, ZkNodeProps message,
+  public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState, DocCollection collection,
+                                                            ZkNodeProps message,
                                                             EnumMap<Replica.Type, Integer> replicaTypeVsCount) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
     boolean skipNodeAssignment = message.getBool(SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
-    DocCollection collection = clusterState.getCollection(collectionName);
 
     int numNrtReplicas = replicaTypeVsCount.get(Replica.Type.NRT);
     int numPullReplicas = replicaTypeVsCount.get(Replica.Type.PULL);
@@ -421,7 +403,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     List<ReplicaPosition> positions = null;
     if (!skipCreateReplicaInClusterState && !skipNodeAssignment) {
 
-      positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
+      positions = Assign.getNodesForNewReplicas(clusterState, collection, sliceName, numNrtReplicas,
                     numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager);
     }
 
@@ -457,21 +439,23 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     public final String node;
     public final Replica.Type replicaType;
     public String coreName;
-    public String coreNodeName;
 
-    CreateReplica(String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName, String coreNodeName) {
+    CreateReplica(String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName) {
       this.collectionName = collectionName;
       this.sliceName = sliceName;
       this.node = node;
       this.replicaType = replicaType;
       this.coreName = coreName;
-      this.coreNodeName = coreNodeName;
     }
   }
 
   public static class Response {
     List<ZkNodeProps> responseProps;
-    Runnable asyncFinalRunner;
+    OverseerCollectionMessageHandler.Finalize asyncFinalRunner;
+
+    NamedList results;
+
+    ClusterState clusterState;
   }
 
 }

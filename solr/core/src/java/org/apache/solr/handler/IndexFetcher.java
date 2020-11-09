@@ -46,11 +46,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.zip.Adler32;
@@ -73,6 +76,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
@@ -169,6 +174,8 @@ public class IndexFetcher {
   private boolean clearLocalIndexFirst = false;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
+
+  private final Map<String,Cancellable> fileFetchRequests = new ConcurrentHashMap<>();
 
   public static class IndexFetchResult {
     private final String message;
@@ -370,7 +377,7 @@ public class IndexFetcher {
         assert !solrCore.isClosed(): "Replication should be stopped before closing the core";
         Replica replica = getLeaderReplica();
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
-        if (cd.getCoreNodeName().equals(replica.getName())) {
+        if (solrCore.getCoreDescriptor().getName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
         }
         if (replica.getState() != Replica.State.ACTIVE) {
@@ -940,20 +947,29 @@ public class IndexFetcher {
     try {
       boolean status = tmpconfDir.mkdirs();
       if (!status) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "Failed to create temporary config folder: " + tmpconfDir.getName());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to create temporary config folder: " + tmpconfDir.getName());
       }
-      for (Map<String, Object> file : confFilesToDownload) {
-        String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
-        localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
-        currentFile = file;
-        localFileFetcher.fetchFile();
-        confFilesDownloaded.add(new HashMap<>(file));
+      //try (ParWork work = new ParWork(this, true)) {
+        for (Map<String,Object> file : confFilesToDownload) {
+       //   work.collect("fetchConfigFile", () -> {
+            try {
+              String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
+              localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
+              currentFile = file;
+              localFileFetcher.fetchFile();
+              confFilesDownloaded.add(new HashMap<>(file));
 
-        if (stop) {
-          throw new AlreadyClosedException();
-        }
-
+              if (stop) {
+                log.info("Skipping conf file copying due to abort");
+                throw new AlreadyClosedException();
+              }
+            } catch (Exception e) {
+              log.error("", e);
+            } finally {
+              fileFetchRequests.remove(file.get(NAME));
+            }
+        //  });
+      //  }
       }
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.
@@ -981,13 +997,15 @@ public class IndexFetcher {
     if (log.isDebugEnabled()) {
       log.debug("Download files to dir: {}", Arrays.asList(indexDir.listAll()));
     }
-    long bytesDownloaded = 0;
-    long bytesSkippedCopying = 0;
+    LongAdder bytesDownloaded = new LongAdder();
+    LongAdder bytesSkippedCopying = new LongAdder();
     boolean doDifferentialCopy = (indexDir instanceof FSDirectory ||
         (indexDir instanceof FilterDirectory && FilterDirectory.unwrap(indexDir) instanceof FSDirectory))
         && (tmpIndexDir instanceof FSDirectory ||
         (tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
 
+    // nocommit
+    doDifferentialCopy = false; // what about windows or link unsupported?
 
     long totalSpaceRequired = 0;
     for (Map<String, Object> file : filesToDownload) {
@@ -999,46 +1017,59 @@ public class IndexFetcher {
       log.info("tmpIndexDir_type  : {} , {}", tmpIndexDir.getClass(), FilterDirectory.unwrap(tmpIndexDir));
     }
     long usableSpace = usableDiskSpaceProvider.apply(tmpIndexDirPath);
-    if (getApproxTotalSpaceReqd(totalSpaceRequired) > usableSpace) {
+    long atsr = getApproxTotalSpaceReqd(totalSpaceRequired);
+    if (atsr > usableSpace) {
+      log.warn("WARNING: clearing disk space ahead of time to avoid running out of space, could cause problems with current SolrCore approxTotalSpaceReqd{}, usableSpace={}", atsr, usableSpace);
       deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
+    try (ParWork parWork = new ParWork(this, true)) {
+      for (Map<String,Object> file : filesToDownload) {
+        String filename = (String) file.get(NAME);
+        long size = (Long) file.get(SIZE);
+        CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
+        boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
 
-    for (Map<String,Object> file : filesToDownload) {
-      String filename = (String) file.get(NAME);
-      long size = (Long) file.get(SIZE);
-      CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
-      boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
-      if (log.isDebugEnabled()) {
-        log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
-      }
-      if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-        File localFile = new File(indexDirPath, filename);
-        if (downloadCompleteIndex && doDifferentialCopy && compareResult.equal && compareResult.checkSummed
-            && localFile.exists()) {
-          if (log.isInfoEnabled()) {
-            log.info("Don't need to download this file. Local file's path is: {}, checksum is: {}",
-                localFile.getAbsolutePath(), file.get(CHECKSUM));
+        boolean finalDoDifferentialCopy = doDifferentialCopy;
+        parWork.collect("IndexFetcher", () -> {
+          if (log.isDebugEnabled()) {
+            log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
           }
-          // A hard link here should survive the eventual directory move, and should be more space efficient as
-          // compared to a file copy. TODO: Maybe we could do a move safely here?
-          Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
-          bytesSkippedCopying += localFile.length();
-        } else {
-          dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file,
-              (String) file.get(NAME), FILE, latestGeneration);
-          currentFile = file;
-          dirFileFetcher.fetchFile();
-          bytesDownloaded += dirFileFetcher.getBytesDownloaded();
-        }
-        filesDownloaded.add(new HashMap<>(file));
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug("Skipping download for {} because it already exists", file.get(NAME));
-        }
+          if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
+            File localFile = new File(indexDirPath, filename);
+            if (downloadCompleteIndex && finalDoDifferentialCopy && compareResult.equal && compareResult.checkSummed && localFile.exists()) {
+              if (log.isInfoEnabled()) {
+                log.info("Don't need to download this file. Local file's path is: {}, checksum is: {}", localFile.getAbsolutePath(), file.get(CHECKSUM));
+              }
+              // A hard link here should survive the eventual directory move, and should be more space efficient as
+              // compared to a file copy. TODO: Maybe we could do a move safely here?
+            //  Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+              bytesDownloaded.add(localFile.length());
+            } else {
+              try {
+                dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
+                currentFile = file;
+                dirFileFetcher.fetchFile();
+                bytesDownloaded.add(dirFileFetcher.getBytesDownloaded());
+              } catch (Exception e) {
+                log.error("Problem downloading file {}", file, e);
+              } finally {
+                fileFetchRequests.remove(file.get(NAME));
+              }
+            }
+            filesDownloaded.add(new HashMap<>(file));
+          } else {
+            if (log.isDebugEnabled()) {
+              log.debug("Skipping download for {} because it already exists", file.get(NAME));
+            }
+          }
+        });
+
       }
+    } finally {
+      fileFetchRequests.clear();
     }
     log.info("Bytes downloaded: {}, Bytes skipped downloading: {}", bytesDownloaded, bytesSkippedCopying);
-    return bytesDownloaded;
+    return bytesDownloaded.sum();
   }
 
   //only for testing purposes. do not use this anywhere else
@@ -1149,8 +1180,8 @@ public class IndexFetcher {
         }
 
         if (!compareResult.checkSummed) {
-          // we don't have checksums to compare
-
+          //
+          log.info("we don't have checksums to compare");
           if (indexFileLen == backupIndexFileLen) {
             compareResult.equal = true;
             return compareResult;
@@ -1455,7 +1486,12 @@ public class IndexFetcher {
    */
   void abortFetch() {
     stop = true;
-
+    fileFetchRequests.forEach((s, cancellable) -> {
+      if (cancellable != null) {
+        cancellable.cancel();
+      }
+    });
+    fileFetchRequests.clear();
   }
 
   @SuppressForbidden(reason = "Need currentTimeMillis for debugging/stats")
@@ -1582,13 +1618,8 @@ public class IndexFetcher {
       try {
         fetch();
       } catch(Exception e) {
-        if (!aborted) {
-          SolrException.log(IndexFetcher.log, "Error fetching file, doing one retry...", e);
-          // one retry
-          fetch();
-        } else {
-          throw e;
-        }
+        SolrException.log(IndexFetcher.log, "Error fetching file", e);
+        throw e;
       }
     }
     
@@ -1780,8 +1811,26 @@ public class IndexFetcher {
         req.setBasePath(masterUrl);
         req.setMethod(SolrRequest.METHOD.POST);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
-        response = solrClient.request(req);
-        is = (InputStream) response.get("stream");
+        //response =
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<InputStream> ais = new AtomicReference<>();
+        Cancellable resp = solrClient.asyncRequestRaw(req, null, new AsyncListener<InputStream>() {
+          @Override
+          public void onSuccess(InputStream is) {
+            ais.set(is);
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            log.error("Exception fetching file", throwable);
+          }
+        });
+
+        fileFetchRequests.put(fileName, resp);
+
+        latch.await();
+        is = ais.get();
         if (is == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
         }
@@ -1828,7 +1877,7 @@ public class IndexFetcher {
     }
   }
 
-  private class DirectoryFileFetcher extends FileFetcher {
+  public class DirectoryFileFetcher extends FileFetcher {
     DirectoryFileFetcher(Directory tmpIndexDir, Map<String, Object> fileDetails, String saveAs,
                          String solrParamOutput, long latestGen) throws IOException {
       super(new DirectoryFile(tmpIndexDir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);
@@ -1877,7 +1926,7 @@ public class IndexFetcher {
     }
   }
 
-  private class LocalFsFileFetcher extends FileFetcher {
+  public class LocalFsFileFetcher extends FileFetcher {
     LocalFsFileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
                        String solrParamOutput, long latestGen) throws IOException {
       super(new LocalFsFile(dir, saveAs), fileDetails, saveAs, solrParamOutput, latestGen);

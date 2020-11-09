@@ -99,8 +99,7 @@ class StatementImpl implements Statement {
       }
 
       Replica rep = shuffler.get(0);
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-      String url = zkProps.getCoreUrl();
+      String url = rep.getCoreUrl();
       return new SolrStream(url, params);
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);

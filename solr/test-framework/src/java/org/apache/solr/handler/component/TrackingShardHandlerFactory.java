@@ -295,7 +295,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
         // multiple shard addresses may be present separated by '|'
         List<String> list = StrUtils.splitSmart(entry.getKey(), '|');
         for (Map.Entry<String, Replica> replica : slice.getReplicasMap().entrySet()) {
-          String coreUrl = new ZkCoreNodeProps(replica.getValue()).getCoreUrl();
+          String coreUrl = replica.getValue().getCoreUrl();
           if (list.contains(coreUrl)) {
             return new ArrayList<>(entry.getValue());
           }

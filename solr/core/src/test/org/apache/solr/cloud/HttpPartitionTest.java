@@ -166,7 +166,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
       JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(testCollectionName, "shard1", 10000)));
 
-      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
 
       List<Replica> notLeaders = new ArrayList<>();
       List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -206,7 +206,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       cloudClient.getZkStateReader().waitForLiveNodes(15, TimeUnit.SECONDS, SolrCloudTestCase.missingLiveNode(notLeaderNodeName));
 
       notLeaderJetty.start();
-      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
 
       assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 2);
     } finally {
@@ -251,7 +251,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     proxy.reopen();
     leaderProxy.reopen();
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
 
 
     notLeaders = new ArrayList<>();
@@ -267,7 +267,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     if (achievedRf == 1) {
       // this case can happen when leader reuse an connection get established before network partition
       // TODO: Remove when SOLR-11776 get committed
-      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+      cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
     }
     
     // sent 3 docs in so far, verify they are on the leader and replica
@@ -277,7 +277,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     JettySolrRunner replicaJetty = getJettyOnPort(getReplicaPort(notLeader));
     CoreContainer coreContainer = replicaJetty.getCoreContainer();
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
-    String coreName = replicaCoreNodeProps.getCoreName();
+    String coreName = notLeader.getName();
     Long maxVersionBefore = null;
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '"+coreName+"' not found for replica: "+notLeader.getName(), core);
@@ -316,7 +316,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       leaderProxy.reopen();
     }
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
 
 
     notLeaders = new ArrayList<>();
@@ -369,7 +369,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     
     sendDoc(1);
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
 
     ArrayList<Replica> notLeaders = new ArrayList<>();
     List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -408,7 +408,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.reopen();
     
     // sent 4 docs in so far, verify they are on the leader and replica
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 3));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 3));
 
     notLeaders = new ArrayList<>();
     replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -437,7 +437,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     sendDoc(1);
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(1, 2));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(1, 2));
 
 
     ArrayList<Replica> notLeaders = new ArrayList<>();

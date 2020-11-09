@@ -23,13 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -67,7 +67,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -104,11 +104,13 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
       propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
       ZkNodeProps m = new ZkNodeProps(propMap);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      clusterState = new SliceMutator(ocmh.cloudManager).updateShardState(clusterState, message);
     }
 
-    String asyncId = message.getStr(ASYNC);
+    slice = clusterState.getCollection(collectionName).getSlice(sliceId);
 
+    String asyncId = message.getStr(ASYNC);
+    List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
 
@@ -117,25 +119,15 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         if (log.isInfoEnabled()) {
           log.info("Deleting replica for collection={} shard={} on node={}", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(CoreAdminParams.NODE));
         }
-        @SuppressWarnings({"rawtypes"})
-        NamedList deleteResult = new NamedList();
+        @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
         try {
-          ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult, () -> {
 
-            if (deleteResult.get("failure") != null) {
-              synchronized (results) {
-                results.add("failure", String.format(Locale.ROOT, "Failed to delete replica for collection=%s shard=%s" +
-                    " on node=%s", replica.getStr(COLLECTION_PROP), replica.getStr(SHARD_ID_PROP), replica.getStr(NODE_NAME_PROP)));
-              }
-            }
-            @SuppressWarnings({"rawtypes"})
-            SimpleOrderedMap success = (SimpleOrderedMap) deleteResult.get("success");
-            if (success != null) {
-              synchronized (results)  {
-                results.add("success", success);
-              }
-            }
-          });
+          // nocommit - return results from deleteReplica cmd
+          AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult);
+          if (resp.asyncFinalRunner != null) {
+            finalizers.add(resp.asyncFinalRunner);
+          }
+          clusterState = resp.clusterState;
         } catch (KeeperException e) {
           log.warn("Error deleting replica: {}", r, e);
           throw e;
@@ -144,31 +136,11 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
           log.warn("Error deleting replica: {}", r, e);
           throw e;
         }
-      }
-      log.debug("Waiting for delete shard action to complete");
+      } log.debug("Waiting for delete shard action to complete");
 
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
-          collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
-      ZkStateReader zkStateReader = ocmh.zkStateReader;
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
 
-
-      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-
-      if (results.get("failure") == null && results.get("exception") == null) {
-        response.asyncFinalRunner = new Runnable() {
-          @Override
-          public void run() {
-            try {
-              zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (c) ->  c  != null && c.getSlice(sliceId) == null);
-            } catch (InterruptedException e) {
-              log.warn("",  e);
-            } catch (TimeoutException e) {
-              log.warn("",  e);
-            }
-          }
-        };
-      }
+      clusterState = new CollectionMutator(ocmh.cloudManager).deleteShard(clusterState, m);
 
       log.info("Successfully deleted collection: {} , shard: {}", collectionName, sliceId);
     } catch (SolrException e) {
@@ -178,7 +150,16 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
-    return null;
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    response.asyncFinalRunner = () -> {
+      for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
+        finalize.call();
+      }
+      return new AddReplicaCmd.Response();
+    };
+    response.clusterState = clusterState;
+    return response;
   }
 
   private List<ZkNodeProps> getReplicasForSlice(String collectionName, Slice slice) {
@@ -187,7 +168,6 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       ZkNodeProps props = new ZkNodeProps(
           COLLECTION_PROP, collectionName,
           SHARD_ID_PROP, slice.getName(),
-          ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
           ZkStateReader.REPLICA_PROP, replica.getName(),
           CoreAdminParams.NODE, replica.getNodeName());
       sourceReplicas.add(props);

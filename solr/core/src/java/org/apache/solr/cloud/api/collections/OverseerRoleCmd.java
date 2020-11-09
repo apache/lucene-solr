@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.cloud.OverseerNodePrioritizer;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -58,7 +57,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Runnable call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map roles = null;

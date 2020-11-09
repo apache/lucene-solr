@@ -55,8 +55,7 @@ import org.slf4j.LoggerFactory;
 @LogLevel("org.apache.solr.cloud.overseer.*=DEBUG,org.apache.solr.cloud.Overseer=DEBUG,org.apache.solr.cloud.ZkController=DEBUG")
 @LuceneTestCase.Nightly
 public class TestCloudSearcherWarming extends SolrCloudTestCase {
-  public static final AtomicReference<String> coreNodeNameRef = new AtomicReference<>(null),
-      coreNameRef = new AtomicReference<>(null);
+  public static final AtomicReference<String> coreNameRef = new AtomicReference<>(null);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicInteger sleepTime = new AtomicInteger(-1);
 
@@ -75,7 +74,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   @Override
   public void tearDown() throws Exception {
     coreNameRef.set(null);
-    coreNodeNameRef.set(null);
     sleepTime.set(-1);
     
     if (null != cluster) {
@@ -164,7 +162,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     // reset
     coreNameRef.set(null);
-    coreNodeNameRef.set(null);
     failingCoreNodeName.set(null);
     sleepTime.set(5000);
 
@@ -201,7 +198,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     // reset
     coreNameRef.set(null);
-    coreNodeNameRef.set(null);
     failingCoreNodeName.set(null);
     sleepTime.set(5000);
 
@@ -222,7 +218,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     // reset
     coreNameRef.set(null);
-    coreNodeNameRef.set(null);
     failingCoreNodeName.set(null);
     sleepTime.set(14000);  // has to be higher than the twice the recovery wait pause between attempts plus some margin
 
@@ -238,19 +233,18 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     cluster.getSolrClient().getZkStateReader().removeCollectionStateWatcher(collectionName, stateWatcher);
   }
 
-  private CollectionStateWatcher createActiveReplicaSearcherWatcher(AtomicInteger expectedDocs, AtomicReference<String> failingCoreNodeName) {
+  private CollectionStateWatcher createActiveReplicaSearcherWatcher(AtomicInteger expectedDocs, AtomicReference<String> failingCoreName) {
     return new CollectionStateWatcher() {
       @Override
       public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
         try {
-          String coreNodeName = coreNodeNameRef.get();
           String coreName = coreNameRef.get();
-          if (coreNodeName == null || coreName == null) return false;
-          Replica replica = collectionState.getReplica(coreNodeName);
+          if (coreName == null) return false;
+          Replica replica = collectionState.getReplica(coreName);
           if (replica == null) return false;
           log.info("Collection state: {}", collectionState);
           if (replica.isActive(liveNodes)) {
-            log.info("Active replica: {}", coreNodeName);
+            log.info("Active replica: {}", coreName);
             for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
               JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(i);
               if (log.isInfoEnabled()) {
@@ -271,7 +265,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                   if (registeredSearcher != null) {
                     log.error("registered searcher not null, maxdocs = {}", registeredSearcher.get().maxDoc());
                     if (registeredSearcher.get().maxDoc() != expectedDocs.get()) {
-                      failingCoreNodeName.set(coreNodeName);
+                      failingCoreName.set(coreName);
                       registeredSearcher.decref();
                       return false;
                     } else {
@@ -289,7 +283,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
                       log.error("newest searcher was also null!");
                     }
                     // no registered searcher but replica is active!
-                    failingCoreNodeName.set(coreNodeName);
+                    failingCoreName.set(coreName);
                   }
                 }
               }
@@ -322,7 +316,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       if (sleepTime.get() > 0) {
-        TestCloudSearcherWarming.coreNodeNameRef.set(newSearcher.getCore().getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
         TestCloudSearcherWarming.coreNameRef.set(newSearcher.getCore().getName());
         if (log.isInfoEnabled()) {
           log.info("Sleeping for {} on newSearcher: {}, currentSearcher: {} belonging to (newest) core: {}, id: {}"

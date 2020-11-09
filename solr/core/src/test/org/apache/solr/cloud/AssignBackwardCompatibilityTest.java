@@ -83,7 +83,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         DocCollection dc = getCollectionState(COLLECTION);
         Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
         CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName()).process(cluster.getSolrClient());
-        coreNames.remove(replica.getCoreName());
+        coreNames.remove(replica.getName());
         numLiveReplicas--;
       } else {
         CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
@@ -97,7 +97,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
 
         Replica newReplica = getCollectionState(COLLECTION).getReplicas().stream()
-            .filter(r -> r.getCoreName().equals(coreName))
+            .filter(r -> r.getName().equals(coreName))
             .findAny().get();
         String coreNodeName = newReplica.getName();
         assertFalse("Core node name is not unique", coreNodeNames.contains(coreName));

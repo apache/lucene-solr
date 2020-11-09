@@ -69,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +83,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @lucene.experimental
  */
 public class RecoveryStrategy implements Runnable, Closeable {
+
+  private volatile CountDownLatch latch;
 
   public static class Builder implements NamedListInitializedPlugin {
     private NamedList args;
@@ -123,7 +126,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile RecoveryListener recoveryListener;
   private final ZkController zkController;
   private final String baseUrl;
-  private volatile String coreZkNodeName;
   private final ZkStateReader zkStateReader;
   private volatile String coreName;
   private final AtomicInteger retries = new AtomicInteger(0);
@@ -148,7 +150,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
     replicaType = cd.getCloudDescriptor().getReplicaType();
   }
 
@@ -211,17 +212,25 @@ public class RecoveryStrategy implements Runnable, Closeable {
           if (finalReplicationHandler != null) finalReplicationHandler.abortFetch();
         });
 
+        closer.collect("latch", () -> {
+          try {
+            latch.countDown();
+            latch = null;
+          } catch (NullPointerException e) {
+            // expected
+          }
+        });
+
       }
     } finally {
       core = null;
     }
-    log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+    log.warn("Stopping recovery for core=[{}]", coreName);
     //ObjectReleaseTracker.release(this);
   }
 
   final private void recoveryFailed(final SolrCore core,
-      final ZkController zkController, final String baseUrl,
-      final String shardZkNodeName, final CoreDescriptor cd) throws Exception {
+      final ZkController zkController, final String baseUrl, final CoreDescriptor cd) throws Exception {
     SolrException.log(log, "Recovery failed - I give up.");
     try {
       if (zkController.getZkClient().isConnected()) {
@@ -239,16 +248,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
    * 
    * @lucene.experimental
    */
-  protected String getReplicateLeaderUrl(ZkNodeProps leaderprops) {
-    return new ZkCoreNodeProps(leaderprops).getCoreUrl();
+  protected String getReplicateLeaderUrl(Replica leaderprops) {
+    return leaderprops.getCoreUrl();
   }
 
-  final private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
+  final private void replicate(String nodeName, SolrCore core, Replica leaderprops)
       throws SolrServerException, IOException {
 
     final String leaderUrl = getReplicateLeaderUrl(leaderprops);
 
-    log.info("Attempting to replicate from [{}].", leaderUrl);
+    log.info("Attempting to replicate from [{}].", leaderprops);
 
     // send commit
     commitOnLeader(leaderUrl);
@@ -268,8 +277,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // always download the tlogs from the leader when running with cdcr enabled. We need to have all the tlogs
     // to ensure leader failover doesn't cause missing docs on the target
 
-    if (isClosed()) return; // we check closed on return
     boolean success = false;
+
+    log.info("do replication fetch [{}].", solrParams);
+
     IndexFetcher.IndexFetchResult result = replicationHandler.doFetch(solrParams, false);
 
     if (result.getMessage().equals(IndexFetcher.IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE)) {
@@ -278,7 +289,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     if (result.getSuccessful()) {
+      log.info("replication fetch reported as success");
       success= true;
+    } else {
+      log.error("replication fetch reported as failed: {} {} {}", result.getMessage(), result, result.getException());
     }
 
     if (!success) {
@@ -319,6 +333,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
+    log.info("send commit to leader");
     Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient();
     UpdateRequest ureq = new UpdateRequest();
     ureq.setBasePath(leaderUrl);
@@ -333,9 +348,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void run() {
     try {
-      if (isClosed()) {
-        return;
-      }
+
       // set request info for logging
 
 
@@ -389,7 +402,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                                                                                             // though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
+        Replica leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
         final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
         final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -488,7 +501,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           if (retries.incrementAndGet() >= maxRetries) {
             SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
             try {
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
+              recoveryFailed(core, zkController, baseUrl, this.coreDescriptor);
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
               return;
@@ -533,13 +546,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
   public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+    log.info("Do peersync or replication recovery core={} collection={}", core.getName(), core.getCoreDescriptor().getCollectionName());
     boolean successfulRecovery = false;
 
     UpdateLog ulog;
     ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog == null) {
       SolrException.log(log, "No UpdateLog found - cannot recover.");
-      recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+      recoveryFailed(core, zkController, baseUrl,
           this.coreDescriptor);
       return;
     }
@@ -659,12 +673,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getCoreName(), slice);
+        sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), slice);
 
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
 
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state
@@ -704,7 +714,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             cloudDebugLog(core, "synced");
 
             log.info("Replaying updates buffered during PeerSync.");
-            replayFuture = replay(core);
+            replay(core);
 
             // sync success
             successfulRecovery = true;
@@ -714,10 +724,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("PeerSync Recovery was not successful - trying replication.");
         }
 
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
 
         log.info("Starting Replication Recovery.");
 
@@ -725,17 +731,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
           replicate(zkController.getNodeName(), core, leader);
 
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
-
-          replayFuture = replay(core);
-
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
+          replay(core);
 
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
@@ -780,17 +776,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
         // Or do a fall off retry...
         try {
 
-          if (isClosed()) {
-            log.info("RecoveryStrategy has been closed");
-            break;
-          }
 
           log.error("Recovery failed - trying again... ({})", retries);
 
           if (retries.incrementAndGet() >= maxRetries) {
             SolrException.log(log, "Recovery failed - max retries exceeded (" + retries + ").");
             try {
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName, this.coreDescriptor);
+              recoveryFailed(core, zkController, baseUrl, this.coreDescriptor);
             } catch(InterruptedException e) {
               ParWork.propagateInterrupt(e);
               return;
@@ -842,7 +834,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (true) {
       CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
-      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 && docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName()).getState() == Replica.State.ACTIVE) {
+      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 && docCollection.getReplica(coreDesc.getName()).getState() == Replica.State.ACTIVE) {
         // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
         // zkController.publish(coreDesc, Replica.State.DOWN);
         // TODO: We should be in recovery and ignored by queries?
@@ -871,7 +863,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   public static Runnable testing_beforeReplayBufferingUpdates;
 
-    final private Future<RecoveryInfo> replay(SolrCore core)
+    final private void replay(SolrCore core)
       throws InterruptedException, ExecutionException {
     if (testing_beforeReplayBufferingUpdates != null) {
       testing_beforeReplayBufferingUpdates.run();
@@ -882,7 +874,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
           new ModifiableSolrParams());
       core.getUpdateHandler().getUpdateLog().copyOverBufferingUpdates(new CommitUpdateCommand(req, false));
       req.close();
-      return null;
     }
     Future<RecoveryInfo> future = core.getUpdateHandler().getUpdateLog().applyBufferedUpdates();
     if (future == null) {
@@ -911,8 +902,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     // solrcloud_debug
     cloudDebugLog(core, "replayed");
-
-    return future;
   }
 
   final private void cloudDebugLog(SolrCore core, String op) {
@@ -942,41 +931,71 @@ public class RecoveryStrategy implements Runnable, Closeable {
   final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException {
 
+    if (coreDescriptor.getCollectionName() == null) {
+      throw new IllegalStateException("Collection name cannot be null");
+    }
+
     WaitForState prepCmd = new WaitForState();
-    prepCmd.setCoreName(leaderCoreName);
+    prepCmd.setCoreName(coreName);
     prepCmd.setNodeName(zkController.getNodeName());
-    prepCmd.setCoreNodeName(coreZkNodeName);
     prepCmd.setState(Replica.State.RECOVERING);
     prepCmd.setCheckLive(true);
     prepCmd.setOnlyIfLeader(true);
+    prepCmd.setCollection(coreDescriptor.getCollectionName());
+    prepCmd.setShardId(coreDescriptor.getCloudDescriptor().getShardId());
     final Slice.State state = slice.getState();
     if (state != Slice.State.CONSTRUCTION && state != Slice.State.RECOVERY && state != Slice.State.RECOVERY_FAILED) {
       prepCmd.setOnlyIfLeaderActive(true);
     }
 
+    log.info("Sending prep recovery command to {} for core {} params={}", leaderBaseUrl, leaderCoreName, prepCmd.getParams());
+
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "30000"));
     // nocommit
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(core.getCoreContainer().getUpdateShardHandler().
-        getRecoveryOnlyClient()).idleTimeout(readTimeout).connectionTimeout(3000).markInternalRequest().build()) {
+        getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
       prepCmd.setBasePath(leaderBaseUrl);
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
-      Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener());
+      latch = new CountDownLatch(1);
+      Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener(latch));
       prevSendPreRecoveryHttpUriRequest = result;
+      try {
+        latch.await();
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      } finally {
+        prevSendPreRecoveryHttpUriRequest = null;
+        latch = null;
+      }
 
-      client.waitForOutstandingRequests();
     }
   }
 
   private static class NamedListAsyncListener implements AsyncListener<NamedList<Object>> {
+
+    private final CountDownLatch latch;
+
+    public NamedListAsyncListener(CountDownLatch latch) {
+      this.latch = latch;
+    }
+
     @Override
     public void onSuccess(NamedList<Object> entries) {
+      try {
+        latch.countDown();
+      } catch (NullPointerException e) {
 
+      }
     }
 
     @Override
     public void onFailure(Throwable throwable) {
+      try {
+        latch.countDown();
+      } catch (NullPointerException e) {
 
+      }
     }
   }
 }

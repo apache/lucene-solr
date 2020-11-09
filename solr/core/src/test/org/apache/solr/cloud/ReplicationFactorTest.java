@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -110,7 +111,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     cloudClient.setDefaultCollection(testCollectionName);
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
 
     ArrayList<Replica> shardreplicas2Replicas = new ArrayList<>();
     List<Replica> replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -151,7 +152,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
         getSomeIds(2), 2, testCollectionName);
 
     // so now kill the replica of shard2 and verify the achieved rf is only 1
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
 
     ArrayList<Replica> shard2Replicas = new ArrayList<>();
     replicas = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -297,7 +298,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     createCollectionWithRetry(testCollectionName, "conf1", numShards, replicationFactor, maxShardsPerNode);
     cloudClient.setDefaultCollection(testCollectionName);
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
 
     ArrayList<Replica> replicas = new ArrayList<>();
     List<Replica> reps = cloudClient.getZkStateReader().getClusterState().getCollection(testCollectionName).getReplicas();
@@ -355,7 +356,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).reopen();    
     getProxyForReplica(replicas.get(1)).reopen();
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
     
     log.info("Indexing docId=4");
     rf = sendDoc(4, minRf);
@@ -426,7 +427,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).reopen();        
     getProxyForReplica(replicas.get(1)).reopen();
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, BaseCloudSolrClient.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
+    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(numShards, numShards * replicationFactor));
   }
 
   protected void addDocs(Set<Integer> docIds, int expectedRf, int retries) throws Exception {

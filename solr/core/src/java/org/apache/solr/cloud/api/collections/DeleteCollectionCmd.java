@@ -19,12 +19,14 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -67,7 +69,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   @Override
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.info("delete collection called");
     Object o = message.get(MaintainRoutedAliasCmd.INVOKED_BY_ROUTED_ALIAS);
     if (o != null) {
@@ -104,14 +106,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       SolrZkClient zkClient = zkStateReader.getZkClient();
       SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
 
-      if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
-        if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
-          // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will just
-          // be removed in the finally - we cannot continue, because the below code will error if the collection
-          // is not in the clusterstate
-          return null;
-        }
-      }
       // remove collection-level metrics history
       if (deleteHistory) {
         MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
@@ -136,6 +130,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
       }
 
+
+      clusterState = new ClusterStateMutator(ocmh.cloudManager) .deleteCollection(clusterState, collection);
       @SuppressWarnings({"unchecked"})
       List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
 
@@ -144,18 +140,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
     } finally {
-      try {
-        log.info("Send DELETE operation to Overseer collection={}", collection);
-        ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
-
-        // wait for a while until we don't see the collection
-        if (zkStateReader.getClusterState().getCollectionOrNull(collection) != null) {
-          zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
-        }
-      } catch (Exception e) {
-        log.error("Exception while removing collection", e);
-      }
 
       // make sure it's gone again after cores have been removed
       try {
@@ -174,7 +158,22 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         });
       }
     }
-    return null;
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    if (results.get("failure") == null && results.get("exception") == null) {
+
+      response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
+        @Override
+        public AddReplicaCmd.Response call() {
+          // TODO: wait for delete collection?
+          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+          return response;
+        }
+      };
+    }
+    response.clusterState = clusterState;
+    return response;
   }
 
   // This method returns the single collection aliases to delete, if present, or null

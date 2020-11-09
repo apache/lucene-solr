@@ -416,7 +416,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   }
 
   private void collectGlobalMetrics() {
-    if (overseer == null || !overseer.getUpdaterThread().isAlive()) {
+    if (overseer != null && overseer.isClosed()) {
       return;
     }
     Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());

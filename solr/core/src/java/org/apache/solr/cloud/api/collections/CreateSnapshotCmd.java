@@ -66,7 +66,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     String extCollectionName =  message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -103,7 +103,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
           if (log.isInfoEnabled()) {
-            log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getCoreName());
+            log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getName());
           }
           continue; // Since replica is not active - no point sending a request.
         }
@@ -142,7 +142,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
         // to have latest state.
         String coreName = (String)resp.get(CoreAdminParams.CORE);
         Slice slice = shardByCoreName.remove(coreName);
-        boolean leader = (slice.getLeader() != null && slice.getLeader().getCoreName().equals(coreName));
+        boolean leader = (slice.getLeader() != null && slice.getLeader().getName().equals(coreName));
         resp.add(SolrSnapshotManager.SHARD_ID, slice.getName());
         resp.add(SolrSnapshotManager.LEADER, leader);
 

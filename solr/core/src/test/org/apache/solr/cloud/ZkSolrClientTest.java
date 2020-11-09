@@ -197,7 +197,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
         timeout = random().nextInt(1000) + 500;
       }
       
-      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(3000);
+      ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(server.getZkClient(), 3000);
       final long start = System.nanoTime();
       expectThrows(KeeperException.SessionExpiredException.class, () -> {
         zkCmdExecutor.retryOperation(() -> {

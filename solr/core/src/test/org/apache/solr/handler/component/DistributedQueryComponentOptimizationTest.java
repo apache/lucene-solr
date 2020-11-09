@@ -51,8 +51,8 @@ import org.junit.Test;
 public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "optimize";
-  private static final String SHARD1 = "shard1";
-  private static final String SHARD2 = "shard2";
+  private static final String SHARD1 = "s1";
+  private static final String SHARD2 = "s2";
 
   private static final int sliceCount = 3;
 

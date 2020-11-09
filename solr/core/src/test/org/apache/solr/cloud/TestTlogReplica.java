@@ -137,7 +137,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       for (Replica r:s.getReplicas()) {
         SolrCore core = null;
         try {
-          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getCoreName());
+          core = cluster.getReplicaJetty(r).getCoreContainer().getCore(r.getName());
           assertNotNull(core);
           assertTrue("Update log should exist for replicas of type Append",
               new java.io.File(core.getUlogDir()).exists());
@@ -266,9 +266,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = createAndWaitForCollection(2, 0, 1, 0);
     assertEquals(2, docCollection.getSlices().size());
 
-    addReplicaToShard("shard1", Replica.Type.TLOG);
+    addReplicaToShard("s1", Replica.Type.TLOG);
     docCollection = assertNumberOfReplicas(0, 3, 0, true, false);
-    addReplicaToShard("shard2", Replica.Type.TLOG);
+    addReplicaToShard("s2", Replica.Type.TLOG);
     docCollection = assertNumberOfReplicas(0, 4, 0, true, false);
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
@@ -276,8 +276,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     //Delete tlog replica from shard1
     CollectionAdminRequest.deleteReplica(
         collectionName,
-        "shard1",
-        docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0).getName())
+        "s1",
+        docCollection.getSlice("s1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0).getName())
     .process(cluster.getSolrClient());
     assertNumberOfReplicas(0, 3, 0, true, true);
   }
@@ -330,7 +330,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
     Http2SolrClient httpClient = cluster.getSolrClient().getHttpClient();
     int id = 0;
-    Slice slice = docCollection.getSlice("shard1");
+    Slice slice = docCollection.getSlice("s1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd:slice.getReplicas()) {
       try (Http2SolrClient client = SolrTestCaseJ4
@@ -386,7 +386,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     if (removeReplica) {
       CollectionAdminRequest.deleteReplica(
           collectionName,
-          "shard1",
+          "s1",
           s.getLeader().getName())
       .process(cluster.getSolrClient());
     } else {
@@ -401,7 +401,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     docCollection = assertNumberOfReplicas(0, 1, 0, true, true);
 
     // Wait until a new leader is elected
-    waitForLeaderChange(leaderJetty, "shard1");
+    waitForLeaderChange(leaderJetty, "s1");
     
     // There is a new leader, I should be able to add and commit
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
@@ -427,7 +427,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int maxAttempts = 3;
     for (int i = 0; i < maxAttempts ; i++) {
       try {
-        CollectionAdminResponse respone = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
+        CollectionAdminResponse respone = CollectionAdminRequest.addReplicaToShard(collectionName, "s1", Replica.Type.TLOG).process(cluster.getSolrClient());
         // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a Jira to address that separately. for now, we'll retry
         if (respone.isSuccess()) {
           break;
@@ -448,11 +448,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
     cluster.getSolrClient().commit(collectionName);
     waitForNumDocsInAllActiveReplicas(1);
 
-    JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
+    JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("s1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     pullReplicaJetty.stop();
     cluster.waitForJettyToStop(pullReplicaJetty);
 
-    waitForLeaderChange(pullReplicaJetty, "shard1");
+    waitForLeaderChange(pullReplicaJetty, "s1");
 //    // Also wait for the replica to be placed in state="down"
 //    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
 
@@ -673,7 +673,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
 
     // Even after the replica is gone, a leader may not be elected yet. Wait for it. 
-    waitForLeaderChange(oldLeaderJetty, "shard1");
+    waitForLeaderChange(oldLeaderJetty, "s1");
     
     new UpdateRequest()   
         .add(SolrTestCaseJ4.sdoc("id", "3"))
@@ -720,7 +720,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     oldLeaderJetty.stop();
     cluster.waitForJettyToStop(oldLeaderJetty);
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    waitForLeaderChange(oldLeaderJetty, "shard1");
+    waitForLeaderChange(oldLeaderJetty, "s1");
     oldLeaderJetty.start();
     cluster.waitForNode(oldLeaderJetty, 10000);
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
@@ -759,7 +759,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private String getBaseUrl() {
     DocCollection collection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
-    Slice slice = collection.getSlice("shard1");
+    Slice slice = collection.getSlice("s1");
     return slice.getLeader().getCoreUrl();
   }
 
@@ -897,7 +897,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+        Replica replica = docCollection.getReplica(solrCore.getCoreDescriptor().getName());
         if (slice.getLeader().equals(replica) && isLeader) {
           rs.add(solrCore);
         } else if (!slice.getLeader().equals(replica) && !isLeader) {
@@ -932,7 +932,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+        Replica replica = docCollection.getReplica(solrCore.getCoreDescriptor().getName());
         if (slice.getLeader() == replica && isLeader) {
           rs.add(solrRunner);
         } else if (slice.getLeader() != replica && !isLeader) {

@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseableLatch;
@@ -61,7 +63,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Runnable call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
@@ -92,63 +94,39 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
     // map of collectionName_coreNodeName to watchers
-    Map<String, CollectionStateWatcher> watchers = new HashMap<>();
+    Map<String,CollectionStateWatcher> watchers = new HashMap<>();
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ocmh);
 
     SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ocmh);
-    try {
-      for (ZkNodeProps sourceReplica : sourceReplicas) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList nl = new NamedList();
-        String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
-        if (log.isInfoEnabled()) {
-          log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-        }
-        String targetNode = target;
-        if (targetNode == null) {
-          Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
-          int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
-          int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
-          int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
-          Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-              .forCollection(sourceCollection)
-              .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
-              .assignNrtReplicas(numNrtReplicas)
-              .assignTlogReplicas(numTlogReplicas)
-              .assignPullReplicas(numPullReplicas)
-              .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
-              .build();
-          Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-          Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, clusterState.getCollection(sourceCollection));
-          targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
-        }
-        ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
-        if (async != null) msg.getProperties().put(ASYNC, async);
-        final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
-            msg, nl, () -> {
-              countDownLatch.countDown();
-              if (nl.get("failure") != null) {
-                String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
-                    " on node=%s", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-                log.warn(errorString);
-                // one replica creation failed. Make the best attempt to
-                // delete all the replicas created so far in the target
-                // and exit
-                synchronized (results) {
-                  results.add("failure", errorString);
-                  anyOneFailed.set(true);
-                }
-              } else {
-                if (log.isDebugEnabled()) {
-                  log.debug("Successfully created replica for collection={} shard={} on node={}",
-                      sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
-                }
-              }
-            }).get(0);
-
+    List<Runnable> runners = new ArrayList<>();
+    for (ZkNodeProps sourceReplica : sourceReplicas) {
+      @SuppressWarnings({"rawtypes"}) NamedList nl = new NamedList();
+      String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
+      if (log.isInfoEnabled()) {
+        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
+      }
+      String targetNode = target;
+      if (targetNode == null) {
+        Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+        int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
+        int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
+        int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
+        Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder().forCollection(sourceCollection).forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
+            .assignNrtReplicas(numNrtReplicas).assignTlogReplicas(numTlogReplicas).assignPullReplicas(numPullReplicas)
+            .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes())).build();
+        Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+        Assign.AssignStrategy assignStrategy = assignStrategyFactory.create();
+        targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
+      }
+      ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
+      if (async != null) msg.getProperties().put(ASYNC, async);
+      AddReplicaCmd.Response response = ocmh.addReplica(clusterState, msg, nl);
+      clusterState = response.clusterState;
+      Runnable runner = () -> {
+        final ZkNodeProps addedReplica = response.responseProps.get(0);
         if (addedReplica != null) {
           createdReplicas.add(addedReplica);
           if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
@@ -158,11 +136,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             String key = collectionName + "_" + replicaName;
             CollectionStateWatcher watcher;
             if (waitForFinalState) {
-              watcher = new ActiveReplicaWatcher(collectionName, Collections.singletonList(replicaName),
-                  null, replicasToRecover);
+              watcher = new ActiveReplicaWatcher(collectionName, Collections.singletonList(replicaName), null, replicasToRecover);
             } else {
-              watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName,
-                  addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
+              watcher = new LeaderRecoveryWatcher(collectionName, shardName, replicaName, addedReplica.getStr(ZkStateReader.CORE_NAME_PROP), replicasToRecover);
             }
             watchers.put(key, watcher);
             log.debug("--- adding {}, {}", key, watcher);
@@ -171,66 +147,90 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             log.debug("--- not waiting for {}", addedReplica);
           }
         }
+      };
+      runners.add(runner);
+    }
+
+
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    response.results = results;
+    response.clusterState = clusterState;
+
+    int finalNumLeaders = numLeaders;
+    response.asyncFinalRunner = () -> {
+      for (Runnable runner : runners) {
+        runner.run();
       }
 
       log.debug("Waiting for replicas to be added");
-      if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
-        log.info("Timed out waiting for replicas to be added");
-        anyOneFailed.set(true);
-      } else {
-        log.debug("Finished waiting for replicas to be added");
+      try {
+        if (!countDownLatch.await(timeout, TimeUnit.SECONDS)) {
+          log.info("Timed out waiting for replicas to be added");
+          anyOneFailed.set(true);
+        } else {
+          log.debug("Finished waiting for replicas to be added");
+        }
+
+        // now wait for leader replicas to recover
+        log.debug("Waiting for {} leader replicas to recover", finalNumLeaders);
+        if (!replicasToRecover.await(timeout, TimeUnit.SECONDS)) {
+          if (log.isInfoEnabled()) {
+            log.info("Timed out waiting for {} leader replicas to recover", replicasToRecover.getCount());
+          }
+          anyOneFailed.set(true);
+        } else {
+          log.debug("Finished waiting for leader replicas to recover");
+        }
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-    } finally {
-    }
-    // now wait for leader replicas to recover
-    log.debug("Waiting for {} leader replicas to recover", numLeaders);
-    if (!replicasToRecover.await(timeout, TimeUnit.SECONDS)) {
-      if (log.isInfoEnabled()) {
-        log.info("Timed out waiting for {} leader replicas to recover", replicasToRecover.getCount());
+      // remove the watchers, we're done either way
+      for (Map.Entry<String,CollectionStateWatcher> e : watchers.entrySet()) {
+        zkStateReader.removeCollectionStateWatcher(e.getKey(), e.getValue());
       }
-      anyOneFailed.set(true);
-    } else {
-      log.debug("Finished waiting for leader replicas to recover");
-    }
-    // remove the watchers, we're done either way
-    for (Map.Entry<String, CollectionStateWatcher> e : watchers.entrySet()) {
-      zkStateReader.removeCollectionStateWatcher(e.getKey(), e.getValue());
-    }
-    if (anyOneFailed.get()) {
-      log.info("Failed to create some replicas. Cleaning up all replicas on target node");
-      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
-      for (ZkNodeProps createdReplica : createdReplicas) {
-        @SuppressWarnings({"rawtypes"})
-        NamedList deleteResult = new NamedList();
-        try {
-          ocmh.deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
+      if (anyOneFailed.get()) {
+        log.info("Failed to create some replicas. Cleaning up all replicas on target node");
+        SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
+        for (ZkNodeProps createdReplica : createdReplicas) {
+          @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
+          try {
+            // nocommit - return results from deleteReplica cmd, update clusterstate
+            ocmh.deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult);
+          } catch (KeeperException e) {
             cleanupLatch.countDown();
-            if (deleteResult.get("failure") != null) {
-              synchronized (results) {
-                results.add("failure", "Could not cleanup, because of : " + deleteResult.get("failure"));
-              }
-            }
-          });
-        } catch (KeeperException e) {
-          cleanupLatch.countDown();
-          log.warn("Error deleting replica ", e);
-        } catch (Exception e) {
+            log.warn("Error deleting replica ", e);
+          } catch (Exception e) {
+            ParWork.propagateInterrupt(e);
+            log.warn("Error deleting replica ", e);
+            cleanupLatch.countDown();
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        }
+        try {
+          cleanupLatch.await(5, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
-          log.warn("Error deleting replica ", e);
-          cleanupLatch.countDown();
-          throw e;
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
-      cleanupLatch.await(5, TimeUnit.MINUTES);
-      return null;
-    }
 
+      // we have reached this far means all replicas could be recreated
+      //now cleanup the replicas in the source node
+      try {
+        DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, null);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
+      AddReplicaCmd.Response resp = new AddReplicaCmd.Response();
+      return resp;
 
-    // we have reached this far means all replicas could be recreated
-    //now cleanup the replicas in the source node
-    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, null);
-    results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
-    return null;
+    };
+
+    return response;
   }
 
   static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {
@@ -242,8 +242,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkNodeProps props = new ZkNodeProps(
                 COLLECTION_PROP, e.getKey(),
                 SHARD_ID_PROP, slice.getName(),
-                ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
-                ZkStateReader.REPLICA_PROP, replica.getName(),
+                ZkStateReader.CORE_NAME_PROP, replica.getName(),
                 ZkStateReader.REPLICA_TYPE, replica.getType().name(),
                 ZkStateReader.LEADER_PROP, String.valueOf(replica.equals(slice.getLeader())),
                 CoreAdminParams.NODE, source);

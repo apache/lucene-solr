@@ -119,7 +119,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       for (Slice s : collState.getSlices()) {
         for (Replica replica : s.getReplicas()) {
           if (replica.getState() == State.DOWN) {
-            stoppedCoreName = Optional.of(replica.getCoreName());
+            stoppedCoreName = Optional.of(replica.getName());
           }
         }
       }
@@ -144,7 +144,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     for ( Slice shard : collectionState.getActiveSlices() ) {
       assertEquals(2, shard.getReplicas().size());
       for (Replica replica : shard.getReplicas()) {
-        if (stoppedCoreName.isPresent() && stoppedCoreName.get().equals(replica.getCoreName())) {
+        if (stoppedCoreName.isPresent() && stoppedCoreName.get().equals(replica.getName())) {
           continue; // We know that the snapshot is not created for this replica.
         }
 
@@ -229,13 +229,13 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
         for (Slice s : collectionState.getSlices()) {
           for (Replica r : s.getReplicas()) {
-            if (r.getCoreName().equals(replicaToDelete.getCoreName())) {
+            if (r.getName().equals(replicaToDelete.getCoreName())) {
               log.info("Deleting replica {}", r);
               CollectionAdminRequest.DeleteReplica delReplica = CollectionAdminRequest.deleteReplica(collectionName,
                   replicaToDelete.getShardId(), r.getName());
               delReplica.process(solrClient);
               // The replica deletion will cleanup the snapshot meta-data.
-              snapshotByCoreName.remove(r.getCoreName());
+              snapshotByCoreName.remove(r.getName());
               break;
             }
           }
@@ -253,7 +253,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
     for ( Slice shard : collectionState.getActiveSlices() ) {
       for (Replica replica : shard.getReplicas()) {
-        if (stoppedCoreName.isPresent() && stoppedCoreName.get().equals(replica.getCoreName())) {
+        if (stoppedCoreName.isPresent() && stoppedCoreName.get().equals(replica.getName())) {
           continue; // We know that the snapshot was not created for this replica.
         }
 

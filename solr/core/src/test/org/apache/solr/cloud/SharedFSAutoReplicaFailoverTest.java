@@ -295,7 +295,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           Map<String, Object> properties = replica.getProperties();
-          String coreName = replica.getCoreName();
+          String coreName = replica.getName();
           String curUlogDir = (String) properties.get(CoreDescriptor.CORE_ULOGDIR);
           String prevUlogDir = collectionUlogDirMap.get(coreName);
           if (curUlogDir != null) {

@@ -106,7 +106,6 @@ public class MoveReplicaHDFSFailoverTest extends SolrCloudTestCase {
     assertTrue(newReplica.getStr("dataDir"),newReplica.getStr("dataDir").equals(dataDir) || newReplica.getStr("dataDir").equals(dataDir+'/'));
 
     assertEquals(replica.getName(), newReplica.getName());
-    assertEquals(replica.getCoreName(), newReplica.getCoreName());
     assertFalse(replica.getNodeName().equals(newReplica.getNodeName()));
     final int numDocs = 100;
     addDocs(coll, numDocs);  // indexed but not committed

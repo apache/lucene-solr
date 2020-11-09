@@ -138,7 +138,7 @@ public class MDCLoggingContext {
       if (ccd != null) {
         setCollection(ccd.getCollectionName());
         setShard(ccd.getShardId());
-        setReplica(ccd.getCoreNodeName());
+        setReplica(cd.getName());
       }
     }
   }

@@ -21,10 +21,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ConnectionManager;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Pair;
@@ -41,15 +45,24 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private volatile boolean isClosed = false;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new ZkNodeProps(ID, zkNodeName), zkClient);
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica(ID, getIDMap(zkNodeName), null, null), zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
+  }
+
+  private static Map<String,Object> getIDMap(String zkNodeName) {
+    Map<String,Object> idMap = new HashMap<>(1);
+    idMap.put(ID, zkNodeName);
+    return idMap;
   }
 
   @Override
   void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
-    if (isClosed() || overseer.isDone()) {
+    log.info("Running the leader process for Overseer");
+
+    if (overseer.isDone()) {
+      log.info("Already closed, bailing ...");
       return;
     }
 
@@ -70,35 +83,20 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 //      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
 //    }
 
-    log.info("Running the leader process for Overseer");
 
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
 
     log.info("Registered as Overseer leader, starting Overseer ...");
 
-    if (isClosed()) {
-      log.info("Bailing on becoming leader, we are closed");
-      return;
-    }
-    if (!isClosed() && !overseer.getZkController().getCoreContainer().isShutDown() && !overseer.isDone() && (overseer.getUpdaterThread() == null || !overseer.getUpdaterThread().isAlive())) {
+    if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShudownCalled()
+        && !overseer.isDone()) {
+      log.info("Starting overseer after winnning Overseer election {}", id);
       overseer.start(id, context);
+    } else {
+      log.info("Will not start Overseer because we are closed");
+      cancelElection();
     }
 
-  }
-
-  private void clearQueue(ZkDistributedQueue queue)
-      throws KeeperException, InterruptedException {
-    while (true) {
-      Collection<Pair<String,byte[]>> items = queue.peekElements(1000, 0, null);
-      List<String> paths = new ArrayList<>(items.size());
-      if (items.size() == 0) {
-        break;
-      }
-      for (Pair<String, byte[]> item : items) {
-        paths.add(item.first());
-      }
-      queue.remove(paths);
-    }
   }
 
   public Overseer getOverseer() {

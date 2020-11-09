@@ -93,7 +93,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
       assertEquals(1L, getElectionNodes(TEST_COLLECTION_1, shard, stateReader.getZkClient()).size());
       List<String> collection2Shard1Nodes = getElectionNodes(TEST_COLLECTION_2, "shard1", stateReader.getZkClient());
       List<String> collection2Shard2Nodes = getElectionNodes(TEST_COLLECTION_2, "shard2", stateReader.getZkClient());
-      CoreAdminRequest.unloadCore(replica.getCoreName(), shardLeaderClient);
+      CoreAdminRequest.unloadCore(replica.getName(), shardLeaderClient);
       // Waiting for leader election being kicked off
       long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
       boolean found = false;

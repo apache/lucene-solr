@@ -525,7 +525,7 @@ public class MiniSolrCloudCluster {
     JettySolrRunner jetty = !trackJettyMetrics 
         ? new JettySolrRunner(runnerPath.toString(), newConfig)
          :new JettySolrRunnerWithMetrics(runnerPath.toString(), newConfig);
-    jetty.start(true, false);
+    jetty.start(true, true);
     jettys.add(jetty);
     synchronized (startupWait) {
       startupWait.notifyAll();
@@ -796,7 +796,6 @@ public class MiniSolrCloudCluster {
         return jetty;
     }
     for (JettySolrRunner jetty : jettys) {
-      System.out.println("against " + jetty.getProxyBaseUrl());
       if (replica.getCoreUrl().startsWith(jetty.getProxyBaseUrl()))
         return jetty;
     }
@@ -888,9 +887,7 @@ public class MiniSolrCloudCluster {
     DocCollection coll = solrClient.getZkStateReader().getClusterState().getCollection(collection);
     if (coll != null) {
       for (Replica replica : coll.getReplicas()) {
-        System.out.println("check replica:" + replica);
-        if (replica.getStr("leader") == null || (replica.getStr("leader").equals("true") &&
-                solrClient.getZkStateReader().getClusterState().liveNodesContain(replica.getStr(ZkStateReader.CORE_NODE_NAME_PROP)))) {
+        if (replica.getStr("leader") == null) {
           return replica;
         }
       }
@@ -927,7 +924,7 @@ public class MiniSolrCloudCluster {
 
   public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas, boolean exact) {
     log.info("waitForActiveCollection: {} shards={} replicas={}, exact={}", collection, shards, totalReplicas, exact);
-    CollectionStatePredicate predicate = BaseCloudSolrClient.expectedShardsAndActiveReplicas(shards, totalReplicas, exact);
+    CollectionStatePredicate predicate = ZkStateReader.expectedShardsAndActiveReplicas(shards, totalReplicas, exact);
 
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
