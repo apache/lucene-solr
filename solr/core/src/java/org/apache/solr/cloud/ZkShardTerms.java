@@ -318,7 +318,7 @@ public class ZkShardTerms implements AutoCloseable{
       log.info("Successful update of terms at {} to {}", znodePath, newTerms);
       return true;
     } catch (KeeperException.BadVersionException e) {
-      log.info("Failed to save terms, version is not a match, retrying");
+      log.info("Failed to save terms, version is not a match, retrying version={}", newTerms.getVersion());
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
