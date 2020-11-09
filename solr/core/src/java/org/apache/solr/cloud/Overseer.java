@@ -81,7 +81,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
  *
  * <p>The Overseer deals with:</p>
  * <ul>
- *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper, see {@link ClusterStateUpdater},</li>
+ *   <li>Cluster State updates, i.e. updating Collections' <code>state.json</code> files in ZooKeeper,</li>
  *   <li>Collection API implementation, see
  *   {@link OverseerCollectionConfigSetProcessor} and {@link OverseerCollectionMessageHandler} (and the example below),</li>
  *   <li>Updating Config Sets, see {@link OverseerCollectionConfigSetProcessor} and {@link OverseerConfigSetMessageHandler},</li>
@@ -112,7 +112,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
  *     This is done by enqueuing a message in <code>/overseer/queue</code>,</li>
  *     <li>The command then waits for the update to be seen in ZooKeeper...</li>
  *   </ol></li>
- *   <li>The {@link ClusterStateUpdater} (also running on the Overseer node) dequeues the state change message and creates the
+ *   <li>The ClusterState Updater (also running on the Overseer node) dequeues the state change message and creates the
  *   <code>state.json</code> file in ZooKeeper for the Collection. All the work of the cluster state updater
  *   (creations, updates, deletes) is done sequentially for the whole cluster by a single thread.</li>
  *   <li>The {@link CreateCollectionCmd} sees the state change in
