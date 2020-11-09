@@ -26,35 +26,44 @@ description = 'Module for native code'
 apply plugin: 'cpp-library'
 
 library {
-    baseName = 'NativePosixUtil'
+  baseName = 'NativePosixUtil'
 
-    // Native build for Windows platform will be added in later stage
-    targetMachines = [
-        machines.linux.x86_64,
-        machines.macOS.x86_64
-    ]
+  // Native build for Windows platform will be added in later stage
+  targetMachines = [
+      machines.linux.x86_64,
+      machines.macOS.x86_64,
+      machines.windows.x86_64
+  ]
+
+  // Point at platform-specific sources. Other platforms will be ignored
+  // (plugin won't find the toolchain).
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    source.from file("${projectDir}/src/main/windows")
+  } else if (Os.isFamily(Os.FAMILY_UNIX) || Os.isFamily(Os.FAMILY_MAC)) {
+    source.from file("${projectDir}/src/main/posix")
+  }
 }
 
 tasks.withType(CppCompile).configureEach {
-    def javaHome = rootProject.ext.runtimeJava.getInstallationDirectory().getAsFile().getPath()
+  def javaHome = rootProject.ext.runtimeJava.getInstallationDirectory().getAsFile().getPath()
 
-    systemIncludes.from file(javaHome + "/include")
-    if (Os.isFamily(Os.FAMILY_MAC)) {
-        systemIncludes.from file(javaHome + "/include/darwin")
+  // Assume standard openjdk layout. This means only one architecture-specific include folder
+  // is present.
+  systemIncludes.from file("${javaHome}/include")
+
+  for (def path : [
+      file("${javaHome}/include/win32"),
+      file("${javaHome}/include/darwin"),
+      file("${javaHome}/include/linux"),
+      file("${javaHome}/include/solaris")]) {
+    if (path.exists()) {
+      systemIncludes.from path
     }
-    else if(Os.isFamily(Os.FAMILY_UNIX)) {
-        systemIncludes.from file(javaHome + "/include/linux")
+  }
 
-        def solarisInclude = file(javaHome + "/include/solaris")
-        if (solarisInclude.exists()) {
-           systemIncludes.from solarisInclude
-        }
-    }
-
-    compilerArgs.add '-fPIC'
+  compilerArgs.add '-fPIC'
 }
 
 tasks.withType(LinkSharedLibrary).configureEach {
-    linkerArgs.add '-lstdc++'
+  linkerArgs.add '-lstdc++'
 }
-
