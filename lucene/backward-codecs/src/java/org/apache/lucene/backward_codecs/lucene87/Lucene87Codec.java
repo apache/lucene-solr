@@ -17,8 +17,6 @@
 
 package org.apache.lucene.backward_codecs.lucene87;
 
-import java.util.Objects;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -84,18 +82,8 @@ public class Lucene87Codec extends Codec {
    * Instantiates a new codec.
    */
   public Lucene87Codec() {
-    this(Lucene87StoredFieldsFormat.Mode.BEST_SPEED);
-  }
-
-  /**
-   * Instantiates a new codec, specifying the stored fields compression
-   * mode to use.
-   * @param mode stored fields compression mode to use for newly
-   *             flushed/merged segments.
-   */
-  public Lucene87Codec(Lucene87StoredFieldsFormat.Mode mode) {
     super("Lucene87");
-    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode));
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat();
     this.defaultFormat = new Lucene84PostingsFormat();
   }
 
