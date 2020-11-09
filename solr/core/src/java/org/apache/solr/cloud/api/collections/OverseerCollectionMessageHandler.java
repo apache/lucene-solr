@@ -264,19 +264,20 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       Cmd command = commandMap.get(action);
       if (command != null) {
         AddReplicaCmd.Response responce = command.call(clusterState, message, results);
-        if (responce == null || responce.clusterState == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "CMD did not return a new clusterstate:" + operation);
+        if (responce == null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "CMD did not return a response:" + operation);
         }
 
         log.info("Command returned clusterstate={} results={}", responce.clusterState, results);
 
-        overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
+        if (responce.clusterState != null) {
+          overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
 
-        overseer.writePendingUpdates();
-
+          overseer.writePendingUpdates();
+        }
 
         // nocommit consider
-        if (responce != null && responce.asyncFinalRunner != null && results.get("failure") == null && results.get("exception") == null) {
+        if (responce != null && responce.asyncFinalRunner != null) {
           AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
           log.info("Finalize after Command returned clusterstate={}", resp.clusterState);
           if (resp.clusterState != null) {
@@ -289,7 +290,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (collection == null) {
           collection = message.getStr("name");
         }
-        if (collection != null) {
+        if (collection != null && responce.clusterState != null) {
           Integer version = overseer.getZkStateWriter().lastWrittenVersion(collection);
           if (version != null && !action.equals(DELETE)) {
             results.add("csver", version); // nocommit - find out which version was written by overseer and return it in response for this
@@ -366,7 +367,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
     response.results = results;
     // nocommit - we don't change this for this cmd, we should be able to indicate that to caller
-    response.clusterState = clusterState;
+    response.clusterState = null;
     return response;
   }
 

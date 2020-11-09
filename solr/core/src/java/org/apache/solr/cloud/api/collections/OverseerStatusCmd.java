@@ -110,7 +110,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    response.clusterState = clusterState;
+    response.clusterState = null;
 
     return response;
   }
