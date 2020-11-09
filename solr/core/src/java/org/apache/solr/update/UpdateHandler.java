@@ -160,19 +160,6 @@ UpdateHandler implements SolrInfoBean, Closeable {
         }
         ourUpdateLog.init(ulogPluginInfo);
         ourUpdateLog.init(this, core);
-      } else if (updateLog == null && !skipUpdateLog && core.getCoreContainer().isZooKeeperAware()) {
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-
-        ourUpdateLog = new UpdateLog();
-
-        if (!core.isReloaded() && !dirFactory.isPersistent()) {
-          ourUpdateLog.clearLog(core, ulogPluginInfo);
-        }
-
-        if (log.isInfoEnabled()) {
-          log.info("Using UpdateLog implementation: {}", ourUpdateLog.getClass().getName());
-        }
-        ourUpdateLog.init(this, core);
       } else {
         ourUpdateLog = updateLog;
       }

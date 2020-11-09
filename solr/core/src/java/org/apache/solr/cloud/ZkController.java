@@ -1378,15 +1378,14 @@ public class ZkController implements Closeable, Runnable {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      // nocommit - we need to know what type we are without getting the clusterstate
-      ///  if (replica.getType() != Type.PULL) {
-      log.info("Register terms for replica {}", coreName);
-      getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
-      //  }
+      if (replica.getType() != Type.PULL) {
+        log.info("Register terms for replica {}", coreName);
+        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
+      }
 
       ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
-      log.info("Register replica - core:{} address:{} collection:{} shard:{}", coreName, baseUrl, collection, shardId);
+      log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
       //
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
@@ -1407,7 +1406,6 @@ public class ZkController implements Closeable, Runnable {
       } catch (KeeperException | IOException e) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
-      joinElection(desc, afterExpiration, false);
 
       log.info("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 10000);
