@@ -44,8 +44,11 @@ tasks.withType(CppCompile).configureEach {
     }
     else if(Os.isFamily(Os.FAMILY_UNIX)) {
         systemIncludes.from file(javaHome + "/include/linux")
-        systemIncludes.from file(javaHome + "/include/solaris")
-        systemIncludes.from file(javaHome + "/include/freebsd")
+
+        def solarisInclude = file(javaHome + "/include/solaris")
+        if (solarisInclude.exists()) {
+           systemIncludes.from solarisInclude
+        }
     }
 
     compilerArgs.add '-fPIC'
