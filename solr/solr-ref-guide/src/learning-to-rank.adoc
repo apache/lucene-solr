@@ -292,7 +292,7 @@ The output XML will include the model picked for each search result, resembling 
 
 === Running a Rerank Query Interleaving a model with the original ranking
 When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking. 
-To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, with a model in input and activating the original ranking interleaving, for example:
+To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
 
 
 [source,text]
