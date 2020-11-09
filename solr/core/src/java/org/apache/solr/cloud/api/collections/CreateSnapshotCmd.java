@@ -198,6 +198,10 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to create snapshot on shards " + failedShards);
     }
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 }

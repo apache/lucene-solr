@@ -98,7 +98,11 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 //      }
 //
 //    }).start();
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
 }

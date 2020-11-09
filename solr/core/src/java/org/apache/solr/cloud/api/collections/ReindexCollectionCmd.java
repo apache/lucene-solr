@@ -508,7 +508,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       }
       results.add(REINDEX_STATUS, reindexingState);
     }
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
   private static final String REINDEXING_STATE_PATH = "/.reindexing";

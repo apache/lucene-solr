@@ -79,8 +79,12 @@ public class CreateAliasCmd extends AliasCmd {
     // We could levy this requirement on the client but they would probably always add an obligatory sleep, which is
     // just kicking the can down the road.  Perhaps ideally at this juncture here we could somehow wait until all
     // Solr nodes in the cluster have the latest aliases?
-    Thread.sleep(100);
-    return null;
+    // Thread.sleep(100);
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
   private void callCreatePlainAlias(ZkNodeProps message, String aliasName, ZkStateReader zkStateReader) {

@@ -141,8 +141,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     response.results = results;
 
-    // nocommit - we don't change this for this cmd, we should be able to indicate that to caller
-    response.clusterState = clusterState;
+    response.clusterState = null;
 
     return response;
   }

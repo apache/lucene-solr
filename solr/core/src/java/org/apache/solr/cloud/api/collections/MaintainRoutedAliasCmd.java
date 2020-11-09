@@ -163,7 +163,11 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown action type!");
       }
     }
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
   @SuppressWarnings({"unchecked"})

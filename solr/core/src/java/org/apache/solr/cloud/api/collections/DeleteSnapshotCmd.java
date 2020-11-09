@@ -169,6 +169,10 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Deleted Zookeeper snapshot metdata for collection={} with commitName={}", collectionName, commitName);
       log.info("Successfully deleted snapshot for collection={} with commitName={}", collectionName, commitName);
     }
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 }

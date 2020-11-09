@@ -420,7 +420,11 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
-    return null;
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+    response.clusterState = null;
+
+    return response;
   }
 
   private int getInt(ZkNodeProps message, String propertyName, Integer count, int defaultValue) {
