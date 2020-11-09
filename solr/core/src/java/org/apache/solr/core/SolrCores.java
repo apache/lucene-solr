@@ -78,7 +78,9 @@ class SolrCores {
   }
 
   public void load(SolrResourceLoader loader) {
-    transientSolrCoreCacheFactory = TransientSolrCoreCacheFactory.newInstance(loader, container);
+    synchronized (modifyLock) {
+      transientSolrCoreCacheFactory = TransientSolrCoreCacheFactory.newInstance(loader, container);
+    }
   }
 
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
@@ -536,7 +538,9 @@ class SolrCores {
    * @return the cache holding the transient cores; never null.
    */
   public TransientSolrCoreCache getTransientCacheHandler() {
-    return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
+    synchronized (modifyLock) {
+      return transientSolrCoreCacheFactory.getTransientSolrCoreCache();
+    }
   }
 
 }
