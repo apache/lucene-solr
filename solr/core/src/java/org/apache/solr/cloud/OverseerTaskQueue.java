@@ -201,9 +201,12 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     for (;;) {
       try {
         return zookeeper.create(path, data, mode, true);
-      } catch (KeeperException.NoNodeException e) {
+      } catch (KeeperException.NodeExistsException e) {
+        log.warn("Found request node already, waiting to see if it frees up ...");
+        // TODO: use a watch?
+        Thread.sleep(250);
         try {
-          zookeeper.create(dir, BYTES, CreateMode.PERSISTENT, true);
+          return zookeeper.create(path, data, mode, true);
         } catch (KeeperException.NodeExistsException ne) {
           // someone created it
         }
