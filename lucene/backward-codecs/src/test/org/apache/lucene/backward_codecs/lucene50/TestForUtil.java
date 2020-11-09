@@ -23,7 +23,6 @@ import static org.apache.lucene.backward_codecs.lucene50.ForUtil.MAX_ENCODED_SIZ
 
 import java.io.IOException;
 
-import org.apache.lucene.backward_codecs.lucene50.ForUtil;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;

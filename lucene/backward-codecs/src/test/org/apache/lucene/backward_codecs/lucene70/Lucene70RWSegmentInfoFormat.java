@@ -20,7 +20,6 @@ package org.apache.lucene.backward_codecs.lucene70;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.backward_codecs.lucene70.Lucene70SegmentInfoFormat;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;

@@ -18,7 +18,6 @@ package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.IOException;
 
-import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
