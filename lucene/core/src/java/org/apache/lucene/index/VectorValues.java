@@ -146,7 +146,6 @@ public abstract class VectorValues extends DocIdSetIterator {
         default:
           return false;
       }
-
     }
   }
 

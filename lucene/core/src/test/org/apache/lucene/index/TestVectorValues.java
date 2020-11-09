@@ -174,9 +174,10 @@ public class TestVectorValues extends LuceneTestCase {
         w.addDocument(doc);
       }
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
-        w2.addIndexes(new Directory[]{dir});
+        w2.addIndexes(dir);
+        w2.forceMerge(1);
         try (IndexReader reader = w2.getReader()) {
-          LeafReader r = reader.leaves().get(0).reader();
+          LeafReader r = getOnlyLeafReader(reader);
           VectorValues vectorValues = r.getVectorValues(fieldName);
           assertEquals(0, vectorValues.nextDoc());
           assertEquals(0, vectorValues.vectorValue()[0], 0);
@@ -197,11 +198,12 @@ public class TestVectorValues extends LuceneTestCase {
       doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         w2.addDocument(doc);
-        w2.addIndexes(new Directory[]{dir});
+        w2.addIndexes(dir);
+        w2.forceMerge(1);
         try (IndexReader reader = w2.getReader()) {
-          LeafReader r = reader.leaves().get(0).reader();
+          LeafReader r = getOnlyLeafReader(reader);
           VectorValues vectorValues = r.getVectorValues(fieldName);
-          assertEquals(0, vectorValues.nextDoc());
+          assertNotEquals(NO_MORE_DOCS, vectorValues.nextDoc());
           assertEquals(0, vectorValues.vectorValue()[0], 0);
           assertEquals(NO_MORE_DOCS, vectorValues.nextDoc());
         }
@@ -222,10 +224,10 @@ public class TestVectorValues extends LuceneTestCase {
       try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         vector[0] = 1;
         w2.addDocument(doc);
-        w2.addIndexes(new Directory[]{dir});
+        w2.addIndexes(dir);
         w2.forceMerge(1);
         try (IndexReader reader = w2.getReader()) {
-          LeafReader r = reader.leaves().get(0).reader();
+          LeafReader r = getOnlyLeafReader(reader);
           VectorValues vectorValues = r.getVectorValues(fieldName);
           assertEquals(0, vectorValues.nextDoc());
           // The merge order is randomized, we might get 0 first, or 1
@@ -460,12 +462,12 @@ public class TestVectorValues extends LuceneTestCase {
       w.commit();
 
       try (DirectoryReader r = w.getReader()) {
-        assertNotNull(r.leaves().get(0).reader().getVectorValues("v"));
+        assertNotNull(getOnlyLeafReader(r).getVectorValues("v"));
       }
       w.deleteDocuments(new Term("id", "0"));
       w.forceMerge(1);
       try (DirectoryReader r = w.getReader()) {
-        assertNull(r.leaves().get(0).reader().getVectorValues("v"));
+        assertNull(getOnlyLeafReader(r).getVectorValues("v"));
       }
     }
   }
@@ -552,8 +554,9 @@ public class TestVectorValues extends LuceneTestCase {
       Document doc3 = new Document();
       doc3.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       iw.addDocument(doc3);
+      iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
-        LeafReader r = reader.leaves().get(0).reader();
+        LeafReader r = getOnlyLeafReader(reader);
         VectorValues vectorValues = r.getVectorValues(fieldName);
         vectorValues.nextDoc();
         assertEquals(1, vectorValues.vectorValue()[0], 0);
@@ -575,8 +578,9 @@ public class TestVectorValues extends LuceneTestCase {
       add(iw, fieldName, 4, 4, new float[]{4});
       add(iw, fieldName, 3, 3, null);
       add(iw, fieldName, 2, 2, new float[]{2});
+      iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
-        LeafReader leaf = reader.leaves().get(0).reader();
+        LeafReader leaf = getOnlyLeafReader(reader);
 
         VectorValues vectorValues = leaf.getVectorValues(fieldName);
         assertEquals(1, vectorValues.dimension());
@@ -759,7 +763,7 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
-  public void testSearchStrategyIdentifiers() throws Exception {
+  public void testSearchStrategyIdentifiers() {
     // make sure we don't accidentally mess up search strategy identifiers by re-ordering their enumerators
     assertEquals(0, VectorValues.SearchStrategy.NONE.ordinal());
     assertEquals(1, VectorValues.SearchStrategy.EUCLIDEAN_HNSW.ordinal());

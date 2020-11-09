@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
@@ -78,9 +77,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -116,21 +113,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
     if (aliases.hasAlias(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection alias already exists: " + collectionName);
-    }
-
-    String withCollection = message.getStr(CollectionAdminParams.WITH_COLLECTION);
-    String withCollectionShard = null;
-    if (withCollection != null) {
-      String realWithCollection = aliases.resolveSimpleAlias(withCollection);
-      if (!clusterState.hasCollection(realWithCollection)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The 'withCollection' does not exist: " + realWithCollection);
-      } else  {
-        DocCollection collection = clusterState.getCollection(realWithCollection);
-        if (collection.getActiveSlices().size() > 1)  {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + collection.getActiveSlices().size());
-        }
-        withCollectionShard = collection.getActiveSlices().iterator().next().getName();
-      }
     }
 
     String configName = getConfigName(collectionName, message);
@@ -208,22 +190,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
-
-        if (withCollection != null) {
-          // check that we have a replica of `withCollection` on this node and if not, create one
-          DocCollection collection = clusterState.getCollection(withCollection);
-          List<Replica> replicas = collection.getReplicas(nodeName);
-          if (replicas == null || replicas.isEmpty()) {
-            ZkNodeProps props = new ZkNodeProps(
-                Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
-                ZkStateReader.COLLECTION_PROP, withCollection,
-                ZkStateReader.SHARD_ID_PROP, withCollectionShard,
-                "node", nodeName,
-                CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
-            new AddReplicaCmd(ocmh).call(clusterState, props, results);
-            clusterState = zkStateReader.getClusterState(); // refresh
-          }
-        }
 
         String coreName = Assign.buildSolrCoreName(ocmh.cloudManager.getDistribStateManager(),
             ocmh.cloudManager.getClusterStateProvider().getClusterState().getCollection(collectionName),
@@ -306,22 +272,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           results.add("warning", "Using _default configset. Data driven schema functionality"
               + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
               + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
-        }
-      }
-
-      // modify the `withCollection` and store this new collection's name with it
-      if (withCollection != null) {
-        ZkNodeProps props = new ZkNodeProps(
-            Overseer.QUEUE_OPERATION, MODIFYCOLLECTION.toString(),
-            ZkStateReader.COLLECTION_PROP, withCollection,
-            CollectionAdminParams.COLOCATED_WITH, collectionName);
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-        try {
-          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (collectionState) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
-        } catch (TimeoutException e) {
-          log.warn("Timed out waiting to see the {} property set on collection: {}", COLOCATED_WITH, withCollection);
-          // maybe the overseer queue is backed up, we don't want to fail the create request
-          // because of this time out, continue
         }
       }
 

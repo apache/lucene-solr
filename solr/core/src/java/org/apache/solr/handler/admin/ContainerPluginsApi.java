@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Command;
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -137,7 +137,7 @@ public class ContainerPluginsApi {
       }
     }
     List<String> errs = new ArrayList<>();
-    CustomContainerPlugins.ApiInfo apiInfo = coreContainer.getCustomContainerPlugins().createInfo(info, errs);
+    ContainerPluginsRegistry.ApiInfo apiInfo = coreContainer.getContainerPluginsRegistry().createInfo(info, errs);
     if (!errs.isEmpty()) {
       for (String err : errs) payload.addError(err);
       return;

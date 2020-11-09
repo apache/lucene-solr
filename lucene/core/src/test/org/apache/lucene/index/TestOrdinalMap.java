@@ -17,10 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -31,6 +27,10 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 
 public class TestOrdinalMap extends LuceneTestCase {
 
@@ -46,7 +46,7 @@ public class TestOrdinalMap extends LuceneTestCase {
   private static final RamUsageTester.Accumulator ORDINAL_MAP_ACCUMULATOR = new RamUsageTester.Accumulator() {
 
     public long accumulateObject(Object o, long shallowSize, java.util.Map<Field,Object> fieldValues, java.util.Collection<Object> queue) {
-      if (o == LongValues.IDENTITY) {
+      if (o == LongValues.ZEROES || o == LongValues.IDENTITY) {
         return 0L;
       }
       if (o instanceof OrdinalMap) {
@@ -90,6 +90,56 @@ public class TestOrdinalMap extends LuceneTestCase {
       OrdinalMap map = ((MultiDocValues.MultiSortedSetDocValues) ssdv).mapping;
       assertEquals(RamUsageTester.sizeOf(map, ORDINAL_MAP_ACCUMULATOR), map.ramBytesUsed());
     }
+    iw.close();
+    r.close();
+    dir.close();
+  }
+
+  /**
+   * Tests the case where one segment contains all of the global ords. In this case, we apply a
+   * small optimization and hardcode the first segment indices and global ord deltas as all zeroes.
+   */
+  public void testOneSegmentWithAllValues() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()))
+        .setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()))
+        .setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriter iw = new IndexWriter(dir, cfg);
+
+    int numTerms = 1000;
+    for (int i = 0; i < numTerms; ++i) {
+      Document d = new Document();
+      String term = String.valueOf(i);
+      d.add(new SortedDocValuesField("sdv", new BytesRef(term)));
+      iw.addDocument(d);
+    }
+    iw.forceMerge(1);
+
+    for (int i = 0; i < 10; ++i) {
+      Document d = new Document();
+      String term = String.valueOf(random().nextInt(numTerms));
+      d.add(new SortedDocValuesField("sdv", new BytesRef(term)));
+      iw.addDocument(d);
+    }
+    iw.commit();
+
+    DirectoryReader r = iw.getReader();
+    SortedDocValues sdv = MultiDocValues.getSortedValues(r, "sdv");
+    assertNotNull(sdv);
+    assertTrue(sdv instanceof MultiDocValues.MultiSortedDocValues);
+
+    // Check that the optimization kicks in.
+    OrdinalMap map = ((MultiDocValues.MultiSortedDocValues) sdv).mapping;
+    assertEquals(LongValues.ZEROES, map.firstSegments);
+    assertEquals(LongValues.ZEROES, map.globalOrdDeltas);
+
+    // Check the map's basic behavior.
+    assertEquals(numTerms, (int) map.getValueCount());
+    for (int i = 0; i < numTerms; i++) {
+      assertEquals(0, map.getFirstSegmentNumber(i));
+      assertEquals(i, map.getFirstSegmentOrd(i));
+    }
+
     iw.close();
     r.close();
     dir.close();

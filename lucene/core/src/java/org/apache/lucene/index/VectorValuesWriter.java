@@ -98,7 +98,7 @@ class VectorValuesWriter {
     }
   }
 
-  private static class SortingVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
+  static class SortingVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
 
     private final VectorValues delegate;
     private final RandomAccessVectorValues randomAccess;
