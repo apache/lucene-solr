@@ -956,6 +956,12 @@ public class Overseer implements SolrCloseable {
 
           Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
 
+          try {
+            zkController.getZkClient().delete(fullPaths, true);
+          } catch (Exception e) {
+            log.warn("Exception deleting processed zk nodes", e);
+          }
+
           overseer.getTaskExecutor().submit(() -> {
             try {
               runAsync(items, fullPaths, data);
@@ -1029,17 +1035,6 @@ public class Overseer implements SolrCloseable {
               return;
             }
 
-          } catch (Exception e) {
-            log.warn("Exception deleting processed zk nodes", e);
-          }
-          try {
-            for (String item : items) {
-              if (item.startsWith("qnr-")) {
-                fullPaths.remove(path + "/" + item);
-              }
-            }
-
-            zkController.getZkClient().delete(fullPaths, true);
           } catch (Exception e) {
             log.warn("Exception deleting processed zk nodes", e);
           }
