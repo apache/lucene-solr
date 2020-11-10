@@ -40,7 +40,8 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+
+* SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
 ======================= Lucene 8.7.0 =======================
 
