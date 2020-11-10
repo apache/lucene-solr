@@ -152,8 +152,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public float[] vectorValue() {
-      throw new UnsupportedOperationException();
+    public float[] vectorValue() throws IOException {
+      return randomAccess.vectorValue(docIdOffsets[docId] - 1);
     }
 
     @Override
