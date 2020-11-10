@@ -245,8 +245,8 @@ public class SimpleTextVectorReader extends VectorReader {
 
     private void readVector(float[] value) throws IOException {
       SimpleTextUtil.readLine(in, scratch);
-      // skip leading " [" and strip trailing "]"
-      String s = new BytesRef(scratch.bytes(), 2, scratch.length() - 3).utf8ToString();
+      // skip leading "[" and strip trailing "]"
+      String s = new BytesRef(scratch.bytes(), 1, scratch.length() - 2).utf8ToString();
       String[] floatStrings = s.split(",");
       assert floatStrings.length == value.length : " read " + s + " when expecting " + value.length + " floats";
       for (int i = 0; i < floatStrings.length; i++) {
