@@ -330,10 +330,13 @@ public class ZkStateWriter {
               if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
 
               try {
-                int version = collection.getZNodeVersion();
+              
                 Integer v = trackVersions.get(collection.getName());
+                Integer version;
                 if (v != null) {
                   version = v;
+                } else {
+                  version = reader.getZkClient().exists(path, null).getVersion();
                 }
                 lastVersion.set(version);
                 reader.getZkClient().setData(path, data, version, true);
