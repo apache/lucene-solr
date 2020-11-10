@@ -356,7 +356,7 @@ public class ClusterState implements JSONWriter.Writable {
    * CollectionRef.get() != null
    */
   public Map<String, CollectionRef> getCollectionStates() {
-    return immutableCollectionStates;
+    return collectionStates;
   }
 
   /**

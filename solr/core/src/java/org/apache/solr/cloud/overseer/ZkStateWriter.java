@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -255,6 +256,7 @@ public class ZkStateWriter {
   public void writePendingUpdates() {
 
     writeLock.lock();
+    Set<String> collectionsToWaitFor = ConcurrentHashMap.newKeySet();
     try {
       ourLock.lock();
       try {
@@ -270,6 +272,12 @@ public class ZkStateWriter {
           log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
           failedUpdates.clear();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+        }
+
+        for (String collectionName : cs.getCollectionStates().keySet()) {
+          DocCollection collection = cs.getCollectionOrNull(collectionName);
+          if (collection == null) return;
+          collectionsToWaitFor.add(collection.getName());
         }
       } finally {
         ourLock.unlock();
@@ -313,6 +321,7 @@ public class ZkStateWriter {
       });
 
       ourLock.lock();
+      AtomicInteger lastVersion = new AtomicInteger();
       try {
         cs.forEachCollection(collection -> {
           if (collectionsToWrite.contains(collection.getName())) {
@@ -333,8 +342,8 @@ public class ZkStateWriter {
                 if (v != null) {
                   version = v;
                 }
-
-                reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
+                lastVersion.set(version);
+                reader.getZkClient().setData(path, data, version, true);
 
                 trackVersions.put(collection.getName(), version + 1);
               } catch (KeeperException.NoNodeException e) {
@@ -346,7 +355,7 @@ public class ZkStateWriter {
                 failedUpdates.put(collection.getName(), collection);
                 stat = reader.getZkClient().exists(path, null);
                 // this is a tragic error, we must disallow usage of this instance
-                log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
+                log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", lastVersion.get(), stat.getVersion(), bve);
               }
               if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
             } catch (InterruptedException | AlreadyClosedException e) {
