@@ -54,7 +54,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   static final BytesRef STARTOFFSET        = new BytesRef("        startoffset ");
   static final BytesRef ENDOFFSET          = new BytesRef("        endoffset ");
 
-  static final String VECTORS_EXTENSION = "vec";
+  static final String VECTORS_EXTENSION = "tvc";
   
   private IndexOutput out;
   private int numDocsWritten = 0;

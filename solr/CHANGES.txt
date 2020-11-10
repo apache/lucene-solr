@@ -16,7 +16,8 @@ New Features
 
 * SOLR-13528 Rate Limiting in Solr (Atri Sharma, Mike Drob)
 
-* SOLR-14749: Improve support for arbitrary container-level plugins. Add ClusterSingleton
+* SOLR-14749: Provide a clean API for cluster-level event processing.
+  Improve support for arbitrary container-level plugins. Add ClusterSingleton
   support for plugins that require only one active instance in the cluster. (ab, noble)
 
 Improvements
@@ -48,6 +49,8 @@ Improvements
   has been rewritten from scratch to be up to date. Clustering code has been rewritten from scratch to work
   properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
   and simplified. (Dawid Weiss)
+
+* SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
 
 Other Changes
 ----------------------
