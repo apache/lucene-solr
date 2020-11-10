@@ -73,6 +73,8 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
         "{\"fq\":[\"{!terms f=popularity}6\"]}");
     loadFeature("featureC2", SolrFeature.class.getName(),"featureStore2",
         "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
+    loadFeature("featureC3", SolrFeature.class.getName(),"featureStore2",
+        "{\"fq\":[\"{!terms f=description}${user_query}\"]}");
 
     loadModel("modelA", LinearModel.class.getName(),
         new String[]{"featureA1", "featureA2", "featureAB"},
@@ -166,13 +168,13 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   @Test
-  public void interleaving_featureLoggerFromNewFeatureStore_shouldReturnNewCalculatedFeatureVector() throws Exception {
+  public void interleaving_explicitNewFeatureStore_shouldExtractAllFeaturesFromNewStore() throws Exception {
     TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w5' format=sparse]");
+    query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w5' format=dense]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
@@ -191,11 +193,11 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
     String[] expectedFeatureVectors = new String[]{
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC1\\=1.0"};
+        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC1\\=0.0\\,featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC1\\=1.0\\,featureC2\\=0.0\\,featureC3\\=0.0"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
@@ -208,7 +210,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
   
   @Test
-  public void interleaving_WithOriginalRankingAndExplicitFeatureStore_shouldReturnNewCalculatedFeatureVector() throws Exception {
+  public void interleaving_withOriginalRankingAndExplicitFeatureStore_shouldReturnNewCalculatedFeatureVector() throws Exception {
     TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
@@ -235,10 +237,10 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
     String[] expectedFeatureVectors = new String[]{
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
         "featureC1\\=1.0"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
@@ -269,7 +271,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
   }
 
   @Test
-  public void interleaving_modelsFromDifferentFeatureStore_shouldLogFeaturesCorrectly() throws Exception {
+  public void interleaving_modelsFromDifferentFeatureStores_shouldLogFeaturesCorrectly() throws Exception {
     TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
     loadFeaturesAndModels();
 
@@ -295,8 +297,8 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     */
     String[] expectedFeatureVectors = new String[]{
         "featureA1\\=1.0\\,featureA2\\=1.0\\,featureAB\\=1.0\\,featureB2\\=1.0",
-        "featureC2\\=1.0",
-        "featureC2\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
         "featureA1\\=1.0\\,featureB2\\=1.0",
         "featureC1\\=1.0"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
@@ -317,7 +319,7 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
-    query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w6' format=sparse]");
+    query.add("fl", "*, score,features:[fv store=featureStore2 efi.user_query='w8' format=sparse]");
     query.add("rows", "10");
     query.add("debugQuery", "true");
     query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
@@ -336,11 +338,53 @@ public class TestFeatureLoggerTransformer extends TestRerankBase {
     Random Boolean Choices Generation from Seed: [0,1,1]
     */
     String[] expectedFeatureVectors = new String[]{
-        "",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
         "",
         "",
         "",
         ""};
+    int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
+
+    String[] tests = new String[16];
+    tests[0] = "/response/numFound/==5";
+    for (int i = 1; i <= 5; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 10] = "/response/docs/[" + (i - 1) + "]/features==" + expectedFeatureVectors[(i - 1)];
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleaving_explicitFeatureStoreReusableFromModel_shouldLogFeaturesCorrectly() throws Exception {
+    TeamDraftInterleaving.setRANDOM(new Random(10101010));//Random Boolean Choices Generation from Seed: [0,1,1]
+    loadFeaturesAndModels();
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*, score,features:[fv store=featureStore2 format=sparse]");
+    query.add("rows", "10");
+    query.add("debugQuery", "true");
+    query.add("fq", "{!terms f=title}w1"); // 1,3,4,7,8
+    query.add("rq",
+        "{!ltr model=modelA model=modelC reRankDocs=10 efi.user_query='w5'}");
+
+    /*
+    Doc1 = "featureC2=1.0", ScoreA(0), ScoreC(25)
+    Doc3 = "featureC2=1.0", ScoreA(0), ScoreC(25)
+    Doc4 = "featureC1=1.0", ScoreA(0), ScoreC(5)
+    Doc7 ="featureA1=1.0,featureA2=1.0,featureAB=1.0", ScoreA(39), ScoreC(0)
+    Doc8 = "featureA1=1.0,featureC2=1.0", ScoreA(3), ScoreC(25)
+    ModelARerankedList = [7,8,1,3,4]
+    ModelCRerankedList = [1,3,8,4,7]
+   
+    Random Boolean Choices Generation from Seed: [0,1,1]
+    */
+    String[] expectedFeatureVectors = new String[]{
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC2\\=1.0\\,featureC3\\=1.0",
+        "featureC1\\=1.0"};
     int[] expectedInterleaved = new int[]{7, 1, 3, 8, 4};
 
     String[] tests = new String[16];
