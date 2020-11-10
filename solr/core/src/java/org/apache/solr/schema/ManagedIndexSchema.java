@@ -182,7 +182,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * 
    * @return true on success 
    */
-  boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
+  synchronized boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
     final ZkController zkController = zkLoader.getZkController();
     final SolrZkClient zkClient = zkController.getZkClient();
@@ -212,33 +212,29 @@ public final class ManagedIndexSchema extends IndexSchema {
       } else {
         try {
           // Assumption: the path exists
-          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
+          int ver = schemaZkVersion;
+          Stat stat = zkClient.setData(managedSchemaPath, data, ver, true);
           schemaZkVersion = stat.getVersion();
-          log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
+          log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {
-          if (schemaZkVersion == 0) {
-            try {
-              Stat stat = zkClient.setData(managedSchemaPath, data, 1, true);
+            Thread.sleep(50);
+            // try again with latest schemaZkVersion value
+          int ver = 0;
+          try {
+              ver = schemaZkVersion;
+              Stat stat = zkClient.setData(managedSchemaPath, data, ver, true);
               schemaZkVersion = stat.getVersion();
-              log.info("Persisted managed schema version {} at {}", schemaZkVersion, managedSchemaPath);
+              log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
             } catch (KeeperException.BadVersionException e1) {
               Stat stat = new Stat();
               zkClient.getData(managedSchemaPath, null, stat, true);
 
-              log.info("Bad version when trying to persist schema using {} found {}", 1, stat.getVersion());
+              log.info("Bad version when trying to persist schema using {} found {}", ver, stat.getVersion());
 
               success = false;
               schemaChangedInZk = true;
             }
-          } else {
-            Stat stat = new Stat();
-            zkClient.getData(managedSchemaPath, null, stat, true);
 
-            log.info("Bad version when trying to persist schema using {} found {}", schemaZkVersion, stat.getVersion());
-
-            success = false;
-            schemaChangedInZk = true;
-          }
         }
       }
     } catch (Exception e) {
