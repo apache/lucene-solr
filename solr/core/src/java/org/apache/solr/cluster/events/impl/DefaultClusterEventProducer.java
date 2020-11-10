@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of {@link ClusterEventProducer}.
- * <h3>Implementation notes</h3>
+ * <h2>Implementation notes</h2>
  * <p>For each cluster event relevant listeners are always invoked sequentially
  * (not in parallel) and in arbitrary order. This means that if any listener blocks the
  * processing other listeners may be invoked much later or not at all.</p>
