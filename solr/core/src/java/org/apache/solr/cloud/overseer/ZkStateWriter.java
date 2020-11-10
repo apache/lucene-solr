@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
@@ -66,6 +67,8 @@ public class ZkStateWriter {
   private boolean dirty;
   private Set<String> collectionsToWrite = new HashSet<>();
 
+  protected final ReentrantLock ourLock = new ReentrantLock(true);
+
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
 
@@ -76,165 +79,168 @@ public class ZkStateWriter {
     cs = zkStateReader.getClusterState();
   }
 
-  public synchronized void enqueueUpdate(ClusterState clusterState, boolean stateUpdate) throws Exception {
+  public void enqueueUpdate(ClusterState clusterState, boolean stateUpdate) throws Exception {
 
     if (log.isDebugEnabled()) log.debug("enqueue update stateUpdate={}", stateUpdate);
+    ourLock.lock();
+    try {
+      AtomicBoolean changed = new AtomicBoolean();
+      if (clusterState == null) {
+        throw new NullPointerException("clusterState cannot be null");
+      }
+      if (!stateUpdate) {
+        changed.set(true);
+        clusterState.forEachCollection(collection -> {
+          DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
 
-    AtomicBoolean changed = new AtomicBoolean();
-    if (clusterState == null) {
-      throw new NullPointerException("clusterState cannot be null");
-    }
-    if (!stateUpdate) {
-      changed.set(true);
-      clusterState.forEachCollection(collection -> {
-        DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
+          for (Slice slice : collection) {
+            if (currentCollection != null) {
+              Slice currentSlice = currentCollection.getSlice(slice.getName());
+              if (currentSlice != null) {
+                slice.setState(currentSlice.getState());
+                slice.setLeader(currentSlice.getLeader());
+              }
+            }
 
-        for (Slice slice : collection) {
-          if (currentCollection != null) {
+            for (Replica replica : slice) {
+              if (currentCollection != null) {
+                Replica currentReplica = currentCollection.getReplica(replica.getName());
+                if (currentReplica != null) {
+                  replica.setState(currentReplica.getState());
+                }
+              }
+              Object removed = replica.getProperties().remove("numShards");
+            }
+          }
+        });
+
+        collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
+        Collection<DocCollection> collections = cs.getCollectionsMap().values();
+        for (DocCollection collection : collections) {
+          if (clusterState.getCollectionOrNull(collection.getName()) == null) {
+            clusterState = clusterState.copyWith(collection.getName(), collection);
+          }
+        }
+
+        this.cs = clusterState;
+      } else {
+        clusterState.forEachCollection(newCollection -> {
+
+          DocCollection currentCollection = cs.getCollectionOrNull(newCollection.getName());
+          if (currentCollection == null) {
+            log.error("Could not update state for non existing collection {}", newCollection.getName());
+            return;
+          }
+          for (Slice slice : newCollection) {
             Slice currentSlice = currentCollection.getSlice(slice.getName());
             if (currentSlice != null) {
-              slice.setState(currentSlice.getState());
-              slice.setLeader(currentSlice.getLeader());
+              if (log.isDebugEnabled()) log.debug("set slice state to {} {} leader={}", slice.getName(), slice.getState(), slice.getLeader());
+              Replica leader = slice.getLeader();
+              if (leader != null) {
+                currentSlice.setState(slice.getState());
+                currentSlice.setLeader(slice.getLeader());
+                currentSlice.getLeader().getProperties().put("leader", "true");
+                changed.set(true);
+              }
             }
-          }
-
-          for (Replica replica : slice) {
-            if (currentCollection != null) {
+            for (Replica replica : slice) {
               Replica currentReplica = currentCollection.getReplica(replica.getName());
               if (currentReplica != null) {
-                replica.setState(currentReplica.getState());
+                if (log.isDebugEnabled()) log.debug("set replica state to {} isLeader={}", replica.getState(), replica.getProperty("leader"));
+                currentReplica.setState(replica.getState());
+                String leader = replica.getProperty("leader");
+                if (leader != null) {
+                  currentReplica.getProperties().put("leader", leader);
+                }
+                // nocommit
+                //              else if (leader == null) {
+                //                currentReplica.getProperties().remove("leader");
+                //              }
+
+                if (slice.getLeader() != null && slice.getLeader().getName().equals(replica.getName())) {
+                  currentReplica.getProperties().put("leader", "true");
+                }
+
+                Replica thereplica = cs.getCollectionOrNull(newCollection.getName()).getReplica(replica.getName());
+                if (log.isDebugEnabled()) log.debug("Check states nreplica={} ceplica={}", replica.getState(), thereplica.getState());
+
+                if (replica.getState() == Replica.State.ACTIVE) {
+                  if (log.isDebugEnabled()) log.debug("Setting replica to active state leader={} state={} col={}", leader, cs, currentCollection);
+                }
+
+                changed.set(true); // nocommit - only if really changed
               }
+
             }
-            Object removed = replica.getProperties().remove("numShards");
           }
-        }
-      });
+        });
 
+        cs.forEachCollection(collection -> {
+          Object removed = collection.getProperties().remove("replicationFactor");
+          if (removed != null) {
+            changed.set(true); // nocommit - only if really changed
+          }
+          removed = collection.getProperties().remove("pullReplicas");
+          if (removed != null) {
+            changed.set(true); // nocommit - only if really changed
+          }
+          removed = collection.getProperties().remove("maxShardsPerNode");
+          if (removed != null) {
+            changed.set(true); // nocommit - only if really changed
+          }
+          removed = collection.getProperties().remove("nrtReplicas");
+          if (removed != null) {
+            changed.set(true); // nocommit - only if really changed
+          }
+          removed = collection.getProperties().remove("tlogReplicas");
+          if (removed != null) {
+            changed.set(true); // nocommit - only if really changed
+          }
 
-      collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
-      Collection<DocCollection> collections = cs.getCollectionsMap().values();
-      for (DocCollection collection : collections) {
-        if (clusterState.getCollectionOrNull(collection.getName()) == null) {
-          clusterState = clusterState.copyWith(collection.getName(), collection);
-        }
-      }
-
-      this.cs = clusterState;
-    } else {
-      clusterState.forEachCollection(newCollection -> {
-
-        DocCollection currentCollection = cs.getCollectionOrNull(newCollection.getName());
-        if (currentCollection == null) {
-          log.error("Could not update state for non existing collection {}", newCollection.getName());
-          return;
-        }
-        for (Slice slice : newCollection) {
-          Slice currentSlice = currentCollection.getSlice(slice.getName());
-          if (currentSlice != null) {
-            if (log.isDebugEnabled()) log.debug("set slice state to {} {} leader={}", slice.getName(), slice.getState(), slice.getLeader());
+          for (Slice slice : collection) {
             Replica leader = slice.getLeader();
-            if (leader != null) {
-              currentSlice.setState(slice.getState());
-              currentSlice.setLeader(slice.getLeader());
-              currentSlice.getLeader().getProperties().put("leader", "true");
+            if (leader != null && leader.getState() != Replica.State.ACTIVE) {
+              slice.setLeader(null);
+              leader.getProperties().remove("leader");
               changed.set(true);
             }
-          }
-          for (Replica replica : slice) {
-            Replica currentReplica = currentCollection.getReplica(replica.getName());
-            if (currentReplica != null) {
-              if (log.isDebugEnabled()) log.debug("set replica state to {} isLeader={}", replica.getState(), replica.getProperty("leader"));
-              currentReplica.setState(replica.getState());
-              String leader = replica.getProperty("leader");
-              if (leader != null) {
-                currentReplica.getProperties().put("leader", leader);
-              }
-// nocommit
-//              else if (leader == null) {
-//                currentReplica.getProperties().remove("leader");
-//              }
 
-              if (slice.getLeader() != null &&  slice.getLeader().getName().equals(replica.getName())) {
-                currentReplica.getProperties().put("leader", "true");
+            for (Replica replica : slice) {
+              String isLeader = replica.getProperty("leader");
+              if (log.isDebugEnabled()) log.debug("isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
+              if (Boolean.parseBoolean(isLeader) && replica.getState() != Replica.State.ACTIVE) {
+                if (log.isDebugEnabled()) log.debug("clear leader isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
+                replica.getProperties().remove("leader");
+                changed.set(true); // nocommit - only if really changed
               }
 
-              Replica thereplica = cs.getCollectionOrNull(newCollection.getName()).getReplica(replica.getName());
-              if (log.isDebugEnabled()) log.debug("Check states nreplica={} ceplica={}", replica.getState(), thereplica.getState());
-
-              if (replica.getState() == Replica.State.ACTIVE) {
-                if (log.isDebugEnabled()) log.debug("Setting replica to active state leader={} state={} col={}", leader, cs, currentCollection);
+              removed = replica.getProperties().remove("numShards");
+              if (removed != null) {
+                changed.set(true); // nocommit - only if really changed
+              }
+              removed = replica.getProperties().remove("base_url");
+              if (removed != null) {
+                changed.set(true); // nocommit - only if really changed
               }
 
-              changed.set(true); // nocommit - only if really changed
             }
-
           }
-        }
-      });
-
-      cs.forEachCollection(collection -> {
-        Object removed = collection.getProperties().remove("replicationFactor");
-        if (removed != null) {
-          changed.set(true); // nocommit - only if really changed
-        }
-        removed = collection.getProperties().remove("pullReplicas");
-        if (removed != null) {
-          changed.set(true); // nocommit - only if really changed
-        }
-        removed = collection.getProperties().remove("maxShardsPerNode");
-        if (removed != null) {
-          changed.set(true); // nocommit - only if really changed
-        }
-        removed = collection.getProperties().remove("nrtReplicas");
-        if (removed != null) {
-          changed.set(true); // nocommit - only if really changed
-        }
-        removed = collection.getProperties().remove("tlogReplicas");
-        if (removed != null) {
-          changed.set(true); // nocommit - only if really changed
-        }
-
-        for (Slice slice : collection) {
-          Replica leader = slice.getLeader();
-          if (leader != null && leader.getState() != Replica.State.ACTIVE) {
-            slice.setLeader(null);
-            leader.getProperties().remove("leader");
-            changed.set(true);
-          }
-
-          for (Replica replica : slice) {
-            String isLeader = replica.getProperty("leader");
-            if (log.isDebugEnabled()) log.debug("isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
-            if (Boolean.parseBoolean(isLeader) && replica.getState() != Replica.State.ACTIVE) {
-              if (log.isDebugEnabled()) log.debug("clear leader isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
-              replica.getProperties().remove("leader");
-              changed.set(true); // nocommit - only if really changed
-            }
-
-            removed = replica.getProperties().remove("numShards");
-            if (removed != null) {
-              changed.set(true); // nocommit - only if really changed
-            }
-            removed = replica.getProperties().remove("base_url");
-            if (removed != null) {
-              changed.set(true); // nocommit - only if really changed
-            }
-
-          }
-        }
-      });
-      collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
-    }
-
-    if (stateUpdate) {
-//      log.error("isStateUpdate, final cs: {}", this.cs);
-//      log.error("isStateUpdate, submitted state: {}", clusterState);
-      if (!changed.get()) {
-        log.warn("Published state that changed nothing");
-        return;
+        });
+        collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
       }
+
+      if (stateUpdate) {
+        //      log.error("isStateUpdate, final cs: {}", this.cs);
+        //      log.error("isStateUpdate, submitted state: {}", clusterState);
+        if (!changed.get()) {
+          log.warn("Published state that changed nothing");
+          return;
+        }
+      }
+      dirty = true;
+    } finally {
+      ourLock.unlock();
     }
-    dirty = true;
   }
 
   public Integer lastWrittenVersion(String collection) {
@@ -245,18 +251,24 @@ public class ZkStateWriter {
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
    */
-  public synchronized void writePendingUpdates() {
-    if (!dirty) {
-      return;
-    }
+  public void writePendingUpdates() {
+    ourLock.lock();
+    try {
+      if (!dirty) {
+        return;
+      }
 
-    if (log.isDebugEnabled()) {
-      log.debug("writePendingUpdates {}", cs);
-    }
+      if (log.isDebugEnabled()) {
+        log.debug("writePendingUpdates {}", cs);
+      }
 
-    if (failedUpdates.size() > 0) {
-      log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+      if (failedUpdates.size() > 0) {
+        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
+        failedUpdates.clear();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+      }
+    } finally {
+      ourLock.unlock();
     }
 
     // wait to see our last publish version has propagated
@@ -296,57 +308,60 @@ public class ZkStateWriter {
 
     });
 
+   ourLock.lock();
+   try {
+     cs.forEachCollection(collection -> {
+       if (collectionsToWrite.contains(collection.getName())) {
+         String name = collection.getName();
+         String path = ZkStateReader.getCollectionPath(collection.getName());
+         if (log.isDebugEnabled()) log.debug("process {}", collection);
+         Stat stat = new Stat();
+         boolean success = false;
+         try {
 
-    cs.forEachCollection(collection -> {
-      if (collectionsToWrite.contains(collection.getName())) {
-        String name = collection.getName();
-        String path = ZkStateReader.getCollectionPath(collection.getName());
-        if (log.isDebugEnabled()) log.debug("process {}", collection);
-        Stat stat = new Stat();
-        boolean success = false;
-        try {
+           byte[] data = Utils.toJSON(singletonMap(name, collection));
 
-          byte[] data = Utils.toJSON(singletonMap(name, collection));
+           if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
 
-          if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
+           try {
+             int version = collection.getZNodeVersion();
+             Integer v = trackVersions.get(collection.getName());
+             if (v != null) {
+               version = v;
+             }
 
-          try {
-            int version = collection.getZNodeVersion();
-            Integer v = trackVersions.get(collection.getName());
-            if (v != null) {
-              version = v;
-            }
+             reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
 
-            reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
+             trackVersions.put(collection.getName(), version + 1);
+           } catch (KeeperException.NoNodeException e) {
+             if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+             trackVersions.remove(collection.getName());
+             // likely deleted
+           } catch (KeeperException.BadVersionException bve) {
+             lastFailedException.set(bve);
+             failedUpdates.put(collection.getName(), collection);
+             stat = reader.getZkClient().exists(path, null);
+             // this is a tragic error, we must disallow usage of this instance
+             log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
+           }
+           if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
+         } catch (InterruptedException | AlreadyClosedException e) {
+           log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
+           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+         } catch (KeeperException.SessionExpiredException e) {
+           log.error("", e);
+           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+         } catch (Exception e) {
+           log.error("Failed processing update=" + collection, e);
+         }
+       }
+     });
 
-            trackVersions.put(collection.getName(), version + 1);
-          } catch (KeeperException.NoNodeException e) {
-            if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
-            trackVersions.remove(collection.getName());
-            // likely deleted
-          } catch (KeeperException.BadVersionException bve) {
-            lastFailedException.set(bve);
-            failedUpdates.put(collection.getName(), collection);
-            stat = reader.getZkClient().exists(path, null);
-            // this is a tragic error, we must disallow usage of this instance
-            log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
-          }
-          if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
-        } catch (InterruptedException | AlreadyClosedException e) {
-          log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (KeeperException.SessionExpiredException e) {
-          log.error("", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (Exception e) {
-          log.error("Failed processing update=" + collection, e);
-        }
-      }
-    });
-
-    dirty = false;
-    collectionsToWrite.clear();
-
+     dirty = false;
+     collectionsToWrite.clear();
+   } finally {
+     ourLock.unlock();
+   }
     // nocommit - harden against failures and exceptions
 
     //    if (log.isDebugEnabled()) {
@@ -355,8 +370,13 @@ public class ZkStateWriter {
 
   }
 
-  public synchronized ClusterState getClusterstate(boolean stateUpdate) {
-    return cs;
+  public ClusterState getClusterstate(boolean stateUpdate) {
+    ourLock.lock();
+    try {
+      return cs;
+    } finally {
+      ourLock.unlock();
+    }
   }
 
 }
