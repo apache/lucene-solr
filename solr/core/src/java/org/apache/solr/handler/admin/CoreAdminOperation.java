@@ -170,10 +170,7 @@ enum CoreAdminOperation implements CoreAdminOp {
     
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
       if (core != null) {
-        // This can take a while
-        ParWork.getRootSharedExecutor().submit(() -> {
-          core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
-        });
+        core.getUpdateHandler().getSolrCoreState().doRecovery(it.handler.coreContainer, core.getCoreDescriptor());
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
