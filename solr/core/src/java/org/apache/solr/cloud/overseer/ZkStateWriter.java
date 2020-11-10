@@ -256,7 +256,6 @@ public class ZkStateWriter {
   public void writePendingUpdates() {
 
     writeLock.lock();
-    Set<String> collectionsToWaitFor = ConcurrentHashMap.newKeySet();
     try {
       ourLock.lock();
       try {
@@ -273,17 +272,11 @@ public class ZkStateWriter {
           failedUpdates.clear();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
         }
-
-        for (String collectionName : cs.getCollectionStates().keySet()) {
-          DocCollection collection = cs.getCollectionOrNull(collectionName);
-          if (collection == null) return;
-          collectionsToWaitFor.add(collection.getName());
-        }
       } finally {
         ourLock.unlock();
       }
 
-      // wait to see our last publish version has propagated
+      // wait to see our last publish version has propagated TODO don't wait on collections not hosted on overseer?
       cs.forEachCollection(collection -> {
         if (collectionsToWrite.contains(collection.getName())) {
           Integer v = null;

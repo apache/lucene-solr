@@ -1357,7 +1357,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={} skipRecovery={}", coreName, baseUrl, collection, shardId, skipRecovery);
       AtomicReference<DocCollection> coll = new AtomicReference<>();
       try {
-        zkStateReader.waitForState(collection, 3, TimeUnit.SECONDS, (l, c) -> { // nocommit timeout
+        zkStateReader.waitForState(collection, 30, TimeUnit.SECONDS, (l, c) -> { // nocommit timeout
 //          if (isClosed()) {
 //            throw new AlreadyClosedException();
 //          }
@@ -1410,7 +1410,7 @@ public class ZkController implements Closeable, Runnable {
       }
 
       log.info("Wait to see leader for {}, {}", collection, shardId);
-      Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 10000);
+      Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 15000);
 
       String ourUrl = replica.getCoreUrl();
       boolean isLeader = leader.getName() .equals(coreName);
