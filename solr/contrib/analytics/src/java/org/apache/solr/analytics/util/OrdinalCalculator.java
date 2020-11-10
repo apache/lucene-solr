@@ -19,6 +19,7 @@ package org.apache.solr.analytics.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Calculates ordinals of a comparable list by placing them in the correct positions in the list.
@@ -84,7 +85,8 @@ public class OrdinalCalculator {
   private static <T extends Comparable<T>> void select(List<T> list, int place, int begin, int end) {
     T split;
     if (end - begin < 10) {
-      split = list.get((int) (Math.random() * (end - begin + 1)) + begin);
+      Random rand = new Random();
+      split = list.get((int) (rand.nextDouble() * (end - begin + 1)) + begin);
     } else {
       split = split(list, begin, end);
     }

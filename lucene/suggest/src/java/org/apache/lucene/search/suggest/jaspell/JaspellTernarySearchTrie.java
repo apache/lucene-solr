@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
+import java.util.Random;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
@@ -362,7 +363,8 @@ public class JaspellTernarySearchTrie implements Accountable {
     int movingKid;
     TSTNode targetNode;
     if (deltaHi == deltaLo) {
-      if (Math.random() < 0.5) {
+      Random rand = new Random();
+      if (rand.nextDouble() < 0.5) {
         deltaHi++;
       } else {
         deltaLo++;
