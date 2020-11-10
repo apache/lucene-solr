@@ -296,14 +296,14 @@ To rerank the results of a query, interleaving a model with the original ranking
 
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel model=_OriginalRanking_ reRankDocs=100}&fl=id,score
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score
 
 The addition of the `rq` parameter will not change the output XML of the search.
 
 To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
 
 [source,text]
-http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel model=_OriginalRanking_ reRankDocs=100}&fl=id,score,[interleaving]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score,[interleaving]
 
 The output XML will include the model picked for each search result, resembling the output shown here:
 
@@ -316,7 +316,7 @@ The output XML will include the model picked for each search result, resembling 
     "params":{
       "q":"test",
       "fl":"id,score,[features]",
-      "rq":"{!ltr model=myModel model=_OriginalRanking_ reRankDocs=100}"}},
+      "rq":"{!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}"}},
   "response":{"numFound":2,"start":0,"maxScore":1.0005897,"docs":[
       {
         "id":"GB18030TEST",
