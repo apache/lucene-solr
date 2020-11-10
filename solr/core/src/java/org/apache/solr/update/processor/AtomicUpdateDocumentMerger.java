@@ -16,16 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -52,6 +42,15 @@ import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -185,7 +184,7 @@ public class AtomicUpdateDocumentMerger {
       if (fieldName.equals(uniqueKeyFieldName)
           || fieldName.equals(CommonParams.VERSION_FIELD)
           || fieldName.equals(routeFieldOrNull)) {
-        if (fieldValue instanceof Map ) {
+        if (fieldValue instanceof Map) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Updating unique key, version or route field is not allowed: " + sdoc.getField(fieldName));
         } else {
@@ -503,7 +502,7 @@ public class AtomicUpdateDocumentMerger {
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
     @SuppressWarnings({"rawtypes"})
-    final Collection original = existingField.getValues();
+    final Collection<Object> original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
         removeObj(original, object, name);
@@ -569,7 +568,7 @@ public class AtomicUpdateDocumentMerger {
     return objValues.iterator().next() instanceof SolrDocumentBase;
   }
 
-  private void removeObj(@SuppressWarnings({"rawtypes"})Collection original, Object toRemove, String fieldName) {
+  private void removeObj(Collection<Object> original, Object toRemove, String fieldName) {
     if(isChildDoc(toRemove)) {
       removeChildDoc(original, (SolrInputDocument) toRemove);
     } else {
@@ -592,12 +591,12 @@ public class AtomicUpdateDocumentMerger {
       return;
     }
 
-    final BiConsumer<Collection, Object> removePredicate = (coll, existingElement) -> coll.remove(existingElement);
+    final BiConsumer<Collection<Object>, Object> removePredicate = (coll, existingElement) -> coll.remove(existingElement);
     modifyCollectionBasedOnFuzzyPresence(fieldName, original, toRemove, removePredicate, null);
   }
 
   private void addValueIfDistinct(String fieldName, Collection<Object> original, Object toAdd) {
-    final BiConsumer<Collection, Object> addPredicate = (coll, newElement) -> coll.add(newElement);
+    final BiConsumer<Collection<Object>, Object> addPredicate = (coll, newElement) -> coll.add(newElement);
     modifyCollectionBasedOnFuzzyPresence(fieldName, original, toAdd, null, addPredicate);
   }
 
@@ -619,8 +618,8 @@ public class AtomicUpdateDocumentMerger {
    * @param ifAbsent a function to execute if rawValue was not found in 'original'
    */
   private void modifyCollectionBasedOnFuzzyPresence(String fieldName, Collection<Object> original, Object rawValue,
-                                                    BiConsumer<Collection, Object> ifPresent,
-                                                    BiConsumer<Collection, Object> ifAbsent) {
+                                                    BiConsumer<Collection<Object>, Object> ifPresent,
+                                                    BiConsumer<Collection<Object>, Object> ifAbsent) {
     Object nativeValue = getNativeFieldValue(fieldName, rawValue);
     Optional<Object> matchingValue = findObjectWithTypeFuzziness(original, rawValue, nativeValue);
     if (matchingValue.isPresent() && ifPresent != null) {
