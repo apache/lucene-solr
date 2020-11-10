@@ -195,6 +195,7 @@ public class OrdinalMap implements Accountable {
     // slow anyway
     PackedLongValues.Builder globalOrdDeltas = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     PackedLongValues.Builder firstSegments = PackedLongValues.packedBuilder(PackedInts.COMPACT);
+    long firstSegmentBits = 0L;
     final PackedLongValues.Builder[] ordDeltas = new PackedLongValues.Builder[subs.length];
     for (int i = 0; i < ordDeltas.length; i++) {
       ordDeltas[i] = PackedLongValues.monotonicBuilder(acceptableOverheadRatio);
@@ -269,6 +270,7 @@ public class OrdinalMap implements Accountable {
 
       // for each unique term, just mark the first segment index/delta where it occurs
       firstSegments.add(firstSegmentIndex);
+      firstSegmentBits |= firstSegmentIndex;
       globalOrdDeltas.add(globalOrdDelta);
       globalOrd++;
     }
@@ -278,7 +280,7 @@ public class OrdinalMap implements Accountable {
 
     // If the first segment contains all of the global ords, then we can apply a small optimization
     // and hardcode the first segment indices and global ord deltas as all zeroes.
-    if (ordDeltaBits.length > 0 && ordDeltaBits[0] == 0L && ordDeltas[0].size() == this.valueCount) {
+    if (ordDeltaBits.length > 0 && ordDeltaBits[0] == 0L && firstSegmentBits == 0L) {
       this.firstSegments = LongValues.ZEROES;
       this.globalOrdDeltas = LongValues.ZEROES;
     } else {
