@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ltr.interleaving;
+package org.apache.solr.ltr.interleaving.algorithms;
 
 
 import java.util.ArrayList;
@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
+import org.apache.solr.ltr.interleaving.InterleavingResult;
 import org.junit.Before;
 import org.junit.Test;
 
