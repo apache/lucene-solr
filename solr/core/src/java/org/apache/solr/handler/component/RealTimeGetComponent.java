@@ -1146,10 +1146,7 @@ public class RealTimeGetComponent extends SearchComponent
       rb.rsp.add("sync", success);
 
       if (!success && rb.req.getCore().getCoreContainer().isZooKeeperAware()) {
-        ParWork.getRootSharedExecutor().submit(() -> {
-          rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
-        });
-
+        rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
       }
     } catch (IOException e) {
       log.error("Error while closing", e);

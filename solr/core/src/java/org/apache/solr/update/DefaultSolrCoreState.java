@@ -394,32 +394,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       // in another thread on another 'recovery' executor.
       //
 
-      try {
-        if (recoveryStrat != null) {
-          recoveryStrat.close();
-        }
-
-        if (recoveryFuture != null) {
-          while (true) {
-            try {
-              recoveryFuture.get(1, TimeUnit.SECONDS);
-              break;
-            } catch (TimeoutException e) {
-              if (log.isDebugEnabled()) log.debug("1 second timeout hit, waiting on recovery again if not closed");
-              synchronized (this) {
-                if (solrCoreStateRefCnt == 0 || core.getCoreContainer().isShutDown()) {
-                  break;
-                }
-              }
-            } catch (Exception e) {
-              log.error("Exception waiting for previous recovery to finish {}", e.getMessage());
-            }
-          }
-        }
-      } catch (NullPointerException e) {
-        // okay
-      }
-
       recoveryFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
           .submit(recoveryTask);
     } catch (RejectedExecutionException e) {
