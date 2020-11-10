@@ -707,7 +707,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public boolean processQueueItem(ZkNodeProps message) throws InterruptedException {
-    log.info("processQueueItem {}", message);
+    if (log.isDebugEnabled()) log.debug("processQueueItem {}", message);
     // nocommit - may not need this now
    new OverseerTaskExecutorTask(getCoreContainer(), zkStateWriter, message).run();
 //    try {

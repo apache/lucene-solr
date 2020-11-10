@@ -121,7 +121,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
       throws IOException, InterruptedException, KeeperException {
 
-    log.info("addReplica() : {}", Utils.toJSONString(message));
+    if (log.isDebugEnabled())  log.debug("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -212,7 +212,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           public Response call() {
             if (!onlyUpdateState && createdShardHandler) {
               try {
-                log.info("Processs responses");
+                if (log.isDebugEnabled())  log.debug("Processs responses");
                 shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
               } catch (Exception e) {
                 ParWork.propagateInterrupt(e);
@@ -363,12 +363,12 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String coreName = message.getStr(CoreAdminParams.CORE);
     Replica.Type replicaType = replicaPosition.type;
 
-    log.info("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
+    if (log.isDebugEnabled()) log.debug("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
 
     if (coreName == null) {
       coreName = Assign.buildSolrCoreName(coll, coll.getName(), shard, replicaType);
     }
-    log.info("Returning CreateReplica command coreName={}", coreName);
+    if (log.isDebugEnabled()) log.debug("Returning CreateReplica command coreName={}", coreName);
 
     return new CreateReplica(collection, shard, node, replicaType, coreName);
   }

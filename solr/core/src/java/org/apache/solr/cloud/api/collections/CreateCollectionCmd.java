@@ -100,7 +100,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   private final SolrCloudManager cloudManager;
 
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh, CoreContainer cc, SolrCloudManager cloudManager) {
-    log.info("create CreateCollectionCmd");
     this.ocmh = ocmh;
     this.timeSource = ocmh.cloudManager.getTimeSource();
     this.zkStateReader = ocmh.zkStateReader;
@@ -110,7 +109,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   @Override
   @SuppressWarnings({"unchecked"})
   public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    log.info("run call for CreateCollectionCmd {}", message);
+    log.info("CreateCollectionCmd {}", message);
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       ocmh.zkStateReader.aliasesManager.update(); // nocommit - hate this
     }
@@ -121,7 +120,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final String collectionName = message.getStr(NAME);
     final boolean waitForFinalState = false;
     final String alias = message.getStr(ALIAS, collectionName);
-    log.info("Create collection {}", collectionName);
+    if (log.isDebugEnabled()) log.debug("Create collection {}", collectionName);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -148,7 +147,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     String configName = getConfigName(collectionName, message);
-    log.info("configName={} collection={}", configName, collectionName);
+    if (log.isDebugEnabled()) log.debug("configName={} collection={}", configName, collectionName);
     if (configName == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No config set found to associate with the collection.");
     }
@@ -216,13 +215,13 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
         DocCollection coll = clusterState.getCollectionOrNull(collectionName);
         String coreName = Assign.buildSolrCoreName(coll, collectionName, replicaPosition.shard, replicaPosition.type);
-        log.info(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}", coreName, replicaPosition.shard, collectionName, nodeName));
+        if (log.isDebugEnabled()) log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}", coreName, replicaPosition.shard, collectionName, nodeName));
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);
         // create the replica in the collection's state.json in ZK prior to creating the core.
         // Otherwise the core creation fails
 
-        log.info("Base url for replica={}", baseUrl);
+        if (log.isDebugEnabled()) log.debug("Base url for replica={}", baseUrl);
 
         ZkNodeProps props = new ZkNodeProps();
         //props.getProperties().putAll(message.getProperties());
@@ -267,10 +266,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
         coresToCreate.put(coreName, sreq);
       }
-      log.info("Sending create call for {} replicas", coresToCreate.size());
+      if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas", coresToCreate.size());
       for (Map.Entry<String,ShardRequest> e : coresToCreate.entrySet()) {
         ShardRequest sreq = e.getValue();
-        log.info("Submit request to shard for for replica coreName={} total requests={} shards={}", e.getKey(), coresToCreate.size(),
+        if (log.isDebugEnabled()) log.debug("Submit request to shard for for replica coreName={} total requests={} shards={}", e.getKey(), coresToCreate.size(),
             sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
         // nocommit - work out parallel / async 100%
         shardHandler.submit(sreq, sreq.shards[0], sreq.params);
@@ -298,7 +297,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, ex);
     }
 
-    log.info("CreateCollectionCmd clusterstate={}", clusterState);
+    if (log.isDebugEnabled()) log.debug("CreateCollectionCmd clusterstate={}", clusterState);
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
     if (results.get("failure") == null && results.get("exception") == null) {
@@ -331,11 +330,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             } catch (Exception e) {
               log.error("Exception trying to clean up collection after fail {}", collectionName);
             }
-            log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
+            if (log.isDebugEnabled()) log.debug("Cleaned up artifacts for failed create collection for [{}]", collectionName);
             //throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
           } else {
             Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
-            log.info("createNodeSet={}", createNodeSet);
+            if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
             if (createNodeSet == null || (!createNodeSet.equals("") && !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
             try {
                 zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
@@ -462,7 +461,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   public static DocCollection buildDocCollection(SolrCloudManager cloudManager, ZkNodeProps message, boolean withDocRouter) {
-    log.info("buildDocCollection {}", message);
+    if (log.isDebugEnabled()) log.debug("buildDocCollection {}", message);
     String cName = message.getStr(NAME);
     DocRouter router = null;
     Map<String,Object> routerSpec = null;
@@ -584,7 +583,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         } else if (configNames != null && configNames.size() == 1) {
           configName = configNames.get(0);
           // no config set named, but there is only 1 - use it
-          log.info("Only one config set found in zk - using it: {}", configName);
+          if (log.isDebugEnabled()) log.debug("Only one config set found in zk - using it: {}", configName);
         }
       } catch (KeeperException.NoNodeException e) {
 
@@ -628,7 +627,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 //      throw new SolrException(ErrorCode.SERVER_ERROR, "createCollectionZkNode(DistribStateManager=" + stateManager + ", String=" + collection + ", Map<String,String>=" + params + ")", e);
    // }
     try {
-      log.info("Creating collection in ZooKeeper:" + collection);
+      if (log.isDebugEnabled()) log.debug("Creating collection in ZooKeeper:" + collection);
 
       Map<String,Object> collectionProps = new HashMap<>();
 
@@ -646,7 +645,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
         // if we are bootstrapping a collection, default the config for
         // a new collection to the collection we are bootstrapping
-        log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
+        if (log.isDebugEnabled()) log.debug("Setting config for collection:" + collection + " to " + defaultConfigName);
 
         Properties sysProps = System.getProperties();
         for (String sprop : System.getProperties().stringPropertyNames()) {
@@ -720,7 +719,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     log.debug("Looking for collection configName");
     if (collectionProps.containsKey("configName")) {
       if (log.isInfoEnabled()) {
-        log.info("configName was passed as a param {}", collectionProps.get("configName"));
+        if (log.isDebugEnabled()) log.debug("configName was passed as a param {}", collectionProps.get("configName"));
       }
       return;
     }
@@ -745,7 +744,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     // check if there's a config set with the same name as the collection
     if (configNames != null && configNames.contains(collection)) {
-      log.info("Could not find explicit collection configName, but found config name matching collection name - using that set.");
+      if (log.isDebugEnabled()) log.info("Could not find explicit collection configName, but found config name matching collection name - using that set.");
       collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
       return;
     }
@@ -774,7 +773,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   }
 
   public static CollectionStatePredicate expectedReplicas(int expectedReplicas, Map<String,Replica> replicaMap) {
-    log.info("Wait for expectedReplicas={}", expectedReplicas);
+    if (log.isDebugEnabled()) log.debug("Wait for expectedReplicas={}", expectedReplicas);
 
     return (liveNodes, collectionState) -> {
     //  log.info("Updated state {}", collectionState);
@@ -793,7 +792,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
       if (replicas >= expectedReplicas) {
-        log.info("Found expected replicas={} {}", expectedReplicas, replicaMap);
+        if (log.isDebugEnabled()) log.debug("Found expected replicas={} {}", expectedReplicas, replicaMap);
         return true;
       }
       return false;
