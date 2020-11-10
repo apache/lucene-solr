@@ -14,7 +14,10 @@ New Features
 
 * LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
 
-* LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)  
+* LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)
+
+* LUCENE-9594: FeatureField supports newLinearQuery that for scoring uses raw indexed
+  values of features without any transformation. (Mayya Sharipova, Adrien Grand)
 
 Improvements
 ---------------------
