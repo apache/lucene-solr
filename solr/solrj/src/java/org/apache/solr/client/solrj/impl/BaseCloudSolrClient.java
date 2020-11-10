@@ -691,7 +691,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // put the leaderUrl first.
       sortedReplicas.add(0, leader);
 
-      urlMap.put(name, sortedReplicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList()));
+      ZkStateReader zkStateReader = getZkStateReader();
+      urlMap.put(name, sortedReplicas.stream().map(replica -> replica.getCoreUrl()).collect(Collectors.toList()));
     }
     return urlMap;
   }
@@ -1213,7 +1214,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Set<String> seenNodes = new HashSet<>();
       sortedReplicas.forEach( replica -> {
         if (seenNodes.add(replica.getNodeName())) {
-          theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+          theUrlList.add(Replica.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
         }
       });
 

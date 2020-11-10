@@ -100,7 +100,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected final Random r = new Random();
 
-  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
+  private volatile RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";

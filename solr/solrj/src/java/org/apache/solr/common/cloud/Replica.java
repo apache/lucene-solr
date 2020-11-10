@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
-  
+
   /**
    * The replica's state. In general, if the node the replica is hosted on is
    * not under {@code /live_nodes} in ZK, the replica's state should be
@@ -107,24 +107,50 @@ public class Replica extends ZkNodeProps {
     }
   }
 
+  public interface NodeNameToBaseUrl {
+    String getBaseUrlForNodeName(final String nodeName);
+  }
+
   private final String name;
   private final String nodeName;
   private State state;
   private final Type type;
   public final String slice, collection;
+  private final String baseUrl;
 
-  public Replica(String name, Map<String,Object> propMap, String collection, String slice) {
+  public Replica(String name, Map<String,Object> propMap, String collection, String slice, NodeNameToBaseUrl nodeNameToBaseUrl) {
     super(propMap);
     this.collection = collection;
     this.slice = slice;
     this.name = name;
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
+    this.baseUrl = nodeNameToBaseUrl.getBaseUrlForNodeName(this.nodeName);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
 //    Objects.requireNonNull(this.collection, "'collection' must not be null");
 //    Objects.requireNonNull(this.slice, "'slice' must not be null");
 //    Objects.requireNonNull(this.name, "'name' must not be null");
 //    Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
 //    Objects.requireNonNull(this.type, "'type' must not be null");
+    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
+      if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
+        this.state = (State) propMap.get(ZkStateReader.STATE_PROP);
+      } else {
+        this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+      }
+    } else {
+      this.state = State.DOWN;                         //Default to DOWN
+      propMap.put(ZkStateReader.STATE_PROP, state.toString());
+    }
+  }
+
+  public Replica(String name, Map<String,Object> propMap, String collection, String slice, String baseUrl) {
+    super(propMap);
+    this.collection = collection;
+    this.slice = slice;
+    this.name = name;
+    this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
+    this.baseUrl =  baseUrl;
+    type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
       if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
         this.state = (State) propMap.get(ZkStateReader.STATE_PROP);
@@ -161,10 +187,10 @@ public class Replica extends ZkNodeProps {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getStr(ZkStateReader.BASE_URL_PROP), name);
+    return getCoreUrl(getBaseUrl(), name);
   }
-  public String getBaseUrl(){
-    return getStr(ZkStateReader.BASE_URL_PROP);
+  public String getBaseUrl() {
+    return baseUrl;
   }
 
   /** The name of the node this replica resides on */
@@ -201,6 +227,16 @@ public class Replica extends ZkNodeProps {
     final String propertyValue = getStr(propertyKey);
     return propertyValue;
   }
+
+  public static String getCoreUrl(String baseUrl, String coreName) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(baseUrl);
+    if (!baseUrl.endsWith("/")) sb.append("/");
+    sb.append(coreName);
+    if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
+    return sb.toString();
+  }
+
 
   @Override
   public String toString() {

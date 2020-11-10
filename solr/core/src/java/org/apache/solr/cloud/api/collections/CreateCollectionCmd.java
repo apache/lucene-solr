@@ -95,14 +95,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final OverseerCollectionMessageHandler ocmh;
   private final TimeSource timeSource;
-  private final DistribStateManager stateManager;
   private final ZkStateReader zkStateReader;
   private final SolrCloudManager cloudManager;
 
   public CreateCollectionCmd(OverseerCollectionMessageHandler ocmh, CoreContainer cc, SolrCloudManager cloudManager) {
     log.info("create CreateCollectionCmd");
     this.ocmh = ocmh;
-    this.stateManager = ocmh.cloudManager.getDistribStateManager();
     this.timeSource = ocmh.cloudManager.getTimeSource();
     this.zkStateReader = ocmh.zkStateReader;
     this.cloudManager = cloudManager;
@@ -177,11 +175,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       //        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '"+collectionName+"' already exists!");
       //      }
 
-      createCollectionZkNode(stateManager, collectionName, collectionParams, configName);
+      createCollectionZkNode(cloudManager.getDistribStateManager(), collectionName, collectionParams, configName);
 
-      OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName);
+      OverseerCollectionMessageHandler.createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
 
-      DocCollection docCollection = buildDocCollection(stateManager, message, true);
+      DocCollection docCollection = buildDocCollection(cloudManager, message, true);
       clusterState = clusterState.copyWith(collectionName, docCollection);
       try {
         replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
@@ -228,7 +226,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps props = new ZkNodeProps();
         //props.getProperties().putAll(message.getProperties());
         ZkNodeProps addReplicaProps = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP,
-            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP, baseUrl, ZkStateReader.NODE_NAME_PROP,
+            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.NODE_NAME_PROP,
             nodeName, "node", nodeName, ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards",
             message.getStr("shards"), CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState)); props.getProperties().putAll(addReplicaProps.getProperties());
         if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
@@ -433,7 +431,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  public static DocCollection buildDocCollection(DistribStateManager stateManager, ZkNodeProps message, boolean withDocRouter) {
+  public static DocCollection buildDocCollection(SolrCloudManager cloudManager, ZkNodeProps message, boolean withDocRouter) {
     log.info("buildDocCollection {}", message);
     String cName = message.getStr(NAME);
     DocRouter router = null;
@@ -447,7 +445,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     Map<String,Slice> slices;
     if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
-      slices = Slice.loadAllFromMap(message.getStr(ZkStateReader.COLLECTION_PROP), (Map<String,Object>) messageShardsObj);
+      slices = Slice.loadAllFromMap((Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider(), message.getStr(ZkStateReader.COLLECTION_PROP), (Map<String,Object>) messageShardsObj);
     } else {
       List<String> shardNames = new ArrayList<>();
       if (withDocRouter) {
@@ -476,7 +474,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
         }
 
-        slices.put(sliceName, new Slice(sliceName, null, sliceProps, message.getStr(ZkStateReader.COLLECTION_PROP)));
+        slices.put(sliceName, new Slice(sliceName, null, sliceProps, message.getStr(ZkStateReader.COLLECTION_PROP), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider()));
 
       }
     }
@@ -499,7 +497,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         collectionProps.put("autoCreated", "true");
       }
     }
-
+    DistribStateManager stateManager = cloudManager.getDistribStateManager();
     // TODO need to make this makePath calls efficient and not use zkSolrClient#makePath
     for (String shardName : slices.keySet()) {
       try {

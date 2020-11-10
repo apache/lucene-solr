@@ -107,12 +107,10 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -1410,7 +1408,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 10000);
 
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+      String ourUrl = replica.getCoreUrl();
       boolean isLeader = leader.getName() .equals(coreName);
 
       log.info("We are {} and leader is {} isLeader={}", ourUrl, leader.getCoreUrl(), isLeader);
@@ -1589,7 +1587,7 @@ public class ZkController implements Closeable, Runnable {
         byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         // nocommit - right key for leader name?
-        return new Replica(leaderProps.getNodeProps().getStr("name"), leaderProps.getNodeProps().getProperties(), collection, slice);
+        return new Replica(leaderProps.getNodeProps().getStr("name"), leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
 
       } catch (Exception e) {
         SolrZkClient.checkInterrupted(e);
@@ -1619,10 +1617,9 @@ public class ZkController implements Closeable, Runnable {
 
     Map<String, Object> props = new HashMap<>();
     // we only put a subset of props into the leader node
-    props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
 
-    Replica replica = new Replica(cd.getName(), props, null, null);
+    Replica replica = new Replica(cd.getName(), props, collection, shardId, zkStateReader);
     LeaderElector leaderElector;
     synchronized (leaderElectors) {
       leaderElector = leaderElectors.get(replica.getName());
@@ -1727,9 +1724,8 @@ public class ZkController implements Closeable, Runnable {
       Map<String,Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
-      props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
-      props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
+      props.put(CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
       props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
       props.put(ZkStateReader.COLLECTION_PROP, collection);
@@ -2077,7 +2073,6 @@ public class ZkController implements Closeable, Runnable {
     String shardId = params.get(SHARD_ID_PROP);
     String coreName = params.get(CORE_NAME_PROP);
     String electionNode = params.get(ELECTION_NODE_PROP);
-    String baseUrl = params.get(BASE_URL_PROP);
 
     try {
       MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
@@ -2090,11 +2085,9 @@ public class ZkController implements Closeable, Runnable {
       if (prevContext != null) prevContext.close();
 
       Map<String, Object> props = new HashMap<>();
-      props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
-      props.put(ZkStateReader.CORE_NAME_PROP, coreName);
       props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
 
-      Replica replica = new Replica(coreName, props, null, null);
+      Replica replica = new Replica(coreName, props, collectionName, shardId, zkStateReader);
 
       LeaderElector elect = ((ShardLeaderElectionContext) prevContext).getLeaderElector();
       ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,

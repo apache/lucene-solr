@@ -137,7 +137,7 @@ public class ClusterStateMockUtil {
         case "s":
           replicas = new HashMap<>();
           if(collName == null) collName = "collection" + (collectionStates.size() + 1);
-          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null,  collName);
+          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null,  collName, nodeName -> "http://" + nodeName);
           slices.put(slice.getName(), slice);
 
           // hack alert: the DocCollection constructor copies over active slices to its active slice map in the constructor
@@ -171,11 +171,11 @@ public class ClusterStateMockUtil {
           if (!leaderFound && !m.group(1).equals("p")) {
             replicaPropMap.put(Slice.LEADER, "true");
           }
-          replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
+          replica = new Replica(replicaName, replicaPropMap, collName, sliceName, nodeName -> "http://" + nodeName);
           replicas.put(replica.getName(), replica);
 
           // hack alert: re-create slice with existing data and new replicas map so that it updates its internal leader attribute
-          slice = new Slice(slice.getName(), replicas, null, collName);
+          slice = new Slice(slice.getName(), replicas, null, collName, nodeName -> "http://" + nodeName);
           slices.put(slice.getName(), slice);
           // we don't need to update doc collection again because we aren't adding a new slice or changing its state
           break;
@@ -232,7 +232,6 @@ public class ClusterStateMockUtil {
 
     Map<String,Object> replicaPropMap = new HashMap<>();
     replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, "baseUrl" + node + "_");
-    replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
     replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
     replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, sliceName + "_" + replicaName);
     replicaPropMap.put(ZkStateReader.REPLICA_TYPE, replicaType.name());

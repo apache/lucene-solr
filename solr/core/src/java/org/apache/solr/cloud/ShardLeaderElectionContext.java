@@ -262,10 +262,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         assert shardId != null;
 
         core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-        publishActive(core);
+
         ZkNodeProps zkNodes = ZkNodeProps
-            .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.BASE_URL_PROP,
-                leaderProps.get(ZkStateReader.BASE_URL_PROP), ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.CORE_NAME_PROP,
+            .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.CORE_NAME_PROP,
                 leaderProps.getName(), ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
         assert zkController != null;
         assert zkController.getOverseer() != null;
@@ -273,7 +272,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         log.info("Publish leader state");
         zkController.getOverseer().offerStateUpdate(Utils.toJSON(zkNodes));
 
-        log.info("I am the new leader: " + ZkCoreNodeProps.getCoreUrl(leaderProps) + " " + shardId);
+        log.info("I am the new leader: " + leaderProps.getCoreUrl() + " " + shardId);
 
       } catch (AlreadyClosedException | InterruptedException e) {
         ParWork.propagateInterrupt("Already closed or interrupted, bailing..", e);

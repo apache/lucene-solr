@@ -125,7 +125,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       switch (action.actionType) {
         case ENSURE_REMOVED:
           if (exists) {
-            ocmh.tpe.submit(
+            ocmh.overseer.getTaskExecutor().submit(
              () -> {
                 try {
                   deleteTargetCollection(clusterState, results, aliasName, aliasesManager, action);

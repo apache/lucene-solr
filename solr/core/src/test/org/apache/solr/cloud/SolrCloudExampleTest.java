@@ -279,7 +279,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(collection);
     for (Slice slice : coll.getActiveSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String uri = "" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config";
+        String uri = "" + replica.getCoreUrl() + "/config";
         Map respMap = getAsMap(cloudClient, uri);
         Long maxTime = (Long) (getObjectByPath(respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
         ret.put(replica.getName(), maxTime);

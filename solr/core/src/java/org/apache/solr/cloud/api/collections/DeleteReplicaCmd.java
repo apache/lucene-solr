@@ -348,7 +348,7 @@ public class DeleteReplicaCmd implements Cmd {
     ZkNodeProps rep = new ZkNodeProps();
     rep.getProperties().put("replica", replicaName);
     rep.getProperties().put("collection", replica.getCollection());
-    rep.getProperties().put(ZkStateReader.BASE_URL_PROP, replica.getBaseUrl());
+    rep.getProperties().put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
 
     log.info("Before slice remove replica {} {}", rep, clusterState);
     clusterState = new SliceMutator(ocmh.cloudManager).removeReplica(clusterState, rep);

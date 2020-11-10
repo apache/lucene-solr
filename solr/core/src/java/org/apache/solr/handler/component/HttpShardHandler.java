@@ -320,7 +320,7 @@ public class HttpShardHandler extends ShardHandler {
 
       if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;
-        rb.shortCircuitedURL = ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
+        rb.shortCircuitedURL = Replica.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
         return;
         // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
       }

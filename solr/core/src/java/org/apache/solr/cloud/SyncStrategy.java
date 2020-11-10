@@ -77,7 +77,7 @@ public class SyncStrategy implements Closeable {
     }
 
     if (log.isInfoEnabled()) {
-      log.info("Sync replicas to {}", ZkCoreNodeProps.getCoreUrl(leaderProps));
+      log.info("Sync replicas to {}", leaderProps.getCoreUrl());
     }
 
     if (core.getUpdateHandler().getUpdateLog() == null) {
@@ -167,7 +167,7 @@ public class SyncStrategy implements Closeable {
             cd.getName());
     if (nodes == null) {
       if (log.isInfoEnabled()) {
-        log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));
+        log.info("{} has no replicas", leaderProps.getCoreUrl());
       }
       return;
     }
@@ -176,10 +176,11 @@ public class SyncStrategy implements Closeable {
     for (Replica node : nodes) {
       try {
         if (log.isInfoEnabled()) {
-          log.info("{}: try and ask {} to sync", ZkCoreNodeProps.getCoreUrl(leaderProps), node.getCoreUrl());
+          log.info("{}: try and ask {} to sync", leaderProps.getCoreUrl(), node.getCoreUrl());
         }
         
-        requestSync(node.getBaseUrl(), node.getCoreUrl(), leaderProps.getCoreUrl(), node.getName(), nUpdates);
+        requestSync(node.getBaseUrl(), node.getCoreUrl(),
+            leaderProps.getCoreUrl(), node.getName(), nUpdates);
         
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
@@ -198,11 +199,11 @@ public class SyncStrategy implements Closeable {
 
         if (!success) {
           if (log.isInfoEnabled()) {
-            log.info("{}: Sync failed - replica ({}) should try to recover.", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+            log.info("{}: Sync failed - replica ({}) should try to recover.", leaderProps.getCoreUrl(), srsp.getShardAddress());
           }
         } else {
           if (log.isInfoEnabled()) {
-            log.info("{}: sync completed with {}", ZkCoreNodeProps.getCoreUrl(leaderProps), srsp.getShardAddress());
+            log.info("{}: sync completed with {}", leaderProps.getCoreUrl(), srsp.getShardAddress());
           }
         }
       }

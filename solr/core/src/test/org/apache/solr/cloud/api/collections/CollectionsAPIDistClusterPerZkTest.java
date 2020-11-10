@@ -444,7 +444,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
 
     assertEquals("Replica should be created on the right node",
         cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)),
-        newReplica.getStr(ZkStateReader.BASE_URL_PROP));
+        newReplica.getBaseUrl());
 
     Path instancePath = createTempDir();
     response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
@@ -453,7 +453,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
-    try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
+    try (Http2SolrClient coreclient = SolrTestCaseJ4.getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getName(), coreclient);
       NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getName());
       String instanceDirStr = (String) coreStatus.get("instanceDir");

@@ -136,7 +136,7 @@ class CloudReplicaSource implements ReplicaSource {
           .filter(replica -> !builder.onlyNrt || (replica.getType() == Replica.Type.NRT || (replica.getType() == Replica.Type.TLOG && isShardLeader.test(replica))))
           .collect(Collectors.toList());
       builder.replicaListTransformer.transform(list);
-      List<String> collect = list.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
+      List<String> collect = list.stream().map(replica -> replica.getCoreUrl()).collect(Collectors.toList());
       builder.hostChecker.checkWhitelist(clusterState, shardsParam, collect);
       return collect;
     }

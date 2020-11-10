@@ -295,8 +295,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   protected Http2SolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + coll;
+    String url = replica.getBaseUrl() + "/" + coll;
     return SolrTestCaseJ4.getHttpSolrClient(url);
   }
 

@@ -97,7 +97,7 @@ public class AffinityReplicaListTransformer implements ReplicaListTransformer, C
     private SortableChoice(Object choice) {
       this.choice = choice;
       if (choice instanceof Replica) {
-        this.sortableCoreLabel = ((Replica)choice).getCoreUrl();
+        this.sortableCoreLabel = ((Replica)choice).getNodeName() + "_" + ((Replica)choice).getName();
       } else if (choice instanceof String) {
         this.sortableCoreLabel = (String)choice;
       } else {

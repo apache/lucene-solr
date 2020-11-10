@@ -64,11 +64,13 @@ public class ColStatus {
   public static final String RAW_SIZE_DETAILS_PROP = SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
   public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
+  private final ZkStateReader zkStateReader;
 
-  public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
+  public ColStatus(SolrClientCache solrClientCache, ZkStateReader zkStateReader, ClusterState clusterState, ZkNodeProps props) {
     this.props = props;
     this.solrClientCache = solrClientCache;
     this.clusterState = clusterState;
+    this.zkStateReader = zkStateReader;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -168,7 +170,7 @@ public class ColStatus {
         if (!leader.isActive(clusterState.getLiveNodes())) {
           continue;
         }
-        String url = ZkCoreNodeProps.getCoreUrl(leader);
+        String url = leader.getCoreUrl();
         SolrClient client = solrClientCache.getHttpSolrClient(url);
         try {
           ModifiableSolrParams params = new ModifiableSolrParams();

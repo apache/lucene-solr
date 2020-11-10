@@ -20,7 +20,9 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class ZkClientClusterStateProvider implements ClusterStateProvider {
+public class ZkClientClusterStateProvider implements ClusterStateProvider, Replica.NodeNameToBaseUrl {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   ZkStateReader zkStateReader;
@@ -233,5 +235,11 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   @Override
   public boolean isClosed() {
     return isClosed;
+  }
+
+  @Override
+  public String getBaseUrlForNodeName(final String nodeName) {
+    return Utils.getBaseUrlForNodeName(nodeName,
+        getClusterProperty(ZkStateReader. URL_SCHEME, "http"));
   }
 }

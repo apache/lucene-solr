@@ -67,6 +67,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -184,7 +185,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
-    Info info = new MultiThreadedRunner(url);
+    Info info = new MultiThreadedRunner(null, url);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(cli.getOptionValue("out"), cli.getOptionValue("format"));
     info.fields = cli.getOptionValue("fields");
@@ -378,6 +379,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
   static class MultiThreadedRunner extends Info {
+    private final ZkStateReader zkStateReader;
     ExecutorService producerThreadpool, consumerThreadpool;
     ArrayBlockingQueue<SolrDocument> queue = new ArrayBlockingQueue(1000);
     SolrDocument EOFDOC = new SolrDocument();
@@ -386,8 +388,9 @@ public class ExportTool extends SolrCLI.ToolBase {
     private final long startTime ;
 
     @SuppressForbidden(reason = "Need to print out time")
-    public MultiThreadedRunner(String url) {
+    public MultiThreadedRunner(ZkStateReader zkStateReader, String url) {
       super(url);
+      this.zkStateReader = zkStateReader;
       startTime= System.currentTimeMillis();
     }
 
@@ -458,7 +461,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         Slice slice = entry.getValue();
         Replica replica = slice.getLeader();
         if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
-        CoreHandler coreHandler = new CoreHandler(replica);
+        CoreHandler coreHandler = new CoreHandler(replica, zkStateReader);
         corehandlers.put(replica.getName(), coreHandler);
       }
     }
@@ -492,10 +495,12 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     class CoreHandler {
       final Replica replica;
+      private final ZkStateReader zkStateReader;
       long expectedDocs;
       AtomicLong receivedDocs = new AtomicLong();
 
-      CoreHandler(Replica replica) {
+      CoreHandler(Replica replica, ZkStateReader zkStateReader) {
+        this.zkStateReader = zkStateReader;
         this.replica = replica;
       }
 

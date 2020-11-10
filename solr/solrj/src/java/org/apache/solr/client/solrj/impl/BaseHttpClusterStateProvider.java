@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 
-public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
+public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider, Replica.NodeNameToBaseUrl {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String urlScheme;
@@ -139,7 +140,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     Set<String> liveNodes = new HashSet((List<String>)(cluster.get("live_nodes")));
     this.liveNodes = liveNodes;
     liveNodesTimestamp = System.nanoTime();
-    ClusterState cs = ClusterState.createFromCollectionMap(znodeVersion, collectionsMap, liveNodes);
+    ClusterState cs = ClusterState.createFromCollectionMap(this, znodeVersion, collectionsMap, liveNodes);
     if (clusterProperties != null) {
       Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
       if (properties != null) {
@@ -250,6 +251,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @Override
+  public String getBaseUrlForNodeName(final String nodeName) {
+    return Utils.getBaseUrlForNodeName(nodeName,
+        getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
+  }
+
+  @Override
   public Map<String, String> getAliasProperties(String alias) {
     getAliases(false);
     return Collections.unmodifiableMap(aliasProperties.getOrDefault(alias, Collections.emptyMap()));
@@ -326,6 +333,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   // This exception is not meant to escape this class it should be caught and wrapped.
-  private class NotACollectionException extends Exception {
+  private static class NotACollectionException extends Exception {
   }
 }

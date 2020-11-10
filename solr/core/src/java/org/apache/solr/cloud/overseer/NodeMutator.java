@@ -37,7 +37,7 @@ public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ClusterState downNode(ClusterState clusterState, ZkNodeProps message) {
+  public ClusterState downNode(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, ClusterState clusterState, ZkNodeProps message) {
 
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
 
@@ -65,13 +65,13 @@ public class NodeMutator {
             log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
             Map<String, Object> props = replica.shallowCopy();
             props.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-            Replica newReplica = new Replica(replica.getName(), props, collection, slice.getName());
+            Replica newReplica = new Replica(replica.getName(), props, collection, slice.getName(), nodeNameToBaseUrl);
             newReplicas.put(replica.getName(), newReplica);
             needToUpdateCollection = true;
           }
         }
 
-        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collection);
+        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collection, nodeNameToBaseUrl);
         slicesCopy.put(slice.getName(), newSlice);
       }
 

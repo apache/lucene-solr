@@ -95,8 +95,8 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected String getReplicateLeaderUrl(Replica leaderprops) {
-      return ZkCoreNodeProps.getCoreUrl(
+    protected String getReplicateLeaderUrl(Replica leaderprops, ZkStateReader zkStateReader) {
+      return Replica.getCoreUrl(
           leaderprops.getStr(alternativeBaseUrlProp),
           leaderprops.getStr(ZkStateReader.CORE_NAME_PROP));
     }

@@ -73,7 +73,7 @@ import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
-public class ZkStateReader implements SolrCloseable {
+public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   public static final int STATE_UPDATE_DELAY = Integer.getInteger("solr.OverseerStateUpdateDelay", 2000);  // delay between cloud state updates
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -1241,6 +1241,7 @@ public class ZkStateReader implements SolrCloseable {
    *
    * @lucene.experimental
    */
+  @Override
   public String getBaseUrlForNodeName(final String nodeName) {
     return Utils.getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"));
   }
@@ -1486,7 +1487,7 @@ public class ZkStateReader implements SolrCloseable {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
         if (data == null) return null;
-        ClusterState state = ClusterState.createFromJson(stat.getVersion(), data, liveNodes);
+        ClusterState state = ClusterState.createFromJson(this, stat.getVersion(), data, liveNodes);
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();
       } catch (KeeperException.NoNodeException e) {

@@ -751,10 +751,12 @@ public class Utils {
 
       public static String getBaseUrlForNodeName ( final String nodeName, String urlScheme){
         final int _offset = nodeName.indexOf("_");
+        final String hostAndPort;
         if (_offset < 0) {
-          throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
+          hostAndPort = nodeName;
+        } else {
+          hostAndPort = nodeName.substring(0, _offset);
         }
-        final String hostAndPort = nodeName.substring(0, _offset);
         final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
         return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
       }

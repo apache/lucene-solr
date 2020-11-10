@@ -146,7 +146,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     this.thisCollection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
     this.req = req;
     this.zkController = cc.getZkController();
-    this.cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
+    this.cmdDistrib = new SolrCmdDistributor(zkController.zkStateReader, cc.getUpdateShardHandler());
 
 
 
@@ -163,7 +163,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.NONE.toString());
     //  Signal this is a distributed search from this URP (see #wrap())
     outParams.set(ALIAS_DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-    outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), core.getName()));
+    outParams.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), core.getName()));
     outParamsToLeader = outParams;
   }
 
@@ -267,7 +267,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
     }
-    return new SolrCmdDistributor.ForwardNode(leader, zkController.getZkStateReader(),
+    return new SolrCmdDistributor.ForwardNode(zkController.zkStateReader, leader,
         collection, slice.getName());
   }
 

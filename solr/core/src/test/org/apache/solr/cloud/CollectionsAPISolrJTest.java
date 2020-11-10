@@ -290,8 +290,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     // Add a shard to the implicit collection
     response = CollectionAdminRequest.createShard(collectionName, "shardC").process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 3, 9);
-
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     

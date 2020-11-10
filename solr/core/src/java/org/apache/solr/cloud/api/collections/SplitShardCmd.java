@@ -517,7 +517,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, sliceName);
         propMap.put(REPLICA_TYPE, replicaPosition.type.name());
-        propMap.put("node", subShardNodeName);
+        propMap.put(ZkStateReader.NODE_NAME_PROP, subShardNodeName);
+        //propMap.put("replica", solrCoreName);
         propMap.put(CoreAdminParams.NAME, solrCoreName);
         // copy over property params:
         for (String key : message.keySet()) {
@@ -664,7 +665,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       collection = clusterState.getCollection(collectionName);
       for (Map<String,Object> replica : replicas) {
         clusterState = checkAndCompleteShardSplit(clusterState, collection, replica.get("name").toString(), replica.get("shard").toString(),
-            new Replica(replica.get("name").toString(), replica, replica.get("collection").toString(), replica.get("shard").toString()));
+            new Replica(replica.get("name").toString(), replica, replica.get("collection").toString(), replica.get("shard").toString(), ocmh.zkStateReader));
       }
 
 

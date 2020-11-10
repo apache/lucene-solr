@@ -55,6 +55,8 @@ import static org.apache.solr.common.util.Utils.makeMap;
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
 public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
 
+  public static final String[] STRINGS = {};
+
   @Test
   public void test() throws Exception {
     //Migrate from HTTP -> HTTPS -> HTTP
@@ -103,7 +105,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     assertEquals("Wrong number of replicas found", 4, replicas.size());
     for(Replica replica : replicas) {
       assertTrue("Replica didn't have the proper urlScheme in the ClusterState",
-          StringUtils.startsWith(replica.getStr(ZkStateReader.BASE_URL_PROP), urlScheme));
+          StringUtils.startsWith(replica.getBaseUrl(), urlScheme));
     }
   }
   
@@ -128,10 +130,10 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     
     List<String> urls = new ArrayList<String>();
     for(Replica replica : getReplicas()) {
-      urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
+      urls.add(replica.getBaseUrl());
     }
     //Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[]{}))) {
+    try (SolrClient client = getLBHttpSolrClient(urls.toArray(STRINGS))) {
       client.request(request);
     }
   }

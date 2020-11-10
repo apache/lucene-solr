@@ -104,10 +104,10 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
 import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
 import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
@@ -175,9 +175,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   final private LockTree lockTree = new LockTree();
 
-  ExecutorService tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, 10, 0L, TimeUnit.MILLISECONDS,
-      new SynchronousQueue<>(),
-      new SolrNamedThreadFactory("OverseerCollectionMessageHandlerThreadFactory"));
+//  ExecutorService tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, 10, 0L, TimeUnit.MILLISECONDS,
+//      new SynchronousQueue<>(),
+//      new SolrNamedThreadFactory("OverseerCollectionMessageHandlerThreadFactory"));
 
   public static final Random RANDOM;
   static {
@@ -374,19 +374,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @SuppressWarnings("unchecked")
   private AddReplicaCmd.Response processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
-    checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
-            BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
+    checkRequired(message, COLLECTION_PROP, NODE_NAME_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP, REJOIN_AT_HEAD_PROP);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
+    params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
     params.set(SHARD_ID_PROP, message.getStr(SHARD_ID_PROP));
     params.set(REJOIN_AT_HEAD_PROP, message.getStr(REJOIN_AT_HEAD_PROP));
     params.set(CoreAdminParams.ACTION, CoreAdminAction.REJOINLEADERELECTION.toString());
     params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
     params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
-    params.set(BASE_URL_PROP, message.getStr(BASE_URL_PROP));
 
-    String baseUrl = message.getStr(BASE_URL_PROP);
+    String baseUrl = zkStateReader.getBaseUrlForNodeName(message.getStr(message.getStr(NODE_NAME_PROP)));
     ShardRequest sreq = new ShardRequest();
     sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
     // yes, they must use same admin handler path everywhere...
@@ -479,8 +478,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
             ZkStateReader.CORE_NAME_PROP, core,
             ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
-            ZkStateReader.COLLECTION_PROP, collectionName,
-            ZkStateReader.BASE_URL_PROP, replica.getStr(ZkStateReader.BASE_URL_PROP));
+            ZkStateReader.COLLECTION_PROP, collectionName);
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 
@@ -988,12 +986,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @Override
   public void close() throws IOException {
     this.isClosed = true;
-
-    if (tpe != null) {
-      if (!tpe.isShutdown()) {
-        ExecutorUtil.shutdownAndAwaitTermination(tpe);
-      }
-    }
     latches.forEach(countDownLatch -> countDownLatch.countDown());
     latches.clear();
 

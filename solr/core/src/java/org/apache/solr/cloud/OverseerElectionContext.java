@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -45,14 +46,15 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private volatile boolean isClosed = false;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica(ID, getIDMap(zkNodeName), null, null), zkClient);
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica(overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer), null, null, overseer.getZkStateReader()), zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
   }
 
-  private static Map<String,Object> getIDMap(String zkNodeName) {
-    Map<String,Object> idMap = new HashMap<>(1);
+  private static Map<String,Object> getIDMap(String zkNodeName, Overseer overseer) {
+    Map<String,Object> idMap = new HashMap<>(2);
     idMap.put(ID, zkNodeName);
+    idMap.put(ZkStateReader.NODE_NAME_PROP, overseer.getZkController().getNodeName());
     return idMap;
   }
 
@@ -104,11 +106,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  public void cancelElection() throws KeeperException, InterruptedException {
-    cancelElection(false);
-  }
-
-  public void cancelElection(boolean fromCSUpdateThread) throws InterruptedException, KeeperException {
+  public void cancelElection() throws InterruptedException, KeeperException {
     try (ParWork closer = new ParWork(this, true)) {
       if (zkClient.isConnected()) {
         closer.collect("cancelElection", () -> {
@@ -122,7 +120,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       }
       closer.collect("overseer", () -> {
         try {
-          overseer.doClose(fromCSUpdateThread);
+          overseer.doClose();
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           log.error("Exception closing Overseer", e);
@@ -133,14 +131,9 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void close() {
-    close(false);
-  }
-
-
-  public void close(boolean fromCSUpdateThread) {
     this.isClosed  = true;
     try {
-      cancelElection(fromCSUpdateThread);
+      cancelElection();
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       log.error("Exception canceling election", e);

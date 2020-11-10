@@ -76,7 +76,7 @@ public class CloudUtil {
         for (Replica replica : slice.getReplicas()) {
 
           String replicaName = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String baseUrl = replica.getBaseUrl();
           log.debug("compare against coreName={} baseUrl={}", replicaName, baseUrl);
 
           if (coreName != null && coreName.equals(replicaName)
@@ -104,17 +104,6 @@ public class CloudUtil {
         }
       }
     }
-  }
-
-  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreName) {
-    DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null) {
-      Slice slice = docCollection.getSlice(shard);
-      if (slice != null) {
-        return slice.getReplica(coreName) != null;
-      }
-    }
-    return false;
   }
 
   /**

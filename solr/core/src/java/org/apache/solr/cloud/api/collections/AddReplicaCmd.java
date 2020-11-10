@@ -173,11 +173,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       collection = clusterState.getCollection(collectionName);
       CreateReplica cr = assignReplicaDetails(collection, message, replicaPosition);
 
-      message = message.plus(ZkStateReader.BASE_URL_PROP, ocmh.zkStateReader.getBaseUrlForNodeName(replicaPosition.node));
-
       message = message.plus(NODE_NAME_PROP, replicaPosition.node);
       message = message.plus(ZkStateReader.REPLICA_TYPE, cr.replicaType.name());
-
 
       clusterState = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, message);
       createReplicas.add(cr);
@@ -311,10 +308,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String collectionName = collection.getName();
     ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName,
-        ZkStateReader.CORE_NAME_PROP, createReplica.coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP,
-        zkStateReader.getBaseUrlForNodeName(createReplica.node), ZkStateReader.NODE_NAME_PROP, createReplica.node, ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
-
-    String coreUrl = ZkCoreNodeProps.getCoreUrl(props.getStr(ZkStateReader.BASE_URL_PROP), createReplica.coreName);
+        ZkStateReader.CORE_NAME_PROP, createReplica.coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.NODE_NAME_PROP, createReplica.node, ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
 
     String configName = zkStateReader.readConfigName(collectionName);
     String routeKey = message.getStr(ShardParams._ROUTE_);

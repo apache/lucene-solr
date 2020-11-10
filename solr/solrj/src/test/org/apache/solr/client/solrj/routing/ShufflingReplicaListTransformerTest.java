@@ -42,7 +42,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
       propMap.put("type", "NRT");
       propMap.put("node_name", "node" + counter);
       counter++;
-      replicas.add(new Replica(url, propMap, "c1", "s1"));
+      replicas.add(new Replica(url, propMap, "c1", "s1", nodeName -> "http://" + nodeName));
     }
     implTestTransform(replicas);
   }

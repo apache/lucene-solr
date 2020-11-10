@@ -116,7 +116,7 @@ public class OverseerTaskExecutorTask implements Runnable {
       //            }
       //            break;
       case DOWNNODE:
-        return new NodeMutator().downNode(clusterState, message);
+        return new NodeMutator().downNode(zkController.zkStateReader, clusterState, message);
       default:
         throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
 

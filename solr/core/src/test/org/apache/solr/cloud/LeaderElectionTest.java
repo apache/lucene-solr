@@ -91,7 +91,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkClient.mkdir("/collections/collection2/election");
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(LeaderElector leaderElector,
@@ -155,10 +155,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       this.runLeaderDelay = runLeaderDelay;
 
       Map<String,Object> props = new HashMap<>();
-      props.put(ZkStateReader.BASE_URL_PROP,      Integer.toString(nodeNumber));
+      props.put(ZkStateReader.NODE_NAME_PROP,  Integer.toString(nodeNumber));
       props.put(ZkStateReader.CORE_NAME_PROP, "");
 
-      replica = new Replica("", props, "", shard);
+      replica = new Replica("", props, "", shard, zkStateReader);
 
       this.es = es;
       if (this.es == null) {
@@ -174,9 +174,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private void setupOnConnect() throws InterruptedException, KeeperException,
         IOException {
       assertNotNull(es);
-      TestLeaderElectionContext context = new TestLeaderElectionContext(
-          es.elector, shard, "collection1", nodeName,
-          replica, es.zkController, runLeaderDelay);
+      TestLeaderElectionContext context = new TestLeaderElectionContext(es.elector, shard, "collection1", nodeName, replica, es.zkController, runLeaderDelay);
       es.elector.setup(context);
       // nocommit - we have to get the seq another way, now returns if become leader first try
       //seq = es.elector.joinElection(context, false);
@@ -268,7 +266,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
             ZkNodeProps.load(data));
         // nocommit
-        Replica replica = new Replica("", leaderProps.getNodeProps().getProperties(), collection, slice);
+        Replica replica = new Replica("", leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
 
         return replica.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {

@@ -204,12 +204,11 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     props.put("autoAddReplicas", "false");
     props.put("nrtReplicas", "1");
 
-    return new DocCollection(BUILT_IN_MOCK_COLLECTION, Slice.loadAllFromMap(BUILT_IN_MOCK_COLLECTION, slices), props, DocRouter.DEFAULT);
+    return new DocCollection(BUILT_IN_MOCK_COLLECTION, Slice.loadAllFromMap(nodeName -> mockSolr.baseUrl() + "/solr", BUILT_IN_MOCK_COLLECTION, slices), props, DocRouter.DEFAULT);
   }
 
   protected static void updateReplicaBaseUrl(JsonNode json, String shard, String replica, String baseUrl) {
     ObjectNode replicaNode = (ObjectNode) json.get(shard).get("replicas").get(replica);
-    replicaNode.put("base_url", baseUrl + "/solr");
     replicaNode.put("node_name", baseUrl);
   }
 

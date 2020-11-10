@@ -27,6 +27,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 
@@ -55,9 +58,11 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -158,15 +163,15 @@ public class Overseer implements SolrCloseable {
   private volatile boolean initedHttpClient = false;
   private volatile QueueWatcher queueWatcher;
   private volatile WorkQueueWatcher.CollectionWorkQueueWatcher collectionQueueWatcher;
+  private volatile ExecutorService taskExecutor;
 
   public boolean isDone() {
     return closeAndDone;
   }
 
-
-  //  public ExecutorService getTaskExecutor() {
-//    return taskExecutor;
-//  }
+  public ExecutorService getTaskExecutor() {
+    return taskExecutor;
+  }
 
   private static class StringBiConsumer implements BiConsumer<String, Object> {
     boolean firstPair = true;
@@ -280,8 +285,8 @@ public class Overseer implements SolrCloseable {
 //
 //     stateManagmentExecutor = ParWork.getParExecutorService("stateManagmentExecutor",
 //        1, 1, 3000, new SynchronousQueue());
-//     taskExecutor = ParWork.getParExecutorService("overseerTaskExecutor",
-//        4, 16, 3000, new SynchronousQueue());
+     taskExecutor = ParWork.getParExecutorService("overseerTaskExecutor",
+        4, 16, 10000, new SynchronousQueue());
 
 //    try {
 //      if (context != null) context.close();
@@ -475,11 +480,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public void close() {
-    close(false);
-  }
-
-  public void close(boolean fromCSUpdateThread) {
-    log.info("Overseer (id={}) closing closeAndDone={} frp,CSUpdateThread={}", id, closeAndDone, fromCSUpdateThread);
+    log.info("Overseer (id={}) closing closeAndDone={} frp}", id, closeAndDone);
 
     if (closeAndDone) {
       if (overseerOnlyClient != null) {
@@ -509,13 +510,9 @@ public class Overseer implements SolrCloseable {
   }
 
   void doClose() {
-    doClose(false);
-  }
-
-  void doClose(boolean fromCSUpdateThread) {
     closed = true;
 
-    log.info("doClose() - start fromCSUpdateThread={}  closeAndDone={}", fromCSUpdateThread, closeAndDone);
+    log.info("doClose() - start closeAndDone={}", closeAndDone);
     this.zkStateWriter  = null;
 
     if (queueWatcher != null) {
@@ -532,10 +529,6 @@ public class Overseer implements SolrCloseable {
 //      stateManagmentExecutor.shutdown();
 //    }
 //
-//    if (taskExecutor != null) {
-//      log.info("shutdown taskExecutor");
-//      taskExecutor.shutdown();
-//    }
 
 //    if (stateManagmentExecutor != null) {
 //      stateManagmentExecutor.shutdownNow();
@@ -544,11 +537,15 @@ public class Overseer implements SolrCloseable {
  //   ExecutorUtil.shutdownAndAwaitTermination(stateManagmentExecutor );
 
 
-//    if (taskExecutor != null) {
-//      taskExecutor.shutdownNow();
-//    }
+    if (taskExecutor != null) {
+      try {
+        taskExecutor.shutdownNow();
+      } catch (NullPointerException okay) {
+        // okay
+      }
+    }
 
- //   ExecutorUtil.shutdownAndAwaitTermination(taskExecutor );
+    ExecutorUtil.shutdownAndAwaitTermination(taskExecutor );
 
     if (log.isDebugEnabled()) {
       log.debug("doClose() - end");
@@ -769,15 +766,15 @@ public class Overseer implements SolrCloseable {
           }}, true);
       } catch (KeeperException.SessionExpiredException e) {
         log.warn("ZooKeeper session expired");
-        overseer.doClose(false);
+        overseer.doClose();
         return;
       } catch (InterruptedException | AlreadyClosedException e) {
         log.info("Already closed");
-        overseer.doClose(false);
+        overseer.doClose();
         return;
       } catch (Exception e) {
         log.error("Unexpected error in Overseer state update loop", e);
-        overseer.doClose(false);
+        overseer.doClose();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
@@ -821,15 +818,15 @@ public class Overseer implements SolrCloseable {
         return children;
       } catch (KeeperException.SessionExpiredException e) {
         log.warn("ZooKeeper session expired");
-        overseer.doClose(false);
+        overseer.doClose();
         return null;
       } catch (InterruptedException | AlreadyClosedException e) {
         log.info("Already closed");
-        overseer.doClose(false);
+        overseer.doClose();
         return null;
       } catch (Exception e) {
         log.error("Unexpected error in Overseer state update loop", e);
-        overseer.doClose(false);
+        overseer.doClose();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }

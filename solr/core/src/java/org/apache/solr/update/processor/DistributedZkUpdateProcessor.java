@@ -115,7 +115,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     desc = req.getCore().getCoreDescriptor();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = cc.getZkController();
-    cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler(), new IsCCClosed(req));
+    cmdDistrib = new SolrCmdDistributor(zkController.getZkStateReader(), cc.getUpdateShardHandler(), new IsCCClosed(req));
     try {
       cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
       collection = cloudDesc.getCollectionName();
@@ -243,7 +243,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             if (log.isDebugEnabled()) log.debug("processCommit - send commit to replicas nodes={}",
                 useNodes);
 
-            params.set(DISTRIB_FROM, ZkCoreNodeProps
+            params.set(DISTRIB_FROM, Replica
                 .getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
             List<SolrCmdDistributor.Node> finalUseNodes = useNodes;
@@ -265,7 +265,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             if (useNodes != null && useNodes.size() > 0) {
               if (log.isDebugEnabled()) log.debug("processCommit - send commit to leaders nodes={}",
                   useNodes);
-              params.set(DISTRIB_FROM, ZkCoreNodeProps
+              params.set(DISTRIB_FROM, Replica
                   .getCoreUrl(zkController.getBaseUrl(),
                       req.getCore().getName()));
 
@@ -310,7 +310,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
       }
@@ -319,7 +319,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
+        params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
 
@@ -339,7 +339,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (nodes != null) {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
-      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
+      params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
       if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
         // TODO: Kept for rolling upgrades only. Should be removed in Solr 9
@@ -406,7 +406,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, Replica.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribDelete(cmd, subShardLeaders, params, true, null, null);
@@ -416,7 +416,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, Replica.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
@@ -429,7 +429,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       params.set(DISTRIB_UPDATE_PARAM,
           (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString()
               : DistribPhase.TOLEADER.toString()));
-      params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+      params.set(DISTRIB_FROM, Replica.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
 
       if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
@@ -465,7 +465,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
       outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-      outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+      outParams.set(DISTRIB_FROM, Replica.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
 
       SolrParams params = req.getParams();
@@ -496,7 +496,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new SolrCmdDistributor.ForwardNode(leader, zkController.getZkStateReader(), collection, sliceName));
+          leaders.add(new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leader, collection, sliceName));
         }
       }
 
@@ -543,7 +543,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
     params.set(CommonParams.VERSION_FIELD, Long.toString(cmd.getVersion()));
     params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-    params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+    params.set(DISTRIB_FROM, Replica.getCoreUrl(
         zkController.getBaseUrl(), req.getCore().getName()));
 
     boolean subShardLeader = false;
@@ -559,7 +559,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (replicaProps != null) {
           final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
           for (Replica replicaProp : replicaProps) {
-            myReplicas.add(new SolrCmdDistributor.StdNode(replicaProp, collection, myShardId));
+            myReplicas.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replicaProp, collection, myShardId));
           }
           cmdDistrib.distribDelete(cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
         }
@@ -577,7 +577,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
         params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
-        params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
+        params.set(DISTRIB_FROM, Replica.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
         params.set(DISTRIB_FROM_COLLECTION, collection);
         params.set(DISTRIB_FROM_SHARD, cloudDesc.getShardId());
@@ -607,7 +607,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (Replica props : replicaProps) {
-          nodes.add(new SolrCmdDistributor.StdNode(props, collection, shardId));
+          nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), props, collection, shardId));
         }
       }
     } catch (InterruptedException e) {
@@ -770,7 +770,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
             skippedCoreNodeNames.add(replica.getName());
           } else {
-            nodes.add(new SolrCmdDistributor.StdNode(replica, collection, shardId, maxRetriesToFollowers));
+            nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId, maxRetriesToFollowers));
           }
         }
         return nodes;
@@ -779,7 +779,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // I need to forward on to the leader...
         forwardToLeader = true;
         return Collections.singletonList(
-            new SolrCmdDistributor.ForwardNode(leaderReplica, zkController.getZkStateReader(), collection, shardId));
+            new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leaderReplica, collection, shardId));
       }
 
     } catch (InterruptedException e) {
@@ -835,7 +835,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (replica != null) {
           Replica nodeProps = replica;
           nodeProps.getProperties().put(ZkStateReader.CORE_NAME_PROP, replica.getName());
-          urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
+          urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), nodeProps, collection, replicas.getName()));
         }
         continue;
       }
@@ -848,7 +848,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica nodeProps = entry.getValue();
         nodeProps.getProperties().put(ZkStateReader.CORE_NAME_PROP, entry.getValue().getName());
         if (clusterState.liveNodesContain(nodeProps.getNodeName())) {
-          urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
+          urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), nodeProps, collection, replicas.getName()));
         }
       }
     }
@@ -930,7 +930,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           || replica.getState() == Replica.State.DOWN) {
         skippedCoreNodeNames.add(replica.getName());
       } else {
-        nodes.add(new SolrCmdDistributor.StdNode(replica, collection, shardId));
+        nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId));
       }
     }
     return nodes;
@@ -953,7 +953,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && clusterState.liveNodesContain(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
-            nodes.add(new SolrCmdDistributor.StdNode(sliceLeader, coll.getName(), aslice.getName()));
+            nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), sliceLeader, coll.getName(), aslice.getName()));
           }
         }
       }
@@ -981,7 +981,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               final Slice[] activeSlices = docCollection.getActiveSlicesArr();
               Slice any = activeSlices[0];
               if (nodes == null) nodes = new ArrayList<>();
-              nodes.add(new SolrCmdDistributor.StdNode(any.getLeader()));
+              nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), any.getLeader()));
             }
           }
           return nodes;
@@ -1005,7 +1005,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                     }
                     Replica targetLeader = targetColl.getLeader(activeSlices.iterator().next().getName());
                     nodes = new ArrayList<>(1);
-                    nodes.add(new SolrCmdDistributor.StdNode(targetLeader));
+                    nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), targetLeader));
                     break;
                   }
                 }

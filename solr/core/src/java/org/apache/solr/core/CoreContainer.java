@@ -1847,8 +1847,7 @@ public class CoreContainer implements Closeable {
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
         ZkStateReader.NODE_NAME_PROP, nodeName,
-        ZkStateReader.COLLECTION_PROP, collectionName,
-        ZkStateReader.BASE_URL_PROP, baseUrl);
+        ZkStateReader.COLLECTION_PROP, collectionName);
     getZkController().getOverseer().offerStateUpdate(Utils.toJSON(m));
   }
 

@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -84,25 +85,24 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
-    try (CloudSolrClient cloudClient = new CloudSolrClientBuilder(getStateProvider(livenodes, refs))
-        .withLBHttpSolrClient(mockLbclient)
-        .build()) {
-      livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
-      ClusterState cs = ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
-      refs.put(collName, new Ref(collName));
-      colls.put(collName, cs.getCollectionOrNull(collName));
-      responses.put("request", o -> {
-        int i = lbhttpRequestCount.incrementAndGet();
-        if (i == 1) return new ConnectException("TEST");
-        if (i == 2) return new SocketException("TEST");
-        if (i == 3) return new NoHttpResponseException("TEST");
-        return okResponse;
-      });
-      UpdateRequest update = new UpdateRequest()
-          .add("id", "123", "desc", "Something 0");
+    try (ClusterStateProvider stateProvider = getStateProvider(livenodes, refs)) {
+      try (CloudSolrClient cloudClient = new CloudSolrClientBuilder(stateProvider).withLBHttpSolrClient(mockLbclient).build()) {
+        livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+        ClusterState cs = ClusterState.createFromJson((ZkStateReader) stateProvider, 1, coll1State.getBytes(UTF_8), Collections.emptySet());
+        refs.put(collName, new Ref(collName));
+        colls.put(collName, cs.getCollectionOrNull(collName));
+        responses.put("request", o -> {
+          int i = lbhttpRequestCount.incrementAndGet();
+          if (i == 1) return new ConnectException("TEST");
+          if (i == 2) return new SocketException("TEST");
+          if (i == 3) return new NoHttpResponseException("TEST");
+          return okResponse;
+        });
+        UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");
 
-      cloudClient.request(update, collName);
-      assertEquals(2, refs.get(collName).getCount());
+        cloudClient.request(update, collName);
+        assertEquals(2, refs.get(collName).getCount());
+      }
     }
     mockLbclient.close();
   }

@@ -38,9 +38,10 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public final String collection;
+  private final Replica.NodeNameToBaseUrl nodeNameToBaseUrl;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
-  public static Map<String,Slice> loadAllFromMap(String collection, Map<String, Object> genericSlices) {
+  public static Map<String,Slice> loadAllFromMap(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, String collection, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
     Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
@@ -49,7 +50,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Slice) {
         result.put(name, (Slice) val);
       } else if (val instanceof Map) {
-        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection));
+        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection, nodeNameToBaseUrl));
       }
     }
     return result;
@@ -130,11 +131,11 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
-  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection) {
+  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection, Replica.NodeNameToBaseUrl nodeNameToBaseUrl) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
-
+    this.nodeNameToBaseUrl = nodeNameToBaseUrl;
     Object rangeObj = propMap.get(RANGE);
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
       this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
@@ -199,7 +200,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Replica) {
         r = (Replica)val;
       } else {
-        r = new Replica(name, (Map<String,Object>)val, collection, slice);
+        r = new Replica(name, (Map<String,Object>)val, collection, slice, nodeNameToBaseUrl);
       }
       result.put(name, r);
     }
@@ -208,8 +209,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
-      if (replica.getStr(LEADER) != null && replica.getState() == Replica.State.ACTIVE) {
-        assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT: "Pull replica should not become leader!";
+      if (replica.getStr(LEADER) != null) {
         return replica;
       }
     }

@@ -88,7 +88,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getCoreUrl());
     }
     return urls.get(random().nextInt(urls.size()));
   }
@@ -98,7 +98,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.get(ZkStateReader.BASE_URL_PROP) + "/"+replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add(""+replica.getCoreUrl());
     }
 
     RestTestHarness writeHarness = randomRestTestHarness();

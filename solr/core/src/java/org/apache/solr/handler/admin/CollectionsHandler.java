@@ -532,7 +532,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (props.containsKey(CoreAdminParams.NAME) && !props.containsKey(COLLECTION_PROP)) {
         props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
       }
-      new ColStatus(h.coreContainer.getSolrClientCache(),
+      new ColStatus(h.coreContainer.getSolrClientCache(),  h.coreContainer.getZkController().getZkStateReader(),
           h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());
       return null;
@@ -590,7 +590,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       Replica leaderProps = docCollection.getLeader(shard);
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-      try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl())
+      try (HttpSolrClient client = new Builder(leaderProps.getBaseUrl())
           .withConnectionTimeout(15000)
           .withSocketTimeout(60000)
           .markInternalRequest()

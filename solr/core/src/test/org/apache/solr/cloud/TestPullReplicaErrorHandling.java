@@ -267,7 +267,7 @@ public void testCantConnectToPullReplica() throws Exception {
   }
   
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
-    String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
     assertNotNull(replicaBaseUrl);
     URL baseUrl = new URL(replicaBaseUrl);
 
@@ -277,7 +277,7 @@ public void testCantConnectToPullReplica() throws Exception {
   }  
   
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
-    String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
     assertNotNull(replicaBaseUrl);
     URL baseUrl = new URL(replicaBaseUrl);
 

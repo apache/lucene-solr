@@ -31,6 +31,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,10 +61,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
         Object choice = it.next();
         final String url;
         if (choice instanceof String) {
-          url = (String)choice;
-        }
-        else if (choice instanceof Replica) {
-          url = ((Replica)choice).getCoreUrl();
+          url = (String) choice;
         } else {
           url = null;
         }
@@ -105,7 +103,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
   @Test
   public void testTransform() throws Exception {
 
-    final String regex = ".*" + random().nextInt(10) + ".*";
+    final String regex = ".*_n" + random().nextInt(10) + ".*";
 
     AtomicReference<ReplicaListTransformer> transformer = new AtomicReference<>();
     try {
@@ -149,15 +147,19 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final List<String> urls = createRandomUrls();
       for (int ii = 0; ii < urls.size(); ++ii) {
 
-        final String name = "replica" + (ii + 1);
+        final String name = "r_n" + (ii + 1);
         final String url = urls.get(ii);
         final Map<String, Object> propMap = new HashMap<String, Object>();
-        propMap.put("base_url", url);
         propMap.put("core", "test_core");
-        propMap.put("node_name", "test_node");
+        propMap.put("node_name", url);
         propMap.put("type", "NRT");
         // a skeleton replica, good enough for this test's purposes
-        final Replica replica = new Replica(name, propMap, "c1", "s1");
+        final Replica replica = new Replica(name, propMap, "c1", "s1", new Replica.NodeNameToBaseUrl() {
+          @Override
+          public String getBaseUrlForNodeName(String nodeName) {
+            return Utils.getBaseUrlForNodeName(nodeName, "http");
+          }
+        });
 
         inputs.add(replica);
         final String coreUrl = replica.getCoreUrl();

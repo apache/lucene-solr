@@ -84,7 +84,7 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider()));
 
 
       // TODO - fix, no makePath (ensure every path part exists), async, single node

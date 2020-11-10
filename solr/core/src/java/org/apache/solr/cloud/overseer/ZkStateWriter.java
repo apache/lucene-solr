@@ -53,9 +53,6 @@ public class ZkStateWriter {
 
   protected volatile Stats stats;
 
-
-
-
   AtomicReference<Exception> lastFailedException = new AtomicReference<>();
   private final Map<String,Integer> trackVersions = new ConcurrentHashMap<>();
 
@@ -161,6 +158,27 @@ public class ZkStateWriter {
       });
 
       cs.forEachCollection(collection -> {
+        Object removed = collection.getProperties().remove("replicationFactor");
+        if (removed != null) {
+          changed.set(true); // nocommit - only if really changed
+        }
+        removed = collection.getProperties().remove("pullReplicas");
+        if (removed != null) {
+          changed.set(true); // nocommit - only if really changed
+        }
+        removed = collection.getProperties().remove("maxShardsPerNode");
+        if (removed != null) {
+          changed.set(true); // nocommit - only if really changed
+        }
+        removed = collection.getProperties().remove("nrtReplicas");
+        if (removed != null) {
+          changed.set(true); // nocommit - only if really changed
+        }
+        removed = collection.getProperties().remove("tlogReplicas");
+        if (removed != null) {
+          changed.set(true); // nocommit - only if really changed
+        }
+
         for (Slice slice : collection) {
           Replica leader = slice.getLeader();
           if (leader != null && leader.getState() != Replica.State.ACTIVE) {
@@ -168,6 +186,7 @@ public class ZkStateWriter {
             leader.getProperties().remove("leader");
             changed.set(true);
           }
+
           for (Replica replica : slice) {
             String isLeader = replica.getProperty("leader");
             log.info("isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
@@ -177,7 +196,11 @@ public class ZkStateWriter {
               changed.set(true); // nocommit - only if really changed
             }
 
-            Object removed = replica.getProperties().remove("numShards");
+            removed = replica.getProperties().remove("numShards");
+            if (removed != null) {
+              changed.set(true); // nocommit - only if really changed
+            }
+            removed = replica.getProperties().remove("base_url");
             if (removed != null) {
               changed.set(true); // nocommit - only if really changed
             }

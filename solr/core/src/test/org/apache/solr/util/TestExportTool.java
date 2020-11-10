@@ -82,7 +82,7 @@ public class TestExportTool extends SolrCloudTestCase {
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
 
-      ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+      ExportTool.Info info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
@@ -91,7 +91,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
@@ -100,7 +100,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJsonDocsCount(info, 1000,null);
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("200");
@@ -109,7 +109,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       assertJavabinDocsCount(info, 200);
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
       info.setLimit("-1");
@@ -174,7 +174,7 @@ public class TestExportTool extends SolrCloudTestCase {
       ExportTool.MultiThreadedRunner info = null;
       String absolutePath = null;
 
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       info.output = System.out;
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
       info.setOutFormat(absolutePath, "javabin");
@@ -184,7 +184,7 @@ public class TestExportTool extends SolrCloudTestCase {
       for (Map.Entry<String, Long> e : docCounts.entrySet()) {
         assertEquals(e.getValue().longValue(), info.corehandlers.get(e.getKey()).receivedDocs.get());
       }
-      info = new ExportTool.MultiThreadedRunner(url);
+      info = new ExportTool.MultiThreadedRunner(cluster.getSolrClient().getZkStateReader(), url);
       info.output = System.out;
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
       info.setOutFormat(absolutePath, "jsonl");

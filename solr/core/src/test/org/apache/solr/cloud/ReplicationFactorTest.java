@@ -269,8 +269,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   @SuppressWarnings("rawtypes")
   protected void sendNonDirectUpdateRequestReplica(Replica replica, UpdateRequest up, int expectedRf, String collection) throws Exception {
-    ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + collection;
+    String url = replica.getBaseUrl() + "/" + collection;
     try (Http2SolrClient solrServer = getHttpSolrClient(url)) {
       NamedList resp = solrServer.request(up);
       NamedList hdr = (NamedList) resp.get("responseHeader");

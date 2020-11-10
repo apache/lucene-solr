@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -148,8 +146,8 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot is not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-        String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        String replicaBaseUrl = replica.getBaseUrl();
+        String coreName = replica.getName();
 
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
@@ -257,8 +255,8 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot was not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-        String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        String replicaBaseUrl = replica.getBaseUrl();
+        String coreName = replica.getName();
 
         try (SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(replicaBaseUrl)) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);

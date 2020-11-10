@@ -243,19 +243,19 @@ public class ClusterState implements JSONWriter.Writable {
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
-  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+  public static ClusterState createFromJson(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, int version, byte[] bytes, Set<String> liveNodes) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
-    return createFromCollectionMap(version, stateMap, liveNodes);
+    return createFromCollectionMap(nodeNameToBaseUrl, version, stateMap, liveNodes);
   }
 
-  public static ClusterState createFromCollectionMap(int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+  public static ClusterState createFromCollectionMap(Replica.NodeNameToBaseUrl zkStateReader, int version, Map<String, Object> stateMap, Set<String> liveNodes) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
-      DocCollection coll = collectionFromObjects(collectionName, (Map<String,Object>)entry.getValue(), version);
+      DocCollection coll = collectionFromObjects(zkStateReader, collectionName, (Map<String,Object>)entry.getValue(), version);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
@@ -263,17 +263,17 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, int version) {
+  private static DocCollection collectionFromObjects(Replica.NodeNameToBaseUrl zkStateReader, String name, Map<String, Object> objs, int version) {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
-      slices = Slice.loadAllFromMap(name, objs);
+      slices = Slice.loadAllFromMap(zkStateReader, name, objs);
       props = Collections.emptyMap();
     } else {
-      slices = Slice.loadAllFromMap(name, sliceObjs);
+      slices = Slice.loadAllFromMap(zkStateReader, name, sliceObjs);
       props = new HashMap<>(objs);
       objs.remove(DocCollection.SHARDS);
     }

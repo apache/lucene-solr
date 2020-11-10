@@ -359,10 +359,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   }
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
-    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = replica.getName();
     boolean reloadedOk = false;
-    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(coreProps.getBaseUrl())) {
+    try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

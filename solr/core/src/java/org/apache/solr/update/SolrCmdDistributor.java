@@ -54,6 +54,7 @@ public class SolrCmdDistributor implements Closeable {
   private static final int MAX_RETRIES_ON_FORWARD = 1;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ConnectionManager.IsClosed isClosed;
+  private final ZkStateReader zkStateReader;
 
   private volatile boolean finished = false; // see finish()
 
@@ -64,14 +65,16 @@ public class SolrCmdDistributor implements Closeable {
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
 
-  public SolrCmdDistributor(UpdateShardHandler updateShardHandler) {
+  public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
+    this.zkStateReader = zkStateReader;
     this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
     isClosed = null;
   }
 
-  public SolrCmdDistributor(UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
+  public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
     assert ObjectReleaseTracker.track(this);
+    this.zkStateReader = zkStateReader;
     this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
     this.isClosed = isClosed;
   }
@@ -396,21 +399,23 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public static class StdNode extends Node {
+    private final ZkStateReader zkStateReader;
     protected Replica nodeProps;
     protected String collection;
     protected String shardId;
     private final boolean retry;
     private final int maxRetries;
 
-    public StdNode(Replica nodeProps) {
-      this(nodeProps, null, null, 0);
+    public StdNode(ZkStateReader zkStateReader, Replica nodeProps) {
+      this(zkStateReader, nodeProps, null, null, 0);
     }
     
-    public StdNode(Replica nodeProps, String collection, String shardId) {
-      this(nodeProps, collection, shardId, 0);
+    public StdNode(ZkStateReader zkStateReader, Replica nodeProps, String collection, String shardId) {
+      this(zkStateReader, nodeProps, collection, shardId, 0);
     }
     
-    public StdNode(Replica nodeProps, String collection, String shardId, int maxRetries) {
+    public StdNode(ZkStateReader zkStateReader, Replica nodeProps, String collection, String shardId, int maxRetries) {
+      this.zkStateReader = zkStateReader;
       this.nodeProps = nodeProps;
       this.collection = collection;
       this.shardId = shardId;
@@ -506,9 +511,8 @@ public class SolrCmdDistributor implements Closeable {
     
     private ZkStateReader zkStateReader;
     
-    public ForwardNode(Replica nodeProps, ZkStateReader zkStateReader, String collection, String shardId) {
-      super(nodeProps, collection, shardId);
-      this.zkStateReader = zkStateReader;
+    public ForwardNode(ZkStateReader zkStateReader, Replica nodeProps, String collection, String shardId) {
+      super(zkStateReader, nodeProps, collection, shardId);
       this.collection = collection;
       this.shardId = shardId;
     }

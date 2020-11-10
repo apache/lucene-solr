@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -185,7 +184,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
         boolean restarted = false;
         for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
           int port = jetty.getLocalPort();
-          if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
+          if (replica.getBaseUrl().contains(":" + port))  {
             stoppedNodeName = jetty.getNodeName();
             jetty.stop();
             jetty.start();

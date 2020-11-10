@@ -248,14 +248,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
    * 
    * @lucene.experimental
    */
-  protected String getReplicateLeaderUrl(Replica leaderprops) {
+  protected String getReplicateLeaderUrl(Replica leaderprops, ZkStateReader zkStateReader) {
     return leaderprops.getCoreUrl();
   }
 
   final private void replicate(String nodeName, SolrCore core, Replica leaderprops)
       throws SolrServerException, IOException {
 
-    final String leaderUrl = getReplicateLeaderUrl(leaderprops);
+    final String leaderUrl = getReplicateLeaderUrl(leaderprops, zkStateReader);
 
     log.info("Attempting to replicate from [{}].", leaderprops);
 
@@ -404,12 +404,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         Replica leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
-        final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
+        final String leaderBaseUrl = leaderprops.getBaseUrl();
+        final String leaderCoreName = leaderprops.getName();
 
-        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
+        String leaderUrl = leaderprops.getCoreUrl();
 
-        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+        String ourUrl = Replica.getCoreUrl(baseUrl, coreName);
 
         boolean isLeader = leaderUrl.equals(ourUrl); // TODO: We can probably delete most of this code if we say this
                                                      // strategy can only be used for pull replicas
@@ -630,7 +630,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       zkController.stopReplicationFromLeader(coreName);
     }
 
-    final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+    final String ourUrl = Replica.getCoreUrl(baseUrl, coreName);
     Future<RecoveryInfo> replayFuture = null;
     while (!successfulRecovery && !isClosed()) { // don't use interruption or
                                                                                             // it will close channels

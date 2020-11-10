@@ -134,7 +134,7 @@ public class SolrCloudScraper extends SolrScraper {
         .stream()
         .map(DocCollection::getReplicas)
         .flatMap(List::stream)
-        .map(Replica::getBaseUrl)
+        .map(replica -> replica.getBaseUrl())
         .collect(Collectors.toSet());
   }
 

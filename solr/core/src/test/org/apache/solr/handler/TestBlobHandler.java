@@ -68,7 +68,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
       Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
 
-      String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+      String baseUrl = replica.getBaseUrl();
       String url = baseUrl + "/.system/config/requestHandler";
       MapWriter map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
       assertNotNull(map);
