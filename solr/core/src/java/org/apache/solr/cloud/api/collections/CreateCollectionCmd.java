@@ -334,32 +334,35 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
             //throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
           } else {
-
+            Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
+            log.info("createNodeSet={}", createNodeSet);
+            if (createNodeSet == null || (!createNodeSet.equals("") && !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
             try {
-              zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
-                if (c == null) {
-                  return false;
-                }
-                for (String name : coresToCreate.keySet()) {
-                  if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
+                zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
+                  if (c == null) {
                     return false;
                   }
-                }
-                Collection<Slice> slices = c.getSlices();
-                if (slices.size() < shardNames.size()) {
-                  return false;
-                }
-                for (Slice slice : slices) {
-                  if (slice.getLeader() == null) {
+                  for (String name : coresToCreate.keySet()) {
+                    if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
+                      return false;
+                    }
+                  }
+                  Collection<Slice> slices = c.getSlices();
+                  if (slices.size() < shardNames.size()) {
                     return false;
                   }
-                }
-                return true;
-              });
-            } catch (InterruptedException e) {
-              log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
-            } catch (TimeoutException e) {
-              log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+                  for (Slice slice : slices) {
+                    if (slice.getLeader() == null) {
+                      return false;
+                    }
+                  }
+                  return true;
+                });
+              } catch(InterruptedException e){
+                log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
+              } catch(TimeoutException e){
+                log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+              }
             }
 
             if (log.isDebugEnabled()) log.debug("Finished create command on all shards for collection: {}", collectionName);

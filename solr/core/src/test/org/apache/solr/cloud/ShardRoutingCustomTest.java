@@ -22,11 +22,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
+public class ShardRoutingCustomTest extends SolrCloudBridgeTestCase {
 
   String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)
 
@@ -38,50 +39,32 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
   public ShardRoutingCustomTest() {
     schemaString = "schema15.xml";      // we need a string id
+    solrconfigString = "solrconfig.xml";
+    uploadSelectCollection1Config = true;
+    createCollection1 = false;
     sliceCount = 0;
   }
 
   @Test
   public void test() throws Exception {
-    boolean testFinished = false;
-    try {
-      doCustomSharding();
-
-      testFinished = true;
-    } finally {
-      if (!testFinished) {
-        printLayout();
-      }
-    }
+    doCustomSharding();
   }
 
   private void doCustomSharding() throws Exception {
-    printLayout();
 
-    File jettyDir = createTempDir("jetty").toFile();
-    jettyDir.mkdirs();
-    setupJettySolrHome(jettyDir);
-    JettySolrRunner j = createJetty(jettyDir, createTempDir().toFile().getAbsolutePath(), "shardA", "solrconfig.xml", null);
-    j.start();
     assertEquals(0, CollectionAdminRequest
         .createCollection(DEFAULT_COLLECTION, "_default", 1, 1)
-        .setCreateNodeSet("")
+        .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest
         .addReplicaToShard(collection,"s1")
-        .setNode(j.getNodeName())
-        .setType(useTlogReplicas()? Replica.Type.TLOG: Replica.Type.NRT)
+        .setNode(cluster.getJettySolrRunner(0).getNodeName())
+        .setType(useTlogReplicas() ? Replica.Type.TLOG: Replica.Type.NRT)
         .process(cloudClient).isSuccess());
-    jettys.add(j);
-    SolrClient client = createNewSolrClient(j.getLocalPort());
-    clients.add(client);
-
-    waitForActiveReplicaCount(cloudClient, DEFAULT_COLLECTION, 1);
-
-    updateMappingsFromZk(this.jettys, this.clients);
-
-    printLayout();
   }
 
+  private boolean useTlogReplicas() {
+    return random().nextBoolean();
+  }
 
 }
