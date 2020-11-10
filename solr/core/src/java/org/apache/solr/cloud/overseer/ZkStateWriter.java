@@ -74,7 +74,7 @@ public class ZkStateWriter {
 
   public synchronized void enqueueUpdate(ClusterState clusterState, boolean stateUpdate) throws Exception {
 
-    log.info("enqueue update stateUpdate={}", stateUpdate);
+    if (log.isDebugEnabled()) log.debug("enqueue update stateUpdate={}", stateUpdate);
 
     AtomicBoolean changed = new AtomicBoolean();
     if (clusterState == null) {
@@ -124,7 +124,7 @@ public class ZkStateWriter {
         for (Slice slice : newCollection) {
           Slice currentSlice = currentCollection.getSlice(slice.getName());
           if (currentSlice != null) {
-            log.info("set slice state to {} {} leader={}", slice.getName(), slice.getState(), slice.getLeader());
+            if (log.isDebugEnabled()) log.debug("set slice state to {} {} leader={}", slice.getName(), slice.getState(), slice.getLeader());
             Replica leader = slice.getLeader();
             if (leader != null) {
               currentSlice.setState(slice.getState());
@@ -136,7 +136,7 @@ public class ZkStateWriter {
           for (Replica replica : slice) {
             Replica currentReplica = currentCollection.getReplica(replica.getName());
             if (currentReplica != null) {
-              log.info("set replica state to {} isLeader={}", replica.getState(), replica.getProperty("leader"));
+              if (log.isDebugEnabled()) log.debug("set replica state to {} isLeader={}", replica.getState(), replica.getProperty("leader"));
               currentReplica.setState(replica.getState());
               String leader = replica.getProperty("leader");
               if (leader != null) {
@@ -152,10 +152,10 @@ public class ZkStateWriter {
               }
 
               Replica thereplica = cs.getCollectionOrNull(newCollection.getName()).getReplica(replica.getName());
-              log.info("Check states nreplica={} ceplica={}", replica.getState(), thereplica.getState());
+              if (log.isDebugEnabled()) log.debug("Check states nreplica={} ceplica={}", replica.getState(), thereplica.getState());
 
               if (replica.getState() == Replica.State.ACTIVE) {
-                log.info("Setting replica to active state leader={} state={} col={}", leader, cs, currentCollection);
+                if (log.isDebugEnabled()) log.debug("Setting replica to active state leader={} state={} col={}", leader, cs, currentCollection);
               }
 
               changed.set(true); // nocommit - only if really changed
@@ -197,9 +197,9 @@ public class ZkStateWriter {
 
           for (Replica replica : slice) {
             String isLeader = replica.getProperty("leader");
-            log.info("isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
+            if (log.isDebugEnabled()) log.debug("isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
             if (Boolean.parseBoolean(isLeader) && replica.getState() != Replica.State.ACTIVE) {
-              log.info("clear leader isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
+              if (log.isDebugEnabled()) log.debug("clear leader isleader={} slice={} state={} sliceLeader={}", isLeader, slice.getName(), slice.getState(), slice.getLeader());
               replica.getProperties().remove("leader");
               changed.set(true); // nocommit - only if really changed
             }
@@ -292,7 +292,7 @@ public class ZkStateWriter {
 
       String name = collection.getName();
       String path = ZkStateReader.getCollectionPath(collection.getName());
-      log.info("processes {}", collection);
+      if (log.isDebugEnabled()) log.debug("process {}", collection);
       Stat stat = new Stat();
       boolean success = false;
       try {
