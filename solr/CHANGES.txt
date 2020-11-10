@@ -50,6 +50,8 @@ Improvements
   properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
   and simplified. (Dawid Weiss)
 
+* SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
