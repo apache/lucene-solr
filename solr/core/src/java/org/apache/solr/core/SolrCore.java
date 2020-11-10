@@ -1193,13 +1193,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     newSearcherMaxReachedCounter = parentContext.counter(this, "maxReached", Category.SEARCHER.toString(), "new");
     newSearcherOtherErrorsCounter = parentContext.counter(this, "errors", Category.SEARCHER.toString(), "new");
 
-    parentContext.gauge(this, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    parentContext.gauge(this, () -> name == null ? parentContext.nullString() : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(this, () -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(this, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
     parentContext.gauge(this, () -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    parentContext.gauge(this, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    parentContext.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(this, () -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(this, () -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(this, () -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
@@ -1207,7 +1207,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           if (cd.getCollectionName() != null) {
             return cd.getCollectionName();
           } else {
-            return "_notset_";
+            return parentContext.nullString();
           }
         }, true, "collection", Category.CORE.toString());
 
@@ -1215,7 +1215,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           if (cd.getShardId() != null) {
             return cd.getShardId();
           } else {
-            return "_auto_";
+            return parentContext.nullString();
           }
         }, true, "shard", Category.CORE.toString());
       }

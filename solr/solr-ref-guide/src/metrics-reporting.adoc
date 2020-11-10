@@ -32,6 +32,45 @@ For each group (and/or for each registry) there can be several *reporters*, whic
 
 There is also a dedicated `/admin/metrics` handler that can be queried to report all or a subset of the current metrics from multiple registries.
 
+=== Missing metrics
+Long-lived metrics values are still reported when the underlying value is unavailable (eg. "INDEX.sizeInBytes" when
+IndexReader is closed). Short-lived transient metrics (such as cache entries) that are properties of complex gauges
+(internally represented as `MetricsMap`) are simply skipped when not available, and neither their names nor values
+appear in registries (or in /admin/metrics reports).
+
+When a missing value is encountered by default it's reported as null value, regardless of the metrics type.
+This can be configured in the `solr.xml:/solr/metrics/missingValues` element, which recognizes the following child elements
+(for string elements a JSON payload is supported):
+
+`nullNumber`::
+value to use when a missing (null) numeric metrics value is encountered.
+
+`notANumber`::
+value to use when an invalid numeric value is encountered.
+
+`nullString`::
+value to use when a missing (null) string metrics is encountered.
+
+`nullObject`::
+value to use when a missing (null) complex object is encountered.
+
+Example configuration that returns null for missing numbers, -1 for
+invalid numeric values, empty string for missing strings, and a Map for missing
+complex objects:
+
+[source,xml]
+----
+<metrics>
+  <missingValues>
+    <null name="nullNumber"/>
+    <int name="notANumber">-1</int>
+    <str name="nullString"></str>
+    <str name="nullObject">{"value":"missing"}</str>
+  </missingValues>
+</metrics>
+----
+
+
 == Metric Registries
 
 Solr includes multiple metric registries, which group related metrics.

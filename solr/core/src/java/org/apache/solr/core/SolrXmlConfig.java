@@ -43,6 +43,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -527,12 +528,35 @@ public class SolrXmlConfig {
     if (node != null) {
       builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
+    node = config.getNode("solr/metrics/missingValues", false);;
+    if (node != null) {
+      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(node);
+      builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
+      builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
+      builder.setNullString(decodeNullValue(missingValues.get("nullString")));
+      builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
+    }
+
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
     Set<String> hiddenSysProps = getHiddenSysProps(config);
     return builder
         .setMetricReporterPlugins(reporterPlugins)
         .setHiddenSysProps(hiddenSysProps)
         .build();
+  }
+
+  private static Object decodeNullValue(Object o) {
+    if (o instanceof String) { // check if it's a JSON object
+      String str = (String) o;
+      if (!str.trim().isEmpty() && (str.startsWith("{") || str.startsWith("["))) {
+        try {
+          o = Utils.fromJSONString((String) o);
+        } catch (Exception e) {
+          // ignore
+        }
+      }
+    }
+    return o;
   }
 
   private static PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) {

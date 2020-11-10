@@ -922,13 +922,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+    solrMetricsContext.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : parentContext.nullString()),
         true, "indexSize", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : parentContext.nullString()),
          true, "indexVersion", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : parentContext.nullNumber()),
         true, GENERATION, getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : parentContext.nullString()),
         true, "indexPath", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isLeader,
          true, "isLeader", getCategory().toString(), scope);

@@ -2279,12 +2279,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(this, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(this, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(this, rgauge(-1, () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, rgauge(-1, () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, rgauge(-1, () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, rgauge(-1, () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, rgauge("", () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, rgauge(-1, () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullString(), () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullString(), () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(this, rgauge(parentContext.nullNumber(), () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
     parentContext.gauge(this, () -> {
       try {
@@ -2295,7 +2295,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         return total;
       } catch (Exception e) {
-        return -1;
+        return parentContext.nullNumber();
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
