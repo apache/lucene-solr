@@ -153,6 +153,8 @@ Other Changes
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 
+* SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
