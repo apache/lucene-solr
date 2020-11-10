@@ -44,6 +44,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
@@ -212,8 +213,22 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/config/boolVal", "true", "/config/strVal", "Something","/config/longVal", "1234" ));
 
+        p.strVal = "Something else";
+        new V2Request.Builder("/cluster/plugin")
+                .forceV2(true)
+                .POST()
+                .withPayload(singletonMap("update", p))
+                .build()
+                .process(cluster.getSolrClient());
 
-      // kill the Overseer leader
+        TestDistribPackageStore.assertResponseValues(10,
+                () -> new V2Request.Builder("hello/plugin")
+                        .forceV2(true)
+                        .GET()
+                        .build().process(cluster.getSolrClient()),
+                ImmutableMap.of("/config/boolVal", "true", "/config/strVal", p.strVal,"/config/longVal", "1234" ));
+
+        // kill the Overseer leader
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
         if (!jetty.getCoreContainer().getZkController().getOverseer().isClosed()) {
           cluster.stopJettySolrRunner(jetty);
@@ -352,7 +367,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
 
     @Override
-    public void initConfig(CConfig cfg) {
+    public void configure(CConfig cfg) {
       this.cfg = cfg;
 
     }
@@ -366,7 +381,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   }
 
-  public static class CConfig extends PluginMeta {
+  public static class CConfig implements ReflectMapWriter {
 
     @JsonProperty
     public String strVal;
@@ -377,6 +392,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     @JsonProperty
     public Boolean boolVal;
 
+    @JsonProperty
+    public String name;
+
+    @JsonProperty(value = "class", required = true)
+    public String klass;
   }
 
   public static class C6 implements ClusterSingleton {
@@ -423,7 +443,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private  SolrResourceLoader resourceLoader;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void inform(ResourceLoader loader) throws IOException {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {

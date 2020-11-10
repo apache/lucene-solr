@@ -126,6 +126,20 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       this.original = original;
       meta = mapper.readValue(Utils.toJSON(original), PluginMeta.class);
     }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof PluginMetaHolder) {
+        PluginMetaHolder that = (PluginMetaHolder) obj;
+        return Objects.equals(this.original,that.original);
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return original.hashCode();
+    }
   }
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
@@ -365,7 +379,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings({"rawtypes","unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
@@ -378,11 +392,10 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
       if (instance instanceof ConfigurablePlugin) {
         Class c = getConfigClass((ConfigurablePlugin<?>) instance);
-        if(c != null) {
-          Object initVal =  mapper.readValue(Utils.toJSON(holder.original), c);
-          ((ConfigurablePlugin) instance).initConfig(initVal);
+        if (c != null) {
+          Object initVal = mapper.readValue(Utils.toJSON(holder.original), c);
+          ((ConfigurablePlugin) instance).configure(initVal);
         }
-
       }
       if (instance instanceof ResourceLoaderAware) {
         try {

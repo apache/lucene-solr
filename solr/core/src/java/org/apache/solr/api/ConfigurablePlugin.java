@@ -27,5 +27,5 @@ public interface ConfigurablePlugin<T> {
    * 
    * @param cfg value deserialized from JSON
    */
-  void initConfig(T cfg);
+  void configure(T cfg);
 }

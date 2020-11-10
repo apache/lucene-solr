@@ -19,10 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -122,7 +119,12 @@ public class ContainerPluginsApi {
           payload.addError("No such plugin: " + info.name);
           return null;
         } else {
-          map.put(info.name, info);
+          Map<String, Object> jsonObj = payload.getDataMap();
+          if(Objects.equals(jsonObj, existing)) {
+            //no need to change anything
+            return null;
+          }
+          map.put(info.name, jsonObj);
           return map;
         }
       });
