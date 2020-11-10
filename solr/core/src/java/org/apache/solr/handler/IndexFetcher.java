@@ -949,9 +949,9 @@ public class IndexFetcher {
       if (!status) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to create temporary config folder: " + tmpconfDir.getName());
       }
-      //try (ParWork work = new ParWork(this, true)) {
+      try (ParWork work = new ParWork(this, true)) {
         for (Map<String,Object> file : confFilesToDownload) {
-       //   work.collect("fetchConfigFile", () -> {
+          work.collect("fetchConfigFile", () -> {
             try {
               String saveAs = (String) (file.get(ALIAS) == null ? file.get(NAME) : file.get(ALIAS));
               localFileFetcher = new LocalFsFileFetcher(tmpconfDir, file, saveAs, CONF_FILE_SHORT, latestGeneration);
@@ -968,8 +968,8 @@ public class IndexFetcher {
             } finally {
               fileFetchRequests.remove(file.get(NAME));
             }
-        //  });
-      //  }
+          });
+        }
       }
       // this is called before copying the files to the original conf dir
       // so that if there is an exception avoid corrupting the original files.

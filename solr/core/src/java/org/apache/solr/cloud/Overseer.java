@@ -286,7 +286,7 @@ public class Overseer implements SolrCloseable {
 //     stateManagmentExecutor = ParWork.getParExecutorService("stateManagmentExecutor",
 //        1, 1, 3000, new SynchronousQueue());
      taskExecutor = ParWork.getParExecutorService("overseerTaskExecutor",
-        4, 16, 10000, new SynchronousQueue());
+        10, 32, 10000, new SynchronousQueue());
 
 //    try {
 //      if (context != null) context.close();
