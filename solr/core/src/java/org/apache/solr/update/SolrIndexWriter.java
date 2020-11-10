@@ -393,19 +393,17 @@ public class SolrIndexWriter extends IndexWriter {
   }
 
   private void cleanup(String label) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("cleanup() - start");
-    }
     numCloses.incrementAndGet();
-
-    log.info("SolrIndexWriter close {} numCloses={}", label, numCloses.get());
+    if (log.isDebugEnabled()) {
+      log.debug("SolrIndexWriter close {} numCloses={}", label, numCloses.get());
+    }
     try {
       if (infoStream != null) {
         ParWork.close(infoStream, true);
       }
 
       if (releaseDirectory) {
-        log.info("SolrIndexWriter release {}", directory);
+        if (log.isDebugEnabled()) log.debug("SolrIndexWriter release {}", directory);
         directoryFactory.release(directory);
       }
       if (solrMetricsContext != null) {

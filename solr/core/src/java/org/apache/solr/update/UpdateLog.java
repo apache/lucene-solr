@@ -1468,7 +1468,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public void close(boolean committed, boolean deleteOnClose) {
-    log.info("Close UpdateLog committed={}, deleteOnClose={}", committed, deleteOnClose);
+    if (log.isDebugEnabled()) log.debug("Close UpdateLog committed={}, deleteOnClose={}", committed, deleteOnClose);
     this.isClosed = true;
     tlogLock.lock();
     try {

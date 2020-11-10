@@ -150,7 +150,7 @@ public class SolrZkClient implements Closeable {
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout, int clientConnectTimeout, final OnReconnect onReconnect, BeforeReconnect beforeReconnect, ZkACLProvider zkACLProvider, IsClosed higherLevelIsClosed) {
     assert ObjectReleaseTracker.track(this);
-    log.info("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
+    if (log.isDebugEnabled()) log.debug("Creating new {} instance {}", SolrZkClient.class.getSimpleName(), this);
     assert (closeTracker = new CloseTracker()) != null;
     this.zkServerAddress = zkServerAddress;
     this.higherLevelIsClosed = higherLevelIsClosed;
@@ -186,7 +186,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public SolrZkClient start() {
-    log.info("Starting {} instance {}", SolrZkClient.class.getSimpleName(), this);
+    if (log.isDebugEnabled()) log.debug("Starting {} instance {}", SolrZkClient.class.getSimpleName(), this);
     try {
       connManager.start();
       connManager.waitForConnected(this.zkClientConnectTimeout);
@@ -214,14 +214,14 @@ public class SolrZkClient implements Closeable {
     String zkCredentialsProviderClassName = System.getProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkCredentialsProviderClassName)) {
       try {
-        log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
+        if (log.isDebugEnabled()) log.debug("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         return (ZkCredentialsProvider)Class.forName(zkCredentialsProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
         log.warn("VM param zkCredentialsProvider does not point to a class implementing ZkCredentialsProvider and with a non-arg constructor", t);
       }
     }
-    log.info("Using default ZkCredentialsProvider");
+    if (log.isDebugEnabled()) log.debug("Using default ZkCredentialsProvider");
     return new DefaultZkCredentialsProvider();
   }
 
@@ -230,14 +230,14 @@ public class SolrZkClient implements Closeable {
     String zkACLProviderClassName = System.getProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     if (!StringUtils.isEmpty(zkACLProviderClassName)) {
       try {
-        log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
+        if (log.isDebugEnabled()) log.debug("Using ZkACLProvider: {}", zkACLProviderClassName);
         return (ZkACLProvider)Class.forName(zkACLProviderClassName).getConstructor().newInstance();
       } catch (Throwable t) {
         // just ignore - go default
         log.warn("VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor", t);
       }
     }
-    log.debug("Using default ZkACLProvider");
+    if (log.isDebugEnabled()) log.debug("Using default ZkACLProvider");
     return new DefaultZkACLProvider();
   }
 
@@ -316,11 +316,11 @@ public class SolrZkClient implements Closeable {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
       Stat existsStat = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null));
-      log.info("exists state return is {} {}", path, existsStat);
+      if (log.isDebugEnabled()) log.debug("exists state return is {} {}", path, existsStat);
       return existsStat != null;
     } else {
       Stat existsStat = keeper.exists(path, null);
-      log.info("exists state return is {} {}", path, existsStat);
+      if (log.isDebugEnabled()) log.debug("exists state return is {} {}", path, existsStat);
       return existsStat != null;
     }
   }
@@ -523,7 +523,7 @@ public class SolrZkClient implements Closeable {
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists, boolean retryOnConnLoss, int skipPathParts) throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
-    log.info("makePath: {}", path);
+    if (log.isDebugEnabled()) log.debug("makePath: {}", path);
     boolean retry = true;
     if (path.startsWith("/")) {
       path = path.substring(1, path.length());
@@ -774,19 +774,19 @@ public class SolrZkClient implements Closeable {
   }
 
   public void delete(Collection<String> paths, boolean wait) {
-    log.info("delete paths {} wait={}", paths, wait);
+    if (log.isDebugEnabled()) log.debug("delete paths {} wait={}", paths, wait);
     CountDownLatch latch = null;
     if (wait) {
       latch = new CountDownLatch(paths.size());
     }
     for (String path : paths) {
-      log.info("process path={} connManager={}", path, connManager);
+      if (log.isDebugEnabled()) log.debug("process path={} connManager={}", path, connManager);
       ZooKeeper keeper = connManager.getKeeper();
-      log.info("keeper={}", keeper);
+      if (log.isDebugEnabled()) log.debug("keeper={}", keeper);
 
       CountDownLatch finalLatch = latch;
       keeper.delete(path, -1, (rc, path1, ctx) -> {
-        log.info("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
+        if (log.isDebugEnabled()) log.debug("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
         if (rc != 0) {
           log.error("got zk error {}", rc);
           final KeeperException.Code keCode = KeeperException.Code.get(rc);
@@ -795,21 +795,21 @@ public class SolrZkClient implements Closeable {
             if (log.isDebugEnabled()) log.debug("Problem removing zk node {}", path1);
           }
         }
-        log.info("done with latch countdown wait={}", wait);
+        if (log.isDebugEnabled()) log.debug("done with latch countdown wait={}", wait);
         if (wait) {
-          log.info("latch countdown");
+          if (log.isDebugEnabled()) log.debug("latch countdown");
           finalLatch.countDown();
         }
-        log.info("after wait &&  latch countdown");
+        if (log.isDebugEnabled()) log.debug("after wait &&  latch countdown");
       }, null);
     }
 
-    log.info("done with all paths, see if wait ... wait={}", wait);
+    if (log.isDebugEnabled()) log.debug("done with all paths, see if wait ... wait={}", wait);
     if (wait) {
       boolean success;
       try {
         success = latch.await(15, TimeUnit.SECONDS);
-        log.info("done waiting on latch, success={}", success);
+        if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
         log.error("", e);
@@ -873,8 +873,7 @@ public class SolrZkClient implements Closeable {
 
   public String mkdir(String path, byte[] data, CreateMode createMode) throws KeeperException {
     if (log.isDebugEnabled()) log.debug("mkdir path={}", path);
-    // nocommit
-    log.info("mkdir path={}", path);
+
 //    if (path.endsWith("/leader_elect")) {
 //      throw new IllegalStateException("");
 //    }
@@ -1017,7 +1016,7 @@ public class SolrZkClient implements Closeable {
     return returnString;
   }
   public void close() {
-    log.info("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
+    if (log.isDebugEnabled()) log.debug("Closing {} instance {}", SolrZkClient.class.getSimpleName(), this);
 
     isClosed = true;
     connManager.close();
@@ -1131,7 +1130,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public void clean(String path, Predicate<String> nodeFilter) throws InterruptedException, KeeperException {
-    log.info("clean path {}" + path);
+    if (log.isDebugEnabled()) log.debug("clean path {}" + path);
     ZkMaintenanceUtils.clean(this, path, nodeFilter);
   }
 

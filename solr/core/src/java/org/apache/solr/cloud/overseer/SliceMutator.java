@@ -59,7 +59,7 @@ public class SliceMutator {
   }
 
   public ClusterState addReplica(ClusterState clusterState, ZkNodeProps message) {
-    log.info("createReplica() {} ", message);
+    if (log.isDebugEnabled()) log.debug("createReplica() {} ", message);
     String coll = message.getStr(ZkStateReader.COLLECTION_PROP);
     // if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String slice = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -88,7 +88,7 @@ public class SliceMutator {
 
   public ClusterState removeReplica(ClusterState clusterState, ZkNodeProps message) {
 
-    log.info("removeReplica(ClusterState clusterState={}, ZkNodeProps message={}) - start", clusterState, message);
+    if (log.isDebugEnabled()) log.debug("removeReplica(ClusterState clusterState={}, ZkNodeProps message={}) - start", clusterState, message);
 
     String coreName = message.getStr(ZkStateReader.REPLICA_PROP);
     if (coreName == null) {
@@ -149,7 +149,7 @@ public class SliceMutator {
       if (log.isDebugEnabled()) log.debug("examine for setting or unsetting as leader replica={}", replica);
 
       if (coreName.equals(replica.getName())) {
-        log.info("Set leader {}", replica.getName());
+        if (log.isDebugEnabled()) log.debug("Set leader {}", replica.getName());
         replica = new ReplicaMutator(cloudManager).setLeader(replica);
       } else if (replica.getBool("leader", false)) {
         if (log.isDebugEnabled()) log.debug("Unset leader");
@@ -164,7 +164,7 @@ public class SliceMutator {
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
 
     clusterState = clusterState.copyWith(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
-    log.info("setShardLeader {} {}", sliceName, clusterState);
+    if (log.isDebugEnabled()) log.debug("setShardLeader {} {}", sliceName, clusterState);
 
     return clusterState;
   }
@@ -175,7 +175,6 @@ public class SliceMutator {
     }
 
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    log.info("Update shard state invoked for collection: " + collectionName + " with message: " + message);
 
     DocCollection collection = clusterState.getCollection(collectionName);
     Map<String, Slice> slicesCopy = new LinkedHashMap<>(collection.getSlicesMap());
@@ -188,7 +187,7 @@ public class SliceMutator {
       if (slice == null) {
         throw new RuntimeException("Overseer.updateShardState unknown slice: " + collectionName + " slice: " + key);
       }
-      log.info("Update shard state " + key + " to " + message.getStr(key));
+      if (log.isDebugEnabled()) log.debug("Update shard state " + key + " to " + message.getStr(key));
       Map<String, Object> props = slice.shallowCopy();
 
       if (Slice.State.getState(message.getStr(key)) == Slice.State.ACTIVE) {
@@ -205,7 +204,7 @@ public class SliceMutator {
     }
 
     ClusterState cs = clusterState.copyWith(collectionName, collection.copyWithSlices(slicesCopy));
-    log.info("updateShardState return clusterstate={}", cs);
+    if (log.isDebugEnabled()) log.debug("updateShardState return clusterstate={}", cs);
     return cs;
   }
 

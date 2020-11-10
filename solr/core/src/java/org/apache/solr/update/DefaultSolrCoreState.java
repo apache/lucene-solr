@@ -103,7 +103,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private void closeIndexWriter(IndexWriterCloser closer) {
     try {
-      if (log.isInfoEnabled()) log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
+      if (log.isDebugEnabled()) log.debug("SolrCoreState ref count has reached 0 - closing IndexWriter");
       if (closer != null) {
         if (log.isDebugEnabled()) log.debug("closing IndexWriter with IndexWriterCloser");
 

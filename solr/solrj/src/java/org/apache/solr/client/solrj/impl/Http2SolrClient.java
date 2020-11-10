@@ -275,7 +275,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public void close() {
-    log.info("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
+    if (log.isDebugEnabled()) log.debug("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
    // assert closeTracker != null ? closeTracker.close() : true;
     asyncTracker.close();
     
@@ -286,7 +286,7 @@ public class Http2SolrClient extends SolrClient {
         log.error("Exception closing httpClient", e);
       }
     }
-    log.info("Done closing {}", this.getClass().getSimpleName());
+    if (log.isDebugEnabled()) log.debug("Done closing {}", this.getClass().getSimpleName());
     assert ObjectReleaseTracker.release(this);
   }
 

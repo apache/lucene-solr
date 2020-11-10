@@ -343,7 +343,7 @@ public class ZkStateWriter {
         }
       }
     });
-    
+
     dirty = false;
     collectionsToWrite.clear();
 

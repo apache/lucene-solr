@@ -254,7 +254,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
-    log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
+    if (log.isDebugEnabled()) log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
     ClusterState clusterState = overseer.getZkStateWriter().getClusterstate(false);
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
@@ -268,7 +268,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           throw new SolrException(ErrorCode.SERVER_ERROR, "CMD did not return a response:" + operation);
         }
 
-        log.info("Command returned clusterstate={} results={}", responce.clusterState, results);
+        if (log.isDebugEnabled()) log.debug("Command returned clusterstate={} results={}", responce.clusterState, results);
 
         if (responce.clusterState != null) {
           overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
@@ -279,7 +279,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         // nocommit consider
         if (responce != null && responce.asyncFinalRunner != null) {
           AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
-          log.info("Finalize after Command returned clusterstate={}", resp.clusterState);
+          if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
           if (resp.clusterState != null) {
             overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
             overseer.writePendingUpdates();
