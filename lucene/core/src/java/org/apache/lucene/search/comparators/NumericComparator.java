@@ -71,11 +71,11 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     public abstract class NumericLeafComparator implements LeafFieldComparator {
         protected final NumericDocValues docValues;
         private final PointValues pointValues;
-        private final boolean enableSkipping; // if skipping functionality should be enabled
         private final int maxDoc;
         private final byte[] minValueAsBytes;
         private final byte[] maxValueAsBytes;
 
+        private boolean enableSkipping; // if skipping functionality should be enabled
         private DocIdSetIterator competitiveIterator;
         private long iteratorCost;
         private int maxDocVisited = 0;
@@ -102,6 +102,12 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         /** Retrieves the NumericDocValues for the field in this segment */
         protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return DocValues.getNumeric(context.reader(), field);
+        }
+
+        @Override
+        public void usesIndexSort() {
+            // disable skipping functionality on index sort, as early termination in this case is handled in TopFieldCollector
+            this.enableSkipping = false;
         }
 
         @Override

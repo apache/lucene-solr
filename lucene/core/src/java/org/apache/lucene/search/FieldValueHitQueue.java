@@ -178,10 +178,13 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     return reverseMul;
   }
 
-  public LeafFieldComparator[] getComparators(LeafReaderContext context) throws IOException {
+  public LeafFieldComparator[] getComparators(LeafReaderContext context, boolean indexSort) throws IOException {
     LeafFieldComparator[] comparators = new LeafFieldComparator[this.comparators.length];
     for (int i = 0; i < comparators.length; ++i) {
       comparators[i] = this.comparators[i].getLeafComparator(context);
+      if (indexSort) {
+        comparators[i].usesIndexSort();
+      }
     }
     return comparators;
   }

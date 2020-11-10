@@ -132,4 +132,10 @@ public interface LeafFieldComparator {
   default void setHitsThresholdReached() throws IOException{
   }
 
+  /**
+   * Informs this leaf comparator that the search sort is congruent with the index sort.
+   */
+  default void usesIndexSort() {
+  }
+
 }

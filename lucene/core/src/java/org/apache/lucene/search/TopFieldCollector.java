@@ -46,38 +46,26 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // always compare lower than a real hit; this would
   // save having to check queueFull on each insert
 
-  private static abstract class MultiComparatorLeafCollector implements LeafCollector {
+  private abstract class TopFieldLeafCollector implements LeafCollector  {
 
     final LeafFieldComparator comparator;
     final int reverseMul;
-    Scorable scorer;
-
-    MultiComparatorLeafCollector(LeafFieldComparator[] comparators, int[] reverseMul) {
-      if (comparators.length == 1) {
-        this.reverseMul = reverseMul[0];
-        this.comparator = comparators[0];
-      } else {
-        this.reverseMul = 1;
-        this.comparator = new MultiLeafFieldComparator(comparators, reverseMul);
-      }
-    }
-
-    @Override
-    public void setScorer(Scorable scorer) throws IOException {
-      comparator.setScorer(scorer);
-      this.scorer = scorer;
-    }
-  }
-
-  private abstract class TopFieldLeafCollector extends MultiComparatorLeafCollector {
-
     final boolean canEarlyTerminate;
+    Scorable scorer;
     boolean collectedAllCompetitiveHits = false;
 
     TopFieldLeafCollector(FieldValueHitQueue<Entry> queue, Sort sort, LeafReaderContext context) throws IOException {
-      super(queue.getComparators(context), queue.getReverseMul());
       final Sort indexSort = context.reader().getMetaData().getSort();
-      canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+      this.canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+      LeafFieldComparator[] comparators = queue.getComparators(context, canEarlyTerminate);
+      int[] reverseMuls = queue.getReverseMul();
+      if (comparators.length == 1) {
+        this.reverseMul = reverseMuls[0];
+        this.comparator = comparators[0];
+      } else {
+        this.reverseMul = 1;
+        this.comparator = new MultiLeafFieldComparator(comparators, reverseMuls);
+      }
     }
 
     void countHit(int doc) throws IOException {
@@ -139,7 +127,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      super.setScorer(scorer);
+      this.scorer = scorer;
+      comparator.setScorer(scorer);
       minCompetitiveScore = 0f;
       updateMinCompetitiveScore(scorer);
       if (minScoreAcc != null) {
@@ -154,8 +143,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
-  // TODO: remove this code when all bulk scores similar to {@code DefaultBulkScorer} use collectors' iterator,
-  // as early termination should be implemented in their respective comparators and removed from a collector
   static boolean canEarlyTerminate(Sort searchSort, Sort indexSort) {
     return canEarlyTerminateOnDocId(searchSort) ||
            canEarlyTerminateOnPrefix(searchSort, indexSort);
