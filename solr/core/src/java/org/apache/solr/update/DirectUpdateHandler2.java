@@ -842,7 +842,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         }
         // we shouldn't close the transaction logs either, but leaving them open
         // means we can't delete them on windows (needed for tests)
-        if (ulog != null) ulog.close(false);
+        if (ulog != null) ulog.close(true);
 
         return;
       }
@@ -896,7 +896,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
 
     try {
-      if (ulog != null) ulog.close(false);
+      if (ulog != null) ulog.close(true);
     } catch (Throwable th) {
       log.error("Error closing log files", th);
       if (th instanceof OutOfMemoryError) {
