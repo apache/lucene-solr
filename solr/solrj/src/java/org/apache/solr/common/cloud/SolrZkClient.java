@@ -315,9 +315,13 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, null) != null);
+      Stat existsStat = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null));
+      log.info("exists state return is {} {}", path, existsStat);
+      return existsStat != null;
     } else {
-      return keeper.exists(path, null) != null;
+      Stat existsStat = keeper.exists(path, null);
+      log.info("exists state return is {} {}", path, existsStat);
+      return existsStat != null;
     }
   }
 

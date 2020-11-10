@@ -956,11 +956,11 @@ public class Overseer implements SolrCloseable {
 
           Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
 
-          ParWork.getRootSharedExecutor().submit(() -> {
+          overseer.getTaskExecutor().submit(() -> {
             try {
               runAsync(items, fullPaths, data);
             } catch (Exception e) {
-              log.error("failed processing collection queue items " + items);
+              log.error("failed processing collection queue items " + items, e);
             }
           });
         } finally {
@@ -969,73 +969,81 @@ public class Overseer implements SolrCloseable {
 
       }
 
-      private void runAsync(List<String> items, List<String> fullPaths, Map<String,byte[]> data) throws KeeperException {
+      private void runAsync(List<String> items, List<String> fullPaths, Map<String,byte[]> data) {
         for (Map.Entry<String,byte[]> entry : data.entrySet()) {
-          byte[] item = entry.getValue();
-          if (item == null) {
-            log.error("empty item {}", entry.getKey());
-            continue;
-          }
-
-          final ZkNodeProps message = ZkNodeProps.load(item);
           try {
-            String operation = message.getStr(Overseer.QUEUE_OPERATION);
-            if (operation == null) {
-              log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+            byte[] item = entry.getValue();
+            if (item == null) {
+              log.error("empty item {}", entry.getKey());
               continue;
             }
 
-            final String asyncId = message.getStr(ASYNC);
-
-            OverseerSolrResponse response;
-            if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
-              response = configMessageHandler.processMessage(message, operation);
-            } else {
-              response = collMessageHandler.processMessage(message, operation);
-            }
-
-            //          try {
-            //            overseer.writePendingUpdates();
-            //          } catch (InterruptedException e) {
-            //            log.error("Overseer state update queue processing interrupted");
-            //            return;
-            //          }
-
-            log.info("response {}", response);
-
-            if (asyncId != null) {
-              if (response != null && (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)) {
-                if (log.isDebugEnabled()) {
-                  log.debug("Updated failed map for task with id:[{}]", asyncId);
-                }
-                failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
-              } else {
-                if (log.isDebugEnabled()) {
-                  log.debug("Updated completed map for task with zkid:[{}]", asyncId);
-                }
-                completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
-
+            final ZkNodeProps message = ZkNodeProps.load(item);
+            try {
+              String operation = message.getStr(Overseer.QUEUE_OPERATION);
+              if (operation == null) {
+                log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
+                continue;
               }
-            } else {
-              byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
-              String responsePath = Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + OverseerTaskQueue.RESPONSE_PREFIX + entry.getKey().substring(entry.getKey().lastIndexOf("-") + 1);
-              zkController.getZkClient().setData(responsePath, sdata, true);
-              log.debug("Completed task:[{}] {}", message, response.getResponse());
+
+              final String asyncId = message.getStr(ASYNC);
+
+              OverseerSolrResponse response;
+              if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
+                response = configMessageHandler.processMessage(message, operation);
+              } else {
+                response = collMessageHandler.processMessage(message, operation);
+              }
+
+              //          try {
+              //            overseer.writePendingUpdates();
+              //          } catch (InterruptedException e) {
+              //            log.error("Overseer state update queue processing interrupted");
+              //            return;
+              //          }
+
+              log.info("response {}", response);
+
+              if (asyncId != null) {
+                if (response != null && (response.getResponse().get("failure") != null || response.getResponse().get("exception") != null)) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Updated failed map for task with id:[{}]", asyncId);
+                  }
+                  failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+                } else {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Updated completed map for task with zkid:[{}]", asyncId);
+                  }
+                  completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+
+                }
+              } else {
+                byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
+                String responsePath = Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + OverseerTaskQueue.RESPONSE_PREFIX + entry.getKey().substring(entry.getKey().lastIndexOf("-") + 1);
+                zkController.getZkClient().setData(responsePath, sdata, true);
+                log.debug("Completed task:[{}] {}", message, response.getResponse());
+              }
+
+            } catch (InterruptedException e) {
+              log.error("Overseer state update queue processing interrupted");
+              return;
             }
 
-          } catch (InterruptedException e) {
-            log.error("Overseer state update queue processing interrupted");
-            return;
+          } catch (Exception e) {
+            log.warn("Exception deleting processed zk nodes", e);
+          }
+          try {
+            for (String item : items) {
+              if (item.startsWith("qnr-")) {
+                fullPaths.remove(path + "/" + item);
+              }
+            }
+
+            zkController.getZkClient().delete(fullPaths, true);
+          } catch (Exception e) {
+            log.warn("Exception deleting processed zk nodes", e);
           }
         }
-
-        for (String item : items) {
-          if (item.startsWith("qnr-")) {
-            fullPaths.remove(path + "/" + item);
-          }
-        }
-
-        zkController.getZkClient().delete(fullPaths, true);
       }
     }
   }
