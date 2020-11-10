@@ -27,7 +27,6 @@ import java.nio.file.StandardOpenOption;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.SuppressForbidden;
 
-
 // TODO
 //   - newer Linux kernel versions (after 2.6.29) have
 //     improved MADV_SEQUENTIAL (and hopefully also
@@ -162,8 +161,8 @@ public class DirectIODirectory extends FSDirectory {
     private long fileLength;
     private boolean isOpen;
 
-  @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
-  public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
+    @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
+    public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
       int blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
