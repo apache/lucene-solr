@@ -172,7 +172,7 @@ Bug Fixes
 * SOLR-14969: Prevent creating multiple cores with the same name which leads to instabilities (race condition)
   (Erick Erickson, Andreas Hubold)
 
-* SOLR-14971: AtomicUpdate 'remove' operations now works on numeric fields in uncommitted docs (Jason Gerlowski)
+* SOLR-14971: AtomicUpdate 'remove', 'add-distinct' operations now works on numeric, date fields in uncommitted docs (Jason Gerlowski)
 
 Other Changes
 ---------------------
