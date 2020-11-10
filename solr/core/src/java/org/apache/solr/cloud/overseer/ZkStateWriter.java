@@ -68,6 +68,7 @@ public class ZkStateWriter {
   private Set<String> collectionsToWrite = new HashSet<>();
 
   protected final ReentrantLock ourLock = new ReentrantLock(true);
+  protected final ReentrantLock writeLock = new ReentrantLock(true);
 
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
@@ -252,116 +253,122 @@ public class ZkStateWriter {
    *
    */
   public void writePendingUpdates() {
-    ourLock.lock();
+
+    writeLock.lock();
     try {
-      if (!dirty) {
-        return;
+      ourLock.lock();
+      try {
+        if (!dirty) {
+          return;
+        }
+
+        if (log.isDebugEnabled()) {
+          log.debug("writePendingUpdates {}", cs);
+        }
+
+        if (failedUpdates.size() > 0) {
+          log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
+          failedUpdates.clear();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+        }
+      } finally {
+        ourLock.unlock();
       }
 
-      if (log.isDebugEnabled()) {
-        log.debug("writePendingUpdates {}", cs);
-      }
+      // wait to see our last publish version has propagated
+      cs.forEachCollection(collection -> {
+        if (collectionsToWrite.contains(collection.getName())) {
+          Integer v = null;
+          try {
+            //System.out.println("waiting to see state " + prevVersion);
+            v = trackVersions.get(collection.getName());
+            if (v == null) v = 0;
+            if (v == 0) return;
+            Integer version = v;
+            try {
+              log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
+              reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
+                if (col == null) {
+                  return true;
+                }
+                //                          if (col != null) {
+                //                            log.info("the version " + col.getZNodeVersion());
+                //                          }
+                if (col != null && col.getZNodeVersion() >= version) {
+                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
+                  // System.out.println("found the version");
+                  return true;
+                }
+                return false;
+              });
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            }
+          } catch (TimeoutException e) {
+            log.warn("Timeout waiting to see written cluster state come back " + v);
+          }
+        }
 
-      if (failedUpdates.size() > 0) {
-        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
-        failedUpdates.clear();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+      });
+
+      ourLock.lock();
+      try {
+        cs.forEachCollection(collection -> {
+          if (collectionsToWrite.contains(collection.getName())) {
+            String name = collection.getName();
+            String path = ZkStateReader.getCollectionPath(collection.getName());
+            if (log.isDebugEnabled()) log.debug("process {}", collection);
+            Stat stat = new Stat();
+            boolean success = false;
+            try {
+
+              byte[] data = Utils.toJSON(singletonMap(name, collection));
+
+              if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
+
+              try {
+                int version = collection.getZNodeVersion();
+                Integer v = trackVersions.get(collection.getName());
+                if (v != null) {
+                  version = v;
+                }
+
+                reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
+
+                trackVersions.put(collection.getName(), version + 1);
+              } catch (KeeperException.NoNodeException e) {
+                if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+                trackVersions.remove(collection.getName());
+                // likely deleted
+              } catch (KeeperException.BadVersionException bve) {
+                lastFailedException.set(bve);
+                failedUpdates.put(collection.getName(), collection);
+                stat = reader.getZkClient().exists(path, null);
+                // this is a tragic error, we must disallow usage of this instance
+                log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
+              }
+              if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
+            } catch (InterruptedException | AlreadyClosedException e) {
+              log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            } catch (KeeperException.SessionExpiredException e) {
+              log.error("", e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            } catch (Exception e) {
+              log.error("Failed processing update=" + collection, e);
+            }
+          }
+        });
+
+        dirty = false;
+        collectionsToWrite.clear();
+      } finally {
+        ourLock.unlock();
       }
     } finally {
-      ourLock.unlock();
+      writeLock.unlock();
     }
-
-    // wait to see our last publish version has propagated
-    cs.forEachCollection(collection -> {
-      if (collectionsToWrite.contains(collection.getName())) {
-        Integer v = null;
-        try {
-          //System.out.println("waiting to see state " + prevVersion);
-          v = trackVersions.get(collection.getName());
-          if (v == null) v = 0;
-          if (v == 0) return;
-          Integer version = v;
-          try {
-            log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
-            reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
-              if (col == null) {
-                return true;
-              }
-              //                          if (col != null) {
-              //                            log.info("the version " + col.getZNodeVersion());
-              //                          }
-              if (col != null && col.getZNodeVersion() >= version) {
-                if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
-                // System.out.println("found the version");
-                return true;
-              }
-              return false;
-            });
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        } catch (TimeoutException e) {
-          log.warn("Timeout waiting to see written cluster state come back " + v);
-        }
-      }
-
-    });
-
-   ourLock.lock();
-   try {
-     cs.forEachCollection(collection -> {
-       if (collectionsToWrite.contains(collection.getName())) {
-         String name = collection.getName();
-         String path = ZkStateReader.getCollectionPath(collection.getName());
-         if (log.isDebugEnabled()) log.debug("process {}", collection);
-         Stat stat = new Stat();
-         boolean success = false;
-         try {
-
-           byte[] data = Utils.toJSON(singletonMap(name, collection));
-
-           if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
-
-           try {
-             int version = collection.getZNodeVersion();
-             Integer v = trackVersions.get(collection.getName());
-             if (v != null) {
-               version = v;
-             }
-
-             reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
-
-             trackVersions.put(collection.getName(), version + 1);
-           } catch (KeeperException.NoNodeException e) {
-             if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
-             trackVersions.remove(collection.getName());
-             // likely deleted
-           } catch (KeeperException.BadVersionException bve) {
-             lastFailedException.set(bve);
-             failedUpdates.put(collection.getName(), collection);
-             stat = reader.getZkClient().exists(path, null);
-             // this is a tragic error, we must disallow usage of this instance
-             log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
-           }
-           if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
-         } catch (InterruptedException | AlreadyClosedException e) {
-           log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
-           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-         } catch (KeeperException.SessionExpiredException e) {
-           log.error("", e);
-           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-         } catch (Exception e) {
-           log.error("Failed processing update=" + collection, e);
-         }
-       }
-     });
-
-     dirty = false;
-     collectionsToWrite.clear();
-   } finally {
-     ourLock.unlock();
-   }
     // nocommit - harden against failures and exceptions
 
     //    if (log.isDebugEnabled()) {

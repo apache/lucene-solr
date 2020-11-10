@@ -228,12 +228,12 @@ public class Http2SolrClient extends SolrClient {
       } else {
         log.info("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(2);
+      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(4);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     } else {
       log.info("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
-      http2client.setSelectors(2);
+      http2client.setSelectors(4);
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(8192);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
@@ -979,7 +979,7 @@ public class Http2SolrClient extends SolrClient {
 
     public AsyncTracker(int maxOutstandingAsyncRequests) {
       if (maxOutstandingAsyncRequests > 0) {
-        available = new Semaphore(maxOutstandingAsyncRequests, true);
+        available = new Semaphore(maxOutstandingAsyncRequests, false);
       } else {
         available = null;
       }
@@ -995,7 +995,7 @@ public class Http2SolrClient extends SolrClient {
 
     public void close() {
       phaser.forceTermination();
-      if (available != null) available.release(available.getQueueLength() + 5);
+      if (available != null) available.drainPermits();
     }
 
     public void register() {
@@ -1038,7 +1038,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(64, ParWork.PROC_COUNT));
+    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", 128);
     public int maxRequestsQueuedPerDestination = 2048;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
