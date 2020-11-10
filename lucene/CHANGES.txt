@@ -222,6 +222,9 @@ Improvements
 * LUCENE-9455: ExitableTermsEnum should sample timeout and interruption
   check before calling next(). (Zach Chen via Bruno Roustant)
 
+* LUCENE-9023: GlobalOrdinalsWithScore should not compute occurrences when the
+  provided min is 1. (Jim Ferenczi)
+
 Optimizations
 ---------------------
 
