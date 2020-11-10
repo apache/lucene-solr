@@ -188,6 +188,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         if (finalShardHandler != null && finalShardRequestTracker != null) {
           try {
             finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
+            // TODO: wait for delete collection?
+            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
           } catch (Exception e) {
             log.error("Exception waiting for results of delete collection cmd", e);
           }

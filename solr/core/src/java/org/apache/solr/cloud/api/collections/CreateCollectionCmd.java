@@ -341,11 +341,14 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                   return false;
                 }
                 for (String name : coresToCreate.keySet()) {
-                  if (c.getReplica(name) == null) {
+                  if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
                     return false;
                   }
                 }
                 Collection<Slice> slices = c.getSlices();
+                if (slices.size() < shardNames.size()) {
+                  return false;
+                }
                 for (Slice slice : slices) {
                   if (slice.getLeader() == null) {
                     return false;

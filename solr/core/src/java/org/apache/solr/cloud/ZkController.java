@@ -164,6 +164,10 @@ public class ZkController implements Closeable, Runnable {
     return dcCalled;
   }
 
+  public LeaderElector getShardLeaderElector(String name) {
+    return leaderElectors.get(name);
+  }
+
   static class ContextKey {
 
     private String collection;

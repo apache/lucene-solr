@@ -1741,6 +1741,10 @@ public class CoreContainer implements Closeable {
 
     if (name != null) {
 
+      if (isZooKeeperAware()) {
+        IOUtils.closeQuietly(getZkController().getShardLeaderElector(name));
+      }
+
       // check for core-init errors first
       CoreLoadFailure loadFailure = coreInitFailures.remove(name);
       if (loadFailure != null) {

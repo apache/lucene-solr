@@ -185,6 +185,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       }
       //assert leaderZkNodeParentVersion != null;
 
+    } catch (NoNodeException e) {
+      throw new AlreadyClosedException("No node exists for election");
     } catch (Throwable t) {
       ParWork.propagateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);

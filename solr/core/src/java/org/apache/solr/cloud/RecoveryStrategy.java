@@ -245,7 +245,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   /**
    * This method may change in future and customisations are not supported between versions in terms of API or back
    * compat behaviour.
-   * 
+   *
    * @lucene.experimental
    */
   protected String getReplicateLeaderUrl(Replica leaderprops, ZkStateReader zkStateReader) {
@@ -333,7 +333,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    log.info("send commit to leader");
+    log.info("send commit to leader {}", leaderUrl);
     Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient();
     UpdateRequest ureq = new UpdateRequest();
     ureq.setBasePath(leaderUrl);
@@ -404,8 +404,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         Replica leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        final String leaderBaseUrl = leaderprops.getBaseUrl();
-        final String leaderCoreName = leaderprops.getName();
 
         String leaderUrl = leaderprops.getCoreUrl();
 
@@ -738,6 +736,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         } catch (InterruptedException | AlreadyClosedException e) {
           ParWork.propagateInterrupt(e, true);
           return;
+        } catch (NullPointerException e) {
+          if (log.isDebugEnabled()) log.debug("NullPointerException", e);
+          break;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
         }

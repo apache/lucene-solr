@@ -254,21 +254,22 @@ public class ZkStateWriter {
 
     // wait to see our last publish version has propagated
     cs.forEachCollection(collection -> {
-
+      Integer v = null;
       try {
         //System.out.println("waiting to see state " + prevVersion);
-        Integer v = trackVersions.get(collection.getName());
-        if (v == null || v == 0) return;
-
+        v = trackVersions.get(collection.getName());
+        if (v == null) v = 0;
+        if (v == 0) return;
         Integer version = v;
         try {
           log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
-          reader.waitForState(collection.getName(), 15, TimeUnit.SECONDS, (l, col) -> {
-
-            //              if (col != null) {
-            //                System.out.println("the version " + col.getZNodeVersion());
-            //              }
-
+          reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
+                      if (col == null) {
+                        return true;
+                      }
+//                          if (col != null) {
+//                            log.info("the version " + col.getZNodeVersion());
+//                          }
             if (col != null && col.getZNodeVersion() >= version) {
               if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
               // System.out.println("found the version");
@@ -281,8 +282,7 @@ public class ZkStateWriter {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       } catch (TimeoutException e) {
-        log.warn("Timeout waiting to see written cluster state come back");
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        log.warn("Timeout waiting to see written cluster state come back " + v);
       }
 
     });
@@ -307,12 +307,15 @@ public class ZkStateWriter {
           Integer v = trackVersions.get(collection.getName());
           if (v != null) {
             version = v;
-            trackVersions.put(collection.getName(), v + 1);
-          } else {
-            trackVersions.put(collection.getName(), version + 1);
           }
 
           reader.getZkClient().setData(path, data, version, true);
+
+          trackVersions.put(collection.getName(), version + 1);
+        } catch (KeeperException.NoNodeException e) {
+          if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+          trackVersions.remove(collection.getName());
+          // likely deleted
         } catch (KeeperException.BadVersionException bve) {
           lastFailedException.set(bve);
           failedUpdates.put(collection.getName(), collection);

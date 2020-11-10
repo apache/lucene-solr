@@ -1089,7 +1089,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Integer ver = (Integer) resp.get("csver");
       if (ver != null) {
         try {
-          log.info("Wait for catch up to server state");
+          log.info("Wait for catch up to server state {}", ver);
           getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState != null && collectionState.getZNodeVersion() >= ver) {
               return true;

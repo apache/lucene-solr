@@ -38,6 +38,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import org.apache.solr.util.TestInjection;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,17 +94,20 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
             state = replica.getState();
             live = n.contains(nodeName);
 
-            ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, c.getSlice(replica).getName());
-            // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname)
-                && shardTerms.skipSendingUpdatesTo(cname)) {
-              // The replica changed its term, then published itself as RECOVERING.
-              // This core already see replica as RECOVERING
-              // so it is guarantees that a live-fetch will be enough for this core to see max term published
-              log.info("refresh shard terms for core {}", cname);
-              shardTerms.refreshTerms();
+            try {
+              ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, c.getSlice(replica).getName());
+              // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
+              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
+                // The replica changed its term, then published itself as RECOVERING.
+                // This core already see replica as RECOVERING
+                // so it is guarantees that a live-fetch will be enough for this core to see max term published
+                log.info("refresh shard terms for core {}", cname);
+                shardTerms.refreshTerms();
+              }
+            } catch (NullPointerException e) {
+              if (log.isDebugEnabled()) log.debug("No shards found", e);
+              // likely deleted shard/collection
             }
-
             if (log.isInfoEnabled()) {
               log.info(
                   "In WaitForState(" + waitForState + "): collection=" + collection +

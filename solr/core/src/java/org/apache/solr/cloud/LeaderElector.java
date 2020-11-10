@@ -152,17 +152,18 @@ public class LeaderElector implements Closeable {
     if (leaderSeqNodeName.equals(seqs.get(0))) {
       // I am the leader
       log.info("I am the potential leader {}, running leader process", context.leaderProps);
-      ParWork.getRootSharedExecutor().submit(() -> {
-        try {
-          if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
-            if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
-            return;
-          }
-          runIamLeaderProcess(context, replacement);
-        } catch (Exception e) {
-          log.error("", e);
+
+      try {
+        if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
+          if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
+          return false;
         }
-      });
+        runIamLeaderProcess(context, replacement);
+      } catch (AlreadyClosedException e) {
+        return false;
+      } catch (Exception e) {
+        log.error("", e);
+      }
 
     } else {
       log.info("I am not the leader - watch the node below me {}", context.getClass().getSimpleName());
