@@ -93,7 +93,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
 
     int slices = cloudClient.getZkStateReader().getClusterState()
       .getCollection("collection1").getActiveSlices().size();
-    int trials = 50;
+    int trials = TEST_NIGHTLY ? 50 : 15;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1)) ;
     SolrClient randomClient = clients.get(random().nextInt(clients.size()));
@@ -133,7 +133,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
     });
 
     // Now, let's ensure that writing the same field with two different types fails
-    int failTrials = 50;
+    int failTrials = TEST_NIGHTLY ? 50 : 15;
     for (int i = 0; i < failTrials; ++i) {
       SolrInputDocument intDoc = new SolrInputDocument();
       intDoc.addField("id", Long.toHexString(Double.doubleToLongBits(random().nextDouble())));
