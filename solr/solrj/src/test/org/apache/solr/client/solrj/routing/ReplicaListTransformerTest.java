@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
@@ -61,7 +62,10 @@ public class ReplicaListTransformerTest extends SolrTestCase {
         Object choice = it.next();
         final String url;
         if (choice instanceof String) {
-          url = (String) choice;
+          url = (String)choice;
+        }
+        else if (choice instanceof Replica) {
+          url = ((Replica)choice).getCoreUrl();
         } else {
           url = null;
         }
@@ -103,7 +107,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
   @Test
   public void testTransform() throws Exception {
 
-    final String regex = ".*_n" + random().nextInt(10) + ".*";
+    final String regex = ".*?r_n\\d+.*";
 
     AtomicReference<ReplicaListTransformer> transformer = new AtomicReference<>();
     try {
@@ -147,17 +151,16 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final List<String> urls = createRandomUrls();
       for (int ii = 0; ii < urls.size(); ++ii) {
 
-        final String name = "r_n" + (ii + 1);
+        final String name = "coll1_s1_r_n" + (ii + 1);
         final String url = urls.get(ii);
         final Map<String, Object> propMap = new HashMap<String, Object>();
-        propMap.put("core", "test_core");
-        propMap.put("node_name", url);
+        propMap.put(ZkStateReader.NODE_NAME_PROP, url);
         propMap.put("type", "NRT");
         // a skeleton replica, good enough for this test's purposes
         final Replica replica = new Replica(name, propMap, "c1", "s1", new Replica.NodeNameToBaseUrl() {
           @Override
           public String getBaseUrlForNodeName(String nodeName) {
-            return Utils.getBaseUrlForNodeName(nodeName, "http");
+            return Utils.getBaseUrlForNodeName(name, "http");
           }
         });
 
