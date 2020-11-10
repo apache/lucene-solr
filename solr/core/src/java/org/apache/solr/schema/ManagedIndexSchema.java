@@ -213,7 +213,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         try {
           // Assumption: the path exists
           int ver = schemaZkVersion;
-          Stat stat = zkClient.setData(managedSchemaPath, data, ver, true);
+          Stat stat = zkClient.setData(managedSchemaPath, data, ver == 0 ? -1 : ver, true);
           schemaZkVersion = stat.getVersion();
           log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {

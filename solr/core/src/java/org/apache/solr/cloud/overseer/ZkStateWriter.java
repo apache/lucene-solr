@@ -309,7 +309,8 @@ public class ZkStateWriter {
             version = v;
           }
 
-          reader.getZkClient().setData(path, data, version, true);
+
+          reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
 
           trackVersions.put(collection.getName(), version + 1);
         } catch (KeeperException.NoNodeException e) {
