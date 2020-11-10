@@ -777,7 +777,6 @@ public class SolrZkClient implements Closeable {
     log.info("delete paths {} wait={}", paths, wait);
     CountDownLatch latch = null;
     if (wait) {
-      log.info("setup countdown latch {}", paths.size());
       latch = new CountDownLatch(paths.size());
     }
     for (String path : paths) {
@@ -809,7 +808,6 @@ public class SolrZkClient implements Closeable {
     if (wait) {
       boolean success;
       try {
-        log.info("watch on countdownlatch {}", "15s");
         success = latch.await(15, TimeUnit.SECONDS);
         log.info("done waiting on latch, success={}", success);
       } catch (InterruptedException e) {
@@ -824,7 +822,7 @@ public class SolrZkClient implements Closeable {
         throw e;
       }
     }
-    log.error("done with delete {} {}", paths, wait);
+    if (log.isDebugEnabled()) log.debug("done with delete {} {}", paths, wait);
   }
 
   // Calls setData for a list of existing paths in parallel

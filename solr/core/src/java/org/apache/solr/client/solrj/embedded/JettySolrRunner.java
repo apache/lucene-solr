@@ -596,7 +596,7 @@ public class JettySolrRunner implements Closeable {
               if (!success) {
                 log.warn("Timedout waiting to see {} node in zk", ZkStateReader.COLLECTIONS_ZKNODE);
               }
-              log.info("Done waiting on latch");
+              if (log.isDebugEnabled()) log.debug("Done waiting on latch");
             } catch (InterruptedException e) {
               ParWork.propagateInterrupt(e);
               throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);

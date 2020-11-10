@@ -353,7 +353,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   public static CreateReplica assignReplicaDetails(DocCollection coll,
                                                  ZkNodeProps message, ReplicaPosition replicaPosition) {
 
-    log.info("assignReplicaDetails {} {} {}", message, replicaPosition, coll);
+    log.info("assignReplicaDetails {} {}", message, replicaPosition);
 
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 

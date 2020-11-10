@@ -18,7 +18,9 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -35,6 +37,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.BoundedTreeSet;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -61,6 +64,7 @@ public class ZkStateWriter {
 
   private volatile ClusterState cs;
   private boolean dirty;
+  private Set<String> collectionsToWrite = new HashSet<>();
 
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
@@ -105,6 +109,9 @@ public class ZkStateWriter {
           }
         }
       });
+
+
+      collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
       Collection<DocCollection> collections = cs.getCollectionsMap().values();
       for (DocCollection collection : collections) {
         if (clusterState.getCollectionOrNull(collection.getName()) == null) {
@@ -216,7 +223,7 @@ public class ZkStateWriter {
           }
         }
       });
-
+      collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
     }
 
     if (stateUpdate) {
@@ -254,89 +261,91 @@ public class ZkStateWriter {
 
     // wait to see our last publish version has propagated
     cs.forEachCollection(collection -> {
-      Integer v = null;
-      try {
-        //System.out.println("waiting to see state " + prevVersion);
-        v = trackVersions.get(collection.getName());
-        if (v == null) v = 0;
-        if (v == 0) return;
-        Integer version = v;
+      if (collectionsToWrite.contains(collection.getName())) {
+        Integer v = null;
         try {
-          log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
-          reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
-                      if (col == null) {
-                        return true;
-                      }
-//                          if (col != null) {
-//                            log.info("the version " + col.getZNodeVersion());
-//                          }
-            if (col != null && col.getZNodeVersion() >= version) {
-              if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
-              // System.out.println("found the version");
-              return true;
-            }
-            return false;
-          });
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          //System.out.println("waiting to see state " + prevVersion);
+          v = trackVersions.get(collection.getName());
+          if (v == null) v = 0;
+          if (v == 0) return;
+          Integer version = v;
+          try {
+            log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
+            reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
+              if (col == null) {
+                return true;
+              }
+              //                          if (col != null) {
+              //                            log.info("the version " + col.getZNodeVersion());
+              //                          }
+              if (col != null && col.getZNodeVersion() >= version) {
+                if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
+                // System.out.println("found the version");
+                return true;
+              }
+              return false;
+            });
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        } catch (TimeoutException e) {
+          log.warn("Timeout waiting to see written cluster state come back " + v);
         }
-      } catch (TimeoutException e) {
-        log.warn("Timeout waiting to see written cluster state come back " + v);
       }
 
     });
 
 
     cs.forEachCollection(collection -> {
-
-      String name = collection.getName();
-      String path = ZkStateReader.getCollectionPath(collection.getName());
-      if (log.isDebugEnabled()) log.debug("process {}", collection);
-      Stat stat = new Stat();
-      boolean success = false;
-      try {
-
-
-        byte[] data = Utils.toJSON(singletonMap(name, collection));
-
-        if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
-
+      if (collectionsToWrite.contains(collection.getName())) {
+        String name = collection.getName();
+        String path = ZkStateReader.getCollectionPath(collection.getName());
+        if (log.isDebugEnabled()) log.debug("process {}", collection);
+        Stat stat = new Stat();
+        boolean success = false;
         try {
-          int version = collection.getZNodeVersion();
-          Integer v = trackVersions.get(collection.getName());
-          if (v != null) {
-            version = v;
+
+          byte[] data = Utils.toJSON(singletonMap(name, collection));
+
+          if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
+
+          try {
+            int version = collection.getZNodeVersion();
+            Integer v = trackVersions.get(collection.getName());
+            if (v != null) {
+              version = v;
+            }
+
+            reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
+
+            trackVersions.put(collection.getName(), version + 1);
+          } catch (KeeperException.NoNodeException e) {
+            if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+            trackVersions.remove(collection.getName());
+            // likely deleted
+          } catch (KeeperException.BadVersionException bve) {
+            lastFailedException.set(bve);
+            failedUpdates.put(collection.getName(), collection);
+            stat = reader.getZkClient().exists(path, null);
+            // this is a tragic error, we must disallow usage of this instance
+            log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
           }
-
-
-          reader.getZkClient().setData(path, data, version == 0 ? -1 : version, true);
-
-          trackVersions.put(collection.getName(), version + 1);
-        } catch (KeeperException.NoNodeException e) {
-          if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
-          trackVersions.remove(collection.getName());
-          // likely deleted
-        } catch (KeeperException.BadVersionException bve) {
-          lastFailedException.set(bve);
-          failedUpdates.put(collection.getName(), collection);
-          stat = reader.getZkClient().exists(path, null);
-          // this is a tragic error, we must disallow usage of this instance
-          log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", collection.getZNodeVersion(), stat.getVersion(), bve);
+          if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
+        } catch (InterruptedException | AlreadyClosedException e) {
+          log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (KeeperException.SessionExpiredException e) {
+          log.error("", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (Exception e) {
+          log.error("Failed processing update=" + collection, e);
         }
-        if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
-      } catch (InterruptedException | AlreadyClosedException e) {
-        log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (KeeperException.SessionExpiredException e) {
-        log.error("", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (Exception e) {
-        log.error("Failed processing update=" + collection, e);
       }
     });
-
+    
     dirty = false;
+    collectionsToWrite.clear();
 
     // nocommit - harden against failures and exceptions
 

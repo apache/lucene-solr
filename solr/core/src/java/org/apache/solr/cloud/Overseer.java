@@ -846,8 +846,9 @@ public class Overseer implements SolrCloseable {
 
         try {
           List<String> items = setWatch();
-
-          processQueueItems(items);
+          if (items.size() > 0) {
+            processQueueItems(items);
+          }
         } catch (Exception e) {
           log.error("Exception during overseer queue queue processing", e);
         }

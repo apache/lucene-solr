@@ -233,7 +233,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
 
         clusterState = new AddReplicaCmd(ocmh, true).call(clusterState, props, results).clusterState;
-        log.info("CreateCollectionCmd after add replica clusterstate={}", clusterState);
+        // log.info("CreateCollectionCmd after add replica clusterstate={}", clusterState);
 
         //clusterState = new SliceMutator(cloudManager).addReplica(clusterState, props);
 
