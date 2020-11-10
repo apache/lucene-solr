@@ -68,9 +68,6 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  * Given a scoring factor {@code S > 0} and its weight {@code w > 0}, there
  * are four ways that S can be turned into a score:
  * <ul>
- *   <li>{@link #newLinearQuery w * S}. This is the simplest function
- *       where no transformation is applied on the feature value, and
- *       the feature value itself multiplied by weight defines the score.
  *   <li>{@link #newLogQuery w * log(a + S)}, with a &ge; 1. This function
  *       usually makes sense because the distribution of scoring factors
  *       often follows a power law. This is typically the case for pagerank for
@@ -85,6 +82,12 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
  *       than the two above but is also harder to tune due to the fact it has
  *       2 parameters. Like with {@code satu}, values are in the 0..1 range and
  *       0.5 is obtained when S and k are equal.
+ *   <li>{@link #newLinearQuery w * S}. Expert: This function doesn't apply
+ *       any transformation to an indexed feature value, and the indexed value itself,
+ *       multiplied by weight, determines the score. Thus, there is an expectation
+ *       that a feature value is encoded in the index in a way that makes
+ *       sense for scoring.
+ *
  * </ul>
  * <p>
  * The constants in the above formulas typically need training in order to
