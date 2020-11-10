@@ -101,7 +101,6 @@ configure(project(":lucene:analysis:common")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    javadocMissingIgnore = [ "org.apache.lucene.analysis.classic", "org.apache.lucene.analysis.email" ]
   }
 }
 
@@ -150,16 +149,6 @@ configure(project(":lucene:backward-codecs")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing @param tags
     javadocMissingLevel = "method"
-    // TODO: fix missing javadocs
-    javadocMissingIgnore = [
-        "org.apache.lucene.backward_codecs",
-        "org.apache.lucene.backward_codecs.lucene50",
-        "org.apache.lucene.backward_codecs.lucene60",
-        "org.apache.lucene.backward_codecs.lucene80",
-        "org.apache.lucene.backward_codecs.lucene84",
-        "org.apache.lucene.backward_codecs.lucene86",
-        "org.apache.lucene.backward_codecs.lucene87"
-    ]
   }
 }
 
@@ -194,10 +183,6 @@ configure(project(":lucene:sandbox")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    javadocMissingIgnore = [
-        "org.apache.lucene.sandbox.search",
-        "org.apache.lucene.sandbox.document"
-    ]
   }
 }
 
@@ -205,15 +190,6 @@ configure(project(":lucene:misc")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    javadocMissingIgnore = [
-        "org.apache.lucene.misc.search",
-        "org.apache.lucene.misc.search.similarity",
-        "org.apache.lucene.misc.util",
-        "org.apache.lucene.misc.util.fst",
-        "org.apache.lucene.misc.store",
-        "org.apache.lucene.misc.document",
-        "org.apache.lucene.misc.index"
-    ]
   }
 }
 
