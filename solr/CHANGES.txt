@@ -50,8 +50,6 @@ Improvements
   properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
   and simplified. (Dawid Weiss)
 
-* SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
-
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -175,6 +173,8 @@ Improvements
   (Cao Manh Dat, Mike Drob, hossman, shalin)
 
 * SOLR-14955: Add env var options for the Prometheus Exporter bin scripts (Houston Putman)
+
+* SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
 
 Optimizations
 ---------------------
