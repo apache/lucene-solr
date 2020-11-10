@@ -166,52 +166,5 @@ public class TeamDraftInterleavingTest {
     assertTrue(modelBPicks.contains(b5.doc));
   }
 
-  protected void initSameIdsInSameRerankedList() {
-    a1 = new ScoreDoc(1,10,1);
-    a2 = new ScoreDoc(5,7,1);
-    a3 = new ScoreDoc(3,6,1);
-    a4 = new ScoreDoc(1,5,2);
-    a5 = new ScoreDoc(3,4,2);
-    rerankedA = new ScoreDoc[]{a1,a2,a3,a4,a5};
-
-    b1 = new ScoreDoc(5,10,1);
-    b2 = new ScoreDoc(1,7,2);
-    b3 = new ScoreDoc(3,6,1);
-    b4 = new ScoreDoc(1,5,1);
-    b5 = new ScoreDoc(3,4,2);
-    rerankedB = new ScoreDoc[]{b1,b2,b3,b4,b5};
-  }
-  
-  /**
-   * Random Boolean Choices Generation from Seed: [0,1,1]
-   */
-  @Test
-  public void interleaving_sameIdScoreDocs_shouldInterleaveDiscerningPerShardId() {
-    initSameIdsInSameRerankedList();
-
-    InterleavingResult interleaved = toTest.interleave(rerankedA, rerankedB);
-    ScoreDoc[] interleavedResults = interleaved.getInterleavedResults();
-    assertThat(interleavedResults.length,is(5));
-    assertThat(interleavedResults[0],is(a1));
-    assertThat(interleavedResults[1],is(b1));
-    assertThat(interleavedResults[2],is(b2));
-    assertThat(interleavedResults[3],is(a3));
-    assertThat(interleavedResults[4],is(b5));
-
-    ArrayList<Set<Integer>> interleavingPicks = interleaved.getInterleavingPicks();
-    Set<Integer> modelAPicks = interleavingPicks.get(0);
-    Set<Integer> modelBPicks = interleavingPicks.get(1);
-    
-    assertThat(modelAPicks.size(),is(2));
-    assertThat(modelBPicks.size(),is(3));
-
-    assertTrue(modelAPicks.contains(a1.doc));
-    assertTrue(modelAPicks.contains(a3.doc));
-
-    assertTrue(modelBPicks.contains(b1.doc));
-    assertTrue(modelBPicks.contains(b2.doc));
-    assertTrue(modelBPicks.contains(b5.doc));
-  }
-
 }
 

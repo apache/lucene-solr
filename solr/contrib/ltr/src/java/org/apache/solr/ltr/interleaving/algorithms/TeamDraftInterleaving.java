@@ -19,7 +19,7 @@ package org.apache.solr.ltr.interleaving.algorithms;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
@@ -76,7 +76,8 @@ public class TeamDraftInterleaving implements Interleaving {
    * @return the interleaved ranking list
    */
   public InterleavingResult interleave(ScoreDoc[] rerankedA, ScoreDoc[] rerankedB) {
-    LinkedHashSet<ScoreDoc> interleavedResults = new LinkedHashSet<>();
+    LinkedList<ScoreDoc> interleavedResults = new LinkedList<>();
+    HashSet<Integer> alreadyAdded = new HashSet<>();
     ScoreDoc[] interleavedResultArray = new ScoreDoc[rerankedA.length];
     ArrayList<Set<Integer>> interleavingPicks = new ArrayList<>(2);
     Set<Integer> teamA = new HashSet<>();
@@ -86,13 +87,15 @@ public class TeamDraftInterleaving implements Interleaving {
 
     while (interleavedResults.size() < topN && indexA < rerankedA.length && indexB < rerankedB.length) {
       if(teamA.size()<teamB.size() || (teamA.size()==teamB.size() && !RANDOM.nextBoolean())){
-        indexA = updateIndex(interleavedResults,indexA,rerankedA);
+        indexA = updateIndex(alreadyAdded, indexA, rerankedA);
         interleavedResults.add(rerankedA[indexA]);
+        alreadyAdded.add(rerankedA[indexA].doc);
         teamA.add(rerankedA[indexA].doc);
         indexA++;
       } else{
-        indexB = updateIndex(interleavedResults,indexB,rerankedB);
+        indexB = updateIndex(alreadyAdded,indexB,rerankedB);
         interleavedResults.add(rerankedB[indexB]);
+        alreadyAdded.add(rerankedB[indexB].doc);
         teamB.add(rerankedB[indexB].doc);
         indexB++;
       }
@@ -104,11 +107,11 @@ public class TeamDraftInterleaving implements Interleaving {
     return new InterleavingResult(interleavedResultArray,interleavingPicks);
   }
 
-  private int updateIndex(LinkedHashSet<ScoreDoc> interleaved, int index, ScoreDoc[] reranked) {
+  private int updateIndex(HashSet<Integer> alreadyAdded, int index, ScoreDoc[] reranked) {
     boolean foundElementToAdd = false;
     while (index < reranked.length && !foundElementToAdd) {
       ScoreDoc elementToCheck = reranked[index];
-      if (interleaved.contains(elementToCheck)) {
+      if (alreadyAdded.contains(elementToCheck.doc)) {
         index++;
       } else {
         foundElementToAdd = true;
