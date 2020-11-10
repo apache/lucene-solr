@@ -37,6 +37,11 @@ Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
    EnvVar: SOLR_DOCKER_BASE_IMAGE
    Gradle Property: -Psolr.docker.baseImage
 
+Github URL or Mirror: (The URL of github or a mirror of github releases. This is of use when building the docker image behind a firewall that does not have access to external Github.)
+   Default: "github.com"
+   EnvVar: SOLR_DOCKER_GITHUB_URL
+   Gradle Property: -Psolr.docker.githubUrl
+
 Testing
 -------
 
