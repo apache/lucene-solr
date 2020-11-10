@@ -17,6 +17,7 @@
 
 package org.apache.lucene.search;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.LongAccumulator;
 
 /**
@@ -77,6 +78,11 @@ final class MaxScoreAccumulator {
       DocAndScore result = (DocAndScore) o;
       return docID == result.docID &&
           Float.compare(result.score, score) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(docID, score);
     }
 
     @Override

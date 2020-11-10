@@ -341,7 +341,7 @@ public  class LeaderElector {
         } catch (KeeperException.NoNodeException nne) {
           // expected . don't do anything
         } catch (Exception e) {
-          log.warn("My watched node still exists and can't remove " + myNode, e);
+          log.warn("My watched node still exists and can't remove {}", myNode, e);
         }
         return;
       }

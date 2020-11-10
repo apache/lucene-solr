@@ -29,7 +29,7 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.BKDConfig;
 
 /** 
  * Access to indexed numeric values.
@@ -38,15 +38,16 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * points are indexed with datastructures such as <a href="https://en.wikipedia.org/wiki/K-d_tree">KD-trees</a>. 
  * These structures are optimized for operations such as <i>range</i>, <i>distance</i>, <i>nearest-neighbor</i>, 
  * and <i>point-in-polygon</i> queries. 
- * <h1>Basic Point Types</h1>
- * <table summary="Basic point types in Java and Lucene">
+ * <h2>Basic Point Types</h2>
+ * <table>
+ *   <caption>Basic point types in Java and Lucene</caption>
  *   <tr><th>Java type</th><th>Lucene class</th></tr>
  *   <tr><td>{@code int}</td><td>{@link IntPoint}</td></tr>
  *   <tr><td>{@code long}</td><td>{@link LongPoint}</td></tr>
  *   <tr><td>{@code float}</td><td>{@link FloatPoint}</td></tr>
  *   <tr><td>{@code double}</td><td>{@link DoublePoint}</td></tr>
  *   <tr><td>{@code byte[]}</td><td>{@link BinaryPoint}</td></tr>
- *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
+ *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/sandbox/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
  *   <tr><td>{@link InetAddress}</td><td><a href="{@docRoot}/../misc/org/apache/lucene/document/InetAddressPoint.html">InetAddressPoint</a>*</td></tr>
  * </table>
  * * in the <i>lucene-sandbox</i> jar<br>
@@ -65,7 +66,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
  *   Query query = IntPoint.newRangeQuery("year", 1960, 1980);
  *   TopDocs docs = searcher.search(query, ...);
  * </pre>
- * <h1>Geospatial Point Types</h1>
+ * <h2>Geospatial Point Types</h2>
  * Although basic point types such as {@link DoublePoint} support points in multi-dimensional space too, Lucene has
  * specialized classes for location data. These classes are optimized for location data: they are more space-efficient and 
  * support special operations such as <i>distance</i> and <i>polygon</i> queries. There are currently two implementations:
@@ -75,7 +76,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
  *   <li><a href="{@docRoot}/../spatial3d/org/apache/lucene/spatial3d/Geo3DPoint.html">Geo3DPoint</a>* in <i>lucene-spatial3d</i>: indexes {@code (latitude,longitude)} as {@code (x,y,z)} in three-dimensional space.
  * </ol>
  * * does <b>not</b> support altitude, 3D here means "uses three dimensions under-the-hood"<br>
- * <h1>Advanced usage</h1>
+ * <h2>Advanced usage</h2>
  * Custom structures can be created on top of single- or multi- dimensional basic types, on top of 
  * {@link BinaryPoint} for more flexibility, or via custom {@link Field} subclasses.
  *
@@ -86,7 +87,10 @@ public abstract class PointValues {
   public static final int MAX_NUM_BYTES = 16;
 
   /** Maximum number of dimensions */
-  public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
+  public static final int MAX_DIMENSIONS = BKDConfig.MAX_DIMS;
+
+  /** Maximum number of index dimensions */
+  public static final int MAX_INDEX_DIMENSIONS = BKDConfig.MAX_INDEX_DIMS;
 
   /** Return the cumulated number of points across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
@@ -269,8 +273,8 @@ public abstract class PointValues {
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue() throws IOException;
 
-  /** Returns how many data dimensions are represented in the values */
-  public abstract int getNumDataDimensions() throws IOException;
+  /** Returns how many dimensions are represented in the values */
+  public abstract int getNumDimensions() throws IOException;
 
   /** Returns how many dimensions are used for the index */
   public abstract int getNumIndexDimensions() throws IOException;

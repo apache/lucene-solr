@@ -18,7 +18,7 @@ package org.apache.lucene.expressions;
 
 
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Tests validation of bindings */
@@ -26,10 +26,10 @@ public class TestExpressionValidation extends LuceneTestCase {
 
   public void testValidExternals() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("valid0", SortField.Type.INT));
-    bindings.add(new SortField("valid1", SortField.Type.INT));
-    bindings.add(new SortField("valid2", SortField.Type.INT));
-    bindings.add(new SortField("_score", SortField.Type.SCORE));
+    bindings.add("valid0", DoubleValuesSource.fromIntField("valid0"));
+    bindings.add("valid1", DoubleValuesSource.fromIntField("valid1"));
+    bindings.add("valid2", DoubleValuesSource.fromIntField("valid2"));
+    bindings.add("_score", DoubleValuesSource.SCORES);
     bindings.add("valide0", JavascriptCompiler.compile("valid0 - valid1 + valid2 + _score"));
     bindings.validate();
     bindings.add("valide1", JavascriptCompiler.compile("valide0 + valid0"));
@@ -40,7 +40,7 @@ public class TestExpressionValidation extends LuceneTestCase {
   
   public void testInvalidExternal() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("valid", SortField.Type.INT));
+    bindings.add("valid", DoubleValuesSource.fromIntField("valid"));
     bindings.add("invalid", JavascriptCompiler.compile("badreference"));
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       bindings.validate();
@@ -50,7 +50,7 @@ public class TestExpressionValidation extends LuceneTestCase {
   
   public void testInvalidExternal2() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(new SortField("valid", SortField.Type.INT));
+    bindings.add("valid", DoubleValuesSource.fromIntField("valid"));
     bindings.add("invalid", JavascriptCompiler.compile("valid + badreference"));
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       bindings.validate();

@@ -627,8 +627,8 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
-      // must be > 4096 so it spans multiple chunks
-      int termCount = TestUtil.nextInt(random(), 4097, 8200);
+      // at night, must be > 4096 so it spans multiple chunks
+      int termCount = TEST_NIGHTLY ? atLeast(4097) : atLeast(200);
 
       List<String> doc = new ArrayList<>();
 
@@ -675,7 +675,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     w.close();
 
     // now search
-    int num = atLeast(10);
+    int num = atLeast(3);
     for(int i=0;i<num;i++) {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);
@@ -1031,7 +1031,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testRandomTopDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    int numDocs = atLeast(128 * 8 * 8 * 3); // make sure some terms have skip data
+    int numDocs = TEST_NIGHTLY ? atLeast(128 * 8 * 8 * 3) : atLeast(100); // at night, make sure some terms have skip data
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       int numTerms = random().nextInt(1 << random().nextInt(5));

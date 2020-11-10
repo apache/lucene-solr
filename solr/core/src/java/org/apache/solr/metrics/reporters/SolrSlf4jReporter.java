@@ -67,7 +67,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     final Map<String, String> mdcContext;
 
     Slf4jReporterWrapper(String logger, Map<String, String> mdcContext, Slf4jReporter delegate, TimeUnit rateUnit, TimeUnit durationUnit) {
-      super(null, logger, null, rateUnit, durationUnit);
+      super(metricManager.registry(registryName), logger, null, rateUnit, durationUnit);
       this.delegate = delegate;
       this.mdcContext = mdcContext;
     }
@@ -85,6 +85,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     }
 
     @Override
+    @SuppressWarnings({"rawtypes"})
     public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
       throw new UnsupportedOperationException("this method should never be called here!");
     }

@@ -27,16 +27,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
@@ -58,7 +56,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    HdfsTestUtil.checkAssumptions();
 
     System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
@@ -87,17 +85,11 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testZkAcls() throws Exception {
-    ZooKeeper keeper = null;
-    try {
-      keeper = new ZooKeeper(cluster.getZkServer().getZkAddress(), (int) TimeUnit.MINUTES.toMillis(1), new Watcher() {
-        @Override
-        public void process(WatchedEvent arg0) {
-          // Do nothing
-        }
-      });
-
-      keeper.addAuthInfo("digest", ("solr:"+SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
+    try (ZooKeeper keeper = new ZooKeeper(cluster.getZkServer().getZkAddress(),
+        (int) TimeUnit.MINUTES.toMillis(1), arg0 -> {/* Do nothing */})) {
+      keeper.addAuthInfo("digest", ("solr:" + SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
       checkNonSecurityACLs(keeper, "/solr.xml");
@@ -106,13 +98,8 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
       // Now test all ZK tree.
       String zkHost = cluster.getSolrClient().getZkHost();
-      String zkChroot = zkHost.contains("/")? zkHost.substring(zkHost.indexOf("/")): null;
+      String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
       walkZkTree(keeper, zkChroot, "/");
-
-    } finally {
-      if (keeper != null) {
-        keeper.close();
-      }
     }
   }
 

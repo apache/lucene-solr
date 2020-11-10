@@ -136,4 +136,34 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     nrtDir.close();
     fsDir.close();
   }
+
+  public void testUnknownFileSize() throws IOException {
+    Directory dir = newDirectory();
+
+    Directory nrtDir1 = new NRTCachingDirectory(dir, 1, 1) {
+      @Override
+      protected boolean doCacheWrite(String name, IOContext context) {
+        boolean cache = super.doCacheWrite(name, context);
+        assertTrue(cache);
+        return cache;
+      }
+    };
+    IOContext ioContext = new IOContext(new FlushInfo(3, 42));
+    nrtDir1.createOutput("foo", ioContext).close();
+    nrtDir1.createTempOutput("bar", "baz", ioContext).close();
+
+    Directory nrtDir2 = new NRTCachingDirectory(dir, 1, 1) {
+      @Override
+      protected boolean doCacheWrite(String name, IOContext context) {
+        boolean cache = super.doCacheWrite(name, context);
+        assertFalse(cache);
+        return cache;
+      }
+    };
+    ioContext = IOContext.DEFAULT;
+    nrtDir2.createOutput("foo", ioContext).close();
+    nrtDir2.createTempOutput("bar", "baz", ioContext).close();
+
+    dir.close();
+  }
 }

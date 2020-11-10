@@ -458,7 +458,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
 
   /** Create a Map&lt;String,String&gt; from a NamedList given no keys are repeated */
   @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String,String> toMap(NamedList params) {
+  public static Map<String,String> toMap(@SuppressWarnings({"rawtypes"})NamedList params) {
     HashMap<String,String> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       map.put(params.getName(i), params.getVal(i).toString());
@@ -468,7 +468,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
 
   /** Create a Map&lt;String,String[]&gt; from a NamedList */
   @Deprecated // Doesn't belong here (no SolrParams).  Just remove.
-  public static Map<String,String[]> toMultiMap(NamedList params) {
+  public static Map<String,String[]> toMultiMap(@SuppressWarnings({"rawtypes"})NamedList params) {
     HashMap<String,String[]> map = new HashMap<>();
     for (int i=0; i<params.size(); i++) {
       String name = params.getName(i);
@@ -476,6 +476,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
       if (val instanceof String[]) {
         MultiMapSolrParams.addParam(name, (String[]) val, map);
       } else if (val instanceof List) {
+        @SuppressWarnings({"rawtypes"})
         List l = (List) val;
         String[] s = new String[l.size()];
         for (int j = 0; j < l.size(); j++) {
@@ -494,7 +495,7 @@ public abstract class SolrParams implements Serializable, MapWriter, Iterable<Ma
    * @deprecated Use {@link NamedList#toSolrParams()}.
    */
   @Deprecated //move to NamedList to allow easier flow
-  public static SolrParams toSolrParams(NamedList params) {
+  public static SolrParams toSolrParams(@SuppressWarnings({"rawtypes"})NamedList params) {
     return params.toSolrParams();
   }
 

@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.path;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
@@ -92,7 +92,12 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     }
   }
   
-  @Override
+  /** Default ctor for compatibility with SPI */
+  public PathHierarchyTokenizerFactory() {
+    throw defaultCtorException();
+  }
+
+@Override
   public Tokenizer create(AttributeFactory factory) {
     if (reverse) {
       return new ReversePathHierarchyTokenizer(factory, delimiter, replacement, skip);

@@ -124,8 +124,7 @@ public class FunctionRangeQuery extends Query {
   }
 
   private class FunctionRangeWeight extends Weight {
-    @SuppressWarnings("rawtypes")
-    private final Map vsContext;
+    private final Map<Object, Object> vsContext;
 
     public FunctionRangeWeight(IndexSearcher searcher) throws IOException {
       super(FunctionRangeQuery.this);

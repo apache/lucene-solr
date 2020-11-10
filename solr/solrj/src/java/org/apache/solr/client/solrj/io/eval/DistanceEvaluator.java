@@ -38,6 +38,7 @@ public class DistanceEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException{
 
     if(values.length == 1) {

@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.payloads;
 
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 import java.util.Map;
 
@@ -58,6 +58,11 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public DelimitedPayloadTokenFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

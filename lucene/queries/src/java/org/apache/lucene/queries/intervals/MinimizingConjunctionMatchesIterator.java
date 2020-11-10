@@ -31,7 +31,7 @@ class MinimizingConjunctionMatchesIterator implements IntervalMatchesIterator {
   private final List<CachingMatchesIterator> subs = new ArrayList<>();
   private boolean cached = true;
 
-  MinimizingConjunctionMatchesIterator(IntervalIterator iterator, List<MatchesIterator> subs) {
+  MinimizingConjunctionMatchesIterator(IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
     this.iterator = iterator;
     for (MatchesIterator mi : subs) {
       assert mi instanceof CachingMatchesIterator;
@@ -81,6 +81,11 @@ class MinimizingConjunctionMatchesIterator implements IntervalMatchesIterator {
   @Override
   public int gaps() {
     return iterator.gaps();
+  }
+
+  @Override
+  public int width() {
+    return iterator.width();
   }
 
   @Override

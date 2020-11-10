@@ -86,7 +86,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     doc.add(field);
     doc.add(collationField);
     
-    int numDocs = atLeast(500);
+    int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; i++) {
       String value = TestUtil.randomSimpleString(random());
       field.setStringValue(value);
@@ -98,7 +98,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     iw.close();
     IndexSearcher is = newSearcher(ir);
     
-    int numChecks = atLeast(100);
+    int numChecks = atLeast(20);
     
     try {
       for (int i = 0; i < numChecks; i++) {

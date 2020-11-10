@@ -35,7 +35,7 @@
 	subsequent reuse (see <a href="#CachedFilter">CachedFilter</a> tag).
 
 	<h4>Nesting elements</h4>
-	Many of the the elements can nest other elements to produce queries/filters of an arbitrary depth and complexity. 
+	Many of the elements can nest other elements to produce queries/filters of an arbitrary depth and complexity. 
 	The <a href="#BooleanQuery">BooleanQuery</a> element is one such example which provides a means for combining other queries (including other BooleanQueries) using Boolean 
 	logic to determine mandatory or optional elements. 
 

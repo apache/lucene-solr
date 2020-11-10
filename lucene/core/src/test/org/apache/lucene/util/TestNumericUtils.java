@@ -265,7 +265,7 @@ public class TestNumericUtils extends LuceneTestCase {
   }
   
   public void testAdd() throws Exception {
-    int iters = atLeast(10000);
+    int iters = atLeast(1000);
     int numBytes = TestUtil.nextInt(random(), 1, 100);
     for(int iter=0;iter<iters;iter++) {
       BigInteger v1 = new BigInteger(8*numBytes-1, random());
@@ -301,7 +301,7 @@ public class TestNumericUtils extends LuceneTestCase {
   }
   
   public void testSubtract() throws Exception {
-    int iters = atLeast(10000);
+    int iters = atLeast(1000);
     int numBytes = TestUtil.nextInt(random(), 1, 100);
     for(int iter=0;iter<iters;iter++) {
       BigInteger v1 = new BigInteger(8*numBytes-1, random());

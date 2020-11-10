@@ -540,10 +540,10 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
     @Override
     public int nextPosition() {
       if (positions != null) {
-        assert nextPos < positions.length;
+        assert nextPos < positions.length : "nextPosition() called more than freq() times!";
         return positions[nextPos++];
       } else {
-        assert nextPos < startOffsets.length;
+        assert nextPos < startOffsets.length : "nextPosition() called more than freq() times!";
         nextPos++;
         return -1;
       }

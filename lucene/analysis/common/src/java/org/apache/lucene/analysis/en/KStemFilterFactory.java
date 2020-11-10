@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link KStemFilter}.
@@ -49,6 +49,11 @@ public class KStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenFilter create(TokenStream input) {
     return new KStemFilter(input);

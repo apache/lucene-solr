@@ -39,7 +39,7 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
 
 The exact output will vary, but you need to make sure you meet the minimum version requirement. We also recommend choosing a version that is not end-of-life from its vendor. Oracle/OpenJDK are the most tested JREs and are preferred. It's also preferred to use the latest available official release.
 
-Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://wiki.apache.org/confluence/display/LUCENEJAVA/JavaBugs[Lucene Java Bugs].
+Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://cwiki.apache.org/confluence/display/LUCENE/JavaBugs[Lucene Java Bugs].
 
 === Sources for Java
 

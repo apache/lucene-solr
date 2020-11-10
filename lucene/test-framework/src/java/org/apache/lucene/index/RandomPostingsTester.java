@@ -130,7 +130,7 @@ public class RandomPostingsTester {
       fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
                                                 DocValuesType.NONE, -1, new HashMap<>(),
-                                                0, 0, 0, false);
+                                                0, 0, 0, 0, VectorValues.SearchStrategy.NONE, false);
       fieldUpto++;
 
       SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
@@ -651,7 +651,7 @@ public class RandomPostingsTester {
                                                    DocValuesType.NONE,
                                                    -1,
                                                    new HashMap<>(),
-                                                   0, 0, 0, false);
+                                                   0, 0, 0, 0, VectorValues.SearchStrategy.NONE, false);
     }
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);
@@ -748,7 +748,7 @@ public class RandomPostingsTester {
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, false, IOContext.READ, Collections.emptyMap());
+    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
@@ -1241,7 +1241,7 @@ public class RandomPostingsTester {
                         final boolean alwaysTestMax) throws Exception {
 
     if (options.contains(Option.THREADS)) {
-      int numThreads = TestUtil.nextInt(random, 2, 5);
+      int numThreads = LuceneTestCase.TEST_NIGHTLY ? TestUtil.nextInt(random, 2, 5) : 2;
       Thread[] threads = new Thread[numThreads];
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
         threads[threadUpto] = new TestThread(new Random(random.nextLong()), this, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);

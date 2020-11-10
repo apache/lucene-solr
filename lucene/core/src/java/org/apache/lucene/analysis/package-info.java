@@ -158,10 +158,10 @@
  *   supplies a large family of <code>Analyzer</code> classes that deliver useful
  *   analysis chains. The most common of these is the <a href="{@docRoot}/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.
  *   Many applications will have a long and industrious life with nothing more
- *   than the <code>StandardAnalyzer</code>. The <a href="{@docRoot}/../analyzers-common/overview-summary.html">analyzers-common</a>
+ *   than the <code>StandardAnalyzer</code>. The <a href="{@docRoot}/../analysis/common/overview-summary.html">analysis-common</a>
  *   library provides many pre-existing analyzers for various languages.
  *   The analysis-common library also allows to configure a custom Analyzer without subclassing using the
- *   <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">CustomAnalyzer</a>
+ *   <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">CustomAnalyzer</a>
  *   class.
  * </p>
  * <p>
@@ -170,7 +170,7 @@
  *   all under the 'analysis' directory of the distribution. Some of
  *   these support particular languages, others integrate external
  *   components. The 'common' subdirectory has some noteworthy
- *  general-purpose analyzers, including the <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">PerFieldAnalyzerWrapper</a>. Most <code>Analyzer</code>s perform the same operation on all
+ *  general-purpose analyzers, including the <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">PerFieldAnalyzerWrapper</a>. Most <code>Analyzer</code>s perform the same operation on all
  *  {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different <code>Analyzer</code> with different
  *  {@link org.apache.lucene.document.Field}s. There is a great deal of
  *  functionality in the analysis area, you should study it carefully to
@@ -253,7 +253,7 @@
  *   Tokenizer, and TokenFilter(s) <i>(optional)</i> &mdash; or components you
  *   create, or a combination of existing and newly created components.  Before
  *   pursuing this approach, you may find it worthwhile to explore the
- *   <a href="{@docRoot}/../analyzers-common/overview-summary.html">analyzers-common</a> library and/or ask on the 
+ *   <a href="{@docRoot}/../analysis/common/overview-summary.html">analysis-common</a> library and/or ask on the
  *   <a href="http://lucene.apache.org/core/discussion.html">java-user@lucene.apache.org mailing list</a> first to see if what you
  *   need already exists. If you are still committed to creating your own
  *   Analyzer, have a look at the source code of any one of the many samples
@@ -383,7 +383,8 @@
  *    synonyms, setting the position increment to 0 is enough to denote the fact that two
  *    words are synonyms, for example:
  * </p>
- * <table summary="table showing position increments of 1 and 0 for red and magenta, respectively">
+ * <table>
+ * <caption>table showing position increments of 1 and 0 for red and magenta, respectively</caption>
  * <tr><td>Term</td><td>red</td><td>magenta</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td></tr>
  * </table>
@@ -394,7 +395,8 @@
  *    a TokenStream where "IBM" is a synonym of "Internal Business Machines". Position increments
  *    are not enough anymore:
  * </p>
- * <table summary="position increments where international is zero">
+ * <table>
+ * <caption>position increments where international is zero</caption>
  * <tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
  * </table>
@@ -405,7 +407,8 @@
  *    than "International" is a synonym of "Business". The only way to solve this issue is to
  *    make "IBM" span across 3 positions, this is where position lengths come to rescue.
  * </p>
- * <table summary="position lengths where IBM is three">
+ * <table>
+ * <caption>position lengths where IBM is three</caption>
  * <tr><td>Term</td><td>IBM</td><td>International</td><td>Business</td><td>Machines</td></tr>
  * <tr><td>Position increment</td><td>1</td><td>0</td><td>1</td><td>1</td></tr>
  * <tr><td>Position length</td><td>3</td><td>1</td><td>1</td><td>1</td></tr>
@@ -414,7 +417,7 @@
  *    This new attribute makes clear that "IBM" and "International Business Machines" start and end
  *    at the same positions.
  * </p>
- * <a name="corrupt"></a>
+ * <a id="corrupt"></a>
  * <h3>How to not write corrupt token streams</h3>
  * <p>
  *    There are a few rules to observe when writing custom Tokenizers and TokenFilters:
@@ -472,7 +475,9 @@
  * <p>
  * Lucene provides seven Attributes out of the box:
  * </p>
- * <table rules="all" frame="box" cellpadding="3" summary="common bundled attributes">
+ * <table class="padding3">
+ *   <caption>common bundled attributes</caption>
+ *   <tbody style="border: 1px solid">
  *   <tr>
  *     <td>{@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}</td>
  *     <td>
@@ -513,6 +518,7 @@
  *       return true from this attribute's isKeyword() method. 
  *     </td>
  *   </tr>
+ *   </tbody>
  * </table>
  * <h3>More Requirements for Analysis Component Classes</h3>
  * Due to the historical development of the API, there are some perhaps

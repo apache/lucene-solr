@@ -49,21 +49,11 @@ limitations under the License.
             </select>
           </p>
 
-          <p class="clearfix"><label for="add_maxShardsPerNode">maxShardsPerNode:</label>
-            <input type="text" name="replicationFactor" id="add_maxShardsPerNode" ng-model="newCollection.maxShardsPerNode"></p>
-
           <p class="clearfix"><label for="add_shards">shards:</label>
             <input type="text" name="shards" id="add_shards" ng-model="newCollection.shards"></p>
 
           <p class="clearfix"><label for="add_routerField">router.field:</label>
             <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
-
-          <p class="clearfix"><label for="add_autoAddReplicas">autoAddReplicas:</label>
-            <select name="autoAddReplicas" id="add_autoAddReplicas" ng-model="newCollection.autoAddReplicas">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </p>
 
         </div>
         <p class="clearfix note error" ng-show="addMessage">
@@ -215,18 +205,8 @@ limitations under the License.
             </dl></li>
 
             <li><dl class="clearfix">
-              <dt><span>maxShardsPerNode:</span></dt>
-                <dd>{{collection.maxShardsPerNode}}</dd>
-            </dl></li>
-
-            <li><dl class="clearfix">
               <dt><span>router:</span></dt>
                 <dd>{{collection.router.name}}</dd>
-            </dl></li>
-
-            <li><dl class="clearfix">
-              <dt><span>autoAddReplicas:</span></dt>
-                <dd>{{collection.autoAddReplicas}}</dd>
             </dl></li>
 
             <li ng-show="collection.aliases"><dl class="clearfix">
@@ -351,11 +331,23 @@ limitations under the License.
 
                     <form>
 
-                      <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
-                      <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
-                          <option value="">No specified node</option>
-                      </select>
-                          node: {{shard.replicaNodeName}}
+                      <p id="node-name" class="clearfix">
+                        <p>
+                         <label for="node-name">Node:</label>
+                         <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
+                             <option value="">No specified node</option>
+                         </select>
+                        </p>
+                        <p>
+                            <label for="node-name">Type:</label>
+                            <select chosen ng-model="shard.replicaType" ng-init="shard.replicaType='NRT'" ng-options="node for node in ['NRT', 'TLOG', 'PULL']" class="other">
+
+                            </select>
+                        </p>
+
+
+                        <div ng-if="shard.replicaNodeName">node: {{shard.replicaNodeName}}</div>
+                        <div ng-if="shard.replicaNodeName">node: {{shard.replicaType}}</div>
                       </p>
 
                       <p class="clearfix note error" ng-show="createReplicaMessage">

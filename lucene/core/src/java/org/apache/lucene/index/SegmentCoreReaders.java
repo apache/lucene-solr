@@ -24,12 +24,13 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -61,7 +62,8 @@ final class SegmentCoreReaders {
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final PointsReader pointsReader;
-  final Directory cfsReader;
+  final VectorReader vectorReader;
+  final CompoundDirectory cfsReader;
   final String segment;
   /** 
    * fieldinfos for this core: means gen=-1.
@@ -90,7 +92,7 @@ final class SegmentCoreReaders {
   private final Set<IndexReader.ClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<IndexReader.ClosedListener>());
   
-  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, boolean openedFromWriter, IOContext context, Map<String, String> readerAttributes) throws IOException {
+  SegmentCoreReaders(Directory dir, SegmentCommitInfo si, IOContext context) throws IOException {
 
     final Codec codec = si.info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) it's the cfsdir, otherwise it's the segment's directory.
@@ -108,7 +110,7 @@ final class SegmentCoreReaders {
 
       coreFieldInfos = codec.fieldInfosFormat().read(cfsDir, si.info, "", context);
       
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, openedFromWriter, context, readerAttributes);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, coreFieldInfos, context);
       final PostingsFormat format = codec.postingsFormat();
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
@@ -137,6 +139,13 @@ final class SegmentCoreReaders {
       } else {
         pointsReader = null;
       }
+
+      if (coreFieldInfos.hasVectorValues()) {
+        vectorReader = codec.vectorFormat().fieldsReader(segmentReadState);
+      } else {
+        vectorReader = null;
+      }
+
       success = true;
     } catch (EOFException | FileNotFoundException e) {
       throw new CorruptIndexException("Problem reading index from " + dir, dir.toString(), e);
@@ -166,10 +175,9 @@ final class SegmentCoreReaders {
   @SuppressWarnings("try")
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      Throwable th = null;
       try (Closeable finalizer = this::notifyCoreClosedListeners){
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-                      cfsReader, normsProducer, pointsReader);
+                      cfsReader, normsProducer, pointsReader, vectorReader);
       }
     }
   }

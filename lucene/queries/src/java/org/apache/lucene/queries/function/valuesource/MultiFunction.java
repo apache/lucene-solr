@@ -112,7 +112,7 @@ public abstract class MultiFunction extends ValueSource {
     return sb.toString();
   }
 
-  public static FunctionValues[] valsArr(List<ValueSource> sources, Map fcontext, LeafReaderContext readerContext) throws IOException {
+  public static FunctionValues[] valsArr(List<ValueSource> sources, Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
     final FunctionValues[] valsArr = new FunctionValues[sources.size()];
     int i=0;
     for (ValueSource source : sources) {
@@ -121,6 +121,7 @@ public abstract class MultiFunction extends ValueSource {
     return valsArr;
   }
 
+  /** Base implementation that wraps multiple sources */
   public class Values extends FunctionValues {
     final FunctionValues[] valsArr;
 
@@ -157,7 +158,7 @@ public abstract class MultiFunction extends ValueSource {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     for (ValueSource source : sources)
       source.createWeight(context, searcher);
   }

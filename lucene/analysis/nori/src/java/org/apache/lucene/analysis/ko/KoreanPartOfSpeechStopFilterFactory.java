@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link KoreanPartOfSpeechStopFilter}.
@@ -66,6 +66,11 @@ public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KoreanPartOfSpeechStopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream stream) {
       return new KoreanPartOfSpeechStopFilter(stream, stopTags);

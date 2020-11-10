@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
@@ -219,7 +219,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   }
 
   private class FSTFieldWriter extends FieldWriter {
-    private final Builder<Long> fstBuilder;
+    private final FSTCompiler<Long> fstCompiler;
     private final PositiveIntOutputs fstOutputs;
     private final long startTermsFilePointer;
 
@@ -233,12 +233,12 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     public FSTFieldWriter(FieldInfo fieldInfo, long termsFilePointer) throws IOException {
       this.fieldInfo = fieldInfo;
       fstOutputs = PositiveIntOutputs.getSingleton();
-      fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, fstOutputs);
+      fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, fstOutputs);
       indexStart = out.getFilePointer();
       ////System.out.println("VGW: field=" + fieldInfo.name);
 
       // Always put empty string in
-      fstBuilder.add(new IntsRef(), termsFilePointer);
+      fstCompiler.add(new IntsRef(), termsFilePointer);
       startTermsFilePointer = termsFilePointer;
     }
 
@@ -269,7 +269,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       final int lengthSave = text.length;
       text.length = indexedTermPrefixLength(lastTerm.get(), text);
       try {
-        fstBuilder.add(Util.toIntsRef(text, scratchIntsRef), termsFilePointer);
+        fstCompiler.add(Util.toIntsRef(text, scratchIntsRef), termsFilePointer);
       } finally {
         text.length = lengthSave;
       }
@@ -278,9 +278,9 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
     @Override
     public void finish(long termsFilePointer) throws IOException {
-      fst = fstBuilder.finish();
+      fst = fstCompiler.compile();
       if (fst != null) {
-        fst.save(out);
+        fst.save(out, out);
       }
     }
   }

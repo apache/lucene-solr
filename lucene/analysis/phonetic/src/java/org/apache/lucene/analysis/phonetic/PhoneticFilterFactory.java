@@ -33,9 +33,9 @@ import org.apache.commons.codec.language.Nysiis;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link PhoneticFilter}.
@@ -112,6 +112,11 @@ public class PhoneticFilterFactory extends TokenFilterFactory implements Resourc
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public PhoneticFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

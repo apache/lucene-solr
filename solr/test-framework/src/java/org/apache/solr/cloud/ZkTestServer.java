@@ -21,7 +21,6 @@ import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeSource;
@@ -178,7 +177,9 @@ public class ZkTestServer {
       }
 
       public void updateForFire(WatchedEvent event) {
-        log.debug("Watch fired: {}: {}", desc, event.getPath());
+        if (log.isDebugEnabled()) {
+          log.debug("Watch fired: {}: {}", desc, event.getPath());
+        }
         counters.decrementAndGet(event.getPath());
       }
 
@@ -253,6 +254,8 @@ public class ZkTestServer {
           case ChildWatchRemoved:
             break;
           case DataWatchRemoved:
+            break;
+          case PersistentWatchRemoved:
             break;
         }
       }
@@ -335,7 +338,8 @@ public class ZkTestServer {
 
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
             config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
-            new TestZKDatabase(ftxn, limiter));
+            config.getClientPortListenBacklog(),
+            new TestZKDatabase(ftxn, limiter), "");
         cnxnFactory = new TestServerCnxnFactory(limiter);
         cnxnFactory.configure(config.getClientPortAddress(),
             config.getMaxClientCnxns());
@@ -559,7 +563,7 @@ public class ZkTestServer {
               } else {
                 this.clientPortAddress = new InetSocketAddress(clientPort);
               }
-              log.info("client port:" + this.clientPortAddress);
+              log.info("client port: {}", this.clientPortAddress);
             }
           };
           try {
@@ -592,7 +596,7 @@ public class ZkTestServer {
         }
         cnt++;
       }
-      log.info("start zk server on port:" + port);
+      log.info("start zk server on port: {}", port);
 
       waitForServerUp(getZkHost(), 30000);
 
@@ -705,7 +709,7 @@ public class ZkTestServer {
   public static String send4LetterWord(String host, int port, String cmd)
           throws IOException
   {
-    log.info("connecting to " + host + " " + port);
+    log.info("connecting to {} {}", host, port);
     BufferedReader reader = null;
     try (Socket sock = new Socket(host, port)) {
       OutputStream outstream = sock.getOutputStream();
@@ -730,7 +734,7 @@ public class ZkTestServer {
   }
 
   public static List<HostPort> parseHostPortList(String hplist) {
-    log.info("parse host and port list: " + hplist);
+    log.info("parse host and port list: {}", hplist);
     ArrayList<HostPort> alist = new ArrayList<>();
     for (String hp : hplist.split(",")) {
       int idx = hp.lastIndexOf(':');
@@ -803,7 +807,9 @@ public class ZkTestServer {
     File file = new File(solrhome, "collection1"
         + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
-      log.info("skipping " + file.getAbsolutePath() + " because it doesn't exist");
+      if (log.isInfoEnabled()) {
+        log.info("skipping {} because it doesn't exist", file.getAbsolutePath());
+      }
       return;
     }
 
@@ -811,7 +817,9 @@ public class ZkTestServer {
     if (zkChroot != null) {
       destPath = zkChroot + destPath;
     }
-    log.info("put " + file.getAbsolutePath() + " to " + destPath);
+    if (log.isInfoEnabled()) {
+      log.info("put {} to {}", file.getAbsolutePath(), destPath);
+    }
     zkClient.makePath(destPath, file, false, true);
   }
 
@@ -840,9 +848,6 @@ public class ZkTestServer {
     ops.add(Op.create(path, null, chRootClient.getZkACLProvider().getACLsToAdd(path),  CreateMode.PERSISTENT));
     chRootClient.multi(ops, true);
 
-    // this workaround is acceptable until we remove legacyCloud because we just init a single core here
-    String defaultClusterProps = "{\""+ZkStateReader.LEGACY_CLOUD+"\":\"true\"}";
-    chRootClient.makePath(ZkStateReader.CLUSTER_PROPS, defaultClusterProps.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");
     putConfig("conf1", chRootClient, solrhome, schema, "schema.xml");

@@ -73,14 +73,14 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
  *     &lt;/analyzer&gt;
  *   &lt;/fieldType&gt;
  * </pre>
- * 
+ *
  * <p>See the <a href="http://opennlp.apache.org/models.html">OpenNLP website</a>
  * for information on downloading pre-trained models.</p>
  *
- * Note that in order to use model files larger than 1MB on SolrCloud, 
- * <a href="https://lucene.apache.org/solr/guide/setting-up-an-external-zookeeper-ensemble#increasing-zookeeper-s-1mb-file-size-limit"
+ * Note that in order to use model files larger than 1MB on SolrCloud,
+ * <a href="https://lucene.apache.org/solr/guide/setting-up-an-external-zookeeper-ensemble.html#increasing-the-file-size-limit"
  * >ZooKeeper server and client configuration is required</a>.
- * 
+ *
  * <p>
  * The <code>source</code> field(s) can be configured as either:
  * </p>
@@ -215,7 +215,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     // high level (loose) check for which type of config we have.
     //
@@ -260,7 +260,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * "source" and "dest" init params do <em>not</em> exist.
    */
   @SuppressWarnings("unchecked")
-  private void initSimpleRegexReplacement(NamedList args) {
+  private void initSimpleRegexReplacement(@SuppressWarnings({"rawtypes"})NamedList args) {
     // The syntactic sugar for the case where there is only one regex pattern for source and the same pattern
     // is used for the destination pattern...
     //
@@ -316,7 +316,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
    * "source" and "dest" init params <em>do</em> exist.
    */
   @SuppressWarnings("unchecked")
-  private void initSourceSelectorSyntax(NamedList args) {
+  private void initSourceSelectorSyntax(@SuppressWarnings({"rawtypes"})NamedList args) {
     // Full and complete syntax where source and dest are mandatory.
     //
     // source may be a single string or a selector.
@@ -340,6 +340,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     if (1 == sources.size()) {
       if (sources.get(0) instanceof NamedList) {
         // nested set of selector options
+        @SuppressWarnings({"rawtypes"})
         NamedList selectorConfig = (NamedList) args.remove(SOURCE_PARAM);
 
         srcInclusions = parseSelectorParams(selectorConfig);
@@ -355,6 +356,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
             throw new SolrException(SERVER_ERROR, "Init param '" + SOURCE_PARAM +
                 "' child 'exclude' must be <lst/>");
           }
+          @SuppressWarnings({"rawtypes"})
           NamedList exc = (NamedList) excObj;
           srcExclusions.add(parseSelectorParams(exc));
           if (0 < exc.size()) {
@@ -387,6 +389,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
     }
 
     if (d instanceof NamedList) {
+      @SuppressWarnings({"rawtypes"})
       NamedList destList = (NamedList) d;
 
       Object patt = destList.remove(PATTERN_PARAM);
@@ -489,7 +492,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
             if (matcher.find()) {
               resolvedDest = matcher.replaceAll(dest);
             } else {
-              log.debug("srcSelector.shouldMutate(\"{}\") returned true, " +
+              log.debug("srcSelector.shouldMutate('{}') returned true, " +
                   "but replacement pattern did not match, field skipped.", fname);
               continue;
             }
@@ -571,7 +574,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
   }
 
   /** macro */
-  private static SelectorParams parseSelectorParams(NamedList args) {
+  private static SelectorParams parseSelectorParams(@SuppressWarnings({"rawtypes"})NamedList args) {
     return FieldMutatingUpdateProcessorFactory.parseSelectorParams(args);
   }
 }

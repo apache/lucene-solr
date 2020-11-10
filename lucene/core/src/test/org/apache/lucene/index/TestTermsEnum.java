@@ -241,7 +241,8 @@ public class TestTermsEnum extends LuceneTestCase {
       docIDToID[i] = (int) values.longValue();
     }
 
-    for(int iter=0;iter<10*RANDOM_MULTIPLIER;iter++) {
+    int numIterations = atLeast(3);
+    for(int iter=0;iter<numIterations;iter++) {
 
       // TODO: can we also test infinite As here...?
 
@@ -897,7 +898,7 @@ public class TestTermsEnum extends LuceneTestCase {
     Set<String> terms = new HashSet<String>();
     //String prefix = TestUtil.randomSimpleString(random(), 1, 20);
     String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
-    int numTerms = atLeast(1000);
+    int numTerms = atLeast(100);
     if (VERBOSE) {
       System.out.println("TEST: " + numTerms + " terms; prefix=" + prefix);
     }
@@ -972,7 +973,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   // Stresses out many-terms-in-root-block case:
-  @Slow
+  @Nightly
   public void testVaryingTermsPerSegment() throws Exception {
     Directory dir = newDirectory();
     Set<BytesRef> terms = new HashSet<BytesRef>();

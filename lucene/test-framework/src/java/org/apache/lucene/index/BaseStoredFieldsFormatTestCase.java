@@ -147,7 +147,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
           System.out.println("TEST: cycle x=" + x + " r=" + r);
         }
 
-        int num = atLeast(1000);
+        int num = atLeast(100);
         for(int iter=0;iter<num;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
           if (VERBOSE) {

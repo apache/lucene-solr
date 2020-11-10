@@ -44,7 +44,7 @@ public abstract class SimpleBoolFunction extends BoolFunction {
   protected abstract boolean func(int doc, FunctionValues vals) throws IOException;
 
   @Override
-  public BoolDocValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
+  public BoolDocValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     final FunctionValues vals =  source.getValues(context, readerContext);
     return new BoolDocValues(this) {
       @Override
@@ -76,7 +76,7 @@ public abstract class SimpleBoolFunction extends BoolFunction {
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     source.createWeight(context, searcher);
   }
 }

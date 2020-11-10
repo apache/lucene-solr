@@ -113,14 +113,14 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
           return new TokenStreamComponents(tokenizer, tokenizer);
         }    
       };
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20);
+      checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER, 20);
       checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 1027);
       a.close();
     }
   }
 
   private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {
-    final String s = RandomStrings.randomAsciiOfLength(random(), length);
+    final String s = RandomStrings.randomAsciiLettersOfLengthBetween(random(), length, length);
     testNGrams(minGram, maxGram, s, nonTokenChars);
   }
 

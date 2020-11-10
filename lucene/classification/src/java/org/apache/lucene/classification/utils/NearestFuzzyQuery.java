@@ -34,14 +34,11 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -155,27 +152,22 @@ public class NearestFuzzyQuery extends Query {
           ScoreTermQueue variantsQ = new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
           float minScore = 0;
           Term startTerm = new Term(f.fieldName, term);
-          AttributeSource atts = new AttributeSource();
-          MaxNonCompetitiveBoostAttribute maxBoostAtt =
-              atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, atts, startTerm, f.maxEdits, f.prefixLength, true);
+          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, startTerm, f.maxEdits, f.prefixLength, true);
           //store the df so all variants use same idf
           int df = reader.docFreq(startTerm);
           int numVariants = 0;
           int totalVariantDocFreqs = 0;
           BytesRef possibleMatch;
-          BoostAttribute boostAtt =
-              fe.attributes().addAttribute(BoostAttribute.class);
           while ((possibleMatch = fe.next()) != null) {
             numVariants++;
             totalVariantDocFreqs += fe.docFreq();
-            float score = boostAtt.getBoost();
+            float score = fe.getBoost();
             if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore) {
               ScoreTerm st = new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)), score, startTerm);
               variantsQ.insertWithOverflow(st);
               minScore = variantsQ.top().score; // maintain minScore
             }
-            maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+            fe.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
           }
 
           if (numVariants > 0) {

@@ -34,7 +34,7 @@ import org.noggit.JSONWriter;
 
 public class TestDelegationTokenResponse extends SolrTestCase {
 
-  private void delegationTokenResponse(DelegationTokenRequest request,
+  private void delegationTokenResponse(@SuppressWarnings({"rawtypes"})DelegationTokenRequest request,
       DelegationTokenResponse response, String responseBody) throws Exception {
     ResponseParser parser = request.getResponseParser();
     response.setResponse(parser.processResponse(

@@ -22,14 +22,14 @@ class ParallelPostingsArray {
   final static int BYTES_PER_POSTING = 3 * Integer.BYTES;
 
   final int size;
-  final int[] textStarts;
-  final int[] intStarts;
-  final int[] byteStarts;
+  final int[] textStarts; // maps term ID to the terms's text start in the bytesHash
+  final int[] addressOffset; // maps term ID to current stream address
+  final int[] byteStarts; // maps term ID to stream start offset in the byte pool
 
   ParallelPostingsArray(final int size) {
     this.size = size;
     textStarts = new int[size];
-    intStarts = new int[size];
+    addressOffset = new int[size];
     byteStarts = new int[size];
   }
 
@@ -50,7 +50,7 @@ class ParallelPostingsArray {
 
   void copyTo(ParallelPostingsArray toArray, int numToCopy) {
     System.arraycopy(textStarts, 0, toArray.textStarts, 0, numToCopy);
-    System.arraycopy(intStarts, 0, toArray.intStarts, 0, numToCopy);
+    System.arraycopy(addressOffset, 0, toArray.addressOffset, 0, numToCopy);
     System.arraycopy(byteStarts, 0, toArray.byteStarts, 0, numToCopy);
   }
 }

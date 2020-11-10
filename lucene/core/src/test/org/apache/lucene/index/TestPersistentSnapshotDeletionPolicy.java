@@ -116,11 +116,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if (PersistentSnapshotDeletionPolicy.class.getName().equals(trace[i].getClassName()) && "persist".equals(trace[i].getMethodName())) {
-            throw new IOException("now fail on purpose");
-          }
+        if (callStackContains(PersistentSnapshotDeletionPolicy.class, "persist")) {
+          throw new IOException("now fail on purpose");
         }
       }
       });

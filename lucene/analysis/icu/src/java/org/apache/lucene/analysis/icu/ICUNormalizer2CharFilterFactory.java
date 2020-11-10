@@ -24,7 +24,7 @@ import java.util.Map;
 import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
-import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
  * Factory for {@link ICUNormalizer2CharFilter}
@@ -72,6 +72,11 @@ public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
     this.normalizer = normalizer;
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ICUNormalizer2CharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

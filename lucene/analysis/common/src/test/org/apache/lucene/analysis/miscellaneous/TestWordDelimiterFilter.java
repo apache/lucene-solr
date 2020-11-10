@@ -37,24 +37,26 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_ALL;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_NUMBERS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.CATENATE_WORDS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.GENERATE_NUMBER_PARTS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.GENERATE_WORD_PARTS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.IGNORE_KEYWORDS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.PRESERVE_ORIGINAL;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.SPLIT_ON_CASE_CHANGE;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.SPLIT_ON_NUMERICS;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE;
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
-
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  * TODO: should explicitly test things like protWords and not rely on
  * the factory tests in Solr.
  */
+@Deprecated
 public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
+
+  private static final int CATENATE_ALL = WordDelimiterFilter.CATENATE_ALL;
+  private static final int CATENATE_NUMBERS = WordDelimiterFilter.CATENATE_NUMBERS;
+  private static final int CATENATE_WORDS = WordDelimiterFilter.CATENATE_WORDS;
+  private static final int GENERATE_NUMBER_PARTS = WordDelimiterFilter.GENERATE_NUMBER_PARTS;
+  private static final int GENERATE_WORD_PARTS = WordDelimiterFilter.GENERATE_WORD_PARTS;
+  private static final int IGNORE_KEYWORDS = WordDelimiterFilter.IGNORE_KEYWORDS;
+  private static final int PRESERVE_ORIGINAL = WordDelimiterFilter.PRESERVE_ORIGINAL;
+  private static final int SPLIT_ON_CASE_CHANGE = WordDelimiterFilter.SPLIT_ON_CASE_CHANGE;
+  private static final int SPLIT_ON_NUMERICS = WordDelimiterFilter.SPLIT_ON_NUMERICS;
+  private static final int STEM_ENGLISH_POSSESSIVE = WordDelimiterFilter.STEM_ENGLISH_POSSESSIVE;
+  private static final byte[] DEFAULT_WORD_DELIM_TABLE = WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
+
 
   /*
   public void testPerformance() throws IOException {
@@ -414,7 +416,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(3);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -433,14 +435,14 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 20, false, false);
       a.close();
     }
   }
   
   /** blast some enormous random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -459,7 +461,7 @@ public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 20*RANDOM_MULTIPLIER, 8192, false, false);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 8192, false, false);
       a.close();
     }
   }

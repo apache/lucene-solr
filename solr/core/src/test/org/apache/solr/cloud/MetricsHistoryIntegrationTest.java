@@ -30,7 +30,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -49,6 +48,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @LuceneTestCase.Slow
+@LuceneTestCase.Nightly
 @LogLevel("org.apache.solr.handler.admin=DEBUG")
 public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -59,18 +59,12 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    boolean simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
-    if (simulated) {
-      cloudManager = SimCloudManager.createCluster(1, TimeSource.get("simTime:50"));
-      solrClient = ((SimCloudManager)cloudManager).simGetSolrClient();
-    }
+    System.setProperty("metricsEnabled", "true");
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    if (!simulated) {
-      cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
-      solrClient = cluster.getSolrClient();
-    }
+    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    solrClient = cluster.getSolrClient();
     timeSource = cloudManager.getTimeSource();
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
@@ -78,19 +72,12 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
         30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
-    // sleep a little to allow the handler to collect some metrics
-    if (simulated) {
-      timeSource.sleep(90000);
-    } else {
-      timeSource.sleep(100000);
-    }
+    // sleep until next generation of kids grow up to allow the handler to collect some metrics
+    timeSource.sleep(100000);
   }
 
   @AfterClass
   public static void teardown() throws Exception {
-    if (cloudManager instanceof SimCloudManager) {
-      cloudManager.close();
-    }
     solrClient = null;
     cloudManager = null;
   }
@@ -100,6 +87,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(CommonParams.ACTION, "list")));
     assertNotNull(rsp);
     // expected solr.jvm, solr.node and solr.collection..system
+    @SuppressWarnings({"unchecked"})
     SimpleOrderedMap<Object> lst = (SimpleOrderedMap<Object>) rsp.get("metrics");
     assertNotNull(lst);
     assertEquals(lst.toString(), 3, lst.size());
@@ -109,6 +97,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testStatus() throws Exception {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(
         params(CommonParams.ACTION, "status", CommonParams.NAME, "solr.jvm")));
@@ -129,6 +118,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testGet() throws Exception {
     NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(
         CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
@@ -192,6 +182,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     });
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static SolrRequest createHistoryRequest(SolrParams params) {
     return new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics/history", params);
   }

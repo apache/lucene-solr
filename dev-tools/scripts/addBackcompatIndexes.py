@@ -92,11 +92,6 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
   print('  adding %s...' % filename, end='', flush=True)
   scriptutil.run('cp %s %s' % (bc_index_file, os.path.join(base_dir, index_dir)))
   os.chdir(base_dir)
-  output = scriptutil.run('svn status %s' % test_file)
-  if not output.strip():
-    # make sure to only add if the file isn't already in svn (we might be regenerating)
-    scriptutil.run('svn add %s' % test_file)
-  os.chdir(base_dir)
   scriptutil.run('rm -rf %s' % bc_index_dir)
   print('done')
 
@@ -169,10 +164,7 @@ def update_backcompat_tests(types, index_version, current_version):
 
 def check_backcompat_tests():
   print('  checking backcompat tests...', end='', flush=True)
-  olddir = os.getcwd()
-  os.chdir('lucene/backward-codecs')
-  scriptutil.run('ant test -Dtestcase=TestBackwardsCompatibility')
-  os.chdir(olddir)
+  scriptutil.run('./gradlew -p lucene/backward-codecs test --tests TestBackwardsCompatibility')
   print('ok')
 
 def download_from_mirror(version, remotename, localname):

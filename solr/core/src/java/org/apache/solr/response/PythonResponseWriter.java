@@ -26,7 +26,7 @@ public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";
 
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     /* NOOP */
   }
   
@@ -46,7 +46,7 @@ public class PythonResponseWriter implements QueryResponseWriter {
   }
 }
 
-class PythonWriter extends NaNFloatWriter {
+class PythonWriter extends JSONResponseWriter.NaNFloatWriter {
   @Override
   protected String getNaN() { return "float('NaN')"; }
   @Override

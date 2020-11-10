@@ -35,27 +35,21 @@ When a new searcher is opened, the current searcher continues servicing requests
 
 === Cache Implementations
 
-In Solr, the following cache implementations are available: recommended `solr.search.CaffeineCache`, and legacy implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
+Solr comes with a default `SolrCache` implementation that is used for different types of caches.
 
 The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library]. By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint. Generally this cache implementation is recommended over other legacy caches as it usually offers lower memory footprint, higher hit ratio and better multi-threaded performance over legacy caches.
 
-The acronym LRU stands for Least Recently Used. When an LRU cache fills up, the entry with the oldest last-accessed timestamp is evicted to make room for the new entry. The net effect is that entries that are accessed frequently tend to stay in the cache, while those that are not accessed frequently tend to drop out and will be re-fetched from the index if needed again.
-
-The `FastLRUCache`, which was introduced in Solr 1.4, is designed to be lock-free, so it is well suited for caches which are hit several times in a request.
-
-`CaffeineCache`, `LRUCache` and `FastLRUCache` use an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
-
-The `LFUCache` refers to the Least Frequently Used cache. This works in a way similar to the LRU cache, except that when the cache fills up, the entry that has been used the least is evicted.
+`CaffeineCache` uses an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
 
 The Statistics page in the Solr Admin UI will display information about the performance of all the active caches. This information can help you fine-tune the sizes of the various caches appropriately for your particular application. When a Searcher terminates, a summary of its cache usage is also written to the log.
 
-Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). The Caffeine, LRU and FastLRU cache implementations can take a percentage instead of an absolute value for `autowarmCount`.
+Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). For `autowarmCount` this can be also expressed as a percentage instead of an absolute value.
 
-Each cache implementation also supports a `maxIdleTime` attribute that controls the automatic eviction of entries that haven't been used for a while. This attribute is expressed in seconds, with the default value of `0` meaning no entries are automatically evicted due to exceeded idle time. Smaller values of this attribute will cause older entries to be evicted quickly, which will reduce cache memory usage but may instead cause thrashing due to a repeating eviction-lookup-miss-insertion cycle of the same entries. Larger values will cause entries to stay around longer, waiting to be reused, at the cost of increased memory usage. Reasonable values, depending on the query volume and patterns, may lie somewhere between 60-3600. Please note that this condition is evaluated synchronously and before other eviction conditions on every entry insertion.
+A `maxIdleTime` attribute controls the automatic eviction of entries that haven't been used for a while. This attribute is expressed in seconds, with the default value of `0` meaning no entries are automatically evicted due to exceeded idle time. Smaller values of this attribute will cause older entries to be evicted quickly, which will reduce cache memory usage but may instead cause thrashing due to a repeating eviction-lookup-miss-insertion cycle of the same entries. Larger values will cause entries to stay around longer, waiting to be reused, at the cost of increased memory usage. Reasonable values, depending on the query volume and patterns, may lie somewhere between 60-3600.
 
-`CaffeineCache`, `LRUCache` and `FastLRUCache` support a `maxRamMB` attribute that limits the maximum amount of memory a cache may consume. When both `size` and `maxRamMB` limits are specified the behavior will differ among implementations: in `CaffeineCache` the `maxRamMB` limit will take precedence and the `size` limit will be ignored, while in `LRUCache` and `FastLRUCache` both limits will be observed, with entries being evicted whenever any of the limits is reached.
+The `maxRamMB` attribute limits the maximum amount of memory a cache may consume. When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
 
-`FastLRUCache` and `LFUCache` support `showItems` attribute. This is the number of cache items to display in the stats page for the cache. It is for debugging.
+All caches can be disabled using the parameter `enabled` with a value of `false`. Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section <<common-query-parameters.adoc#cache-parameter,cache Parameter>>. 
 
 Details of each cache are described below.
 
@@ -67,21 +61,19 @@ The most typical way Solr uses the `filterCache` is to cache results of each `fq
 
 Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`. For a discussion of faceting, see <<searching.adoc#searching,Searching>>.
 
-The filter cache uses a specialized cache named as FastLRUCache which is optimized for fast concurrent access with the trade-off that writes and evictions are costlier than the LRUCache used for query result cache and document cache.
-
 [source,xml]
 ----
-<filterCache class="solr.FastLRUCache"
+<filterCache class="solr.CaffeineCache"
              size="512"
              initialSize="512"
              autowarmCount="128"/>
 ----
 
-The FastLRUCache used for filter cache also supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache. The FastLRUCache only supports evictions by either heap usage or size but not both. Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
+The cache supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache. The `CaffeineCache` only supports evictions by either heap usage or size but not both. Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
 
 [source,xml]
 ----
-<filterCache class="solr.FastLRUCache"
+<filterCache class="solr.CaffeineCache"
              maxRamMB="1000"
              autowarmCount="128"/>
 ----
@@ -90,15 +82,14 @@ The FastLRUCache used for filter cache also supports a `maxRamMB` parameter whic
 
 This cache holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.
 
-The `queryResultCache` has an additional (optional) setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit. If a `size` is specified in addition to `maxRamMB` then both heap usage and maximum size limits are respected.
+The `queryResultCache` has an optional setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit. If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
 
 [source,xml]
 ----
-<queryResultCache class="solr.LRUCache"
+<queryResultCache class="solr.CaffeineCache"
                   size="512"
                   initialSize="512"
-                  autowarmCount="128"
-                  maxRamMB="1000"/>
+                  autowarmCount="128"/>
 ----
 
 === documentCache
@@ -107,7 +98,7 @@ This cache holds Lucene Document objects (the stored fields for each document). 
 
 [source,xml]
 ----
-<documentCache class="solr.LRUCache"
+<documentCache class="solr.CaffeineCache"
                size="512"
                initialSize="512"
                autowarmCount="0"/>
@@ -119,14 +110,14 @@ You can also define named caches for your own application code to use. You can l
 
 [source,xml]
 ----
-<cache name="myUserCache" class="solr.LRUCache"
+<cache name="myUserCache" class="solr.CaffeineCache"
                           size="4096"
                           initialSize="1024"
                           autowarmCount="1024"
                           regenerator="org.mycompany.mypackage.MyRegenerator" />
 ----
 
-If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as`: regenerator="solr.NoOpRegenerator"`.
+If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator"`.
 
 == Query Sizing and Warming
 
@@ -181,6 +172,51 @@ This parameter sets the maximum number of documents to cache for any entry in th
 <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 ----
 
+=== circuitBreaker
+
+This set of configurations control the behaviour of circuit breakers.
+
+[source,xml]
+----
+<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
+  <!-- All specific configs in this section -->
+</circuitBreaker>
+----
+
+To control whether Circuit Breakers are globally enabled, use the "enabled" attribute.
+
+=== Memory Circuit Breaker Settings
+
+To turn memory circuit breaker on/off, use the following flag:
+[source,xml]
+----
+<str name="memEnabled">true</str>
+----
+
+Memory threshold in percentage for JVM heap usage defined in percentage of maximum heap allocated
+to the JVM (-Xmx). Ideally, this value should be in the range of 75-80% of maximum heap allocated
+to the JVM. The enabled flag can be used to control the specific toggle for this circuit breaker.
+
+[source,xml]
+----
+<str name="memThreshold">75</str>
+----
+
+=== CPU Circuit Breaker Settings
+
+To control turning on/off this feature, use the following flag:
+[source,xml]
+----
+<str name="cpuEnabled">true</str>
+----
+
+Defines the triggering threshold in terms of the average per minute CPU load. The enabled flag can be used to control the specific toggle for this circuit breaker.
+
+[source,xml]
+----
+<str name="cpuThreshold">75</str>
+----
+
 === useColdSearcher
 
 This setting controls whether search requests for which there is not a currently registered searcher should wait for a new searcher to warm up (false) or proceed immediately (true). When set to "false", requests will block until the searcher has warmed its caches.
@@ -192,7 +228,7 @@ This setting controls whether search requests for which there is not a currently
 
 === maxWarmingSearchers
 
-This parameter sets the maximum number of searchers that may be warming up in the background at any given time. Exceeding this limit will raise an error. For read-only slaves, a value of two is reasonable. Masters should probably be set a little higher.
+This parameter sets the maximum number of searchers that may be warming up in the background at any given time. Exceeding this limit will raise an error. For read-only followers, a value of two is reasonable. Leaders should probably be set a little higher.
 
 [source,xml]
 ----

@@ -26,7 +26,7 @@ If you are unfamiliar with JMX, you may  find the following overview useful: htt
 
 JMX support is configured by defining a metrics reporter, as described in the section the section <<metrics-reporting.adoc#jmx-reporter,JMX Reporter>>.
 
-If you have an existing MBean server running in Solr's JVM, or if you start Solr with the system property `-Dcom.sun.management.jmxremote`, Solr will automatically identify it's location on startup even if you have not defined a reporter explicitly in `solr.xml`. You can also define the location of the MBean server with parameters defined in the reporter definition.
+If you have an existing MBean server running in Solr's JVM, or if you start Solr with the system property `-Dcom.sun.management.jmxremote`, Solr will automatically identify its location on startup even if you have not defined a reporter explicitly in `solr.xml`. You can also define the location of the MBean server with parameters defined in the reporter definition.
 
 == Configuring MBean Servers
 

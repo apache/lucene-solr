@@ -141,6 +141,7 @@ public class FieldHighlighter {
       }
     });
     Passage passage = new Passage(); // the current passage in-progress.  Will either get reset or added to queue.
+    int lastPassageEnd = 0;
 
     do {
       int start = off.startOffset();
@@ -158,9 +159,12 @@ public class FieldHighlighter {
         if (start >= contentLength) {
           break;
         }
+        // find fragment from the middle of the match, so the result's length may be closer to fragsize
+        final int center = start + (end - start) / 2;
         // advance breakIterator
-        passage.setStartOffset(Math.max(this.breakIterator.preceding(start + 1), 0));
-        passage.setEndOffset(Math.min(this.breakIterator.following(start), contentLength));
+        passage.setStartOffset(Math.min(start, Math.max(this.breakIterator.preceding(Math.max(start + 1, center)), lastPassageEnd)));
+        lastPassageEnd = Math.max(end, Math.min(this.breakIterator.following(Math.min(end - 1, center)), contentLength));
+        passage.setEndOffset(lastPassageEnd);
       }
       // Add this term to the passage.
       BytesRef term = off.getTerm();// a reference; safe to refer to

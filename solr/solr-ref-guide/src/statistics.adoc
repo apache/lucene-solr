@@ -369,7 +369,7 @@ In the example below covariance is calculated for two numeric
 arrays.
 
 The example below uses arrays created by the `array` function. Its important to note that
-vectorized data from Solr Cloud collections can be used with any function that
+vectorized data from SolrCloud collections can be used with any function that
 operates on arrays.
 
 [source,text]

@@ -88,7 +88,7 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new HunspellStemFilter(tokenizer, dictionary));
       }  
     };
-    checkRandomData(random(), analyzer, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
     analyzer.close();
   }
   

@@ -26,6 +26,7 @@ import static org.apache.lucene.index.PostingsEnum.POSITIONS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -332,6 +333,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   }
 
+  /** Randomly generated document: call toDocument to index it */
   protected class RandomDocument {
 
     private final String[] fieldNames;
@@ -366,6 +368,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   }
 
+  /** Factory for generating random documents, call newDocument to generate each one */
   protected class RandomDocumentFactory {
 
     private final String[] fieldNames;
@@ -395,13 +398,12 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   protected void assertEquals(RandomDocument doc, Fields fields) throws IOException {
     // compare field names
-    assertEquals(doc == null, fields == null);
+    assertNotNull(doc);
+    assertNotNull(fields);
     assertEquals(doc.fieldNames.length, fields.size());
     final Set<String> fields1 = new HashSet<>();
     final Set<String> fields2 = new HashSet<>();
-    for (int i = 0; i < doc.fieldNames.length; ++i) {
-      fields1.add(doc.fieldNames[i]);
-    }
+    Collections.addAll(fields1, doc.fieldNames);
     for (String field : fields) {
       fields2.add(field);
     }
@@ -460,55 +462,48 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         assertEquals(0, docsAndPositionsEnum.nextDoc());
         final int freq = docsAndPositionsEnum.freq();
         assertEquals(tk.freqs.get(termsEnum.term().utf8ToString()), (Integer) freq);
-        if (docsAndPositionsEnum != null) {
-          for (int k = 0; k < freq; ++k) {
-            final int position = docsAndPositionsEnum.nextPosition();
-            final Set<Integer> indexes;
-            if (terms.hasPositions()) {
-              indexes = tk.positionToTerms.get(position);
-              assertNotNull(indexes);
-            } else {
-              indexes = tk.startOffsetToTerms.get(docsAndPositionsEnum.startOffset());
-              assertNotNull(indexes);
-            }
-            if (terms.hasPositions()) {
-              boolean foundPosition = false;
-              for (int index : indexes) {
-                if (tk.termBytes[index].equals(termsEnum.term()) && tk.positions[index] == position) {
-                  foundPosition = true;
-                  break;
-                }
-              }
-              assertTrue(foundPosition);
-            }
-            if (terms.hasOffsets()) {
-              boolean foundOffset = false;
-              for (int index : indexes) {
-                if (tk.termBytes[index].equals(termsEnum.term()) && tk.startOffsets[index] == docsAndPositionsEnum.startOffset() && tk.endOffsets[index] == docsAndPositionsEnum.endOffset()) {
-                  foundOffset = true;
-                  break;
-                }
-              }
-              assertTrue(foundOffset);
-            }
-            if (terms.hasPayloads()) {
-              boolean foundPayload = false;
-              for (int index : indexes) {
-                if (tk.termBytes[index].equals(termsEnum.term()) && equals(tk.payloads[index], docsAndPositionsEnum.getPayload())) {
-                  foundPayload = true;
-                  break;
-                }
-              }
-              assertTrue(foundPayload);
-            }
+        for (int k = 0; k < freq; ++k) {
+          final int position = docsAndPositionsEnum.nextPosition();
+          final Set<Integer> indexes;
+          if (terms.hasPositions()) {
+            indexes = tk.positionToTerms.get(position);
+            assertNotNull(indexes);
+          } else {
+            indexes = tk.startOffsetToTerms.get(docsAndPositionsEnum.startOffset());
+            assertNotNull(indexes);
           }
-          try {
-            docsAndPositionsEnum.nextPosition();
-            fail();
-          } catch (Exception | AssertionError e) {
-            // ok
+          if (terms.hasPositions()) {
+            boolean foundPosition = false;
+            for (int index : indexes) {
+              if (tk.termBytes[index].equals(termsEnum.term()) && tk.positions[index] == position) {
+                foundPosition = true;
+                break;
+              }
+            }
+            assertTrue(foundPosition);
+          }
+          if (terms.hasOffsets()) {
+            boolean foundOffset = false;
+            for (int index : indexes) {
+              if (tk.termBytes[index].equals(termsEnum.term()) && tk.startOffsets[index] == docsAndPositionsEnum.startOffset() && tk.endOffsets[index] == docsAndPositionsEnum.endOffset()) {
+                foundOffset = true;
+                break;
+              }
+            }
+            assertTrue(foundOffset);
+          }
+          if (terms.hasPayloads()) {
+            boolean foundPayload = false;
+            for (int index : indexes) {
+              if (tk.termBytes[index].equals(termsEnum.term()) && equals(tk.payloads[index], docsAndPositionsEnum.getPayload())) {
+                foundPayload = true;
+                break;
+              }
+            }
+            assertTrue(foundPayload);
           }
         }
+        expectThrows(getReadPastLastPositionExceptionClass(), docsAndPositionsEnum::nextPosition);
         assertEquals(PostingsEnum.NO_MORE_DOCS, docsAndPositionsEnum.nextDoc());
       }
       this.docsEnum.set(docsAndPositionsEnum);
@@ -521,6 +516,10 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
         assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(RandomPicks.randomFrom(random(), tk.termBytes)));
       }
     }
+  }
+
+  protected Class<? extends Throwable> getReadPastLastPositionExceptionClass() {
+    return IllegalStateException.class;
   }
 
   protected Document addId(Document doc, String id) {
@@ -576,7 +575,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
       }
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 1, 2), atLeast(20000), options);
+      final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 1, 2), atLeast(2000), options);
       writer.addDocument(doc.toDocument());
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
@@ -586,12 +585,14 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
+  @Slow
   public void testLotsOfFields() throws IOException {
-    final RandomDocumentFactory docFactory = new RandomDocumentFactory(5000, 10);
+    int fieldCount = atLeast(100);
+    final RandomDocumentFactory docFactory = new RandomDocumentFactory(fieldCount, 10);
     for (Options options : validOptions()) {
       final Directory dir = newDirectory();
       final RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-      final RandomDocument doc = docFactory.newDocument(atLeast(100), 5, options);
+      final RandomDocument doc = docFactory.newDocument(TestUtil.nextInt(random(), 20, fieldCount), 5, options);
       writer.addDocument(doc.toDocument());
       final IndexReader reader = writer.getReader();
       assertEquals(doc, reader.getTermVectors(0));
@@ -630,7 +631,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   public void testRandom() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(50);
     final RandomDocument[] docs = new RandomDocument[numDocs];
     for (int i = 0; i < numDocs; ++i) {
       docs[i] = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), TestUtil.nextInt(random(), 10, 50), randomOptions());
@@ -693,7 +694,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   // don't share mutable data
   public void testClone() throws IOException, InterruptedException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(50);
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {

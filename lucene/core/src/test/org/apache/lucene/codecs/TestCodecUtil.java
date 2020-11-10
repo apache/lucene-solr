@@ -26,6 +26,8 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexInput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
@@ -148,13 +150,13 @@ public class TestCodecUtil extends LuceneTestCase {
     // bogusly read a byte too far (can happen)
     input.readByte();
     Exception mine = new RuntimeException("fake exception");
-    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
+    CorruptIndexException expected = expectThrows(CorruptIndexException.class, () -> {
       CodecUtil.checkFooter(input, mine);
     });
-    assertEquals("fake exception", expected.getMessage());
+    assertTrue(expected.getMessage().contains("checksum status indeterminate"));
     Throwable suppressed[] = expected.getSuppressed();
     assertEquals(1, suppressed.length);
-    assertTrue(suppressed[0].getMessage().contains("checksum status indeterminate"));
+    assertEquals("fake exception", suppressed[0].getMessage());
     input.close();
   }
   
@@ -172,13 +174,13 @@ public class TestCodecUtil extends LuceneTestCase {
     CodecUtil.checkHeader(input, "FooBar", 5, 5);
     assertEquals("this is the data", input.readString());
     Exception mine = new RuntimeException("fake exception");
-    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
+    CorruptIndexException expected = expectThrows(CorruptIndexException.class, () -> {
       CodecUtil.checkFooter(input, mine);
     });
-    assertEquals("fake exception", expected.getMessage());
+    assertTrue(expected.getMessage().contains("checksum failed"));
     Throwable suppressed[] = expected.getSuppressed();
     assertEquals(1, suppressed.length);
-    assertTrue(suppressed[0].getMessage().contains("checksum failed"));
+    assertEquals("fake exception", suppressed[0].getMessage());
     input.close();
   }
   
@@ -318,5 +320,48 @@ public class TestCodecUtil extends LuceneTestCase {
     e = expectThrows(CorruptIndexException.class,
         () -> CodecUtil.retrieveChecksum(input));
     assertTrue(e.getMessage(), e.getMessage().contains("misplaced codec footer (file truncated?): length=0 but footerLength==16 (resource"));
+  }
+
+  public void testRetrieveChecksum() throws IOException {
+    Directory dir = newDirectory();
+    try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
+      out.writeByte((byte) 42);
+      CodecUtil.writeFooter(out);
+    }
+    try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+      CodecUtil.retrieveChecksum(in, in.length()); // no exception
+
+      CorruptIndexException exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() - 1));
+      assertTrue(exception.getMessage().contains("too long"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() + 1));
+      assertTrue(exception.getMessage().contains("truncated"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+    }
+
+    try (IndexOutput out = dir.createOutput("bar", IOContext.DEFAULT)) {
+      for (int i = 0; i <= CodecUtil.footerLength(); ++i) {
+        out.writeByte((byte) i);
+      }
+    }
+    try (IndexInput in = dir.openInput("bar", IOContext.DEFAULT)) {
+      CorruptIndexException exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length()));
+      assertTrue(exception.getMessage().contains("codec footer mismatch"));
+      assertArrayEquals(new Throwable[0], exception.getSuppressed());
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() - 1));
+      assertTrue(exception.getMessage().contains("too long"));
+
+      exception = expectThrows(CorruptIndexException.class,
+          () -> CodecUtil.retrieveChecksum(in, in.length() + 1));
+      assertTrue(exception.getMessage().contains("truncated"));
+    }
+
+    dir.close();
   }
 }

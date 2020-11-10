@@ -162,7 +162,7 @@ public abstract class ReferenceManager<G> implements Closeable {
 
   private void doMaybeRefresh() throws IOException {
     // it's ok to call lock() here (blocking) because we're supposed to get here
-    // from either maybeRefreh() or maybeRefreshBlocking(), after the lock has
+    // from either maybeRefresh() or maybeRefreshBlocking(), after the lock has
     // already been obtained. Doing that protects us from an accidental bug
     // where this method will be called outside the scope of refreshLock.
     // Per ReentrantLock's javadoc, calling lock() by the same thread more than

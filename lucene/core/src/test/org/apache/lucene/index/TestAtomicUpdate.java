@@ -16,69 +16,63 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.store.*;
-import org.apache.lucene.util.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestAtomicUpdate extends LuceneTestCase {
   
-
   private static abstract class TimedThread extends Thread {
-    volatile boolean failed;
-    int count;
-    private static float RUN_TIME_MSEC = atLeast(500);
-    private TimedThread[] allThreads;
+    int numIterations;
+    volatile Throwable failure;
 
-    abstract public void doWork() throws Throwable;
+    abstract public void doWork(int currentIteration) throws IOException;
 
-    TimedThread(TimedThread[] threads) {
-      this.allThreads = threads;
+    TimedThread(int numIterations) {
+      this.numIterations = numIterations;
     }
 
     @Override
     public void run() {
-      final long stopTime = System.currentTimeMillis() + (long) RUN_TIME_MSEC;
-
-      count = 0;
-
       try {
-        do {
-          if (anyErrors()) break;
-          doWork();
-          count++;
-        } while(System.currentTimeMillis() < stopTime);
+        for (int count = 0; count < numIterations; count++) {
+          doWork(count);
+        }
       } catch (Throwable e) {
-        System.out.println(Thread.currentThread().getName() + ": exc");
+        failure = e;
         e.printStackTrace(System.out);
-        failed = true;
+        throw new RuntimeException(e);
       }
-    }
-
-    private boolean anyErrors() {
-      for(int i=0;i<allThreads.length;i++)
-        if (allThreads[i] != null && allThreads[i].failed)
-          return true;
-      return false;
     }
   }
 
   private static class IndexerThread extends TimedThread {
     IndexWriter writer;
-    public IndexerThread(IndexWriter writer, TimedThread[] threads) {
-      super(threads);
+    public IndexerThread(IndexWriter writer, int numIterations) {
+      super(numIterations);
       this.writer = writer;
     }
 
     @Override
-    public void doWork() throws Exception {
+    public void doWork(int currentIteration) throws IOException {
       // Update all 100 docs...
       for(int i=0; i<100; i++) {
         Document d = new Document();
         d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
-        d.add(new TextField("contents", English.intToEnglish(i+10*count), Field.Store.NO));
+        d.add(new TextField("contents", English.intToEnglish(i+10*currentIteration), Field.Store.NO));
         d.add(new IntPoint("doc", i));
         d.add(new IntPoint("doc2d", i, i));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
@@ -89,13 +83,13 @@ public class TestAtomicUpdate extends LuceneTestCase {
   private static class SearcherThread extends TimedThread {
     private Directory directory;
 
-    public SearcherThread(Directory directory, TimedThread[] threads) {
-      super(threads);
+    public SearcherThread(Directory directory, int numIterations) {
+      super(numIterations);
       this.directory = directory;
     }
 
     @Override
-    public void doWork() throws Throwable {
+    public void doWork(int currentIteration) throws IOException {
       IndexReader r = DirectoryReader.open(directory);
       assertEquals(100, r.numDocs());
       r.close();
@@ -103,12 +97,14 @@ public class TestAtomicUpdate extends LuceneTestCase {
   }
 
   /*
-    Run one indexer and 2 searchers against single index as
-    stress test.
-  */
+   * Run N indexer and N searchers against single index as
+   * stress test.
+   */
   public void runTest(Directory directory) throws Exception {
-
-    TimedThread[] threads = new TimedThread[4];
+    int indexThreads = TEST_NIGHTLY ? 2 : 1;
+    int searchThreads = TEST_NIGHTLY ? 2 : 1;
+    int indexIterations = TEST_NIGHTLY ? 10 : 1;
+    int searchIterations = TEST_NIGHTLY ? 10 : 1;
 
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(7);
@@ -131,36 +127,27 @@ public class TestAtomicUpdate extends LuceneTestCase {
     assertEquals(100, r.numDocs());
     r.close();
 
-    IndexerThread indexerThread = new IndexerThread(writer, threads);
-    threads[0] = indexerThread;
-    indexerThread.start();
-    
-    IndexerThread indexerThread2 = new IndexerThread(writer, threads);
-    threads[1] = indexerThread2;
-    indexerThread2.start();
-      
-    SearcherThread searcherThread1 = new SearcherThread(directory, threads);
-    threads[2] = searcherThread1;
-    searcherThread1.start();
-
-    SearcherThread searcherThread2 = new SearcherThread(directory, threads);
-    threads[3] = searcherThread2;
-    searcherThread2.start();
-
-    indexerThread.join();
-    indexerThread2.join();
-    searcherThread1.join();
-    searcherThread2.join();
+    List<TimedThread> threads = new ArrayList<>();
+    for (int i = 0; i < indexThreads; i++) {
+      threads.add(new IndexerThread(writer, indexIterations));
+    }
+    for (int i = 0; i < searchThreads; i++) {
+      threads.add(new SearcherThread(directory, searchIterations));
+    }
+    for (TimedThread thread : threads) {
+      thread.start();
+    }
+    for (TimedThread thread : threads) {
+      thread.join();
+    }
 
     writer.close();
-
-    assertTrue("hit unexpected exception in indexer", !indexerThread.failed);
-    assertTrue("hit unexpected exception in indexer2", !indexerThread2.failed);
-    assertTrue("hit unexpected exception in search1", !searcherThread1.failed);
-    assertTrue("hit unexpected exception in search2", !searcherThread2.failed);
-    //System.out.println("    Writer: " + indexerThread.count + " iterations");
-    //System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");
-    //System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
+    
+    for (TimedThread thread : threads) {
+      if (thread.failure != null) {
+        throw new RuntimeException("hit exception from " + thread, thread.failure);
+      }
+    }
   }
 
   /* */

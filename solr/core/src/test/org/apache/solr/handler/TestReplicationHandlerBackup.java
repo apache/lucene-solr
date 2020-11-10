@@ -25,10 +25,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -37,7 +37,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test
 public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
-  JettySolrRunner masterJetty;
-  TestReplicationHandler.SolrInstance master = null;
-  SolrClient masterClient;
+  JettySolrRunner leaderJetty;
+  TestReplicationHandler.SolrInstance leader = null;
+  SolrClient leaderClient;
   
   private static final String CONF_DIR = "solr" + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
@@ -95,19 +95,19 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    String configFile = "solrconfig-master1.xml";
+    String configFile = "solrconfig-leader1.xml";
 
     if(random().nextBoolean()) {
-      configFile = "solrconfig-master1-keepOneBackup.xml";
+      configFile = "solrconfig-leader1-keepOneBackup.xml";
       addNumberToKeepInRequest = false;
       backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_INIT_PARAM;
     }
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
+    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leader.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
     docsSeed = random().nextLong();
   }
 
@@ -115,39 +115,39 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient  = null;
+    if (null != leaderClient) {
+      leaderClient.close();
+      leaderClient  = null;
     }
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != leaderJetty) {
+      leaderJetty.stop();
+      leaderJetty = null;
     }
-    master = null;
+    leader = null;
   }
 
   @Test
   public void testBackupOnCommit() throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+
+    final String lastBackupDir = backupStatus.checkBackupSuccess();
+    // sanity check no backups yet
+    assertNull("Already have a successful backup",
+               lastBackupDir);
+    
     //Index
-    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
-
-    //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
-    }
-
+    int nDocs = BackupRestoreUtils.indexDocs(leaderClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
+    
+    final String newBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     //Validate
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-      Path snapDir = stream.iterator().next();
-      verify(snapDir, nDocs);
-    }
+    verify(Paths.get(leader.getDataDir(), newBackupDir), nDocs);
   }
 
   private void verify(Path backup, int nDocs) throws IOException {
-    try (Directory dir = new SimpleFSDirectory(backup);
-        IndexReader reader = DirectoryReader.open(dir)) {
+    log.info("Verifying ndocs={} in {}", nDocs, backup);
+    try (Directory dir = new NIOFSDirectory(backup);
+         IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
       assertEquals(nDocs, hits.totalHits.value);
@@ -157,62 +157,43 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   @Test
   public void doTestBackup() throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
 
-    int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
+    String lastBackupDir = backupStatus.checkBackupSuccess();
+    assertNull("Already have a successful backup",
+               lastBackupDir);
 
-    //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
-    }
-
-    Path[] snapDir = new Path[5]; //One extra for the backup on commit
+    final Path[] snapDir = new Path[5]; //One extra for the backup on commit
     //First snapshot location
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-      snapDir[0] = stream.iterator().next();
-    }
+    
+    int nDocs = BackupRestoreUtils.indexDocs(leaderClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
-    boolean namedBackup = random().nextBoolean();
-    String firstBackupTimestamp = null;
+    lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
+    snapDir[0] = Paths.get(leader.getDataDir(), lastBackupDir);
+
+    final boolean namedBackup = random().nextBoolean();
 
     String[] backupNames = null;
     if (namedBackup) {
       backupNames = new String[4];
     }
     for (int i = 0; i < 4; i++) {
-      final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
+      final String backupName = TestUtil.randomSimpleString(random(), 1, 20) + "_" + i;
       if (!namedBackup) {
         if (addNumberToKeepInRequest) {
-          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&" + backupKeepParamName + "=2");
+          runBackupCommand(leaderJetty, ReplicationHandler.CMD_BACKUP, "&" + backupKeepParamName + "=2");
         } else {
-          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "");
+          runBackupCommand(leaderJetty, ReplicationHandler.CMD_BACKUP, "");
         }
+        lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
       } else {
-          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&name=" +  backupName);
+        runBackupCommand(leaderJetty, ReplicationHandler.CMD_BACKUP, "&name=" +  backupName);
+        lastBackupDir = backupStatus.waitForBackupSuccess(backupName, 30);
         backupNames[i] = backupName;
       }
-
-     checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, firstBackupTimestamp);
-      while (!checkBackupStatus.success) {
-        checkBackupStatus.fetchStatus();
-        Thread.sleep(1000);
-      }
-      if (i == 0) {
-        firstBackupTimestamp = checkBackupStatus.backupTimestamp;
-      }
-
-      if (!namedBackup) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-          snapDir[i+1] = stream.iterator().next();
-        }
-      } else {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName)) {
-          snapDir[i+1] = stream.iterator().next();
-        }
-      }
+      snapDir[i+1] = Paths.get(leader.getDataDir(), lastBackupDir);
       verify(snapDir[i+1], nDocs);
-
     }
 
     
@@ -222,24 +203,26 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     } else {
       //5 backups got created. 4 explicitly and one because a commit was called.
       // Only the last two should still exist.
-      int count =0;
-      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
+      final List<String> remainingBackups = new ArrayList<>();
+      
+      try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(leader.getDataDir()), "snapshot*")) {
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
-          iter.next();
-          count ++;
+          remainingBackups.add(iter.next().getFileName().toString());
         }
       }
 
-      //There will be 2 backups, otherwise 1
+      // Depending on the use of backupKeepParamName there should either be 2 or 1 backups remaining
       if (backupKeepParamName.equals(ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM)) {
-        assertEquals(2, count);
+        assertEquals(remainingBackups.toString(),
+                     2, remainingBackups.size());
 
         if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])) {
           fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 2.");
         }
       } else {
-        assertEquals(1, count);
+        assertEquals(remainingBackups.toString(),
+                     1, remainingBackups.size());
 
         if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])
             || Files.exists(snapDir[3])) {
@@ -250,31 +233,27 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
-    String lastTimestamp = null;
+  private void testDeleteNamedBackup(String backupNames[]) throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(leaderClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
-      runBackupCommand(masterJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);
-      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i], lastTimestamp);
-      while (true) {
-        boolean success = checkDeleteBackupStatus.fetchStatus();
-        if (success) {
-          lastTimestamp = checkDeleteBackupStatus.lastTimestamp;
-          if (i == 0) {
-            Thread.sleep(1000); //make the timestamp change
-          }
-          break;
-        }
-        Thread.sleep(200);
-      }
+      final Path p = Paths.get(leader.getDataDir(), "snapshot." + backupNames[i]);
+      assertTrue("WTF: Backup doesn't exist: " + p.toString(),
+                 Files.exists(p));
+      runBackupCommand(leaderJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);
+      backupStatus.waitForBackupDeletionSuccess(backupNames[i], 30);
+      assertFalse("backup still exists after deletion: " + p.toString(),
+                  Files.exists(p));
     }
+    
   }
 
-  public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
-    String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
+  public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params) throws IOException {
+    String leaderUrl = buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
         + ReplicationHandler.PATH+"?wt=xml&command=" + cmd + params;
     InputStream stream = null;
     try {
-      URL url = new URL(masterUrl);
+      URL url = new URL(leaderUrl);
       stream = url.openStream();
       stream.close();
     } finally {
@@ -282,39 +261,4 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private class CheckDeleteBackupStatus {
-    String response = null;
-    private String backupName;
-    final Pattern p = Pattern.compile("<str name=\"snapshotDeletedAt\">(.*?)</str>");
-    String lastTimestamp;
-    
-    private CheckDeleteBackupStatus(String backupName, String lastTimestamp) {
-      this.backupName = backupName;
-      this.lastTimestamp = lastTimestamp;
-    }
-
-    public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
-      URL url;
-      InputStream stream = null;
-      try {
-        url = new URL(masterUrl);
-        stream = url.openStream();
-        response = IOUtils.toString(stream, "UTF-8");
-        if(response.contains("<str name=\"status\">success</str>")) {
-          Matcher m = p.matcher(response);
-          if(m.find() && (lastTimestamp == null || !lastTimestamp.equals(m.group(1)))) {
-            lastTimestamp = m.group(1);
-            return true;
-          }
-        } else if(response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>" )) {
-          return false;
-        }
-        stream.close();
-      } finally {
-        IOUtils.closeQuietly(stream);
-      }
-      return false;
-    }
-  }
 }

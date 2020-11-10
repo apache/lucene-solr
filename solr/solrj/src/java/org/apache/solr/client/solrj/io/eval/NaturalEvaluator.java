@@ -38,7 +38,7 @@ public class NaturalEvaluator extends RecursiveNumericEvaluator implements OneVa
   @Override
   public Object doWork(Object value){
     int natural = ((Number)value).intValue();
-    List<Number> naturals = new ArrayList();
+    List<Number> naturals = new ArrayList<>();
     for(int i=0; i<natural; i++) {
       naturals.add(i);
     }

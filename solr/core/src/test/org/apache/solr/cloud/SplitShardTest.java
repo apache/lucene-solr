@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -54,6 +54,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -76,7 +77,6 @@ public class SplitShardTest extends SolrCloudTestCase {
   public void doTest() throws IOException, SolrServerException {
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 2, 1)
-        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
@@ -93,7 +93,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(10);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards > 8");
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertTrue(ex.getMessage().contains("A shard can only be split into 2 to 8 subshards in one split request."));
     }
 
@@ -101,7 +101,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard2").setNumSubShards(1);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards < 2");
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertTrue(ex.getMessage().contains("A shard can only be split into 2 to 8 subshards in one split request. Provided numSubShards=1"));
     }
   }
@@ -127,7 +127,6 @@ public class SplitShardTest extends SolrCloudTestCase {
     String collectionName = "splitFuzzCollection";
     CollectionAdminRequest
         .createCollection(collectionName, "conf", 2, 1)
-        .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 2);
@@ -156,7 +155,6 @@ public class SplitShardTest extends SolrCloudTestCase {
 
       CollectionAdminRequest
           .createCollection(collectionName, "conf", 1, repFactor)
-          .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, repFactor);
@@ -181,7 +179,7 @@ public class SplitShardTest extends SolrCloudTestCase {
         long numFound = 0;
         try {
           numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
-          log.info("Replica count=" + numFound + " for " + replica);
+          log.info("Replica count={} for {}", numFound, replica);
         } finally {
           replicaClient.close();
         }
@@ -269,11 +267,11 @@ public class SplitShardTest extends SolrCloudTestCase {
         String id = (String) doc.get("id");
         leftover.remove(id);
       }
-      log.error("MISSING DOCUMENTS: " + leftover);
+      log.error("MISSING DOCUMENTS: {}", leftover);
     }
 
     assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
-    log.info("Number of documents indexed and queried : " + numDocs);
+    log.info("Number of documents indexed and queried : {}", numDocs);
   }
 
 

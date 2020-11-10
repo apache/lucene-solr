@@ -171,7 +171,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   public void testRandom() throws Exception {
-    int numberOfRuns = TestUtil.nextInt(random(), 3, 6);
+    int numberOfRuns = atLeast(1);
     for (int iter = 0; iter < numberOfRuns; iter++) {
       if (VERBOSE) {
         System.out.println(String.format(Locale.ROOT, "TEST: iter=%d total=%d", iter, numberOfRuns));

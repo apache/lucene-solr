@@ -43,9 +43,9 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -482,7 +482,7 @@ public class ChaosMonkey {
     
     if (chaosRandom.nextBoolean()) {
       monkeyLog("Jetty will not commit on close");
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
     }
 
     this.aggressivelyKillLeaders = killLeaders;
@@ -518,11 +518,11 @@ public class ChaosMonkey {
   }
   
   public static void monkeyLog(String msg) {
-    log.info("monkey: " + msg);
+    log.info("monkey: {}", msg);
   }
   
   public static void monkeyLog(String msg, Object...logParams) {
-    log.info("monkey: " + msg, logParams);
+    log.info("monkey: {}", msg, logParams);
   }
   
   public void stopTheMonkey() {
@@ -533,8 +533,7 @@ public class ChaosMonkey {
       Thread.currentThread().interrupt();
     }
     runTimer.stop();
-
-    DirectUpdateHandler2.commitOnClose = true;
+    TestInjection.skipIndexWriterCommitOnClose = false;
 
     double runtime = runTimer.getTime()/1000.0f;
     if (runtime > NO_STOP_WARN_TIME && stops.get() == 0) {
@@ -593,7 +592,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
@@ -614,7 +613,7 @@ public class ChaosMonkey {
         Integer.MAX_VALUE,
         15, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
-        new DefaultSolrThreadFactory("ChaosMonkey"),
+        new SolrNamedThreadFactory("ChaosMonkey"),
         false);
     for (JettySolrRunner jetty : jettys) {
       executor.submit(() -> {
@@ -655,7 +654,7 @@ public class ChaosMonkey {
     for (Slice slice:docCollection.getSlices()) {
       builder.append(slice.getName()).append(": {");
       for (Replica replica:slice.getReplicas()) {
-        log.info(replica.toString());
+        log.info("{}", replica);
         java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());
         m.find();
         String jettyPort = m.group(1);

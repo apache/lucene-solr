@@ -41,7 +41,7 @@ public class NodeMutator {
     List<ZkWriteCommand> zkWriteCommands = new ArrayList<>();
     String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
 
-    log.debug("DownNode state invoked for node: " + nodeName);
+    log.debug("DownNode state invoked for node: {}", nodeName);
 
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
@@ -62,16 +62,16 @@ public class NodeMutator {
             throw new RuntimeException("Replica without node name! " + replica);
           }
           if (rNodeName.equals(nodeName)) {
-            log.debug("Update replica state for " + replica + " to " + Replica.State.DOWN.toString());
+            log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
             Map<String, Object> props = replica.shallowCopy();
-            props.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
-            Replica newReplica = new Replica(replica.getName(), props);
+            Replica newReplica = new Replica(replica.getName(), replica.node, replica.collection, slice.getName(), replica.core,
+                Replica.State.DOWN, replica.type, props);
             newReplicas.put(replica.getName(), newReplica);
             needToUpdateCollection = true;
           }
         }
 
-        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy());
+        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collection);
         slicesCopy.put(slice.getName(), newSlice);
       }
 

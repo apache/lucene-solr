@@ -19,13 +19,13 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -33,8 +33,6 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -43,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
  * Directory methods that would normally modify data throw an exception.
  * @lucene.experimental
  */
-final class Lucene50CompoundReader extends Directory {
+final class Lucene50CompoundReader extends CompoundDirectory {
   
   /** Offset/Length for a slice inside of a compound file */
   public static final class FileEntry {
@@ -160,24 +158,6 @@ final class Lucene50CompoundReader extends Directory {
     return res;
   }
   
-  /** Not implemented
-   * @throws UnsupportedOperationException always: not supported by CFS */
-  @Override
-  public void deleteFile(String name) {
-    throw new UnsupportedOperationException();
-  }
-  
-  /** Not implemented
-   * @throws UnsupportedOperationException always: not supported by CFS */
-  @Override
-  public void rename(String from, String to) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void syncMetaData() {
-  }
-  
   /** Returns the length of a file in the directory.
    * @throws IOException if the file does not exist */
   @Override
@@ -188,26 +168,6 @@ final class Lucene50CompoundReader extends Directory {
       throw new FileNotFoundException(name);
     return e.length;
   }
-  
-  @Override
-  public IndexOutput createOutput(String name, IOContext context) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public void sync(Collection<String> names) {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public Lock obtainLock(String name) {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public String toString() {
@@ -217,5 +177,10 @@ final class Lucene50CompoundReader extends Directory {
   @Override
   public Set<String> getPendingDeletions() {
     return Collections.emptySet();
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    CodecUtil.checksumEntireFile(handle);
   }
 }

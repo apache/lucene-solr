@@ -103,7 +103,7 @@ public class RecordCountStream extends TupleStream implements Expressible, Seria
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l = new ArrayList();
+    List<TupleStream> l = new ArrayList<>();
     l.add(stream);
     return l;
   }

@@ -1,5 +1,4 @@
 = Faceting
-:page-children: blockjoin-faceting
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -20,6 +19,8 @@
 Faceting is the arrangement of search results into categories based on indexed terms.
 
 Searchers are presented with the indexed terms, along with numerical counts of how many matching documents were found for each term. Faceting makes it easy for users to explore search results, narrowing in on exactly the results they are looking for.
+
+See also <<json-facet-api.adoc#json-facet-api, JSON Facet API>> for an alternative approach to this.
 
 == General Facet Parameters
 
@@ -45,7 +46,8 @@ Several parameters can be used to trigger faceting based on the indexed terms in
 
 When using these parameters, it is important to remember that "term" is a very specific concept in Lucene: it relates to the literal field/value pairs that are indexed after any analysis occurs. For text fields that include stemming, lowercasing, or word splitting, the resulting terms may not be what you expect.
 
-If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String. Make sure both are `indexed="true"`. (For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>.)
+If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String. The Text field should have `indexed="true" docValues=“false"` if used for searching but not faceting and the String field should have `indexed="false" docValues="true"` if used for faceting but not searching.
+(For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>.)
 
 Unless otherwise specified, all of the parameters below can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.<parameter>`
 
@@ -176,7 +178,7 @@ The `facet.range.end` specifies the upper bound of the ranges. You can specify t
 `f.lastModified_dt.facet.range.end=NOW/DAY+30DAYS`
 
 `facet.range.gap`::
-The span of each range expressed as a value to be added to the lower bound. For date fields, this should be expressed using the {solr-javadocs}/solr-core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`). You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`. For example:
+The span of each range expressed as a value to be added to the lower bound. For date fields, this should be expressed using the {solr-javadocs}/core/org/apache/solr/util/DateMathParser.html[`DateMathParser` syntax] (such as, `facet.range.gap=%2B1DAY ... '+1DAY'`). You can specify this parameter on a per-field basis with the syntax of `f.<fieldname>.facet.range.gap`. For example:
 +
 `f.price.facet.range.gap=100&f.age.facet.range.gap=10`
 +
@@ -585,7 +587,7 @@ Consider the following example query with faceting:
 
 Because everything is already constrained by the filter `doctype:pdf`, the `facet.field=doctype` facet command is currently redundant and will return 0 counts for everything except `doctype:pdf`.
 
-To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the http://doctypepdf[`doctype:pdf`] constraint had not yet been applied. For example:
+To implement a multi-select facet for doctype, a GUI may want to still display the other doctype values and their associated counts, as if the `doctype:pdf` constraint had not yet been applied. For example:
 
 [source,text]
 ----
@@ -616,7 +618,7 @@ To limit field facet with certain terms specify them comma separated with `terms
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 
-This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.   
+This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.
 
 == Related Topics
 

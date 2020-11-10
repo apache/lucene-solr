@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * as documents are added to and deleted from an index.  Clients should thus not
  * rely on a given document having the same number between sessions.
  * 
- * <p><a name="thread-safety"></a><p><b>NOTE</b>: {@link
+ * <p><a id="thread-safety"></a><p><b>NOTE</b>: {@link
  * IndexReader} instances are completely thread
  * safe, meaning multiple threads can call any of its methods,
  * concurrently.  If your application requires external

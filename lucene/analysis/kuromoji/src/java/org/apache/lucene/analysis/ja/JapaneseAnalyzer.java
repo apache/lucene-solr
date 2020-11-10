@@ -87,7 +87,7 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    Tokenizer tokenizer = new JapaneseTokenizer(userDict, true, mode);
+    Tokenizer tokenizer = new JapaneseTokenizer(userDict, true, true, mode);
     TokenStream stream = new JapaneseBaseFormFilter(tokenizer);
     stream = new JapanesePartOfSpeechStopFilter(stream, stoptags);
     stream = new CJKWidthFilter(stream);

@@ -50,7 +50,7 @@ You configure each filter with a `<filter>` element in `schema.xml` as a child o
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.util.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
+The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
 
 Arguments may be passed to tokenizer factories to modify their behavior by setting attributes on the `<filter>` element. For example:
 
@@ -85,8 +85,6 @@ Arguments may be passed to tokenizer factories to modify their behavior by setti
 --
 
 The following sections describe the filter factories that are included in this release of Solr.
-
-For user tips about Solr's filters, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
 
 == ASCII Folding Filter
 
@@ -400,6 +398,72 @@ Discard original token (`inject="false"`).
 
 Note that "Kuczewski" has two encodings, which are added at the same position.
 
+== Delimited Boost Filter
+
+This filter adds a numeric floating point boost value to tokens, splitting on a delimiter character.
+
+*Factory class:* `solr.DelimitedBoostTokenFilterFactory`
+
+*Arguments:*
+
+`delimiter`:: The character used to separate the token and the boost. Defaults to '|'.
+
+*Example:*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-delimitedBoost]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-delimitedBoost]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer>
+<tokenizer class="solr.StandardTokenizerFactory"/>
+<filter class="solr.DelimitedBoostTokenFilterFactory"/>
+</analyzer>
+----
+====
+--
+
+*In:* "leopard|0.5 panthera uncia|0.9"
+
+*Tokenizer to Filter:* "leopard|0.5"(1), "panthera"(2), "uncia|0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+The numeric floating point in square brackets is a float token boost attribute.
+
+*Example:*
+
+Using a different delimiter (`delimiter="/"`).
+
+[source,xml]
+----
+<analyzer>
+<tokenizer name="standard"/>
+<filter name="delimitedBoost" delimiter="/"/>
+</analyzer>
+----
+
+*In:* "leopard/0.5 panthera uncia/0.9"
+
+*Tokenizer to Filter:* "leopard/0.5"(1), "panthera"(2), "uncia/0.9"(3)
+
+*Out:* "leopard"(1)[0.5], "panthera"(2), "uncia"(3)[0.9]
+
+*N.B.* make sure the delimiter is compatible with the tokenizer you use
+
 == Edge N-Gram Filter
 
 This filter generates edge n-gram tokens of sizes within the given range.
@@ -411,6 +475,8 @@ This filter generates edge n-gram tokens of sizes within the given range.
 `minGramSize`:: (integer, default 1) The minimum gram size.
 
 `maxGramSize`:: (integer, default 1) The maximum gram size.
+
+`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
 
 *Example:*
 
@@ -483,6 +549,24 @@ A range of 4 to 6.
 *Tokenizer to Filter:* "four", "score", "and", "twenty"
 
 *Out:* "four", "scor", "score", "twen", "twent", "twenty"
+
+*Example:*
+
+Preserve original term.
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="edgeNGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
+</analyzer>
+----
+
+*In:* "four score"
+
+*Tokenizer to Filter:* "four", "score"
+
+*Out:* "fo", "fou", "four", "sc, "sco", "score"
 
 == English Minimal Stem Filter
 
@@ -732,7 +816,7 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 This filter is a custom Unicode normalization form that applies the foldings specified in http://www.unicode.org/reports/tr30/tr30-4.html[Unicode TR #30: Character Foldings] in addition to the `NFKC_Casefold` normalization form as described in <<ICU Normalizer 2 Filter>>. This filter is a better substitute for the combined behavior of the <<ASCII Folding Filter>>, <<Lower Case Filter>>, and <<ICU Normalizer 2 Filter>>.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 *Factory class:* `solr.ICUFoldingFilterFactory`
 
@@ -840,7 +924,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 For detailed information about these normalization forms, see http://unicode.org/reports/tr15/[Unicode Normalization Forms].
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == ICU Transform Filter
 
@@ -882,7 +966,7 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
-To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See `solr/contrib/analysis-extras/README.txt` for instructions on which jars you need to add.
+To use this filter, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See `solr/contrib/analysis-extras/README.md` for instructions on which jars you need to add.
 
 == Keep Word Filter
 
@@ -1377,6 +1461,8 @@ Generates n-gram tokens of sizes in the given range. Note that tokens are ordere
 
 `maxGramSize`:: (integer, default 2) The maximum gram size.
 
+`preserveOriginal`:: (boolean, default false) If true keep the original term even if it is shorter than `minGramSize` or longer than `maxGramSize`.
+
 *Example:*
 
 Default behavior.
@@ -1448,6 +1534,24 @@ A range of 3 to 5.
 *Tokenizer to Filter:* "four", "score"
 
 *Out:* "fou", "four", "our", "sco", "scor", "score", "cor", "core", "ore"
+
+*Example:*
+
+Preserve original term.
+
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="nGram" minGramSize="2" maxGramSize="3" preserveOriginal="true"/>
+</analyzer>
+----
+
+*In:* "four score"
+
+*Tokenizer to Filter:* "four", "score"
+
+*Out:* "fo", "fou", "ou", "our", "ur", "four", "sc", "sco", "co", "cor", "or", "ore", "re", "score"
 
 == Numeric Payload Token Filter
 
@@ -2136,7 +2240,7 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 *Arguments:*
 
-`words`:: (optional; default: {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
+`words`:: (optional; default: {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/core/StopAnalyzer.html[`StopAnalyzer#ENGLISH_STOP_WORDS_SET`] ) The name of a stopwords file to parse.
 
 `format`:: (optional; default: `wordset`) Defines how the words file will be parsed. If `words` is not specified, then `format` must not be specified. The valid values for the format option are:
 
@@ -2210,7 +2314,7 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 
 *Arguments:*
 
-`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-and-plugin-loading.adoc#resource-and-plugin-loading,Resource and Plugin Loading>> for more information.
+`synonyms`:: (required) The path of a file that contains a list of synonyms, one per line. In the (default) `solr` format - see the `format` argument below for alternatives - blank lines and lines that begin with "`#`" are ignored. This may be a comma-separated list of paths.  See <<resource-loading.adoc#resource-loading,Resource Loading>> for more information.
 +
 There are two ways to specify synonym mappings:
 +
@@ -2222,7 +2326,7 @@ There are two ways to specify synonym mappings:
 
 `expand`:: (optional; default: `true`) If `true`, a synonym will be expanded to all equivalent synonyms. If `false`, all equivalent synonyms will be reduced to the first in the list.
 
-`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
+`format`:: (optional; default: `solr`) Controls how the synonyms will be parsed. The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser)`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported, or you may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
 `tokenizerFactory`:: (optional; default: `WhitespaceTokenizerFactory`) The name of the tokenizer factory to use when parsing the synonyms file. Arguments with the name prefix `tokenizerFactory.*` will be supplied as init params to the specified tokenizer factory.
 +
@@ -2293,6 +2397,39 @@ small => tiny,teeny,weeny
 *Tokenizer to Filter:* "teh"(1), "ginormous"(2), "humungous"(3), "sofa"(4)
 
 *Out:* "the"(1), "large"(2), "large"(3), "couch"(4), "sofa"(4), "divan"(4)
+
+*Weighted Synonyms:*
+
+Combining the DelimitedBoostFilter with the Synonym Graph Filter you can achieve Weighted synonyms at query time.
+For more information feel free to refer to:
+https://sease.io/2020/02/introducing-weighted-synonyms-in-apache-lucene.html
+For the following examples, assume a synonyms file named `boostedSynonyms.txt`:
+
+[source,text]
+----
+leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
+lion => panthera leo|0.9, simba|0.8, kimba|0.75
+----
+
+*Example:*
+
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="boostedSynonyms.txt"/>
+  <filter name="delimitedBoost"/>
+</analyzer>
+----
+====
+
+*In:* "lion"
+
+*Tokenizer to Filter:* "lion"(1)
+
+*Out:* "panthera"(1), "leo"(2)[0.9], "simba"(1)[0.8], "kimba"(1)[0.75]
 
 == Token Offset Payload Filter
 

@@ -73,7 +73,7 @@ public class TestCachePurging extends MonitorTestBase {
   }
 
   public void testConcurrentPurges() throws Exception {
-    int iters = Integer.getInteger("purgeIters", 2);
+    int iters = Integer.getInteger("purgeIters", 1);
     for (int i = 0; i < iters; i++) {
       doConcurrentPurgesAndUpdatesTest();
     }

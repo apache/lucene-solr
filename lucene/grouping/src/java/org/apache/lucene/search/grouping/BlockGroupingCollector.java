@@ -67,6 +67,10 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.experimental
  */
 
+// TODO: TopGroups.merge() won't work with TopGroups returned by this collector, because
+// each block will be on a different shard.  Add a specialized merge() static method
+// to this collector?
+
 public class BlockGroupingCollector extends SimpleCollector {
 
   private int[] pendingSubDocs;

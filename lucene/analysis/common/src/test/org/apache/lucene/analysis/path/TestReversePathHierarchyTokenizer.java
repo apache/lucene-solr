@@ -184,7 +184,7 @@ public class TestReversePathHierarchyTokenizer extends BaseTokenStreamTestCase {
       }    
     };
     // TODO: properly support positionLengthAttribute
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER, 20, false, false);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER, 20, false, false);
     a.close();
   }
   

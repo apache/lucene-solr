@@ -85,10 +85,10 @@ public class SloppyMath {
    * effectively does the second half of the computation.
    */
   public static double haversinSortKey(double lat1, double lon1, double lat2, double lon2) {
-    double x1 = lat1 * TO_RADIANS;
-    double x2 = lat2 * TO_RADIANS;
+    double x1 = Math.toRadians(lat1);
+    double x2 = Math.toRadians(lat2);
     double h1 = 1 - cos(x1 - x2);
-    double h2 = 1 - cos((lon1 - lon2) * TO_RADIANS);
+    double h2 = 1 - cos(Math.toRadians(lon1 - lon2));
     double h = h1 + cos(x1) * cos(x2) * h2;
     // clobber crazy precision so subsequent rounding does not create ties.
     return Double.longBitsToDouble(Double.doubleToRawLongBits(h) & 0xFFFFFFFFFFFFFFF8L);
@@ -176,29 +176,6 @@ public class SloppyMath {
     }
   }
 
-  /**
-   * Convert to degrees.
-   * @param radians radians to convert to degrees
-   * @return degrees
-   */
-  public static double toDegrees(final double radians) {
-    return radians * TO_DEGREES;
-  }
-  
-  /**
-   * Convert to radians.
-   * @param degrees degrees to convert to radians
-   * @return radians
-   */
-  public static double toRadians(final double degrees) {
-    return degrees * TO_RADIANS;
-  }
-  
-  // haversin
-  // TODO: remove these for java 9, they fixed Math.toDegrees()/toRadians() to work just like this.
-  public static final double TO_RADIANS = Math.PI / 180D;
-  public static final double TO_DEGREES = 180D / Math.PI;
-
   // Earth's mean radius, in meters and kilometers; see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
   private static final double TO_METERS = 6_371_008.7714D; // equatorial radius
   private static final double TO_KILOMETERS = 6_371.0087714D; // equatorial radius
@@ -227,7 +204,7 @@ public class SloppyMath {
     
   // Supposed to be >= sin(77.2deg), as fdlibm code is supposed to work with values > 0.975,
   // but seems to work well enough as long as value >= sin(25deg).
-  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(toRadians(73.0));
+  private static final double ASIN_MAX_VALUE_FOR_TABS = StrictMath.sin(Math.toRadians(73.0));
   
   private static final int ASIN_TABS_SIZE = (1<<13) + 1;
   private static final double ASIN_DELTA = ASIN_MAX_VALUE_FOR_TABS/(ASIN_TABS_SIZE - 1);

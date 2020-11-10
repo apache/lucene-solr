@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
@@ -136,8 +136,8 @@ class OffsetIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator mi = in.matches(field, ctx, doc);
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    IntervalMatchesIterator mi = in.matches(field, ctx, doc);
     if (mi == null) {
       return null;
     }
@@ -146,7 +146,7 @@ class OffsetIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-    in.visit(field, visitor);
+    in.visit(field, visitor.getSubVisitor(BooleanClause.Occur.MUST, new IntervalQuery(field, this)));
   }
 
   @Override

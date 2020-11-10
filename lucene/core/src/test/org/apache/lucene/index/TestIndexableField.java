@@ -92,7 +92,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public int pointDataDimensionCount() {
+      public int pointDimensionCount() {
         return 0;
       }
 
@@ -104,6 +104,16 @@ public class TestIndexableField extends LuceneTestCase {
       @Override
       public int pointNumBytes() {
         return 0;
+      }
+
+      @Override
+      public int vectorDimension() {
+        return 0;
+      }
+
+      @Override
+      public VectorValues.SearchStrategy vectorSearchStrategy() {
+        return VectorValues.SearchStrategy.NONE;
       }
 
       @Override

@@ -20,6 +20,7 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -43,11 +44,12 @@ public final class TokenInfoDictionary extends BinaryDictionary {
    * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
    * this class's name as the path.
    */
-  TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+  public TokenInfoDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
     super(resourceScheme, resourcePath);
     FST<Long> fst;
     try (InputStream is = new BufferedInputStream(getResource(FST_FILENAME_SUFFIX))) {
-      fst = new FST<>(new InputStreamDataInput(is), PositiveIntOutputs.getSingleton());
+      DataInput in = new InputStreamDataInput(is);
+      fst = new FST<>(in, in, PositiveIntOutputs.getSingleton());
     }
     this.fst = new TokenInfoFST(fst);
   }

@@ -33,14 +33,11 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-// See: https://github.com/DmitryKey/luke/issues/111
-@LuceneTestCase.SuppressCodecs({
-   "SimpleText", "DummyCompressingStoredFields", "HighCompressionCompressingStoredFields", "FastCompressingStoredFields", "FastDecompressionCompressingStoredFields"
-})
 public class CommitsImplTest extends LuceneTestCase {
 
   private DirectoryReader reader;
@@ -63,7 +60,7 @@ public class CommitsImplTest extends LuceneTestCase {
 
     Directory dir = newFSDirectory(indexDir);
 
-    IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.getDefaultCodec());
     config.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
 

@@ -17,11 +17,10 @@
 package org.apache.solr.core;
 
 import com.google.common.collect.Lists;
-import org.apache.http.annotation.Experimental;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +130,7 @@ class SolrCores {
       }
       
       ExecutorService coreCloseExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(Integer.MAX_VALUE,
-          new DefaultSolrThreadFactory("coreCloseExecutor"));
+          new SolrNamedThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
           coreCloseExecutor.submit(() -> {
@@ -159,6 +159,8 @@ class SolrCores {
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
     synchronized (modifyLock) {
+      addCoreDescriptor(cd); // cd must always be registered if we register a core
+
       if (cd.isTransient()) {
         if (getTransientCacheHandler() != null) {
           return getTransientCacheHandler().addCore(cd.getName(), core);
@@ -210,28 +212,6 @@ class SolrCores {
     }
     return set;
   }
-
-  /** This method is currently experimental.
-   *
-   * @return a Collection of the names that a specific core object is mapped to, there are more than one.
-   */
-  @Experimental
-  List<String> getNamesForCore(SolrCore core) {
-    List<String> lst = new ArrayList<>();
-
-    synchronized (modifyLock) {
-      for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
-        if (core == entry.getValue()) {
-          lst.add(entry.getKey());
-        }
-      }
-      if (getTransientCacheHandler() != null) {
-        lst.addAll(getTransientCacheHandler().getNamesForCore(core));
-      }
-    }
-    return lst;
-  }
-
   /**
    * Gets a list of all cores, loaded and unloaded 
    *
@@ -303,15 +283,19 @@ class SolrCores {
       return ret;
     }
   }
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
+    return getCoreFromAnyList(name, incRefCount, null);
+  }
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  SolrCore  getCoreFromAnyList(String name, boolean incRefCount) {
+  SolrCore  getCoreFromAnyList(String name, boolean incRefCount, UUID coreId) {
     synchronized (modifyLock) {
       SolrCore core = cores.get(name);
 
       if (core == null && getTransientCacheHandler() != null) {
         core = getTransientCacheHandler().getCore(name);
       }
+      if(core != null && coreId != null && coreId != core.uniqueId) return null;
 
       if (core != null && incRefCount) {
         core.open();
@@ -541,8 +525,8 @@ class SolrCores {
   public TransientSolrCoreCache getTransientCacheHandler() {
 
     if (transientCoreCache == null) {
-      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom " +
-          "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
+      log.error("No transient handler has been defined. Check solr.xml to see if an attempt to provide a custom {}"
+          , "TransientSolrCoreCacheFactory was done incorrectly since the default should have been used otherwise.");
       return null;
     }
     return transientCoreCache.getTransientSolrCoreCache();

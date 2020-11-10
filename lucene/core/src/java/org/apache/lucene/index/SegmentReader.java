@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -27,6 +26,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -73,7 +73,7 @@ public final class SegmentReader extends CodecReader {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, boolean openedFromWriter, IOContext context, Map<String, String> readerAttributes) throws IOException {
+  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
     this.si = si.clone();
     this.originalSi = si;
     this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
@@ -81,7 +81,7 @@ public final class SegmentReader extends CodecReader {
     // We pull liveDocs/DV updates from disk:
     this.isNRT = false;
     
-    core = new SegmentCoreReaders(si.info.dir, si, openedFromWriter, context, readerAttributes);
+    core = new SegmentCoreReaders(si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
     
     boolean success = false;
@@ -261,6 +261,11 @@ public final class SegmentReader extends CodecReader {
   }
 
   @Override
+  public VectorReader getVectorReader() {
+    return core.vectorReader;
+  }
+
+  @Override
   public FieldsProducer getPostingsReader() {
     ensureOpen();
     return core.fields;
@@ -366,5 +371,13 @@ public final class SegmentReader extends CodecReader {
    */
   public Bits getHardLiveDocs() {
     return hardLiveDocs;
+  }
+
+  @Override
+  public void checkIntegrity() throws IOException {
+    super.checkIntegrity();
+    if (core.cfsReader != null) {
+      core.cfsReader.checkIntegrity();
+    }
   }
 }

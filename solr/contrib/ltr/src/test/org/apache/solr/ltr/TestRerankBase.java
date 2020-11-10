@@ -32,9 +32,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -47,13 +44,8 @@ import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.rest.ManagedResourceStorage;
-import org.apache.solr.rest.SolrSchemaRestApi;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,13 +151,15 @@ public class TestRerankBase extends RestTestBase {
     }
 
     if (fstore.exists()) {
-      log.info("remove feature store config file in {}",
-          fstore.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("remove feature store config file in {}", fstore.getAbsolutePath());
+      }
       Files.delete(fstore.toPath());
     }
     if (mstore.exists()) {
-      log.info("remove model store config file in {}",
-          mstore.getAbsolutePath());
+      if (log.isInfoEnabled()) {
+        log.info("remove model store config file in {}", mstore.getAbsolutePath());
+      }
       Files.delete(mstore.toPath());
     }
     if (!solrconfig.equals("solrconfig.xml")) {
@@ -181,17 +175,8 @@ public class TestRerankBase extends RestTestBase {
               + "/collection1/conf/schema.xml"));
     }
 
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi",
-        ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application",
-        SolrSchemaRestApi.class.getCanonicalName());
-    solrRestApi.setInitParameter("storageIO",
-        ManagedResourceStorage.InMemoryStorageIO.class.getCanonicalName());
-    extraServlets.put(solrRestApi, PARENT_ENDPOINT);
-
     System.setProperty("managed.schema.mutable", "true");
-
+    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
     return extraServlets;
   }
 
@@ -433,26 +418,6 @@ public class TestRerankBase extends RestTestBase {
     assertU(adoc("title", "bloomberg bloomberg bloomberg bloomberg",
         "description", "bloomberg", "id", "9", "popularity", "5"));
     assertU(commit());
-  }
-
-  protected static void bulkIndex(String filePath) throws Exception {
-    final SolrQueryRequestBase req = lrf.makeRequest(
-        CommonParams.STREAM_CONTENTTYPE, "application/xml");
-
-    final List<ContentStream> streams = new ArrayList<ContentStream>();
-    final File file = new File(filePath);
-    streams.add(new ContentStreamBase.FileStream(file));
-    req.setContentStreams(streams);
-
-    try {
-      final SolrQueryResponse res = new SolrQueryResponse();
-      h.updater.handleRequest(req, res);
-    } catch (final Throwable ex) {
-      // Ignore. Just log the exception and go to the next file
-      log.error(ex.getMessage(), ex);
-    }
-    assertU(commit());
-
   }
 
   protected static void buildIndexUsingAdoc(String filepath)

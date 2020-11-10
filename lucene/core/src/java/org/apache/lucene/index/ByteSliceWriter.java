@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ByteBlockPool;
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 
 
 /**
@@ -26,8 +27,11 @@ import org.apache.lucene.util.ByteBlockPool;
  * byte[].  This is used by DocumentsWriter to hold the
  * posting list for many terms in RAM.
  */
-
 final class ByteSliceWriter extends DataOutput {
+
+  /* Initial chunks size of the shared byte[] blocks used to
+     store postings data */
+  private final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
   private byte[] slice;
   private int upto;
@@ -81,6 +85,6 @@ final class ByteSliceWriter extends DataOutput {
   }
 
   public int getAddress() {
-    return upto + (offset0 & DocumentsWriterPerThread.BYTE_BLOCK_NOT_MASK);
+    return upto + (offset0 & BYTE_BLOCK_NOT_MASK);
   }
 }

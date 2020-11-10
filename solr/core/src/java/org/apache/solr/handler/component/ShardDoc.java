@@ -32,6 +32,7 @@ public class ShardDoc extends FieldDoc {
     // this is currently the uniqueKeyField but
     // may be replaced with internal docid in a future release.
 
+  @SuppressWarnings({"rawtypes"})
   public NamedList sortFieldValues;
   // sort field values for *all* docs in a particular shard.
   // this doc's values are in position orderInShard

@@ -93,12 +93,14 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals(JSONWriter.JSON_NL_STYLE_COUNT, namedListStyles.length);
   }
 
+  @SuppressWarnings({"unchecked"})
   private void implTestJSON(final String namedListStyle) throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl",namedListStyle, "indent", "off");
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("data1", "he\u2028llo\u2029!");       // make sure that 2028 and 2029 are both escaped (they are illegal in javascript)
     nl.add(null, 42);
@@ -180,8 +182,8 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
                result.contains("\"id\"") &&
                result.contains("\"score\"") && result.contains("_children_"));
 
-    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7,'docs':[{'id':'1', 'score':'0.7'," +
-        " '_children_':{'numFound':1,'start':0,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
+    String expectedResult = "{'response':{'numFound':1,'start':0,'maxScore':0.7, 'numFoundExact':true,'docs':[{'id':'1', 'score':'0.7'," +
+        " '_children_':{'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'2', 'score':'0.4', 'path':['a>b', 'a>b>c']}] }}] }}";
     String error = JSONTestUtil.match(result, "=="+expectedResult);
     assertNull("response validation failed with error: " + error, error);
 
@@ -211,7 +213,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeIterator(org.apache.solr.common.IteratorWriter) throws java.io.IOException");
     methodsExpectedNotOverriden.add("public default void org.apache.solr.common.util.JsonTextWriter.writeJsonIter(java.util.Iterator) throws java.io.IOException");
 
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
 
     List<Method> allSuperClassMethods = new ArrayList<>();
@@ -256,7 +258,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testArrntvWriterLacksMethodsOfItsOwn() {
-    final Class<?> subClass = ArrayOfNameTypeValueJSONWriter.class;
+    final Class<?> subClass = JSONResponseWriter.ArrayOfNameTypeValueJSONWriter.class;
     final Class<?> superClass = subClass.getSuperclass();
     // ArrayOfNamedValuePairJSONWriter is a simple sub-class
     // which should have (almost) no methods of its own

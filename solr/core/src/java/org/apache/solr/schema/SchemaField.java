@@ -26,6 +26,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -48,7 +49,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   boolean required = false;  // this can't be final since it may be changed dynamically
   
   /** Declared field property overrides */
-  Map<String,?> args = Collections.emptyMap();
+  Map<String,Object> args = Collections.emptyMap();
 
 
   /** Create a new SchemaField with the given name and type,
@@ -154,7 +155,23 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return type.getSortField(this, top);
   }
 
-  /** 
+  /**
+   * Expert/advanced method to get the field {@link org.apache.lucene.codecs.PostingsFormat}.
+   * @return The {@code postingsFormat} declared; or null if unspecified.
+   */
+  public String getPostingsFormat() {
+    return (String) args.getOrDefault(POSTINGS_FORMAT, type.getPostingsFormat());
+  }
+
+  /**
+   * Expert/advanced method to get the field {@link org.apache.lucene.codecs.DocValuesFormat}.
+   * @return The {@code docValuesFormat} declared; or null if unspecified.
+   */
+  public String getDocValuesFormat() {
+    return (String) args.getOrDefault(DOC_VALUES_FORMAT, type.getDocValuesFormat());
+  }
+
+  /**
    * Sanity checks that the properties of this field type are plausible 
    * for a field that may be used in sorting, throwing an appropriate 
    * exception (including the field name) if it is not.  FieldType subclasses 
@@ -417,7 +434,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   @Override
-  public int pointDataDimensionCount() {
+  public int pointDimensionCount() {
     return 0;
   }
 
@@ -429,6 +446,16 @@ public final class SchemaField extends FieldProperties implements IndexableField
   @Override
   public int pointNumBytes() {
     return 0;
+  }
+
+  @Override
+  public int vectorDimension() {
+    return 0;
+  }
+
+  @Override
+  public VectorValues.SearchStrategy vectorSearchStrategy() {
+    return VectorValues.SearchStrategy.NONE;
   }
 
   @Override

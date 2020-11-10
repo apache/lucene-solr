@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.SortField;
 
 /**
@@ -35,12 +36,29 @@ public class WrappedIntPointField extends IntPointField {
       throw new RuntimeException("impossible?", e);
     }
     SimpleBindings bindings = new SimpleBindings();
-    bindings.add(superSort);
+    bindings.add(superSort.getField(), fromSortField(superSort));
     return expr.getSortField(bindings, superSort.getReverse());
   }
 
   @Override
   public SortField getSortField(final SchemaField field, final boolean reverse) {
     return getSortField(super.getSortField(field, reverse), field);
+  }
+
+  private static DoubleValuesSource fromSortField(SortField field) {
+    switch(field.getType()) {
+      case INT:
+        return DoubleValuesSource.fromIntField(field.getField());
+      case LONG:
+        return DoubleValuesSource.fromLongField(field.getField());
+      case FLOAT:
+        return DoubleValuesSource.fromFloatField(field.getField());
+      case DOUBLE:
+        return DoubleValuesSource.fromDoubleField(field.getField());
+      case SCORE:
+        return DoubleValuesSource.SCORES;
+      default:
+        throw new UnsupportedOperationException();
+    }
   }
 }

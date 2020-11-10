@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.tr;
 
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 import java.util.Map;
 
@@ -45,6 +45,11 @@ public class ApostropheFilterFactory extends TokenFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameter(s): " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ApostropheFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

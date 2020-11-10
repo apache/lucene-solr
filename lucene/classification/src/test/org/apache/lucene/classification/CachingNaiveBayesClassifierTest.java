@@ -93,7 +93,8 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
   @Test
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer,  numDocs);
     try {
       CachingNaiveBayesClassifier simpleNaiveBayesClassifier = new CachingNaiveBayesClassifier(leafReader,
           analyzer, null, categoryFieldName, textFieldName);

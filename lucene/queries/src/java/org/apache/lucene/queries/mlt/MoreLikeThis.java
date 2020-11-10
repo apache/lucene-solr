@@ -80,7 +80,7 @@ import org.apache.lucene.util.PriorityQueue;
  * 
  * Doug
  * </code></pre>
- * <h3>Initial Usage</h3>
+ * <h2>Initial Usage</h2>
  * <p>
  * This class has lots of options to try to make it efficient and flexible.
  * The simplest possible usage is as follows. The bold
@@ -109,7 +109,7 @@ import org.apache.lucene.util.PriorityQueue;
  * <li> call the searcher to find the similar docs
  * </ol>
  * <br>
- * <h3>More Advanced Usage</h3>
+ * <h2>More Advanced Usage</h2>
  * <p>
  * You may want to use {@link #setFieldNames setFieldNames(...)} so you can examine
  * multiple fields (e.g. body and title) for similarity.

@@ -168,7 +168,7 @@ public final class DocValues {
   /**
    * An empty SortedNumericDocValues which returns zero values for every document 
    */
-  public static final SortedNumericDocValues emptySortedNumeric(int maxDoc) {
+  public static final SortedNumericDocValues emptySortedNumeric() {
     return new SortedNumericDocValues() {
       
       private int doc = -1;
@@ -387,7 +387,7 @@ public final class DocValues {
       NumericDocValues single = reader.getNumericDocValues(field);
       if (single == null) {
         checkField(reader, field, DocValuesType.SORTED_NUMERIC, DocValuesType.NUMERIC);
-        return emptySortedNumeric(reader.maxDoc());
+        return emptySortedNumeric();
       }
       return singleton(single);
     }

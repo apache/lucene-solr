@@ -19,15 +19,18 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -36,8 +39,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -49,6 +55,28 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * <p>
+ * Solr Request Handler for graph traversal with streaming functions that responds with GraphML markup.
+ * </p>
+ * <p>
+ * It loads the default set of streaming expression functions via {@link org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
+ * </p>
+ * <p>
+ * To add additional functions, just define them as plugins in solrconfig.xml via
+ * {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * }
+ * </p>
+ * <p>
+ * The @deprecated configuration method as of Solr 8.5 is
+  * {@code
+ *  &lt;lst name="streamFunctions"&gt;
+ *    &lt;str name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt;
+ *    &lt;str name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt;
+ *  &lt;/lst&gt;
+  * }
+ *</p>
+ *
  * @since 6.1.0
  */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -56,28 +84,20 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   private StreamFactory streamFactory = new DefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private SolrClientCache solrClientCache;
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
     return PermissionNameProvider.Name.READ_PERM;
   }
 
+  @SuppressWarnings({"unchecked"})
   public void inform(SolrCore core) {
-
-    /* The stream factory will always contain the zkUrl for the given collection
-     * Adds default streams with their corresponding function names. These
-     * defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override
-     *  <lst name="streamFunctions">
-     *    <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *    <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
-     *  </lst>
-     * */
-
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
     this.coreName = core.getName();
+    this.solrClientCache = coreContainer.getSolrClientCache();
 
     if(coreContainer.isZooKeeperAware()) {
       defaultCollection = core.getCoreDescriptor().getCollectionName();
@@ -87,17 +107,33 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
+    StreamHandler.addExpressiblePlugins(streamFactory, core);
+
+    // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){
+      log.warn("solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
-      for(Entry<String,?> functionMapping : functionMappings){
-        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
-            Expressible.class);
-        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
+      for(Entry<String,?> functionMapping : functionMappings) {
+        String key = functionMapping.getKey();
+        PluginInfo pluginInfo = new PluginInfo(key, Collections.singletonMap("class", functionMapping.getValue()));
+
+        if (pluginInfo.pkgName == null) {
+          Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String) functionMapping.getValue(),
+              Expressible.class);
+          streamFactory.withFunctionName(key, clazz);
+        } else {
+          @SuppressWarnings("resource")
+          StreamHandler.ExpressibleHolder holder = new StreamHandler.ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class.getName()));
+          streamFactory.withFunctionName(key, () -> holder.getClazz());
+        }
+
       }
+
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
     params = adjustParams(params);
@@ -111,24 +147,26 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     } catch (Exception e) {
       //Catch exceptions that occur while the stream is being created. This will include streaming expression parse rules.
       SolrException.log(log, e);
+      @SuppressWarnings({"rawtypes"})
       Map requestContext = req.getContext();
       requestContext.put("stream", new DummyErrorStream(e));
       return;
     }
 
     StreamContext context = new StreamContext();
-    context.setSolrClientCache(StreamHandler.clientCache);
+    context.setSolrClientCache(solrClientCache);
     context.put("core", this.coreName);
     Traversal traversal = new Traversal();
     context.put("traversal", traversal);
     tupleStream.setStreamContext(context);
+    @SuppressWarnings({"rawtypes"})
     Map requestContext = req.getContext();
     requestContext.put("stream", new TimerStream(new ExceptionStream(tupleStream)));
     requestContext.put("traversal", traversal);
   }
 
   public String getDescription() {
-    return "StreamHandler";
+    return "GraphHandler";
   }
 
   public String getSource() {
@@ -169,11 +207,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     public Tuple read() {
-      String msg = e.getMessage();
-      Map m = new HashMap();
-      m.put("EOF", true);
-      m.put("EXCEPTION", msg);
-      return new Tuple(m);
+      return Tuple.EXCEPTION(e.getMessage(), true);
     }
   }
 
@@ -220,11 +254,12 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() throws IOException {
       Tuple tuple = this.tupleStream.read();
       if(tuple.EOF) {
         long totalTime = (System.nanoTime() - begin) / 1000000;
-        tuple.fields.put("RESPONSE_TIME", totalTime);
+        tuple.put(StreamParams.RESPONSE_TIME, totalTime);
       }
       return tuple;
     }

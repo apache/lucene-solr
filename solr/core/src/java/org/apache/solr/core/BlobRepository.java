@@ -60,7 +60,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
-  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5 * 1024 * 1024)));
+
+  private static final long MAX_JAR_SIZE = Long.parseLong(
+      System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -77,9 +79,11 @@ public class BlobRepository {
   }
 
   private final CoreContainer coreContainer;
+  @SuppressWarnings({"rawtypes"})
   private Map<String, BlobContent> blobs = createMap();
 
   // for unit tests to override
+  @SuppressWarnings({"rawtypes"})
   ConcurrentHashMap<String, BlobContent> createMap() {
     return new ConcurrentHashMap<>();
   }
@@ -116,8 +120,9 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
-    StringBuffer keyBuilder = new StringBuffer(key);
+    StringBuilder keyBuilder = new StringBuilder(key);
     if (decoder != null) keyBuilder.append(decoder.getName());
     keyBuilder.append("/").append(sha512);
 
@@ -125,6 +130,7 @@ public class BlobRepository {
   }
 
   // do the actual work returning the appropriate type...
+  @SuppressWarnings({"unchecked"})
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
     BlobContent<T> aBlob;
     if (this.coreContainer.isZooKeeperAware()) {
@@ -253,7 +259,9 @@ public class BlobRepository {
             replica = r;
             break;
           } else {
-            log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+            if (log.isInfoEnabled()) {
+              log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+            }
           }
         }
       }
@@ -269,7 +277,7 @@ public class BlobRepository {
    *
    * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
    */
-  public void decrementBlobRefCount(BlobContentRef ref) {
+  public void decrementBlobRefCount(@SuppressWarnings({"rawtypes"})BlobContentRef ref) {
     if (ref == null) return;
     synchronized (ref.blob.references) {
       if (!ref.blob.references.remove(ref)) {
@@ -281,6 +289,7 @@ public class BlobRepository {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static class BlobContent<T> {
     public final String key;
     private final T content; // holds byte buffer or cached object, holding both is a waste of memory

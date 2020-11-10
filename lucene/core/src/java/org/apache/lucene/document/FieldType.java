@@ -25,6 +25,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.VectorValues;
 
 /**
  * Describes the properties of a field.
@@ -41,9 +42,11 @@ public class FieldType implements IndexableFieldType  {
   private IndexOptions indexOptions = IndexOptions.NONE;
   private boolean frozen;
   private DocValuesType docValuesType = DocValuesType.NONE;
-  private int dataDimensionCount;
+  private int dimensionCount;
   private int indexDimensionCount;
   private int dimensionNumBytes;
+  private int vectorDimension;
+  private VectorValues.SearchStrategy vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
   private Map<String, String> attributes;
 
   /**
@@ -59,9 +62,11 @@ public class FieldType implements IndexableFieldType  {
     this.omitNorms = ref.omitNorms();
     this.indexOptions = ref.indexOptions();
     this.docValuesType = ref.docValuesType();
-    this.dataDimensionCount = ref.pointDataDimensionCount();
+    this.dimensionCount = ref.pointDimensionCount();
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
+    this.vectorDimension = ref.vectorDimension();
+    this.vectorSearchStrategy = ref.vectorSearchStrategy();
     if (ref.getAttributes() != null) {
       this.attributes = new HashMap<>(ref.getAttributes());
     }
@@ -294,18 +299,22 @@ public class FieldType implements IndexableFieldType  {
   /**
    * Enables points indexing with selectable dimension indexing.
    */
-  public void setDimensions(int dataDimensionCount, int indexDimensionCount, int dimensionNumBytes) {
-    if (dataDimensionCount < 0) {
-      throw new IllegalArgumentException("dataDimensionCount must be >= 0; got " + dataDimensionCount);
+  public void setDimensions(int dimensionCount, int indexDimensionCount, int dimensionNumBytes) {
+    checkIfFrozen();
+    if (dimensionCount < 0) {
+      throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
     }
-    if (dataDimensionCount > PointValues.MAX_DIMENSIONS) {
-      throw new IllegalArgumentException("dataDimensionCount must be <= " + PointValues.MAX_DIMENSIONS + "; got " + dataDimensionCount);
+    if (dimensionCount > PointValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("dimensionCount must be <= " + PointValues.MAX_DIMENSIONS + "; got " + dimensionCount);
     }
     if (indexDimensionCount < 0) {
       throw new IllegalArgumentException("indexDimensionCount must be >= 0; got " + indexDimensionCount);
     }
-    if (indexDimensionCount > dataDimensionCount) {
-      throw new IllegalArgumentException("indexDimensionCount must be <= dataDimensionCount: " + dataDimensionCount + "; got " + indexDimensionCount);
+    if (indexDimensionCount > dimensionCount) {
+      throw new IllegalArgumentException("indexDimensionCount must be <= dimensionCount: " + dimensionCount + "; got " + indexDimensionCount);
+    }
+    if (indexDimensionCount > PointValues.MAX_INDEX_DIMENSIONS) {
+      throw new IllegalArgumentException("indexDimensionCount must be <= " + PointValues.MAX_INDEX_DIMENSIONS + "; got " + indexDimensionCount);
     }
     if (dimensionNumBytes < 0) {
       throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
@@ -313,29 +322,29 @@ public class FieldType implements IndexableFieldType  {
     if (dimensionNumBytes > PointValues.MAX_NUM_BYTES) {
       throw new IllegalArgumentException("dimensionNumBytes must be <= " + PointValues.MAX_NUM_BYTES + "; got " + dimensionNumBytes);
     }
-    if (dataDimensionCount == 0) {
+    if (dimensionCount == 0) {
       if (indexDimensionCount != 0) {
-        throw new IllegalArgumentException("when dataDimensionCount is 0, indexDimensionCount must be 0; got " + indexDimensionCount);
+        throw new IllegalArgumentException("when dimensionCount is 0, indexDimensionCount must be 0; got " + indexDimensionCount);
       }
       if (dimensionNumBytes != 0) {
-        throw new IllegalArgumentException("when dataDimensionCount is 0, dimensionNumBytes must be 0; got " + dimensionNumBytes);
+        throw new IllegalArgumentException("when dimensionCount is 0, dimensionNumBytes must be 0; got " + dimensionNumBytes);
       }
     } else if (indexDimensionCount == 0) {
-      throw new IllegalArgumentException("when dataDimensionCount is > 0, indexDimensionCount must be > 0; got " + indexDimensionCount);
+      throw new IllegalArgumentException("when dimensionCount is > 0, indexDimensionCount must be > 0; got " + indexDimensionCount);
     } else if (dimensionNumBytes == 0) {
-      if (dataDimensionCount != 0) {
-        throw new IllegalArgumentException("when dimensionNumBytes is 0, dataDimensionCount must be 0; got " + dataDimensionCount);
+      if (dimensionCount != 0) {
+        throw new IllegalArgumentException("when dimensionNumBytes is 0, dimensionCount must be 0; got " + dimensionCount);
       }
     }
 
-    this.dataDimensionCount = dataDimensionCount;
+    this.dimensionCount = dimensionCount;
     this.indexDimensionCount = indexDimensionCount;
     this.dimensionNumBytes = dimensionNumBytes;
   }
 
   @Override
-  public int pointDataDimensionCount() {
-    return dataDimensionCount;
+  public int pointDimensionCount() {
+    return dimensionCount;
   }
 
   @Override
@@ -346,6 +355,28 @@ public class FieldType implements IndexableFieldType  {
   @Override
   public int pointNumBytes() {
     return dimensionNumBytes;
+  }
+
+  void setVectorDimensionsAndSearchStrategy(int numDimensions, VectorValues.SearchStrategy distFunc) {
+    checkIfFrozen();
+    if (numDimensions <= 0) {
+      throw new IllegalArgumentException("vector numDimensions must be > 0; got " + numDimensions);
+    }
+    if (numDimensions > VectorValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("vector numDimensions must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + numDimensions);
+    }
+    this.vectorDimension = numDimensions;
+    this.vectorSearchStrategy = distFunc;
+  }
+
+  @Override
+  public int vectorDimension() {
+    return vectorDimension;
+  }
+
+  @Override
+  public VectorValues.SearchStrategy vectorSearchStrategy() {
+    return vectorSearchStrategy;
   }
 
   /**
@@ -407,12 +438,12 @@ public class FieldType implements IndexableFieldType  {
         result.append(indexOptions);
       }
     }
-    if (dataDimensionCount != 0) {
+    if (dimensionCount != 0) {
       if (result.length() > 0) {
         result.append(",");
       }
-      result.append("pointDataDimensionCount=");
-      result.append(dataDimensionCount);
+      result.append("pointDimensionCount=");
+      result.append(dimensionCount);
       result.append(",pointIndexDimensionCount=");
       result.append(indexDimensionCount);
       result.append(",pointNumBytes=");
@@ -459,7 +490,7 @@ public class FieldType implements IndexableFieldType  {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + dataDimensionCount;
+    result = prime * result + dimensionCount;
     result = prime * result + indexDimensionCount;
     result = prime * result + dimensionNumBytes;
     result = prime * result + ((docValuesType == null) ? 0 : docValuesType.hashCode());
@@ -480,7 +511,7 @@ public class FieldType implements IndexableFieldType  {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     FieldType other = (FieldType) obj;
-    if (dataDimensionCount != other.dataDimensionCount) return false;
+    if (dimensionCount != other.dimensionCount) return false;
     if (indexDimensionCount != other.indexDimensionCount) return false;
     if (dimensionNumBytes != other.dimensionNumBytes) return false;
     if (docValuesType != other.docValuesType) return false;

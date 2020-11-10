@@ -17,7 +17,7 @@
 package org.apache.lucene.analysis.charfilter;
 
 
-import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 import java.io.Reader;
 import java.util.Map;
@@ -52,6 +52,11 @@ public class HTMLStripCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public HTMLStripCharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

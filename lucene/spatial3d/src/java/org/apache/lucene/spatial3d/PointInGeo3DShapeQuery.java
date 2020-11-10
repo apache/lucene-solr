@@ -29,9 +29,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -56,13 +54,6 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
     this.shape = shape;
     this.shapeBounds = new XYZBounds();
     shape.getBounds(shapeBounds);
-
-    if (shape instanceof BasePlanetObject) {
-      BasePlanetObject planetObject = (BasePlanetObject) shape;
-      if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
-        throw new IllegalArgumentException("this qurey requires PlanetModel.WGS84, but got: " + planetObject.getPlanetModel());
-      }
-    }
   }
 
   @Override

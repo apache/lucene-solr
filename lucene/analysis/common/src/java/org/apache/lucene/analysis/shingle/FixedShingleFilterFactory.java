@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.shingle;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link FixedShingleFilter}
@@ -49,6 +49,11 @@ public class FixedShingleFilterFactory extends TokenFilterFactory {
     this.shingleSize = getInt(args, "shingleSize", 2);
     this.tokenSeparator = get(args, "tokenSeparator", " ");
     this.fillerToken = get(args, "fillerToken", "_");
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public FixedShingleFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

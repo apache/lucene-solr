@@ -35,8 +35,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class MonteCarloEvaluator extends RecursiveEvaluator {
   protected static final long serialVersionUID = 1L;
 
+  @SuppressWarnings({"rawtypes"})
   private Map variables = new LinkedHashMap();
 
+  @SuppressWarnings({"unchecked"})
   public MonteCarloEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory);
 
@@ -44,11 +46,8 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
     //Get all the named params
     Set<String> echo = null;
     boolean echoAll = false;
-    String currentName = null;
     for(StreamExpressionParameter np : namedParams) {
       String name = ((StreamExpressionNamedParameter)np).getName();
-      currentName = name;
-
 
       StreamExpressionParameter param = ((StreamExpressionNamedParameter)np).getParameter();
       if(factory.isEvaluator((StreamExpression)param)) {
@@ -83,7 +82,7 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
       StreamEvaluator iterationsEvaluator = containedEvaluators.get(1);
       Number itNum = (Number)iterationsEvaluator.evaluate(tuple);
       int it = itNum.intValue();
-      List<Number> results = new ArrayList();
+      List<Number> results = new ArrayList<>();
       for(int i=0; i<it; i++) {
         populateVariables(tuple);
         Number result = (Number)function.evaluate(tuple);
@@ -106,13 +105,14 @@ public class MonteCarloEvaluator extends RecursiveEvaluator {
 
   private void populateVariables(Tuple contextTuple) throws IOException {
 
+    @SuppressWarnings({"unchecked"})
     Set<Map.Entry<String, Object>> entries = variables.entrySet();
 
     for(Map.Entry<String, Object> entry : entries) {
       String name = entry.getKey();
       Object o = entry.getValue();
       if(o instanceof TupleStream) {
-        List<Tuple> tuples = new ArrayList();
+        List<Tuple> tuples = new ArrayList<>();
         TupleStream tStream = (TupleStream)o;
         tStream.setStreamContext(streamContext);
         try {

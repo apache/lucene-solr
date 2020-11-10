@@ -185,6 +185,7 @@ final class WANDScorer extends Scorer {
     }
 
     assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
+    assert doc <= upTo;
 
     return true;
   }
@@ -374,17 +375,34 @@ final class WANDScorer extends Scorer {
     }
   }
 
+  /**
+   * Update {@code upTo} and maximum scores of sub scorers so that {@code upTo}
+   * is greater than or equal to the next candidate after {@code target}, i.e.
+   * the top of `head`.
+   */
   private void updateMaxScoresIfNecessary(int target) throws IOException {
     assert lead == null;
 
-    if (head.size() == 0) { // no matches in the current block
-      if (upTo != DocIdSetIterator.NO_MORE_DOCS) {
-        updateMaxScores(Math.max(target, upTo + 1));
+    while (upTo < DocIdSetIterator.NO_MORE_DOCS) {
+      if (head.size() == 0) {
+        // All clauses could fit in the tail, which means that the sum of the
+        // maximum scores of sub clauses is less than the minimum competitive score.
+        // Move to the next block until this condition becomes false.
+        target = Math.max(target, upTo + 1);
+        updateMaxScores(target);
+      } else if (head.top().doc > upTo) {
+        // We have a next candidate but it's not in the current block. We need to
+        // move to the next block in order to not miss any potential hits between
+        // `target` and `head.top().doc`.
+        assert head.top().doc >= target;
+        updateMaxScores(target);
+        break;
+      } else {
+        break;
       }
-    } else if (head.top().doc > upTo) { // the next candidate is in a different block
-      assert head.top().doc >= target;
-      updateMaxScores(target);
     }
+
+    assert upTo == DocIdSetIterator.NO_MORE_DOCS || (head.size() > 0 && head.top().doc <= upTo);
   }
 
   /** Set 'doc' to the next potential match, and move all disis of 'head' that
@@ -394,14 +412,12 @@ final class WANDScorer extends Scorer {
     updateMaxScoresIfNecessary(target);
     assert upTo >= target;
 
-    // If the head is empty, it means that the sum of all max scores is not
-    // enough to produce a competitive score. So we jump to the next block.
-    while (head.size() == 0) {
-      if (upTo == DocIdSetIterator.NO_MORE_DOCS) {
-        doc = DocIdSetIterator.NO_MORE_DOCS;
-        return;
-      }
-      updateMaxScores(upTo + 1);
+    // updateMaxScores tries to move forward until a block with matches is found
+    // so if the head is empty it means there are no matches at all anymore
+    if (head.size() == 0) {
+      assert upTo == DocIdSetIterator.NO_MORE_DOCS;
+      doc = DocIdSetIterator.NO_MORE_DOCS;
+      return;
     }
 
     // The top of `head` defines the next potential match

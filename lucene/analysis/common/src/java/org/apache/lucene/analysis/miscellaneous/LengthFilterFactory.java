@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link LengthFilter}. 
@@ -55,6 +55,11 @@ public class LengthFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public LengthFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public LengthFilter create(TokenStream input) {
     final LengthFilter filter = new LengthFilter(input,min,max);

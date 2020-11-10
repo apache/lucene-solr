@@ -60,6 +60,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
    *   @deprecated Solr now always includes in the response the {@link #REPFACT}, this parameter
    *   doesn't need to be explicitly set
    */
+  @Deprecated // SOLR-14034
   public static final String MIN_REPFACT = "min_rf";
   public static final String VER = "ver";
   public static final String OVERWRITE = "ow";
@@ -240,7 +241,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
 
   private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(SolrRequest solrRequest, List<String> servers);
+    T get(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, List<String> servers);
   }
 
   private <T extends LBSolrClient.Req> Map<String, T> getRoutes(DocRouter router,

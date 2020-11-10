@@ -57,6 +57,9 @@ public class PointMerger {
     public ValueIterator(SchemaField field, List<LeafReaderContext> readers, int totalBufferSize, int minSegBufferSize) throws IOException {
       assert field.getType().isPointField();
       queue = new PQueue(readers.size());
+      if (readers.isEmpty()) {
+        return;
+      }
       long ndocs = readers.get(readers.size()-1).docBase + readers.get(readers.size()-1).reader().maxDoc();
       for (LeafReaderContext ctx : readers) {
         PointValues pv = ctx.reader().getPointValues(field.getName());

@@ -54,6 +54,7 @@ public class AnalyticsRequestManager {
   public String analyticsRequest;
   public AnalyticsShardRequestManager shardStream;
   public boolean sendShards;
+  private boolean partialResults = false;
 
   /**
    * Create an manager with the given ungrouped expressions. This is straightforward in the new
@@ -276,4 +277,14 @@ public class AnalyticsRequestManager {
     }
     return analyticsResponse;
   }
+
+  public void setPartialResults(boolean b) {
+    this.partialResults=b;
+  }
+
+  public boolean isPartialResults() {
+    return partialResults;
+  }
+  
+  
 }

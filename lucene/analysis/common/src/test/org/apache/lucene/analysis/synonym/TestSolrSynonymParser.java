@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
  * Tests parser for the Solr synonyms format
  * @lucene.experimental
  */
+@Deprecated
 public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
   
   /** Tests some simple examples from the solr wiki */
@@ -183,6 +184,29 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
         new String[]{"word", "SYNONYM", "word"},
         new int[]{1, 0, 1},
         new int[]{1, 2, 1});
+  }
+
+  /** Verify type of original token is "word", others are Synonym. */
+  public void testTypes() throws Exception {
+    String testFile = "woods, wood, forest";
+
+    Analyzer analyzer = new MockAnalyzer(random());
+    SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
+    parser.parse(new StringReader(testFile));
+    final SynonymMap map = parser.build();
+    analyzer.close();
+
+    analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, true));
+      }
+    };
+
+    assertAnalyzesTo(analyzer, "lost in the forest",
+        new String[]{"lost", "in", "the", "forest", "woods", "wood"},
+        new String[]{"word", "word", "word", "word", "SYNONYM", "SYNONYM"});
   }
 
   /** Test parsing of simple examples. */

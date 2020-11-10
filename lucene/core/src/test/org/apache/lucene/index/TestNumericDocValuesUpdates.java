@@ -36,6 +36,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -1221,7 +1222,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     // create index
     final int numFields = TestUtil.nextInt(random(), 1, 4);
-    final int numDocs = atLeast(2000);
+    final int numDocs = TEST_NIGHTLY ? atLeast(2000) : atLeast(200);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", "doc" + i, Store.NO));
@@ -1240,7 +1241,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    final int numThreads = TestUtil.nextInt(random(), 3, 6);
+    final int numThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 3, 6) : 2;
     final CountDownLatch done = new CountDownLatch(numThreads);
     final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
     
@@ -1483,6 +1484,160 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IOUtils.close(dir1, dir2);
   }
 
+  public void testAddNewFieldAfterAddIndexes() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    final int numDocs = atLeast(50);
+    try (IndexWriter writer = new IndexWriter(dir1, conf)) {
+      // create first index
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("a1", 0L));
+        doc.add(new NumericDocValuesField("a2", 1L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(dir2, conf)) {
+      // create second index
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("i1", 0L));
+        doc.add(new NumericDocValuesField("i2", 1L));
+        doc.add(new NumericDocValuesField("i3", 2L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory mainDir = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(mainDir, conf)) {
+      writer.addIndexes(dir1, dir2);
+
+      List<FieldInfos> originalFieldInfos = new ArrayList<>();
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (LeafReaderContext leaf : reader.leaves()) {
+          originalFieldInfos.add(leaf.reader().getFieldInfos());
+        }
+      }
+      assertTrue(originalFieldInfos.size() > 0);
+
+      // update all doc values
+      long value = random().nextInt();
+      NumericDocValuesField[] update = new NumericDocValuesField[numDocs];
+      for (int i = 0; i < numDocs; i++) {
+        Term term = new Term("id", new BytesRef(Integer.toString(i)));
+        writer.updateDocValues(term, new NumericDocValuesField("ndv", value));
+      }
+
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (int i = 0; i < reader.leaves().size(); i++) {
+          LeafReader leafReader = reader.leaves().get(i).reader();
+          FieldInfos origFieldInfos = originalFieldInfos.get(i);
+          FieldInfos newFieldInfos = leafReader.getFieldInfos();
+          ensureConsistentFieldInfos(origFieldInfos, newFieldInfos);
+          assertEquals(DocValuesType.NUMERIC, newFieldInfos.fieldInfo("ndv").getDocValuesType());
+          NumericDocValues ndv = leafReader.getNumericDocValues("ndv");
+          for (int docId = 0; docId < leafReader.maxDoc(); docId++) {
+            assertEquals(docId, ndv.nextDoc());
+            assertEquals(ndv.longValue(), value);
+          }
+        }
+      }
+    }
+    IOUtils.close(dir1, dir2, mainDir);
+  }
+
+  public void testUpdatesAfterAddIndexes() throws Exception {
+    Directory dir1 = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    final int numDocs = atLeast(50);
+    try (IndexWriter writer = new IndexWriter(dir1, conf)) {
+      // create first index
+      for (int i = 0; i < numDocs; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("ndv", 4L));
+        doc.add(new NumericDocValuesField("control", 8L));
+        doc.add(new LongPoint("i1", 4L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory dir2 = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(dir2, conf)) {
+      // create second index
+      for (int i = numDocs; i < numDocs * 2; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", Integer.toString(i), Store.NO));
+        doc.add(new NumericDocValuesField("ndv", 2L));
+        doc.add(new NumericDocValuesField("control", 4L));
+        doc.add(new LongPoint("i2", 16L));
+        doc.add(new LongPoint("i2", 24L));
+        writer.addDocument(doc);
+      }
+    }
+
+    Directory mainDir = newDirectory();
+    conf = newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
+    try (IndexWriter writer = new IndexWriter(mainDir, conf)) {
+      writer.addIndexes(dir1, dir2);
+
+      List<FieldInfos> originalFieldInfos = new ArrayList<>();
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (LeafReaderContext leaf : reader.leaves()) {
+          originalFieldInfos.add(leaf.reader().getFieldInfos());
+        }
+      }
+      assertTrue(originalFieldInfos.size() > 0);
+
+      // update some docs to a random value
+      long value = random().nextInt();
+      Term term = new Term("id", new BytesRef(Integer.toString(random().nextInt(numDocs) * 2)));
+      writer.updateDocValues(term, new NumericDocValuesField("ndv", value),
+          new NumericDocValuesField("control", value*2));
+
+      try (DirectoryReader reader = DirectoryReader.open(writer)) {
+        for (int i = 0; i < reader.leaves().size(); i++) {
+          LeafReader leafReader = reader.leaves().get(i).reader();
+          FieldInfos origFieldInfos = originalFieldInfos.get(i);
+          FieldInfos newFieldInfos = leafReader.getFieldInfos();
+          ensureConsistentFieldInfos(origFieldInfos, newFieldInfos);
+          assertNotNull(newFieldInfos.fieldInfo("ndv"));
+          assertEquals(DocValuesType.NUMERIC, newFieldInfos.fieldInfo("ndv").getDocValuesType());
+          assertEquals(DocValuesType.NUMERIC, newFieldInfos.fieldInfo("control").getDocValuesType());
+          NumericDocValues ndv = leafReader.getNumericDocValues("ndv");
+          NumericDocValues control = leafReader.getNumericDocValues("control");
+          for (int docId = 0; docId < leafReader.maxDoc(); docId++) {
+            assertEquals(docId, ndv.nextDoc());
+            assertEquals(docId, control.nextDoc());
+            assertEquals(ndv.longValue()*2, control.longValue());
+          }
+        }
+        IndexSearcher searcher = new IndexSearcher(reader);
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i1", 4L)));
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i2", 16L)));
+        assertEquals(numDocs, searcher.count(LongPoint.newExactQuery("i2", 24L)));
+      }
+    }
+    IOUtils.close(dir1, dir2, mainDir);
+  }
+
+  private void ensureConsistentFieldInfos(FieldInfos old, FieldInfos after) {
+    for (FieldInfo fi : old) {
+      assertNotNull(after.fieldInfo(fi.number));
+      assertNotNull(after.fieldInfo(fi.name));
+      assertEquals(fi.number, after.fieldInfo(fi.name).number);
+      assertTrue(fi.getDocValuesGen() <= after.fieldInfo(fi.name).getDocValuesGen());
+    }
+  }
+
+
   public void testDeleteUnusedUpdatesFiles() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -1522,7 +1677,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
-    final int numDocs = atLeast(20000);
+    final int numDocs = TEST_NIGHTLY ? atLeast(20000) : atLeast(200);
     final int numNumericFields = atLeast(5);
     final int numTerms = TestUtil.nextInt(random, 10, 100); // terms should affect many docs
     Set<String> updateTerms = new HashSet<>();

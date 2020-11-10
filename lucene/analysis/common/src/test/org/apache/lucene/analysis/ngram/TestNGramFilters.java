@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -79,6 +79,20 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "maxGramSize", "3").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "te", "tes", "es", "est", "st" });
+  }
+
+  /**
+   * Test the NGramFilterFactory with preserve option
+   */
+  public void testNGramFilter3() throws Exception {
+    Reader reader = new StringReader("test");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("NGram",
+        "minGramSize", "2",
+        "maxGramSize", "3",
+        "preserveOriginal", "true").create(stream);
+    assertTokenStreamContents(stream, 
+        new String[] { "te", "tes", "es", "est", "st", "test" });
   }
 
   /**
@@ -150,6 +164,20 @@ public class TestNGramFilters extends BaseTokenStreamFactoryTestCase {
         "maxGramSize", "2").create(stream);
     assertTokenStreamContents(stream, 
         new String[] { "t", "te" });
+  }
+
+  /**
+   * Test EdgeNGramFilterFactory with preserve option
+   */
+  public void testEdgeNGramFilter3() throws Exception {
+    Reader reader = new StringReader("test");
+    TokenStream stream = whitespaceMockTokenizer(reader);
+    stream = tokenFilterFactory("EdgeNGram",
+        "minGramSize", "1",
+        "maxGramSize", "2",
+        "preserveOriginal", "true").create(stream);
+    assertTokenStreamContents(stream, 
+        new String[] { "t", "te", "test" });
   }
 
   /**

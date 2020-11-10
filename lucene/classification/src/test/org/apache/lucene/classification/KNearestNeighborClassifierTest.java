@@ -123,7 +123,8 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
   @Test
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer,  numDocs);
     try {
       KNearestNeighborClassifier kNearestNeighborClassifier = new KNearestNeighborClassifier(leafReader, null,
           analyzer, null, 1, 1, 1, categoryFieldName, textFieldName);

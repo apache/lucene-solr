@@ -99,7 +99,7 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new ReverseStringFilter(tokenizer));
       }
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
   

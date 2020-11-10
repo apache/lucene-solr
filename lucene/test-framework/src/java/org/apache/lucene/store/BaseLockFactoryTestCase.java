@@ -115,7 +115,7 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     final AtomicInteger atomicCounter = new AtomicInteger(0);
     final ReentrantLock assertingLock = new ReentrantLock();
     int numThreads = 2 + random().nextInt(10);
-    final int runs = atLeast(10000);
+    final int runs = atLeast(1000);
     CyclicBarrier barrier = new CyclicBarrier(numThreads);
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
@@ -168,8 +168,9 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     addDoc(w);
     w.close();
     
-    WriterThread writer = new WriterThread(100, dir);
-    SearcherThread searcher = new SearcherThread(100, dir);
+    int numIterations = atLeast(20);
+    WriterThread writer = new WriterThread(numIterations, dir);
+    SearcherThread searcher = new SearcherThread(numIterations, dir);
     writer.start();
     searcher.start();
 

@@ -39,7 +39,7 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
 public class RandomGeo3dShapeGenerator extends LuceneTestCase {
 
   /* Max num of iterations to find right shape under given constrains */
-  final private static int MAX_SHAPE_ITERATIONS = 50;
+  final private static int MAX_SHAPE_ITERATIONS = 20;
   /* Max num of iterations to find right point under given constrains */
   final private static int MAX_POINT_ITERATIONS = 1000;
 

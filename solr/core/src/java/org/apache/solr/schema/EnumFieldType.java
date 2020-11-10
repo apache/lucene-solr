@@ -57,7 +57,7 @@ public class EnumFieldType extends AbstractEnumField {
   }
   
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Integer minValue = enumMapping.stringValueToIntValue(min);
     Integer maxValue = enumMapping.stringValueToIntValue(max);
 

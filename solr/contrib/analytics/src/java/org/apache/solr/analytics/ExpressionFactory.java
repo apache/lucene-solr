@@ -849,43 +849,43 @@ public class ExpressionFactory {
   public static interface ConstantFunction {
     AnalyticsValueStream apply(String t) throws SolrException;
   }
-}
-class VariableFunctionInfo {
-  public String[] params;
-  public String returnSignature;
-}
-class WeightedMeanVariableFunction {
-  public static final String name = "wmean";
-  public static final String params = "a,b";
-  public static final String function = DivideFunction.name+"("+SumFunction.name+"("+MultFunction.name+"(a,b)),"+SumFunction.name+"("+FilterFunction.name+"(b,"+ExistsFunction.name+"(a))))";
-}
-class SumOfSquaresVariableFunction {
-  public static final String name = "sumofsquares";
-  public static final String params = "a";
-  public static final String function = SumFunction.name+"("+PowerFunction.name+"(a,2))";
-}
-class SquareRootVariableFunction {
-  public static final String name = "sqrt";
-  public static final String params = "a";
-  public static final String function = PowerFunction.name+"(a,0.5)";
-}
-class VarianceVariableFunction {
-  public static final String name = "variance";
-  public static final String params = "a";
-  public static final String function = SubtractFunction.name+"("+MeanFunction.name+"("+PowerFunction.name+"(a,2)),"+PowerFunction.name+"("+MeanFunction.name+"(a),2))";
-}
-class SandardDeviationVariableFunction {
-  public static final String name = "stddev";
-  public static final String params = "a";
-  public static final String function = SquareRootVariableFunction.name+"("+VarianceVariableFunction.name+"(a))";
-}
-class CSVVariableFunction {
-  public static final String name = "csv";
-  public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
-  public static final String function = SeparatedConcatFunction.name+"(',',a)";
-}
-class CSVOutputVariableFunction {
-  public static final String name = "csv_output";
-  public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
-  public static final String function = "concat_sep(',',a"+ExpressionFactory.variableForEachSep+FillMissingFunction.name+"("+SeparatedConcatFunction.name+"(';',"+ExpressionFactory.variableForEachParam+"),''))";
+  static class VariableFunctionInfo {
+    public String[] params;
+    public String returnSignature;
+  }
+  static class WeightedMeanVariableFunction {
+    public static final String name = "wmean";
+    public static final String params = "a,b";
+    public static final String function = DivideFunction.name+"("+SumFunction.name+"("+MultFunction.name+"(a,b)),"+SumFunction.name+"("+FilterFunction.name+"(b,"+ExistsFunction.name+"(a))))";
+  }
+  static class SumOfSquaresVariableFunction {
+    public static final String name = "sumofsquares";
+    public static final String params = "a";
+    public static final String function = SumFunction.name+"("+PowerFunction.name+"(a,2))";
+  }
+  static class SquareRootVariableFunction {
+    public static final String name = "sqrt";
+    public static final String params = "a";
+    public static final String function = PowerFunction.name+"(a,0.5)";
+  }
+  static class VarianceVariableFunction {
+    public static final String name = "variance";
+    public static final String params = "a";
+    public static final String function = SubtractFunction.name+"("+MeanFunction.name+"("+PowerFunction.name+"(a,2)),"+PowerFunction.name+"("+MeanFunction.name+"(a),2))";
+  }
+  static class SandardDeviationVariableFunction {
+    public static final String name = "stddev";
+    public static final String params = "a";
+    public static final String function = SquareRootVariableFunction.name+"("+VarianceVariableFunction.name+"(a))";
+  }
+  static class CSVVariableFunction {
+    public static final String name = "csv";
+    public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
+    public static final String function = SeparatedConcatFunction.name+"(',',a)";
+  }
+  static class CSVOutputVariableFunction {
+    public static final String name = "csv_output";
+    public static final String params = "a"+ExpressionFactory.variableLengthParamSuffix;
+    public static final String function = "concat_sep(',',a"+ExpressionFactory.variableForEachSep+FillMissingFunction.name+"("+SeparatedConcatFunction.name+"(';',"+ExpressionFactory.variableForEachParam+"),''))";
+  }
 }

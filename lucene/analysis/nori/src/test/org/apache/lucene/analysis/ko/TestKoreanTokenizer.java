@@ -29,6 +29,10 @@ import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
+import org.apache.lucene.analysis.ko.dict.BinaryDictionary.ResourceScheme;
+import org.apache.lucene.analysis.ko.dict.ConnectionCosts;
+import org.apache.lucene.analysis.ko.dict.TokenInfoDictionary;
+import org.apache.lucene.analysis.ko.dict.UnknownDictionary;
 import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
@@ -357,6 +361,28 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     );
   }
 
+  // Make sure loading custom dictionaries from classpath works:
+  public void testCustomDictionary() throws Exception {
+    Tokenizer tokenizer = new KoreanTokenizer(newAttributeFactory(),
+        new TokenInfoDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ko/dict/TokenInfoDictionary"),
+        new UnknownDictionary(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ko/dict/UnknownDictionary"),
+        new ConnectionCosts(ResourceScheme.CLASSPATH, "org/apache/lucene/analysis/ko/dict/ConnectionCosts"),
+        readDict(), DecompoundMode.NONE, false, false);
+    try (Analyzer a = new Analyzer() {
+      @Override
+      protected Analyzer.TokenStreamComponents createComponents(String fieldName) {
+        return new Analyzer.TokenStreamComponents(tokenizer, tokenizer);
+      }
+    }) {
+      assertTokenStreamContents(a.tokenStream("foo", "커스텀사전검사"),
+          new String[] { "커스텀", "사전", "검사"  },
+          new int[] { 0, 3, 5 },
+          new int[] { 3, 5, 7 },
+          7
+      );
+    }
+  }
+
   public void testInterpunct() throws IOException {
     assertAnalyzesTo(analyzer, "도로ㆍ지반ㆍ수자원ㆍ건설환경ㆍ건축ㆍ화재설비연구",
         new String[]{"도로", "지반", "수자원", "건설", "환경", "건축", "화재", "설비", "연구"},
@@ -368,17 +394,25 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerUnigram, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerDecompound, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerUnigram, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerDecompound, 100*RANDOM_MULTIPLIER);
   }
 
   /** blast some random large strings through the tokenizer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerUnigram, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerDecompound, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerUnigram, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerDecompound, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerUnigram, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerDecompound, 3*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -392,7 +426,7 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
     analyzer.close();
   }
 

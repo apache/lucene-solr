@@ -375,7 +375,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, new DictionaryCompoundWordTokenFilter(tokenizer, dict));
       }
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
     
     InputSource is = new InputSource(getClass().getResource("da_UTF8.xml").toExternalForm());
@@ -389,7 +389,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, filter);
       }
     };
-    checkRandomData(random(), b, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
   

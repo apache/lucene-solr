@@ -85,9 +85,14 @@ public class STBlockWriter extends BlockWriter {
   }
 
   @Override
+  protected BlockLine.Serializer createBlockLineSerializer() {
+    return new STBlockLine.Serializer();
+  }
+
+  @Override
   protected void writeBlockLine(boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine) throws IOException {
-    STBlockLine.Serializer.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
-    STBlockLine.Serializer.writeLineTermStates(termStatesWriteBuffer, (STBlockLine) line, termStateSerializer);
+    blockLineWriter.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
+    ((STBlockLine.Serializer) blockLineWriter).writeLineTermStates(termStatesWriteBuffer, (STBlockLine) line, termStateSerializer);
     ((STBlockLine) line).collectFields(fieldsInBlock);
   }
 

@@ -29,4 +29,4 @@ The following sections cover these topics:
 * <<parameter-reference.adoc#parameter-reference,Parameter Reference>>
 * <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>>
 * <<solrcloud-with-legacy-configuration-files.adoc#solrcloud-with-legacy-configuration-files,SolrCloud with Legacy Configuration Files>>
-* <<configsets-api.adoc#configsets-api,ConfigSets API>>
+* <<configsets-api.adoc#configsets-api,Configsets API>>

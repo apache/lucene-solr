@@ -17,8 +17,15 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Date;
 
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 public class SumAgg extends SimpleAggValueSource {
 
@@ -27,8 +34,32 @@ public class SumAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new SumSlotAcc(getArg(), fcontext, numSlots);
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+    ValueSource vs = getArg();
+
+    if (vs instanceof FieldNameValueSource) {
+      String field = ((FieldNameValueSource)vs).getFieldName();
+      SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
+      if (sf.getType().getNumberType() == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            name() + " aggregation not supported for " + sf.getType().getTypeName());
+      }
+      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+        if (sf.hasDocValues()) {
+          if (sf.getType().isPointField()) {
+            return new SumSortedNumericAcc(fcontext, sf, numSlots);
+          }
+          return new SumSortedSetAcc(fcontext, sf, numSlots);
+        }
+        if (sf.getType().isPointField()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              name() + " aggregation not supported for PointField w/o docValues");
+        }
+        return new SumUnInvertedFieldAcc(fcontext, sf, numSlots);
+      }
+      vs = sf.getType().getValueSource(sf, null);
+    }
+    return new SlotAcc.SumSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -36,7 +67,7 @@ public class SumAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  public static class Merger extends FacetDoubleMerger {
+  public static class Merger extends FacetModule.FacetDoubleMerger {
     double val;
 
     @Override
@@ -46,6 +77,59 @@ public class SumAgg extends SimpleAggValueSource {
 
     protected double getDouble() {
       return val;
+    }
+  }
+
+  class SumSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+
+    public SumSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+    }
+
+    @Override
+    protected void collectValues(int doc, int slot) throws IOException {
+      for (int i = 0, count = values.docValueCount(); i < count; i++) {
+        result[slot]+=getDouble(values.nextValue());
+      }
+    }
+
+  }
+
+  class SumSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+
+    public SumSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+    }
+
+    @Override
+    protected void collectValues(int doc, int slot) throws IOException {
+      long ord;
+      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        BytesRef term = values.lookupOrd(ord);
+        Object obj = sf.getType().toObject(sf, term);
+        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        result[slot] += val;
+      }
+    }
+  }
+
+  class SumUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+
+    public SumUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+    }
+
+    @Override
+    public void call(int termNum) {
+      try {
+        BytesRef term = docToTerm.lookupOrd(termNum);
+        Object obj = sf.getType().toObject(sf, term);
+        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        result[currentSlot] += val;
+      } catch (IOException e) {
+        // find a better way to do it
+        throw new UncheckedIOException(e);
+      }
     }
   }
 }

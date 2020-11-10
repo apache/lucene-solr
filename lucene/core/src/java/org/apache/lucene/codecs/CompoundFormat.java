@@ -28,20 +28,18 @@ import org.apache.lucene.store.IOContext;
  * @lucene.experimental
  */
 public abstract class CompoundFormat {
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  // Explicitly declared so that we have non-empty javadoc
+  protected CompoundFormat() {}
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  public CompoundFormat() {
-  }
-  
   // TODO: this is very minimal. If we need more methods,
   // we can add 'producer' classes.
   
   /**
    * Returns a Directory view (read-only) for the compound files in this segment
    */
-  public abstract Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
-  
+  public abstract CompoundDirectory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
+
   /**
    * Packs the provided segment's files into a compound format.  All files referenced
    * by the provided {@link SegmentInfo} must have {@link CodecUtil#writeIndexHeader}

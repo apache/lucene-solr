@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -58,10 +57,9 @@ public abstract class TransientSolrCoreCacheFactory {
       tccf.setCoreContainer(coreContainer);
       return tccf;
     } catch (Exception e) {
-      // Many things could cuse this, bad solrconfig, mis-typed class name, whatever. However, this should not
+      // Many things could cause this, bad solrconfig, mis-typed class name, whatever. However, this should not
       // keep the enclosing coreContainer from instantiating, so log an error and continue.
-      log.error(String.format(Locale.ROOT, "Error instantiating TransientSolrCoreCacheFactory class [%s]: %s",
-          info.className, e.getMessage()));
+      log.error("Error instantiating TransientSolrCoreCacheFactory class [{}]: ", info.className, e);
       return null;
     }
 

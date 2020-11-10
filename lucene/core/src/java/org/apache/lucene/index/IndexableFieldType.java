@@ -100,9 +100,9 @@ public interface IndexableFieldType {
   public DocValuesType docValuesType();
 
   /**
-   * If this is positive (representing the number of point data dimensions), the field is indexed as a point.
+   * If this is positive (representing the number of point dimensions), the field is indexed as a point.
    */
-  public int pointDataDimensionCount();
+  public int pointDimensionCount();
 
   /**
    * The number of dimensions used for the index key
@@ -113,6 +113,16 @@ public interface IndexableFieldType {
    * The number of bytes in each dimension's values.
    */
   public int pointNumBytes();
+
+  /**
+   * The number of dimensions of the field's vector value
+   */
+  public int vectorDimension();
+
+  /**
+   * The {@link VectorValues.SearchStrategy} of the field's vector value
+   */
+  public VectorValues.SearchStrategy vectorSearchStrategy();
 
   /**
    * Attributes for the field type.

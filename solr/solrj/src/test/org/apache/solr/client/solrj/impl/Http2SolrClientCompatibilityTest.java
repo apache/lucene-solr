@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.ParseException;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -60,7 +59,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
-      } catch (ParseException ignored) {}
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
     } finally {
       afterSolrJettyTestBase();
     }
@@ -80,7 +79,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
-      } catch (ParseException ignored) {}
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
     } finally {
       afterSolrJettyTestBase();
     }
@@ -102,7 +101,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
         fail("Jetty client with HTTP2 transport should not be able to connect to HTTP1 only nodes");
-      } catch (ParseException ignored) {
+      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
         fail("Jetty client with HTTP2 transport should not be able to connect to HTTP1 only nodes");
       } catch (SolrServerException e) {
         // expected

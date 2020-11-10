@@ -23,10 +23,11 @@ import os
 import sys
 import subprocess
 from subprocess import TimeoutExpired
-from scriptutil import check_ant
 import textwrap
 import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
+
+import scriptutil
 
 LOG = '/tmp/release.log'
 
@@ -108,37 +109,24 @@ def prepare(root, version, gpgKeyID, gpgPassword):
   print('  Check DOAP files')
   checkDOAPfiles(version)
 
-  print('  ant -Dtests.badapples=false clean test validate documentation-lint')
-  run('ant -Dtests.badapples=false clean test validate documentation-lint')
+  print('  ./gradlew -Dtests.badapples=false clean check')
+  run('./gradlew -Dtests.badapples=false clean check')
 
   open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
-  print('  lucene prepare-release')
-  os.chdir('lucene')
-  cmd = 'ant -Dversion=%s' % version
+  print('  prepare-release')
+  cmd = './gradlew -Dversion.release=%s clean assembleDist' % version
   if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
+    # TODO sign
+    # cmd += ' -Psigning.keyId=%s publishSignedPublicationToMavenLocal' % gpgKeyID
+    pass
+  cmd += ' mavenToLocalFolder'
 
   if gpgPassword is not None:
     runAndSendGPGPassword(cmd, gpgPassword)
   else:
     run(cmd)
   
-  print('  solr prepare-release')
-  os.chdir('../solr')
-  cmd = 'ant -Dversion=%s' % version
-  if gpgKeyID is not None:
-    cmd += ' -Dgpg.key=%s prepare-release' % gpgKeyID
-  else:
-    cmd += ' prepare-release-no-sign'
-
-  if gpgPassword is not None:
-    runAndSendGPGPassword(cmd, gpgPassword)
-  else:
-    run(cmd)
-    
   print('  done!')
   print()
   return rev
@@ -202,7 +190,8 @@ def pushLocal(version, root, rev, rcNum, localDir):
   os.makedirs('%s/%s/lucene' % (localDir, dir))
   os.makedirs('%s/%s/solr' % (localDir, dir))
   print('  Lucene')
-  os.chdir('%s/lucene/dist' % root)
+  lucene_dist_dir = '%s/lucene/packaging/build/distributions' % root
+  os.chdir(lucene_dist_dir)
   print('    zip...')
   if os.path.exists('lucene.tar.bz2'):
     os.remove('lucene.tar.bz2')
@@ -210,19 +199,20 @@ def pushLocal(version, root, rev, rcNum, localDir):
 
   os.chdir('%s/%s/lucene' % (localDir, dir))
   print('    unzip...')
-  run('tar xjf "%s/lucene/dist/lucene.tar.bz2"' % root)
-  os.remove('%s/lucene/dist/lucene.tar.bz2' % root)
+  run('tar xjf "%s/lucene.tar.bz2"' % lucene_dist_dir)
+  os.remove('%s/lucene.tar.bz2' % lucene_dist_dir)
 
   print('  Solr')
-  os.chdir('%s/solr/package' % root)
+  solr_dist_dir = '%s/solr/packaging/build/distributions' % root
+  os.chdir(solr_dist_dir)
   print('    zip...')
   if os.path.exists('solr.tar.bz2'):
     os.remove('solr.tar.bz2')
   run('tar cjf solr.tar.bz2 *')
   print('    unzip...')
   os.chdir('%s/%s/solr' % (localDir, dir))
-  run('tar xjf "%s/solr/package/solr.tar.bz2"' % root)
-  os.remove('%s/solr/package/solr.tar.bz2' % root)
+  run('tar xjf "%s/solr.tar.bz2"' % solr_dist_dir)
+  os.remove('%s/solr.tar.bz2' % solr_dist_dir)
 
   print('  chmod...')
   os.chdir('..')
@@ -232,8 +222,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   return 'file://%s/%s' % (os.path.abspath(localDir), dir)
 
 def read_version(path):
-  version_props_file = os.path.join(path, 'lucene', 'version.properties')
-  return re.search(r'version\.base=(.*)', open(version_props_file).read()).group(1)
+  return scriptutil.find_current_version()
 
 def parse_config():
   epilogue = textwrap.dedent('''
@@ -287,7 +276,6 @@ def parse_config():
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
   if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
-  check_ant()
 
 def check_key_in_keys(gpgKeyID, local_keys):
   if gpgKeyID is not None:
@@ -307,14 +295,14 @@ def check_key_in_keys(gpgKeyID, local_keys):
       gpgKeyID = gpgKeyID.replace(" ", "")
     if len(gpgKeyID) == 8:
       gpgKeyID8Char = "%s %s" % (gpgKeyID[0:4], gpgKeyID[4:8])
-      re_to_match = r"^pub .*\n\s+\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s" % gpgKeyID8Char
+      re_to_match = r"^pub .*\n\s+(\w{4} \w{4} \w{4} \w{4} \w{4}  \w{4} \w{4} \w{4} %s|\w{32}%s)" % (gpgKeyID8Char, gpgKeyID)
     elif len(gpgKeyID) == 40:
       gpgKeyID40Char = "%s %s %s %s %s  %s %s %s %s %s" % \
                        (gpgKeyID[0:4], gpgKeyID[4:8], gpgKeyID[8:12], gpgKeyID[12:16], gpgKeyID[16:20],
                        gpgKeyID[20:24], gpgKeyID[24:28], gpgKeyID[28:32], gpgKeyID[32:36], gpgKeyID[36:])
       re_to_match = r"^pub .*\n\s+(%s|%s)" % (gpgKeyID40Char, gpgKeyID)
     else:
-      print('Invalid gpg key id format. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.')
+      print('Invalid gpg key id format [%s]. Must be 8 byte short ID or 40 byte fingerprint, with or without 0x prefix, no spaces.' % gpgKeyID)
       exit(2)
     if re.search(re_to_match, keysFileText, re.MULTILINE):
       print('    Found key %s in KEYS file at %s' % (gpgKeyID, keysFileLocation))

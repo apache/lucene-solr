@@ -39,7 +39,7 @@ import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
 import org.apache.solr.prometheus.scraper.SolrScraper;
 import org.apache.solr.prometheus.scraper.SolrStandaloneScraper;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public class SolrExporter {
   private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
   private static final String ARG_PORT_METAVAR = "PORT";
   private static final String ARG_PORT_DEST = "port";
-  private static final int ARG_PORT_DEFAULT = 9983;
+  private static final int ARG_PORT_DEFAULT = 8989;
   private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + ARG_PORT_DEFAULT + ".";
 
   private static final String[] ARG_BASE_URL_FLAGS = {"-b", "--baseurl"};
@@ -68,7 +68,7 @@ public class SolrExporter {
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
-  private static final String ARG_CONFIG_DEFAULT = "./conf/solr-exporter-config.xml";
+  private static final String ARG_CONFIG_DEFAULT = "solr-exporter-config.xml";
   private static final String ARG_CONFIG_HELP = "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
 
   private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};
@@ -105,11 +105,11 @@ public class SolrExporter {
 
     this.metricCollectorExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new DefaultSolrThreadFactory("solr-exporter-collectors"));
+        new SolrNamedThreadFactory("solr-exporter-collectors"));
 
     this.requestExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(
         numberThreads,
-        new DefaultSolrThreadFactory("solr-exporter-requests"));
+        new SolrNamedThreadFactory("solr-exporter-requests"));
 
     this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
     this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();
@@ -194,7 +194,7 @@ public class SolrExporter {
       }
 
       if (scrapeConfiguration == null) {
-        log.error("Must provide either %s or %s", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
+        log.error("Must provide either {} or {}", ARG_BASE_URL_FLAGS, ARG_ZK_HOST_FLAGS);
       }
 
       SolrExporter solrExporter = new SolrExporter(
@@ -208,7 +208,7 @@ public class SolrExporter {
       solrExporter.start();
       log.info("Solr Prometheus Exporter is running");
     } catch (IOException e) {
-      log.error("Failed to start Solr Prometheus Exporter: " + e.toString());
+      log.error("Failed to start Solr Prometheus Exporter: ", e);
     } catch (ArgumentParserException e) {
       parser.handleError(e);
     }
@@ -216,10 +216,10 @@ public class SolrExporter {
 
   private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
     try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
-      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString());
+      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString(), null, null);
       return MetricsConfiguration.from(config);
     } catch (Exception e) {
-      log.error("Could not load scrape configuration from %s", configPath.toAbsolutePath());
+      log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());
       throw new RuntimeException(e);
     }
   }

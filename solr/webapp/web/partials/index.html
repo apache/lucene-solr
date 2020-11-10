@@ -106,7 +106,7 @@ limitations under the License.
       <div class="block" id="system">
 
           <h2><span>System</span>
-    <small class="bar-desc">{{load_average[0]}} {{load_average[1]}} {{load_average[2]}}</small>
+    <small class="bar-desc">{{load_average}}</small>
     </h2>
           <a class="reload" ng-click="reload()"><span>reload</span></a>
 
@@ -249,6 +249,40 @@ limitations under the License.
 
               </div>
             </div>
+
+          </div>
+
+      </div>
+      <div class="block" id="security">
+
+          <h2>Security</h2>
+
+          <div class="content">
+
+            <ul class="data">
+
+              <li class="authentication_plugin"><dl class="clearfix">
+                <dt><span>Authentication Plugin</span></dt>
+                  <dd>{{system.security["authenticationPlugin"]}}</dd>
+              </dl></li>
+
+              <li class="authorization_plugin"><dl class="clearfix">
+                <dt><span>Authorization Plugin</span></dt>
+                  <dd>{{system.security["authorizationPlugin"]}}</dd>
+              </dl></li>
+
+              <li class="username"><dl class="clearfix">
+                <dt><span>Current Username</span></dt>
+                  <dd>{{system.security["username"]}}</dd>
+              </dl></li>
+
+              <li class="user_roles"><dl class="clearfix">
+                <dt><span>User Roles</span></dt>
+                  <dd>{{system.security["roles"]}}</dd>
+              </dl></li>
+
+            </ul>
+
 
           </div>
 

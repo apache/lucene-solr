@@ -87,7 +87,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException {
-    final int maxDoc = TestUtil.nextInt(random(), 1, 10000000);
+    final int maxDoc = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 10000000) : TestUtil.nextInt(random(), 1, 100000) ;
     for (int i = 1 ; i < maxDoc / 2; i <<=1) {
       final int numDocs = TestUtil.nextInt(random(), 1, i);
       final FixedBitSet docs = new FixedBitSet(maxDoc);
@@ -327,7 +327,7 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     }
 
     @Override
-    public int getNumDataDimensions() throws IOException {
+    public int getNumDimensions() throws IOException {
       throw new UnsupportedOperationException();
     }
 

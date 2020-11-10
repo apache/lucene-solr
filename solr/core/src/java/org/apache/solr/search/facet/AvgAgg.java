@@ -17,9 +17,18 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 
 public class AvgAgg extends SimpleAggValueSource {
@@ -28,8 +37,32 @@ public class AvgAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new AvgSlotAcc(getArg(), fcontext, numSlots);
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+    ValueSource vs = getArg();
+
+    if (vs instanceof FieldNameValueSource) {
+      String field = ((FieldNameValueSource) vs).getFieldName();
+      SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
+      if (sf.getType().getNumberType() == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            name() + " aggregation not supported for " + sf.getType().getTypeName());
+      }
+      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+        if (sf.hasDocValues()) {
+          if (sf.getType().isPointField()) {
+            return new AvgSortedNumericAcc(fcontext, sf, numSlots);
+          }
+          return new AvgSortedSetAcc(fcontext, sf, numSlots);
+        }
+        if (sf.getType().isPointField()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              name() + " aggregation not supported for PointField w/o docValues");
+        }
+        return new AvgUnInvertedFieldAcc(fcontext, sf, numSlots);
+      }
+      vs = sf.getType().getValueSource(sf, null);
+    }
+    return new SlotAcc.AvgSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -37,13 +70,14 @@ public class AvgAgg extends SimpleAggValueSource {
     return new Merger();
   }
 
-  private static class Merger extends FacetDoubleMerger {
+  private static class Merger extends FacetModule.FacetDoubleMerger {
     long num;
     double sum;
 
     @Override
     public void merge(Object facetResult, Context mcontext1) {
-      List<Number> numberList = (List<Number>)facetResult;
+      @SuppressWarnings({"unchecked"})
+      List<Number> numberList = (List<Number>) facetResult;
       num += numberList.get(0).longValue();
       sum += numberList.get(1).doubleValue();
     }
@@ -51,8 +85,170 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     protected double getDouble() {
       // TODO: is it worth to try and cache?
-      return num==0 ? 0.0d : sum/num;
+      return AggUtil.avg(sum, num);
+    }
+  }
+
+  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+    int[] counts;
+
+    public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+      this.counts = new int[numSlots];
     }
 
-  };
+    @Override
+    protected void collectValues(int doc, int slot) throws IOException {
+      for (int i = 0, count = values.docValueCount(); i < count; i++) {
+        result[slot]+=getDouble(values.nextValue());
+        counts[slot]++;
+      }
+    }
+
+    private double avg(int slot) {
+      return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(avg(slotA), avg(slotB));
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+        ArrayList lst = new ArrayList(2);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        return lst;
+      } else {
+        return avg(slot);
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      Arrays.fill(counts, 0);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      this.counts = resizer.resize(counts, 0);
+    }
+  }
+
+  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+    int[] counts;
+
+    public AvgSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+      this.counts = new int[numSlots];
+    }
+
+    @Override
+    protected void collectValues(int doc, int slot) throws IOException {
+      long ord;
+      while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        BytesRef term = values.lookupOrd(ord);
+        Object obj = sf.getType().toObject(sf, term);
+        double val = obj instanceof Date ? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        result[slot] += val;
+        counts[slot]++;
+      }
+    }
+
+    private double avg(int slot) {
+      return AggUtil.avg(result[slot], counts[slot]);
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(avg(slotA), avg(slotB));
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+        ArrayList lst = new ArrayList(2);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        return lst;
+      } else {
+        return avg(slot);
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      Arrays.fill(counts, 0);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      this.counts = resizer.resize(counts, 0);
+    }
+  }
+
+  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+    int[] counts;
+
+    public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots, 0);
+      this.counts = new int[numSlots];
+    }
+
+    @Override
+    public void call(int termNum) {
+      try {
+        BytesRef term = docToTerm.lookupOrd(termNum);
+        Object obj = sf.getType().toObject(sf, term);
+        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        result[currentSlot] += val;
+        counts[currentSlot]++;
+      } catch (IOException e) {
+        // find a better way to do it
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    private double avg(int slot) {
+      return AggUtil.avg(result[slot], counts[slot]);
+    }
+
+    @Override
+    public int compare(int slotA, int slotB) {
+      return Double.compare(avg(slotA), avg(slotB));
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Object getValue(int slot) {
+      if (fcontext.isShard()) {
+        ArrayList lst = new ArrayList(2);
+        lst.add(counts[slot]);
+        lst.add(result[slot]);
+        return lst;
+      } else {
+        return avg(slot);
+      }
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      Arrays.fill(counts, 0);
+    }
+
+    @Override
+    public void resize(Resizer resizer) {
+      super.resize(resizer);
+      this.counts = resizer.resize(counts, 0);
+    }
+  }
 }

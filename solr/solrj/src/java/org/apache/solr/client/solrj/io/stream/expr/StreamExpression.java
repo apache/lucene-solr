@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Expression containing a function and set of parameters
@@ -122,5 +123,10 @@ public class StreamExpression implements StreamExpressionParameter {
     }
 
     return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(functionName);
   }
 }

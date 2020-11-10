@@ -30,9 +30,9 @@ import java.util.function.Predicate; // javadocs
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for a {@link ProtectedTermFilter}
@@ -104,6 +104,11 @@ public class ProtectedTermFilterFactory extends ConditionalTokenFilterFactory im
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ProtectedTermFilterFactory() {
+    throw defaultCtorException();
   }
 
   private void handleWrappedFilterArgs(Map<String, String> args) {

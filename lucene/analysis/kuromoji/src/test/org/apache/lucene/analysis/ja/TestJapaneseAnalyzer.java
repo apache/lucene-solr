@@ -62,59 +62,54 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     // Senior software engineer:
     assertAnalyzesToPositions(a, "シニアソフトウェアエンジニア",
                               new String[] { "シニア",
-                                             "シニアソフトウェアエンジニア", // zero pos inc
                                              "ソフトウェア",
                                              "エンジニア" },
-                              new int[] { 1, 0, 1, 1},
-                              new int[] { 1, 3, 1, 1}
+                              new int[] { 1, 1, 1},
+                              new int[] { 1, 1, 1}
                               );
 
     // Senior project manager: also tests katakana spelling variation stemming
     assertAnalyzesToPositions(a, "シニアプロジェクトマネージャー",
                               new String[] { "シニア",
-                                              "シニアプロジェクトマネージャ", // trailing ー removed by stemming, zero pos inc
                                               "プロジェクト",
                                               "マネージャ"}, // trailing ー removed by stemming
-                              new int[]{1, 0, 1, 1},
-                              new int[]{1, 3, 1, 1}
+                              new int[]{1, 1, 1},
+                              new int[]{1, 1, 1}
                               );
 
     // Kansai International Airport:
     assertAnalyzesToPositions(a, "関西国際空港",
                               new String[] { "関西",
-                                             "関西国際空港", // zero pos inc
                                              "国際",
                                              "空港" },
-                              new int[] {1, 0, 1, 1},
-                              new int[] {1, 3, 1, 1}
+                              new int[] {1, 1, 1},
+                              new int[] {1, 1, 1}
                               );
 
     // Konika Minolta Holdings; not quite the right
     // segmentation (see LUCENE-3726):
     assertAnalyzesToPositions(a, "コニカミノルタホールディングス",
                               new String[] { "コニカ",
-                                             "コニカミノルタホールディングス", // zero pos inc
-                                             "ミノルタ", 
+                                             "ミノルタ",
                                              "ホールディングス"},
-                              new int[] {1, 0, 1, 1},
-                              new int[] {1, 3, 1, 1}
+                              new int[] {1, 1, 1},
+                              new int[] {1, 1, 1}
                               );
 
     // Narita Airport
     assertAnalyzesToPositions(a, "成田空港",
                               new String[] { "成田",
-                                             "成田空港",
                                              "空港" },
-                              new int[] {1, 0, 1},
-                              new int[] {1, 2, 1}
+                              new int[] {1, 1},
+                              new int[] {1, 1}
                               );
 
     // Kyoto University Baseball Club
     a.close();
     a = new JapaneseAnalyzer();
     assertAnalyzesToPositions(a, "京都大学硬式野球部",
-                     new String[] { "京都大",
-                                    "学",
+                     new String[] { "京都",
+                                    "大学",
                                     "硬式",
                                     "野球",
                                     "部" },
@@ -133,7 +128,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, atLeast(1000));
+    checkRandomData(random, a, atLeast(100));
     a.close();
   }
   

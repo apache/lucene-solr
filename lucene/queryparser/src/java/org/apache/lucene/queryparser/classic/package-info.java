@@ -22,7 +22,7 @@
  * <p>Note that JavaCC defines lots of public classes, methods and fields
  * that do not need to be public.&nbsp; These clutter the documentation.&nbsp;
  * Sorry.
- * <p>Note that because JavaCC defines a class named <tt>Token</tt>, <tt>org.apache.lucene.analysis.Token</tt>
+ * <p>Note that because JavaCC defines a class named <code>Token</code>, <code>org.apache.lucene.analysis.Token</code>
  * must always be fully qualified in source code in this package.
  *
  * <p><b>NOTE</b>: {@link org.apache.lucene.queryparser.flexible.standard} has an alternative queryparser that matches the syntax of this one, but is more modular,
@@ -96,7 +96,7 @@
  * </ul>
  * </div>
  *         
- * <a name="N10013"></a><a name="Overview"></a>
+ * <a id="N10013"></a><a id="Overview"></a>
  * <h2 class="boxed">Overview</h2>
  * <div class="section">
  * <p>Although Lucene provides the ability to create your own
@@ -140,7 +140,7 @@
  * </div>
  * 
  *         
- * <a name="N10032"></a><a name="Terms"></a>
+ * <a id="N10032"></a><a id="Terms"></a>
  * <h2 class="boxed">Terms</h2>
  * <div class="section">
  * <p>A query is broken up into terms and operators. There are two types of terms: Single Terms and Phrases.
@@ -152,7 +152,7 @@
  * </div>
  * 
  *         
- * <a name="N10048"></a><a name="Fields"></a>
+ * <a id="N10048"></a><a id="Fields"></a>
  * <h2 class="boxed">Fields</h2>
  * <div class="section">
  * <p>Lucene supports fielded data. When performing a search you can either specify a field, or use the default field. The field names and default field is implementation specific.
@@ -169,11 +169,11 @@
  * </div>
  * 
  *         
- * <a name="N1006D"></a><a name="Term_Modifiers"></a>
+ * <a id="N1006D"></a><a id="Term_Modifiers"></a>
  * <h2 class="boxed">Term Modifiers</h2>
  * <div class="section">
  * <p>Lucene supports modifying query terms to provide a wide range of searching options.
- * <a name="N10076"></a><a name="Wildcard_Searches"></a>
+ * <a id="N10076"></a><a id="Wildcard_Searches"></a>
  * <h3 class="boxed">Wildcard Searches</h3>
  * <p>Lucene supports single and multiple character wildcard searches within single terms
  *         (not within phrase queries).
@@ -186,13 +186,13 @@
  * <p>You can also use the wildcard searches in the middle of a term.
  * <pre class="code">te*t</pre>
  * <p>Note: You cannot use a * or ? symbol as the first character of a search.
- * <a name="Regexp_Searches"></a>
+ * <a id="Regexp_Searches"></a>
  * <h3 class="boxed">Regular Expression Searches</h3>
  * <p>Lucene supports regular expression searches matching a pattern between forward slashes "/". The syntax may change across releases, but the current supported
  * syntax is documented in the {@link org.apache.lucene.util.automaton.RegExp RegExp} class. For example to find documents containing "moat" or "boat":
  * 
  * <pre class="code">/[mb]oat/</pre>
- * <a name="N1009B"></a><a name="Fuzzy_Searches"></a>
+ * <a id="N1009B"></a><a id="Fuzzy_Searches"></a>
  * <h3 class="boxed">Fuzzy Searches</h3>
  * <p>Lucene supports fuzzy searches based on Damerau-Levenshtein Distance. To do a fuzzy search use the tilde, "~", symbol at the end of a Single word Term. For example to search for a term similar in spelling to "roam" use the fuzzy search: 
  * <pre class="code">roam~</pre>
@@ -201,11 +201,11 @@
  * <pre class="code">roam~1</pre>
  * <p>The default that is used if the parameter is not given is 2 edit distances.
  * <p>Previously, a floating point value was allowed here. This syntax is considered deprecated and will be removed in Lucene 5.0
- * <a name="N100B4"></a><a name="Proximity_Searches"></a>
+ * <a id="N100B4"></a><a id="Proximity_Searches"></a>
  * <h3 class="boxed">Proximity Searches</h3>
  * <p>Lucene supports finding words are a within a specific distance away. To do a proximity search use the tilde, "~", symbol at the end of a Phrase. For example to search for a "apache" and "jakarta" within 10 words of each other in a document use the search:
  * <pre class="code">"jakarta apache"~10</pre>
- * <a name="N100C1"></a><a name="Range_Searches"></a>
+ * <a id="N100C1"></a><a id="Range_Searches"></a>
  * <h3 class="boxed">Range Searches</h3>
  * <p>Range Queries allow one to match documents whose field(s) values
  *             are between the lower and upper bound specified by the Range Query.
@@ -218,7 +218,7 @@
  * <p>This will find all documents whose titles are between Aida and Carmen, but not including Aida and Carmen.
  * <p>Inclusive range queries are denoted by square brackets.  Exclusive range queries are denoted by
  *             curly brackets.
- * <a name="N100DA"></a><a name="Boosting_a_Term"></a>
+ * <a id="N100DA"></a><a id="Boosting_a_Term"></a>
  * <h3 class="boxed">Boosting a Term</h3>
  * <p>Lucene provides the relevance level of matching documents based on the terms found. To boost a term use the caret, "^", symbol with a boost factor (a number) at the end of the term you are searching. The higher the boost factor, the more relevant the term will be.
  * <p>Boosting allows you to control the relevance of a document by boosting its term. For example, if you are searching for
@@ -233,12 +233,12 @@
  * 
  * 
  *         
- * <a name="N100FA"></a><a name="Boolean_operators"></a>
+ * <a id="N100FA"></a><a id="Boolean_operators"></a>
  * <h2 class="boxed">Boolean Operators</h2>
  * <div class="section">
  * <p>Boolean operators allow terms to be combined through logic operators.
  *         Lucene supports AND, "+", OR, NOT and "-" as Boolean operators(Note: Boolean operators must be ALL CAPS).
- * <a name="N10103"></a><a name="OR"></a>
+ * <a id="N10103"></a><a id="OR"></a>
  * <h3 class="boxed">OR</h3>
  * <p>The OR operator is the default conjunction operator. This means that if there is no Boolean operator between two terms, the OR operator is used.
  *         The OR operator links two terms and finds a matching document if either of the terms exist in a document. This is equivalent to a union using sets.
@@ -247,18 +247,18 @@
  * <pre class="code">"jakarta apache" jakarta</pre>
  * <p>or
  * <pre class="code">"jakarta apache" OR jakarta</pre>
- * <a name="N10116"></a><a name="AND"></a>
+ * <a id="N10116"></a><a id="AND"></a>
  * <h3 class="boxed">AND</h3>
  * <p>The AND operator matches documents where both terms exist anywhere in the text of a single document.
  *         This is equivalent to an intersection using sets. The symbol &amp;&amp; can be used in place of the word AND.
  * <p>To search for documents that contain "jakarta apache" and "Apache Lucene" use the query: 
  * <pre class="code">"jakarta apache" AND "Apache Lucene"</pre>
- * <a name="N10126"></a>
+ * <a id="N10126"></a>
  * <h3 class="boxed">+</h3>
  * <p>The "+" or required operator requires that the term after the "+" symbol exist somewhere in a the field of a single document.
  * <p>To search for documents that must contain "jakarta" and may contain "lucene" use the query:
  * <pre class="code">+jakarta lucene</pre>
- * <a name="N10136"></a><a name="NOT"></a>
+ * <a id="N10136"></a><a id="NOT"></a>
  * <h3 class="boxed">NOT</h3>
  * <p>The NOT operator excludes documents that contain the term after NOT.
  *         This is equivalent to a difference using sets. The symbol ! can be used in place of the word NOT.
@@ -266,7 +266,7 @@
  * <pre class="code">"jakarta apache" NOT "Apache Lucene"</pre>
  * <p>Note: The NOT operator cannot be used with just one term. For example, the following search will return no results:
  * <pre class="code">NOT "jakarta apache"</pre>
- * <a name="N1014C"></a>
+ * <a id="N1014C"></a>
  * <h3 class="boxed">-</h3>
  * <p>The "-" or prohibit operator excludes documents that contain the term after the "-" symbol.
  * <p>To search for documents that contain "jakarta apache" but not "Apache Lucene" use the query: 
@@ -274,7 +274,7 @@
  * </div>
  * 
  *         
- * <a name="N1015D"></a><a name="Grouping"></a>
+ * <a id="N1015D"></a><a id="Grouping"></a>
  * <h2 class="boxed">Grouping</h2>
  * <div class="section">
  * <p>Lucene supports using parentheses to group clauses to form sub queries. This can be very useful if you want to control the boolean logic for a query.
@@ -284,7 +284,7 @@
  * </div>
  * 
  *         
- * <a name="N10170"></a><a name="Field_Grouping"></a>
+ * <a id="N10170"></a><a id="Field_Grouping"></a>
  * <h2 class="boxed">Field Grouping</h2>
  * <div class="section">
  * <p>Lucene supports using parentheses to group multiple clauses to a single field.
@@ -293,7 +293,7 @@
  * </div>
  * 
  *         
- * <a name="N10180"></a><a name="Escaping_Special_Characters"></a>
+ * <a id="N10180"></a><a id="Escaping_Special_Characters"></a>
  * <h2 class="boxed">Escaping Special Characters</h2>
  * <div class="section">
  * <p>Lucene supports escaping special characters that are part of the query syntax. The current list special characters are

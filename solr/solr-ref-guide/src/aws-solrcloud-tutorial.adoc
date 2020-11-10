@@ -178,7 +178,7 @@ You can refer <<solr-tutorial.adoc#exercise-1,Solr Tutorial>> for an extensive w
 
 If you want to configure an external ZooKeeper ensemble to avoid using the embedded single-instance ZooKeeper that runs in the same JVM as the Solr node, you need to make few tweaks in the above listed steps as follows.
 
-* When creating the security group, instead of opening port `9983` for ZooKeeper, you'll open `2181` (or whatever port you are using for ZooKeeper: it's default is 2181).
+* When creating the security group, instead of opening port `9983` for ZooKeeper, you'll open `2181` (or whatever port you are using for ZooKeeper: its default is 2181).
 * When configuring the number of instances to launch, choose to open 3 instances instead of 2.
 * When modifying the `/etc/hosts` on each machine, add a third line for the 3rd instance and give it a recognizable name:
 +

@@ -1,0 +1,122 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This verifies local git repository's status.
+
+import org.eclipse.jgit.api.*
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.errors.*
+
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.Path
+import java.nio.file.attribute.BasicFileAttributes
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "org.eclipse.jgit:org.eclipse.jgit:${scriptDepVersions['jgit']}"
+  }
+}
+
+configure(rootProject) {
+  task gitStatus() {
+    doFirst {
+      try {
+        def repository = new FileRepositoryBuilder()
+                .setWorkTree(rootProject.projectDir)
+                .setMustExist(true)
+                .build()
+
+        def ref = repository.findRef("HEAD").getObjectId()
+        project.ext.gitRev = ref.name()
+        project.ext.gitRevShort = ref.abbreviate(8).name()
+        project.ext.gitStatus = new Git(repository).status().call()
+      } catch (RepositoryNotFoundException | NoWorkTreeException e) {
+        project.ext.gitRev = "(not a git checkout)"
+        project.ext.gitRevShort = "(not a git checkout)"
+        project.ext.gitStatus = null
+      } catch (NotSupportedException e) {
+        throw new GradleException("jgit does not support git repository version at this location: ${dir}", e)
+      }
+    }
+  }
+
+  // Verify git working copy does not have any unstaged modified files.
+  task checkWorkingCopyClean() {
+    dependsOn gitStatus
+    doFirst {
+      def status = rootProject.ext.gitStatus
+      if (status == null) {
+        if (file("${rootProject.projectDir}/.git").exists()) {
+          // Ignore git worktree branches until jgit supports them.
+          logger.warn("WARNING: git worktrees are not supported by jgit (won't check dirty files): ${rootProject.projectDir}")
+        } else {
+          // Ignore the check. This isn't a git checkout.
+          logger.warn("WARNING: Directory is not a valid git checkout (won't check dirty files): ${rootProject.projectDir}")
+        }
+      } else {
+        // git ignores any folders which are empty (this includes folders with recursively empty sub-folders).
+        def untrackedNonEmptyFolders = status.untrackedFolders.findAll { path ->
+          File location = file("${rootProject.projectDir}/${path}")
+          boolean hasFiles = false
+          Files.walkFileTree(location.toPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+              hasFiles = true
+              // Terminate early.
+              return FileVisitResult.TERMINATE
+            }
+          })
+          return hasFiles
+        }
+
+        def offenders = [
+            // Exclude staged changes. These are fine in precommit.
+            // "(added)": status.added,
+            // "(changed)": status.changed,
+            // "(removed)": status.removed,
+            "(conflicting)": status.conflicting,
+            "(missing)": status.missing,
+            "(modified)": status.modified,
+            "(untracked)": status.untracked,
+            "(untracked non-empty dir)": untrackedNonEmptyFolders
+        ].collectMany { fileStatus, files ->
+          files.collect {file -> "  - ${file} ${fileStatus}" }
+        }.sort()
+
+        if (offenders) {
+          def checkProp = "validation.git.failOnModified"
+          def shouldFail = Boolean.valueOf(propertyOrDefault(checkProp, true))
+          def message = "Working copy is not a clean git checkout" + 
+            (shouldFail ? " (skip with -P${checkProp}=false)" : "") +
+            ", offending files:\n${offenders.join("\n")}"
+
+          if (shouldFail) {
+            throw new GradleException(message)
+          } else {
+            logger.lifecycle("NOTE: ${message}")
+          }
+        }
+      }
+    }
+  }
+}

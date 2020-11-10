@@ -23,6 +23,7 @@ import java.text.ParseException;
 import java.util.Locale;
 import java.util.Random;
 
+@SuppressWarnings("deprecation")
 public class TestVersion extends LuceneTestCase {
 
   public void testOnOrAfter() throws Exception {
@@ -192,7 +193,7 @@ public class TestVersion extends LuceneTestCase {
     String commonBuildVersion = System.getProperty("tests.LUCENE_VERSION");
     assumeTrue("Null 'tests.LUCENE_VERSION' test property. You should run the tests with the official Lucene build file",
         commonBuildVersion != null);
-    assertEquals("Version.LATEST does not match the one given in common-build.xml",
+    assertEquals("Version.LATEST does not match the one given in tests.LUCENE_VERSION property",
         Version.LATEST.toString(), commonBuildVersion);
   }
 

@@ -235,7 +235,7 @@ public abstract class StringHelper {
         // may not be available on this platform
         // fall back to lower quality randomness from 3 different sources:
         x0 = System.nanoTime();
-        x1 = StringHelper.class.hashCode() << 32;
+        x1 = (long) StringHelper.class.hashCode() << 32;
         
         StringBuilder sb = new StringBuilder();
         // Properties can vary across JVM instances:

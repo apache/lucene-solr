@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.de;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /** 
  * Factory for {@link GermanStemFilter}. 
@@ -49,6 +49,11 @@ public class GermanStemFilterFactory extends TokenFilterFactory {
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public GermanStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public GermanStemFilter create(TokenStream in) {
     return new GermanStemFilter(in);

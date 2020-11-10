@@ -75,7 +75,7 @@ public class STBlockLine extends BlockLine {
     /**
      * Writes all the {@link BlockTermState} of the provided {@link STBlockLine} to the given output.
      */
-    public static void writeLineTermStates(DataOutput termStatesOutput, STBlockLine line,
+    public void writeLineTermStates(DataOutput termStatesOutput, STBlockLine line,
                                     DeltaBaseTermStateSerializer encoder) throws IOException {
 
       FieldMetadataTermState fieldMetadataTermState;
@@ -111,7 +111,7 @@ public class STBlockLine extends BlockLine {
      * @return The {@link BlockTermState} corresponding to the provided field id; or null if the field
      * does not occur in the line.
      */
-    public static BlockTermState readTermStateForField(int fieldId, DataInput termStatesInput,
+    public BlockTermState readTermStateForField(int fieldId, DataInput termStatesInput,
                                                 DeltaBaseTermStateSerializer termStateSerializer,
                                                 BlockHeader blockHeader, FieldInfos fieldInfos,
                                                 BlockTermState reuse) throws IOException {
@@ -161,7 +161,7 @@ public class STBlockLine extends BlockLine {
      * @param fieldTermStatesMap Map filled with the term states for each field. It is cleared first.
      * @see #readTermStateForField
      */
-    public static void readFieldTermStatesMap(DataInput termStatesInput,
+    public void readFieldTermStatesMap(DataInput termStatesInput,
                                        DeltaBaseTermStateSerializer termStateSerializer,
                                        BlockHeader blockHeader,
                                        FieldInfos fieldInfos,
@@ -183,7 +183,7 @@ public class STBlockLine extends BlockLine {
     /**
      * Reads all the field ids in the current block line of the provided input.
      */
-    public static int[] readFieldIds(DataInput termStatesInput, int numFields) throws IOException {
+    public int[] readFieldIds(DataInput termStatesInput, int numFields) throws IOException {
       int[] fieldIds = new int[numFields];
       for (int i = 0; i < numFields; i++) {
         fieldIds[i] = termStatesInput.readVInt();

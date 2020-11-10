@@ -41,6 +41,12 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import java.util.ArrayList;
@@ -171,8 +177,9 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
   private ScriptEngineCustomizer scriptEngineCustomizer;
 
   @Override
-  public void init(NamedList args) {
-    Collection<String> scripts = 
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+    @SuppressWarnings({"unchecked"})
+    Collection<String> scripts =
       args.removeConfigArgs(SCRIPT_ARG);
     if (scripts.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
@@ -269,7 +276,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     for (ScriptFile scriptFile : scriptFiles) {
-      ScriptEngine engine = null;
+      final ScriptEngine engine;
       if (null != engineName) {
         engine = scriptEngineManager.getEngineByName(engineName);
         if (engine == null) {
@@ -314,7 +321,17 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
         Reader scriptSrc = scriptFile.openReader(resourceLoader);
   
         try {
-          engine.eval(scriptSrc);
+          try {
+            AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+              @Override
+              public Void run() throws ScriptException  {
+                engine.eval(scriptSrc);
+                return null;
+              }
+            }, SCRIPT_SANDBOX);
+          } catch (PrivilegedActionException e) {
+            throw (ScriptException) e.getException();
+          }
         } catch (ScriptException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                   "Unable to evaluate script: " + 
@@ -424,6 +441,15 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
      * cast to a java Boolean.
      */
     private boolean invokeFunction(String name, Object... cmd) {
+      return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+        @Override
+        public Boolean run() {
+          return invokeFunctionUnsafe(name, cmd);
+        }
+      }, SCRIPT_SANDBOX);
+    }
+
+    private boolean invokeFunctionUnsafe(String name, Object... cmd) {
 
       for (EngineInfo engine : engines) {
         try {
@@ -496,4 +522,8 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
         (input, StandardCharsets.UTF_8);
     }
   }
+
+  // sandbox for script code: zero permissions
+  private static final AccessControlContext SCRIPT_SANDBOX =
+      new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, null) });
 }

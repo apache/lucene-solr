@@ -128,7 +128,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
   /**
    * Care should be taken in calling this with higher order dimensions for performance reasons.
    */
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     //Query could look like: [x1,y1 TO x2,y2] for 2 dimension, but could look like: [x1,y1,z1 TO x2,y2,z2], and can be extrapolated to n-dimensions
     //thus, this query essentially creates a box, cube, etc.
     String[] p1 = parseCommaSeparatedList(part1, dimension);

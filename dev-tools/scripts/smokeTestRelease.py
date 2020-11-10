@@ -37,9 +37,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict
 from collections import namedtuple
-from scriptutil import download
+import scriptutil
 
-import checkJavaDocs
 import checkJavadocLinks
 
 # This tool expects to find /lucene and /solr off the base URL.  You
@@ -225,7 +224,8 @@ def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-          if (normRoot.endswith('/contrib/dataimporthandler-extras/lib') and (file.startswith('javax.mail-') or file.startswith('activation-'))) or (normRoot.endswith('/test-framework/lib') and file.startswith('jersey-')):
+          if ((normRoot.endswith('/test-framework/lib') and file.startswith('jersey-'))
+              or (normRoot.endswith('/contrib/extraction/lib') and file.startswith('xml-apis-'))):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
         else:
@@ -322,13 +322,13 @@ def checkSigs(project, urlString, version, tmpDir, isSigned, keysFile):
 
   for artifact, urlString in artifacts:
     print('  download %s...' % artifact)
-    download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
     verifyDigests(artifact, urlString, tmpDir)
 
     if isSigned:
       print('    verify sig')
       # Test sig (this is done with a clean brand-new GPG world)
-      download(artifact + '.asc', urlString + '.asc', tmpDir, force_clean=FORCE_CLEAN)
+      scriptutil.download(artifact + '.asc', urlString + '.asc', tmpDir, force_clean=FORCE_CLEAN)
       sigFile = '%s/%s.asc' % (tmpDir, artifact)
       artifactFile = '%s/%s' % (tmpDir, artifact)
       logFile = '%s/%s.%s.gpg.verify.log' % (tmpDir, project, artifact)
@@ -621,9 +621,9 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'luke', 'memory', 'misc', 'monitor', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'backward-codecs', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'expressions', 'facet', 'grouping', 'highlighter', 'join', 'luke', 'memory', 'misc', 'monitor', 'queries', 'queryparser', 'replicator', 'sandbox', 'spatial-extras', 'spatial3d', 'suggest', 'test-framework', 'licenses')
     if isSrc:
-      extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'version.properties', 'tools', 'site')
+      extras += ('build.gradle', 'build.xml', 'common-build.xml', 'module-build.xml', 'top-level-ivy-settings.xml', 'default-nested-ivy-settings.xml', 'ivy-versions.properties', 'ivy-ignore-conflicts.properties', 'tools', 'site', 'dev-docs')
   else:
     extras = ()
 
@@ -666,7 +666,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
       print('    generate javadocs w/ Java 11...')
       java.run_java11('ant javadocs', '%s/javadocs.log' % unpackPath)
-      checkJavadocpathFull('%s/build/docs' % unpackPath)
+      checkBrokenLinks('%s/build/docs' % unpackPath)
 
       if java.run_java12:
         print("    run tests w/ Java 12 and testArgs='%s'..." % testArgs)
@@ -676,7 +676,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
         #print('    generate javadocs w/ Java 12...')
         #java.run_java12('ant javadocs', '%s/javadocs.log' % unpackPath)
-        #checkJavadocpathFull('%s/build/docs' % unpackPath)
+        #checkBrokenLinks('%s/build/docs' % unpackPath)
 
     else:
       os.chdir('solr')
@@ -687,7 +687,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       # test javadocs
       print('    generate javadocs w/ Java 11...')
       java.run_java11('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-      checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+      checkBrokenLinks('%s/solr/build/docs')
 
       print('    test solr example w/ Java 11...')
       java.run_java11('ant clean server', '%s/antexample.log' % unpackPath)
@@ -699,7 +699,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
 
         #print('    generate javadocs w/ Java 12...')
         #java.run_java12('ant clean javadocs', '%s/javadocs.log' % unpackPath)
-        #checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
+        #checkBrokenLinks('%s/solr/build/docs' % unpackPath)
 
         print('    test solr example w/ Java 12...')
         java.run_java12('ant clean server', '%s/antexample.log' % unpackPath)
@@ -717,9 +717,6 @@ def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, te
       testDemo(java.run_java11, isSrc, version, '11')
       if java.run_java12:
         testDemo(java.run_java12, isSrc, version, '12')
-
-      print('    check Lucene\'s javadoc JAR')
-      checkJavadocpath('%s/docs' % unpackPath)
 
     else:
       print('    copying unpacked distribution for Java 11 ...')
@@ -794,7 +791,12 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
     startupEvent.set()
   finally:
     f.close()
-    
+
+def is_port_in_use(port):
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
 def testSolrExample(unpackPath, javaPath, isSrc):
   # test solr using some examples it comes with
   logFile = '%s/solr-example.log' % unpackPath
@@ -859,26 +861,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   else:
     os.chdir(unpackPath)
     
-# the weaker check: we can use this on java6 for some checks,
-# but its generated HTML is hopelessly broken so we cannot run
-# the link checking that checkJavadocpathFull does.
-def checkJavadocpath(path, failOnMissing=True):
-  # check for level='package'
-  # we fail here if its screwed up
-  if failOnMissing and checkJavaDocs.checkPackageSummaries(path, 'package'):
-    raise RuntimeError('missing javadocs package summaries!')
-    
-  # now check for level='class'
-  if checkJavaDocs.checkPackageSummaries(path):
-    # disabled: RM cannot fix all this, see LUCENE-3887
-    # raise RuntimeError('javadoc problems')
-    print('\n***WARNING***: javadocs want to fail!\n')
-
-# full checks
-def checkJavadocpathFull(path, failOnMissing=True):
-  # check for missing, etc
-  checkJavadocpath(path, failOnMissing)
-
+# check for broken links
+def checkBrokenLinks(path):
   # also validate html/check for broken links
   if checkJavadocLinks.checkAll(path):
     raise RuntimeError('broken javadocs links found!')
@@ -957,7 +941,7 @@ def getBinaryDistFiles(project, tmpDir, version, baseURL):
   if not os.path.exists('%s/%s' % (tmpDir, distribution)):
     distURL = '%s/%s/%s' % (baseURL, project, distribution)
     print('    download %s...' % distribution, end=' ')
-    download(distribution, distURL, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download(distribution, distURL, tmpDir, force_clean=FORCE_CLEAN)
   destDir = '%s/unpack-%s-getBinaryDistFiles' % (tmpDir, project)
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -1186,7 +1170,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         crawl(downloadedFiles, subURL, path, exclusions)
       else:
         if not os.path.exists(path) or FORCE_CLEAN:
-          download(text, subURL, targetDir, quiet=True, force_clean=FORCE_CLEAN)
+          scriptutil.download(text, subURL, targetDir, quiet=True, force_clean=FORCE_CLEAN)
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
@@ -1315,7 +1299,7 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   command = 'ant test -Dtestcase=TestBackwardsCompatibility -Dtests.verbose=true'
   p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   stdout, stderr = p.communicate()
-  if p.returncode is not 0:
+  if p.returncode != 0:
     # Not good: the test failed!
     raise RuntimeError('%s failed:\n%s' % (command, stdout))
   stdout = stdout.decode('utf-8',errors='replace').replace('\r\n','\n')
@@ -1387,22 +1371,11 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   else:
     print('    success!')
 
-def getScriptVersion():
-  topLevelDir = '../..'                       # Assumption: this script is in dev-tools/scripts/ of a checkout
-  m = re.compile(r'(.*)/').match(sys.argv[0]) # Get this script's directory
-  if m is not None and m.group(1) != '.':
-    origCwd = os.getcwd()
-    os.chdir(m.group(1))
-    os.chdir('../..')
-    topLevelDir = os.getcwd()
-    os.chdir(origCwd)
-  reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+)')
-  return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
 
 def main():
   c = parse_config()
 
-  scriptVersion = getScriptVersion()
+  scriptVersion = scriptutil.find_current_version()
   if not c.version.startswith(scriptVersion + '.'):
     raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
 
@@ -1451,8 +1424,11 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   else:
     keysFileURL = "https://archive.apache.org/dist/lucene/KEYS"
     print("    Downloading online KEYS file %s" % keysFileURL)
-    download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
+    scriptutil.download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
+
+  if is_port_in_use(8983):
+    raise RuntimeError('Port 8983 is already in use. The smoketester needs it to test Solr')
 
   print()
   print('Test Lucene...')

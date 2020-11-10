@@ -37,6 +37,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.classic.QueryParser.Operator;
 import org.apache.lucene.queryparser.flexible.standard.CommonQueryParserConfiguration;
 import org.apache.lucene.queryparser.util.QueryParserTestBase;
@@ -50,10 +51,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
@@ -546,15 +543,11 @@ public class TestQueryParser extends QueryParserTestBase {
         .build();
     assertEquals(graphQuery, dumb.parse("guinea pig"));
 
-    // With the phrase operator, a multi-word synonym source will form span near queries.
-    SpanNearQuery spanGuineaPig = SpanNearQuery.newOrderedNearQuery("field")
-        .addClause(new SpanTermQuery(new Term("field", "guinea")))
-        .addClause(new SpanTermQuery(new Term("field", "pig")))
-        .setSlop(0)
+    Query synonyms = new BooleanQuery.Builder()
+        .add(new PhraseQuery("field", "guinea", "pig"), BooleanClause.Occur.SHOULD)
+        .add(new TermQuery(new Term("field", "cavy")), BooleanClause.Occur.SHOULD)
         .build();
-    SpanTermQuery spanCavy = new SpanTermQuery(new Term("field", "cavy"));
-    SpanOrQuery spanPhrase = new SpanOrQuery(new SpanQuery[]{spanGuineaPig, spanCavy});
-    assertEquals(spanPhrase, dumb.parse("\"guinea pig\""));
+    assertEquals(synonyms, dumb.parse("\"guinea pig\""));
 
     // custom behavior, the synonyms are expanded, unless you use quote operator
     QueryParser smart = new SmartQueryParser();
@@ -682,9 +675,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "((+guinea +pig) cavy) running?");
     assertQueryEquals("guinea pig \"running\"", a, "((+guinea +pig) cavy) running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
+    assertQueryEquals("\"guinea pig\"~2", a, "\"guinea pig\" cavy");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
+    assertQueryEquals("field:\"guinea pig\"", a, "\"guinea pig\" cavy");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }
@@ -761,9 +754,9 @@ public class TestQueryParser extends QueryParserTestBase {
     assertQueryEquals("guinea pig running?", a, "guinea pig running?");
     assertQueryEquals("guinea pig \"running\"", a, "guinea pig running");
 
-    assertQueryEquals("\"guinea pig\"~2", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
+    assertQueryEquals("\"guinea pig\"~2", a, "\"guinea pig\" cavy");
 
-    assertQueryEquals("field:\"guinea pig\"", a, "spanOr([spanNear([guinea, pig], 0, true), cavy])");
+    assertQueryEquals("field:\"guinea pig\"", a, "\"guinea pig\" cavy");
 
     splitOnWhitespace = oldSplitOnWhitespace;
   }

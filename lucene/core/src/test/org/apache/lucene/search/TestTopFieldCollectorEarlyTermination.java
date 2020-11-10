@@ -117,7 +117,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
   }
 
   private void doTestEarlyTermination(boolean paging) throws IOException {
-    final int iters = atLeast(8);
+    final int iters = atLeast(1);
     for (int i = 0; i < iters; ++i) {
       createRandomIndex(false);
       int maxSegmentSize = 0;

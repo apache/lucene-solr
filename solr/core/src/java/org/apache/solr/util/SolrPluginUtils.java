@@ -196,18 +196,14 @@ public class SolrPluginUtils {
 
   }
 
+  private static final Pattern SPLIT_PATTERN = Pattern.compile("[\\s,]+"); // space or comma
 
-
-
-
-
-  private final static Pattern splitList=Pattern.compile(",| ");
-
-  /** Split a value that may contain a comma, space of bar separated list. */
-  public static String[] split(String value){
-     return splitList.split(value.trim(), 0);
+  /** Split a value between spaces and/or commas.  No need to trim anything. */
+  public static String[] split(String value) {
+    // TODO consider moving / adapting this into a new StrUtils.splitSmart variant?
+    // TODO deprecate; it's only used by two callers?
+    return SPLIT_PATTERN.split(value.trim());
   }
-
 
   /**
    * Pre-fetch documents into the index searcher's document cache.
@@ -327,6 +323,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @SuppressWarnings({"rawtypes"})
   public static NamedList doStandardDebug(
           SolrQueryRequest req,
           String userQuery,
@@ -343,12 +340,13 @@ public class SolrPluginUtils {
   }
 
 
+  @SuppressWarnings({"unchecked"})
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
           String userQuery,
           Query query,
           boolean dbgQuery,
-          NamedList dbg)
+          @SuppressWarnings({"rawtypes"})NamedList dbg)
   {
     if (dbgQuery) {
       /* userQuery may have been pre-processed .. expose that */
@@ -364,12 +362,13 @@ public class SolrPluginUtils {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public static void doStandardResultsDebug(
           SolrQueryRequest req,
           Query query,
           DocList results,
           boolean dbgResults,
-          NamedList dbg) throws IOException
+          @SuppressWarnings({"rawtypes"})NamedList dbg) throws IOException
   {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
@@ -678,7 +677,11 @@ public class SolrPluginUtils {
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
         String[] parts = lessThanPattern.split(s,0);
-        int upperBound = Integer.parseInt(parts[0]);
+        if (parts.length < 2) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid 'mm' spec: '" + s + "'. Expecting values before and after '<'");
+        }
+        int upperBound = checkedParseInt(parts[0], "Invalid 'mm' spec. Expecting an integer.");
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -694,17 +697,37 @@ public class SolrPluginUtils {
     if (-1 < spec.indexOf('%')) {
       /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
       spec = spec.substring(0,spec.length()-1);
-      int percent = Integer.parseInt(spec);
+      int percent = checkedParseInt(spec,
+          "Invalid 'mm' spec. Expecting an integer.");
       float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = Integer.parseInt(spec);
+      int calc = checkedParseInt(spec, "Invalid 'mm' spec. Expecting an integer.");
       result = calc < 0 ? result + calc : calc;
     }
 
     return (optionalClauseCount < result ?
             optionalClauseCount : (result < 0 ? 0 : result));
 
+  }
+
+  /**
+   * Wrapper of {@link Integer#parseInt(String)} that wraps any {@link NumberFormatException} in a
+   * {@link SolrException} with HTTP 400 Bad Request status.
+   *
+   * @param input the string to parse
+   * @param errorMessage the error message for any SolrException
+   * @return the integer value of {@code input}
+   * @throws SolrException when parseInt throws NumberFormatException
+   */
+  private static int checkedParseInt(String input, String errorMessage) {
+    int percent;
+    try {
+      percent = Integer.parseInt(input);
+    } catch (NumberFormatException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMessage, e);
+    }
+    return percent;
   }
 
 
@@ -824,7 +847,7 @@ public class SolrPluginUtils {
    * {@code resultIds} is.  {@code resultIds} comes from {@link ResponseBuilder#resultIds}.  If the doc key
    * isn't in {@code resultIds} then it is ignored.
    * Note: most likely you will call {@link #removeNulls(Map.Entry[], NamedList)} sometime after calling this. */
-  public static void copyNamedListIntoArrayByDocPosInResponse(NamedList namedList, Map<Object, ShardDoc> resultIds,
+  public static void copyNamedListIntoArrayByDocPosInResponse(@SuppressWarnings({"rawtypes"})NamedList namedList, Map<Object, ShardDoc> resultIds,
                                                               Map.Entry<String, Object>[] destArr) {
     assert resultIds.size() == destArr.length;
     for (int i = 0; i < namedList.size(); i++) {
@@ -949,7 +972,7 @@ public class SolrPluginUtils {
       /* we definitely had some sort of sort string from the user,
        * but no SortSpec came out of it
        */
-      log.warn("Invalid sort \""+sort+"\" was specified, ignoring", sortE);
+      log.warn("Invalid sort '{}' was specified, ignoring", sort, sortE);
       return null;
     }
 

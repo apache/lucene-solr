@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 
+import static org.apache.lucene.util.fst.FST.Arc.BitTable;
+
 /** Static helper methods.
  *
  * @lucene.experimental */
@@ -151,7 +153,7 @@ public final class Util {
         
         fst.readFirstRealTargetArc(arc.target(), arc, in);
 
-        if (arc.bytesPerArc() != 0 && arc.arcIdx() > Integer.MIN_VALUE) {
+        if (arc.bytesPerArc() != 0 && arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH) {
 
           int low = 0;
           int high = arc.numArcs() -1;
@@ -478,6 +480,7 @@ public final class Util {
 
           // For each arc leaving this node:
           boolean foundZero = false;
+          boolean arcCopyIsPending = false;
           while(true) {
             // tricky: instead of comparing output == 0, we must
             // express it via the comparator compare(output, 0) == 0
@@ -486,7 +489,7 @@ public final class Util {
                 foundZero = true;
                 break;
               } else if (!foundZero) {
-                scratchArc.copyFrom(path.arc);
+                arcCopyIsPending = true;
                 foundZero = true;
               } else {
                 addIfCompetitive(path);
@@ -497,16 +500,16 @@ public final class Util {
             if (path.arc.isLast()) {
               break;
             }
+            if (arcCopyIsPending) {
+              scratchArc.copyFrom(path.arc);
+              arcCopyIsPending = false;
+            }
             fst.readNextArc(path.arc, fstReader);
           }
 
           assert foundZero;
 
-          if (queue != null) {
-            // TODO: maybe we can save this copyFrom if we
-            // are more clever above... eg on finding the
-            // first NO_OUTPUT arc we'd switch to using
-            // scratchArc
+          if (queue != null && !arcCopyIsPending) {
             path.arc.copyFrom(scratchArc);
           }
 
@@ -940,18 +943,27 @@ public final class Util {
     }
     fst.readFirstTargetArc(follow, arc, in);
     if (arc.bytesPerArc() != 0 && arc.label() != FST.END_LABEL) {
-      if (arc.arcIdx() == Integer.MIN_VALUE) {
-        // Arcs are in an array-with-gaps
-        int offset = label - arc.label();
-        if (offset >= arc.numArcs()) {
+      if (arc.nodeFlags() == FST.ARCS_FOR_DIRECT_ADDRESSING) {
+        // Fixed length arcs in a direct addressing node.
+        int targetIndex = label - arc.label();
+        if (targetIndex >= arc.numArcs()) {
           return null;
-        } else if (offset < 0) {
+        } else if (targetIndex < 0) {
           return arc;
         } else {
-          return fst.readArcAtPosition(arc, in, arc.posArcsStart() - offset * arc.bytesPerArc());
+          if (BitTable.isBitSet(targetIndex, arc, in)) {
+            fst.readArcByDirectAddressing(arc, in, targetIndex);
+            assert arc.label() == label;
+          } else {
+            int ceilIndex = BitTable.nextBitSet(targetIndex, arc, in);
+            assert ceilIndex != -1;
+            fst.readArcByDirectAddressing(arc, in, ceilIndex);
+            assert arc.label() > label;
+          }
+          return arc;
         }
       }
-      // Arcs are packed array -- use binary search to find the target.
+      // Fixed length arcs in a binary search node.
       int idx = binarySearch(fst, arc, label);
       if (idx >= 0) {
         return fst.readArcByIndex(arc, in, idx);
@@ -964,7 +976,8 @@ public final class Util {
       return fst.readArcByIndex(arc, in , idx);
     }
 
-    // Linear scan
+    // Variable length arcs in a linear scan list,
+    // or special arc with label == FST.END_LABEL.
     fst.readFirstRealTargetArc(follow.target(), arc, in);
 
     while (true) {
@@ -995,6 +1008,7 @@ public final class Util {
    * @throws IOException when the FST reader does
    */
   static <T> int binarySearch(FST<T> fst, FST.Arc<T> arc, int targetLabel) throws IOException {
+    assert arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH : "Arc is not encoded as packed array for binary search (nodeFlags=" + arc.nodeFlags() + ")";
     BytesReader in = fst.getBytesReader();
     int low = arc.arcIdx();
     int mid = 0;

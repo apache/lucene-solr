@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,7 +38,6 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
@@ -222,6 +220,9 @@ public final class CheckIndex implements Closeable {
 
       /** Status of index sort */
       public IndexSortStatus indexSortStatus;
+
+      /** Status of vectors */
+      public VectorValuesStatus vectorValuesStatus;
     }
     
     /**
@@ -376,7 +377,25 @@ public final class CheckIndex implements Closeable {
       /** Total number of fields with points. */
       public int totalValueFields;
       
-      /** Exception thrown during doc values test (null on success) */
+      /** Exception thrown during point values test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing VectorValues
+     */
+    public static final class VectorValuesStatus {
+
+      VectorValuesStatus() {
+      }
+
+      /** Total number of vector values tested. */
+      public long totalVectorValues;
+
+      /** Total number of fields with vectors. */
+      public int totalVectorFields;
+
+      /** Exception thrown during vector values test (null on success) */
       public Throwable error = null;
     }
 
@@ -674,8 +693,7 @@ public final class CheckIndex implements Closeable {
         long startOpenReaderNS = System.nanoTime();
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), false, IOContext.DEFAULT,
-            Collections.singletonMap(BlockTreeTermsReader.FST_MODE_KEY, BlockTreeTermsReader.FSTLoadMode.OFF_HEAP.name())); // lets keep stuff on disk for check-index
+        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), IOContext.DEFAULT);
         msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startOpenReaderNS)));
 
         segInfoStat.openReaderPassed = true;
@@ -733,6 +751,9 @@ public final class CheckIndex implements Closeable {
 
           // Test PointValues
           segInfoStat.pointsStatus = testPoints(reader, infoStream, failFast);
+
+          // Test VectorValues
+          segInfoStat.vectorValuesStatus = testVectors(reader, infoStream, failFast);
 
           // Test index sort
           segInfoStat.indexSortStatus = testSort(reader, indexSort, infoStream, failFast);
@@ -1674,7 +1695,7 @@ public final class CheckIndex implements Closeable {
             }
             final long norm = norms.longValue();
             if (norm != 0 && visitedDocs.get(doc) == false) {
-              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + norm);
+              throw new RuntimeException("Document " + doc + " doesn't have terms according to postings but has a norm value that is not zero: " + Long.toUnsignedString(norm));
             } else if (norm == 0 && visitedDocs.get(doc)) {
               throw new RuntimeException("Document " + doc + " has terms according to postings but its norm value is 0, which may only be used on documents that have no terms");
             }
@@ -1902,7 +1923,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
-          if (fieldInfo.getPointDataDimensionCount() > 0) {
+          if (fieldInfo.getPointDimensionCount() > 0) {
             PointValues values = pointsReader.getValues(fieldInfo.name);
             if (values == null) {
               continue;
@@ -1958,6 +1979,65 @@ public final class CheckIndex implements Closeable {
     return status;
   }
 
+  /**
+   * Test the vectors index
+   * @lucene.experimental
+   */
+  public static Status.VectorValuesStatus testVectors(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null) {
+      infoStream.print("    test: vectors..............");
+    }
+    long startNS = System.nanoTime();
+    FieldInfos fieldInfos = reader.getFieldInfos();
+    Status.VectorValuesStatus status = new Status.VectorValuesStatus();
+    try {
+
+      if (fieldInfos.hasVectorValues()) {
+        for (FieldInfo fieldInfo : fieldInfos) {
+          if (fieldInfo.hasVectorValues()) {
+            int dimension = fieldInfo.getVectorDimension();
+            if (dimension <= 0) {
+              throw new RuntimeException("Field \"" + fieldInfo.name + "\" has vector values but dimension is " + dimension);
+            }
+            VectorValues values = reader.getVectorValues(fieldInfo.name);
+            if (values == null) {
+              continue;
+            }
+
+            status.totalVectorFields++;
+
+            int docCount = 0;
+            while (values.nextDoc() != NO_MORE_DOCS) {
+              int valueLength = values.vectorValue().length;
+              if (valueLength != dimension) {
+                throw new RuntimeException("Field \"" + fieldInfo.name + "\" has a value whose dimension=" + valueLength + " not matching the field's dimension=" + dimension);
+              }
+              ++docCount;
+            }
+            if (docCount != values.size()) {
+              throw new RuntimeException("Field \"" + fieldInfo.name + "\" has size=" + values.size() + " but when iterated, returns " + docCount + " docs with values");
+            }
+            status.totalVectorValues += docCount;
+          }
+        }
+      }
+
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d vectors] [took %.3f sec]", status.totalVectorFields, status.totalVectorValues, nsToSec(System.nanoTime()-startNS)));
+
+    } catch (Throwable e) {
+      if (failFast) {
+        throw IOUtils.rethrowAlways(e);
+      }
+      msg(infoStream, "ERROR: " + e);
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
+
   /** Walks the entire N-dimensional points space, verifying that all points fall within the last cell's boundaries.
    *
    * @lucene.internal */
@@ -1982,7 +2062,7 @@ public final class CheckIndex implements Closeable {
     public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
       this.maxDoc = maxDoc;
       this.fieldName = fieldName;
-      numDataDims = values.getNumDataDimensions();
+      numDataDims = values.getNumDimensions();
       numIndexDims = values.getNumIndexDimensions();
       bytesPerDim = values.getBytesPerDimension();
       packedBytesCount = numDataDims * bytesPerDim;

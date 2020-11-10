@@ -93,10 +93,12 @@ public class SolrCmdDistributor implements Closeable {
   
   public void finish() {    
     try {
-      assert ! finished : "lifecycle sanity check";
+      assert !finished : "lifecycle sanity check";
       finished = true;
-      
+
       blockAndDoRetries();
+    } catch (IOException e) {
+      log.warn("Unable to finish sending updates", e);
     } finally {
       clients.shutdown();
     }
@@ -106,7 +108,7 @@ public class SolrCmdDistributor implements Closeable {
     clients.shutdown();
   }
 
-  private void doRetriesIfNeeded() {
+  private void doRetriesIfNeeded() throws IOException {
     // NOTE: retries will be forwards to a single url
     
     List<Error> errors = new ArrayList<>(this.errors);
@@ -129,7 +131,7 @@ public class SolrCmdDistributor implements Closeable {
         builder.append(errors.size() - 10);
         builder.append(" more");
       }
-      log.debug(builder.toString());
+      log.debug("{}", builder);
     }
 
     for (Error err : errors) {
@@ -160,7 +162,9 @@ public class SolrCmdDistributor implements Closeable {
       // Only backoff once for the full batch
       try {
         int backoffTime = Math.min(retryPause * resubmitList.get(0).req.retries, 2000);
-        log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        if (log.isDebugEnabled()) {
+          log.debug("Sleeping {}ms before re-submitting {} requests", backoffTime, resubmitList.size());
+        }
         Thread.sleep(backoffTime);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -259,7 +263,7 @@ public class SolrCmdDistributor implements Closeable {
     
   }
 
-  public void blockAndDoRetries() {
+  public void blockAndDoRetries() throws IOException {
     clients.blockUntilFinished();
     
     // wait for any async commits to complete
@@ -284,7 +288,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req, boolean isCommit) {
+  private void submit(final Req req, boolean isCommit) throws IOException {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
@@ -318,9 +322,8 @@ public class SolrCmdDistributor implements Closeable {
     }
     
     if (log.isDebugEnabled()) {
-      log.debug("sending update to "
-          + req.node.getUrl() + " retry:"
-          + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
+      log.debug("sending update to {} retry: {} {} params {}"
+          , req.node.getUrl(), req.retries, req.cmd, req.uReq.getParams());
     }
     
     if (isCommit) {
@@ -425,6 +428,7 @@ public class SolrCmdDistributor implements Closeable {
           NamedList<Object> nl = brp.processResponse(inputStream, null);
           Object hdr = nl.get("responseHeader");
           if (hdr != null && hdr instanceof NamedList) {
+            @SuppressWarnings({"unchecked"})
             NamedList<Object> hdrList = (NamedList<Object>) hdr;
             Object rfObj = hdrList.get(UpdateRequest.REPFACT);
             if (rfObj != null && rfObj instanceof Integer) {

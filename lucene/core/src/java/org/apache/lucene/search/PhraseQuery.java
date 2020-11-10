@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -304,13 +304,17 @@ public class PhraseQuery extends Query {
     v.consumeTerms(this, terms);
   }
 
-  static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
+  /** Term postings and position information for phrase matching
+   * @lucene.internal
+   */
+  public static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
     final PostingsEnum postings;
     final ImpactsEnum impacts;
     final int position;
     final Term[] terms;
     final int nTerms; // for faster comparisons
 
+    /** Creates PostingsAndFreq instance */
     public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, Term... terms) {
       this.postings = postings;
       this.impacts = impacts;
@@ -325,6 +329,22 @@ public class PhraseQuery extends Query {
           Arrays.sort(terms2);
           this.terms = terms2;
         }
+      } else {
+        this.terms = null;
+      }
+    }
+
+    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, List<Term> terms) {
+      this.postings = postings;
+      this.impacts = impacts;
+      this.position = position;
+      nTerms = terms == null ? 0 : terms.size();
+      if (nTerms > 0) {
+        Term[] terms2 = terms.toArray(new Term[0]);
+        if (nTerms > 1) {
+          Arrays.sort(terms2);
+        }
+        this.terms = terms2;
       } else {
         this.terms = null;
       }
@@ -374,10 +394,10 @@ public class PhraseQuery extends Query {
   /** A guess of
    * the average number of simple operations for the initial seek and buffer refill
    * per document for the positions of a term.
-   * See also {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}.
+   * See also {@link Lucene84PostingsReader.BlockImpactsPostingsEnum#nextPosition()}.
    * <p>
    * Aside: Instead of being constant this could depend among others on
-   * {@link Lucene50PostingsFormat#BLOCK_SIZE},
+   * {@link Lucene84PostingsFormat#BLOCK_SIZE},
    * {@link TermsEnum#docFreq()},
    * {@link TermsEnum#totalTermFreq()},
    * {@link DocIdSetIterator#cost()} (expected number of matching docs),
@@ -386,7 +406,7 @@ public class PhraseQuery extends Query {
    */
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
-  /** Number of simple operations in {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}
+  /** Number of simple operations in {@link Lucene84PostingsReader.BlockImpactsPostingsEnum#nextPosition()}
    *  when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
@@ -397,7 +417,7 @@ public class PhraseQuery extends Query {
    *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
    *  @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
-  static float termPositionsCost(TermsEnum termsEnum) throws IOException {
+  public static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     int docFreq = termsEnum.docFreq();
     assert docFreq > 0;
     long totalTermFreq = termsEnum.totalTermFreq();

@@ -1,0 +1,1048 @@
+diff --git a/algorithms/armenian.sbl b/algorithms/armenian.sbl
+new file mode 100644
+index 0000000..3a9a926
+--- /dev/null
++++ b/algorithms/armenian.sbl
+@@ -0,0 +1,301 @@
++stringescapes {}
++
++stringdef a    '{U+0561}' // 531
++stringdef b    '{U+0562}' // 532
++stringdef g    '{U+0563}' // 533
++stringdef d    '{U+0564}' // 534
++stringdef ye   '{U+0565}' // 535
++stringdef z    '{U+0566}' // 536
++stringdef e    '{U+0567}' // 537
++stringdef y    '{U+0568}' // 538
++stringdef dt   '{U+0569}' // 539
++stringdef zh   '{U+056A}' // 53A
++stringdef i    '{U+056B}' // 53B
++stringdef l    '{U+056C}' // 53C
++stringdef kh   '{U+056D}' // 53D
++stringdef ts   '{U+056E}' // 53E
++stringdef k    '{U+056F}' // 53F
++stringdef h    '{U+0570}' // 540
++stringdef dz   '{U+0571}' // 541
++stringdef gh   '{U+0572}' // 542
++stringdef djch '{U+0573}' // 543
++stringdef m    '{U+0574}' // 544
++stringdef j    '{U+0575}' // 545
++stringdef n    '{U+0576}' // 546
++stringdef sh   '{U+0577}' // 547
++stringdef vo   '{U+0578}' // 548
++stringdef ch   '{U+0579}' // 549
++stringdef p    '{U+057A}' // 54A
++stringdef dj   '{U+057B}' // 54B
++stringdef r    '{U+057C}' // 54C
++stringdef s    '{U+057D}' // 54D
++stringdef v    '{U+057E}' // 54E
++stringdef t    '{U+057F}' // 54F
++stringdef r'   '{U+0580}' // 550
++stringdef c    '{U+0581}' // 551
++stringdef u    '{U+0582}' // 552                  //vjun
++stringdef bp   '{U+0583}' // 553
++stringdef q    '{U+0584}' // 554
++stringdef ev   '{U+0587}'
++stringdef o    '{U+0585}' // 555
++stringdef f    '{U+0586}' // 556
++
++routines ( mark_regions R2
++           adjective
++           verb
++           noun
++           ending
++)
++
++externals ( stem )
++
++integers ( pV p2 )
++
++groupings ( v )
++
++define v '{a}{e}{i}{o}{u}{ye}{vo}{y}'
++
++define mark_regions as (
++
++    $pV = limit
++    $p2 = limit
++    do (
++        gopast v  setmark pV  gopast non-v
++        gopast v  gopast non-v  setmark p2
++       )
++)
++
++backwardmode (
++
++    define R2 as $p2 <= cursor
++
++    define adjective as (
++        [substring] among (
++            '{b}{a}{r'}'
++            '{p}{ye}{s}'
++            '{vo}{r'}{e}{n}'
++            '{vo}{v}{i}{n}'
++            '{a}{k}{i}'
++            '{l}{a}{j}{n}'
++            '{r'}{vo}{r'}{d}'
++            '{ye}{r'}{vo}{r'}{d}'
++            '{a}{k}{a}{n}'
++            '{a}{l}{i}'
++            '{k}{vo}{t}'
++            '{ye}{k}{ye}{n}'
++            '{vo}{r'}{a}{k}'
++            '{ye}{gh}'
++            '{v}{vo}{u}{n}'
++            '{ye}{r'}{ye}{n}'
++            '{a}{r'}{a}{n}'
++            '{ye}{n}'
++            '{a}{v}{ye}{t}'
++            '{g}{i}{n}'
++            '{i}{v}'
++            '{a}{t}'
++            '{i}{n}'
++
++              (delete)
++        )
++    )
++
++    define verb as (
++        [substring] among (
++            '{vo}{u}{m}'
++            '{v}{vo}{u}{m}'
++            '{a}{l}{vo}{u}'
++            '{ye}{l}{vo}{u}'
++            '{v}{ye}{l}'
++            '{a}{n}{a}{l}'
++            '{ye}{l}{vo}{u}{c}'
++            '{a}{l}{vo}{u}{c}'
++            '{y}{a}{l}'
++            '{y}{ye}{l}'
++            '{a}{l}{vo}{v}'
++            '{ye}{l}{vo}{v}'
++            '{a}{l}{i}{s}'
++            '{ye}{l}{i}{s}'
++            '{ye}{n}{a}{l}'
++            '{a}{c}{n}{a}{l}'
++            '{ye}{c}{n}{ye}{l}'
++            '{c}{n}{ye}{l}'
++            '{n}{ye}{l}'
++            '{a}{t}{ye}{l}'
++            '{vo}{t}{ye}{l}'
++            '{k}{vo}{t}{ye}{l}'
++            '{t}{ye}{l}'
++            '{v}{a}{ts}'
++            '{ye}{c}{v}{ye}{l}'
++            '{a}{c}{v}{ye}{l}'
++            '{ye}{c}{i}{r'}'
++            '{a}{c}{i}{r'}'
++            '{ye}{c}{i}{n}{q}'
++            '{a}{c}{i}{n}{q}'
++            '{v}{ye}{c}{i}{r'}'
++            '{v}{ye}{c}{i}{n}{q}'
++            '{v}{ye}{c}{i}{q}'
++            '{v}{ye}{c}{i}{n}'
++            '{a}{c}{r'}{i}{r'}'
++            '{a}{c}{r'}{ye}{c}'
++            '{a}{c}{r'}{i}{n}{q}'
++            '{a}{c}{r'}{i}{q}'
++            '{a}{c}{r'}{i}{n}'
++            '{ye}{c}{i}{q}'
++            '{a}{c}{i}{q}'
++            '{ye}{c}{i}{n}'
++            '{a}{c}{i}{n}'
++            '{a}{c}{a}{r'}'
++            '{a}{c}{a}{v}'
++            '{a}{c}{a}{n}{q}'
++            '{a}{c}{a}{q}'
++            '{a}{c}{a}{n}'
++            '{v}{ye}{c}{i}'
++            '{a}{c}{r'}{i}'
++            '{ye}{c}{a}{r'}'
++            '{ye}{c}{a}{v}'
++            '{c}{a}{n}{q}'
++            '{c}{a}{q}'
++            '{c}{a}{n}'
++            '{a}{c}{a}'
++            '{a}{c}{i}'
++            '{ye}{c}{a}'
++            '{ch}{ye}{l}'
++            '{ye}{c}{i}'
++            '{a}{r'}'
++            '{a}{v}'
++            '{a}{n}{q}'
++            '{a}{q}'
++            '{a}{n}'
++            '{a}{l}'
++            '{ye}{l}'
++            '{ye}{c}'
++            '{a}{c}'
++            '{v}{ye}'
++            '{a}'
++
++                (delete)
++        )
++    )
++
++    define noun as (
++        [substring] among (
++            '{a}{ts}{vo}'
++            '{a}{n}{a}{k}'
++            '{a}{n}{o}{c}'
++            '{a}{r'}{a}{n}'
++            '{a}{r'}{q}'
++            '{p}{a}{n}'
++            '{s}{t}{a}{n}'
++            '{ye}{gh}{e}{n}'
++            '{ye}{n}{q}'
++            '{i}{k}'
++            '{i}{ch}'
++            '{i}{q}'
++            '{m}{vo}{u}{n}{q}'
++            '{j}{a}{k}'
++            '{j}{vo}{u}{n}'
++            '{vo}{n}{q}'
++            '{vo}{r'}{d}'
++            '{vo}{c}'
++            '{ch}{ye}{q}'
++            '{v}{a}{ts}{q}'
++            '{v}{vo}{r'}'
++            '{a}{v}{vo}{r'}'
++            '{vo}{u}{dt}{j}{vo}{u}{n}'
++            '{vo}{u}{k}'
++            '{vo}{u}{h}{i}'
++            '{vo}{u}{j}{dt}'
++            '{vo}{u}{j}{q}'
++            '{vo}{u}{s}{t}'
++            '{vo}{u}{s}'
++            '{c}{i}'
++            '{a}{l}{i}{q}'
++            '{a}{n}{i}{q}'
++            '{i}{l}'
++            '{i}{ch}{q}'
++            '{vo}{u}{n}{q}'
++            '{g}{a}{r'}'
++            '{vo}{u}'
++            '{a}{k}'
++            '{a}{n}'
++            '{q}'
++
++                (delete)
++        )
++    )
++
++    define ending as (
++        [substring] R2 among (
++            '{n}{ye}{r'}{y}'
++            '{n}{ye}{r'}{n}'
++            '{n}{ye}{r'}{i}'
++            '{n}{ye}{r'}{d}'
++            '{ye}{r'}{i}{c}'
++            '{n}{ye}{r'}{i}{c}'
++            '{ye}{r'}{i}'
++            '{ye}{r'}{d}'
++            '{ye}{r'}{n}'
++            '{ye}{r'}{y}'
++            '{n}{ye}{r'}{i}{n}'
++            '{vo}{u}{dt}{j}{a}{n}{n}'
++            '{vo}{u}{dt}{j}{a}{n}{y}'
++            '{vo}{u}{dt}{j}{a}{n}{s}'
++            '{vo}{u}{dt}{j}{a}{n}{d}'
++            '{vo}{u}{dt}{j}{a}{n}'
++            '{ye}{r'}{i}{n}'
++            '{i}{n}'
++            '{s}{a}'
++            '{vo}{dj}'
++            '{i}{c}'
++            '{ye}{r'}{vo}{v}'
++            '{n}{ye}{r'}{vo}{v}'
++            '{ye}{r'}{vo}{u}{m}'
++            '{n}{ye}{r'}{vo}{u}{m}'
++            '{vo}{u}{n}'
++            '{vo}{u}{d}'
++            '{v}{a}{n}{s}'
++            '{v}{a}{n}{y}'
++            '{v}{a}{n}{d}'
++            '{a}{n}{y}'
++            '{a}{n}{d}'
++            '{v}{a}{n}'
++            '{vo}{dj}{y}'
++            '{vo}{dj}{s}'
++            '{vo}{dj}{d}'
++            '{vo}{c}'
++            '{vo}{u}{c}'
++            '{vo}{dj}{i}{c}'
++            '{c}{i}{c}'
++            '{v}{i}{c}'
++            '{v}{i}'
++            '{v}{vo}{v}'
++            '{vo}{v}'
++            '{a}{n}{vo}{v}'
++            '{a}{n}{vo}{u}{m}'
++            '{v}{a}{n}{i}{c}'
++            '{a}{m}{b}'
++            '{a}{n}'
++            '{n}{ye}{r'}'
++            '{ye}{r'}'
++            '{v}{a}'
++            '{y}'
++            '{n}'
++            '{d}'
++            '{c}'
++            '{i}'
++
++                (delete)
++        )
++    )
++)
++
++define stem as (
++
++    do mark_regions
++    backwards setlimit tomark pV for (
++        do ending
++        do verb
++        do adjective
++        do noun
++    )
++)
+diff --git a/algorithms/estonian.sbl b/algorithms/estonian.sbl
+new file mode 100644
+index 0000000..0cc2b60
+--- /dev/null
++++ b/algorithms/estonian.sbl
+@@ -0,0 +1,258 @@
++/* Estonian stemmer version 1.3
++
++Made by Linda Freienthal in January 2019.
++
++*/
++
++routines (
++	mark_regions
++	LONGV
++	special_noun_endings
++	case_ending
++	emphasis
++	plural_three_first_cases
++	remove_double_kpt
++	double
++	undouble
++	i_plural
++	degrees
++	substantive
++	verb_exceptions
++	verb
++	nu
++)
++
++stringescapes {}
++stringdef a" '{U+00E4}' //a-umlaut ä
++stringdef o" '{U+00F6}' //o-umlaut ö
++stringdef o' '{U+00F5}' //o with tilde õ
++stringdef u" '{U+00FC}' //u-umlaut ü
++stringdef s" '{U+0161}' //s with caron š
++stringdef z" '{U+017E}' //z with caron ž
++
++externals ( stem )
++booleans ( is_verb )
++integers ( p1 )
++groupings ( V1 RV KI GI)
++
++define V1 'aeiou{o'}{a"}{o"}{u"}'
++define RV 'aeiuo'
++define KI 'kptgbdshf{s"}z{z"}'
++define GI 'cjlmnqrvwxaeiou{o'}{a"}{o"}{u"}'
++define mark_regions as (
++
++    $p1 = limit
++
++    goto V1 gopast non-V1  setmark p1
++)
++
++
++backwardmode (
++
++	define emphasis as (
++	    setlimit tomark p1 for ([substring])
++	    test hop 4 //kingi -> kingi
++            among(
++		'gi' ((GI and not LONGV) delete) //jooksemegi -> jookseme, bioloogi -> bioloogi
++		'ki' (KI delete) //kookki -> kook	   
++	    )
++	    
++	)
++
++	define verb as (
++	    setlimit tomark p1 for ([substring])
++            among(
++		'nuksin' 'nuksime' 'nuksid' 'nuksite' (delete) //seleta-nuksite
++		'ksin' 'ksid' 'ksime' 'ksite' (delete) //personal conditional: rõõmusta-ksin
++		'mata' (delete)
++		'takse' 'dakse' (delete) //impersonal: laul-dakse, luba-takse 
++		'taks' 'daks' (delete) 	//impersonal conditional: laul-daks, saade-taks
++		'akse' (<-'a') 		//impersonal: tulla-kse, süüa-kse, teha-kse, püüt-akse, leita-kse
++		'sime' (delete) 	//pl1pst: saat-sime
++		'site' (delete) 	//pl2pst: saat-site
++		'sin' (delete) 		//sg1pst: laul-sin, saat-sin
++		'me' (V1 delete) 	//pl1prs: laula-me, tule-me
++		'da' (V1 delete) 	//da-infinitive: luba-da
++		'n' (V1 delete) 	//sg1prs: kirjuta-n
++		'b' (V1 delete) 	//sg3prs: laula-b
++	    )
++	    set is_verb
++	)
++
++	define LONGV as 
++		among('aa' 'ee' 'ii' 'oo' 'uu' '{a"}{a"}' '{o"}{o"}' '{u"}{u"}' '{o'}{o'}')
++
++	define i_plural as (
++	    setlimit tomark p1 for ([substring])
++	    among(
++		'i' (RV) //raamatui -> raamatu, lapsikui -> lapsiku
++	    )
++	    delete
++	)
++
++	define special_noun_endings as (
++	    setlimit tomark p1 for ([substring])
++	    among(
++		'lasse' (<- 'lase') //teadlasse -> teadlase
++		'last' (<- 'lase') //teadlast -> teadlase
++		'lane' (<- 'lase') //teadlane -> teadlase
++		'lasi'(<- 'lase') //teadlasi -> teadlase
++		'misse' (<- 'mise') //tegemisse -> tegemise
++		'mist' (<- 'mise') //kasutamist -> kasutamise
++		'mine' (<- 'mise') //tegemine -> tegemise
++		'misi' (<- 'mise') //kasutamisi -> kasutamise
++		'lisse' (<- 'lise') //rohelisse -> rohelise
++		'list' (<- 'lise') //tavalist -> tavalise
++		'line' (<- 'lise') //roheline -> rohelise
++		'lisi' (<- 'lise') //tavalisi -> tavalise
++	     )
++	    
++	)
++	define case_ending as (
++	    setlimit tomark p1 for ([substring])
++            among(
++		'sse' (RV or LONGV) //illative: saapa-sse, tegemisse -> tegemisse
++		'st' (RV or LONGV) //elative: saapa-st, rohelist -> rohelist
++		'le' (RV or LONGV) //allative: raamatu-le
++		'lt' (RV or LONGV) //ablative: raamatu-lt
++		'ga' (RV or LONGV) //komitatiive: õpetaja-ga
++		'ks' (RV or LONGV) //translative: õpetaja-ks
++		'ta' (RV or LONGV) //abessive and da-infinitive: õpetaja-ta and hüpa-ta
++		't' //partitiiv, raamatu-t and kapsas-t
++		's'  (RV or LONGV)//inessive and sg3pst: raamatu-s and sõiti-s
++		'l'  (RV or LONGV) //adessive: raamatu-l and kapsa-l.
++	    )
++	    delete
++	)
++
++
++	define plural_three_first_cases as ( 
++	    setlimit tomark p1 for ([substring])
++            among(
++		'ikkude' (<-'iku') //plural genitive: õnnelikkude -> õnneliku
++		'ikke' (<-'iku') //plural partitive: rahulikke -> rahuliku
++		'ike' (<-'iku') //plural genitive: ohtlike -> ohtliku
++		'sid' (not LONGV delete) //plural partitive and sg2pst and pl3pst: auto-sid and laul-sid (exludes plural nominative with words like gaasid, roosid)
++		'te' ((test hop 4 (('mis' <- 'e') or ('las' <- 'e') or ('lis' <- 'e') or (not 't' delete))) or (not 't' <-'t')) //plural genitive and pl2: ministri-te, olulis-te and saada-te, laula-te; also torte -> tort (if not in compound word) and kokkuvõtte -> kokkuvõte and roheliste -> rohelise, tegemiste -> tegemise, teadlaste -> teadlase
++		'de' ((RV or LONGV) delete) //plural genitive: lauda-de
++		'd' ((RV or LONGV) delete) //plural nominative: voodid -> voodi, rattaid -> rattai, lapsikuid -> lapsiku
++	    )	    	
++	)
++
++	define double as (
++            test among('kk' 'tt' 'pp')
++	)
++
++	define undouble as (
++            next [hop 1] delete
++	)
++
++	define nu as (
++	    setlimit tomark p1 for ([substring])
++            among(
++		'nu' //haka-nu(-te-ga)
++		'tu' //luba-tu(-d)
++		'du' //laul-du(-te-st)
++		'va' //laul-va(-te-le)
++	    )
++	    delete
++	)
++
++	define remove_double_kpt as (// undouble kpt consonant if 'C1C1V': mõtte(-le) -> mõte, hakka(-n) -> haka, haka(-nu-d) -> haka 
++	    (V1) (double)
++	    and undouble
++	)
++
++	define degrees as (
++	    setlimit tomark p1 for ([substring])
++            among(
++		'mai' (RV delete) //heleda-mai(-le)
++		'ma' (delete)  //tugeva-ma(-le) and ma-infinitive: sõit-ma
++		'm' (RV delete) //kauge-i-m, rõõmsa-m
++	    )
++	)
++
++	define substantive as (
++	    do special_noun_endings
++	    do case_ending
++	    do plural_three_first_cases
++	    do degrees
++	    do i_plural
++	    do nu
++	)
++)
++
++
++define verb_exceptions as (
++	 [substring] atlimit
++	among(
++		'joon' 'jood' 'joob' 'joote' 'joome' 'joovad' (<-'joo')
++		'j{o'}in' 'j{o'}id' 'j{o'}i' 'j{o'}ime' 'j{o'}ite'  (<-'joo')
++		'joomata' 'juuakse' 'joodakse' 'juua' 'jooma' (<- 'joo')
++		'saan' 'saad' 'saab' 'saate' 'saame' 'saavad' (<-'saa')
++		'saaksin' 'saaksid' 'saaks' 'saaksite' 'saaksime' (<-'saa')
++		'sain' 'said' 'sai' 'saite' 'saime' (<-'saa')
++		'saamata' 'saadakse' 'saadi' 'saama' 'saada' (<-'saa')
++		'viin' 'viid' 'viib' 'viite' 'viime' 'viivad' (<-'viima')
++		'viiksin' 'viiksid' 'viiks' 'viiksite' 'viiksime' (<-'viima')
++		'viisin' 'viisite' 'viisime' (<-'viima')
++		'viimata' 'viiakse' 'viidi' 'viima' 'viia' (<-'viima')
++		'keen' 'keeb' 'keed' 'kees' 'keeme' 'keete' 'keevad' (<-'keesi')
++		'keeksin' 'keeks' 'keeksid' 'keeksime' 'keeksite' (<-'keesi')
++		'keemata' 'keema' 'keeta' 'keedakse' (<-'keesi')
++		'l{o"}{o"}n' 'l{o"}{o"}d' 'l{o"}{o"}b' 'l{o"}{o"}me' 'l{o"}{o"}te' 'l{o"}{o"}vad'  (<-'l{o"}{o"}')
++		'l{o"}{o"}ksin' 'l{o"}{o"}ksid' 'l{o"}{o"}ks' 'l{o"}{o"}ksime' 'l{o"}{o"}ksite' (<-'l{o"}{o"}')
++		'l{o"}{o"}mata' 'l{u"}{u"}akse' 'l{o"}{o"}dakse' 'l{o"}{o"}di' 'l{o"}{o"}ma' 'l{u"}{u"}a' (<-'l{o"}{o"}')
++		'l{o'}in' 'l{o'}id' 'l{o'}i' 'l{o'}ime' 'l{o'}ite' (<-'l{o"}i') //looma-lõi, lööma-lõi
++		'loon' 'lood' 'loob' 'loome' 'loote' 'loovad' (<-'loo')
++		'looksin' 'looksid' 'looks' 'looksime' 'looksite' (<-'loo')
++		'loomata' 'luuakse' 'loodi' 'luua' 'looma' (<-'loo')
++		'k{a"}in' 'k{a"}ib' 'k{a"}id' 'k{a"}is'  'k{a"}ime' 'k{a"}ite' 'k{a"}ivad' (<-'k{a"}isi')
++		'k{a"}iksin' 'k{a"}iks' 'k{a"}iksid' 'k{a"}iksime' 'k{a"}iksite' (<-'k{a"}isi')
++		'k{a"}imata' 'k{a"}iakse' 'k{a"}idi' 'k{a"}ia' 'k{a"}ima' (<-'k{a"}isi')
++		's{o"}{o"}n' 's{o"}{o"}b' 's{o"}{o"}d' 's{o"}{o"}me' 's{o"}{o"}te' 's{o"}{o"}vad' (<-'s{o"}{o"}')
++		's{o"}{o"}ksin' 's{o"}{o"}ks' 's{o"}{o"}ksid' 's{o"}{o"}ksime' 's{o"}{o"}ksite' (<-'s{o"}{o"}')
++		's{o'}in' 's{o'}i' 's{o'}id' 's{o'}ime' 's{o'}ite' (<-'s{o"}{o"}')
++		's{o"}{o"}mata' 's{u"}{u"}akse' 's{o"}{o"}dakse' 's{o"}{o"}di' 's{o"}{o"}ma' 's{u"}{u"}a' (<-'s{o"}{o"}') 
++		'toon' 'tood' 'toob' 'toote' 'toome' 'toovad' (<-'too') 
++		'tooksin' 'tooksid' 'tooks' 'tooksite' 'tooksime' (<-'too') 
++		't{o'}in' 't{o'}id' 't{o'}i' 't{o'}ime' 't{o'}ite' (<-'too')
++		'toomata' 'tuuakse' 'toodi' 'tooma' 'tuua' (<-'too')
++		'v{o'}in' 'v{o'}id' 'v{o'}ib' 'v{o'}ime' 'v{o'}is' 'v{o'}ite' 'v{o'}ivad' (<-'v{o'}isi')
++		'v{o'}iksin' 'v{o'}iksid' 'v{o'}iks' 'v{o'}iksime' 'v{o'}iksite' (<-'v{o'}isi')
++		'v{o'}imata' 'v{o'}idakse' 'v{o'}idi' 'v{o'}ida' 'v{o'}ima' (<-'v{o'}isi')
++		'j{a"}{a"}n' 'j{a"}{a"}d' 'j{a"}{a"}b' 'j{a"}{a"}me' 'j{a"}{a"}te' 'j{a"}{a"}vad' (<-'j{a"}{a"}ma')
++		'j{a"}{a"}ksin' 'j{a"}{a"}ksid' 'j{a"}{a"}ks' 'j{a"}{a"}ksime' 'j{a"}{a"}ksite' (<-'j{a"}{a"}ma')
++		'j{a"}ime' 'j{a"}ite' 'j{a"}in' 'j{a"}id' 'j{a"}i' (<-'j{a"}{a"}ma')
++		'j{a"}{a"}mata' 'j{a"}{a"}dakse' 'j{a"}{a"}da' 'j{a"}{a"}ma' 'j{a"}{a"}di' (<-'j{a"}{a"}ma')
++		'm{u"}{u"}n' 'm{u"}{u"}d' 'm{u"}{u"}b' 'm{u"}{u"}s' 'm{u"}{u"}me' 'm{u"}{u"}te' 'm{u"}{u"}vad' (<-'m{u"}{u"}si')
++		'm{u"}{u"}ksin' 'm{u"}{u"}ksid' 'm{u"}{u"}ks' 'm{u"}{u"}ksime' 'm{u"}{u"}ksite' (<-'m{u"}{u"}si')
++		'm{u"}{u"}mata' 'm{u"}{u"}akse' 'm{u"}{u"}di' 'm{u"}{u"}a' 'm{u"}{u"}ma' (<-'m{u"}{u"}si')
++		'loeb' 'loen' 'loed' 'loeme' 'loete' 'loevad' (<- 'luge')
++		'loeks' 'loeksin' 'loeksid' 'loeksime' 'loeksite' (<- 'luge')
++		'p{o'}en' 'p{o'}eb' 'p{o'}ed' 'p{o'}eme' 'p{o'}ete' 'p{o'}evad' (<- 'p{o'}de')
++		'p{o'}eksin' 'p{o'}eks' 'p{o'}eksid' 'p{o'}eksime' 'p{o'}eksite' (<- 'p{o'}de')
++		'laon' 'laob' 'laod' 'laome' 'laote' 'laovad' (<- 'ladu')
++		'laoksin' 'laoks' 'laoksid' 'laoksime' 'laoksite' (<- 'ladu')
++		'teeksin' 'teeks' 'teeksid' 'teeksime' 'teeksite' (<- 'tegi')
++		'teen' 'teeb' 'teed' 'teeme' 'teete' 'teevad' (<- 'tegi')
++		'tegemata' 'tehakse' 'tehti' 'tegema' 'teha' (<-'tegi')
++		'n{a"}en' 'n{a"}eb' 'n{a"}ed' 'n{a"}eme' 'n{a"}ete' 'n{a"}evad' (<-'n{a"}gi')
++		'n{a"}eksin' 'n{a"}eks' 'n{a"}eksid' 'n{a"}eksime' 'n{a"}eksite' (<-'n{a"}gi')
++		'n{a"}gemata' 'n{a"}hakse' 'n{a"}hti' 'n{a"}ha' 'n{a"}gema' (<-'n{a"}gi')
++	)
++)
++
++
++define stem as (
++	do mark_regions
++	not verb_exceptions
++	unset is_verb
++	backwards (
++	    do emphasis
++	    do verb
++	    try (not is_verb do substantive)
++	    do remove_double_kpt
++	    
++	)
++)
+diff --git a/compiler/generator_java.c b/compiler/generator_java.c
+index 3a18db7..5909f87 100644
+--- a/compiler/generator_java.c
++++ b/compiler/generator_java.c
+@@ -272,7 +272,7 @@ static void generate_AE(struct generator * g, struct node * p) {
+             break;
+         case c_len: /* Same as size() for Java. */
+         case c_size:
+-            w(g, "current.length()");
++            w(g, "limit");
+             break;
+     }
+ }
+@@ -1138,6 +1138,7 @@ static void generate_class_begin(struct generator * g) {
+     w(g, " {~+~N"
+          "~N"
+          "~Mprivate static final long serialVersionUID = 1L;~N"
++         "~Mprivate static final java.lang.invoke.MethodHandles.Lookup methodObject = java.lang.invoke.MethodHandles.lookup();~N"
+          "~N");
+ }
+ 
+@@ -1184,7 +1185,7 @@ static void generate_among_table(struct generator * g, struct among * x) {
+             if (v->function != 0) {
+                 w(g, ", \"");
+                 write_varname(g, v->function);
+-                w(g, "\", ~n.class");
++                w(g, "\", methodObject");
+             }
+             w(g, ")~S0~N");
+             v++;
+diff --git a/java/org/tartarus/snowball/Among.java b/java/org/tartarus/snowball/Among.java
+index 8261503..abb8685 100644
+--- a/java/org/tartarus/snowball/Among.java
++++ b/java/org/tartarus/snowball/Among.java
+@@ -1,7 +1,13 @@
+ package org.tartarus.snowball;
+ 
+-import java.lang.reflect.Method;
++import java.lang.invoke.MethodHandle;
++import java.lang.invoke.MethodHandles;
++import java.lang.invoke.MethodType;
++import java.util.Locale;
+ 
++/**
++ * Internal class used by Snowball stemmers
++ */
+ public class Among {
+     public Among (String s, int substring_i, int result) {
+         this.s = s.toCharArray();
+@@ -11,19 +17,30 @@ public class Among {
+     }
+ 
+     public Among (String s, int substring_i, int result, String methodname,
+-		  Class<? extends SnowballProgram> programclass) {
++		  MethodHandles.Lookup methodobject) {
+         this.s = s.toCharArray();
+         this.substring_i = substring_i;
+ 	this.result = result;
+-	try {
+-	    this.method = programclass.getDeclaredMethod(methodname);
+-	} catch (NoSuchMethodException e) {
+-	    throw new RuntimeException(e);
+-	}
++	final Class<? extends SnowballProgram> clazz = methodobject.lookupClass().asSubclass(SnowballProgram.class);
++	if (methodname.length() > 0) {
++	    try {
++	        this.method = methodobject.findVirtual(clazz, methodname, MethodType.methodType(boolean.class))
++	            .asType(MethodType.methodType(boolean.class, SnowballProgram.class));
++	    } catch (NoSuchMethodException | IllegalAccessException e) {
++	        throw new RuntimeException(String.format(Locale.ENGLISH,
++	            "Snowball program '%s' is broken, cannot access method: boolean %s()",
++	            clazz.getSimpleName(), methodname
++	        ), e);
++	    }
++	} else {
++	    this.method = null;
++        }
+     }
+ 
+-    public final char[] s; /* search string */
+-    public final int substring_i; /* index to longest matching substring */
+-    public final int result; /* result of the lookup */
+-    public final Method method; /* method to use if substring matches */
++    final char[] s; /* search string */
++    final int substring_i; /* index to longest matching substring */
++    final int result; /* result of the lookup */
++
++    // Make sure this is not accessible outside package for Java security reasons!
++    final MethodHandle method; /* method to use if substring matches */
+ };
+diff --git a/java/org/tartarus/snowball/SnowballProgram.java b/java/org/tartarus/snowball/SnowballProgram.java
+index 1b27b96..94f2d4b 100644
+--- a/java/org/tartarus/snowball/SnowballProgram.java
++++ b/java/org/tartarus/snowball/SnowballProgram.java
+@@ -1,50 +1,84 @@
+ 
+ package org.tartarus.snowball;
+-import java.lang.reflect.InvocationTargetException;
++import java.lang.reflect.UndeclaredThrowableException;
+ import java.io.Serializable;
+ 
++/**
++ * Base class for a snowball stemmer
++ */
+ public class SnowballProgram implements Serializable {
+     protected SnowballProgram()
+     {
+-	current = new StringBuilder();
+-	init();
++	current = new char[8];
++	setCurrent("");
+     }
+ 
+     static final long serialVersionUID = 2016072500L;
+ 
+-    private void init() {
++    /**
++     * Set the current string.
++     */
++    public void setCurrent(String value)
++    {
++	current = value.toCharArray();
+ 	cursor = 0;
+-	limit = current.length();
++	limit = value.length();
+ 	limit_backward = 0;
+ 	bra = cursor;
+ 	ket = limit;
+     }
+ 
+     /**
+-     * Set the current string.
++     * Get the current string.
+      */
+-    public void setCurrent(String value)
++    public String getCurrent()
+     {
+-        // Make a new StringBuilder.  If we reuse the old one, and a user of
+-        // the library keeps a reference to the buffer returned (for example,
+-        // by converting it to a String in a way which doesn't force a copy),
+-        // the buffer size will not decrease, and we will risk wasting a large
+-        // amount of memory.
+-        // Thanks to Wolfram Esser for spotting this problem.
+-        current = new StringBuilder(value);
+-	init();
++        return new String(current, 0, limit);
+     }
+ 
+     /**
+-     * Get the current string.
++     * Set the current string.
++     * @param text character array containing input
++     * @param length valid length of text.
+      */
+-    public String getCurrent()
+-    {
+-        return current.toString();
++    public void setCurrent(char text[], int length) {
++        current = text;
++        cursor = 0;
++        limit = length;
++        limit_backward = 0;
++        bra = cursor;
++        ket = limit;
++    }
++
++    /**
++     * Get the current buffer containing the stem.
++     * <p>
++     * NOTE: this may be a reference to a different character array than the
++     * one originally provided with setCurrent, in the exceptional case that
++     * stemming produced a longer intermediate or result string.
++     * </p>
++     * <p>
++     * It is necessary to use {@link #getCurrentBufferLength()} to determine
++     * the valid length of the returned buffer. For example, many words are
++     * stemmed simply by subtracting from the length to remove suffixes.
++     * </p>
++     * @see #getCurrentBufferLength()
++     */
++    public char[] getCurrentBuffer() {
++        return current;
++    }
++
++    /**
++     * Get the valid length of the character array in
++     * {@link #getCurrentBuffer()}.
++     * @return valid length of the array.
++     */
++    public int getCurrentBufferLength() {
++        return limit;
+     }
+ 
+     // current string
+-    protected StringBuilder current;
++    private char current[];
+ 
+     protected int cursor;
+     protected int limit;
+@@ -74,7 +108,7 @@ public class SnowballProgram implements Serializable {
+     protected boolean in_grouping(char [] s, int min, int max)
+     {
+ 	if (cursor >= limit) return false;
+-	char ch = current.charAt(cursor);
++	char ch = current[cursor];
+ 	if (ch > max || ch < min) return false;
+ 	ch -= min;
+ 	if ((s[ch >> 3] & (0X1 << (ch & 0X7))) == 0) return false;
+@@ -85,7 +119,7 @@ public class SnowballProgram implements Serializable {
+     protected boolean in_grouping_b(char [] s, int min, int max)
+     {
+ 	if (cursor <= limit_backward) return false;
+-	char ch = current.charAt(cursor - 1);
++	char ch = current[cursor - 1];
+ 	if (ch > max || ch < min) return false;
+ 	ch -= min;
+ 	if ((s[ch >> 3] & (0X1 << (ch & 0X7))) == 0) return false;
+@@ -96,7 +130,7 @@ public class SnowballProgram implements Serializable {
+     protected boolean out_grouping(char [] s, int min, int max)
+     {
+ 	if (cursor >= limit) return false;
+-	char ch = current.charAt(cursor);
++	char ch = current[cursor];
+ 	if (ch > max || ch < min) {
+ 	    cursor++;
+ 	    return true;
+@@ -112,7 +146,7 @@ public class SnowballProgram implements Serializable {
+     protected boolean out_grouping_b(char [] s, int min, int max)
+     {
+ 	if (cursor <= limit_backward) return false;
+-	char ch = current.charAt(cursor - 1);
++	char ch = current[cursor - 1];
+ 	if (ch > max || ch < min) {
+ 	    cursor--;
+ 	    return true;
+@@ -130,7 +164,7 @@ public class SnowballProgram implements Serializable {
+ 	if (limit - cursor < s.length()) return false;
+ 	int i;
+ 	for (i = 0; i != s.length(); i++) {
+-	    if (current.charAt(cursor + i) != s.charAt(i)) return false;
++	    if (current[cursor + i] != s.charAt(i)) return false;
+ 	}
+ 	cursor += s.length();
+ 	return true;
+@@ -141,7 +175,7 @@ public class SnowballProgram implements Serializable {
+ 	if (cursor - limit_backward < s.length()) return false;
+ 	int i;
+ 	for (i = 0; i != s.length(); i++) {
+-	    if (current.charAt(cursor - s.length() + i) != s.charAt(i)) return false;
++	    if (current[cursor - s.length() + i] != s.charAt(i)) return false;
+ 	}
+ 	cursor -= s.length();
+ 	return true;
+@@ -171,7 +205,7 @@ public class SnowballProgram implements Serializable {
+ 		    diff = -1;
+ 		    break;
+ 		}
+-		diff = current.charAt(c + common) - w.s[i2];
++		diff = current[c + common] - w.s[i2];
+ 		if (diff != 0) break;
+ 		common++;
+ 	    }
+@@ -199,16 +233,13 @@ public class SnowballProgram implements Serializable {
+ 	    if (common_i >= w.s.length) {
+ 		cursor = c + w.s.length;
+ 		if (w.method == null) return w.result;
+-		boolean res;
++		boolean res = false;
+ 		try {
+-		    Object resobj = w.method.invoke(this);
+-		    res = resobj.toString().equals("true");
+-		} catch (InvocationTargetException e) {
+-		    res = false;
+-		    // FIXME - debug message
+-		} catch (IllegalAccessException e) {
+-		    res = false;
+-		    // FIXME - debug message
++		    res = (boolean) w.method.invokeExact(this);
++		} catch (Error | RuntimeException e) {
++		    throw e;
++		} catch (Throwable e) {
++		    throw new UndeclaredThrowableException(e);
+ 		}
+ 		cursor = c + w.s.length;
+ 		if (res) return w.result;
+@@ -243,7 +274,7 @@ public class SnowballProgram implements Serializable {
+ 		    diff = -1;
+ 		    break;
+ 		}
+-		diff = current.charAt(c - 1 - common) - w.s[i2];
++		diff = current[c - 1 - common] - w.s[i2];
+ 		if (diff != 0) break;
+ 		common++;
+ 	    }
+@@ -267,16 +298,13 @@ public class SnowballProgram implements Serializable {
+ 		cursor = c - w.s.length;
+ 		if (w.method == null) return w.result;
+ 
+-		boolean res;
++		boolean res = false;
+ 		try {
+-		    Object resobj = w.method.invoke(this);
+-		    res = resobj.toString().equals("true");
+-		} catch (InvocationTargetException e) {
+-		    res = false;
+-		    // FIXME - debug message
+-		} catch (IllegalAccessException e) {
+-		    res = false;
+-		    // FIXME - debug message
++		    res = (boolean) w.method.invokeExact(this);
++		} catch (Error | RuntimeException e) {
++		    throw e;
++		} catch (Throwable e) {
++		    throw new UndeclaredThrowableException(e);
+ 		}
+ 		cursor = c - w.s.length;
+ 		if (res) return w.result;
+@@ -286,13 +314,41 @@ public class SnowballProgram implements Serializable {
+ 	}
+     }
+ 
++    // mini version of ArrayUtil.oversize from lucene, specialized to chars
++    static int oversize(int minTargetSize) {
++	int extra = minTargetSize >> 3;
++	if (extra < 3) {
++	    extra = 3;
++	}
++	int newSize = minTargetSize + extra;
++	return (newSize + 3) & 0x7ffffffc;
++    }
++
+     /* to replace chars between c_bra and c_ket in current by the
+      * chars in s.
+      */
+-    protected int replace_s(int c_bra, int c_ket, String s)
++    protected int replace_s(int c_bra, int c_ket, CharSequence s)
+     {
+-	int adjustment = s.length() - (c_ket - c_bra);
+-	current.replace(c_bra, c_ket, s);
++	final int adjustment = s.length() - (c_ket - c_bra);
++	final int newLength = limit + adjustment;
++	//resize if necessary
++	if (newLength > current.length) {
++	    char newBuffer[] = new char[oversize(newLength)];
++	    System.arraycopy(current, 0, newBuffer, 0, limit);
++	    current = newBuffer;
++	}
++	// if the substring being replaced is longer or shorter than the
++	// replacement, need to shift things around
++	if (adjustment != 0 && c_ket < limit) {
++	    System.arraycopy(current, c_ket, current, c_bra + s.length(),
++	        limit - c_ket);
++	}
++	// insert the replacement text
++	// Note, faster is s.getChars(0, s.length(), current, c_bra);
++	// but would have to duplicate this method for both String and StringBuilder
++	for (int i = 0; i < s.length(); i++)
++	    current[c_bra + i] = s.charAt(i);
++
+ 	limit += adjustment;
+ 	if (cursor >= c_ket) cursor += adjustment;
+ 	else if (cursor > c_bra) cursor = c_bra;
+@@ -303,57 +359,43 @@ public class SnowballProgram implements Serializable {
+     {
+ 	if (bra < 0 ||
+ 	    bra > ket ||
+-	    ket > limit ||
+-	    limit > current.length())   // this line could be removed
++	    ket > limit)
+ 	{
+-	    System.err.println("faulty slice operation");
+-	// FIXME: report error somehow.
+-	/*
+-	    fprintf(stderr, "faulty slice operation:\n");
+-	    debug(z, -1, 0);
+-	    exit(1);
+-	    */
++	     throw new IllegalArgumentException("faulty slice operation: bra=" + bra + ",ket=" + ket + ",limit=" + limit);
+ 	}
+     }
+ 
+-    protected void slice_from(String s)
++    protected void slice_from(CharSequence s)
+     {
+ 	slice_check();
+ 	replace_s(bra, ket, s);
+     }
+ 
+-    protected void slice_from(CharSequence s)
+-    {
+-        slice_from(s.toString());
+-    }
+-
+     protected void slice_del()
+     {
+ 	slice_from("");
+     }
+ 
+-    protected void insert(int c_bra, int c_ket, String s)
++    protected void insert(int c_bra, int c_ket, CharSequence s)
+     {
+ 	int adjustment = replace_s(c_bra, c_ket, s);
+ 	if (c_bra <= bra) bra += adjustment;
+ 	if (c_bra <= ket) ket += adjustment;
+     }
+ 
+-    protected void insert(int c_bra, int c_ket, CharSequence s)
+-    {
+-	insert(c_bra, c_ket, s.toString());
+-    }
+-
+     /* Copy the slice into the supplied StringBuilder */
+     protected void slice_to(StringBuilder s)
+     {
+ 	slice_check();
+-	s.replace(0, s.length(), current.substring(bra, ket));
++	int len = ket - bra;
++	s.setLength(0);
++	s.append(current, bra, len);
+     }
+ 
+     protected void assign_to(StringBuilder s)
+     {
+-	s.replace(0, s.length(), current.substring(0, limit));
++	s.setLength(0);
++	s.append(current, 0, limit);
+     }
+ 
+ /*
+diff --git a/java/org/tartarus/snowball/SnowballStemmer.java b/java/org/tartarus/snowball/SnowballStemmer.java
+index 73a81a9..f7772d3 100644
+--- a/java/org/tartarus/snowball/SnowballStemmer.java
++++ b/java/org/tartarus/snowball/SnowballStemmer.java
+@@ -1,6 +1,9 @@
+ 
+ package org.tartarus.snowball;
+ 
++/**
++ * Parent class of all snowball stemmers, which must implement <code>stem</code>
++ */
+ public abstract class SnowballStemmer extends SnowballProgram {
+     public abstract boolean stem();
+ 
+diff --git a/libstemmer/modules.txt b/libstemmer/modules.txt
+index cb39621..9fe141e 100644
+--- a/libstemmer/modules.txt
++++ b/libstemmer/modules.txt
+@@ -10,11 +10,13 @@
+ # the most commonly used encoding.
+ 
+ arabic          UTF_8                   arabic,ar,ara
++armenian        UTF_8                   armenian,hy,arm,hye
+ basque          UTF_8,ISO_8859_1        basque,eu,eus,baq
+ catalan         UTF_8,ISO_8859_1        catalan,ca,cat
+ danish          UTF_8,ISO_8859_1        danish,da,dan
+ dutch           UTF_8,ISO_8859_1        dutch,nl,dut,nld
+ english         UTF_8,ISO_8859_1        english,en,eng
++estonian        UTF_8                   estonian,et,est
+ finnish         UTF_8,ISO_8859_1        finnish,fi,fin
+ french          UTF_8,ISO_8859_1        french,fr,fre,fra
+ german          UTF_8,ISO_8859_1        german,de,ger,deu
+@@ -50,12 +52,12 @@ porter          UTF_8,ISO_8859_1        porter			english
+ # algorithms are:
+ #
+ # german2          - This is a slight modification of the german stemmer.
+-#german2          UTF_8,ISO_8859_1        german2		german
++german2          UTF_8,ISO_8859_1        german2		german
+ #
+ # kraaij_pohlmann  - This is a different dutch stemmer.
+-#kraaij_pohlmann  UTF_8,ISO_8859_1        kraaij_pohlmann	dutch
++kraaij_pohlmann  UTF_8,ISO_8859_1        kraaij_pohlmann	dutch
+ #
+ # lovins           - This is an english stemmer, but fairly outdated, and
+ #                    only really applicable to a restricted type of input text
+ #                    (keywords in academic publications).
+-#lovins           UTF_8,ISO_8859_1        lovins		english
++lovins           UTF_8,ISO_8859_1        lovins		english

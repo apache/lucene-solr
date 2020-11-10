@@ -368,15 +368,16 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     };
   }
 
-  private synchronized void ensureOpen() throws IOException {
-    if (writer == null) {
-      if (DirectoryReader.indexExists(dir)) {
-        // Already built; open it:
-        writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
-      } else {
-        writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
-      }
-      synchronized (searcherMgrLock) {
+  private void ensureOpen() throws IOException {
+    synchronized (searcherMgrLock) {
+      if (writer == null) {
+        if (DirectoryReader.indexExists(dir)) {
+          // Already built; open it:
+          writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
+        } else {
+          writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+        }
+
         SearcherManager oldSearcherMgr = searcherMgr;
         searcherMgr = new SearcherManager(writer, null);
         if (oldSearcherMgr != null) {

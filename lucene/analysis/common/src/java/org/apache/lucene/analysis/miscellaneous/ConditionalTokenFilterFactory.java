@@ -24,9 +24,9 @@ import java.util.function.Function;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Abstract parent class for analysis factories that create {@link ConditionalTokenFilter} instances
@@ -43,6 +43,11 @@ public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory i
 
   protected ConditionalTokenFilterFactory(Map<String, String> args) {
     super(args);
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ConditionalTokenFilterFactory() {
+    throw defaultCtorException();
   }
 
   /**

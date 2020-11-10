@@ -23,9 +23,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link KeywordMarkerFilter}.
@@ -63,6 +63,11 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
     }
   }
   
+  /** Default ctor for compatibility with SPI */
+  public KeywordMarkerFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public void inform(ResourceLoader loader) throws IOException {
     if (wordFiles != null) {  

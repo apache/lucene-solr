@@ -105,7 +105,6 @@ limitations under the License.
 
 #content #collections .actions form input,
 #content #collections .actions form select,
-#content #collections .actions form .chosen-container
 #content #collections .actions form .buttons,
 #content #collections .actions form .note span
 {
@@ -113,10 +112,20 @@ limitations under the License.
   width: 71%;
 }
 
+#content #collections .actions form .chosen-container
+{
+  width: 71% !important;
+}
+
 #content #collections .actions form .note span
 {
   padding-left: 3px;
   padding-right: 3px;
+}
+
+#content #collections  .chosen-container.chosen-container-single
+{
+  width: 100% !important;
 }
 
 #content #collections .actions form .buttons
@@ -224,7 +233,7 @@ limitations under the License.
 #content #collections #data #alias-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #collection-data h2 { background-image: url( ../../img/ico/box.png ); }
 #content #collections #data #shard-data h2 { background-image: url( ../../img/ico/sitemap.png ); }
-#content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #collections #data #shard-data .replica h2 { background-image: url( ../../img/ico/node-follower.png ); }
 
 #content #collections #data #index-data
 {
@@ -355,11 +364,6 @@ limitations under the License.
 #content #collections .delete-shard button.submit span
 {
   background-image: url( ../../img/ico/tick.png );
-}
-
-#content #collections #node-name .chosen-container
-{
-    width: 100% !important;
 }
 
 #content #collections #alias-data {

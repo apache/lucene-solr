@@ -82,25 +82,22 @@
          that match a particular query.
       -->
     <filterCache
-        class="solr.search.FastLRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <queryResultCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <documentCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="0"/>
 
     <cache name="perSegFilter"
-           class="solr.search.LRUCache"
+           class="solr.CaffeineCache"
            size="10"
            initialSize="0"
            autowarmCount="10" />
@@ -112,7 +109,7 @@
     <!--
 
     <cache name="myUserCache"
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"
@@ -125,9 +122,6 @@
     -->
 
     <queryResultWindowSize>10</queryResultWindowSize>
-
-    <!-- set maxSize artificially low to exercise both types of sets -->
-    <HashDocSet maxSize="3" loadFactor="0.75"/>
 
     <!-- boolToFilterOptimizer converts boolean clauses with zero boost
          into cached filters if the number of docs selected by the clause exceeds
@@ -163,10 +157,6 @@
 
   <queryResponseWriter name="xml" default="true"
                        class="solr.XMLResponseWriter" />
-
-  <!-- An alternate set representation that uses an integer hash to store filters (sets of docids).
-If the set cardinality <= maxSize elements, then HashDocSet will be used instead of the bitset
-based HashBitset. -->
 
   <!-- requestHandler plugins... incoming queries will be dispatched to the
      correct handler based on the 'qt' param matching the
@@ -293,13 +283,6 @@ based HashBitset. -->
     </lst>
   </searchComponent>
 
-  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
-
-  <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
-    <arr name="components">
-      <str>termsComp</str>
-    </arr>
-  </requestHandler>
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -533,7 +516,7 @@ based HashBitset. -->
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/terms">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

@@ -1,5 +1,5 @@
 = Configuring Authentication, Authorization and Audit Logging
-:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin, rule-based-authorization-plugin, jwt-authentication-plugin
+:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin,  jwt-authentication-plugin, cert-authentication-plugin, rule-based-authorization-plugin, audit-logging
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -129,7 +129,7 @@ include::securing-solr.adoc[tag=list-of-authentication-plugins]
 [#configuring-authorization]
 == Authorization
 
-An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
+An authorization plugin can be written for Solr by extending the {solr-javadocs}/core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
 
 === Enabling an Authorization Plugin
 
@@ -149,7 +149,7 @@ All of the content in the `authorization` block of `security.json` would be pass
 
 [IMPORTANT]
 ====
-The authorization plugin is only supported in SolrCloud mode. Also, reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
+Reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
 ====
 
 Currently available authorization plugins are:
@@ -184,6 +184,6 @@ Each Authentication plugin may also decide to secure inter-node requests on its 
 
 The `PKIAuthenticationPlugin` provides a built-in authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes through the use of Public Key Infrastructure (PKI). Each Authentication plugn may choose to delegate all or some inter-node traffic to the PKI plugin.
 
-For each outgoing request `PKIAuthenticationPlugin` adds a special header `'SolrAuth'` which carries the timestamp and principal encrypted using the private key of that node. The public key is exposed through an API so that any node can read it whenever it needs it. Any node who gets the request with that header, would get the public key from the sender and decrypt the information. If it is able to decrypt the data, the request trusted. It is invalid if the timestamp is more than 5 secs old. This assumes that the clocks of different nodes in the cluster are synchronized. Only traffic from other Solr nodes registered with Zookeeper is trusted.
+For each outgoing request `PKIAuthenticationPlugin` adds a special header `'SolrAuth'` which carries the timestamp and principal encrypted using the private key of that node. The public key is exposed through an API so that any node can read it whenever it needs it. Any node who gets the request with that header, would get the public key from the sender and decrypt the information. If it is able to decrypt the data, the request trusted. It is invalid if the timestamp is more than 5 secs old. This assumes that the clocks of different nodes in the cluster are synchronized. Only traffic from other Solr nodes registered with ZooKeeper is trusted.
 
 The timeout is configurable through a system property called `pkiauth.ttl`. For example, if you wish to bump up the time-to-live to 10 seconds (10000 milliseconds), start each node with a property `'-Dpkiauth.ttl=10000'`.

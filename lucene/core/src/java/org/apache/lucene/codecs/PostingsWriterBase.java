@@ -68,21 +68,12 @@ public abstract class PostingsWriterBase implements Closeable {
    * Usually elements in {@code longs} are file pointers, so each one always 
    * increases when a new term is consumed. {@code out} is used to write generic
    * bytes, which are not monotonic.
-   *
-   * NOTE: sometimes long[] might contain "don't care" values that are unused, e.g. 
-   * the pointer to postings list may not be defined for some terms but is defined
-   * for others, if it is designed to inline  some postings data in term dictionary.
-   * In this case, the postings writer should always use the last value, so that each
-   * element in metadata long[] remains monotonic.
    */
-  public abstract void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
+  public abstract void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
 
   /** 
-   * Sets the current field for writing, and returns the
-   * fixed length of long[] metadata (which is fixed per
-   * field), called when the writing switches to another field. */
-  // TODO: better name?
-  public abstract int setField(FieldInfo fieldInfo);
+   * Sets the current field for writing. */
+  public abstract void setField(FieldInfo fieldInfo);
 
   @Override
   public abstract void close() throws IOException;
