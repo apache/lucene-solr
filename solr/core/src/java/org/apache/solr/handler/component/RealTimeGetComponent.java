@@ -791,7 +791,7 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   /**
-   * Ensure we don't have {@link org.apache.lucene.document.LazyDocument.LazyField} or equivalent.
+   * Ensure we don't have {@link org.apache.lucene.misc.document.LazyDocument.LazyField} or equivalent.
    * It can pose problems if the searcher is about to be closed and we haven't fetched a value yet.
    */
   private static IndexableField materialize(IndexableField in) {

@@ -205,15 +205,14 @@ configure(project(":lucene:misc")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
     javadocMissingIgnore = [
-        "org.apache.lucene.search",
-        "org.apache.lucene.search.similarity",
-        "org.apache.lucene.util",
-        "org.apache.lucene.util.fst",
-        "org.apache.lucene.store",
-        "org.apache.lucene.document",
-        "org.apache.lucene.index"
+        "org.apache.lucene.misc.search",
+        "org.apache.lucene.misc.search.similarity",
+        "org.apache.lucene.misc.util",
+        "org.apache.lucene.misc.util.fst",
+        "org.apache.lucene.misc.store",
+        "org.apache.lucene.misc.document",
+        "org.apache.lucene.misc.index"
     ]
   }
 }

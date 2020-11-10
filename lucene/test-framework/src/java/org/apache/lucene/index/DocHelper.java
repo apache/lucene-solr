@@ -35,7 +35,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
-class DocHelper {
+/** Helper functions for tests that handles documents */
+public class DocHelper {
   
   public static final FieldType customType;
   public static final String FIELD_1_TEXT = "field one text";
