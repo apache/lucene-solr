@@ -1636,22 +1636,25 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
     AtomicBoolean watchSet = new AtomicBoolean(false);
 
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null) {
-        v = new CollectionWatch<>();
-        watchSet.set(true);
+    synchronized (collectionWatches) {
+
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) {
+          v = new CollectionWatch<>();
+          watchSet.set(true);
+        }
+        v.stateWatchers.add(stateWatcher);
+        return v;
+      });
+
+      if (watchSet.get()) {
+        new StateWatcher(collection).refreshAndWatch();
       }
-      v.stateWatchers.add(stateWatcher);
-      return v;
-    });
 
-    if (watchSet.get()) {
-      new StateWatcher(collection).refreshAndWatch();
-    }
-
-    DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(state) == true) {
-      removeDocCollectionWatcher(collection, stateWatcher);
+      DocCollection state = clusterState.getCollectionOrNull(collection);
+      if (stateWatcher.onStateChanged(state) == true) {
+        removeDocCollectionWatcher(collection, stateWatcher);
+      }
     }
   }
 
@@ -1866,19 +1869,21 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     AtomicBoolean reconstructState = new AtomicBoolean(false);
+    synchronized (collectionWatches) {
 
-    collectionWatches.compute(collection, (k, v) -> {
-      if (v == null) return null;
-      v.stateWatchers.remove(watcher);
-      if (v.canBeRemoved()) {
-        log.info("no longer watch collection {}", collection);
-        watchedCollectionStates.remove(collection);
-        lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
-        reconstructState.set(true);
-        return null;
-      }
-      return v;
-    });
+      collectionWatches.compute(collection, (k, v) -> {
+        if (v == null) return null;
+        v.stateWatchers.remove(watcher);
+        if (v.canBeRemoved()) {
+          log.info("no longer watch collection {}", collection);
+          watchedCollectionStates.remove(collection);
+          lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+          reconstructState.set(true);
+          return null;
+        }
+        return v;
+      });
+    }
 
     if (reconstructState.get()) {
       updateLock.lock();
