@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -104,6 +105,13 @@ public class ZkStateWriter {
           }
         }
       });
+      Collection<DocCollection> collections = cs.getCollectionsMap().values();
+      for (DocCollection collection : collections) {
+        if (clusterState.getCollectionOrNull(collection.getName()) == null) {
+          clusterState = clusterState.copyWith(collection.getName(), collection);
+        }
+      }
+
       this.cs = clusterState;
     } else {
       clusterState.forEachCollection(newCollection -> {
@@ -334,8 +342,7 @@ public class ZkStateWriter {
 
   }
 
-  public ClusterState getClusterstate(boolean stateUpdate) {
-
+  public synchronized ClusterState getClusterstate(boolean stateUpdate) {
     return cs;
   }
 

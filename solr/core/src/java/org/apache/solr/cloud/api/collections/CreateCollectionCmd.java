@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -320,32 +321,55 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
           @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
           if (failure) {
+            log.error("Failure creating collection {}", results.get("failure"));
             //        // Let's cleanup as we hit an exception
             //        // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
             //        // element, which may be interpreted by the user as a positive ack
             //        // nocommit review
             try {
-              response.clusterState =  ocmh.cleanupCollection(collectionName, new NamedList<Object>()).clusterState;
+              response.clusterState = ocmh.cleanupCollection(collectionName, new NamedList<Object>()).clusterState;
             } catch (Exception e) {
               log.error("Exception trying to clean up collection after fail {}", collectionName);
             }
             log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
-                   //throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
+            //throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
           } else {
+
+            try {
+              zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
+                if (c == null) {
+                  return false;
+                }
+                for (String name : coresToCreate.keySet()) {
+                  if (c.getReplica(name) == null) {
+                    return false;
+                  }
+                }
+                Collection<Slice> slices = c.getSlices();
+                for (Slice slice : slices) {
+                  if (slice.getLeader() == null) {
+                    return false;
+                  }
+                }
+                return true;
+              });
+            } catch (InterruptedException e) {
+              log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
+            } catch (TimeoutException e) {
+              log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+            }
+
             if (log.isDebugEnabled()) log.debug("Finished create command on all shards for collection: {}", collectionName);
 
             // Emit a warning about production use of data driven functionality
             boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null || message.getStr(COLL_CONF).equals(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
             if (defaultConfigSetUsed) {
-              results.add("warning",
-                  "Using _default configset. Data driven schema functionality" + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:" + " curl http://{host:port}/solr/"
-                      + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
+              results.add("warning", "Using _default configset. Data driven schema functionality" + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
+                  + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
             }
 
           }
 
-
-          zkStateReader.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, shardNames.size(), finalReplicaPositions.size());
           return response;
         }
       };

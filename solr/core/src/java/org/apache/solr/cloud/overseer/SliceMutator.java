@@ -125,8 +125,6 @@ public class SliceMutator {
       log.debug("setShardLeader(ClusterState clusterState={}, ZkNodeProps message={}) - start", clusterState, message);
     }
 
-    StringBuilder sb = new StringBuilder();
-
     String coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
 
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -134,7 +132,7 @@ public class SliceMutator {
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
 
     if (coll == null) {
-      log.error("Could not mark shard leader for non existing collection: {}", collectionName);
+      log.error("Could not mark shard leader for non existing collection: {} {}", collectionName, message);
       return clusterState;
     }
 
