@@ -347,9 +347,10 @@ public class ZkStateWriter {
                 trackVersions.remove(collection.getName());
                 // likely deleted
               } catch (KeeperException.BadVersionException bve) {
-                lastFailedException.set(bve);
-                failedUpdates.put(collection.getName(), collection);
+                //lastFailedException.set(bve);
+                //failedUpdates.put(collection.getName(), collection);
                 stat = reader.getZkClient().exists(path, null);
+                trackVersions.put(collection.getName(), stat.getVersion());
                 // this is a tragic error, we must disallow usage of this instance
                 log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", lastVersion.get(), stat.getVersion(), bve);
               }
