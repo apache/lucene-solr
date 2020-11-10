@@ -504,8 +504,7 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 +
 [source,xml]
 ----
-<transformer name="interleaving" class="org.apache.solr.ltr.response.transform.LTRInterleavingTransformerFactory">
-</transformer>
+<transformer name="interleaving" class="org.apache.solr.ltr.response.transform.LTRInterleavingTransformerFactory"/>
 ----
 
 === Advanced Options
@@ -536,11 +535,12 @@ How does Solr Learning-To-Rank work under the hood?::
 Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
-Contributions for further models, features and normalizers are welcome. Related links:
+Contributions for further models, features, normalizers and interleaving algorithms are welcome. Related links:
 +
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
 * https://cwiki.apache.org/confluence/display/solr/HowToContribute
 * https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 

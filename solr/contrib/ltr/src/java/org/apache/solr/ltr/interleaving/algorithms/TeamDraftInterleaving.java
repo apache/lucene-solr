@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ltr.interleaving;
+package org.apache.solr.ltr.interleaving.algorithms;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,6 +24,8 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.solr.ltr.interleaving.Interleaving;
+import org.apache.solr.ltr.interleaving.InterleavingResult;
 
 /**
  * Interleaving was introduced the first time by Joachims in [1, 2].
@@ -40,7 +42,7 @@ import org.apache.lucene.search.ScoreDoc;
  * [4] O. Chapelle, T. Joachims, F. Radlinski, and Y. Yue.
  * Large-scale validation and analysis of interleaved search evaluation. ACM TOIS, 30(1):1–41, Feb. (2012)
  */
-public class TeamDraftInterleaving implements Interleaving{
+public class TeamDraftInterleaving implements Interleaving {
   public static Random RANDOM;
 
   static {

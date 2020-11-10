@@ -16,6 +16,6 @@
  */
 
 /**
- *  Contains Various Interleaving auxiliary classes
+ *  Contains Various Interleaving Algorithms
  */
-package org.apache.solr.ltr.interleaving;
+package org.apache.solr.ltr.interleaving.algorithms;

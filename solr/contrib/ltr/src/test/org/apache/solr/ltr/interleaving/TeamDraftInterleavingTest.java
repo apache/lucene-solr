@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 import org.junit.Before;
 import org.junit.Test;
 

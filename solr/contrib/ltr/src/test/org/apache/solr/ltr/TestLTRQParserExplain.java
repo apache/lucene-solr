@@ -20,7 +20,7 @@ import java.util.Random;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.feature.SolrFeature;
-import org.apache.solr.ltr.interleaving.TeamDraftInterleaving;
+import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.After;
 import org.junit.Before;
