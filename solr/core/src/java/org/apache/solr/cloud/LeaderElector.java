@@ -166,7 +166,7 @@ public class LeaderElector implements Closeable {
       }
 
     } else {
-      log.info("I am not the leader - watch the node below me {}", context.getClass().getSimpleName());
+      log.info("I am not the leader (leaderSeqNodeName={}) - watch the node below me {} seqs={}", leaderSeqNodeName, context.getClass().getSimpleName(), seqs);
       String toWatch = seqs.get(0);
       for (String node : seqs) {
         if (leaderSeqNodeName.equals(node)) {
@@ -383,6 +383,14 @@ public class LeaderElector implements Closeable {
 
   @Override
   public void close() throws IOException {
+    if (context != null) {
+      try {
+        context.cancelElection();
+      } catch (Exception e) {
+        log.warn("Exception canceling election", e);
+      }
+      context.close();
+    }
     IOUtils.closeQuietly(watcher);
     this.isClosed = true;
   }
