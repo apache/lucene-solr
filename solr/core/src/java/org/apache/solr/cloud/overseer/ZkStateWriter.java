@@ -142,6 +142,7 @@ public class ZkStateWriter {
                 currentSlice.setState(slice.getState());
                 currentSlice.setLeader(slice.getLeader());
                 currentSlice.getLeader().getProperties().put("leader", "true");
+                currentSlice.getLeader().getProperties().put("state", Replica.State.ACTIVE.toString());
                 changed.set(true);
               }
             }
@@ -151,8 +152,9 @@ public class ZkStateWriter {
                 if (log.isDebugEnabled()) log.debug("set replica state to {} isLeader={}", replica.getState(), replica.getProperty("leader"));
                 currentReplica.setState(replica.getState());
                 String leader = replica.getProperty("leader");
-                if (leader != null) {
-                  currentReplica.getProperties().put("leader", leader);
+                if (leader != null || slice.getLeader() != null && replica.getName().equals(slice.getLeader().getName())) {
+                  currentReplica.getProperties().put("leader", "true");
+                  currentReplica.getProperties().put("state", Replica.State.ACTIVE.toString());
                 }
                 // nocommit
                 //              else if (leader == null) {
@@ -161,6 +163,7 @@ public class ZkStateWriter {
 
                 if (slice.getLeader() != null && slice.getLeader().getName().equals(replica.getName())) {
                   currentReplica.getProperties().put("leader", "true");
+                  currentReplica.getProperties().put("state", Replica.State.ACTIVE.toString());
                 }
 
                 Replica thereplica = cs.getCollectionOrNull(newCollection.getName()).getReplica(replica.getName());

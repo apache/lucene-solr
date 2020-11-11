@@ -919,14 +919,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           return false;
         Slice slice = c.getSlice(shard);
         if (slice == null) return false;
-        for (Replica replica : slice.getReplicas()) {
-          String leader = replica.getProperty("leader");
-          if (leader != null && leader.equals("true") && replica.getState() == Replica.State.ACTIVE) {
-            returnLeader.set(replica);
-            return true;
-          }
+        Replica leader = slice.getLeader();
+        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
+          returnLeader.set(leader);
+          return true;
         }
-
         return false;
       });
     } catch (TimeoutException e) {
