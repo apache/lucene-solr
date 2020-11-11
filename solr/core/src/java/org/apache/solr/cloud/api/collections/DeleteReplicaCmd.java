@@ -294,7 +294,7 @@ public class DeleteReplicaCmd implements Cmd {
       replicasToBeRemoved.add(replica.getName());
       count --;
     }
-    log.info("Found replicas to be removed {}", replicasToBeRemoved);
+    if (log.isDebugEnabled()) log.debug("Found replicas to be removed {}", replicasToBeRemoved);
     return replicasToBeRemoved;
   }
 
@@ -350,9 +350,9 @@ public class DeleteReplicaCmd implements Cmd {
     rep.getProperties().put("collection", replica.getCollection());
     rep.getProperties().put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
 
-    log.info("Before slice remove replica {} {}", rep, clusterState);
+    if (log.isDebugEnabled()) log.debug("Before slice remove replica {} {}", rep, clusterState);
     clusterState = new SliceMutator(ocmh.cloudManager).removeReplica(clusterState, rep);
-    log.info("After slice remove replica {} {}", rep, clusterState);
+    if (log.isDebugEnabled()) log.debug("After slice remove replica {} {}", rep, clusterState);
     boolean isLive = false;
 
     if (!onlyUpdateState) {

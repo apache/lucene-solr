@@ -732,63 +732,6 @@ public class Overseer implements SolrCloseable {
 
   }
 
-  // nocommit use
-  private static class OverseerWatcher implements Watcher, Closeable {
-
-    private final CoreContainer cc;
-    private final ZkController zkController;
-    private final String path = Overseer.OVERSEER_ELECT + "/leader";
-    private final Overseer overseer;
-
-    public OverseerWatcher(CoreContainer cc) {
-      this.cc = cc;
-      this.zkController = cc.getZkController();
-      this.overseer = zkController.getOverseer();
-    }
-
-    @Override
-    public void process(WatchedEvent event) {
-      try {
-        if (log.isDebugEnabled()) {
-          log.debug("set watch on leader znode");
-        }
-        zkController.getZkClient().exists(path, new Watcher() {
-
-          @Override
-          public void process(WatchedEvent event) {
-            if (Event.EventType.None.equals(event.getType())) {
-              return;
-            }
-
-            log.info("Overseer leader has changed, closing ...");
-            overseer.close();
-
-          }}, true);
-      } catch (KeeperException.SessionExpiredException e) {
-        log.warn("ZooKeeper session expired");
-        overseer.doClose();
-        return;
-      } catch (InterruptedException | AlreadyClosedException e) {
-        log.info("Already closed");
-        overseer.doClose();
-        return;
-      } catch (Exception e) {
-        log.error("Unexpected error in Overseer state update loop", e);
-        overseer.doClose();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      try {
-        zkController.getZkClient().getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
-      } catch (Exception e) {
-        log.info("", e.getMessage());
-      }
-    }
-  }
-
   private static abstract class QueueWatcher implements Watcher, Closeable {
 
     protected final CoreContainer cc;
