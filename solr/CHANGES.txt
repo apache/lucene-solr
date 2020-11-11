@@ -178,7 +178,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
 
 Bug Fixes
 ---------------------
