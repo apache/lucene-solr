@@ -1004,7 +1004,7 @@ public class CoreContainer implements Closeable {
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
     if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null && !zkSys.getZkController().isDcCalled()) {
-      zkSys.zkController.disconnect();
+      zkSys.zkController.disconnect(false);
     }
 
     // must do before isShutDown=true

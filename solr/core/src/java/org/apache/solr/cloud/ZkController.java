@@ -159,7 +159,7 @@ public class ZkController implements Closeable, Runnable {
 
   @Override
   public void run() {
-    disconnect();
+    disconnect(true);
   }
 
   public boolean isDcCalled() {
@@ -628,24 +628,26 @@ public class ZkController implements Closeable, Runnable {
     }
   }
 
-  public void disconnect() {
+  public void disconnect(boolean publishDown) {
     log.info("disconnect");
     this.dcCalled = true;
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect( "replicateFromLeaders", replicateFromLeaders);
 
       if (getZkClient().getConnectionManager().isConnected()) {
-        closer.collect("PublishNodeAsDown&RepFromLeadersClose&RemoveEmphem", () -> {
+        if (publishDown) {
+          closer.collect("PublishNodeAsDown&RepFromLeaders", () -> {
 
-          try {
-            log.info("Publish this node as DOWN...");
-            publishNodeAsDown(getNodeName());
-          } catch (Exception e) {
-            ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
-          }
-          return "PublishDown";
+            try {
+              log.info("Publish this node as DOWN...");
+              publishNodeAsDown(getNodeName());
+            } catch (Exception e) {
+              ParWork.propagateInterrupt("Error publishing nodes as down. Continuing to close CoreContainer", e);
+            }
+            return "PublishDown";
 
-        });
+          });
+        }
         closer.collect("removeEphemeralLiveNode", () -> {
           try {
             removeEphemeralLiveNode();
@@ -677,6 +679,10 @@ public class ZkController implements Closeable, Runnable {
     this.shudownCalled = true;
 
     this.isClosed = true;
+
+    if (statePublisher != null) {
+      statePublisher.submitState(StatePublisher.TERMINATE_OP);
+    }
     IOUtils.closeQuietly(statePublisher);
 
     try (ParWork closer = new ParWork(this, true, true)) {

@@ -33,6 +33,12 @@ import java.util.concurrent.TimeUnit;
 public class StatePublisher implements Closeable {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
+
+  public static class NoOpMessage extends ZkNodeProps {
+  }
+
+  public static final NoOpMessage TERMINATE_OP = new NoOpMessage();
+
   private final BlockingArrayQueue<ZkNodeProps> workQueue = new BlockingArrayQueue<>(30, 10);
   private final ZkDistributedQueue overseerJobQueue;
   private volatile Worker worker;
@@ -55,6 +61,9 @@ public class StatePublisher implements Closeable {
           message = workQueue.poll(5, TimeUnit.SECONDS);
           if (message != null) {
             log.info("Got state message " + message);
+            if (message == TERMINATE_OP) {
+              return;
+            }
 
             bulkMessage(message, bulkMessage);
 
@@ -62,6 +71,9 @@ public class StatePublisher implements Closeable {
               message = workQueue.poll(0, TimeUnit.SECONDS);
               log.info("Got state message " + message);
               if (message != null) {
+                if (message == TERMINATE_OP) {
+                  return;
+                }
                 bulkMessage(message, bulkMessage);
               }
             }

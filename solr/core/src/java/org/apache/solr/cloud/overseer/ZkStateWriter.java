@@ -158,7 +158,7 @@ public class ZkStateWriter {
                 Replica replica = docColl.getReplica(core);
                 if (replica != null) {
                   if (setState.equals("leader")) {
-                    log.info("set leader {} {}", message.getStr(ZkStateReader.CORE_NAME_PROP), replica);
+                    if (log.isDebugEnabled()) log.debug("set leader {} {}", message.getStr(ZkStateReader.CORE_NAME_PROP), replica);
                     Slice slice = docColl.getSlice(replica.getSlice());
                     slice.setLeader(replica);
                     replica.setState(Replica.State.ACTIVE);
