@@ -209,7 +209,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
-      if (replica.getStr(LEADER) != null) {
+      String leaderStr = replica.getStr(LEADER);
+      if (leaderStr != null && leaderStr.equals("true") && replica.getState() == Replica.State.ACTIVE) {
         return replica;
       }
     }
