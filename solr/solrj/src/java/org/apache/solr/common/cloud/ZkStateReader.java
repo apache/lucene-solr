@@ -222,7 +222,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     final Set<T> stateWatchers = ConcurrentHashMap.newKeySet();
 
     public boolean canBeRemoved() {
-      return coreRefCount.get() <=0 && stateWatchers.size() <= 0;
+      return coreRefCount.get() < 0 && stateWatchers.size() <= 0;
     }
 
   }
@@ -1916,7 +1916,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   private boolean updateWatchedCollection(String coll, DocCollection newState) {
 
     if (newState == null) {
-      log.debug("Removing cached collection state for [{}]", coll);
+      if (log.isDebugEnabled()) log.debug("Removing cached collection state for [{}]", coll);
       watchedCollectionStates.remove(coll);
       return true;
     }

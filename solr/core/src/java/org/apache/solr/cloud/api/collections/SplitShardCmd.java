@@ -348,7 +348,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 //        firstReplicaFutures.add(future);
       }
 
-      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, false);
+      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null,false);
       ocmh.overseer.writePendingUpdates();
       firstReplicaFutures.forEach(future -> {
         try {

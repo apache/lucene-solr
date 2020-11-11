@@ -290,7 +290,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     AddReplicaCmd.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
 
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState, false);
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState, null,false);
     ocmh.overseer.writePendingUpdates();
 
 

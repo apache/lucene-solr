@@ -271,7 +271,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (log.isDebugEnabled()) log.debug("Command returned clusterstate={} results={}", responce.clusterState, results);
 
         if (responce.clusterState != null) {
-          overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
+          overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, null, false);
 
           overseer.writePendingUpdates();
         }
@@ -281,7 +281,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
           if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
           if (resp.clusterState != null) {
-            overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, false);
+            overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, null,false);
             overseer.writePendingUpdates();
           }
         }

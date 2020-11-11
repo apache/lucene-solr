@@ -73,10 +73,10 @@ public class OverseerTaskExecutorTask implements Runnable {
     ClusterState cs = zkStateWriter.getClusterstate(true);
 
     log.info("Process message {} {}", message, operation);
-    ClusterState newClusterState = processMessage(message, operation, cs);
+ //   ClusterState newClusterState = processMessage(message, operation, cs);
 
     log.info("Enqueue message {}", operation);
-    zkStateWriter.enqueueUpdate(newClusterState, true);
+    zkStateWriter.enqueueUpdate(null, message, true);
 
 
     if (log.isDebugEnabled()) log.debug("State update consumed from queue {}", message);

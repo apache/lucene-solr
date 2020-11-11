@@ -625,6 +625,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     if (replicaType == Replica.Type.TLOG) {
+      log.info("Stopping replication from leader for {}", coreName);
       zkController.stopReplicationFromLeader(coreName);
     }
 
@@ -635,16 +636,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                                                                                             // though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        final Replica leader = getLeader(ourUrl, this.coreDescriptor, true);
-        if (isClosed()) {
-          log.info("RecoveryStrategy has been closed");
-          break;
-        }
-
-        boolean isLeader = leader.getCoreUrl().equals(ourUrl);
-        if (isLeader && !cloudDesc.isLeader() && leader.getState().equals(Replica.State.ACTIVE)) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
-        }
+        final Replica leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 15000);
 
         log.info("Begin buffering updates. core=[{}]", coreName);
         // recalling buffer updates will drop the old buffer tlog
@@ -703,6 +695,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
+            log.info("PeerSync was successful, commit to force open a new searcher");
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             req.close();
@@ -734,23 +727,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Replication Recovery was successful.");
           successfulRecovery = true;
         } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propagateInterrupt(e, true);
+          log.info("Interrupted or already closed, bailing on recovery");
           return;
-        } catch (NullPointerException e) {
-          if (log.isDebugEnabled()) log.debug("NullPointerException", e);
-          break;
         } catch (Exception e) {
           SolrException.log(log, "Error while trying to recover", e);
         }
 
       } catch (Exception e) {
-        if (core.getCoreContainer().isShutDown()) {
-          break;
-        }
         SolrException.log(log, "Error while trying to recover. core=" + coreName, e);
       } finally {
         if (successfulRecovery) {
-          log.info("Registering as Active after recovery.");
+          log.info("Registering as Active after recovery {}", coreName);
           try {
             if (replicaType == Replica.Type.TLOG) {
               zkController.startReplicationFromLeader(coreName, true);
@@ -768,6 +755,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
             close = true;
             recoveryListener.recovered();
           }
+        } else {
+          log.info("Recovery was not sucessful, will not register as ACTIVE {}", coreName);
         }
       }
 
@@ -827,39 +816,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     log.info("Finished recovery process, successful=[{}]", successfulRecovery);
-  }
-
-  private final Replica getLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
-      throws Exception {
-    int numTried = 0;
-    while (true) {
-      CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
-      DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
-      if (!isClosed() && mayPutReplicaAsDown && numTried == 1 && docCollection.getReplica(coreDesc.getName()).getState() == Replica.State.ACTIVE) {
-        // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
-        // zkController.publish(coreDesc, Replica.State.DOWN);
-        // TODO: We should be in recovery and ignored by queries?
-      }
-      numTried++;
-
-      if (numTried > 3) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get leader");
-        // instead of hammering on the leader,
-        // let recovery process continue normally
-      }
-
-      Replica leaderReplica = null;
-
-      try {
-        leaderReplica = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
-      } catch (SolrException e) {
-        Thread.sleep(500);
-        log.info("Could not find leader, looping again ...", e);
-        continue;
-      }
-
-      return leaderReplica;
-    }
   }
 
   public static Runnable testing_beforeReplayBufferingUpdates;
@@ -926,7 +882,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   final public boolean isClosed() {
-    return close || cc.isShutDown();
+    return close;
   }
 
   final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
