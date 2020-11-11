@@ -157,37 +157,29 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
   }
 
   DocumentsWriterPerThread doAfterDocument(DocumentsWriterPerThread perThread, boolean isUpdate) {
-    final long delta = perThread.getCommitLastBytesUsedDelta();
+    final long delta = perThread.commitLastBytesUsed();
     synchronized (this) {
-      // we need to commit this under lock but calculate it outside of the lock to minimize the time this lock is held
-      // per document. The reason we update this under lock is that we mark DWPTs as pending without acquiring it's
-      // lock in #setFlushPending and this also reads the committed bytes and modifies the flush/activeBytes.
-      // In the future we can clean this up to be more intuitive.
-      perThread.commitLastBytesUsed(delta);
       try {
         /*
          * We need to differentiate here if we are pending since setFlushPending
          * moves the perThread memory to the flushBytes and we could be set to
          * pending during a delete
          */
-        if (perThread.isFlushPending()) {
-          flushBytes += delta;
-          assert updatePeaks(delta);
-        } else {
-          activeBytes += delta;
-          assert updatePeaks(delta);
+        activeBytes += delta;
+        assert updatePeaks(delta);
+        if (perThread.getState() == DocumentsWriterPerThread.State.ACTIVE) {
           if (isUpdate) {
             flushPolicy.onUpdate(this, perThread);
           } else {
             flushPolicy.onInsert(this, perThread);
           }
-          if (!perThread.isFlushPending() && perThread.ramBytesUsed() > hardMaxBytesPerDWPT) {
+          if (perThread.getState() == DocumentsWriterPerThread.State.ACTIVE && perThread.ramBytesUsed() > hardMaxBytesPerDWPT) {
             // Safety check to prevent a single DWPT exceeding its RAM limit. This
             // is super important since we can not address more than 2048 MB per DWPT
             setFlushPending(perThread);
           }
         }
-        return checkout(perThread, false);
+        return checkoutFlushableWriter(perThread, false);
       } finally {
         boolean stalled = updateStallState();
         assert assertNumDocsSinceStalled(stalled) && assertMemory();
@@ -195,11 +187,12 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
-  private DocumentsWriterPerThread checkout(DocumentsWriterPerThread perThread, boolean markPending) {
+  private DocumentsWriterPerThread checkoutFlushableWriter(DocumentsWriterPerThread perThread, boolean markPending) {
     assert Thread.holdsLock(this);
     if (fullFlush) {
       if (perThread.isFlushPending()) {
-        checkoutAndBlock(perThread);
+        checkoutFlushableWriter(perThread);
+        blockedFlushes.add(perThread);
         return nextPendingFlush();
       }
     } else {
@@ -235,7 +228,8 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     assert flushingWriters.contains(dwpt);
     try {
       flushingWriters.remove(dwpt);
-      flushBytes -= dwpt.getLastCommittedBytesUsed();
+      dwpt.transitionTo(DocumentsWriterPerThread.State.FLUSHED);
+      flushBytes -= dwpt.ramBytesUsed();
       assert assertMemory();
     } finally {
       try {
@@ -295,27 +289,32 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
    * {@link DocumentsWriterPerThread} must have indexed at least on Document and must not be
    * already pending.
    */
-  public synchronized void setFlushPending(DocumentsWriterPerThread perThread) {
-    assert !perThread.isFlushPending();
+  synchronized void setFlushPending(DocumentsWriterPerThread perThread) {
+    assert !perThread.isFlushPending() : "state: " + perThread.getState();
     if (perThread.getNumDocsInRAM() > 0) {
-      perThread.setFlushPending(); // write access synced
-      final long bytes = perThread.getLastCommittedBytesUsed();
-      flushBytes += bytes;
-      activeBytes -= bytes;
+      perThread.transitionTo(DocumentsWriterPerThread.State.FLUSH_PENDING); // write access synced
       numPending++; // write access synced
-      assert assertMemory();
     } // don't assert on numDocs since we could hit an abort excp. while selecting that dwpt for flushing
-    
   }
+
   
   synchronized void doOnAbort(DocumentsWriterPerThread perThread) {
     try {
       assert perThreadPool.isRegistered(perThread);
       assert perThread.isHeldByCurrentThread();
-      if (perThread.isFlushPending()) {
-        flushBytes -= perThread.getLastCommittedBytesUsed();
-      } else {
-        activeBytes -= perThread.getLastCommittedBytesUsed();
+      switch (perThread.getState()) {
+        case ACTIVE:
+        case FLUSH_PENDING:
+          activeBytes -= perThread.ramBytesUsed();
+          break;
+        case FLUSHING:
+          flushBytes -= perThread.ramBytesUsed();
+          break;
+        case FLUSHED:
+          assert false : "flushed writers must not be aborted";
+          break;
+        default:
+          throw new IllegalStateException("Unexpected value: " + perThread.getState());
       }
       assert assertMemory();
       // Take it out of the loop this DWPT is stale
@@ -326,39 +325,34 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     }
   }
 
-  /**
-   * To be called only by the owner of this object's monitor lock
-   */
-  private void checkoutAndBlock(DocumentsWriterPerThread perThread) {
-    assert Thread.holdsLock(this);
-    assert perThreadPool.isRegistered(perThread);
-    assert perThread.isHeldByCurrentThread();
-    assert perThread.isFlushPending() : "can not block non-pending threadstate";
-    assert fullFlush : "can not block if fullFlush == false";
-    numPending--; // write access synced
-    blockedFlushes.add(perThread);
-    boolean checkedOut = perThreadPool.checkout(perThread);
-    assert checkedOut;
-  }
-
   private synchronized DocumentsWriterPerThread checkOutForFlush(DocumentsWriterPerThread perThread) {
-    assert Thread.holdsLock(this);
-    assert perThread.isFlushPending();
-    assert perThread.isHeldByCurrentThread();
-    assert perThreadPool.isRegistered(perThread);
     try {
-        addFlushingDWPT(perThread);
-        numPending--; // write access synced
-        boolean checkedOut = perThreadPool.checkout(perThread);
-        assert checkedOut;
-        return perThread;
+      checkoutFlushableWriter(perThread);
+      addFlushingDWPT(perThread);
+      return perThread;
     } finally {
       updateStallState();
     }
   }
 
+  private void checkoutFlushableWriter(DocumentsWriterPerThread perThread) {
+    assert Thread.holdsLock(this);
+    assert perThread.isFlushPending();
+    assert perThread.isHeldByCurrentThread();
+    assert perThreadPool.isRegistered(perThread);
+    perThread.transitionTo(DocumentsWriterPerThread.State.FLUSHING);
+    final long bytes = perThread.ramBytesUsed();
+    flushBytes += bytes;
+    activeBytes -= bytes;
+    assert assertMemory();
+    numPending--; // write access synced
+    boolean checkedOut = perThreadPool.checkout(perThread);
+    assert checkedOut;
+  }
+
   private void addFlushingDWPT(DocumentsWriterPerThread perThread) {
     assert flushingWriters.contains(perThread) == false : "DWPT is already flushing";
+    assert perThread.getState() == DocumentsWriterPerThread.State.FLUSHING;
     // Record the flushing DWPT to reduce flushBytes in doAfterFlush
     flushingWriters.add(perThread);
   }
@@ -676,7 +670,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
     int count = 0;
     for (DocumentsWriterPerThread next : perThreadPool) {
       if (next.isFlushPending() == false && next.getNumDocsInRAM() > 0) {
-        final long nextRam = next.getLastCommittedBytesUsed();
+        final long nextRam = next.ramBytesUsed();
         if (infoStream.isEnabled("FP")) {
           infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.getNumDocsInRAM());
         }
@@ -705,7 +699,7 @@ final class DocumentsWriterFlushControl implements Accountable, Closeable {
         if (perThreadPool.isRegistered(largestNonPendingWriter)) {
           synchronized (this) {
             try {
-              return checkout(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
+              return checkoutFlushableWriter(largestNonPendingWriter, largestNonPendingWriter.isFlushPending() == false);
             } finally {
               updateStallState();
             }

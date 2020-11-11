@@ -429,10 +429,10 @@ final class DocumentsWriter implements Closeable, Accountable {
       final boolean isUpdate = delNode != null && delNode.isDelete();
       flushingDWPT = flushControl.doAfterDocument(dwpt, isUpdate);
     } finally {
-      if (dwpt.isFlushPending() || dwpt.isAborted()) {
-        dwpt.unlock();
-      } else {
+      if (dwpt.getState() == DocumentsWriterPerThread.State.ACTIVE && dwpt.isAborted() == false) {
         perThreadPool.marksAsFreeAndUnlock(dwpt);
+      } else {
+        dwpt.unlock();
       }
       assert dwpt.isHeldByCurrentThread() == false : "we didn't release the dwpt even on abort";
     }
@@ -446,7 +446,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException {
     boolean hasEvents = false;
     while (flushingDWPT != null) {
-      assert flushingDWPT.hasFlushed() == false;
+      assert flushingDWPT.getState() == DocumentsWriterPerThread.State.FLUSHING : "expected FLUSHING but was: " + flushingDWPT.getState();
       hasEvents = true;
       boolean success = false;
       DocumentsWriterFlushQueue.FlushTicket ticket = null;

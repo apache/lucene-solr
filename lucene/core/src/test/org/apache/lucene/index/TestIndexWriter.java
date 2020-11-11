@@ -2933,7 +2933,7 @@ public class TestIndexWriter extends LuceneTestCase {
     int numRamDocs = w.numRamDocs();
     int numDocsInDWPT = largestNonPendingWriter.getNumDocsInRAM();
     assertTrue(w.flushNextBuffer());
-    assertTrue(largestNonPendingWriter.hasFlushed());
+    assertEquals(DocumentsWriterPerThread.State.FLUSHED, largestNonPendingWriter.getState());
     assertEquals(numRamDocs-numDocsInDWPT, w.numRamDocs());
 
     // make sure it's not locked
@@ -2982,8 +2982,7 @@ public class TestIndexWriter extends LuceneTestCase {
     indexDocsForMultipleDWPTs(w);
     DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.isFlushPending());
-    assertFalse(largestNonPendingWriter.hasFlushed());
+    assertEquals(DocumentsWriterPerThread.State.ACTIVE, largestNonPendingWriter.getState());
     int threadPoolSize = w.docWriter.perThreadPool.size();
     w.docWriter.flushControl.markForFullFlush();
     DocumentsWriterPerThread documentsWriterPerThread = w.docWriter.flushControl.checkoutLargestNonPendingWriter();
@@ -3002,8 +3001,7 @@ public class TestIndexWriter extends LuceneTestCase {
     int numDocs = indexDocsForMultipleDWPTs(w);
     DocumentsWriterPerThread largestNonPendingWriter
         = w.docWriter.flushControl.findLargestNonPendingWriter();
-    assertFalse(largestNonPendingWriter.isFlushPending());
-    assertFalse(largestNonPendingWriter.hasFlushed());
+    assertEquals(DocumentsWriterPerThread.State.ACTIVE, largestNonPendingWriter.getState());
 
     CountDownLatch wait = new CountDownLatch(1);
     CountDownLatch locked = new CountDownLatch(1);
@@ -3036,7 +3034,7 @@ public class TestIndexWriter extends LuceneTestCase {
     lockThread.join();
     flushThread.join();
 
-    assertTrue("largest DWPT should be flushed", largestNonPendingWriter.hasFlushed());
+    assertEquals("largest DWPT should be flushed", DocumentsWriterPerThread.State.FLUSHED, largestNonPendingWriter.getState());
     // make sure it's not locked
     largestNonPendingWriter.lock();
     largestNonPendingWriter.unlock();
