@@ -121,6 +121,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   }
   
   @Test
+  @Nightly
   public void testZkConnected() throws Exception{
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
 
@@ -164,6 +165,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   }
 
   @Test
+  @Nightly
   public void testRequireZkConnected() throws Exception{
     MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
 

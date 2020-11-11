@@ -369,6 +369,7 @@ public class ConnectionManager implements Watcher, Closeable {
     client.zkCallbackExecutor.shutdown();
     client.zkConnManagerCallbackExecutor.shutdown();
     if (keeper != null) {
+      keeper.register(new NullWatcher());
       keeper.close();
     }
 
@@ -450,5 +451,10 @@ public class ConnectionManager implements Watcher, Closeable {
     void connected();
   }
 
+  private static class NullWatcher implements Watcher {
+    @Override
+    public void process(WatchedEvent event) {
 
+    }
+  }
 }
