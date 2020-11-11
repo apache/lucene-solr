@@ -90,13 +90,12 @@ public class ZkStateWriter {
     this.reader = zkStateReader;
     this.stats = stats;
 
-    zkStateReader.forciblyRefreshAllClusterStateSlow();
     cs = zkStateReader.getClusterState();
   }
 
   public void enqueueUpdate(ClusterState clusterState, ZkNodeProps message, boolean stateUpdate) throws Exception {
 
-    if (log.isDebugEnabled()) log.debug("enqueue update stateUpdate={}", stateUpdate);
+    if (log.isDebugEnabled()) log.debug("enqueue update stateUpdate={} cs={}", stateUpdate, clusterState);
     //log.info("Get our write lock for enq");
     ourLock.lock();
     //log.info("Got our write lock for enq");
@@ -123,12 +122,6 @@ public class ZkStateWriter {
               Slice currentSlice = currentCollection.getSlice(slice.getName());
               if (currentSlice != null) {
                 slice.setState(currentSlice.getState());
-                Replica leader = currentSlice.getLeader();
-                slice.setLeader(currentSlice.getLeader());
-                if (leader != null) {
-                  leader.setState(Replica.State.ACTIVE);
-                  leader.getProperties().put("leader", "true");
-                }
               }
             }
 

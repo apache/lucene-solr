@@ -79,6 +79,7 @@ import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Vari
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -347,8 +348,17 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 //        });
 //        firstReplicaFutures.add(future);
       }
+      DocCollection docColl = clusterState.getCollectionOrNull(message.getStr(COLLECTION));
+      Map<String, DocCollection> collectionStates;
+      if (docColl != null) {
+        collectionStates = new HashMap<>();
+        collectionStates.put(docColl.getName(), docColl);
+      } else {
+        collectionStates = new HashMap<>();
+      }
+      ClusterState cs = new ClusterState(clusterState.getLiveNodes(), collectionStates);
 
-      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null,false);
+      ocmh.overseer.getZkStateWriter().enqueueUpdate(cs, null,false);
       ocmh.overseer.writePendingUpdates();
       firstReplicaFutures.forEach(future -> {
         try {

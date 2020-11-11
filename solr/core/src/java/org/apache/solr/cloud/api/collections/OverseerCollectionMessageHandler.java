@@ -258,7 +258,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     ClusterState clusterState = overseer.getZkStateWriter().getClusterstate(false);
     @SuppressWarnings({"rawtypes"})
     NamedList results = new NamedList();
-
+    String collection = message.getStr("collection");
+    if (collection == null) {
+      collection = message.getStr("name");
+    }
     try {
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
@@ -271,7 +274,19 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (log.isDebugEnabled()) log.debug("Command returned clusterstate={} results={}", responce.clusterState, results);
 
         if (responce.clusterState != null) {
-          overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, null, false);
+          DocCollection docColl = responce.clusterState.getCollectionOrNull(collection);
+          Map<String, DocCollection> collectionStates;
+          if (docColl != null) {
+            log.info("create new single collection state for collection {}", docColl.getName());
+            collectionStates = new HashMap<>();
+            collectionStates.put(docColl.getName(), docColl);
+          } else {
+            log.info("collection not found in returned state {} {}", collection, responce.clusterState);
+            collectionStates = new HashMap<>();
+          }
+          ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
+
+          overseer.getZkStateWriter().enqueueUpdate(cs, null, false);
 
           overseer.writePendingUpdates();
         }
@@ -281,15 +296,21 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
           if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
           if (resp.clusterState != null) {
-            overseer.getZkStateWriter().enqueueUpdate(responce.clusterState, null,false);
+            DocCollection docColl = resp.clusterState.getCollectionOrNull(collection);
+            Map<String, DocCollection> collectionStates;
+            if (docColl != null) {
+              collectionStates = new HashMap<>();
+              collectionStates.put(docColl.getName(), docColl);
+            } else {
+              collectionStates = new HashMap<>();
+            }
+            ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
+
+            overseer.getZkStateWriter().enqueueUpdate(cs, null,false);
             overseer.writePendingUpdates();
           }
         }
 
-        String collection = message.getStr("collection");
-        if (collection == null) {
-          collection = message.getStr("name");
-        }
         if (collection != null && responce.clusterState != null) {
           Integer version = overseer.getZkStateWriter().lastWrittenVersion(collection);
           if (version != null && !action.equals(DELETE)) {

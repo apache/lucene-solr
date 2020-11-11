@@ -20,8 +20,10 @@ package org.apache.solr.cloud.api.collections;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -49,6 +51,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
@@ -290,7 +293,16 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     AddReplicaCmd.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
 
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState, null,false);
+    DocCollection docColl = response.clusterState.getCollectionOrNull(coll.getName());
+    Map<String, DocCollection> collectionStates;
+    if (docColl != null) {
+      collectionStates = new HashMap<>();
+      collectionStates.put(docColl.getName(), docColl);
+    } else {
+      collectionStates = new HashMap<>();
+    }
+    ClusterState cs = new ClusterState(response.clusterState.getLiveNodes(), collectionStates);
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(cs, null,false);
     ocmh.overseer.writePendingUpdates();
 
 

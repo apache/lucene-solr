@@ -331,7 +331,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               log.error("Exception trying to clean up collection after fail {}", collectionName);
             }
             if (log.isDebugEnabled()) log.debug("Cleaned up artifacts for failed create collection for [{}]", collectionName);
-            //throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
           } else {
             Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
             if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
@@ -379,6 +379,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       };
     }
+    if (log.isDebugEnabled()) log.debug("return cs from create collection cmd {}", clusterState);
     response.clusterState = clusterState;
     return response;
   }
