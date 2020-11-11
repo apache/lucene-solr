@@ -192,6 +192,8 @@ Bug Fixes
 
 * SOLR-14961: Fix for deleting zookeeper nodes with same path length. Only the first zk-node was removed. (Michael Aleythe via Mike Drob)
 
+* SOLR-14971: AtomicUpdate 'remove', 'add-distinct' operations now works on numeric, date fields in uncommitted docs (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
