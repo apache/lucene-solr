@@ -121,6 +121,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.collection = collection;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
+    if (this.schemaZkVersion == -1) {
+      throw new IllegalArgumentException();
+    }
     this.schemaUpdateLock = schemaUpdateLock;
   }
   
@@ -190,6 +193,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
     boolean success = true;
     boolean schemaChangedInZk = false;
+    int ver = -1;
     try {
 
       // Persist the managed schema
@@ -200,40 +204,36 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (createOnly) {
         try {
           zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
-          schemaZkVersion = 0;
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
         } catch (KeeperException.NodeExistsException e) {
           // This is okay - do nothing and fall through
-          Stat stat = new Stat();
-          zkClient.getData(managedSchemaPath, null, stat, true);
-          log.info("Managed schema znode at {} already exists - no need to create it version at {}", managedSchemaPath, stat.getVersion());
-          schemaZkVersion = stat.getVersion();
         }
       } else {
         try {
           // Assumption: the path exists
-          int ver = schemaZkVersion;
-          Stat stat = zkClient.setData(managedSchemaPath, data, ver == 0 ? -1 : ver, true);
-          schemaZkVersion = stat.getVersion();
+
+          Stat stat = zkClient.exists(managedSchemaPath, null, true);
+          int zkVersion = stat.getVersion();
+          ver = schemaZkVersion;
+          if (zkVersion != ver) {
+            log.info("Our schema version is not what we found ours={} found={}", schemaZkVersion, zkVersion);
+
+            String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
+            log.info(msg);
+            return false;
+           // throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
+          }
+
+
+          zkClient.setData(managedSchemaPath, data, ver, true);
           log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {
-            Thread.sleep(50);
-            // try again with latest schemaZkVersion value
-          int ver = 0;
-          try {
-              ver = schemaZkVersion;
-              Stat stat = zkClient.setData(managedSchemaPath, data, ver, true);
-              schemaZkVersion = stat.getVersion();
-              log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
-            } catch (KeeperException.BadVersionException e1) {
-              Stat stat = new Stat();
-              zkClient.getData(managedSchemaPath, null, stat, true);
+          // try again with latest schemaZkVersion value
 
-              log.info("Bad version when trying to persist schema using {} found {}", ver, stat.getVersion());
+          log.info("Bad version when trying to persist schema using {}", ver);
 
-              success = false;
-              schemaChangedInZk = true;
-            }
+          success = false;
+          schemaChangedInZk = true;
 
         }
       }
@@ -436,72 +436,87 @@ public final class ManagedIndexSchema extends IndexSchema {
                                       Map<String, Collection<String>> copyFieldNames,
                                       boolean persist) {
     ManagedIndexSchema newSchema;
-    if (isMutable) {
-      boolean success = false;
-      if (copyFieldNames == null){
-        copyFieldNames = Collections.emptyMap();
+    try {
+
+      if (persist) {
+        schemaUpdateLock.lockInterruptibly();
       }
-      newSchema = shallowCopy(true);
-
-      newSchema.fields = new ConcurrentHashMap<>(fields.size());
-      ManagedIndexSchema finalNewSchema = newSchema;
-      fields.forEach((s, schemaField) -> {
-        finalNewSchema.fields.put(s, schemaField);
-      });
-
-      newSchema.requiredFields = ConcurrentHashMap.newKeySet(requiredFields.size());
-      newSchema.requiredFields.addAll(requiredFields);
-      newSchema.fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(fieldsWithDefaultValue.size());
-      newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
-      newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes.size());
-      newSchema.fieldTypes.putAll(fieldTypes);
-
-      Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
-      newFields.forEach(newField -> {
-        if (null != finalNewSchema.fields.get(newField.getName())) {
-          String msg = "Field '" + newField.getName() + "' already exists.";
-          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+      if (isMutable) {
+        boolean success = false;
+        if (copyFieldNames == null) {
+          copyFieldNames = Collections.emptyMap();
         }
-        finalNewSchema.fields.put(newField.getName(), newField);
+        newSchema = shallowCopy(true);
 
-        if (null != newField.getDefaultValue()) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
+        newSchema.fields = new ConcurrentHashMap<>(fields.size());
+        ManagedIndexSchema finalNewSchema = newSchema;
+        fields.forEach((s, schemaField) -> {
+          finalNewSchema.fields.put(s, schemaField);
+        });
+
+        newSchema.requiredFields = ConcurrentHashMap.newKeySet(requiredFields.size());
+        newSchema.requiredFields.addAll(requiredFields);
+        newSchema.fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(fieldsWithDefaultValue.size());
+        newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
+        newSchema.fieldTypes = new ConcurrentHashMap<>(fieldTypes.size());
+        newSchema.fieldTypes.putAll(fieldTypes);
+
+        Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
+        newFields.forEach(newField -> {
+          if (null != finalNewSchema.fields.get(newField.getName())) {
+            String msg = "Field '" + newField.getName() + "' already exists.";
+            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
           }
-          finalNewSchema.fieldsWithDefaultValue.add(newField);
-        }
-        if (newField.isRequired()) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} is required in this schema", newField.getName());
+          finalNewSchema.fields.put(newField.getName(), newField);
+
+          if (null != newField.getDefaultValue()) {
+            if (log.isDebugEnabled()) {
+              log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
+            }
+            finalNewSchema.fieldsWithDefaultValue.add(newField);
           }
-          finalNewSchema.requiredFields.add(newField);
-        }
-        Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
-        if (copyFields != null) {
-          for (String copyField : copyFields) {
-            finalNewSchema.registerCopyField(newField.getName(), copyField);
+          if (newField.isRequired()) {
+            if (log.isDebugEnabled()) {
+              log.debug("{} is required in this schema", newField.getName());
+            }
+            finalNewSchema.requiredFields.add(newField);
+          }
+          Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
+          if (copyFields != null) {
+            for (String copyField : copyFields) {
+              finalNewSchema.registerCopyField(newField.getName(), copyField);
+            }
+          }
+
+        });
+
+        newSchema.postReadInform();
+
+        newSchema.refreshAnalyzers();
+
+        if (persist) {
+          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+          if (success) {
+            log.debug("Added field(s): {}", newFields);
+          } else {
+            log.error("Failed to add field(s): {}", newFields);
+            newSchema = null;
           }
         }
-
-      });
-
-      newSchema.postReadInform();
-
-      newSchema.refreshAnalyzers();
-
-      if(persist) {
-        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-        if (success) {
-          log.debug("Added field(s): {}", newFields);
-        } else {
-          log.error("Failed to add field(s): {}", newFields);
-          newSchema = null;
+      } else {
+        String msg = "This ManagedIndexSchema is not mutable.";
+        log.error(msg);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException();
+    } finally {
+      if (persist) {
+        if (schemaUpdateLock.isHeldByCurrentThread()) {
+          schemaUpdateLock.unlock();
         }
       }
-    } else {
-      String msg = "This ManagedIndexSchema is not mutable.";
-      log.error(msg);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     return newSchema;
   }
@@ -635,44 +650,58 @@ public final class ManagedIndexSchema extends IndexSchema {
   public ManagedIndexSchema addDynamicFields(Collection<SchemaField> newDynamicFields, 
                                              Map<String,Collection<String>> copyFieldNames, boolean persist) {
     ManagedIndexSchema newSchema;
-    if (isMutable) {
-      boolean success = false;
-      if (copyFieldNames == null){
-        copyFieldNames = Collections.emptyMap();
+    try {
+      if (persist) {
+        schemaUpdateLock.lockInterruptibly();
       }
-      newSchema = shallowCopy(true);
-
-      for (SchemaField newDynamicField : newDynamicFields) {
-        List<DynamicField> dFields = new ArrayList<>(Arrays.asList(newSchema.dynamicFields));
-        if (isDuplicateDynField(dFields, newDynamicField)) {
-          String msg = "Dynamic field '" + newDynamicField.getName() + "' already exists.";
-          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+      if (isMutable) {
+        boolean success = false;
+        if (copyFieldNames == null) {
+          copyFieldNames = Collections.emptyMap();
         }
-        dFields.add(new DynamicField(newDynamicField));
-        newSchema.dynamicFields = dynamicFieldListToSortedArray(dFields);
+        newSchema = shallowCopy(true);
 
-        Collection<String> copyFields = copyFieldNames.get(newDynamicField.getName());
-        if (copyFields != null) {
-          for (String copyField : copyFields) {
-            newSchema.registerCopyField(newDynamicField.getName(), copyField);
+        for (SchemaField newDynamicField : newDynamicFields) {
+          List<DynamicField> dFields = new ArrayList<>(Arrays.asList(newSchema.dynamicFields));
+          if (isDuplicateDynField(dFields, newDynamicField)) {
+            String msg = "Dynamic field '" + newDynamicField.getName() + "' already exists.";
+            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+          }
+          dFields.add(new DynamicField(newDynamicField));
+          newSchema.dynamicFields = dynamicFieldListToSortedArray(dFields);
+
+          Collection<String> copyFields = copyFieldNames.get(newDynamicField.getName());
+          if (copyFields != null) {
+            for (String copyField : copyFields) {
+              newSchema.registerCopyField(newDynamicField.getName(), copyField);
+            }
           }
         }
-      }
 
-      newSchema.postReadInform();
-      newSchema.refreshAnalyzers();
+        newSchema.postReadInform();
+        newSchema.refreshAnalyzers();
+        if (persist) {
+          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+          if (success) {
+            log.debug("Added dynamic field(s): {}", newDynamicFields);
+          } else {
+            log.error("Failed to add dynamic field(s): {}", newDynamicFields);
+          }
+        }
+      } else {
+        String msg = "This ManagedIndexSchema is not mutable.";
+        log.error(msg);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException();
+    } finally {
       if (persist) {
-        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-        if (success) {
-          log.debug("Added dynamic field(s): {}", newDynamicFields);
-        } else {
-          log.error("Failed to add dynamic field(s): {}", newDynamicFields);
+        if (schemaUpdateLock.isHeldByCurrentThread()) {
+          schemaUpdateLock.unlock();
         }
       }
-    } else {
-      String msg = "This ManagedIndexSchema is not mutable.";
-      log.error(msg);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     return newSchema;
   }
@@ -818,32 +847,46 @@ public final class ManagedIndexSchema extends IndexSchema {
   @Override
   public ManagedIndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist) {
     ManagedIndexSchema newSchema;
-    if (isMutable) {
-      boolean success = false;
-      newSchema = shallowCopy(true);
-      for (Map.Entry<String, Collection<String>> entry : copyFields.entrySet()) {
-        //Key is the name of the field, values are the destinations
+    try {
+      if (persist) {
+        schemaUpdateLock.lockInterruptibly();
+      }
+      if (isMutable) {
+        boolean success = false;
+        newSchema = shallowCopy(true);
+        for (Map.Entry<String,Collection<String>> entry : copyFields.entrySet()) {
+          //Key is the name of the field, values are the destinations
 
-        for (String destination : entry.getValue()) {
-          newSchema.registerCopyField(entry.getKey(), destination);
-        }
-      }
-      newSchema.postReadInform();
-      newSchema.refreshAnalyzers();
-      if(persist) {
-        success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
-        if (success) {
-          if (log.isDebugEnabled()) {
-            log.debug("Added copy fields for {} sources", copyFields.size());
+          for (String destination : entry.getValue()) {
+            newSchema.registerCopyField(entry.getKey(), destination);
           }
-        } else {
-          log.error("Failed to add copy fields for {} sources", copyFields.size());
+        }
+        newSchema.postReadInform();
+        newSchema.refreshAnalyzers();
+        if (persist) {
+          success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
+          if (success) {
+            if (log.isDebugEnabled()) {
+              log.debug("Added copy fields for {} sources", copyFields.size());
+            }
+          } else {
+            log.error("Failed to add copy fields for {} sources", copyFields.size());
+          }
+        }
+      } else {
+        String msg = "This ManagedIndexSchema is not mutable.";
+        log.error(msg);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException();
+    } finally {
+      if (persist) {
+        if (schemaUpdateLock.isHeldByCurrentThread()) {
+          schemaUpdateLock.unlock();
         }
       }
-    } else {
-      String msg = "This ManagedIndexSchema is not mutable.";
-      log.error(msg);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     return newSchema;
   }
@@ -1003,58 +1046,71 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   public ManagedIndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
-    if (!isMutable) {
-      String msg = "This ManagedIndexSchema is not mutable.";
-      log.error(msg);
-      throw new SolrException(ErrorCode.SERVER_ERROR, msg);    
-    }
-
-    ManagedIndexSchema newSchema = shallowCopy(true);
-
-    // we shallow copied fieldTypes, but since we're changing them, we need to do a true
-    // deep copy before adding the new field types
-
-    HashMap<Object,Object> tmpMap = new HashMap<>(fieldTypes.size());
-    fieldTypes.forEach((s, fieldType) -> {
-      tmpMap.put(s, fieldType);
-    });
-
-    newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) tmpMap.clone());
-
-    // do a first pass to validate the field types don't exist already
-    for (FieldType fieldType : fieldTypeList) {    
-      String typeName = fieldType.getTypeName();
-      if (newSchema.getFieldTypeByName(typeName) != null) {
-        throw new FieldExistsException(ErrorCode.BAD_REQUEST,
-            "Field type '" + typeName + "' already exists!");
+    ManagedIndexSchema newSchema;
+    try {
+      if (persist) {
+        schemaUpdateLock.lockInterruptibly();
       }
-      
-      newSchema.fieldTypes.put(typeName, fieldType);
-    }
 
-    newSchema.postReadInform();
-    
-    newSchema.refreshAnalyzers();
+      if (!isMutable) {
+        String msg = "This ManagedIndexSchema is not mutable.";
+        log.error(msg);
+        throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+      }
 
-    if (persist) {
-      boolean success = newSchema.persistManagedSchema(false);
-      if (success) {
-        if (log.isDebugEnabled()) {
-          StringBuilder fieldTypeNames = new StringBuilder();
-          for (int i=0; i < fieldTypeList.size(); i++) {
-            if (i > 0) fieldTypeNames.append(", ");
-            fieldTypeNames.append(fieldTypeList.get(i).typeName);
-          }
-          log.debug("Added field types: {}", fieldTypeNames);
+      newSchema = shallowCopy(true);
+
+      // we shallow copied fieldTypes, but since we're changing them, we need to do a true
+      // deep copy before adding the new field types
+
+      HashMap<Object,Object> tmpMap = new HashMap<>(fieldTypes.size());
+      fieldTypes.forEach((s, fieldType) -> {
+        tmpMap.put(s, fieldType);
+      });
+
+      newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) tmpMap.clone());
+
+      // do a first pass to validate the field types don't exist already
+      for (FieldType fieldType : fieldTypeList) {
+        String typeName = fieldType.getTypeName();
+        if (newSchema.getFieldTypeByName(typeName) != null) {
+          throw new FieldExistsException(ErrorCode.BAD_REQUEST, "Field type '" + typeName + "' already exists!");
         }
-      } else {
-        // this is unlikely to happen as most errors are handled as exceptions in the persist code
-        log.error("Failed to add field types: {}", fieldTypeList);
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Failed to persist updated schema due to underlying storage issue; check log for more details!");
+
+        newSchema.fieldTypes.put(typeName, fieldType);
+      }
+
+      newSchema.postReadInform();
+
+      newSchema.refreshAnalyzers();
+
+      if (persist) {
+        boolean success = newSchema.persistManagedSchema(false);
+        if (success) {
+          if (log.isDebugEnabled()) {
+            StringBuilder fieldTypeNames = new StringBuilder();
+            for (int i = 0; i < fieldTypeList.size(); i++) {
+              if (i > 0) fieldTypeNames.append(", ");
+              fieldTypeNames.append(fieldTypeList.get(i).typeName);
+            }
+            log.debug("Added field types: {}", fieldTypeNames);
+          }
+        } else {
+          // this is unlikely to happen as most errors are handled as exceptions in the persist code
+          log.error("Failed to add field types: {}", fieldTypeList);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to persist updated schema due to underlying storage issue; check log for more details!");
+        }
+      }
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException();
+    } finally {
+      if (persist) {
+        if (schemaUpdateLock.isHeldByCurrentThread()) {
+          schemaUpdateLock.unlock();
+        }
       }
     }
-
     return newSchema;
   }
 

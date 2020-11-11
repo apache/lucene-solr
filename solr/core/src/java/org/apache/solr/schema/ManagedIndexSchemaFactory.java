@@ -136,7 +136,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
       }
 
-      int schemaZkVersion = -1;
+      int schemaZkVersion = 0;
       if (!(loader instanceof ZkSolrResourceLoader)) {
         schemaInputStream = readSchemaLocally();
       } else { // ZooKeeper
@@ -148,6 +148,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           // Attempt to load the managed schema
           byte[] data = zkClient.getData(managedSchemaPath, null, stat);
           schemaZkVersion = stat.getVersion();
+          log.info("Found schema version on load {}", schemaZkVersion);
           schemaInputStream = new ByteArrayInputStream(data);
           loadedResource = managedSchemaResourceName;
           warnIfNonManagedSchemaExists();
@@ -172,6 +173,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               // Retry to load the managed schema, in case it was created since the first attempt
               byte[] data = zkClient.getData(managedSchemaPath, null, stat);
               schemaZkVersion = stat.getVersion();
+              log.info("Found schema version on load after exception {}", schemaZkVersion, e);
               schemaInputStream = new ByteArrayInputStream(data);
               loadedResource = managedSchemaPath;
               warnIfNonManagedSchemaExists();
