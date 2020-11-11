@@ -272,7 +272,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
         params.set( "collection", collectionName);
       }
       if (shardId != null) {
-        params.set( "shardId", shardId);
+        params.set( ZkStateReader.SHARD_ID_PROP, shardId);
       }
 
       return params;

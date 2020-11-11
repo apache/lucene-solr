@@ -347,10 +347,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     // TODO change to accept json
     Map json = (Map) Utils.fromJSON(data);
 
-    final String operation = (String) json.get(Overseer.QUEUE_OPERATION);
-//    if (!OPERATIONS.contains(operation)) {
-//      throw new IllegalArgumentException("unknown operation:" + operation + " contents:" + json);
-//    }
     Timer.Context time = stats.time(dir + "_offer");
 
     try {

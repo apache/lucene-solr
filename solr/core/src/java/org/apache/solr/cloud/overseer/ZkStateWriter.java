@@ -42,7 +42,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.BoundedTreeSet;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -70,7 +69,7 @@ public class ZkStateWriter {
 
   private volatile ClusterState cs;
   private boolean dirty;
-  private Set<String> collectionsToWrite = new HashSet<>();
+  private Set<String> collectionsToWrite = ConcurrentHashMap.newKeySet();
 
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
@@ -88,7 +87,9 @@ public class ZkStateWriter {
   public void enqueueUpdate(ClusterState clusterState, ZkNodeProps message, boolean stateUpdate) throws Exception {
 
     if (log.isDebugEnabled()) log.debug("enqueue update stateUpdate={}", stateUpdate);
+    //log.info("Get our write lock for enq");
     ourLock.lock();
+    //log.info("Got our write lock for enq");
     try {
       AtomicBoolean changed = new AtomicBoolean();
 
@@ -143,26 +144,51 @@ public class ZkStateWriter {
         }
         switch (overseerAction) {
           case STATE:
-            log.info("state cmd");
-            String collection = message.getStr("collection");
-            DocCollection docColl = cs.getCollectionOrNull(collection);
-            if (docColl != null) {
-              Replica replica = docColl.getReplica(message.getStr(ZkStateReader.CORE_NAME_PROP));
-              if (replica != null) {
-                Replica.State state = Replica.State.getState((String) message.get(ZkStateReader.STATE_PROP));
-                log.info("set state {} {}", state, replica);
-                if (state != replica.getState()) {
-                  replica.setState(state);
-                  changed.set(true);
-                  collectionsToWrite.add(collection);
+           // log.info("state cmd {}", message);
+            message.getProperties().remove("operation");
+
+            for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
+              String core = entry.getKey();
+              String collectionAndStateString = (String) entry.getValue();
+              String[] collectionAndState = collectionAndStateString.split(",");
+              String collection = collectionAndState[0];
+              String setState = collectionAndState[1];
+              DocCollection docColl = cs.getCollectionOrNull(collection);
+              if (docColl != null) {
+                Replica replica = docColl.getReplica(core);
+                if (replica != null) {
+                  if (setState.equals("leader")) {
+                    log.info("set leader {} {}", message.getStr(ZkStateReader.CORE_NAME_PROP), replica);
+                    Slice slice = docColl.getSlice(replica.getSlice());
+                    slice.setLeader(replica);
+                    replica.setState(Replica.State.ACTIVE);
+                    replica.getProperties().put("leader", "true");
+                    Collection<Replica> replicas = slice.getReplicas();
+                    for (Replica r : replicas) {
+                      if (r != replica) {
+                        r.getProperties().remove("leader");
+                      }
+                    }
+                    changed.set(true);
+                    collectionsToWrite.add(collection);
+                  } else {
+
+                    Replica.State state = Replica.State.getState(setState);
+
+                    // log.info("set state {} {}", state, replica);
+                    replica.setState(state);
+                    changed.set(true);
+                    collectionsToWrite.add(collection);
+                  }
                 }
               }
             }
+
             break;
           case LEADER:
-            log.info("leader cmd");
-            collection = message.getStr("collection");
-            docColl = cs.getCollectionOrNull(collection);
+           // log.info("leader cmd");
+            String collection = message.getStr("collection");
+            DocCollection docColl = cs.getCollectionOrNull(collection);
             if (docColl != null) {
               Slice slice = docColl.getSlice(message.getStr("shard"));
               if (slice != null) {
@@ -199,11 +225,9 @@ public class ZkStateWriter {
                   Slice slice = docColl.getSlice(entry.getKey());
                   if (slice != null) {
                     Slice.State state = Slice.State.getState((String) entry.getValue());
-                    if (slice.getState() != state) {
-                      slice.setState(state);
-                      changed.set(true);
-                      collectionsToWrite.add(collection);
-                    }
+                    slice.setState(state);
+                    changed.set(true);
+                    collectionsToWrite.add(collection);
                   }
                 }
               }
@@ -253,13 +277,15 @@ public class ZkStateWriter {
    */
   public void writePendingUpdates() {
 
-    writeLock.lock();
-    try {
+   // writeLock.lock();
+   // try {
+   //   log.info("Get our write lock");
       ourLock.lock();
       try {
-        if (!dirty) {
-          return;
-        }
+   //     log.info("Got our write lock");
+//        if (!dirty) {
+//          return;
+//        }
 
         if (log.isDebugEnabled()) {
           log.debug("writePendingUpdates {}", cs);
@@ -270,61 +296,31 @@ public class ZkStateWriter {
           failedUpdates.clear();
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
         }
-      } finally {
-        ourLock.unlock();
-      }
+//      } finally {
+//        ourLock.unlock();
+//      }
 
       // wait to see our last publish version has propagated TODO don't wait on collections not hosted on overseer?
-      cs.forEachCollection(collection -> {
-        if (collectionsToWrite.contains(collection.getName())) {
-          Integer v = null;
-          try {
-            //System.out.println("waiting to see state " + prevVersion);
-            v = trackVersions.get(collection.getName());
-            if (v == null) v = 0;
-            if (v == 0) return;
-            Integer version = v;
-            try {
-              log.debug("wait to see last published version for collection {} {}", collection.getName(), v);
-              reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
-                if (col == null) {
-                  return true;
-                }
-                //                          if (col != null) {
-                //                            log.info("the version " + col.getZNodeVersion());
-                //                          }
-                if (col != null && col.getZNodeVersion() >= version) {
-                  if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
-                  // System.out.println("found the version");
-                  return true;
-                }
-                return false;
-              });
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-            }
-          } catch (TimeoutException e) {
-            log.warn("Timeout waiting to see written cluster state come back " + v);
-          }
-        }
+      // waitForStateWePublishedToComeBack();
 
-      });
-
-      ourLock.lock();
+   //   ourLock.lock();
       AtomicInteger lastVersion = new AtomicInteger();
-      try {
+      //log.info("writing out state, looking at collections count={} toWrite={} {} : {}", cs.getCollectionsMap().size(), collectionsToWrite.size(), cs.getCollectionsMap().keySet(), collectionsToWrite);
+      //try {
         cs.forEachCollection(collection -> {
+         // log.info("check collection {}", collection);
           if (collectionsToWrite.contains(collection.getName())) {
+          //  log.info("process collection {}", collection);
             String name = collection.getName();
             String path = ZkStateReader.getCollectionPath(collection.getName());
+           // log.info("process collection {} path {}", collection.getName(), path);
+
             if (log.isDebugEnabled()) log.debug("process {}", collection);
             Stat stat = new Stat();
-            boolean success = false;
             try {
-
+             // log.info("get data for {}", name);
               byte[] data = Utils.toJSON(singletonMap(name, collection));
-
+            //  log.info("got data for {} {}", name, data.length);
               if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
 
               try {
@@ -373,20 +369,59 @@ public class ZkStateWriter {
           }
         });
 
+        //log.info("Done with successful cluster write out");
         dirty = false;
         collectionsToWrite.clear();
       } finally {
         ourLock.unlock();
       }
-    } finally {
-      writeLock.unlock();
-    }
+//    } finally {
+//      writeLock.unlock();
+//    }
     // nocommit - harden against failures and exceptions
 
     //    if (log.isDebugEnabled()) {
     //      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);
     //    }
 
+  }
+
+  private void waitForStateWePublishedToComeBack() {
+    cs.forEachCollection(collection -> {
+      if (collectionsToWrite.contains(collection.getName())) {
+        Integer v = null;
+        try {
+          //System.out.println("waiting to see state " + prevVersion);
+          v = trackVersions.get(collection.getName());
+          if (v == null) v = 0;
+          if (v == 0) return;
+          Integer version = v;
+          try {
+            log.info("wait to see last published version for collection {} {}", collection.getName(), v);
+            reader.waitForState(collection.getName(), 5, TimeUnit.SECONDS, (l, col) -> {
+              if (col == null) {
+                return true;
+              }
+              //                          if (col != null) {
+              //                            log.info("the version " + col.getZNodeVersion());
+              //                          }
+              if (col != null && col.getZNodeVersion() >= version) {
+                if (log.isDebugEnabled()) log.debug("Waited for ver: {}", col.getZNodeVersion() + 1);
+                // System.out.println("found the version");
+                return true;
+              }
+              return false;
+            });
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        } catch (TimeoutException e) {
+          log.warn("Timeout waiting to see written cluster state come back " + v);
+        }
+      }
+
+    });
   }
 
   public ClusterState getClusterstate(boolean stateUpdate) {

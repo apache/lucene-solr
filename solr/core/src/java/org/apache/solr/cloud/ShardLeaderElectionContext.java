@@ -264,13 +264,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
 
         ZkNodeProps zkNodes = ZkNodeProps
-            .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(), ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP), ZkStateReader.CORE_NAME_PROP,
-                leaderProps.getName(), ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
+            .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP,
+                leaderProps.getName(), ZkStateReader.STATE_PROP, "leader");
         assert zkController != null;
         assert zkController.getOverseer() != null;
 
         log.info("Publish leader state");
-        zkController.getOverseer().offerStateUpdate(Utils.toJSON(zkNodes));
+        zkController.publish(zkNodes);
 
         log.info("I am the new leader: " + leaderProps.getCoreUrl() + " " + shardId);
 

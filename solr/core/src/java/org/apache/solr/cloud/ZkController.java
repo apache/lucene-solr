@@ -140,6 +140,8 @@ public class ZkController implements Closeable, Runnable {
   private CloseTracker closeTracker;
   private boolean closeZkClient = false;
 
+  private volatile StatePublisher statePublisher;
+
   private volatile ZkDistributedQueue overseerJobQueue;
   private volatile OverseerTaskQueue overseerCollectionQueue;
   private volatile OverseerTaskQueue overseerConfigSetQueue;
@@ -675,6 +677,7 @@ public class ZkController implements Closeable, Runnable {
     this.shudownCalled = true;
 
     this.isClosed = true;
+    IOUtils.closeQuietly(statePublisher);
 
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(overseer);
@@ -1195,6 +1198,9 @@ public class ZkController implements Closeable, Runnable {
 //            }
 //          });
         }
+        statePublisher = new StatePublisher(overseerJobQueue);
+        statePublisher.start();
+
         // Do this last to signal we're up.
         createEphemeralLiveNode();
 
@@ -1728,10 +1734,10 @@ public class ZkController implements Closeable, Runnable {
       Map<String,Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
-      props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
+    //  props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(CORE_NAME_PROP, cd.getName());
-      props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-      props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
+    //  props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+    //  props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
       props.put(ZkStateReader.COLLECTION_PROP, collection);
       props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
 
@@ -1774,10 +1780,14 @@ public class ZkController implements Closeable, Runnable {
       if (updateLastState) {
         cd.getCloudDescriptor().setLastPublished(state);
       }
-      overseerJobQueue.offer(Utils.toJSON(m));
+      statePublisher.submitState(m);
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  public void publish(ZkNodeProps message) {
+    statePublisher.submitState(message);
   }
 
   public ZkShardTerms getShardTerms(String collection, String shardId) {

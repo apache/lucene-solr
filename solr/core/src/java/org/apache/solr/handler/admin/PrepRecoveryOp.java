@@ -55,30 +55,26 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
     String collection = params.get("collection");
 
+    String shard = params.get(ZkStateReader.SHARD_ID_PROP);
+
     if (collection == null) {
       throw new IllegalArgumentException("collection cannot be null");
     }
 
-    String shardId = params.get("shardId");
-    String nodeName = params.get("nodeName");
     Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
-    Boolean checkLive = params.getBool("checkLive");
-    Boolean onlyIfLeader = params.getBool("onlyIfLeader");
 
     log.info(
-        "Going to wait for core: {}, state: {}, checkLive: {}, onlyIfLeader: {}: params={}",
-        cname, waitForState, checkLive, onlyIfLeader, params);
+        "Going to wait for core: {}, state: {}: params={}",
+        cname, waitForState, params);
 
     assert TestInjection.injectPrepRecoveryOpPauseForever();
 
     CoreContainer coreContainer = it.handler.coreContainer;
-    // wait long enough for the leader conflict to work itself out plus a little extra
-    int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
-
 
     AtomicReference<String> errorMessage = new AtomicReference<>();
+
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collection, conflictWaitMs, TimeUnit.MILLISECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
           log.info("collection not found {}", collection);
           return false;
@@ -86,54 +82,15 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
         // wait until we are sure the recovering node is ready
         // to accept updates
-        Replica.State state = null;
-        boolean live = false;
         final Replica replica = c.getReplica(cname);
         if (replica != null) {
           if (replica != null) {
-            state = replica.getState();
-            live = n.contains(nodeName);
-
-            try {
-              ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, c.getSlice(replica).getName());
-              // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-              if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
-                // The replica changed its term, then published itself as RECOVERING.
-                // This core already see replica as RECOVERING
-                // so it is guarantees that a live-fetch will be enough for this core to see max term published
-                log.info("refresh shard terms for core {}", cname);
-                shardTerms.refreshTerms();
-              }
-            } catch (NullPointerException e) {
-              if (log.isDebugEnabled()) log.debug("No shards found", e);
-              // likely deleted shard/collection
-            }
-            if (log.isInfoEnabled()) {
-              log.info(
-                  "In WaitForState(" + waitForState + "): collection=" + collection +
-                      ", thisCore=" + cname +
-                      ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
-                      + ", nodeName=" + nodeName +
-                      ", core=" + cname
-                      + ", nodeProps: " + replica); //LOGOK
-            }
-
-            log.info("replica={} state={} waitForState={}", replica, state, waitForState);
-            if (replica != null && (state == waitForState)) {
-              if (checkLive == null) {
-                log.info("checkLive=false, return true");
-                return true;
-              } else if (checkLive && live) {
-                log.info("checkLive=true live={}, return true", live);
-                return true;
-              } else if (!checkLive && !live) {
-                log.info("checkLive=false live={}, return true", live);
-                return true;
-              }
+            if (replica.getState() == waitForState) {
+              log.info("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
+              return true;
             }
           }
         }
-
         return false;
       });
 
@@ -141,8 +98,23 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       SolrZkClient.checkInterrupted(e);
       String error = errorMessage.get();
       if (error == null)
-        error = "Timeout waiting for collection state.";
+        error = "Timeout waiting for collection state. \n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    }
+
+    try {
+      ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, shard);
+      // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
+      if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
+        // The replica changed its term, then published itself as RECOVERING.
+        // This core already see replica as RECOVERING
+        // so it is guarantees that a live-fetch will be enough for this core to see max term published
+        log.info("refresh shard terms for core {}", cname);
+        shardTerms.refreshTerms();
+      }
+    } catch (NullPointerException e) {
+      if (log.isDebugEnabled()) log.debug("No shards found", e);
+      // likely deleted shard/collection
     }
 
   }

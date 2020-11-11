@@ -894,10 +894,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(coreName);
-    prepCmd.setNodeName(zkController.getNodeName());
     prepCmd.setState(Replica.State.RECOVERING);
-    prepCmd.setCheckLive(true);
-    prepCmd.setOnlyIfLeader(true);
     prepCmd.setCollection(coreDescriptor.getCollectionName());
     prepCmd.setShardId(coreDescriptor.getCloudDescriptor().getShardId());
     final Slice.State state = slice.getState();
