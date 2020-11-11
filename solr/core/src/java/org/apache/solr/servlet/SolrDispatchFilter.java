@@ -108,8 +108,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {} {}", XmlConfigFile.xpathFactory,
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
+    log.warn("expected pre init of xml factories {} {} {} {} {}", XmlConfigFile.xpathFactory,
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory, XmlConfigFile.getXpath());
   }
 
   private static class LiveThread extends Thread {
@@ -382,28 +382,37 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     CoreContainer cc = cores;
     cores = null;
     try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
+//      if (metricManager != null) {
+//        try {
+//          metricManager.unregisterGauges(registryName, metricTag);
+//        } catch (NullPointerException e) {
+//          // okay
+//        } catch (Exception e) {
+//          log.warn("Exception closing FileCleaningTracker", e);
+//        } finally {
+//          metricManager = null;
+//        }
+//      }
     } finally {
       if (cc != null) {
+
         httpClient = null;
         IOUtils.closeQuietly(cc);
         if (zkClient != null) {
           zkClient.disableCloseLock();
         }
-        ParWork.close(zkClient);
+
+
+        try (ParWork parWork = new ParWork(this, true, true)) {
+          parWork.collect("", ()->{
+            ParWork.close(zkClient);
+          });
+          parWork.collect("", ()->{
+            liveThread.interrupt();
+          });
+        }
       }
       GlobalTracer.get().close();
-      liveThread.interrupt();
     }
   }
 

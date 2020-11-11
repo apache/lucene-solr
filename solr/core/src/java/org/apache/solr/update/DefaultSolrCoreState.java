@@ -66,7 +66,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private final ReentrantReadWriteLock iwLock = new ReentrantReadWriteLock();
 
   private volatile SolrIndexWriter indexWriter = null;
-  private volatile DirectoryFactory directoryFactory;
+  private final DirectoryFactory directoryFactory;
   private final RecoveryStrategy.Builder recoveryStrategyBuilder;
 
   private volatile RecoveryStrategy recoveryStrat;

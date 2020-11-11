@@ -160,8 +160,8 @@ public class CoreContainer implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {} {}", XmlConfigFile.xpathFactory,
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
+    log.warn("expected pre init of xml factories {} {} {} {} {}", XmlConfigFile.xpathFactory,
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory, XmlConfigFile.getXpath());
   }
 
   final SolrCores solrCores = new SolrCores(this);
