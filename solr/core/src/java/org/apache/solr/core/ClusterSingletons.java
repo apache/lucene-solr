@@ -17,7 +17,7 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 
 /**
  * Helper class to manage the initial registration of {@link ClusterSingleton} plugins and
- * to track the changes in loaded plugins in {@link org.apache.solr.api.CustomContainerPlugins}.
+ * to track the changes in loaded plugins in {@link ContainerPluginsRegistry}.
  */
 public class ClusterSingletons {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -41,7 +41,7 @@ public class ClusterSingletons {
   private final Map<String, ClusterSingleton> singletonMap = new ConcurrentHashMap<>();
   private final Supplier<Boolean> runSingletons;
   private final Consumer<Runnable> asyncRunner;
-  private final CustomContainerPlugins.PluginRegistryListener pluginListener;
+  private final ContainerPluginsRegistry.PluginRegistryListener pluginListener;
 
   public static final int DEFAULT_WAIT_TIMEOUT_SEC = 60;
 
@@ -60,9 +60,9 @@ public class ClusterSingletons {
     this.runSingletons = runSingletons;
     this.asyncRunner = asyncRunner;
     // create plugin registry listener
-    pluginListener = new CustomContainerPlugins.PluginRegistryListener() {
+    pluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
       @Override
-      public void added(CustomContainerPlugins.ApiInfo plugin) {
+      public void added(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -83,7 +83,7 @@ public class ClusterSingletons {
       }
 
       @Override
-      public void deleted(CustomContainerPlugins.ApiInfo plugin) {
+      public void deleted(ContainerPluginsRegistry.ApiInfo plugin) {
         if (plugin == null || plugin.getInstance() == null) {
           return;
         }
@@ -96,14 +96,14 @@ public class ClusterSingletons {
       }
 
       @Override
-      public void modified(CustomContainerPlugins.ApiInfo old, CustomContainerPlugins.ApiInfo replacement) {
+      public void modified(ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
         added(replacement);
         deleted(old);
       }
     };
   }
 
-  public CustomContainerPlugins.PluginRegistryListener getPluginRegistryListener() {
+  public ContainerPluginsRegistry.PluginRegistryListener getPluginRegistryListener() {
     return pluginListener;
   }
 
@@ -151,9 +151,6 @@ public class ClusterSingletons {
    */
   public void startClusterSingletons() {
     final Runnable initializer = () -> {
-      if (!runSingletons.get()) {
-        return;
-      }
       try {
         waitUntilReady(DEFAULT_WAIT_TIMEOUT_SEC, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
@@ -161,6 +158,9 @@ public class ClusterSingletons {
         return;
       } catch (TimeoutException te) {
         log.warn("Timed out during initialization of ClusterSingleton-s (waited {} sec)", DEFAULT_WAIT_TIMEOUT_SEC);
+        return;
+      }
+      if (!runSingletons.get()) {
         return;
       }
       singletonMap.forEach((name, singleton) -> {

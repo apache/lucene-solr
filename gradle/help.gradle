@@ -29,6 +29,7 @@ configure(rootProject) {
       ["Git", "help/git.txt", "Git assistance and guides."],
       ["ValidateLogCalls", "help/validateLogCalls.txt", "How to use logging calls efficiently."],
       ["IDEs", "help/IDEs.txt", "IDE support."],
+      ["Docker", "help/docker.txt", "Building Solr Docker images."],
   ]
 
   helpFiles.each { section, path, sectionInfo ->

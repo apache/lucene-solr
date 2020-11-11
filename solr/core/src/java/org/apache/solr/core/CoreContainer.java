@@ -26,7 +26,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -57,7 +56,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -73,6 +72,8 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cluster.events.ClusterEventProducer;
+import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -178,7 +179,7 @@ public class CoreContainer {
    */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
-  private final CustomContainerPlugins customContainerPlugins =  new CustomContainerPlugins(this, containerHandlers.getApiBag());
+  private final ContainerPluginsRegistry containerPluginsRegistry =  new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -253,6 +254,10 @@ public class CoreContainer {
           getZkController().getOverseer() != null &&
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
+
+  // initially these are the same to collect the plugin-based listeners during init
+  private ClusterEventProducer clusterEventProducer;
+
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
@@ -671,7 +676,11 @@ public class CoreContainer {
       loader.reloadLuceneSPI();
     }
 
-    customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
+    ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
+    clusterEventProducer = clusterEventProducerFactory;
+
+    containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
+    containerPluginsRegistry.registerListener(clusterEventProducerFactory.getPluginRegistryListener());
 
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
@@ -774,18 +783,18 @@ public class CoreContainer {
 
     // initialize gauges for reporting the number of cores and disk total/free
 
-    solrMetricsContext.gauge(() -> solrCores.getCores().size(),
+    solrMetricsContext.gauge(solrCores::getNumLoadedPermanentCores,
         true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
+    solrMetricsContext.gauge(solrCores::getNumLoadedTransientCores,
         true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
+    solrMetricsContext.gauge(solrCores::getNumUnloadedCores,
         true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
     solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(() -> dataHome.toString(),
+    solrMetricsContext.gauge(dataHome::toString,
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
     solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
@@ -881,11 +890,14 @@ public class CoreContainer {
     }
 
     if (isZooKeeperAware()) {
-      customContainerPlugins.refresh();
-      getZkController().zkStateReader.registerClusterPropertiesListener(customContainerPlugins);
+      containerPluginsRegistry.refresh();
+      getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // create target ClusterEventProducer (possibly from plugins)
+      clusterEventProducer = clusterEventProducerFactory.create(containerPluginsRegistry);
 
       // init ClusterSingleton-s
 
@@ -1117,6 +1129,9 @@ public class CoreContainer {
       if (solrClientCache != null) {
         solrClientCache.close();
       }
+      if (containerPluginsRegistry != null) {
+        IOUtils.closeQuietly(containerPluginsRegistry);
+      }
 
     } finally {
       try {
@@ -1264,13 +1279,13 @@ public class CoreContainer {
         } else {
           String msg = "Already creating a core with name '" + coreName + "', call aborted '";
           log.warn(msg);
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+          throw new SolrException(ErrorCode.CONFLICT, msg);
         }
       }
       CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
       // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
-      if (getAllCoreNames().contains(coreName)) {
+      if (getCoreDescriptor(coreName) != null) {
         log.warn("Creating a core with existing name is not allowed: '{}'", coreName);
         // TODO: Shouldn't this be a BAD_REQUEST?
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists.");
@@ -1552,31 +1567,47 @@ public class CoreContainer {
   }
 
   /**
-   * @return a Collection of registered SolrCores
+   * Gets the permanent (non-transient) cores that are currently loaded.
+   *
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<SolrCore> getCores() {
+  public List<SolrCore> getCores() {
     return solrCores.getCores();
   }
 
   /**
-   * Gets the cores that are currently loaded, i.e. cores that have
+   * Gets the permanent and transient cores that are currently loaded, i.e. cores that have
    * 1: loadOnStartup=true and are either not-transient or, if transient, have been loaded and have not been aged out
    * 2: loadOnStartup=false and have been loaded but are either non-transient or have not been aged out.
    * <p>
    * Put another way, this will not return any names of cores that are lazily loaded but have not been called for yet
    * or are transient and either not loaded or have been swapped out.
+   * <p>
+   * For efficiency, prefer to check {@link #isLoaded(String)} instead of {@link #getLoadedCoreNames()}.contains(coreName).
+   *
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<String> getLoadedCoreNames() {
+  public List<String> getLoadedCoreNames() {
     return solrCores.getLoadedCoreNames();
   }
 
   /**
-   * get a list of all the cores that are currently known, whether currently loaded or not
+   * Gets a collection of all the cores, permanent and transient, that are currently known, whether they are loaded or not.
+   * <p>
+   * For efficiency, prefer to check {@link #getCoreDescriptor(String)} != null instead of {@link #getAllCoreNames()}.contains(coreName).
    *
-   * @return a list of all the available core names in either permanent or transient cores
+   * @return An unsorted list. This list is a new copy, it can be modified by the caller (e.g. it can be sorted).
    */
-  public Collection<String> getAllCoreNames() {
+  public List<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
+  }
+
+  /**
+   * Gets the total number of cores, including permanent and transient cores, loaded and unloaded cores.
+   * Faster equivalent for {@link #getAllCoreNames()}.size().
+   */
+  public int getNumAllCores() {
+    return solrCores.getNumAllCores();
   }
 
   /**
@@ -2137,12 +2168,16 @@ public class CoreContainer {
     return tragicException != null;
   }
 
-  public CustomContainerPlugins getCustomContainerPlugins(){
-    return customContainerPlugins;
+  public ContainerPluginsRegistry getContainerPluginsRegistry() {
+    return containerPluginsRegistry;
   }
 
   public ClusterSingletons getClusterSingletons() {
     return clusterSingletons;
+  }
+
+  public ClusterEventProducer getClusterEventProducer() {
+    return clusterEventProducer;
   }
 
   static {
