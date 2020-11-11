@@ -107,10 +107,17 @@ public class ZkStateWriter {
         if (clusterState == null) {
           throw new NullPointerException("clusterState cannot be null");
         }
+
+
+
         changed.set(true);
         clusterState.forEachCollection(collection -> {
           DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
-
+          collection.getProperties().remove("pullReplicas");
+          collection.getProperties().remove("replicationFactor");
+          collection.getProperties().remove("maxShardsPerNode");
+          collection.getProperties().remove("nrtReplicas");
+          collection.getProperties().remove("tlogReplicas");
           for (Slice slice : collection) {
             if (currentCollection != null) {
               Slice currentSlice = currentCollection.getSlice(slice.getName());

@@ -832,18 +832,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.modifyCollection(collection, null)
-        .setAttribute("replicationFactor", 25)
-        .process(cluster.getSolrClient());
-
-    waitForState("Expecting attribute 'replicationFactor' to be 25", collection,
-        (n, c) -> 25 == c.getReplicationFactor());
-
-    CollectionAdminRequest.modifyCollection(collection, null)
-        .unsetAttribute("maxShardsPerNode")
+        .unsetAttribute("router")
         .process(cluster.getSolrClient());
 
     waitForState("Expecting attribute 'maxShardsPerNode' to be deleted", collection,
-        (n, c) -> null == c.get("maxShardsPerNode"));
+        (n, c) -> null == c.get("router"));
 
     expectThrows(IllegalArgumentException.class,
         "An attempt to set unknown collection attribute should have failed",

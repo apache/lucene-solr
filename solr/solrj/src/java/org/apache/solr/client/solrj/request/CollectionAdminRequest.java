@@ -83,12 +83,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * The set of modifiable collection properties
    */
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
-      REPLICATION_FACTOR,
-      MAX_SHARDS_PER_NODE,
       COLL_CONF,
       WITH_COLLECTION,
       COLOCATED_WITH,
-      READ_ONLY);
+      READ_ONLY, "router");
 
   protected final CollectionAction action;
 
