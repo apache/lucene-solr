@@ -105,9 +105,12 @@ public class LeaderElector implements Closeable {
    */
   private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
-    if (checkClosed(context)) return false;
+    //if (checkClosed(context)) return false;
 
     log.info("Check if I am leader {}", context.getClass().getSimpleName());
+    if (isClosed) {
+      log.info("elector is closed, won't join election");
+    }
 
     ParWork.getRootSharedExecutor().submit(() -> {
       context.checkIfIamLeaderFired();
@@ -280,8 +283,10 @@ public class LeaderElector implements Closeable {
    * @return sequential node number
    */
   public synchronized boolean joinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
-    if (checkClosed(context)) return false;
-
+    //if (checkClosed(context)) return false;
+    if (isClosed) {
+      log.info("elector is closed, won't join election");
+    }
     ParWork.getRootSharedExecutor().submit(() -> {
       context.joinedElectionFired();
     });
@@ -318,7 +323,7 @@ public class LeaderElector implements Closeable {
                       CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
-        if (log.isDebugEnabled()) log.debug("Joined leadership election with path: {}", leaderSeqPath);
+        log.info("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         cont = false;
       } catch (ConnectionLossException e) {
@@ -356,6 +361,8 @@ public class LeaderElector implements Closeable {
     }
 
     int seq = getSeq(context.leaderSeqPath);
+
+    log.info("Do checkIfIamLeader");
 
     boolean tryagain = checkIfIamLeader(context, replacement);
 
