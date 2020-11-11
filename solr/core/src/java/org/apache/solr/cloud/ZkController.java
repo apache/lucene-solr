@@ -680,11 +680,6 @@ public class ZkController implements Closeable, Runnable {
 
     this.isClosed = true;
 
-    if (statePublisher != null) {
-      statePublisher.submitState(StatePublisher.TERMINATE_OP);
-    }
-    IOUtils.closeQuietly(statePublisher);
-
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect(overseer);
       closer.collect(replicateFromLeaders);
@@ -694,6 +689,15 @@ public class ZkController implements Closeable, Runnable {
       closer.collect(cloudManager);
       closer.collect(cloudSolrClient);
       closer.collect(overseerContexts);
+    }
+
+    try {
+      if (statePublisher != null) {
+        statePublisher.submitState(StatePublisher.TERMINATE_OP);
+      }
+      IOUtils.closeQuietly(statePublisher);
+    } catch (Exception e) {
+      log.error("Exception closing state publisher");
     }
 
     IOUtils.closeQuietly(zkStateReader);
@@ -1826,6 +1830,11 @@ public class ZkController implements Closeable, Runnable {
 
   public void unregister(String coreName, CoreDescriptor cd, boolean removeCoreFromZk) throws Exception {
     log.info("Unregister core from zookeeper {}", coreName);
+
+    if (statePublisher != null) {
+      statePublisher.clearStatCache(coreName);
+    }
+
     if (!zkClient.isConnected()) return;
     final String collection = cd.getCloudDescriptor().getCollectionName();
 
@@ -2531,8 +2540,8 @@ public class ZkController implements Closeable, Runnable {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
-      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-    } catch (AlreadyClosedException | InterruptedException e) {
+      statePublisher.submitState(m);
+    } catch (AlreadyClosedException e) {
       ParWork.propagateInterrupt("Not publishing node as DOWN because a resource required to do so is already closed.", null, true);
       return;
     }

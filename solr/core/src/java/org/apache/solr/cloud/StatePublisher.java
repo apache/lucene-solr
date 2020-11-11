@@ -27,12 +27,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class StatePublisher implements Closeable {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
+
+  private final Map<String,String> stateCache = new ConcurrentHashMap<>(32, 0.75f, 4);
 
   public static class NoOpMessage extends ZkNodeProps {
   }
@@ -90,11 +94,15 @@ public class StatePublisher implements Closeable {
     }
 
     private void bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) throws KeeperException, InterruptedException {
-      String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
-      String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
-      String state = zkNodeProps.getStr(ZkStateReader.STATE_PROP);
+      if (zkNodeProps.getStr("operation").equals("DOWNNODE")) {
+        bulkMessage.getProperties().put("DOWNNODE", zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
+      } else {
+        String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
+        String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
+        String state = zkNodeProps.getStr(ZkStateReader.STATE_PROP);
 
-      bulkMessage.getProperties().put(core, collection + "," + state);
+        bulkMessage.getProperties().put(core, collection + "," + state);
+      }
     }
 
     private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
@@ -107,7 +115,25 @@ public class StatePublisher implements Closeable {
   }
 
   public void submitState(ZkNodeProps stateMessage) {
+    // Don't allow publish of state we last published if not DOWNNODE
+    if (stateMessage != TERMINATE_OP) {
+      String operation = stateMessage.getStr("operation");
+      if (operation.equals("state")) {
+        String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
+        String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
+        String lastState = stateCache.get(core);
+        if (state.equals(lastState)) {
+          return;
+        }
+        stateCache.put(core, state);
+      }
+    }
+
     workQueue.offer(stateMessage);
+  }
+
+  public void clearStatCache(String core) {
+    stateCache.remove(core);
   }
 
   public void start() {

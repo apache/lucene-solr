@@ -154,10 +154,27 @@ public class ZkStateWriter {
         }
         switch (overseerAction) {
           case STATE:
-           // log.info("state cmd {}", message);
+            // log.info("state cmd {}", message);
             message.getProperties().remove("operation");
 
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
+              if (entry.getKey().equals("DOWNNODE")) {
+                cs.forEachCollection(docColl -> {
+
+                  List<Replica> replicas = docColl.getReplicas();
+                  for (Replica replica : replicas) {
+                    if (replica.getState() != Replica.State.DOWN) {
+                      replica.setState(Replica.State.DOWN);
+                      changed.set(true);
+                      collectionsToWrite.add(docColl.getName());
+                    }
+                  }
+
+                });
+
+                continue;
+              }
+
               String core = entry.getKey();
               String collectionAndStateString = (String) entry.getValue();
               String[] collectionAndState = collectionAndStateString.split(",");
@@ -195,61 +212,22 @@ public class ZkStateWriter {
             }
 
             break;
-          case LEADER:
-           // log.info("leader cmd");
-            String collection = message.getStr("collection");
-            DocCollection docColl = cs.getCollectionOrNull(collection);
-            if (docColl != null) {
-              Slice slice = docColl.getSlice(message.getStr("shard"));
-              if (slice != null) {
-                Replica replica = docColl.getReplica(message.getStr(ZkStateReader.CORE_NAME_PROP));
-                if (replica != null) {
-                  log.info("set leader {} {}", message.getStr(ZkStateReader.CORE_NAME_PROP), replica);
-                  slice.setLeader(replica);
-                  replica.setState(Replica.State.ACTIVE);
-                  replica.getProperties().put("leader", "true");
-                  Collection<Replica> replicas = slice.getReplicas();
-                  for (Replica r : replicas) {
-                    if (r != replica) {
-                      r.getProperties().remove("leader");
-                    }
-                  }
-                  changed.set(true);
-                  collectionsToWrite.add(collection);
-                }
-              }
-            }
-            break;
-//          case ADDROUTINGRULE:
-//            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
-//          case REMOVEROUTINGRULE:
-//            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
+          //          case ADDROUTINGRULE:
+          //            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
+          //          case REMOVEROUTINGRULE:
+          //            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
           case UPDATESHARDSTATE:
-            collection = message.getStr("collection");
+            String collection = message.getStr("collection");
             message.getProperties().remove("collection");
             message.getProperties().remove("operation");
 
-              docColl = cs.getCollectionOrNull(collection);
-              if (docColl != null) {
-                for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
-                  Slice slice = docColl.getSlice(entry.getKey());
-                  if (slice != null) {
-                    Slice.State state = Slice.State.getState((String) entry.getValue());
-                    slice.setState(state);
-                    changed.set(true);
-                    collectionsToWrite.add(collection);
-                  }
-                }
-              }
-            break;
-          case DOWNNODE:
-            collection = message.getStr("collection");
-            docColl = cs.getCollectionOrNull(collection);
+            DocCollection docColl = cs.getCollectionOrNull(collection);
             if (docColl != null) {
-              List<Replica> replicas = docColl.getReplicas();
-              for (Replica replica : replicas) {
-                if (replica.getState() != Replica.State.DOWN) {
-                  replica.setState(Replica.State.DOWN);
+              for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
+                Slice slice = docColl.getSlice(entry.getKey());
+                if (slice != null) {
+                  Slice.State state = Slice.State.getState((String) entry.getValue());
+                  slice.setState(state);
                   changed.set(true);
                   collectionsToWrite.add(collection);
                 }
