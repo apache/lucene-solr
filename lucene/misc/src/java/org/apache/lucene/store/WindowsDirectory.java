@@ -26,14 +26,10 @@ import java.nio.file.Path;
  * <p>
  * Steps:
  * <ol> 
- *   <li>Compile the source code to create WindowsDirectory.dll:
- *       <blockquote>
- * c:\mingw\bin\g++ -Wall -D_JNI_IMPLEMENTATION_ -Wl,--kill-at 
- * -I"%JAVA_HOME%\include" -I"%JAVA_HOME%\include\win32" -static-libgcc 
- * -static-libstdc++ -shared WindowsDirectory.cpp -o WindowsDirectory.dll
- *       </blockquote> 
- *       For 64-bit JREs, use mingw64, with the -m64 option. 
- *   <li>Put WindowsDirectory.dll into some directory in your windows PATH
+ *   <li>Compile the source code to create libLuceneNativeIO.dll: <code>./gradlew build</code>
+ *   <li>Put the resulting <code>libLuceneNativeIO.dll</code>
+ *   (from <code>lucene/misc/native/build/lib/release/platform/</code>)
+ *   into some directory in your windows PATH
  *   <li>Open indexes with WindowsDirectory and use it.
  * </ol>
  * @lucene.experimental

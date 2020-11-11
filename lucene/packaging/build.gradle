@@ -34,7 +34,7 @@ def includeInBinaries = project(":lucene").subprojects.findAll {subproject ->
         // Exclude parent container project of analysis modules (no artifacts).
         ":lucene:analysis",
         // Exclude native module, which requires manual copying and enabling
-        ":lucene:native"
+        ":lucene:misc:native"
     ])
 }
 

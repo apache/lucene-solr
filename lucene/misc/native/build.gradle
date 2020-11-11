@@ -26,7 +26,7 @@ description = 'Module for native code'
 apply plugin: 'cpp-library'
 
 library {
-  baseName = 'NativePosixUtil'
+  baseName = 'LuceneNativeIO'
 
   // Native build for Windows platform will be added in later stage
   targetMachines = [
