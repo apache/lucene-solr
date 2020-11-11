@@ -75,7 +75,7 @@ public abstract class TimeSource {
    * calculated as the elapsed number of nanoseconds as measured by this
    * implementation.
    */
-  public static final class NanoTimeSource extends TimeSource {
+  public static class NanoTimeSource extends TimeSource {
     private final long epochStart;
     private final long nanoStart;
 

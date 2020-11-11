@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
@@ -41,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -65,6 +67,8 @@ public class ZkStateWriter {
   AtomicReference<Exception> lastFailedException = new AtomicReference<>();
   private final Map<String,Integer> trackVersions = new ConcurrentHashMap<>();
 
+
+
   Map<String,DocCollection> failedUpdates = new ConcurrentHashMap<>();
 
   private volatile ClusterState cs;
@@ -73,6 +77,12 @@ public class ZkStateWriter {
 
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
+
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", 50, new TimeSource.NanoTimeSource(){
+    public void sleep(long ms) throws InterruptedException {
+      ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
+    }
+  });
 
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
@@ -283,9 +293,16 @@ public class ZkStateWriter {
       ourLock.lock();
       try {
    //     log.info("Got our write lock");
-//        if (!dirty) {
-//          return;
-//        }
+
+        throttle.minimumWaitBetweenActions();
+        throttle.markAttemptingAction();
+
+        if (!dirty) {
+          if (log.isDebugEnabled()) {
+            log.debug("not dirty, skip writePendingUpdates");
+          }
+          return;
+        }
 
         if (log.isDebugEnabled()) {
           log.debug("writePendingUpdates {}", cs);
