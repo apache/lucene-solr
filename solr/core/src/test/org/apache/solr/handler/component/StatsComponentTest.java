@@ -1687,6 +1687,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality 
    * @see #testHllOptionsErrors
    */
+  @Nightly
   public void testHllOptions() throws Exception {
     SolrCore core = h.getCore();
 
