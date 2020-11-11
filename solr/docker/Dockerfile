@@ -39,6 +39,9 @@ COPY --chown=0:0 scripts /opt/docker-solr/scripts
 
 ARG SOLR_VERSION
 
+# Used by solr-fg
+ENV SOLR_VERSION $SOLR_VERSION
+
 COPY --from=solr_package "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz"
 
 RUN set -ex; \

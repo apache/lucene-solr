@@ -116,6 +116,11 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
 
+    Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
+    assertNotNull(gauge.getValue());
+    h.getCore().close();
+    assertEquals(metricManager.nullString(), gauge.getValue());
+
     deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {

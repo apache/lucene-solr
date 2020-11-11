@@ -593,7 +593,7 @@ public class TestVectorValues extends LuceneTestCase {
         assertEquals(4f, vectorValues.vectorValue()[0], 0);
         assertEquals(NO_MORE_DOCS, vectorValues.nextDoc());
 
-        VectorValues.RandomAccess ra = vectorValues.randomAccess();
+        RandomAccessVectorValues ra = ((RandomAccessVectorValuesProducer) vectorValues).randomAccess();
         assertEquals(1f, ra.vectorValue(0)[0], 0);
         assertEquals(2f, ra.vectorValue(1)[0], 0);
         assertEquals(4f, ra.vectorValue(2)[0], 0);
