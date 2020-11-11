@@ -351,7 +351,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                     return false;
                   }
                   for (Slice slice : slices) {
-                    if (slice.getLeader() == null) {
+                    if (slice.getLeader() == null || slice.getLeader().getState() != Replica.State.ACTIVE) {
                       return false;
                     }
                   }
