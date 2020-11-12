@@ -156,6 +156,9 @@ Improvements
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
   from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* LUCENE-9450: Use BinaryDocValues for the taxonomy index instead of StoredFields.
+  Add backwards compatibility tests for the taxonomy index. (Gautam Worah, Michael McCandless)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
