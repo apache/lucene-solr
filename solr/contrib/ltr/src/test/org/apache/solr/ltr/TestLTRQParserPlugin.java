@@ -48,7 +48,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide model in the request"));
+    assert (res.contains("Must provide at least one model in the request"));
   }
 
   @Test
