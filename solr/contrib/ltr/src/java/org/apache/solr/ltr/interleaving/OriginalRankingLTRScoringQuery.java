@@ -14,13 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr; // TODO: move to org.apache.solr.ltr.interleaving ?
+package org.apache.solr.ltr.interleaving;
 
-import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
-
-/**
- * TODO
- */
 public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoringQuery {
 
   private final String originalRankingModelName;

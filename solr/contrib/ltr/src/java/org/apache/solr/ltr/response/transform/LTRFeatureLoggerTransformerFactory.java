@@ -34,10 +34,10 @@ import org.apache.solr.ltr.FeatureLogger;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
 import org.apache.solr.ltr.LTRThreadModule;
-import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.SolrQueryRequestContextUtils;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.interleaving.LTRInterleavingScoringQuery;
+import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.search.LTRQParserPlugin;
@@ -242,7 +242,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
         final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
-        transformerFeatureStore = store.getName(); // if featureStoreName was null before this gets actual name
+        transformerFeatureStore = store.getName(); // if transformerFeatureStore was null before this gets actual name
 
         loggingModel = new LoggingModel(loggingModelName,
             transformerFeatureStore, store.getFeatures());
@@ -253,16 +253,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * When preparing the reranking queries for logging features various scenarios apply:
      * 
      * No Reranking 
-     * There is the need of a logger model from the default feature store/ the explicit feature store passed
+     * There is the need of a logger model from the default feature store or the explicit feature store passed
      * to extract the feature vector
      * 
      * Re Ranking
      * 1) If no explicit feature store is passed, the models for each reranking query can be safely re-used
      * the feature vector can be fetched from the feature vector cache.
-     * 2) If an explicit feature store is passed, and no reranking query uses a model from that featureStore,
+     * 2) If an explicit feature store is passed, and no reranking query uses a model with that feature store,
      * There is the need of a logger model to extract the feature vector
-     * 3) If an explicit feature store is passed, and there is a reranking query that uses a model from that featureStore,
-     * It can be re-used
+     * 3) If an explicit feature store is passed, and there is a reranking query that uses a model with that feature store,
+     * the model can be re-used and there is no need for a logging model
      * 
      * @param rerankingQueriesFromContext reranking queries
      * @param transformerFeatureStore explicit feature store for the transformer
@@ -272,7 +272,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       if (docsWereNotReranked) { //no reranking query
         LTRScoringQuery loggingQuery = new LTRScoringQuery(loggingModel,
             transformerExternalFeatureInfo,
-            true,
+            true /* extractAllFeatures */,
             threadManager);
         rerankingQueries = new LTRScoringQuery[]{loggingQuery};
       } else {

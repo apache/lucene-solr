@@ -64,7 +64,7 @@ public class LTRInterleavingQuery extends LTRQuery {
 
   @Override
   public String toString(String field) {
-    return "{!ltr mainQuery='" + mainQuery.toString() + "' scoringQuery='"
+    return "{!ltr mainQuery='" + mainQuery.toString() + "' rerankingQueries='"
         + Arrays.toString(rerankingQueries) + "' reRankDocs=" + reRankDocs + "}";
   }
 

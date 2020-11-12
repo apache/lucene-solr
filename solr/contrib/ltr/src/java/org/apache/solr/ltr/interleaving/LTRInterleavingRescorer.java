@@ -29,7 +29,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.solr.ltr.LTRRescorer;
 import org.apache.solr.ltr.LTRScoringQuery;
-import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their
@@ -39,9 +38,9 @@ import org.apache.solr.ltr.OriginalRankingLTRScoringQuery;
  * */
 public class LTRInterleavingRescorer extends LTRRescorer {
   
-  LTRInterleavingScoringQuery[] rerankingQueries;
+  final private LTRInterleavingScoringQuery[] rerankingQueries;
   private Integer originalRankingIndex = null;
-  Interleaving interleavingAlgorithm;
+  final private Interleaving interleavingAlgorithm;
   
   public LTRInterleavingRescorer( Interleaving interleavingAlgorithm, LTRInterleavingScoringQuery[] rerankingQueries) {
     this.rerankingQueries = rerankingQueries;
@@ -51,6 +50,7 @@ public class LTRInterleavingRescorer extends LTRRescorer {
         this.originalRankingIndex = i;
       }
     }
+    // TODO: throw exception if this.rerankingQueries.length is not 2
   }
 
   /**

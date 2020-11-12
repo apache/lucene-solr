@@ -31,7 +31,7 @@ import org.apache.solr.search.RankQuery;
  * of the documents.
  **/
 public class LTRQuery extends AbstractReRankQuery {
-  private static Query defaultQuery = new MatchAllDocsQuery();
+  private static final Query defaultQuery = new MatchAllDocsQuery();
   private final LTRScoringQuery scoringQuery;
 
   public LTRQuery(LTRScoringQuery scoringQuery, int reRankDocs) {

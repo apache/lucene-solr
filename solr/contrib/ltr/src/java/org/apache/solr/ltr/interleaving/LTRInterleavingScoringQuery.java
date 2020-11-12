@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ltr.interleaving; // TODO: move to org.apache.solr.ltr.interleaving ?
+package org.apache.solr.ltr.interleaving;
 
 import java.util.Map;
 import java.util.Set;

@@ -31,6 +31,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 
 
@@ -42,9 +43,10 @@ import org.apache.solr.search.SolrIndexSearcher;
  * */
 public class LTRRescorer extends Rescorer {
 
-  LTRScoringQuery scoringQuery;
+  final private LTRScoringQuery scoringQuery;
 
   public LTRRescorer() {
+    this.scoringQuery = null;
   }
 
   public LTRRescorer(LTRScoringQuery scoringQuery) {
@@ -128,7 +130,7 @@ public class LTRRescorer extends Rescorer {
     return reranked;
   }
 
-  protected void sortByScore(ScoreDoc[] reranked) {
+  protected static void sortByScore(ScoreDoc[] reranked) {
     Arrays.sort(reranked, new Comparator<ScoreDoc>() {
       @Override
       public int compare(ScoreDoc a, ScoreDoc b) {
@@ -146,7 +148,7 @@ public class LTRRescorer extends Rescorer {
     });
   }
 
-  protected ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
+  protected static ScoreDoc[] getFirstPassDocsRanked(TopDocs firstPassTopDocs) {
     final ScoreDoc[] hits = firstPassTopDocs.scoreDocs;
     Arrays.sort(hits, new Comparator<ScoreDoc>() {
       @Override

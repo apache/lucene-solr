@@ -23,8 +23,8 @@ import java.util.Set;
 import org.apache.lucene.search.ScoreDoc;
 
 public class InterleavingResult {
-  private ScoreDoc[] interleavedResults;
-  private ArrayList<Set<Integer>> interleavingPicks;
+  final private ScoreDoc[] interleavedResults;
+  final private ArrayList<Set<Integer>> interleavingPicks;
 
   public InterleavingResult(ScoreDoc[] interleavedResults, ArrayList<Set<Integer>> interleavingPicks) {
     this.interleavedResults = interleavedResults;
@@ -35,15 +35,8 @@ public class InterleavingResult {
     return interleavedResults;
   }
 
-  public void setInterleavedResults(ScoreDoc[] interleavedResults) {
-    this.interleavedResults = interleavedResults;
-  }
-
   public ArrayList<Set<Integer>> getInterleavingPicks() {
     return interleavingPicks;
   }
 
-  public void setInterleavingPicks(ArrayList<Set<Integer>> interleavingPicks) {
-    this.interleavingPicks = interleavingPicks;
-  }
 }
