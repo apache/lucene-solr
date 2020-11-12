@@ -81,7 +81,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private char csvFeatureSeparator = CSVFeatureLogger.DEFAULT_FEATURE_SEPARATOR;
 
   private LTRThreadModule threadManager = null;
-  private LoggingModel loggingModel = null;
 
   public void setFvCacheName(String fvCacheName) {
     this.fvCacheName = fvCacheName;
@@ -222,8 +221,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
       Map<String, String[]> transformerExternalFeatureInfo = LTRQParserPlugin.extractEFIParams(localparams);
 
-      initLoggingModel(transformerFeatureStore);
-      setupRerankingQueriesForLogging(rerankingQueriesFromContext, transformerFeatureStore, transformerExternalFeatureInfo);
+      final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
+      setupRerankingQueriesForLogging(rerankingQueriesFromContext, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
     }
     
@@ -236,17 +235,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * and log them
      * @param transformerFeatureStore the explicit transformer feature store
      */
-    private void initLoggingModel(String transformerFeatureStore) {
-      if (transformerFeatureStore == null || !isModelMatchingFeatureStore(transformerFeatureStore, loggingModel)) {
-        // if store is set in the transformer we should overwrite the logger
-        final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
+    private LoggingModel createLoggingModel(String transformerFeatureStore) {
+      final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
-        final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
-        transformerFeatureStore = store.getName(); // if transformerFeatureStore was null before this gets actual name
+      final FeatureStore store = fr.getFeatureStore(transformerFeatureStore);
+      transformerFeatureStore = store.getName(); // if transformerFeatureStore was null before this gets actual name
 
-        loggingModel = new LoggingModel(loggingModelName,
-            transformerFeatureStore, store.getFeatures());
-      }
+      return new LoggingModel(loggingModelName,
+          transformerFeatureStore, store.getFeatures());
     }
 
     /**
@@ -268,7 +264,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * @param transformerFeatureStore explicit feature store for the transformer
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
-    private void setupRerankingQueriesForLogging(LTRScoringQuery[] rerankingQueriesFromContext, String transformerFeatureStore, Map<String, String[]> transformerExternalFeatureInfo) {
+    private void setupRerankingQueriesForLogging(LTRScoringQuery[] rerankingQueriesFromContext, String transformerFeatureStore, Map<String, String[]> transformerExternalFeatureInfo, LoggingModel loggingModel) {
       if (docsWereNotReranked) { //no reranking query
         LTRScoringQuery loggingQuery = new LTRScoringQuery(loggingModel,
             transformerExternalFeatureInfo,
