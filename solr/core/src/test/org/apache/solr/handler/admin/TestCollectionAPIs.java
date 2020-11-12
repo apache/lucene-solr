@@ -40,6 +40,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -82,8 +84,13 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
       apiBag = new ApiBag(false);
+      apiBag.registerObject(new CollectionsAPI(collectionsHandler));
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+
+      ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler,null);
+      apiBag.registerObject(clusterAPI);
+      apiBag.registerObject(clusterAPI.commands);
     }
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
@@ -166,10 +173,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}"
     );
 
-    compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : ['replica:*, cores:<5']} }", null,
-        "{collection: collName, operation : modifycollection , rule : [{replica: '*', cores : '<5' }]}"
-    );
     compareOutput(apiBag, "/cluster", POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }", null,
         "{operation : addrole ,role : overseer, node : 'localhost_8978'}"
@@ -275,6 +278,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {
+    }
+
+    @Override
+    protected CoreContainer checkErrors() {
+      return null;
     }
 
     @Override

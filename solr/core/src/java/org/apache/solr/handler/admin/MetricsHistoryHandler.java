@@ -196,7 +196,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
 
     this.nodeName = nodeName;
-    this.enable = Boolean.parseBoolean(String.valueOf(args.getOrDefault(ENABLE_PROP, "true")));
+    // disable when metrics reporting is disabled
+    this.enable = Boolean.parseBoolean(String.valueOf(args.getOrDefault(ENABLE_PROP, "true")))
+        && metricsHandler.isEnabled();
     // default to false - don't collect local per-replica metrics
     this.enableReplicas = Boolean.parseBoolean(String.valueOf(args.getOrDefault(ENABLE_REPLICAS_PROP, "false")));
     this.enableNodes = Boolean.parseBoolean(String.valueOf(args.getOrDefault(ENABLE_NODES_PROP, "false")));
@@ -245,6 +247,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   // check that .system exists
   public void checkSystemCollection() {
+    if (!enable) {
+      return;
+    }
     if (cloudManager != null) {
       try {
         if (cloudManager.isClosed() || Thread.interrupted()) {
@@ -306,7 +311,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   public void removeHistory(String registry) throws IOException {
     registry = SolrMetricManager.enforcePrefix(registry);
     knownDbs.remove(registry);
-    factory.remove(registry);
+    if (factory != null) {
+      factory.remove(registry);
+    }
   }
 
   @VisibleForTesting
@@ -699,6 +706,10 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (!enable) {
+      rsp.add("error", "metrics history collection is disabled");
+      return;
+    }
     String actionStr = req.getParams().get(CommonParams.ACTION);
     if (actionStr == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'action' is a required param");

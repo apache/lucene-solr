@@ -404,7 +404,7 @@ final class ReaderPool implements Closeable {
   private boolean noDups() {
     Set<String> seen = new HashSet<>();
     for(SegmentCommitInfo info : readerMap.keySet()) {
-      assert !seen.contains(info.info.name);
+      assert !seen.contains(info.info.name) : "seen twice: " + info.info.name ;
       seen.add(info.info.name);
     }
     return true;

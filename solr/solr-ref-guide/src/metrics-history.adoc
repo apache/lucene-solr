@@ -121,6 +121,9 @@ The handler assumes that a simple aggregation (sum of partial metric values from
 sufficient. This happens to make sense for the default built-in sets of metrics. Future extensions will
 provide other aggregation strategies (such as, average, max, min, etc.).
 
+This handler is automatically disabled when metrics collection is disabled using the
+`<metrics enabled="false">` element in `solr.xml`.
+
 == Metrics History Configuration
 There are two ways to configure this subsystem:
 
@@ -133,9 +136,9 @@ with the existing metrics configuration section in this file. Configuration is s
 
 Currently the following configuration options are supported:
 
-`enable`:: boolean, default is `true`. If this is `false` then metrics history is not collected
-but can still be retrieved from existing databases. When this is `true` then metrics are
-periodically collected, aggregated and saved.
+`enable`:: boolean, default is `true`.
+If this is `false` then metrics history is not collected.
+When this is `true` then metrics are periodically collected, aggregated and saved.
 
 `enableReplicas`:: boolean, default is `false`. When this is `true` non-aggregated history will be
 collected for each replica in each collection. When this is `false` then only aggregated history

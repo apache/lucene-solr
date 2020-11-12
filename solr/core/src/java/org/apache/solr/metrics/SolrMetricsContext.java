@@ -48,6 +48,34 @@ public class SolrMetricsContext {
   }
 
   /**
+   * See {@link SolrMetricManager#nullNumber()}.
+   */
+  public Object nullNumber() {
+    return metricManager.nullNumber();
+  }
+
+  /**
+   * See {@link SolrMetricManager#notANumber()}.
+   */
+  public Object notANumber() {
+    return metricManager.notANumber();
+  }
+
+  /**
+   * See {@link SolrMetricManager#nullString()}.
+   */
+  public Object nullString() {
+    return metricManager.nullString();
+  }
+
+  /**
+   * See {@link SolrMetricManager#nullObject()}.
+   */
+  public Object nullObject() {
+    return metricManager.nullObject();
+  }
+
+  /**
    * Metrics tag that represents objects with the same life-cycle.
    */
   public String getTag() {
@@ -129,10 +157,10 @@ public class SolrMetricsContext {
   }
 
   /**
-   * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, boolean, String, String...)}.
+   * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, SolrMetricManager.ResolutionStrategy, String, String...)}.
    */
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath);
+    metricManager.registerGauge(this, registryName, gauge, tag, force ? SolrMetricManager.ResolutionStrategy.REPLACE : SolrMetricManager.ResolutionStrategy.ERROR, metricName, metricPath);
   }
 
   /**

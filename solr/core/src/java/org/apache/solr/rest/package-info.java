@@ -16,7 +16,7 @@
  */
  
 /** 
- * Solr RESTful APIs via Restlet.
+ * Solr RESTful APIs.
  */
 package org.apache.solr.rest;
 

@@ -427,6 +427,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
     formatter.printHelp("export", getToolOptions(new ExportTool()));
+    formatter.printHelp("package", getToolOptions(new PackageTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -1666,7 +1667,7 @@ public class SolrCLI implements CLIO {
 
       String systemInfoUrl = solrUrl+"admin/info/system";
       CloseableHttpClient httpClient = getHttpClient();
-      String solrHome = null;
+      String coreRootDirectory = null; //usually same as solr home, but not always
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -1675,9 +1676,11 @@ public class SolrCLI implements CLIO {
         }
 
         // convert raw JSON into user-friendly output
-        solrHome = (String)systemInfo.get("solr_home");
-        if (solrHome == null)
-          solrHome = configsetsDir.getParentFile().getAbsolutePath();
+        coreRootDirectory = (String)systemInfo.get("core_root");
+
+        //Fall back to solr_home, in case we are running against older server that does not return the property
+        if (coreRootDirectory == null)  coreRootDirectory = (String)systemInfo.get("solr_home");
+        if (coreRootDirectory == null)  coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
 
       } finally {
         closeHttpClient(httpClient);
@@ -1689,7 +1692,7 @@ public class SolrCLI implements CLIO {
             "' already exists!\nChecked core existence using Core API command:\n"+coreStatusUrl);
       }
 
-      File coreInstanceDir = new File(solrHome, coreName);
+      File coreInstanceDir = new File(coreRootDirectory, coreName);
       File confDir = new File(configSetDir,"conf");
       if (!coreInstanceDir.isDirectory()) {
         coreInstanceDir.mkdirs();
@@ -2637,7 +2640,7 @@ public class SolrCLI implements CLIO {
               .argName("NAME")
               .hasArg()
               .required(true)
-              .desc("Name of the example to launch, one of: cloud, techproducts, dih, schemaless")
+              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless")
               .longOpt("example")
               .build(),
           Option.builder("script")
@@ -2753,32 +2756,12 @@ public class SolrCLI implements CLIO {
       String exampleType = cli.getOptionValue("example");
       if ("cloud".equals(exampleType)) {
         runCloudExample(cli);
-      } else if ("dih".equals(exampleType)) {
-        runDihExample(cli);
       } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType)) {
         runExample(cli, exampleType);
       } else {
         throw new IllegalArgumentException("Unsupported example "+exampleType+
-            "! Please choose one of: cloud, dih, schemaless, or techproducts");
+            "! Please choose one of: cloud, schemaless, or techproducts");
       }
-    }
-
-    protected void runDihExample(CommandLine cli) throws Exception {
-      File dihSolrHome = new File(exampleDir, "example-DIH/solr");
-      if (!dihSolrHome.isDirectory()) {
-        dihSolrHome = new File(serverDir.getParentFile(), "example/example-DIH/solr");
-        if (!dihSolrHome.isDirectory()) {
-          throw new Exception("example/example-DIH/solr directory not found");
-        }
-      }
-
-      boolean isCloudMode = cli.hasOption('c');
-      String zkHost = cli.getOptionValue('z');
-      int port = Integer.parseInt(cli.getOptionValue('p', "8983"));
-
-      Map<String,Object> nodeStatus = startSolr(dihSolrHome, isCloudMode, cli, port, zkHost, 30);
-      String solrUrl = (String)nodeStatus.get("baseUrl");
-      echo("\nSolr dih example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
     }
 
     protected void runExample(CommandLine cli, String exampleName) throws Exception {

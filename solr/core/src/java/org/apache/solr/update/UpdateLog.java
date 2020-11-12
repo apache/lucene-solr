@@ -1517,8 +1517,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   update.version = version;
 
                   if (oper == UpdateLog.UPDATE_INPLACE) {
-                    if ((update.log instanceof CdcrTransactionLog && entry.size() == 6) ||
-                        (!(update.log instanceof CdcrTransactionLog) && entry.size() == 5)) {
+                    if (entry.size() == 5) {
                       update.previousVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
                     }
                   }

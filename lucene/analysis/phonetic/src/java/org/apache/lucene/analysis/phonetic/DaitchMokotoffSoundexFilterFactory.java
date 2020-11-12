@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.phonetic;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link DaitchMokotoffSoundexFilter}.

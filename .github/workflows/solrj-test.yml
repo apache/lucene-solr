@@ -1,0 +1,35 @@
+name: SolrJ Tests
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+    paths:
+      - '.github/workflows/solrj-test.yml'
+      - 'solr/solrj/**'
+
+jobs:
+  test:
+    name: Run SolrJ Tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # Setup
+    - uses: actions/checkout@v2
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-solrj-${{ hashFiles('versions.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-solrj-
+          ${{ runner.os }}-gradle-
+    - name: Test the SolrJ Package
+      run: ./gradlew solr:solrj:test

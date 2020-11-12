@@ -115,6 +115,16 @@ public interface IndexableFieldType {
   public int pointNumBytes();
 
   /**
+   * The number of dimensions of the field's vector value
+   */
+  public int vectorDimension();
+
+  /**
+   * The {@link VectorValues.SearchStrategy} of the field's vector value
+   */
+  public VectorValues.SearchStrategy vectorSearchStrategy();
+
+  /**
    * Attributes for the field type.
    *
    * Attributes are not thread-safe, user must not add attributes while other threads are indexing documents

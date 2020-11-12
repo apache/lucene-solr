@@ -288,7 +288,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
             if (core == null) {
               if (log.isDebugEnabled()) {
-                log.debug("SolrCore not found: {} in {}", coreName, cc.getLoadedCoreNames());
+                log.debug("SolrCore not found: {} in {}", coreName, CloudUtil.getLoadedCoreNamesAsString(cc));
               }
               return;
             }

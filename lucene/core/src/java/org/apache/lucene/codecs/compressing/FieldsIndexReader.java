@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.FIELDS_INDEX_EXTENSION_SUFFIX;
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.FIELDS_META_EXTENSION_SUFFIX;
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_START;
 
@@ -27,7 +25,6 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -49,26 +46,18 @@ final class FieldsIndexReader extends FieldsIndex {
   private final DirectMonotonicReader docs, startPointers;
   private final long maxPointer;
 
-  FieldsIndexReader(Directory dir, String name, String suffix, String extensionPrefix, String codecName, byte[] id) throws IOException {
-    try (ChecksumIndexInput metaIn = dir.openChecksumInput(IndexFileNames.segmentFileName(name, suffix, extensionPrefix + FIELDS_META_EXTENSION_SUFFIX), IOContext.READONCE)) {
-      Throwable priorE = null;
-      try {
-        CodecUtil.checkIndexHeader(metaIn, codecName + "Meta", VERSION_START, VERSION_CURRENT, id, suffix);
-        maxDoc = metaIn.readInt();
-        blockShift = metaIn.readInt();
-        numChunks = metaIn.readInt();
-        docsStartPointer = metaIn.readLong();
-        docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-        docsEndPointer = startPointersStartPointer = metaIn.readLong();
-        startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-        startPointersEndPointer = metaIn.readLong();
-        maxPointer = metaIn.readLong();
-      } finally {
-        CodecUtil.checkFooter(metaIn, priorE);
-      }
-    }
+  FieldsIndexReader(Directory dir, String name, String suffix, String extension, String codecName, byte[] id, IndexInput metaIn) throws IOException {
+    maxDoc = metaIn.readInt();
+    blockShift = metaIn.readInt();
+    numChunks = metaIn.readInt();
+    docsStartPointer = metaIn.readLong();
+    docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    docsEndPointer = startPointersStartPointer = metaIn.readLong();
+    startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    startPointersEndPointer = metaIn.readLong();
+    maxPointer = metaIn.readLong();
 
-    indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extensionPrefix + FIELDS_INDEX_EXTENSION_SUFFIX), IOContext.READ);
+    indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extension), IOContext.READ);
     boolean success = false;
     try {
       CodecUtil.checkIndexHeader(indexInput, codecName + "Idx", VERSION_START, VERSION_CURRENT, id, suffix);

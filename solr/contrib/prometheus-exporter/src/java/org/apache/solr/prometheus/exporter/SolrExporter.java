@@ -50,7 +50,7 @@ public class SolrExporter {
   private static final String[] ARG_PORT_FLAGS = {"-p", "--port"};
   private static final String ARG_PORT_METAVAR = "PORT";
   private static final String ARG_PORT_DEST = "port";
-  private static final int ARG_PORT_DEFAULT = 9983;
+  private static final int ARG_PORT_DEFAULT = 8989;
   private static final String ARG_PORT_HELP = "Specify the solr-exporter HTTP listen port; default is " + ARG_PORT_DEFAULT + ".";
 
   private static final String[] ARG_BASE_URL_FLAGS = {"-b", "--baseurl"};
@@ -68,7 +68,7 @@ public class SolrExporter {
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
-  private static final String ARG_CONFIG_DEFAULT = "./conf/solr-exporter-config.xml";
+  private static final String ARG_CONFIG_DEFAULT = "solr-exporter-config.xml";
   private static final String ARG_CONFIG_HELP = "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
 
   private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};

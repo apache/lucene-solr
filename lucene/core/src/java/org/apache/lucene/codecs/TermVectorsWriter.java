@@ -32,6 +32,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -58,7 +59,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * 
  * @lucene.experimental
  */
-public abstract class TermVectorsWriter implements Closeable {
+public abstract class TermVectorsWriter implements Closeable, Accountable {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */

@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -78,6 +77,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.MetricRegistry;
+
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
@@ -117,7 +118,8 @@ public class MiniSolrCloudCluster {
       "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
       "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
       "  </solrcloud>\n" +
-      "  <metrics>\n" +
+      // NOTE: this turns off the metrics collection unless overriden by a sysprop
+      "  <metrics enabled=\"${metricsEnabled:false}\">\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
       "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
       "    </reporter>\n" +
@@ -587,7 +589,7 @@ public class MiniSolrCloudCluster {
 
   }
   
-  public void deleteAllConfigSets() throws SolrServerException, IOException {
+  public void deleteAllConfigSets() throws Exception {
 
     List<String> configSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
 
@@ -595,6 +597,10 @@ public class MiniSolrCloudCluster {
       if (configSet.equals("_default")) {
         continue;
       }
+      try {
+        // cleanup any property before removing the configset
+        getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1, true);
+      } catch (KeeperException.NoNodeException nne) { }
       new ConfigSetAdminRequest.Delete()
           .setConfigSetName(configSet)
           .process(solrClient);

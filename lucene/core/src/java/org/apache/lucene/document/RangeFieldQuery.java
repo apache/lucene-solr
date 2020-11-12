@@ -40,8 +40,9 @@ import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
  * Query class for searching {@code RangeField} types by a defined {@link Relation}.
+ * @lucene.internal
  */
-abstract class RangeFieldQuery extends Query {
+public abstract class RangeFieldQuery extends Query {
   /** field name */
   final String field;
   /** query relation
@@ -57,7 +58,7 @@ abstract class RangeFieldQuery extends Query {
   final int bytesPerDim;
 
   /** Used by {@code RangeFieldQuery} to check how each internal or leaf node relates to the query. */
-  enum QueryType {
+  public enum QueryType {
     /** Use this for intersects queries. */
     INTERSECTS {
 
@@ -228,7 +229,7 @@ abstract class RangeFieldQuery extends Query {
    * @param ranges encoded range values; this is done by the {@code RangeField} implementation
    * @param queryType the query relation
    */
-  RangeFieldQuery(String field, final byte[] ranges, final int numDims, final QueryType queryType) {
+  protected RangeFieldQuery(String field, final byte[] ranges, final int numDims, final QueryType queryType) {
     checkArgs(field, ranges, numDims);
     if (queryType == null) {
       throw new IllegalArgumentException("Query type cannot be null");
@@ -404,6 +405,7 @@ abstract class RangeFieldQuery extends Query {
         equalsTo(getClass().cast(o));
   }
 
+  /** Check equality of two RangeFieldQuery objects */
   protected boolean equalsTo(RangeFieldQuery other) {
     return Objects.equals(field, other.field) &&
         numDims == other.numDims &&

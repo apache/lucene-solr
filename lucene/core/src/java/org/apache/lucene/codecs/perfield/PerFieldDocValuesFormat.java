@@ -74,7 +74,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
   
   /** Sole constructor. */
-  public PerFieldDocValuesFormat() {
+  protected PerFieldDocValuesFormat() {
     super(PER_FIELD_NAME);
   }
 
