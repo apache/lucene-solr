@@ -70,6 +70,7 @@ public class TeamDraftInterleaving implements Interleaving {
    * - rerankedA and rerankedB has the same length.
    * They contains the same search results, ranked differently by two ranking models
    * - each reranked list can not contain the same search result more than once.
+   * - results are all from the same shard
    *
    * @param rerankedA a ranked list of search results produced by a ranking model A
    * @param rerankedB a ranked list of search results produced by a ranking model B

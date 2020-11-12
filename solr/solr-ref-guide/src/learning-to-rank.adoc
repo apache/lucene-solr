@@ -42,7 +42,7 @@ A ranking model computes the scores used to rerank documents. Irrespective of an
 
 Interleaving is an approach to Online Search Quality evaluation that allows to compare two models interleaving their results in the final ranked list returned to the user.
 
-* currently only the Team Draft Interleaving algorithm is supported
+* currently only the Team Draft Interleaving algorithm is supported (and its implementation assumes all results are from the same shard)
 
 
 ==== Feature
