@@ -173,6 +173,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * length=1 - [Classic LTR] When reranking with a single model
      * length=2 - [Interleaving] When reranking with interleaving (two ranking models are involved)
      */
+    private LTRScoringQuery[] rerankingQueriesFromContext;
     private LTRScoringQuery[] rerankingQueries;
     private LTRScoringQuery.ModelWeight[] modelWeights;
     private FeatureLogger featureLogger;
@@ -216,18 +217,14 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
       }
 
-      LTRScoringQuery[] rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
+      rerankingQueriesFromContext = SolrQueryRequestContextUtils.getScoringQueries(req);
       docsWereNotReranked = (rerankingQueriesFromContext == null || rerankingQueriesFromContext.length == 0);
       String transformerFeatureStore = SolrQueryRequestContextUtils.getFvStoreName(req);
       Map<String, String[]> transformerExternalFeatureInfo = LTRQParserPlugin.extractEFIParams(localparams);
 
       final LoggingModel loggingModel = createLoggingModel(transformerFeatureStore);
-      setupRerankingQueriesForLogging(rerankingQueriesFromContext, transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
+      setupRerankingQueriesForLogging(transformerFeatureStore, transformerExternalFeatureInfo, loggingModel);
       setupRerankingWeightsForLogging(context);
-    }
-    
-    private boolean isModelMatchingFeatureStore(String featureStoreName, LTRScoringModel model) {
-      return model != null && featureStoreName.equals(model.getFeatureStoreName());
     }
 
     /**
@@ -264,7 +261,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * @param transformerFeatureStore explicit feature store for the transformer
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
-    private void setupRerankingQueriesForLogging(LTRScoringQuery[] rerankingQueriesFromContext, String transformerFeatureStore, Map<String, String[]> transformerExternalFeatureInfo, LoggingModel loggingModel) {
+    private void setupRerankingQueriesForLogging(String transformerFeatureStore, Map<String, String[]> transformerExternalFeatureInfo, LoggingModel loggingModel) {
       if (docsWereNotReranked) { //no reranking query
         LTRScoringQuery loggingQuery = new LTRScoringQuery(loggingModel,
             transformerExternalFeatureInfo,
@@ -276,22 +273,20 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         System.arraycopy(rerankingQueriesFromContext, 0, rerankingQueries, 0, rerankingQueriesFromContext.length);
 
         if (transformerFeatureStore != null) {// explicit feature store for the transformer
-          LTRScoringModel matchingRerankingModel = null;
+          LTRScoringModel matchingRerankingModel = loggingModel;
           for (LTRScoringQuery rerankingQuery : rerankingQueries) {
-            if (isModelMatchingFeatureStore(transformerFeatureStore, rerankingQuery.getScoringModel())) {
+            if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) &&
+                transformerFeatureStore.equals(rerankingQuery.getScoringModel().getFeatureStoreName())) {
               matchingRerankingModel = rerankingQuery.getScoringModel();
             }
           }
-          if (matchingRerankingModel != null) {//one of the LTR query model can be re-used
-            for (LTRScoringQuery rerankingQuery : rerankingQueries) {
-              rerankingQuery.setLtrScoringModel(matchingRerankingModel);
-            }
-          } else {
-            for (LTRScoringQuery rerankingQuery : rerankingQueries) {
-              rerankingQuery.setLtrScoringModel(loggingModel);
-              rerankingQuery.setExtractAllFeatures(true);
-              rerankingQuery.setEfi(transformerExternalFeatureInfo);
-            }
+
+          for (int i = 0; i < rerankingQueries.length; i++) {
+            rerankingQueries[i] = new LTRScoringQuery(
+                matchingRerankingModel,
+                (!transformerExternalFeatureInfo.isEmpty() ? transformerExternalFeatureInfo : rerankingQueries[i].getExternalFeatureInfo()),
+                true /* extractAllFeatures */,
+                threadManager);
           }
         }
       }
@@ -338,9 +333,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         throws IOException {
       LTRScoringQuery rerankingQuery = rerankingQueries[0];
       LTRScoringQuery.ModelWeight rerankingModelWeight = modelWeights[0];
-      if (rerankingQueries.length > 1 && ((LTRInterleavingScoringQuery)rerankingQueries[1]).getPickedInterleavingDocIds().contains(docid)) {
-        rerankingQuery = rerankingQueries[1];
-        rerankingModelWeight = modelWeights[1];
+      for (int i = 1; i < rerankingQueries.length; i++) {
+        if (((LTRInterleavingScoringQuery)rerankingQueriesFromContext[i]).getPickedInterleavingDocIds().contains(docid)) {
+          rerankingQuery = rerankingQueries[i];
+          rerankingModelWeight = modelWeights[i];
+        }
       }
       if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || localparams.get(FV_STORE) != null) {
         Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);

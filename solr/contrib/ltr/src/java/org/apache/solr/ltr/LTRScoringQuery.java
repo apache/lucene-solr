@@ -61,16 +61,16 @@ public class LTRScoringQuery extends Query implements Accountable {
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LTRScoringQuery.class);
 
   // contains a description of the model
-  private LTRScoringModel ltrScoringModel;
-  private boolean extractAllFeatures;
-  private LTRThreadModule ltrThreadMgr;
+  final private LTRScoringModel ltrScoringModel;
+  final private boolean extractAllFeatures;
+  final private LTRThreadModule ltrThreadMgr;
   final private Semaphore querySemaphore; // limits the number of threads per query, so that multiple requests can be serviced simultaneously
 
   // feature logger to output the features.
   private FeatureLogger fl;
   // Map of external parameters, such as query intent, that can be used by
   // features
-  private Map<String,String[]> efi;
+  final private Map<String,String[]> efi;
   // Original solr query used to fetch matching documents
   private Query originalQuery;
   // Original solr request
@@ -100,22 +100,6 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   public LTRScoringModel getScoringModel() {
     return ltrScoringModel;
-  }
-
-  public void setLtrScoringModel(LTRScoringModel ltrScoringModel) {
-    this.ltrScoringModel = ltrScoringModel;
-  }
-
-  public void setLtrThreadMgr(LTRThreadModule ltrThreadMgr) {
-    this.ltrThreadMgr = ltrThreadMgr;
-  }
-
-  public void setExtractAllFeatures(boolean extractAllFeatures) {
-    this.extractAllFeatures = extractAllFeatures;
-  }
-
-  public void setEfi(Map<String, String[]> efi) {
-    this.efi = efi;
   }
 
   public String getScoringModelName() {
