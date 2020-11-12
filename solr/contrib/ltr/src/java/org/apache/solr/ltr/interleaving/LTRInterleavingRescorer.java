@@ -103,8 +103,10 @@ public class LTRInterleavingRescorer extends LTRRescorer {
     }
     scoreFeatures(searcher, topN, modelWeights, firstPassResults, leaves, reRankedPerModel);
 
-    for (int i = 0; i < rerankingQueries.length && !(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery); i++) {
-      sortByScore(reRankedPerModel[i]);
+    for (int i = 0; i < rerankingQueries.length; i++) {
+      if (originalRankingIndex == null || originalRankingIndex != i) {
+        sortByScore(reRankedPerModel[i]);
+      }
     }
 
     return reRankedPerModel;
