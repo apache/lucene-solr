@@ -16,6 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -201,6 +203,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private final ConcurrentHashMap<String, CollectionWatch<DocCollectionWatcher>> collectionWatches = new ConcurrentHashMap<>(32, 0.75f, 3);
 
+  private final Map<String,StateWatcher> stateWatchersMap = new ConcurrentHashMap<>(32, 0.75f, 3);
+
   // named this observers so there's less confusion between CollectionPropsWatcher map and the PropsWatcher map.
   private final ConcurrentHashMap<String, CollectionWatch<CollectionPropsWatcher>> collectionPropsObservers = new ConcurrentHashMap<>();
 
@@ -219,7 +223,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   private static class CollectionWatch<T> {
 
     volatile AtomicInteger coreRefCount = new AtomicInteger();
-    final Set<T> stateWatchers = ConcurrentHashMap.newKeySet();
+    final Set<DocCollectionWatcher> stateWatchers = ConcurrentHashMap.newKeySet();
+
+    final Set<CollectionPropsWatcher> propStateWatchers = ConcurrentHashMap.newKeySet();
 
     public boolean canBeRemoved() {
       return coreRefCount.get() < 0 && stateWatchers.size() <= 0;
@@ -590,15 +596,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   }
 
-  /**
-   * Refresh collections.
-   */
-  private void refreshCollections() {
-    for (String coll : collectionWatches.keySet()) {
-      new StateWatcher(coll).refreshAndWatch();
-    }
-  }
-
   // We don't get a Stat or track versions on getChildren() calls, so force linearization.
   private final Object refreshCollectionListLock = new Object();
 
@@ -836,7 +833,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       notifications.shutdown();
     }
 
+    stateWatchersMap.forEach((s, stateWatcher) -> IOUtils.closeQuietly(stateWatcher));
+    stateWatchersMap.clear();
+
     waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
+    waitLatches.clear();
 
     try {
       if (closeClient) {
@@ -1249,7 +1250,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   /**
    * Watches a single collection's format2 state.json.
    */
-  class StateWatcher implements Watcher {
+  class StateWatcher implements Watcher, Closeable {
     private final String coll;
 
     StateWatcher(String coll) {
@@ -1288,6 +1289,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
      */
     public void refreshAndWatch() {
       try {
+        if (isClosed()) {
+          return;
+        }
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
         updateLock.lock();
@@ -1303,6 +1307,22 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.error("Unwatched collection: [{}]", coll, e);
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
+      if (zk != null) {
+        try {
+          zk.removeWatches(getCollectionPath(coll), this, WatcherType.Any, true);
+        } catch (KeeperException.NoWatcherException e) {
+          // okay
+        } catch (InterruptedException e) {
+          log.info("Interrupted removing leader watch");
+        } catch (KeeperException e) {
+          log.error("Exception removing leader watch", e);
+        }
       }
     }
   }
@@ -1540,7 +1560,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       return v;
     });
     if (reconstructState.get()) {
-      new StateWatcher(collection).refreshAndWatch();
+      StateWatcher sw = new StateWatcher(collection);
+      stateWatchersMap.put(collection, sw);
+      sw.refreshAndWatch();
     }
 
   }
@@ -1648,7 +1670,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       });
 
       if (watchSet.get()) {
-        new StateWatcher(collection).refreshAndWatch();
+        StateWatcher sw = new StateWatcher(collection);
+        stateWatchersMap.put(collection, sw);
+        sw.refreshAndWatch();
       }
 
       DocCollection state = clusterState.getCollectionOrNull(collection);
@@ -1878,6 +1902,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           log.info("no longer watch collection {}", collection);
           watchedCollectionStates.remove(collection);
           lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
+          stateWatchersMap.remove(collection);
           reconstructState.set(true);
           return null;
         }
@@ -1969,7 +1994,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         v = new CollectionWatch<>();
         watchSet.set(true);
       }
-      v.stateWatchers.add(propsWatcher);
+      v.propStateWatchers.add(propsWatcher);
       return v;
     });
 
@@ -1982,7 +2007,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     collectionPropsObservers.compute(collection, (k, v) -> {
       if (v == null)
         return null;
-      v.stateWatchers.remove(watcher);
+      v.propStateWatchers.remove(watcher);
       if (v.canBeRemoved()) {
         // don't want this to happen in middle of other blocks that might add it back.
         synchronized (watchedCollectionProps) {
@@ -2257,7 +2282,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       collectionPropsObservers.compute(collection, (k, v) -> {
         if (v == null)
           return null;
-        watchers.addAll(v.stateWatchers);
+        watchers.addAll(v.propStateWatchers);
         return v;
       });
     }
