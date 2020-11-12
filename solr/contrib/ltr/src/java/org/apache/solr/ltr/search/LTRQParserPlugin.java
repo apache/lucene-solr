@@ -150,9 +150,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       }
       // ReRanking Model
       final String[] modelNames = localParams.getParams(LTRQParserPlugin.MODEL);
-      if ((modelNames == null) || modelNames.length==0) {
+      if ((modelNames == null) || (modelNames.length!=1 && modelNames.length!=2)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Must provide at least one model in the request");
+            "Must provide one or two models in the request");
       }
       final boolean isInterleaving = (modelNames.length > 1);
       final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
