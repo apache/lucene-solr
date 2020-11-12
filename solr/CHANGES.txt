@@ -178,7 +178,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -192,10 +192,14 @@ Bug Fixes
 
 * SOLR-14961: Fix for deleting zookeeper nodes with same path length. Only the first zk-node was removed. (Michael Aleythe via Mike Drob)
 
+* SOLR-14971: AtomicUpdate 'remove', 'add-distinct' operations now works on numeric, date fields in uncommitted docs (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
+
+* SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
 ==================  8.7.0 ==================
 
