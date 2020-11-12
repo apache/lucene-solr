@@ -128,14 +128,15 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
 
     // Communicate which feature store we are requesting features for
-    SolrQueryRequestContextUtils.setFvStoreName(req, localparams.get(FV_STORE, defaultStore));
+    final String fvStoreName = localparams.get(FV_STORE);
+    SolrQueryRequestContextUtils.setFvStoreName(req, (fvStoreName == null ? defaultStore : fvStoreName));
 
     // Create and supply the feature logger to be used
     SolrQueryRequestContextUtils.setFeatureLogger(req,
         createFeatureLogger(
             localparams.get(FV_FORMAT)));
 
-    return new FeatureTransformer(name, localparams, req);
+    return new FeatureTransformer(name, localparams, req, (fvStoreName != null) /* hasExplicitFeatureStore */);
   }
 
   /**
@@ -165,6 +166,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     final private String name;
     final private SolrParams localparams;
     final private SolrQueryRequest req;
+    final private boolean hasExplicitFeatureStore;
 
     private List<LeafReaderContext> leafContexts;
     private SolrIndexSearcher searcher;
@@ -185,10 +187,11 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      *          feature vectors
      */
     public FeatureTransformer(String name, SolrParams localparams,
-        SolrQueryRequest req) {
+        SolrQueryRequest req, boolean hasExplicitFeatureStore) {
       this.name = name;
       this.localparams = localparams;
       this.req = req;
+      this.hasExplicitFeatureStore = hasExplicitFeatureStore;
     }
 
     @Override
@@ -299,7 +302,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           rerankingQueries[i].setOriginalQuery(context.getQuery());
         }
         rerankingQueries[i].setRequest(req);
-        if (!(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery) || localparams.get(FV_STORE) != null) {
+        if (!(rerankingQueries[i] instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
           if (rerankingQueries[i].getFeatureLogger() == null) {
             rerankingQueries[i].setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
           }
@@ -339,7 +342,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
           rerankingModelWeight = modelWeights[i];
         }
       }
-      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || localparams.get(FV_STORE) != null) {
+      if (!(rerankingQuery instanceof OriginalRankingLTRScoringQuery) || hasExplicitFeatureStore) {
         Object featureVector = featureLogger.getFeatureVector(docid, rerankingQuery, searcher);
         if (featureVector == null) { // FV for this document was not in the cache
           featureVector = featureLogger.makeFeatureVector(
