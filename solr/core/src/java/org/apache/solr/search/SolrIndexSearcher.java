@@ -1605,7 +1605,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         hitsRelation = topDocs.totalHits.relation;
       }
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -1714,7 +1714,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
