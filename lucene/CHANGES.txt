@@ -216,6 +216,9 @@ New Features
 
 * LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)  
 
+* LUCENE-9378: Doc values now allow configuring how to trade compression for
+  retrieval speed. (Adrien Grand)
+
 Improvements
 ---------------------
 

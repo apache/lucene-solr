@@ -64,12 +64,14 @@ import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_
 /** writer for {@link Lucene80DocValuesFormat} */
 final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
+  final Lucene80DocValuesFormat.Mode mode;
   IndexOutput data, meta;
   final int maxDoc;
   private final SegmentWriteState state;
 
   /** expert: Creates a new writer */
-  public Lucene80DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  public Lucene80DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension, Lucene80DocValuesFormat.Mode mode) throws IOException {
+    this.mode = mode;
     boolean success = false;
     try {
       this.state = state;
@@ -490,13 +492,86 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
     
   }
-  
 
   @Override
   public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeInt(field.number);
     meta.writeByte(Lucene80DocValuesFormat.BINARY);
 
+    switch (mode) {
+      case BEST_SPEED:
+        meta.writeByte((byte) 0);
+        doAddUncompressedBinaryField(field, valuesProducer);
+        break;
+      case BEST_COMPRESSION:
+        meta.writeByte((byte) 1);
+        doAddCompressedBinaryField(field, valuesProducer);
+        break;
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  private void doAddUncompressedBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    BinaryDocValues values = valuesProducer.getBinary(field);
+    long start = data.getFilePointer();
+    meta.writeLong(start); // dataOffset
+    int numDocsWithField = 0;
+    int minLength = Integer.MAX_VALUE;
+    int maxLength = 0;
+    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+      numDocsWithField++;
+      BytesRef v = values.binaryValue();
+      int length = v.length;
+      data.writeBytes(v.bytes, v.offset, v.length);
+      minLength = Math.min(length, minLength);
+      maxLength = Math.max(length, maxLength);
+    }
+    assert numDocsWithField <= maxDoc;
+    meta.writeLong(data.getFilePointer() - start); // dataLength
+
+    if (numDocsWithField == 0) {
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
+    } else if (numDocsWithField == maxDoc) {
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
+      meta.writeByte((byte) -1);   // denseRankPower
+    } else {
+      long offset = data.getFilePointer();
+      meta.writeLong(offset); // docsWithFieldOffset
+      values = valuesProducer.getBinary(field);
+      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
+      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
+    }
+
+    meta.writeInt(numDocsWithField);
+    meta.writeInt(minLength);
+    meta.writeInt(maxLength);
+    if (maxLength > minLength) {
+      start = data.getFilePointer();
+      meta.writeLong(start);
+      meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
+
+      final DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, data, numDocsWithField + 1, DIRECT_MONOTONIC_BLOCK_SHIFT);
+      long addr = 0;
+      writer.add(addr);
+      values = valuesProducer.getBinary(field);
+      for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
+        addr += values.binaryValue().length;
+        writer.add(addr);
+      }
+      writer.finish();
+      meta.writeLong(data.getFilePointer() - start);
+    }
+  }
+
+  private void doAddCompressedBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     try (CompressedBinaryBlockWriter blockWriter = new CompressedBinaryBlockWriter()){
       BinaryDocValues values = valuesProducer.getBinary(field);
       long start = data.getFilePointer();
@@ -542,7 +617,6 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeInt(maxLength);    
       
       blockWriter.writeMetaData();
-      
     }
 
   }

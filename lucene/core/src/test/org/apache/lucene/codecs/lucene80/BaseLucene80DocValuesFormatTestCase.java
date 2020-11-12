@@ -28,7 +28,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
@@ -70,15 +69,8 @@ import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests Lucene80DocValuesFormat
- * Copied directly from the lucene70 package for separation of codec-code
  */
-public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat());
-
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  }
+public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressingDocValuesFormatTestCase {
   
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
   // for now just keep them here, as we want to test this for this format.
@@ -286,7 +278,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
     final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
-    final DocValuesFormat dv = new Lucene80DocValuesFormat();
+    final DocValuesFormat dv = getCodec().docValuesFormat();
     conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
