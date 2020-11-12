@@ -157,6 +157,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
       final boolean isInterleaving = (modelNames.length > 1);
       final boolean extractFeatures = SolrQueryRequestContextUtils.isExtractingFeatures(req);
       final String tranformerFeatureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
+      final Map<String,String[]> externalFeatureInfo = extractEFIParams(localParams);
 
       LTRScoringQuery rerankingQuery = null;
       LTRInterleavingScoringQuery[] rerankingQueries = new LTRInterleavingScoringQuery[modelNames.length];
@@ -177,11 +178,11 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
           
           if (isInterleaving) {
             rerankingQuery = rerankingQueries[i] = new LTRInterleavingScoringQuery(ltrScoringModel,
-                extractEFIParams(localParams),
+                externalFeatureInfo,
                 featuresRequestedFromSameStore, threadManager);
           } else {
             rerankingQuery = new LTRScoringQuery(ltrScoringModel,
-                extractEFIParams(localParams),
+                externalFeatureInfo,
                 featuresRequestedFromSameStore, threadManager);
             rerankingQueries[i] = null;
           }
