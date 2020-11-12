@@ -61,6 +61,8 @@ grant {
   permission java.lang.RuntimePermission "getenv.*";
   permission java.lang.RuntimePermission "getClassLoader";
   permission java.lang.RuntimePermission "setContextClassLoader";
+  // needed for loading native library in tests
+  permission java.lang.RuntimePermission "loadLibrary.LuceneNativeIO";
 
   // TestLockFactoriesMultiJVM opens a random port on 127.0.0.1 (port 0 = ephemeral port range):
   permission java.net.SocketPermission "127.0.0.1:0", "accept,listen,resolve";
