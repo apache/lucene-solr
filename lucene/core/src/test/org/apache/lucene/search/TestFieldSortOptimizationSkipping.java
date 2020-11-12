@@ -321,7 +321,6 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-9569")
   public void testDocSortOptimizationWithAfter() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
@@ -398,7 +397,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-9569")
+
   public void testDocSortOptimization() throws IOException {
     final Directory dir = newDirectory();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
