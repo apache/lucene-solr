@@ -194,6 +194,9 @@ Bug Fixes
 
 * SOLR-14971: AtomicUpdate 'remove', 'add-distinct' operations now works on numeric, date fields in uncommitted docs (Jason Gerlowski)
 
+* SOLR-14983: Fix response returning original score instead of reranked score due to query and filter combining.
+  (Krishan Goyal, Jason Baik, Christine Poerschke)
+
 Other Changes
 ---------------------
 
