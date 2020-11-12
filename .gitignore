@@ -8,10 +8,6 @@ build/
 /.idea/
 #    IntelliJ creates this folder, ignore.
 /dev-tools/missing-doclet/out/
-*.iml
-*.ipr
-*.imr
-*.iws
 
 # Eclipse
 /.project

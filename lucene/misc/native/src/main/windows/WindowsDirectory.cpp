@@ -56,11 +56,11 @@ void throwException(JNIEnv *env, const char *clazz, const char *msg)
 /**
  * Opens a handle to a file.
  *
- * Class:     org_apache_lucene_store_WindowsDirectory
+ * Class:     org_apache_lucene_misc_store_WindowsDirectory
  * Method:    open
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_open
+JNIEXPORT jlong JNICALL Java_org_apache_lucene_misc_store_WindowsDirectory_open
   (JNIEnv *env, jclass ignored, jstring filename) 
 {
   char *fname;
@@ -95,11 +95,11 @@ JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_open
  * Reads data into the byte array, starting at offset, for length characters.
  * The read is positioned at pos.
  * 
- * Class:     org_apache_lucene_store_WindowsDirectory
+ * Class:     org_apache_lucene_misc_store_WindowsDirectory
  * Method:    read
  * Signature: (J[BIIJ)I
  */
-JNIEXPORT jint JNICALL Java_org_apache_lucene_store_WindowsDirectory_read
+JNIEXPORT jint JNICALL Java_org_apache_lucene_misc_store_WindowsDirectory_read
   (JNIEnv *env, jclass ignored, jlong fd, jbyteArray bytes, jint offset, jint length, jlong pos)
 {
   OVERLAPPED io = { 0 };
@@ -140,11 +140,11 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_WindowsDirectory_read
 /**
  * Closes a handle to a file
  *
- * Class:     org_apache_lucene_store_WindowsDirectory
+ * Class:     org_apache_lucene_misc_store_WindowsDirectory
  * Method:    close
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_org_apache_lucene_store_WindowsDirectory_close
+JNIEXPORT void JNICALL Java_org_apache_lucene_misc_store_WindowsDirectory_close
   (JNIEnv *env, jclass ignored, jlong fd) 
 {
   if (!CloseHandle((HANDLE) fd)) {
@@ -155,11 +155,11 @@ JNIEXPORT void JNICALL Java_org_apache_lucene_store_WindowsDirectory_close
 /**
  * Returns the length in bytes of a file.
  *
- * Class:     org_apache_lucene_store_WindowsDirectory
+ * Class:     org_apache_lucene_misc_store_WindowsDirectory
  * Method:    length
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_WindowsDirectory_length
+JNIEXPORT jlong JNICALL Java_org_apache_lucene_misc_store_WindowsDirectory_length
   (JNIEnv *env, jclass ignored, jlong fd)
 {
   BY_HANDLE_FILE_INFORMATION info;

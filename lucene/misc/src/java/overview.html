@@ -47,15 +47,15 @@ for details.
 
 Steps to build:
 <ul>
-  <li> <code>cd lucene/misc/</code>
+  <li> In lucene-solr root directory
 
-  <li> To compile NativePosixUtil.cpp -&gt; libNativePosixUtil.so, run<code> ant build-native-unix</code>.
+  <li> To compile NativePosixUtil.cpp or WindowsDirectory.cpp -&gt; libLuceneNativeIO.so, run<code>./gradlew build</code>.
   
-  <li><code>libNativePosixUtil.so</code> will be located in the <code>lucene/build/native/</code> folder
+  <li><code>libLuceneNativeIO.so</code> will be located in the <code>lucene/misc/native/build/lib/main/release/platform</code> folder
 
-  <li> Make sure libNativePosixUtil.so is on your LD_LIBRARY_PATH so java can find it (something like <code>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</code>, where /path/to/dir contains libNativePosixUtil.so)
+  <li> Make sure libNativePosixUtil.so is on your LD_LIBRARY_PATH so java can find it (something like <code>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</code>, where /path/to/dir contains libLuceneNativeIO.so)
 
-  <li> <code>ant jar</code> to compile the java source and put that JAR on your CLASSPATH
+  <li> <code>cd lucene/misc/</code>, and run <code>../../gradlew package</code> to compile the java source and put that JAR on your CLASSPATH
 </ul>
 
 <p>
