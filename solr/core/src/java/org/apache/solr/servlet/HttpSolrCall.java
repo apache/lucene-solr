@@ -343,27 +343,28 @@ public class HttpSolrCall {
 
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
     if (cores.isZooKeeperAware()) {
-     log.info("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
-     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+      log.info("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
+      invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (invalidStates != null) {
-      Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
-      for (Map.Entry<String,Integer> entry : entries) {
-        String collection = entry.getKey();
-        Integer version = entry.getValue();
-        log.info("ensure states are at at least client version {} for collection {}", version, collection);
-        if (cores.getZkController().getZkStateReader().watched(collection)) {
-          cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-            if (collectionState == null) {
-              return false;
-            }
-            log.info("found server state version {}", collectionState.getZNodeVersion());
-            if (collectionState.getZNodeVersion() < version) {
-              return false;
-            }
-            return true;
-          });
+        Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
+        for (Map.Entry<String,Integer> entry : entries) {
+          String collection = entry.getKey();
+          Integer version = entry.getValue();
+          log.info("ensure states are at at least client version {} for collection {}", version, collection);
+          DocCollection docCollection = cores.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
+          if (docCollection != null && docCollection.getZNodeVersion() < version) {
+            cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+              if (collectionState == null) {
+                return false;
+              }
+              log.info("found server state version {}", collectionState.getZNodeVersion());
+              if (collectionState.getZNodeVersion() < version) {
+                return false;
+              }
+              return true;
+            });
+          }
         }
-      }
       }
     }
   }
