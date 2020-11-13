@@ -17,20 +17,65 @@
 
 // This is the master switch to disable all tasks that compile
 // native (cpp) code.
-def buildNative = propertyOrDefault("build.native", true).toBoolean()
+rootProject.ext {
+  buildNative = propertyOrDefault("build.native", true).toBoolean()
+}
 
+// Explicitly list all projects that should be configured for native extensions.
+// We could scan for projects with a the cpp-library plugin but this is faster.
+def nativeProjects = allprojects.findAll {it.path in [
+    ":lucene:misc:native"
+]}
+
+def javaProjectsWithNativeDeps = allprojects.findAll {it.path in [
+    ":lucene:misc"
+]}
+
+// Set up defaults for projects with native dependencies.
+configure(javaProjectsWithNativeDeps, {
+  configurations {
+    nativeDeps {
+      attributes {
+        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.NATIVE_RUNTIME))
+        attributes.attribute(CppBinary.OPTIMIZED_ATTRIBUTE, false)
+      }
+    }
+  }
+
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions += [
+          [propName: 'tests.native', value: buildNative, description: "Enable tests that require native extensions."]
+      ]
+
+      nativeDepsDir = file("${buildDir}/nativeDeps")
+    }
+
+    // Only copy and attach native deps if native build is enabled.
+    if (buildNative) {
+      task copyNativeDeps(type: Sync) {
+        from configurations.nativeDeps
+        into nativeDepsDir
+      }
+
+      tasks.withType(Test) {
+        dependsOn copyNativeDeps
+        systemProperty "java.library.path", nativeDepsDir
+      }
+    }
+  }
+})
+
+// If native build is disabled we just disable all tasks in the active task set that
+// originate from "native" projects.
+//
+// Perhaps there is a cleaner way to do it but removing their references from
+// settings.gradle would remove them from IDE detection, dependency resolution, etc.
+// This way seems better.
 if (!buildNative) {
-  // Explicitly list all projects that should be disabled if the flag above is false.
-  // We could scan for projects with a the cpp-library plugin but this is faster.
-  def nativeProjects = [ ":lucene:misc:native" ]
-
-  // We just disable all tasks in the active dependency that originate in native projects.
-  // Perhaps there is a cleaner way to do it but removing their references from
-  // settings.gradle would remove them from IDE detection, dependency resolution, etc.
-  // This way seems better.
   gradle.taskGraph.whenReady { taskGraph ->
     def tasks = taskGraph.getAllTasks()
-    tasks.findAll { task -> task.project.path in nativeProjects }.each { task ->
+    tasks.findAll { task -> task.project in nativeProjects }.each { task ->
       task.enabled = false
     }
   }

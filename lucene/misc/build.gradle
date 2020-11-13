@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.tools.ant.taskdefs.condition.Os
 
 apply plugin: 'java-library'
 
@@ -23,25 +22,6 @@ description = 'Index tools and other miscellaneous code'
 dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')
-}
 
-test.doFirst {
-  def buildNative = propertyOrDefault("build.native", true).toBoolean()
-
-  if (buildNative && file("${projectDir}/native/build/").exists()) {
-    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-      exclude '**/NativePosixUtilTest.class'
-    } else if (Os.isFamily(Os.FAMILY_UNIX) || Os.isFamily(Os.FAMILY_MAC)) {
-      exclude '**/WindowsDirectoryTest.class'
-    }
-
-    // This is a bit ugly, but "simpler way" like "${projectDir}/native/build/lib/main/release/**" doesn't work
-    def dirWithNativeLib = file("${projectDir}/native/build/lib/main/release/").listFiles()[0]
-    def libraryPath = propertyOrDefault("java.library.path", ".") + File.pathSeparator + dirWithNativeLib
-
-    systemProperty "java.library.path",  libraryPath
-  } else {
-    exclude '**/NativePosixUtilTest.class'
-    exclude '**/WindowsDirectoryTest.class'
-  }
+  nativeDeps project(":lucene:misc:native")
 }
