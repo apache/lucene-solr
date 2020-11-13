@@ -53,8 +53,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
   @Test
   public void searchingShouldFailWithoutTolerantSearchSetToTrue() throws Exception {
 
-    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("tolerant", "conf", 2, 1).process(cluster.getSolrClient());
 
     UpdateRequest update = new UpdateRequest();
     for (int i = 0; i < 100; i++) {
@@ -72,20 +71,24 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
       response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       // a remote node we are proxied too may still think this is live, try again
-      Thread.sleep(100);
-      response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+      Thread.sleep(250);
+      try {
+        response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+      } catch (BaseHttpSolrClient.RemoteExecutionException e1) {
+        // a remote node we are proxied too may still think this is live, try again
+        Thread.sleep(500);
+
+        response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+
+      }
     }
 
     assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
-    SolrServerException e = expectThrows(SolrServerException.class,
-        "Request should have failed because we killed shard1 jetty",
-        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1)
-            .setParam(ShardParams.SHARDS_TOLERANT, false))
-    );
+    SolrServerException e = expectThrows(SolrServerException.class, "Request should have failed because we killed shard1 jetty",
+        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
     assertNotNull(e.getCause());
-    assertTrue("Error message from server should have the name of the down shard",
-        e.getCause().getMessage().contains("shard"));
+    assertTrue("Error message from server should have the name of the down shard", e.getCause().getMessage().contains("shard"));
   }
-}
+  }
