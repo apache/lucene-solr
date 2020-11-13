@@ -43,8 +43,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
 
-    // in order to fix stored base_url's, just remove it for now and
-    // re-compute when needed if we have a node_name to work from
+    // don't store base_url if we have a node_name to recompute from when we read back from ZK
     // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
     if (this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
       this.propMap.remove(ZkStateReader.BASE_URL_PROP);
@@ -152,32 +151,21 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Get a string property value.
    */
   public String getStr(String key, String def) {
-    Object o = get(key);
+    Object o = propMap.get(key);
+
+    // TODO: This "hack" should not be needed but keeping it here b/c we removed the base_url from the map in the ctor
+    if (o == null && def == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
+      final String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
+      if (nodeName != null) {
+        o = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
+      }
+    }
+
     return o == null ? def : o.toString();
   }
 
   public Object get(String key) {
-    Object v = propMap.get(key);
-
-    // init the base_url on-the-fly if not already set,
-    // we don't want to compute it eagerly b/c some of the Overseer
-    // message objects have a node_name but never need a base_url
-    // Replica eagerly computes this in the ctor so never hits this code
-    if (v == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
-      v = initBaseUrlFromNodeName();
-    }
-
-    return v;
-  }
-  
-  protected final String initBaseUrlFromNodeName() {
-    String v = null;
-    final Object prop = propMap.get(ZkStateReader.NODE_NAME_PROP);
-    if (prop != null) {
-      v = UrlScheme.INSTANCE.getBaseUrlForNodeName((String)prop);
-      propMap.put(ZkStateReader.BASE_URL_PROP, v);
-    }
-    return v;
+    return propMap.get(key);
   }
 
   @Override

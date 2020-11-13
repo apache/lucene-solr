@@ -135,18 +135,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.shard = shard;
     this.name = name;
     this.node = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
-
-    // it's ok to eagerly set the base_url from the node_name for replicas
-    String baseUrl = initBaseUrlFromNodeName();
-    if (baseUrl != null) {
-      propMap.put(BASE_URL_PROP, baseUrl);
-    }
-
     this.core = (String) propMap.get(ZkStateReader.CORE_NAME_PROP);
     this.type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     // default to ACTIVE
     this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
     validate();
+
+    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   // clone constructor
@@ -163,10 +158,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
     if (props != null) {
       this.propMap.putAll(props);
     }
-    if (node != null) {
-      propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(node));
-    }
     validate();
+    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
@@ -188,6 +181,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     state = State.getState(String.valueOf(details.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     this.propMap.putAll(details);
     validate();
+    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   private final void validate() {

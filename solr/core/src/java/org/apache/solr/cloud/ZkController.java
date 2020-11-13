@@ -102,9 +102,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.UrlScheme.HTTP;
-import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
@@ -448,9 +445,6 @@ public class ZkController implements Closeable {
       public boolean isClosed() {
         return cc.isShutDown();
       }});
-
-    // setup the scheme before updating cluster state
-    UrlScheme.INSTANCE.initFromClusterProps(zkClient);
 
     // Refuse to start if ZK has a non empty /clusterstate.json
     checkNoOldClusterstate(zkClient);
@@ -929,11 +923,7 @@ public class ZkController implements Closeable {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
 
-      if (UrlScheme.INSTANCE.useLiveNodesUrlScheme() && UrlScheme.INSTANCE.isOnServer()) {
-        zkStateReader.registerLiveNodesListener(UrlScheme.INSTANCE);
-        zkStateReader.registerClusterPropertiesListener(UrlScheme.INSTANCE); // so operators can turn this off
-      } // else we don't want to use url scheme from live nodes ...
-
+      // this must happen after zkStateReader has initialized the cluster props
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
       checkForExistingEphemeralNode();
@@ -1114,19 +1104,11 @@ public class ZkController implements Closeable {
       return;
     }
 
-    byte[] schemeData = null;
-    if (UrlScheme.INSTANCE.useLiveNodesUrlScheme()) {
-      // a bit hacky ... we don't really care if the cluster prop scheme is set to "https" if we're not configured
-      // to accept https connections, so set our live node znode data to https if we're really configured to accept https
-      String activeUrlScheme = System.getProperty(UrlScheme.HTTPS_PORT_PROP) != null ? HTTPS : HTTP;
-      schemeData = activeUrlScheme.getBytes(StandardCharsets.UTF_8);
-    }
-
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     List<Op> ops = new ArrayList<>(2);
-    ops.add(Op.create(nodePath, schemeData, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
     zkClient.multi(ops, true);
   }
 
@@ -1460,7 +1442,6 @@ public class ZkController implements Closeable {
 
     Map<String, Object> props = new HashMap<>();
     // we only put a subset of props into the leader node
-    props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
@@ -1559,7 +1540,6 @@ public class ZkController implements Closeable {
       Map<String,Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
-      props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
@@ -1664,7 +1644,6 @@ public class ZkController implements Closeable {
           OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
           ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
-          ZkStateReader.BASE_URL_PROP, getBaseUrl(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       overseerJobQueue.offer(Utils.toJSON(m));
     }
@@ -2210,7 +2189,6 @@ public class ZkController implements Closeable {
     String coreNodeName = params.get(CORE_NODE_NAME_PROP);
     String coreName = params.get(CORE_NAME_PROP);
     String electionNode = params.get(ELECTION_NODE_PROP);
-    String baseUrl = params.get(BASE_URL_PROP);
 
     try {
       MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
@@ -2222,7 +2200,8 @@ public class ZkController implements Closeable {
       ElectionContext prevContext = electionContexts.get(contextKey);
       if (prevContext != null) prevContext.cancelElection();
 
-      ZkNodeProps zkProps = new ZkNodeProps(BASE_URL_PROP, baseUrl, CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
+      String ourUrl = ZkCoreNodeProps.getCoreUrl(UrlScheme.INSTANCE.getBaseUrlForNodeName(getNodeName()), coreName);
+      ZkNodeProps zkProps = new ZkNodeProps(CORE_NAME_PROP, coreName, NODE_NAME_PROP, getNodeName(), CORE_NODE_NAME_PROP, coreNodeName);
 
       LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
       ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
@@ -2238,7 +2217,6 @@ public class ZkController implements Closeable {
         Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
         if (replicaType == Type.TLOG) {
           String leaderUrl = getLeader(core.getCoreDescriptor().getCloudDescriptor(), cloudConfig.getLeaderVoteWait());
-          String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
           if (!leaderUrl.equals(ourUrl)) {
             // restart the replication thread to ensure the replication is running in each new replica
             // especially if previous role is "leader" (i.e., no replication thread)

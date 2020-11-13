@@ -303,9 +303,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty(URL_SCHEME, UrlScheme.HTTPS);
-      if (!UrlScheme.INSTANCE.isOnServer()) {
-        UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
-      }
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
+    } else {
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     }
   }
 
@@ -346,7 +346,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
       System.clearProperty(URL_SCHEME);
-      UrlScheme.INSTANCE.reset();
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);

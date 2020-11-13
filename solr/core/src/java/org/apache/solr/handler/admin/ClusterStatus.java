@@ -254,6 +254,7 @@ public class ClusterStatus {
       replicas.values().forEach(r -> {
         String nodeName = (String)r.get(ZkStateReader.NODE_NAME_PROP);
         if (nodeName != null) {
+          // UI needs the base_url set
           r.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
         }
       });

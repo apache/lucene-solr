@@ -73,6 +73,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -878,7 +879,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = entry.getKey();
             // TODO: no trailing slash on end desired, so replica.getCoreUrl is not applicable here
-            cjr.url = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
+            cjr.url = replica.getBaseUrl() + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
             if (isLeader) {
@@ -2002,8 +2003,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection); //new ZkCoreNodeProps(node).getCoreUrl();
+        final String nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
+        if (clusterState.liveNodesContain(nodeName)) {
+          return ZkCoreNodeProps.getCoreUrl(UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName), collection);
         }
       }
     }

@@ -85,7 +85,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node4",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://node4:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node4:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
@@ -98,7 +97,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node5",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://node5:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node5:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
@@ -138,7 +136,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node1",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://node1:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node1:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT"
@@ -149,7 +146,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node2",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://node2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node2:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
@@ -160,7 +156,6 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
         new Replica(
             "node3",
             map(
-                ZkStateReader.BASE_URL_PROP, "http://node3:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node3:8983_solr",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
