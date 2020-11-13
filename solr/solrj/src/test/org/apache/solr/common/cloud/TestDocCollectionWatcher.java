@@ -60,7 +60,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   }
 
   private Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
-                                           Predicate<DocCollection> predicate) {
+      CollectionStatePredicate predicate) {
     return testExecutor.submit(() -> {
       try {
         cluster.getSolrClient().waitForState(collection, timeout, unit, predicate);
@@ -129,7 +129,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   public void testCanWaitForNonexistantCollection() throws Exception {
 
     Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                                              (c) -> (null != c));
+                                              (l, c) -> (null != c));
 
     CollectionAdminRequest.createCollection("delayed", "config", 1, 1)
       .processAndWait(cluster.getSolrClient(), MAX_WAIT_TIMEOUT);
@@ -166,7 +166,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     final AtomicInteger runCount = new AtomicInteger(0);
     final Future<Boolean> future = waitInBackground
       ("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-       (collectionState) -> {
+       (l, collectionState) -> {
         runCount.incrementAndGet();
         int replicas = 0;
         for (Slice slice : collectionState) {
@@ -209,7 +209,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS,
-                          (c) -> (false));
+                          (l, c) -> (false));
     });
 
     await("Watchers for collection should be removed after timeout")
@@ -226,7 +226,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
                         (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
    
     Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                                              (c) -> c == null);
+                                              (l, c) -> c == null);
 
     CollectionAdminRequest.deleteCollection("tobedeleted").process(client);
 

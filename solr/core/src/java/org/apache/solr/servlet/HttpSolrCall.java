@@ -166,7 +166,6 @@ public class HttpSolrCall {
   protected Action action;
   protected String coreUrl;
   protected SolrConfig config;
-  protected volatile Map<String, Integer> invalidStates;
 
   //The states of client that is invalid in this request
   protected String origCorename; // What's in the URL path; might reference a collection/alias or a Solr core name
@@ -328,7 +327,7 @@ public class HttpSolrCall {
 
         ensureStatesAreAtLeastAtClient();
 
-        invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+        Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
 
         addCollectionParamIfNeeded(getCollectionsList());
 
@@ -344,7 +343,7 @@ public class HttpSolrCall {
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
     if (cores.isZooKeeperAware()) {
       log.info("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
-      invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+      Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (invalidStates != null) {
         Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
         for (Map.Entry<String,Integer> entry : entries) {
@@ -465,13 +464,13 @@ public class HttpSolrCall {
 
     coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
-    invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+    Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
         && queryParams.get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
-      if (invalidStates != null) {
-        //it does not make sense to send the request to a remote node
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
-      }
+//      if (invalidStates != null) {
+//        //it does not make sense to send the request to a remote node
+//        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+//      }
       action = REMOTEQUERY;
     } else {
       if (!retry) {
@@ -611,7 +610,7 @@ public class HttpSolrCall {
               resp.addHeader(entry.getKey(), entry.getValue());
             }
             QueryResponseWriter responseWriter = getResponseWriter();
-            if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
+            //if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
             writeResponse(solrRsp, responseWriter, reqMethod);
           }
           return RETURN;
@@ -871,7 +870,7 @@ public class HttpSolrCall {
   protected void sendError(int code, String message) throws IOException {
     try {
       response.sendError(code, message);
-    } catch (EOFException e) {
+    } catch (Exception e) {
       log.info("Unable to write error response, client closed connection or we are shutting down", e);
     }
   }

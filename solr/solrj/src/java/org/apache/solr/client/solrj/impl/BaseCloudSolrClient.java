@@ -399,7 +399,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * instead
    * </p>
    *
-   * @see #waitForState(String, long, TimeUnit, Predicate)
+   * @see #waitForState(String, long, TimeUnit, CollectionStatePredicate)
    * @see #registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param wait       how long to wait
@@ -409,27 +409,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * @throws TimeoutException     on timeout
    */
   public void waitForState(String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
-      throws InterruptedException, TimeoutException {
-    getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
-  }
-  /**
-   * Block until a Predicate returns true, or the wait times out
-   *
-   * <p>
-   * Note that the predicate may be called again even after it has returned true, so
-   * implementors should avoid changing state within the predicate call itself.
-   * </p>
-   *
-   * @see #registerDocCollectionWatcher
-   * @param collection the collection to watch
-   * @param wait       how long to wait
-   * @param unit       the units of the wait parameter
-   * @param predicate  a {@link Predicate} to test against the {@link DocCollection}
-   * @throws InterruptedException on interrupt
-   * @throws TimeoutException     on timeout
-   */
-  public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);

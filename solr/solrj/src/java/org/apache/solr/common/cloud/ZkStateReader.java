@@ -926,7 +926,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Slice slice = coll.getSlice(shard);
       if (slice != null) {
         Replica leader = slice.getLeader();
-        if (leader != null) {
+        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
           return leader;
         }
       }
@@ -1937,12 +1937,15 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * @param predicate  the predicate to call on state changes
    * @throws InterruptedException on interrupt
    * @throws TimeoutException     on timeout
-   * @see #waitForState(String, long, TimeUnit, Predicate)
    * @see #registerCollectionStateWatcher
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
 
+    DocCollection coll = clusterState.getCollectionOrNull(collection);
+    if (predicate.matches(liveNodes, coll)) {
+      return;
+    }
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1966,53 +1969,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       }
     } finally {
       removeCollectionStateWatcher(collection, watcher);
-      waitLatches.remove(latch);
-    }
-  }
-
-  /**
-   * Block until a Predicate returns true, or the wait times out
-   *
-   * <p>
-   * Note that the predicate may be called again even after it has returned true, so
-   * implementors should avoid changing state within the predicate call itself.
-   * </p>
-   *
-   * @param collection the collection to watch
-   * @param wait       how long to wait
-   * @param unit       the units of the wait parameter
-   * @param predicate  the predicate to call on state changes
-   * @throws InterruptedException on interrupt
-   * @throws TimeoutException     on timeout
-   */
-  public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
-      throws InterruptedException, TimeoutException {
-    assert collection != null;
-
-    if (this.closed) {
-      throw new AlreadyClosedException();
-    }
-
-    final CountDownLatch latch = new CountDownLatch(1);
-    waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
-    DocCollectionWatcher watcher = (c) -> {
-      docCollection.set(c);
-      boolean matches = predicate.test(c);
-      if (matches)
-        latch.countDown();
-
-      return matches;
-    };
-    registerDocCollectionWatcher(collection, watcher);
-
-    try {
-      // wait for the watcher predicate to return true, or time out
-      if (!latch.await(wait, unit))
-        throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
-
-    } finally {
-      removeDocCollectionWatcher(collection, watcher);
       waitLatches.remove(latch);
     }
   }

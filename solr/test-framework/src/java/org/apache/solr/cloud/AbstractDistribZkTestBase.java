@@ -192,7 +192,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Wait for collection to disappear - collection: {}"
         , collection);
 
-    zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (docCollection) -> docCollection == null);
+    zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (l, docCollection) -> docCollection == null);
     log.info("Collection has disappeared - collection:{}", collection);
   }
 
@@ -222,7 +222,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Thread.sleep(100);
     }
 
-    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (docCollection) -> {
+    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (l, docCollection) -> {
       if (docCollection == null)
         return false;
 
@@ -242,7 +242,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Replica.State expectedState) throws InterruptedException, TimeoutException {
     log.info("verifyReplicaStatus ({}) shard={} coreNodeName={}", collection, shard, coreNodeName);
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
-        (collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
+        (l, collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName).getState() == expectedState);
   }

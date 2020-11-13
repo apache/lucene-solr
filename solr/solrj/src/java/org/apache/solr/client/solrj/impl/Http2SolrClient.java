@@ -882,6 +882,8 @@ public class Http2SolrClient extends SolrClient {
         throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(), e);
       }
 
+      log.error("rsp:{}", rsp);
+
       Object error = rsp == null ? null : rsp.get("error");
 
       if (error != null && (error instanceof NamedList && ((NamedList<?>) error).get("metadata") == null || isV2Api)) {

@@ -391,22 +391,4 @@ public class DeleteReplicaCmd implements Cmd {
 
     return response;
   }
-
-  boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
-    try {
-      ocmh.zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (c) -> {
-        if (c == null)
-          return true;
-        Slice slice = c.getSlice(shard);
-        if(slice == null || slice.getReplica(replicaName) == null) {
-          return true;
-        }
-        return false;
-      });
-    } catch (TimeoutException e) {
-      return false;
-    }
-
-    return true;
-  }
 }

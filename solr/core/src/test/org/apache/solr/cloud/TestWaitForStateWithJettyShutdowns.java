@@ -87,14 +87,12 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       // then this number needs to change -- but the test fundementally depends on the implementation
       // calling the predicate at least once, which should also be neccessary for any future impl
       // (to verify that it didn't "miss" the state change when creating the watcher)
-      final CountDownLatch latch = new CountDownLatch(2);
+      final CountDownLatch latch = new CountDownLatch(1);
       
       final Future<?> backgroundWaitForState = executor.submit
         (() -> {
           try {
-            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS,
-                                                 new LatchCountingPredicateWrapper(latch,
-                                                                                   clusterShape(1, 1)));
+            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS, new LatchCountingPredicateWrapper(latch, clusterShape(1, 1)));
           } catch (Exception e) {
             log.error("background thread got exception", e);
             throw new RuntimeException(e);
@@ -126,7 +124,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     }
   }
     
-  public final class LatchCountingPredicateWrapper implements CollectionStatePredicate {
+  public static final class LatchCountingPredicateWrapper implements CollectionStatePredicate {
     private final CountDownLatch latch;
     private final CollectionStatePredicate inner;
     public LatchCountingPredicateWrapper(final CountDownLatch latch, final CollectionStatePredicate inner) {

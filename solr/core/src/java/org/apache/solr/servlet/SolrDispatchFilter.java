@@ -511,7 +511,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } catch(Exception e) {
-      log.error("", e);
+      log.error("Solr ran into an unexpected problem and doesn't seem to know more about it.", e);
       response.sendError(500, e.getMessage());
     } finally {
       if (span != null) span.finish();
@@ -716,6 +716,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
         @Override
         public void sendError(int sc, String msg) throws IOException {
+          log.error(msg);
           response.setStatus(sc);
           PrintWriter writer = new PrintWriter(getOutputStream());
           writer.write(msg);
