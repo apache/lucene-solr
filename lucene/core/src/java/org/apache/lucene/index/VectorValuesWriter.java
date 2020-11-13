@@ -253,7 +253,7 @@ class VectorValuesWriter {
 
     @Override
     public RandomAccessVectorValues randomAccess() {
-      return this;
+      return new BufferedVectorValues(docsWithField, vectors, dimension, searchStrategy);
     }
 
     @Override

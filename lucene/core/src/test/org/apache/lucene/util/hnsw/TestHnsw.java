@@ -17,6 +17,11 @@
 
 package org.apache.lucene.util.hnsw;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90VectorReader;
 import org.apache.lucene.document.Document;
@@ -37,11 +42,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Tests HNSW KNN graphs */
@@ -55,7 +55,7 @@ public class TestHnsw extends LuceneTestCase {
         RandomVectorValues v2 = vectors.copy(), v3 = vectors.copy();
         long seed = random().nextLong();
         HnswGraphBuilder.randSeed = seed;
-        HnswGraph hnsw = HnswGraphBuilder.build(vectors);
+        HnswGraph hnsw = HnswGraphBuilder.build((RandomAccessVectorValuesProducer) vectors);
         // Recreate the graph while indexing with the same random seed and write it out
         HnswGraphBuilder.randSeed = seed;
         try (Directory dir = newDirectory()) {
@@ -181,7 +181,7 @@ public class TestHnsw extends LuceneTestCase {
 
         @Override
         public RandomAccessVectorValues randomAccess() {
-            return this;
+            return new CircularVectorValues(size);
         }
 
         @Override
@@ -309,6 +309,7 @@ public class TestHnsw extends LuceneTestCase {
         private final int dimension;
         private final float[][] denseValues;
         private final float[][] values;
+        private final float[] scratch;
         private final SearchStrategy searchStrategy;
 
         final int numVectors;
@@ -320,6 +321,7 @@ public class TestHnsw extends LuceneTestCase {
             this.dimension = dimension;
             values = new float[size][];
             denseValues = new float[size][];
+            scratch = new float[dimension];
             int sz = 0;
             int md = -1;
             for (int offset = 0; offset < size; offset += random.nextInt(3) + 1) {
@@ -338,6 +340,7 @@ public class TestHnsw extends LuceneTestCase {
             this.searchStrategy = searchStrategy;
             this.values = values;
             this.denseValues = denseValues;
+            scratch = new float[dimension];
             numVectors = size;
             maxDoc = values.length - 1;
         }
@@ -363,7 +366,15 @@ public class TestHnsw extends LuceneTestCase {
 
         @Override
         public float[] vectorValue() {
-            return values[pos];
+            if(random().nextBoolean()) {
+                return values[pos];
+            } else {
+                // Sometimes use the same scratch array repeatedly, mimicing what the codec will do.
+                // This should help us catch cases of aliasing where the same VectorValues source is used twice in a
+                // single computation.
+                System.arraycopy(values[pos], 0, scratch, 0, dimension);
+                return scratch;
+            }
         }
 
         @Override

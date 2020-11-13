@@ -238,7 +238,7 @@ public class KnnGraphTester {
     int total = 0, ibucket = 1;
     for (int i = 1; i <= max && ibucket <= nbuckets; i++) {
       total += hist[i];
-      if (total >= count * ibucket / nbuckets) {
+      while (total >= count * ibucket / nbuckets) {
         System.out.printf("%4d", i);
         ++ibucket;
       }

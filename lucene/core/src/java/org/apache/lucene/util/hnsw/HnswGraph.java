@@ -59,6 +59,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 public final class HnswGraph {
 
   private final int maxConn;
+  private final VectorValues.SearchStrategy searchStrategy;
 
   // Each entry lists the top maxConn neighbors of a node. The nodes correspond to vectors added to HnswBuilder, and the
   // node values are the ordinals of those vectors.
@@ -68,6 +69,7 @@ public final class HnswGraph {
     graph = new ArrayList<>();
     graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
     this.maxConn = maxConn;
+    this.searchStrategy = searchStrategy;
   }
 
   /**
@@ -83,6 +85,7 @@ public final class HnswGraph {
   public static Neighbors search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
+    // TODO: use unbounded priority queue
     TreeSet<Neighbor> candidates;
     if (searchStrategy.reversed) {
       candidates = new TreeSet<>(Comparator.reverseOrder());
@@ -96,7 +99,7 @@ public final class HnswGraph {
     }
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     Set<Integer> visited = new HashSet<>();
-    // TODO: use PriorityQueue's sentinel optimization
+    // TODO: use PriorityQueue's sentinel optimization?
     Neighbors results = Neighbors.create(topK, searchStrategy.reversed);
     for (Neighbor c : candidates) {
       visited.add(c.node());
@@ -152,34 +155,45 @@ public final class HnswGraph {
   /** Connects two nodes symmetrically, limiting the maximum number of connections from either node.
    * node1 must be less than node2 and must already have been inserted to the graph */
   void connectNodes(int node1, int node2, float score) {
-    assert node1 >= 0 && node2 >= 0;
-    assert node1 < node2;
-    Neighbors arcs1 = graph.get(node1);
-    assert arcs1 != null;
-    assert arcs1.size() == 0 || arcs1.top().node() < node2;
-    if (arcs1.size() == maxConn) {
-      Neighbor top = arcs1.top();
-      if (score < top.score() == arcs1.reversed()) {
-        top.update(node2, score);
-        arcs1.updateTop();
-      }
-    } else {
-      arcs1.add(new Neighbor(node2, score));
+    connect(node1, node2, score);
+    if (node2 == graph.size()) {
+      addNode();
     }
-    Neighbors arcs2;
-    if (node2 < graph.size()) {
-      arcs2 = graph.get(node2);
-    } else {
-      assert node2 == graph.size();
-      arcs2 = Neighbors.create(maxConn, arcs1.reversed());
-      graph.add(arcs2);
-    }
-    assert arcs2.size() < maxConn;
-    arcs2.add(new Neighbor(node1, score));
+    connect(node2, node1, score);
   }
 
   KnnGraphValues getGraphValues() {
     return new HnswGraphValues();
+  }
+
+  /**
+   * Makes a connection from the node to a neighbor, dropping the worst connection when maxConn is exceeded
+   * @param node1 node to connect *from*
+   * @param node2 node to connect *to*
+   * @param score searchStrategy.score() of the vectors associated with the two nodes
+   */
+  boolean connect(int node1, int node2, float score) {
+    //System.out.println("    HnswGraph.connect " + node1 + " -> " + node2);
+    assert node1 >= 0 && node2 >= 0;
+    Neighbors nn = graph.get(node1);
+    assert nn != null;
+    if (nn.size() == maxConn) {
+      Neighbor top = nn.top();
+      if (score < top.score() == nn.reversed()) {
+        top.update(node2, score);
+        nn.updateTop();
+        return true;
+      }
+    } else {
+      nn.add(new Neighbor(node2, score));
+      return true;
+    }
+    return false;
+  }
+
+  int addNode() {
+    graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
+    return graph.size() - 1;
   }
 
   /**
