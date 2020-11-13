@@ -23,6 +23,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
+import static org.apache.lucene.util.VectorUtil.dotProduct;
+import static org.apache.lucene.util.VectorUtil.squareDistance;
+
 /**
  * This class provides access to per-document floating point vector values indexed as {@link
  * org.apache.lucene.document.VectorField}.
@@ -91,15 +94,59 @@ public abstract class VectorValues extends DocIdSetIterator {
    * determine the nearest neighbors.
    */
   public enum SearchStrategy {
+
     /** No search strategy is provided. Note: {@link VectorValues#search(float[], int, int)}
      * is not supported for fields specifying this strategy. */
     NONE,
 
     /** HNSW graph built using Euclidean distance */
-    EUCLIDEAN_HNSW,
+    EUCLIDEAN_HNSW(true),
 
     /** HNSW graph buit using dot product */
-    DOT_PRODUCT_HNSW
+    DOT_PRODUCT_HNSW;
+
+    /** If true, the scores associated with vector comparisons in this strategy are in reverse order; that is,
+     * lower scores represent more similar vectors. Otherwise, if false, higher scores represent more similar vectors.
+     */
+    public final boolean reversed;
+
+    SearchStrategy(boolean reversed) {
+      this.reversed = reversed;
+    }
+
+    SearchStrategy() {
+      reversed = false;
+    }
+
+    /**
+     * Calculates a similarity score between the two vectors with a specified function.
+     * @param v1 a vector
+     * @param v2 another vector, of the same dimension
+     * @return the value of the strategy's score function applied to the two vectors
+     */
+    public float compare(float[] v1, float[] v2) {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+          return squareDistance(v1, v2);
+        case DOT_PRODUCT_HNSW:
+          return dotProduct(v1, v2);
+        default:
+          throw new IllegalStateException("Incomparable search strategy: " + this);
+      }
+    }
+
+    /**
+     * Return true if vectors indexed using this strategy will be indexed using an HNSW graph
+     */
+    public boolean isHnsw() {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+        case DOT_PRODUCT_HNSW:
+          return true;
+        default:
+          return false;
+      }
+    }
   }
 
   /**
