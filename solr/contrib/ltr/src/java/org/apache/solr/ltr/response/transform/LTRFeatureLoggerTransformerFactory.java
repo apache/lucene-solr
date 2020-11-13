@@ -259,8 +259,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
      * There is the need of a logger model to extract the feature vector
      * 3) If an explicit feature store is passed, and there is a reranking query that uses a model with that feature store,
      * the model can be re-used and there is no need for a logging model
-     * 
-     * @param rerankingQueriesFromContext reranking queries
+     *
      * @param transformerFeatureStore explicit feature store for the transformer
      * @param transformerExternalFeatureInfo explicit efi for the transformer
      */
