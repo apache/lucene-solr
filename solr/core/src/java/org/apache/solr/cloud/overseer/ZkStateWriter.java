@@ -166,7 +166,10 @@ public class ZkStateWriter {
                   }
                   Integer ver = trackVersions.get(docColl.getName());
                   if (ver == null)  {
-                    ver = 0;
+                    ver = docColl.getZNodeVersion();
+                    if (ver == null) {
+                      ver = 0;
+                    }
                   } else {
                     ver = ver + 1;
                   }
