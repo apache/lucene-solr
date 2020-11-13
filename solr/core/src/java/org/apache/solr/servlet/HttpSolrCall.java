@@ -343,26 +343,27 @@ public class HttpSolrCall {
 
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
     if (cores.isZooKeeperAware()) {
-      log.info("ensure states are at at least client version");
-      invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+     log.info("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
+     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (invalidStates != null) {
       Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
       for (Map.Entry<String,Integer> entry : entries) {
         String collection = entry.getKey();
         Integer version = entry.getValue();
-
+        log.info("ensure states are at at least client version {} for collection {}", version, collection);
         if (cores.getZkController().getZkStateReader().watched(collection)) {
           cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
             if (collectionState == null) {
               return false;
             }
+            log.info("found server state version {}", collectionState.getZNodeVersion());
             if (collectionState.getZNodeVersion() < version) {
               return false;
             }
             return true;
           });
         }
-       }
+      }
       }
     }
   }
@@ -456,8 +457,11 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException {
+  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException, TimeoutException {
     assert core == null;
+
+    ensureStatesAreAtLeastAtClient();
+
     coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
@@ -988,14 +992,15 @@ public class HttpSolrCall {
       for (String pair : pairs) {
         String[] pcs = StringUtils.split(pair, ':');
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
-          Integer status = cores.getZkController().getZkStateReader().compareStateVersions(pcs[0], Integer.parseInt(pcs[1]));
-          if (status != null) {
+          log.info("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
+
             if (result == null) result = new HashMap<>();
-            result.put(pcs[0], status);
-          }
+            result.put(pcs[0], Integer.parseInt(pcs[1]));
+
         }
       }
     }
+    log.info("compare version states result {} {}", stateVer, result);
     return result;
   }
 

@@ -907,24 +907,23 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       StringBuilder stateVerParamBuilder = null;
+      log.info("build version params for collections {}", requestedCollectionNames);
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getDocCollection(requestedCollection, null);
-        if (coll == null) {
-          continue;
+        DocCollection coll = getZkStateReader().getClusterState().getCollectionOrNull(requestedCollection);
+        if (coll != null) {
+          int collVer = coll.getZNodeVersion();
+          if (requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+          requestedCollections.add(coll);
+
+          if (stateVerParamBuilder == null) {
+            stateVerParamBuilder = new StringBuilder();
+          } else {
+            stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
+          }
+
+          stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
         }
-
-        int collVer = coll.getZNodeVersion();
-        if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
-        requestedCollections.add(coll);
-
-        if (stateVerParamBuilder == null) {
-          stateVerParamBuilder = new StringBuilder();
-        } else {
-          stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
-        }
-
-        stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
       }
 
       if (stateVerParamBuilder != null) {
@@ -937,10 +936,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (stateVerParam != null) {
         params.set(STATE_VERSION, stateVerParam);
       } else {
-        params.remove(STATE_VERSION);
+       // params.remove(STATE_VERSION);
       }
-    } // else: ??? how to set this ???
+    } else {
+      ModifiableSolrParams sp = new ModifiableSolrParams(request.getParams());
+      if (stateVerParam != null) {
+        sp.set(STATE_VERSION, stateVerParam);
+      } else {
+        //sp.remove(STATE_VERSION);
+      }
+    }
 
+
+//    log.info("state version param {}", request.getParams().get(STATE_VERSION));
     NamedList<Object> resp = null;
     try {
       resp = sendRequest(request, inputCollections);
@@ -1116,6 +1124,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   protected NamedList<Object> sendRequest(SolrRequest request, List<String> inputCollections)
       throws SolrServerException, IOException {
+
+//    if (request.getParams().get(STATE_VERSION) == null) {
+//      throw new IllegalStateException("State version cannot be null " + request.getParams());
+//    }
+
     connect();
 
     boolean sendToLeaders = false;

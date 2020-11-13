@@ -57,8 +57,6 @@ public class CloudSolrClient extends BaseCloudSolrClient {
   private final HttpClient myClient;
   private final boolean clientIsInternal;
 
-  public static final String STATE_VERSION = BaseCloudSolrClient.STATE_VERSION;
-
   /**
    * @deprecated since 7.0  Use {@link Builder} methods instead. 
    */
