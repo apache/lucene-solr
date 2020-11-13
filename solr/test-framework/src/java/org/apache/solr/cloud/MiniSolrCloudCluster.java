@@ -631,17 +631,6 @@ public class MiniSolrCloudCluster {
       throw errors.values().iterator().next();
     }
 
-    // TODO timeouts
-
-    for (String collection : collections) {
-      try {
-        reader.waitForState(collection, 10, TimeUnit.SECONDS, Objects::isNull);
-      } catch (TimeoutException timeoutException) {
-        log.error("Wait to see collection {} deleted in client state timed out!", collection, timeoutException);
-        throw timeoutException;
-      }
-    }
-
     // may be deleted, but may not be gone yet - we only wait to not see it in ZK, not for core unloads
     for (JettySolrRunner jetty : jettys) {
       CoreContainer cc = jetty.getCoreContainer();

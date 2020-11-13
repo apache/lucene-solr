@@ -1101,14 +1101,14 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       } else if (request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
-        try {
-          getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-        } catch (TimeoutException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
+//        try {
+//          getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (c) -> c == null);
+//        } catch (InterruptedException e) {
+//          ParWork.propagateInterrupt(e);
+//          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+//        } catch (TimeoutException e) {
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//        }
       }
 
     }

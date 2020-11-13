@@ -18,6 +18,7 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,13 +68,11 @@ public class ZkStateWriter {
   AtomicReference<Exception> lastFailedException = new AtomicReference<>();
   private final Map<String,Integer> trackVersions = new ConcurrentHashMap<>();
 
-
+  private final Map<String, ZkNodeProps> stateUpdates = new HashMap<>();
 
   Map<String,DocCollection> failedUpdates = new ConcurrentHashMap<>();
 
   private volatile ClusterState cs;
-  private boolean dirty;
-  private Set<String> collectionsToWrite = ConcurrentHashMap.newKeySet();
 
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
@@ -84,12 +83,16 @@ public class ZkStateWriter {
     }
   });
 
+
+  private Set<String> dirtyStructure = new HashSet<>();
+  private Set<String> dirtyState = new HashSet<>();
+
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;
     this.stats = stats;
-
+    zkStateReader.forciblyRefreshAllClusterStateSlow();
     cs = zkStateReader.getClusterState();
   }
 
@@ -100,16 +103,12 @@ public class ZkStateWriter {
     ourLock.lock();
     //log.info("Got our write lock for enq");
     try {
-      AtomicBoolean changed = new AtomicBoolean();
 
       if (!stateUpdate) {
         if (clusterState == null) {
           throw new NullPointerException("clusterState cannot be null");
         }
 
-
-
-        changed.set(true);
         clusterState.forEachCollection(collection -> {
           DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
           collection.getProperties().remove("pullReplicas");
@@ -135,9 +134,9 @@ public class ZkStateWriter {
               Object removed = replica.getProperties().remove("numShards");
             }
           }
+          dirtyStructure.add(collection.getName());
         });
 
-        collectionsToWrite.addAll(clusterState.getCollectionsMap().keySet());
         Collection<DocCollection> collections = cs.getCollectionsMap().values();
         for (DocCollection collection : collections) {
           if (clusterState.getCollectionOrNull(collection.getName()) == null) {
@@ -160,18 +159,25 @@ public class ZkStateWriter {
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
               if (entry.getKey().equals("DOWNNODE")) {
                 cs.forEachCollection(docColl -> {
-
+                  ZkNodeProps updates = stateUpdates.get(docColl.getName());
+                  if (updates == null) {
+                    updates = new ZkNodeProps();
+                    stateUpdates.put(docColl.getName(), updates);
+                    Integer ver = trackVersions.get(docColl.getName());
+                    if (ver == null)  {
+                      ver = 0;
+                    }
+                    //updates.getProperties().put("_cs_ver_", ver.toString());
+                  }
                   List<Replica> replicas = docColl.getReplicas();
                   for (Replica replica : replicas) {
                     if (replica.getState() != Replica.State.DOWN) {
                       replica.setState(Replica.State.DOWN);
-                      changed.set(true);
-                      collectionsToWrite.add(docColl.getName());
+                      updates.getProperties().put(replica.getName(), "down");
+                      dirtyState.add(docColl.getName());
                     }
                   }
-
                 });
-
                 continue;
               }
 
@@ -180,6 +186,17 @@ public class ZkStateWriter {
               String[] collectionAndState = collectionAndStateString.split(",");
               String collection = collectionAndState[0];
               String setState = collectionAndState[1];
+              ZkNodeProps updates = stateUpdates.get(collection);
+              if (updates == null) {
+                updates = new ZkNodeProps();
+                stateUpdates.put(collection, updates);
+                Integer ver = trackVersions.get(collection);
+                if (ver == null)  {
+                  ver = 0;
+                }
+                //updates.getProperties().put("_cs_ver_", ver.toString());
+              }
+
               DocCollection docColl = cs.getCollectionOrNull(collection);
               if (docColl != null) {
                 Replica replica = docColl.getReplica(core);
@@ -196,16 +213,15 @@ public class ZkStateWriter {
                         r.getProperties().remove("leader");
                       }
                     }
-                    changed.set(true);
-                    collectionsToWrite.add(collection);
+                    updates.getProperties().put(replica.getName(), "leader");
+                    dirtyState.add(collection);
                   } else {
 
                     Replica.State state = Replica.State.getState(setState);
-
+                    updates.getProperties().put(replica.getName(), setState);
                     // log.info("set state {} {}", state, replica);
                     replica.setState(state);
-                    changed.set(true);
-                    collectionsToWrite.add(collection);
+                    dirtyState.add(collection);
                   }
                 }
               }
@@ -228,8 +244,7 @@ public class ZkStateWriter {
                 if (slice != null) {
                   Slice.State state = Slice.State.getState((String) entry.getValue());
                   slice.setState(state);
-                  changed.set(true);
-                  collectionsToWrite.add(collection);
+                  dirtyStructure.add(collection);
                 }
               }
             }
@@ -241,15 +256,6 @@ public class ZkStateWriter {
 
       }
 
-      if (stateUpdate) {
-        //      log.error("isStateUpdate, final cs: {}", this.cs);
-        //      log.error("isStateUpdate, submitted state: {}", clusterState);
-        if (!changed.get()) {
-          log.warn("Published state that changed nothing");
-          return;
-        }
-      }
-      dirty = true;
     } finally {
       ourLock.unlock();
     }
@@ -263,6 +269,8 @@ public class ZkStateWriter {
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
    */
+
+  // if additional updates too large, publish structure changew
   public void writePendingUpdates() {
 
    // writeLock.lock();
@@ -274,13 +282,6 @@ public class ZkStateWriter {
 
         throttle.minimumWaitBetweenActions();
         throttle.markAttemptingAction();
-
-        if (!dirty) {
-          if (log.isDebugEnabled()) {
-            log.debug("not dirty, skip writePendingUpdates");
-          }
-          return;
-        }
 
         if (log.isDebugEnabled()) {
           log.debug("writePendingUpdates {}", cs);
@@ -304,14 +305,14 @@ public class ZkStateWriter {
       //try {
         cs.forEachCollection(collection -> {
          // log.info("check collection {}", collection);
-          if (collectionsToWrite.contains(collection.getName())) {
+          if (dirtyStructure.contains(collection.getName()) || dirtyState.contains(collection.getName())) {
           //  log.info("process collection {}", collection);
             String name = collection.getName();
             String path = ZkStateReader.getCollectionPath(collection.getName());
+            String pathSCN = ZkStateReader.getCollectionSCNPath(collection.getName());
            // log.info("process collection {} path {}", collection.getName(), path);
-
+            Stat existsStat = null;
             if (log.isDebugEnabled()) log.debug("process {}", collection);
-            Stat stat = new Stat();
             try {
              // log.info("get data for {}", name);
               byte[] data = Utils.toJSON(singletonMap(name, collection));
@@ -323,19 +324,38 @@ public class ZkStateWriter {
                 Integer v = trackVersions.get(collection.getName());
                 Integer version;
                 if (v != null) {
+                  //log.info("got version from cache {}", v);
                   version = v;
                   lastVersion.set(version);
                   reader.getZkClient().setData(path, data, version, true);
+                  if (dirtyStructure.contains(collection.getName())) {
+                    reader.getZkClient().setData(pathSCN, null, -1, true);
+                    ZkNodeProps updates = stateUpdates.get(collection.getName());
+                    if (updates != null) {
+                      updates.getProperties().clear();
+                    }
+                  }
+
                 } else {
-                  Stat existsStat = reader.getZkClient().exists(path, null);
+                  existsStat = reader.getZkClient().exists(path, null);
                   if (existsStat == null) {
+                    //log.info("no node exists, using version 0");
                     version = 0;
-                    lastVersion.set(version);
-                    reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+                    lastVersion.set(-1);
+                    log.error("No state.json found for collection {}", collection);
                   } else {
-                    version = stat.getVersion();
+                    //log.info("got version from zk {}", existsStat.getVersion());
+                    version = existsStat.getVersion();
                     lastVersion.set(version);
                     reader.getZkClient().setData(path, data, version, true);
+                    if (dirtyStructure.contains(collection.getName())) {
+                      reader.getZkClient().setData(pathSCN, null, -1, true);
+                      ZkNodeProps updates = stateUpdates.get(collection.getName());
+                      if (updates != null) {
+                        updates.getProperties().clear();
+                      }
+                    }
+
                   }
                 }
                 trackVersions.put(collection.getName(), version + 1);
@@ -346,12 +366,21 @@ public class ZkStateWriter {
               } catch (KeeperException.BadVersionException bve) {
                 //lastFailedException.set(bve);
                 //failedUpdates.put(collection.getName(), collection);
-                stat = reader.getZkClient().exists(path, null);
-                trackVersions.put(collection.getName(), stat.getVersion());
+                existsStat = reader.getZkClient().exists(path, null);
+                trackVersions.put(collection.getName(), existsStat.getVersion());
                 // this is a tragic error, we must disallow usage of this instance
-                log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", lastVersion.get(), stat.getVersion(), bve);
+                log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", lastVersion.get(), existsStat.getVersion(), bve);
               }
               if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
+
+              ZkNodeProps updates = stateUpdates.get(collection.getName());
+              if (updates != null) {
+                String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
+                log.info("write state updates for collection {} {}", collection.getName(), updates);
+                reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+                updates.getProperties().clear();
+              }
+
             } catch (InterruptedException | AlreadyClosedException e) {
               log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -362,11 +391,14 @@ public class ZkStateWriter {
               log.error("Failed processing update=" + collection, e);
             }
           }
+
         });
 
+
+
         //log.info("Done with successful cluster write out");
-        dirty = false;
-        collectionsToWrite.clear();
+        dirtyStructure.clear();
+        dirtyState.clear();
       } finally {
         ourLock.unlock();
       }
@@ -383,7 +415,7 @@ public class ZkStateWriter {
 
   private void waitForStateWePublishedToComeBack() {
     cs.forEachCollection(collection -> {
-      if (collectionsToWrite.contains(collection.getName())) {
+      if (dirtyStructure.contains(collection.getName()) || dirtyState.contains(collection.getName())) {
         Integer v = null;
         try {
           //System.out.println("waiting to see state " + prevVersion);
@@ -428,5 +460,15 @@ public class ZkStateWriter {
     }
   }
 
+  public void removeCollection(String collection) {
+    ourLock.lock();
+    try {
+      stateUpdates.remove(collection);
+      cs.getCollectionStates().remove(collection);
+      //reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1);
+    } finally {
+      ourLock.unlock();
+    }
+  }
 }
 

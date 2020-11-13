@@ -132,7 +132,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   private final UpdateLog ulog;
   @VisibleForTesting
-  VersionInfo vinfo;
+  volatile VersionInfo vinfo;
   private final boolean versionsStored;
   private final boolean returnVersions;
 

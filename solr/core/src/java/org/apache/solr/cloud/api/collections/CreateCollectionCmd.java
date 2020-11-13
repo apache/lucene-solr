@@ -83,6 +83,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.getCollectionSCNPath;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
@@ -90,6 +91,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.THREADS;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
@@ -342,25 +344,33 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                     return false;
                   }
                   for (String name : coresToCreate.keySet()) {
+                    log.info("look for core {}", name);
                     if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
+                      log.info("not the right replica {}", c.getReplica(name));
                       return false;
                     }
                   }
                   Collection<Slice> slices = c.getSlices();
                   if (slices.size() < shardNames.size()) {
+                    log.info("wrong number slices {} vs {}", slices.size(), shardNames.size());
                     return false;
                   }
                   for (Slice slice : slices) {
+                    log.info("slice {} leader={}", slice, slice.getLeader());
                     if (slice.getLeader() == null || slice.getLeader().getState() != Replica.State.ACTIVE) {
+                      log.info("no leader found for slice {}", slice.getName());
                       return false;
                     }
                   }
+                  log.info("return true, everything active");
                   return true;
                 });
-              } catch(InterruptedException e){
+              } catch(InterruptedException e) {
                 log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
               } catch(TimeoutException e){
                 log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+                throw new SolrException(ErrorCode.SERVER_ERROR, e);
               }
             }
 
@@ -690,6 +700,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.STATE_JSON,
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+      stateManager.makePath(getCollectionSCNPath(collection),
+          ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+      stateManager.makePath(ZkStateReader.getCollectionStateUpdatesPath(collection),
+          ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.getCollectionPropsPath(collection),
               ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/schema_lock", null, CreateMode.PERSISTENT, false);

@@ -221,9 +221,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
             }
 
             String asyncId = finalMessage.getStr(ASYNC);
-            for (CreateReplica createReplica : createReplicas) {
-              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplicas);
-            }
+//            for (CreateReplica createReplica : createReplicas) {
+//              waitForActiveReplica(createReplica.sliceName, collectionName, asyncId, ocmh.zkStateReader, createReplicas);
+//            }
             AddReplicaCmd.Response response = new AddReplicaCmd.Response();
             return response;
           }

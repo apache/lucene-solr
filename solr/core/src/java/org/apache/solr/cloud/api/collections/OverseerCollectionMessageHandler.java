@@ -275,18 +275,19 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
         if (responce.clusterState != null) {
           DocCollection docColl = responce.clusterState.getCollectionOrNull(collection);
-          Map<String, DocCollection> collectionStates;
+          Map<String, DocCollection> collectionStates = null;
           if (docColl != null) {
             log.info("create new single collection state for collection {}", docColl.getName());
             collectionStates = new HashMap<>();
             collectionStates.put(docColl.getName(), docColl);
           } else {
             log.info("collection not found in returned state {} {}", collection, responce.clusterState);
-            collectionStates = new HashMap<>();
+            overseer.getZkStateWriter().removeCollection(collection);
           }
-          ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
-
-          overseer.getZkStateWriter().enqueueUpdate(cs, null, false);
+          if (collectionStates != null) {
+            ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
+            overseer.getZkStateWriter().enqueueUpdate(cs, null, false);
+          }
 
           overseer.writePendingUpdates();
         }

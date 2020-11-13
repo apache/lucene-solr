@@ -42,6 +42,9 @@ import org.apache.solr.handler.admin.MetricsHistoryHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -189,11 +193,43 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           try {
             finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
             // TODO: wait for delete collection?
-            zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
+           // zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
+            CountDownLatch latch = new CountDownLatch(1);
+            Stat stat = zkStateReader.getZkClient().exists(ZkStateReader.getCollectionPath(collection), new Watcher() {
+              @Override
+              public void process(WatchedEvent event) {
+
+                  if (event.getType() == Watcher.Event.EventType.NodeDeleted) {
+                    latch.countDown();
+                  } else {
+                    try {
+                      Stat stat2 = zkStateReader.getZkClient().exists(ZkStateReader.getCollectionPath(collection), this, true);
+                      if (stat2 != null) {
+                        latch.countDown();
+                      }
+                    } catch (KeeperException e) {
+                      log.error("", e);
+                    } catch (InterruptedException e) {
+                      log.error("", e);
+                    }
+                  }
+
+              }
+            }, true);
+            if (stat == null) {
+              latch.countDown();
+            }
+
+            boolean success = latch.await(10, TimeUnit.SECONDS);
+            if (!success) {
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for collection to be removed");
+            }
           } catch (Exception e) {
             log.error("Exception waiting for results of delete collection cmd", e);
           }
         }
+
+
 
         AddReplicaCmd.Response response = new AddReplicaCmd.Response();
         return response;

@@ -46,11 +46,6 @@ public class DeleteLastCustomShardedReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteReplica(collectionName, "a", replica.getName())
         .process(cluster.getSolrClient());
-
-    waitForState("Expected shard 'a' to have no replicas", collectionName, (n, c) -> {
-      return c.getSlice("a") == null || c.getSlice("a").getReplicas().size() == 0;
-    });
-
   }
 
 }
