@@ -177,46 +177,47 @@ class VectorValuesWriter {
     }
 
     @Override
-    public long cost() {
-      return size();
-    }
-
-
-    @Override
     public TopDocs search(float[] target, int k, int fanout) {
       throw new UnsupportedOperationException();
     }
 
     @Override
+    public long cost() {
+      return size();
+    }
+
+    @Override
     public RandomAccessVectorValues randomAccess() {
+
+      // Must make a new delegate randomAccess so that we have our own distinct float[]
+      final RandomAccessVectorValues delegateRA = ((RandomAccessVectorValuesProducer) SortingVectorValues.this.delegate).randomAccess();
 
       return new RandomAccessVectorValues() {
 
         @Override
         public int size() {
-          return delegate.size();
+          return delegateRA.size();
         }
 
         @Override
         public int dimension() {
-          return delegate.dimension();
+          return delegateRA.dimension();
         }
 
         @Override
         public SearchStrategy searchStrategy() {
-          return delegate.searchStrategy();
+          return delegateRA.searchStrategy();
         }
 
         @Override
         public float[] vectorValue(int targetOrd) throws IOException {
-          return randomAccess.vectorValue(ordMap[targetOrd]);
+          return delegateRA.vectorValue(ordMap[targetOrd]);
         }
 
         @Override
         public BytesRef binaryValue(int targetOrd) {
           throw new UnsupportedOperationException();
         }
-
       };
     }
   }
@@ -252,7 +253,7 @@ class VectorValuesWriter {
 
     @Override
     public RandomAccessVectorValues randomAccess() {
-      return this;
+      return new BufferedVectorValues(docsWithField, vectors, dimension, searchStrategy);
     }
 
     @Override

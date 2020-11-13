@@ -601,6 +601,51 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
+  public void testIndexMultipleVectorFields() throws Exception {
+    try (Directory dir = newDirectory();
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
+      Document doc = new Document();
+      float[] v = new float[]{1};
+      doc.add(new VectorField("field1", v, SearchStrategy.EUCLIDEAN_HNSW));
+      doc.add(new VectorField("field2", new float[]{1, 2, 3}, SearchStrategy.NONE));
+      iw.addDocument(doc);
+      v[0] = 2;
+      iw.addDocument(doc);
+      doc = new Document();
+      doc.add(new VectorField("field3", new float[]{1, 2, 3}, SearchStrategy.DOT_PRODUCT_HNSW));
+      iw.addDocument(doc);
+      iw.forceMerge(1);
+      try (IndexReader reader = iw.getReader()) {
+        LeafReader leaf = reader.leaves().get(0).reader();
+
+        VectorValues vectorValues = leaf.getVectorValues("field1");
+        assertEquals(1, vectorValues.dimension());
+        assertEquals(2, vectorValues.size());
+        vectorValues.nextDoc();
+        assertEquals(1f, vectorValues.vectorValue()[0], 0);
+        vectorValues.nextDoc();
+        assertEquals(2f, vectorValues.vectorValue()[0], 0);
+        assertEquals(NO_MORE_DOCS, vectorValues.nextDoc());
+
+        VectorValues vectorValues2 = leaf.getVectorValues("field2");
+        assertEquals(3, vectorValues2.dimension());
+        assertEquals(2, vectorValues2.size());
+        vectorValues2.nextDoc();
+        assertEquals(2f, vectorValues2.vectorValue()[1], 0);
+        vectorValues2.nextDoc();
+        assertEquals(2f, vectorValues2.vectorValue()[1], 0);
+        assertEquals(NO_MORE_DOCS, vectorValues2.nextDoc());
+
+        VectorValues vectorValues3 = leaf.getVectorValues("field3");
+        assertEquals(3, vectorValues3.dimension());
+        assertEquals(1, vectorValues3.size());
+        vectorValues3.nextDoc();
+        assertEquals(1f, vectorValues3.vectorValue()[0], 0);
+        assertEquals(NO_MORE_DOCS, vectorValues3.nextDoc());
+      }
+    }
+  }
+
   /**
    * Index random vectors, sometimes skipping documents, sometimes deleting a document,
    * sometimes merging, sometimes sorting the index,

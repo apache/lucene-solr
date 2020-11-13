@@ -283,7 +283,6 @@ public abstract class VectorWriter implements Closeable {
       public BytesRef binaryValue(int targetOrd) throws IOException {
         throw new UnsupportedOperationException();
       }
-
     }
   }
 }
