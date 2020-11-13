@@ -328,7 +328,7 @@ public class HttpSolrCall {
 
         ensureStatesAreAtLeastAtClient();
 
-        invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
+        invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
 
         addCollectionParamIfNeeded(getCollectionsList());
 
