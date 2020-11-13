@@ -249,10 +249,6 @@ public class BlobRepository {
           if (zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
             replica = r;
             break;
-          } else {
-            if (log.isInfoEnabled()) {
-              log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
-            }
           }
         }
       }

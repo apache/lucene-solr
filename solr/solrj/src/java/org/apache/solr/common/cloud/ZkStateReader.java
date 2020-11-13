@@ -1402,6 +1402,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       }
 
       Map<String,Object> m = (Map) fromJSON(data);
+      log.info("Got additional state updates {}", m);
+      if (m.size() == 0) {
+        return;
+      }
+
+      Integer version = Integer.parseInt((String) m.get("_cs_ver_"));
+      log.info("Got additional state updates with version {}", version);
+
+      m.remove("_cs_ver_");
+      
       Set<Entry<String,Object>> entrySet = m.entrySet();
       DocCollection docCollection = clusterState.getCollectionOrNull(coll);
 
@@ -1448,7 +1458,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
               log.info("add new slice leader={} {}", newSlice.getLeader(), newSlice);
 
-              DocCollection newDocCollection = new DocCollection(coll, newSlices, docCollection.getProperties(), docCollection.getRouter(), docCollection.getZNodeVersion() + 1);
+              DocCollection newDocCollection = new DocCollection(coll, newSlices, docCollection.getProperties(), docCollection.getRouter(), version);
               docCollection = newDocCollection;
               changedCollections.add(coll);
 
@@ -2286,7 +2296,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         });
       }
       for (DocCollectionWatcher watcher : watchers) {
-        log.info("Notify sDocCollectionWatcher {} {}", watcher, collectionState);
+        log.info("Notify DocCollectionWatcher {} {}", watcher, collectionState);
         try {
           if (watcher.onStateChanged(collectionState)) {
             removeDocCollectionWatcher(collection, watcher);

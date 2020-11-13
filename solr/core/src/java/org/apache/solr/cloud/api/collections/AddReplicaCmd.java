@@ -242,7 +242,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       coreNames.add(replica.coreName);
     }
     try {
-      zkStateReader.waitForState(collectionName, 60, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      log.info("waiting for created replicas shard={} {}", shard, coreNames);
+      zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
         if (collectionState == null) {
           return false;
         }

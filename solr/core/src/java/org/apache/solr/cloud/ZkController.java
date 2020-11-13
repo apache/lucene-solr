@@ -1373,7 +1373,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={} skipRecovery={}", coreName, baseUrl, collection, shardId, skipRecovery);
       AtomicReference<DocCollection> coll = new AtomicReference<>();
       try {
-        zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (l, c) -> { // nocommit timeout
+        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 60000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
 //          if (isClosed()) {
 //            throw new AlreadyClosedException();
 //          }

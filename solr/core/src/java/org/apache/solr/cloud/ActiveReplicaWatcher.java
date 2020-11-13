@@ -44,7 +44,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
   private final List<String> solrCoreNames = new ArrayList<>();
   private final List<Replica> activeReplicas = new ArrayList<>();
 
-  private int lastZkVersion = -1;
+  //private int lastZkVersion = -1;
 
   private SolrCloseableLatch latch;
 
@@ -138,11 +138,11 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
       log.debug("-- already done, exiting...");
       return true;
     }
-    if (collectionState.getZNodeVersion() == lastZkVersion) {
-      log.debug("-- spurious call with already seen zkVersion= {}, ignoring...", lastZkVersion);
-      return false;
-    }
-    lastZkVersion = collectionState.getZNodeVersion();
+//    if (collectionState.getZNodeVersion() == lastZkVersion) {
+//      log.debug("-- spurious call with already seen zkVersion= {}, ignoring...", lastZkVersion);
+//      return false;
+//    }
+//    lastZkVersion = collectionState.getZNodeVersion();
 
     for (Slice slice : collectionState.getSlices()) {
       for (Replica replica : slice.getReplicas()) {

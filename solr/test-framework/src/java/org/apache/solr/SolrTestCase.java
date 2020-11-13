@@ -259,6 +259,9 @@ public class SolrTestCase extends LuceneTestCase {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
+
+
+      System.setProperty("solr.zkregister.leaderwait", "3000");
       System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "10000");
       System.setProperty("zookeeper.request.timeout", "15000");

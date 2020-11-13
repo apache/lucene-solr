@@ -343,6 +343,7 @@ public class HttpSolrCall {
 
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
     if (cores.isZooKeeperAware()) {
+      log.info("ensure states are at at least client version");
       invalidStates = checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
       if (invalidStates != null) {
       Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();

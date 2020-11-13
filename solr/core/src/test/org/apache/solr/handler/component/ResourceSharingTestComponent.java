@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.BlobRepository;
@@ -33,6 +35,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 public class ResourceSharingTestComponent extends SearchComponent implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private SolrCore core;
+  private volatile SolrCore core;
   private volatile BlobRepository.BlobContent<TestObject> blob;
 
   @SuppressWarnings("SynchronizeOnNonFinalField")
@@ -73,7 +76,11 @@ public class ResourceSharingTestComponent extends SearchComponent implements Sol
   public void inform(SolrCore core) {
     log.info("Informing test component...");
     this.core = core;
-    this.blob =  core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
+    ParWork.getRootSharedExecutor().submit(() -> {
+      core.getCoreContainer().getZkController().getZkStateReader().waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL, 5, TimeUnit.SECONDS, 1, 1, false);
+      this.blob =  core.loadDecodeAndCacheBlob(getKey(), new DumbCsvDecoder()).blob;
+    });
+
     log.info("Test component informed!");
   }
 

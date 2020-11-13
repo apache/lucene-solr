@@ -315,7 +315,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (collection != null && responce.clusterState != null) {
           Integer version = overseer.getZkStateWriter().lastWrittenVersion(collection);
           if (version != null && !action.equals(DELETE)) {
-            results.add("csver", version); // nocommit - find out which version was written by overseer and return it in response for this
+            results.add("csver", version);
           } else {
              //deleted
           }

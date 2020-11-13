@@ -163,12 +163,14 @@ public class ZkStateWriter {
                   if (updates == null) {
                     updates = new ZkNodeProps();
                     stateUpdates.put(docColl.getName(), updates);
-                    Integer ver = trackVersions.get(docColl.getName());
-                    if (ver == null)  {
-                      ver = 0;
-                    }
-                    //updates.getProperties().put("_cs_ver_", ver.toString());
                   }
+                  Integer ver = trackVersions.get(docColl.getName());
+                  if (ver == null)  {
+                    ver = 0;
+                  } else {
+                    ver = ver + 1;
+                  }
+                  updates.getProperties().put("_cs_ver_", ver.toString());
                   List<Replica> replicas = docColl.getReplicas();
                   for (Replica replica : replicas) {
                     if (replica.getState() != Replica.State.DOWN) {
@@ -190,12 +192,14 @@ public class ZkStateWriter {
               if (updates == null) {
                 updates = new ZkNodeProps();
                 stateUpdates.put(collection, updates);
-                Integer ver = trackVersions.get(collection);
-                if (ver == null)  {
-                  ver = 0;
-                }
-                //updates.getProperties().put("_cs_ver_", ver.toString());
               }
+              Integer ver = trackVersions.get(collection);
+              if (ver == null)  {
+                ver = 0;
+              } else {
+                ver = ver + 1;
+              }
+              updates.getProperties().put("_cs_ver_", ver.toString());
 
               DocCollection docColl = cs.getCollectionOrNull(collection);
               if (docColl != null) {
@@ -317,7 +321,6 @@ public class ZkStateWriter {
              // log.info("get data for {}", name);
               byte[] data = Utils.toJSON(singletonMap(name, collection));
             //  log.info("got data for {} {}", name, data.length);
-              if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", collection.getZNodeVersion(), data.length, collection);
 
               try {
               
@@ -327,8 +330,11 @@ public class ZkStateWriter {
                   //log.info("got version from cache {}", v);
                   version = v;
                   lastVersion.set(version);
+                  if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", version, data.length, collection);
+
                   reader.getZkClient().setData(path, data, version, true);
                   if (dirtyStructure.contains(collection.getName())) {
+                    dirtyStructure.remove(collection.getName());
                     reader.getZkClient().setData(pathSCN, null, -1, true);
                     ZkNodeProps updates = stateUpdates.get(collection.getName());
                     if (updates != null) {
@@ -344,11 +350,15 @@ public class ZkStateWriter {
                     lastVersion.set(-1);
                     log.error("No state.json found for collection {}", collection);
                   } else {
+
                     //log.info("got version from zk {}", existsStat.getVersion());
                     version = existsStat.getVersion();
                     lastVersion.set(version);
+                    if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", version, data.length, collection);
+
                     reader.getZkClient().setData(path, data, version, true);
                     if (dirtyStructure.contains(collection.getName())) {
+                      dirtyStructure.remove(collection.getName());
                       reader.getZkClient().setData(pathSCN, null, -1, true);
                       ZkNodeProps updates = stateUpdates.get(collection.getName());
                       if (updates != null) {
@@ -371,12 +381,12 @@ public class ZkStateWriter {
                 // this is a tragic error, we must disallow usage of this instance
                 log.warn("Tried to update the cluster state using version={} but we where rejected, found {}", lastVersion.get(), existsStat.getVersion(), bve);
               }
-              if (log.isDebugEnabled()) log.debug("Set version for local collection {} to {}", collection.getName(), collection.getZNodeVersion() + 1);
 
               ZkNodeProps updates = stateUpdates.get(collection.getName());
               if (updates != null) {
                 String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
                 log.info("write state updates for collection {} {}", collection.getName(), updates);
+                dirtyState.remove(collection.getName());
                 reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
                 updates.getProperties().clear();
               }
@@ -397,8 +407,7 @@ public class ZkStateWriter {
 
 
         //log.info("Done with successful cluster write out");
-        dirtyStructure.clear();
-        dirtyState.clear();
+
       } finally {
         ourLock.unlock();
       }
@@ -454,7 +463,7 @@ public class ZkStateWriter {
   public ClusterState getClusterstate(boolean stateUpdate) {
     ourLock.lock();
     try {
-      return cs;
+      return new ClusterState(reader.getLiveNodes(), cs.getCollectionsMap());
     } finally {
       ourLock.unlock();
     }

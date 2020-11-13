@@ -215,7 +215,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         closer.collect("latch", () -> {
           try {
             latch.countDown();
-            latch = null;
           } catch (NullPointerException e) {
             // expected
           }
