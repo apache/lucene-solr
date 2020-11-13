@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+import com.google.common.base.Preconditions
+import com.google.common.base.Strings
+
 apply plugin: 'base'
 apply plugin: 'com.palantir.docker'
 
@@ -31,13 +34,16 @@ dependencies {
   docker dockerPackage
 }
 
-def dockerImageName = "apache/solr:${version}"
-def baseDockerImage = 'openjdk:11-jre-slim'
+def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
+def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
+def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
+def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
 docker {
   name = dockerImageName
   files file('include')
-  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
+  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}", 'GITHUB_URL': githubUrlOrMirror])
 }
 
 tasks.docker {
@@ -53,11 +59,21 @@ tasks.docker {
 }
 
 abstract class DockerTestSuite extends DefaultTask {
+  private String solrImageName = null;
   private List<String> tests = new ArrayList<>();
   private List<String> ignore = new ArrayList<>();
 
   @OutputDirectory
   abstract DirectoryProperty getOutputDir()
+
+  public void setSolrImageName(String solrImageName) {
+    this.solrImageName = solrImageName
+  }
+
+  public String getSolrImageName() {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(solrImageName), "solrImageName is a required dockerTests configuration item.")
+    return solrImageName
+  }
 
   @Option(option = "tests", description = "Only run these specified tests, comma separated.")
   public void setTests(List<String> tests) {
@@ -81,6 +97,8 @@ abstract class DockerTestSuite extends DefaultTask {
 
   @TaskAction
   void execute() {
+    // Print information on the image before it is tested
+    project.logger.lifecycle("Testing Solr Image: $solrImageName\n")
     def sourceDir = project.file("tests/cases")
     sourceDir.eachFile  { file ->
       def testName = file.getName()
@@ -92,7 +110,7 @@ abstract class DockerTestSuite extends DefaultTask {
         project.exec {
           environment "TEST_DIR", "$file"
           environment "BUILD_DIR", "$testCaseBuildDir"
-          commandLine "bash", "$file/test.sh", "apache/solr:${project.version}"
+          commandLine "bash", "$file/test.sh", solrImageName
         }
       }
     }
@@ -101,4 +119,5 @@ abstract class DockerTestSuite extends DefaultTask {
 
 task testDocker(type: DockerTestSuite) {
   outputDir = project.file("$buildDir/tmp/tests")
+  solrImageName = dockerImageName
 }

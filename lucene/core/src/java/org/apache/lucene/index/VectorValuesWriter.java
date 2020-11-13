@@ -98,17 +98,17 @@ class VectorValuesWriter {
     }
   }
 
-  static class SortingVectorValues extends VectorValues {
+  static class SortingVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
 
     private final VectorValues delegate;
-    private final VectorValues.RandomAccess randomAccess;
+    private final RandomAccessVectorValues randomAccess;
     private final int[] docIdOffsets;
     private final int[] ordMap;
     private int docId = -1;
 
     SortingVectorValues(VectorValues delegate, Sorter.DocMap sortMap) throws IOException {
       this.delegate = delegate;
-      randomAccess = delegate.randomAccess();
+      randomAccess = ((RandomAccessVectorValuesProducer) delegate).randomAccess();
       docIdOffsets = new int[sortMap.size()];
 
       int offset = 1; // 0 means no vector for this (field, document)
@@ -152,8 +152,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public float[] vectorValue() {
-      throw new UnsupportedOperationException();
+    public float[] vectorValue() throws IOException {
+      return randomAccess.vectorValue(docIdOffsets[docId] - 1);
     }
 
     @Override
@@ -177,49 +177,52 @@ class VectorValuesWriter {
     }
 
     @Override
+    public TopDocs search(float[] target, int k, int fanout) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long cost() {
       return size();
     }
 
     @Override
-    public RandomAccess randomAccess() {
-      RandomAccess ra = delegate.randomAccess();
-      return new RandomAccess() {
+    public RandomAccessVectorValues randomAccess() {
+
+      // Must make a new delegate randomAccess so that we have our own distinct float[]
+      final RandomAccessVectorValues delegateRA = ((RandomAccessVectorValuesProducer) SortingVectorValues.this.delegate).randomAccess();
+
+      return new RandomAccessVectorValues() {
 
         @Override
         public int size() {
-          return delegate.size();
+          return delegateRA.size();
         }
 
         @Override
         public int dimension() {
-          return delegate.dimension();
+          return delegateRA.dimension();
         }
 
         @Override
         public SearchStrategy searchStrategy() {
-          return delegate.searchStrategy();
+          return delegateRA.searchStrategy();
         }
 
         @Override
         public float[] vectorValue(int targetOrd) throws IOException {
-          return ra.vectorValue(ordMap[targetOrd]);
+          return delegateRA.vectorValue(ordMap[targetOrd]);
         }
 
         @Override
         public BytesRef binaryValue(int targetOrd) {
           throw new UnsupportedOperationException();
         }
-
-        @Override
-        public TopDocs search(float[] target, int k, int fanout) {
-          throw new UnsupportedOperationException();
-        }
       };
     }
   }
 
-  private static class BufferedVectorValues extends VectorValues implements VectorValues.RandomAccess {
+  private static class BufferedVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final DocsWithFieldSet docsWithField;
 
@@ -249,8 +252,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public RandomAccess randomAccess() {
-      return this;
+    public RandomAccessVectorValues randomAccess() {
+      return new BufferedVectorValues(docsWithField, vectors, dimension, searchStrategy);
     }
 
     @Override

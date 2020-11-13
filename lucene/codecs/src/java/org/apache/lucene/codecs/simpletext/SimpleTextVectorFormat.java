@@ -43,9 +43,9 @@ public final class SimpleTextVectorFormat extends VectorFormat {
     return new SimpleTextVectorReader(state);
   }
 
-  /** Extension of points data file */
+  /** Extension of vectors data file */
   static final String VECTOR_EXTENSION = "vec";
 
-  /** Extension of points index file */
+  /** Extension of vectors index file */
   static final String META_EXTENSION = "gri";
 }
