@@ -468,10 +468,10 @@ public class HttpSolrCall {
     Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
         && queryParams.get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM) == null) {
-//      if (invalidStates != null) {
-//        //it does not make sense to send the request to a remote node
-//        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
-//      }
+      if (invalidStates != null) {
+        //it does not make sense to send the request to a remote node
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+      }
       action = REMOTEQUERY;
     } else {
       if (!retry) {
