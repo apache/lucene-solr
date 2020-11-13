@@ -345,10 +345,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops);
-        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+        final String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops);
+        final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
-        boolean isLeader = leaderUrl.equals(ourUrl); // TODO: We can probably delete most of this code if we say this
+        boolean isLeader = ourUrl.equals(leaderUrl); // TODO: We can probably delete most of this code if we say this
                                                      // strategy can only be used for pull replicas
         if (isLeader && !cloudDesc.isLeader()) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
