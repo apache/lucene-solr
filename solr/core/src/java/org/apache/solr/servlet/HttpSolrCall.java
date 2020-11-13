@@ -166,6 +166,7 @@ public class HttpSolrCall {
   protected Action action;
   protected String coreUrl;
   protected SolrConfig config;
+  protected Map<String, Integer> invalidStates;
 
   //The states of client that is invalid in this request
   protected String origCorename; // What's in the URL path; might reference a collection/alias or a Solr core name
@@ -325,9 +326,9 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
-        ensureStatesAreAtLeastAtClient();
+        invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
 
-        Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+        ensureStatesAreAtLeastAtClient();
 
         addCollectionParamIfNeeded(getCollectionsList());
 
@@ -343,7 +344,7 @@ public class HttpSolrCall {
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
     if (cores.isZooKeeperAware()) {
       log.info("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
-      Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
+      Map<String,Integer> invalidStates = getStateVersions(queryParams.get(CloudSolrClient.STATE_VERSION));
       if (invalidStates != null) {
         Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
         for (Map.Entry<String,Integer> entry : entries) {
@@ -992,10 +993,31 @@ public class HttpSolrCall {
       for (String pair : pairs) {
         String[] pcs = StringUtils.split(pair, ':');
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
+          Integer status = cores.getZkController().getZkStateReader().compareStateVersions(pcs[0], Integer.parseInt(pcs[1]));
+          if (status != null) {
+            if (result == null) result = new HashMap<>();
+            result.put(pcs[0], status);
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  private Map<String, Integer> getStateVersions(String stateVer) {
+    // TODO: for collections that are local and watched, we should just wait for the right min state, not eager fetch everything
+    Map<String, Integer> result = null;
+    String[] pairs;
+    if (stateVer != null && !stateVer.isEmpty() && cores.isZooKeeperAware()) {
+      // many have multiple collections separated by |
+      pairs = StringUtils.split(stateVer, '|');
+      for (String pair : pairs) {
+        String[] pcs = StringUtils.split(pair, ':');
+        if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
           log.info("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
 
-            if (result == null) result = new HashMap<>();
-            result.put(pcs[0], Integer.parseInt(pcs[1]));
+          if (result == null) result = new HashMap<>();
+          result.put(pcs[0], Integer.parseInt(pcs[1]));
 
         }
       }
