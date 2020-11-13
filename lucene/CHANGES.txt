@@ -9,6 +9,8 @@ New Features
 
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
+* LUCENE-9004: Approximate nearest vector search via NSW graphs
+
 System Requirements
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
