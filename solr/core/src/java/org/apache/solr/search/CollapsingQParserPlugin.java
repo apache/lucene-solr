@@ -778,6 +778,94 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /*
+  * Collapses groups that have been block indexed.
+  */
+
+  private static class BlockOrdScoreCollector extends DelegatingCollector {
+
+    private int currentGroup = -1;
+    private float topScore = Float.MIN_VALUE;
+    private int topDoc = -1;
+    private ScoreAndDoc dummy = new ScoreAndDoc();
+    private String collapseField;
+    private SortedDocValues segmentValues;
+
+    public BlockOrdScoreCollector(String collapseField) throws IOException {
+      this.collapseField = collapseField;
+    }
+
+    @Override public ScoreMode scoreMode() { return ScoreMode.COMPLETE; }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+
+      if(topDoc > -1) {
+        //Collect the topDoc in the last group of previous segment
+        dummy.docId = topDoc;
+        dummy.score = topScore;
+        leafDelegate.collect(topDoc);
+      }
+      //Now setup for the next segment.
+      leafDelegate = delegate.getLeafCollector(context);
+      leafDelegate.setScorer(dummy);
+      this.segmentValues = DocValues.getSorted(context.reader(), collapseField);
+
+      //Reset the grouping values
+
+      topDoc = -1;
+      topScore = Float.MIN_VALUE;
+      currentGroup = -1;
+    }
+
+    @Override
+    public void collect(int contextDoc) throws IOException {
+      int ord = -1;
+
+      if (segmentValues.advanceExact(contextDoc)) {
+        ord = segmentValues.ordValue();
+      } else {
+        ord = -1;
+      }
+
+      if(ord > -1) {
+        float score = scorer.score();
+        if(ord == currentGroup) {
+          //We have a document within the current group
+          if (score > topScore) {
+            //We have a higher scoring document so set the topScore and topDoc
+            topScore = score;
+            topDoc = contextDoc;
+          }
+        } else {
+          //We have a document that starts a new group
+          if(topDoc > -1) {
+            //Collect the topDoc in the previous group
+            dummy.docId = topDoc;
+            dummy.score = topScore;
+            leafDelegate.collect(topDoc);
+          }
+          //Set new doc, score and group
+          topDoc = contextDoc;
+          topScore = score;
+          currentGroup = ord;
+        }
+      }
+    }
+
+    @Override
+    public void finish() throws IOException {
+      //Collect the last document
+      dummy.score = topScore;
+      dummy.docId = topDoc;
+      leafDelegate.collect(topDoc);
+
+      if(delegate instanceof DelegatingCollector) {
+        ((DelegatingCollector) delegate).finish();
+      }
+    }
+  }
+
+  /*
   * Collapses on an integer field using the score to select the group head.
   */
 
@@ -1409,7 +1497,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if (collapseFieldType instanceof StrField) {
 
-          return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher);
+          return new BlockOrdScoreCollector(collapseField);
+          //return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
 
