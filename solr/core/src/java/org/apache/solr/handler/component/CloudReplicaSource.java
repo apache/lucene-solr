@@ -55,6 +55,7 @@ class CloudReplicaSource implements ReplicaSource {
   private DocCollection collection;
   private String collectionName;
   private ZkStateReader zkStateReader;
+  private Builder builder;
 
   private CloudReplicaSource(Builder builder) {
     final String shards = builder.params.get(ShardParams.SHARDS);
@@ -72,6 +73,7 @@ class CloudReplicaSource implements ReplicaSource {
     this.zkStateReader = builder.zkStateReader;
     this.collection = clusterState.getCollection(builder.collection);
     this.collectionName = builder.collection;
+    this.builder = builder;
 
     String shardKeys = params.get(ShardParams._ROUTE_);
 
@@ -115,7 +117,8 @@ class CloudReplicaSource implements ReplicaSource {
     List<String> sliceOrUrls = StrUtils.splitSmart(shardsParam, ",", true);
     this.slices = new String[sliceOrUrls.size()];
     this.replicas = new List[sliceOrUrls.size()];
-
+    this.builder = builder;
+    
     clusterState = builder.zkStateReader.getClusterState();
     this.zkStateReader = builder.zkStateReader;
     this.collection = clusterState.getCollection(builder.collection);
@@ -144,12 +147,13 @@ class CloudReplicaSource implements ReplicaSource {
       final Predicate<Replica> isShardLeader = new IsLeaderPredicate(builder.zkStateReader, clusterState, slice.getCollection(), slice.getName());
       List<Replica> list = slice.getReplicas()
           .stream()
-          .filter(replica -> replica.isActive(clusterState.getLiveNodes()))
+          .filter(replica -> replica.isActive(zkStateReader.getLiveNodes()))
           .filter(replica -> !builder.onlyNrt || (replica.getType() == Replica.Type.NRT || (replica.getType() == Replica.Type.TLOG && isShardLeader.test(replica))))
           .collect(Collectors.toList());
       builder.replicaListTransformer.transform(list);
       List<String> collect = list.stream().map(replica -> replica.getCoreUrl()).collect(Collectors.toList());
       builder.hostChecker.checkWhitelist(clusterState, shardsParam, collect);
+      Collections.shuffle(collect);
       return collect;
     }
   }
@@ -181,15 +185,8 @@ class CloudReplicaSource implements ReplicaSource {
     if (s == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Slice not found " + slice + " collection=" + collection);
     }
-    Collection<Replica> reps = s.getReplicas();
-    List<String> urls = new ArrayList<>(reps.size());
-    Collections.shuffle(urls);
-    for (Replica r : reps) {
-      if (r.getState() == Replica.State.ACTIVE && zkStateReader.isNodeLive(r.getNodeName())) {
-        urls.add(r.getCoreUrl());
-      }
-    }
-    return urls;
+
+    return findReplicas(builder, null, clusterState, s);
   }
 
   @Override

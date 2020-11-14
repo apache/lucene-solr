@@ -462,7 +462,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
      * @param shardUrls The list of cores generated from the shards parameter.
      */
     protected void checkWhitelist(ClusterState clusterState, String shardsParamValue, List<String> shardUrls) {
-      if (!whitelistHostCheckingEnabled) {
+      if (!whitelistHostCheckingEnabled || shardsParamValue == null) {
         return;
       }
       Set<String> localWhitelistHosts;
