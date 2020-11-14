@@ -1172,7 +1172,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         if (col == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
         }
-        Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
+        List<Slice> routeSlices = new ArrayList<>(col.getRouter().getSearchSlices(shardKeys, reqParams , col));
+        Collections.shuffle(routeSlices);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
 
@@ -1181,7 +1182,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       List<Replica> replicas = new ArrayList<>();
       for (Slice slice : slices.values()) {
         Replica leader = slice.getLeader();
-        for (Replica replica : slice.getReplicas()) {
+        ArrayList<Replica> replicaList = new ArrayList<>(slice.getReplicas());
+        Collections.shuffle(replicaList);
+        for (Replica replica : replicaList) {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
               || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
