@@ -328,7 +328,7 @@ public class MiniSolrCloudCluster {
       }
 
       // build the client
-      solrClient = buildSolrClient();
+      solrClient = buildZkReaderAndSolrClient();
       solrZkClient = zkStateReader.getZkClient();
 
       if (numServers > 0) {
@@ -742,12 +742,16 @@ public class MiniSolrCloudCluster {
   public SolrZkClient getZkClient() {
     return solrZkClient;
   }
-  
-  public CloudHttp2SolrClient buildSolrClient() {
-   // return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
+
+  protected CloudHttp2SolrClient buildZkReaderAndSolrClient() {
+    // return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
     zkStateReader = new ZkStateReader(zkServer.getZkAddress(), 15000, 30000);
     zkStateReader.createClusterStateWatchersAndUpdate();
     return new CloudHttp2SolrClient.Builder(zkStateReader).build();
+  }
+
+  public CloudHttp2SolrClient buildSolrClient() {
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkServer.getZkHost()), Optional.of("/solr")).build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {

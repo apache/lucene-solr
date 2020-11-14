@@ -1638,7 +1638,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       constructState(Collections.emptySet());
     }
-    
+
     public void refreshAndWatch() {
       try {
         refreshCollectionList(this);
