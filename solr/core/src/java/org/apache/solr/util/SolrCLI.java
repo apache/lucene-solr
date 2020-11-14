@@ -427,6 +427,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
     formatter.printHelp("export", getToolOptions(new ExportTool()));
+    formatter.printHelp("package", getToolOptions(new PackageTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {

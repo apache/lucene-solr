@@ -240,7 +240,7 @@ As this check is periodically performed, the actual time for which a request can
 
 This parameter may be set to either `true` or `false`.
 
-If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/solr-core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
+If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the mergePolicyFactory>> for this collection is a {solr-javadocs}/core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 

@@ -35,4 +35,4 @@ Topics covered in this section:
 
 * <<field-properties-by-use-case.adoc#field-properties-by-use-case,Field Properties by Use Case>>
 
-TIP: See also the {solr-javadocs}/solr-core/org/apache/solr/schema/FieldType.html[FieldType Javadoc].
+TIP: See also the {solr-javadocs}/core/org/apache/solr/schema/FieldType.html[FieldType Javadoc].

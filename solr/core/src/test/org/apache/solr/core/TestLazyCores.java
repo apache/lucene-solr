@@ -668,6 +668,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     Collection<String> loadedNames = cc.getLoadedCoreNames();
     for (String name : nameCheck) {
       assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
+      assertFalse(cc.isLoaded(name));
     }
     
     // There was a problem at one point exacerbated by the poor naming conventions. So parallel to loaded cores, there
@@ -681,26 +682,33 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
 
     assertEquals("There should be as many coreDescriptors as coreNames", allNames.size(), descriptors.size());
+    assertEquals(allNames.size(), cc.getNumAllCores());
     for (CoreDescriptor desc : descriptors) {
       assertTrue("Name should have a corresponding descriptor", allNames.contains(desc.getName()));
+      assertNotNull(cc.getCoreDescriptor(desc.getName()));
     }
     
     // First check that all loaded cores are in allNames.
     for (String name : loadedNames) {                                                                                        
       assertTrue("Loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNotNull(cc.getCoreDescriptor(name));
+      assertTrue(cc.isLoaded(name));
     }
 
-    // failed cores should have had their descriptors removed.
+    // Unloaded cores should be in allNames.
     for (String name : nameCheck) {
       assertTrue("Not-currently-loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNotNull(cc.getCoreDescriptor(name));
     }
 
     // Failed cores should not be in coreDescriptors.
     for (String name : namesBad) {
       assertFalse("Failed core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNull(cc.getCoreDescriptor(name));
+      assertFalse(cc.isLoaded(name));
     }
 
   }

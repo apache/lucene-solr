@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,11 +32,19 @@ public class MetricsConfig {
   private final PluginInfo timerSupplier;
   private final PluginInfo histogramSupplier;
   private final PluginInfo historyHandler;
+  private final Object nullNumber;
+  private final Object notANumber;
+  private final Object nullString;
+  private final Object nullObject;
+  private final boolean enabled;
 
-  private MetricsConfig(PluginInfo[] metricReporters, Set<String> hiddenSysProps,
+  private MetricsConfig(boolean enabled,
+                        PluginInfo[] metricReporters, Set<String> hiddenSysProps,
                         PluginInfo counterSupplier, PluginInfo meterSupplier,
                         PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        PluginInfo historyHandler) {
+                        PluginInfo historyHandler,
+                        Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
+    this.enabled = enabled;
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
     this.counterSupplier = counterSupplier;
@@ -43,34 +52,96 @@ public class MetricsConfig {
     this.timerSupplier = timerSupplier;
     this.histogramSupplier = histogramSupplier;
     this.historyHandler = historyHandler;
+    this.nullNumber = nullNumber;
+    this.notANumber = notANumber;
+    this.nullString = nullString;
+    this.nullObject = nullObject;
   }
 
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  private static final PluginInfo[] NO_OP_REPORTERS = new PluginInfo[0];
+
   public PluginInfo[] getMetricReporters() {
-    return metricReporters;
+    if (enabled) {
+      return metricReporters;
+    } else {
+      return NO_OP_REPORTERS;
+    }
+  }
+
+  public Object getNullNumber() {
+    return nullNumber;
+  }
+
+  public Object getNotANumber() {
+    return notANumber;
+  }
+
+  public Object getNullString() {
+    return nullString;
+  }
+
+  public Object getNullObject() {
+    return nullObject;
   }
 
   public Set<String> getHiddenSysProps() {
-    return hiddenSysProps;
+    if (enabled) {
+      return hiddenSysProps;
+    } else {
+      return Collections.emptySet();
+    }
   }
 
+  /** Symbolic name to use as plugin class name for no-op implementations. */
+  public static final String NOOP_IMPL_CLASS = "__noop__";
+
+  private static final PluginInfo NO_OP_PLUGIN =
+      new PluginInfo("typeUnused",
+            Collections.singletonMap("class", NOOP_IMPL_CLASS),
+            null, null);
+
   public PluginInfo getCounterSupplier() {
-    return counterSupplier;
+    if (enabled) {
+      return counterSupplier;
+    } else {
+      return NO_OP_PLUGIN;
+    }
   }
 
   public PluginInfo getMeterSupplier() {
-    return meterSupplier;
+    if (enabled) {
+      return meterSupplier;
+    } else {
+      return NO_OP_PLUGIN;
+    }
   }
 
   public PluginInfo getTimerSupplier() {
-    return timerSupplier;
+    if (enabled) {
+      return timerSupplier;
+    } else {
+      return NO_OP_PLUGIN;
+    }
   }
 
   public PluginInfo getHistogramSupplier() {
-    return histogramSupplier;
+    if (enabled) {
+      return histogramSupplier;
+    } else {
+      return NO_OP_PLUGIN;
+    }
   }
 
   public PluginInfo getHistoryHandler() {
-    return historyHandler;
+    if (enabled) {
+      return historyHandler;
+    } else {
+      return NO_OP_PLUGIN;
+    }
   }
 
   public static class MetricsConfigBuilder {
@@ -81,9 +152,20 @@ public class MetricsConfig {
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
     private PluginInfo historyHandler;
+    private Object nullNumber = null;
+    private Object notANumber = null;
+    private Object nullString = null;
+    private Object nullObject = null;
+    // default to metrics enabled
+    private boolean enabled = true;
 
     public MetricsConfigBuilder() {
 
+    }
+
+    public MetricsConfigBuilder setEnabled(boolean enabled) {
+      this.enabled = enabled;
+      return this;
     }
 
     public MetricsConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
@@ -124,9 +206,30 @@ public class MetricsConfig {
       return this;
     }
 
+    public MetricsConfigBuilder setNullNumber(Object nullNumber) {
+      this.nullNumber = nullNumber;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNotANumber(Object notANumber) {
+      this.notANumber = notANumber;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNullString(Object nullString) {
+      this.nullString = nullString;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNullObject(Object nullObject) {
+      this.nullObject = nullObject;
+      return this;
+    }
+
     public MetricsConfig build() {
-      return new MetricsConfig(metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier, historyHandler);
+      return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
+          timerSupplier, histogramSupplier, historyHandler,
+          nullNumber, notANumber, nullString, nullObject);
     }
 
   }

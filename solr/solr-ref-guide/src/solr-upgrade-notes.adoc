@@ -24,7 +24,7 @@ These notes highlight the biggest changes that may impact the largest number of
 implementations. It is not a comprehensive list of all changes to Solr in any release.
 
 When planning your Solr upgrade, consider the customizations you have made to
-your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
+your system and review the {solr-javadocs}/changes//Changes.html[`CHANGES.txt`]
 file found in your Solr package. That file includes all the changes and updates
 that may effect your existing implementation.
 
@@ -53,7 +53,13 @@ If you are already on 8.6.1 or higher, you can ignore these instructions.
 *Deprecations*
 
 * The autoscaling framework is now formally deprecated and will be removed in Solr 9.0.
-The Solr community is working on a plugin to replace this functionality, with the goal for it to be ready by the time 9.0 is released.
+The Solr community is working on pluggable API to replace this functionality, with the goal for it to be ready by the time 9.0 is released. Deprecations include: autoscaling policy, triggers, `withCollection` support, simulation framework, autoscaling suggestions tab in the UI, `autoAddReplicas` and `UTILIZENODE` command.
+
+* Similarly, rule-based replica placement strategy has been deprecated and will be replaced
+  in Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+
+* Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
+`spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
 
 *Legacy Scaling (non-SolrCloud) Terminology Updated*
 
@@ -567,7 +573,7 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 
 == Upgrading from Pre-7.x Versions
 
-Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes//Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
 

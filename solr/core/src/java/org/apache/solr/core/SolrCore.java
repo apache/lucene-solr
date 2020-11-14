@@ -1195,13 +1195,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     newSearcherMaxReachedCounter = parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
     newSearcherOtherErrorsCounter = parentContext.counter("errors", Category.SEARCHER.toString(), "new");
 
-    parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    parentContext.gauge(() -> name == null ? parentContext.nullString() : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
     parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
@@ -1209,7 +1209,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           if (cd.getCollectionName() != null) {
             return cd.getCollectionName();
           } else {
-            return "_notset_";
+            return parentContext.nullString();
           }
         }, true, "collection", Category.CORE.toString());
 
@@ -1217,7 +1217,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           if (cd.getShardId() != null) {
             return cd.getShardId();
           } else {
-            return "_auto_";
+            return parentContext.nullString();
           }
         }, true, "shard", Category.CORE.toString());
       }
@@ -1228,14 +1228,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
     parentContext.gauge(() -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
-    parentContext.gauge(() -> {
-      try {
-        return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
-      } catch (IOException e) {
-        // default to spinning
-        return true;
-      }
-    }, true, "spins", Category.CORE.toString(), "fs");
   }
 
   public String getMetricTag() {
@@ -1738,6 +1730,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closeHooks = new ArrayList<>();
     }
     closeHooks.add(hook);
+  }
+
+  /**
+   * Remove a close callback hook
+   */
+  public void removeCloseHook(CloseHook hook) {
+    if (closeHooks != null) {
+      closeHooks.remove(hook);
+    }
+  }
+
+  // Visible for testing
+  public Collection<CloseHook> getCloseHooks() {
+    return Collections.unmodifiableCollection(closeHooks);
   }
 
   /**

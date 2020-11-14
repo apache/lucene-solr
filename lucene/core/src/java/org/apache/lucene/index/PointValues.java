@@ -25,6 +25,7 @@ import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.InetAddressPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
@@ -47,8 +48,8 @@ import org.apache.lucene.util.bkd.BKDConfig;
  *   <tr><td>{@code float}</td><td>{@link FloatPoint}</td></tr>
  *   <tr><td>{@code double}</td><td>{@link DoublePoint}</td></tr>
  *   <tr><td>{@code byte[]}</td><td>{@link BinaryPoint}</td></tr>
- *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
- *   <tr><td>{@link InetAddress}</td><td><a href="{@docRoot}/../misc/org/apache/lucene/document/InetAddressPoint.html">InetAddressPoint</a>*</td></tr>
+ *   <tr><td>{@link InetAddress}</td><td>{@link InetAddressPoint}</td></tr>
+ *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/sandbox/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
  * </table>
  * * in the <i>lucene-sandbox</i> jar<br>
  * <p>

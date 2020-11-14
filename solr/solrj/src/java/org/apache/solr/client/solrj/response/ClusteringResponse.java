@@ -26,11 +26,12 @@ import org.apache.solr.common.util.NamedList;
  * Encapsulates responses from ClusteringComponent
  */
 public class ClusteringResponse {
-  private static final String CLUSTERS_NODE = "clusters";
-  private static final String LABELS_NODE = "labels";
-  private static final String DOCS_NODE = "docs";
-  private static final String SCORE_NODE = "score";
-  private static final String IS_OTHER_TOPICS = "other-topics";
+  public static final String CLUSTERS_NODE = "clusters";
+  public static final String LABELS_NODE = "labels";
+  public static final String DOCS_NODE = "docs";
+  public static final String SCORE_NODE = "score";
+  public static final String IS_OTHER_TOPICS = "other-topics";
+
   private List<Cluster> clusters;
 
   @SuppressWarnings("unchecked")
@@ -53,7 +54,7 @@ public class ClusteringResponse {
             break;
             
           case SCORE_NODE:
-            score = (Double) e.getValue();
+            score = ((Number) e.getValue()).doubleValue();
             break;
 
           case CLUSTERS_NODE:

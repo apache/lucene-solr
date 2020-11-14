@@ -195,6 +195,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   @SuppressWarnings("unchecked")
   public static NamedList<Object> getParsedResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
     try {
+      if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) {
+        rsp.removeResponseHeader();
+      }
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
