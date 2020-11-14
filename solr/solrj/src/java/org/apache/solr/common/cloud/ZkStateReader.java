@@ -393,11 +393,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (updateWatchedCollection(coll, nu)) {
-          updateLock.lock();
+     //     updateLock.lock();
           try {
             constructState(Collections.singleton(coll));
           } finally {
-            updateLock.unlock();
+       //     updateLock.unlock();
           }
         }
         collection = nu;
@@ -1323,11 +1323,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
-        updateLock.lock();
+      //  updateLock.lock();
         try {
           constructState(Collections.singleton(coll));
         } finally {
-          updateLock.unlock();
+     //     updateLock.unlock();
         }
 
       } catch (KeeperException e) {
@@ -1379,14 +1379,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       };
       try {
-        updateLock.lock();
         processStateUpdates(stateUpdatesPath);
-      } catch (KeeperException e) {
+      } catch (Exception e) {
         log.error("Unwatched collection: [{}]", coll, e);
-      } catch (InterruptedException e) {
-        log.error("Unwatched collection: [{}]", coll, e);
-      } finally {
-        updateLock.unlock();
       }
     }
 
@@ -1669,11 +1664,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         log.error("An error has occurred", e);
         return;
       }
-      updateLock.lock();
+     // updateLock.lock();
       try {
         constructState(Collections.emptySet());
       } finally {
-        updateLock.unlock();
+    //    updateLock.unlock();
       }
     }
 
@@ -1845,11 +1840,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     });
 
     if (reconstructState.get()) {
-      updateLock.lock();
+    //  updateLock.lock();
       try {
         constructState(Collections.emptySet());
       } finally {
-        updateLock.unlock();
+      //  updateLock.unlock();
       }
     }
   }
@@ -2116,11 +2111,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     if (reconstructState.get()) {
-      updateLock.lock();
+     // updateLock.lock();
       try {
         constructState(Collections.emptySet());
       } finally {
-        updateLock.unlock();
+     //   updateLock.unlock();
       }
     }
   }
@@ -2310,12 +2305,12 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
-    updateLock.lock();
+   // updateLock.lock();
     try {
       constructState(Collections.emptySet());
       zkClient.exists(ALIASES, watcher);
     } finally {
-      updateLock.unlock();
+    //  updateLock.unlock();
     }
     aliasesManager.update();
   }
