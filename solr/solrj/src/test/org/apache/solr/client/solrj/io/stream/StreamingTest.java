@@ -136,9 +136,7 @@ private static final String id = "id";
 
 @Before
 public void clearCollection() throws Exception {
-  new UpdateRequest()
-      .deleteByQuery("*:*")
-      .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+  clearIndex(COLLECTIONORALIAS);
 }
 
 @Test

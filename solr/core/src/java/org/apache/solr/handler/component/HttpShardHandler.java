@@ -325,14 +325,15 @@ public class HttpShardHandler extends ShardHandler {
         // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
       }
 
-      for (int i = 0; i < rb.slices.length; i++) {
-        if (!ShardParams.getShardsTolerantAsBool(params) && replicaSource.getReplicasBySlice(i).isEmpty()) {
-          // stop the check when there are no replicas available for a shard
-          // todo fix use of slices[i] which can be null if user specified urls in shards param
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "no servers hosting shard: " + rb.slices[i]);
-        }
-      }
+//      for (int i = 0; i < rb.slices.length; i++) {
+//        boolean noReplicas = replicaSource.getReplicasBySlice(i).isEmpty();
+//        if (!ShardParams.getShardsTolerantAsBool(params) && noReplicas) {
+//          // stop the check when there are no replicas available for a shard
+//          // todo fix use of slices[i] which can be null if user specified urls in shards param
+//          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+//              "no servers hosting shard: " + rb.slices[i]);
+//        }
+//      }
     } else {
       replicaSource = new StandaloneReplicaSource.Builder()
           .whitelistHostChecker(hostChecker)
@@ -343,7 +344,7 @@ public class HttpShardHandler extends ShardHandler {
 
     rb.shards = new String[rb.slices.length];
     for (int i = 0; i < rb.slices.length; i++) {
-      rb.shards[i] = createSliceShardsStr(replicaSource.getReplicasBySlice(i));
+      rb.shards[i] = createSliceShardsStr(replicaSource.getReplicasBySlice(rb.slices[i], i));
     }
 
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);

@@ -33,7 +33,7 @@ interface ReplicaSource {
   /**
    * Get the list of replica urls for a 0-indexed slice number.
    */
-  List<String> getReplicasBySlice(int sliceNumber);
+  List<String> getReplicasBySlice(String slice, int index);
 
   /**
    * @return the count of slices

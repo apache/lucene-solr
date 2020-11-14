@@ -107,7 +107,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private volatile String defaultCollection;
   //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "1"));
+  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "3"));
   private Random rand = new Random();
 
   private final boolean updatesToLeaders;

@@ -39,6 +39,8 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -48,6 +50,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -58,13 +62,18 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
  * Base class for SolrCloud tests
@@ -560,5 +569,37 @@ public class SolrCloudTestCase extends SolrTestCase {
       msp.add(params[i], params[i+1]);
     }
     return msp;
+  }
+
+  public void clearIndex(String collection) {
+
+    try {
+      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
+          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString()), collection);
+    } catch (Exception e) {
+      log.warn("Error clearing index {}", e.getMessage());
+    }
+    try {
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), collection);
+    } catch (Exception e) {
+      log.warn("Error clearing index {}", e.getMessage());
+    }
+  }
+
+  public static Long deleteByQueryAndGetVersion(String q, SolrParams params, String collection) throws Exception {
+    if (params==null || params.get("versions") == null) {
+      ModifiableSolrParams mparams = new ModifiableSolrParams(params);
+      mparams.set("versions","true");
+      params = mparams;
+    }
+    SolrQuery query = new SolrQuery(q);
+    query.setParams(params);
+    QueryResponse response = cluster.getSolrClient().query(collection, query);
+
+    List lst = (List)response.getResponse().get("deleteByQuery");
+    if (lst == null || lst.size() == 0) return null;
+    return (Long) lst.get(1);
   }
 }

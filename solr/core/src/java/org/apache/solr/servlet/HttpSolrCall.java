@@ -42,6 +42,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.opentracing.Span;
 import org.apache.commons.lang3.StringUtils;
@@ -718,11 +719,12 @@ public class HttpSolrCall {
         InputStreamContentProvider defferedContent = new InputStreamContentProvider(req.getInputStream(), 16384, false);
         proxyRequest.content(defferedContent);
       }
-
+      AtomicReference<Throwable> failException = new AtomicReference<>();
       InputStreamResponseListener listener = new InputStreamResponseListener() {
         @Override
         public void onFailure(Response resp, Throwable t) {
           log.error("remote proxy failed", t);
+          failException.set(t);
           super.onFailure(resp, t);
         }
 
@@ -749,6 +751,18 @@ public class HttpSolrCall {
 
 
       listener.getInputStream().transferTo(response.getOutputStream());
+
+      try {
+        listener.await(60, TimeUnit.SECONDS); // nocommit timeout
+      } catch (InterruptedException e) {
+        log.error("Interrupted waiting for proxy request");
+      } catch (TimeoutException e) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout proxying request");
+      }
+
+      if (failException.get() != null) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, failException.get());
+      }
 
     }
 

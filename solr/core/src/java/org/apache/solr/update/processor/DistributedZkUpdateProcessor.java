@@ -190,7 +190,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT), true);
 
         try {
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
+          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 0);
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -709,7 +709,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     try {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 0);
       isLeader = leaderReplica.getName().equals(desc.getName());
       if (log.isDebugEnabled()) log.debug("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {

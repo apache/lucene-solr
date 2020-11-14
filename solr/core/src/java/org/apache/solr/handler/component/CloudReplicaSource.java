@@ -18,6 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +51,10 @@ class CloudReplicaSource implements ReplicaSource {
 
   private String[] slices;
   private List<String>[] replicas;
+  private ClusterState clusterState;
+  private DocCollection collection;
+  private String collectionName;
+  private ZkStateReader zkStateReader;
 
   private CloudReplicaSource(Builder builder) {
     final String shards = builder.params.get(ShardParams.SHARDS);
@@ -63,6 +68,11 @@ class CloudReplicaSource implements ReplicaSource {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void withClusterState(Builder builder, SolrParams params) {
     ClusterState clusterState = builder.zkStateReader.getClusterState();
+    clusterState = builder.zkStateReader.getClusterState();
+    this.zkStateReader = builder.zkStateReader;
+    this.collection = clusterState.getCollection(builder.collection);
+    this.collectionName = builder.collection;
+
     String shardKeys = params.get(ShardParams._ROUTE_);
 
     // This will be the complete list of slices we need to query for this request.
@@ -106,8 +116,10 @@ class CloudReplicaSource implements ReplicaSource {
     this.slices = new String[sliceOrUrls.size()];
     this.replicas = new List[sliceOrUrls.size()];
 
-    ClusterState clusterState = builder.zkStateReader.getClusterState();
-
+    clusterState = builder.zkStateReader.getClusterState();
+    this.zkStateReader = builder.zkStateReader;
+    this.collection = clusterState.getCollection(builder.collection);
+    this.collectionName = builder.collection;
     for (int i = 0; i < sliceOrUrls.size(); i++) {
       String sliceOrUrl = sliceOrUrls.get(i);
       if (sliceOrUrl.indexOf('/') < 0) {
@@ -154,9 +166,30 @@ class CloudReplicaSource implements ReplicaSource {
   }
 
   @Override
-  public List<String> getReplicasBySlice(int sliceNumber) {
-    assert sliceNumber >= 0 && sliceNumber < replicas.length;
-    return replicas[sliceNumber];
+  public List<String> getReplicasBySlice(String slice, int index) {
+    DocCollection collection;
+    if (zkStateReader != null) {
+      collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+    } else {
+      collection = this.collection;
+    }
+
+    if (collection == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found collection=" + collection + " state=" + clusterState);
+    }
+    Slice s = collection.getSlice(slice);
+    if (s == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Slice not found " + slice + " collection=" + collection);
+    }
+    Collection<Replica> reps = s.getReplicas();
+    List<String> urls = new ArrayList<>(reps.size());
+    Collections.shuffle(urls);
+    for (Replica r : reps) {
+      if (r.getState() == Replica.State.ACTIVE && zkStateReader.isNodeLive(r.getNodeName())) {
+        urls.add(r.getCoreUrl());
+      }
+    }
+    return urls;
   }
 
   @Override
