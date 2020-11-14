@@ -78,6 +78,11 @@ The number of `pull` replicas that should be created (optional, defaults to 1 if
 `property._name_=_value_`::
 Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
 
+[WARNING]
+====
+The entries in each core.properties file are vital for Solr to function correctly. Overriding entries can result in unusable collections. Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
+====
+
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
 
