@@ -175,8 +175,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
 
-  private final ReentrantLock updateLock = new ReentrantLock(true);
-
   /**
    * "Interesting" and actively watched Collections.
    */
@@ -347,8 +345,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   // don't call this, used in one place
 
   public void forciblyRefreshAllClusterStateSlow() {
-    updateLock.lock();
-
     // No need to set watchers because we should already have watchers registered for everything.
     try {
       refreshCollectionList(null);
@@ -369,8 +365,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } finally {
-      updateLock.unlock();
     }
 
   }
@@ -393,12 +387,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (updateWatchedCollection(coll, nu)) {
-     //     updateLock.lock();
-          try {
-            constructState(Collections.singleton(coll));
-          } finally {
-       //     updateLock.unlock();
-          }
+          constructState(Collections.singleton(coll));
         }
         collection = nu;
       }
@@ -520,28 +509,25 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               return;
             }
             try {
-              updateLock.lock();
-              try {
-                log.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
 
-                // remake watch
-                final Stat stat = new Stat();
-                byte[] data = "{}".getBytes(StandardCharsets.UTF_8);
-                if (EventType.NodeDeleted.equals(event.getType())) {
-                  // Node deleted, just recreate watch without attempting a read - SOLR-9679
-                  getZkClient().exists(SOLR_SECURITY_CONF_PATH, this);
-                } else {
-                  data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat);
-                }
-                try {
-                  callback.call(new Pair<>(data, stat));
-                } catch (Exception e) {
-                  log.error("Error running collections node listener", e);
-                  return;
-                }
-              } finally {
-                updateLock.unlock();
+              log.info("Updating [{}] ... ", SOLR_SECURITY_CONF_PATH);
+
+              // remake watch
+              final Stat stat = new Stat();
+              byte[] data = "{}".getBytes(StandardCharsets.UTF_8);
+              if (EventType.NodeDeleted.equals(event.getType())) {
+                // Node deleted, just recreate watch without attempting a read - SOLR-9679
+                getZkClient().exists(SOLR_SECURITY_CONF_PATH, this);
+              } else {
+                data = getZkClient().getData(SOLR_SECURITY_CONF_PATH, this, stat);
               }
+              try {
+                callback.call(new Pair<>(data, stat));
+              } catch (Exception e) {
+                log.error("Error running collections node listener", e);
+                return;
+              }
+
             } catch (KeeperException e) {
               log.error("A ZK error has occurred", e);
               return;
@@ -555,7 +541,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   /**
    * Construct the total state view from all sources.
-   * Must hold {@link #getUpdateLock()} before calling this.
    *
    * @param changedCollections collections that have changed since the last call,
    *                           and that should fire notifications
@@ -756,21 +741,18 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     // Can't lock getUpdateLock() until we release the other, it would cause deadlock.
     SortedSet<String> oldLiveNodes;
     SortedSet<String> newLiveNodes = null;
-    updateLock.lock();
-    try {
-      try {
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
-        newLiveNodes = new TreeSet<>(nodeList);
-      } catch (KeeperException.NoNodeException e) {
-        newLiveNodes = emptySortedSet();
-      }
 
-      oldLiveNodes = this.liveNodes;
-      this.liveNodes = newLiveNodes;
-      clusterState.setLiveNodes(newLiveNodes);
-    } finally {
-      updateLock.unlock();
+    try {
+      List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
+      newLiveNodes = new TreeSet<>(nodeList);
+    } catch (KeeperException.NoNodeException e) {
+      newLiveNodes = emptySortedSet();
     }
+
+    oldLiveNodes = this.liveNodes;
+    this.liveNodes = newLiveNodes;
+    clusterState.setLiveNodes(newLiveNodes);
+
     if (oldLiveNodes.size() != newLiveNodes.size()) {
       if (log.isInfoEnabled()) {
         log.info("Updated live nodes from ZooKeeper... ({}) -> ({})", oldLiveNodes.size(), newLiveNodes.size());
@@ -826,10 +808,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   public Set<String> getLiveNodes() {
     return liveNodes;
-  }
-
-  public ReentrantLock getUpdateLock() {
-    return updateLock;
   }
 
   public void close() {
@@ -1323,12 +1301,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
-      //  updateLock.lock();
-        try {
-          constructState(Collections.singleton(coll));
-        } finally {
-     //     updateLock.unlock();
-        }
+
+        constructState(Collections.singleton(coll));
 
       } catch (KeeperException e) {
         log.error("Unwatched collection: [{}]", coll, e);
@@ -1348,7 +1322,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         public void process(WatchedEvent event) {
           log.info("_statupdates event {}", event);
           try {
-            updateLock.lock();
 
 //            if (event.getType() == EventType.NodeDataChanged ||
 //                event.getType() == EventType.NodeDeleted || event.getType() == EventType.NodeCreated) {
@@ -1371,8 +1344,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             log.error("Unwatched collection: [{}]", coll, e);
           } catch (InterruptedException e) {
             log.error("Unwatched collection: [{}]", coll, e);
-          } finally {
-            updateLock.unlock();
           }
 
         }
@@ -1664,17 +1635,10 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         log.error("An error has occurred", e);
         return;
       }
-     // updateLock.lock();
-      try {
-        constructState(Collections.emptySet());
-      } finally {
-    //    updateLock.unlock();
-      }
-    }
 
-    /**
-     * Must hold {@link #getUpdateLock()} before calling this method.
-     */
+      constructState(Collections.emptySet());
+    }
+    
     public void refreshAndWatch() {
       try {
         refreshCollectionList(this);
@@ -1840,12 +1804,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     });
 
     if (reconstructState.get()) {
-    //  updateLock.lock();
-      try {
-        constructState(Collections.emptySet());
-      } finally {
-      //  updateLock.unlock();
-      }
+      constructState(Collections.emptySet());
     }
   }
 
@@ -2111,12 +2070,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     if (reconstructState.get()) {
-     // updateLock.lock();
-      try {
-        constructState(Collections.emptySet());
-      } finally {
-     //   updateLock.unlock();
-      }
+      constructState(Collections.emptySet());
     }
   }
 
@@ -2305,13 +2259,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
-   // updateLock.lock();
-    try {
-      constructState(Collections.emptySet());
-      zkClient.exists(ALIASES, watcher);
-    } finally {
-    //  updateLock.unlock();
-    }
+    constructState(Collections.emptySet());
+    zkClient.exists(ALIASES, watcher);
     aliasesManager.update();
   }
 

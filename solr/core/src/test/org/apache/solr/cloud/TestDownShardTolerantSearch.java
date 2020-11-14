@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -46,9 +47,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -68,26 +67,29 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
-    while (true) {
-      try {
-        response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-        break;
-      } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-        // a remote node we are proxied too may still think this is live, try again
-        if (!e.getMessage().contains("Connection refused")) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    try (SolrClient client = cluster.buildSolrClient()) {
+      for (int i = 0; i < 10; i++) {
+
+        try {
+          response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+          break;
+        } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+          // a remote node we are proxied too may still think this is live, try again
+          if (!e.getMessage().contains("Connection refused")) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
         }
       }
-    }
 
-    assertThat(response.getStatus(), is(0));
-    assertTrue(response.getResults().getNumFound() > 0);
+      assertThat(response.getStatus(), is(0));
+      assertTrue(response.getResults().getNumFound() > 0);
 
-    SolrServerException e = expectThrows(SolrServerException.class, "Request should have failed because we killed shard1 jetty",
-        () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
-    assertNotNull(e.getCause());
-    if (!e.getCause().getMessage().contains("Connection refused")) {
-      assertTrue("Error message from server should have the name of the down shard " + e.getCause().getMessage(), e.getCause().getMessage().contains("shard"));
+      SolrServerException e = expectThrows(SolrServerException.class, "Request should have failed because we killed shard1 jetty",
+          () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
+      assertNotNull(e.getCause());
+      if (!e.getCause().getMessage().contains("Connection refused")) {
+        assertTrue("Error message from server should have the name of the down shard " + e.getCause().getMessage(), e.getCause().getMessage().contains("shard"));
+      }
     }
   }
-  }
+}
