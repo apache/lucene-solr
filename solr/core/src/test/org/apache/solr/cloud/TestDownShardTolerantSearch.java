@@ -84,10 +84,11 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
       assertThat(response.getStatus(), is(0));
       assertTrue(response.getResults().getNumFound() > 0);
 
-      SolrServerException e = expectThrows(SolrServerException.class, "Request should have failed because we killed shard1 jetty",
+      Exception e = expectThrows(Exception.class, "Request should have failed because we killed shard1 jetty",
           () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
-      assertNotNull(e.getCause());
-      if (!e.getCause().getMessage().contains("Connection refused")) {
+
+      if (!e.getMessage().contains("Connection refused")) {
+        assertNotNull(e.getCause());
         assertTrue("Error message from server should have the name of the down shard " + e.getCause().getMessage(), e.getCause().getMessage().contains("shard"));
       }
     }
