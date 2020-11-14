@@ -161,6 +161,8 @@ Improvements
 * LUCENE-9450: Use BinaryDocValues for the taxonomy index instead of StoredFields.
   Add backwards compatibility tests for the taxonomy index. (Gautam Worah, Michael McCandless)
 
+* LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
