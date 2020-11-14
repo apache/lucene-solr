@@ -132,7 +132,7 @@ public class CJKWidthCharFilter extends BaseCharFilter {
     assert voiceMark == HW_KATAKANA_SEMI_VOICED_MARK || voiceMark == HW_KATAKANA_VOICED_MARK;
     int prev = prevChar;
     if (prevChar >= 0x30A6 && prevChar <= 0x30FD) {
-      prevChar += (voiceMark == 0xFF9F)
+      prevChar += (voiceMark == HW_KATAKANA_SEMI_VOICED_MARK)
         ? KANA_COMBINE_SEMI_VOICED[prevChar - 0x30A6]
         : KANA_COMBINE_VOICED[prevChar - 0x30A6];
       return prevChar != prev;
