@@ -456,4 +456,10 @@ public class TestHnsw extends LuceneTestCase {
         assertTrue(min.check(f + 1e-5f)); // delta is zero initially
     }
 
+    public void testHnswGraphBuilderInvalid() {
+        expectThrows(NullPointerException.class, () -> new HnswGraphBuilder(null, 0, 0, 0));
+        expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 0, 10, 0));
+        expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 10, 0, 0));
+    }
+
 }
