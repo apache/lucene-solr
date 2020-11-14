@@ -570,7 +570,7 @@ index 0000000..0cc2b60
 +	)
 +)
 diff --git a/compiler/generator_java.c b/compiler/generator_java.c
-index 3a18db7..5909f87 100644
+index 2958452..966adb4 100644
 --- a/compiler/generator_java.c
 +++ b/compiler/generator_java.c
 @@ -272,7 +272,7 @@ static void generate_AE(struct generator * g, struct node * p) {
@@ -582,7 +582,7 @@ index 3a18db7..5909f87 100644
              break;
      }
  }
-@@ -1138,6 +1138,7 @@ static void generate_class_begin(struct generator * g) {
+@@ -1140,6 +1140,7 @@ static void generate_class_begin(struct generator * g) {
      w(g, " {~+~N"
           "~N"
           "~Mprivate static final long serialVersionUID = 1L;~N"
@@ -590,7 +590,7 @@ index 3a18db7..5909f87 100644
           "~N");
  }
  
-@@ -1184,7 +1185,7 @@ static void generate_among_table(struct generator * g, struct among * x) {
+@@ -1186,7 +1187,7 @@ static void generate_among_table(struct generator * g, struct among * x) {
              if (v->function != 0) {
                  w(g, ", \"");
                  write_varname(g, v->function);
@@ -1013,7 +1013,7 @@ index 73a81a9..f7772d3 100644
      public abstract boolean stem();
  
 diff --git a/libstemmer/modules.txt b/libstemmer/modules.txt
-index cb39621..9fe141e 100644
+index b8ec17a..d2c8e61 100644
 --- a/libstemmer/modules.txt
 +++ b/libstemmer/modules.txt
 @@ -10,11 +10,13 @@
@@ -1030,7 +1030,7 @@ index cb39621..9fe141e 100644
  finnish         UTF_8,ISO_8859_1        finnish,fi,fin
  french          UTF_8,ISO_8859_1        french,fr,fre,fra
  german          UTF_8,ISO_8859_1        german,de,ger,deu
-@@ -50,12 +52,12 @@ porter          UTF_8,ISO_8859_1        porter			english
+@@ -51,12 +53,12 @@ porter          UTF_8,ISO_8859_1        porter			english
  # algorithms are:
  #
  # german2          - This is a slight modification of the german stemmer.
