@@ -77,6 +77,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
         try {
           response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
         } catch (BaseHttpSolrClient.RemoteExecutionException e2) {
+          log.info("Live nodes is {}", cluster.getSolrClient().getZkStateReader().getLiveNodes());
           // a remote node we are proxied too may still think this is live, try again
           response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
         }

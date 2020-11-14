@@ -50,6 +50,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   // log level that doesn't exist
 
   protected static Map<String, Level> savedClassLogLevels = new HashMap<>();
+  private static boolean firstInit;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -88,11 +89,14 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   public void restoreMethodLogLevels() {
     LogLevel.Configurer.restoreLogLevels(savedMethodLogLevels);
     savedMethodLogLevels.clear();
+    firstInit = false;
   }
 
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
-    
+
+    assumeTrue("Only run this the first time in a JVM", firstInit);
+
     // sanity check our setup...
     assertNotNull(this.getClass().getAnnotation(LogLevel.class));
     final String annotationConfig = this.getClass().getAnnotation(LogLevel.class).value();
@@ -102,13 +106,16 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
     
     assertEquals(Level.DEBUG, LogManager.getLogger( CLASS_LOGGER_NAME ).getLevel());
     
-    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(true);
     final Configuration config = ctx.getConfiguration();
 
     assertEquals("Unexpected config for " + PARENT_LOGGER_NAME + " ... expected 'root' config",
                  config.getRootLogger(),
                  config.getLoggerConfig(PARENT_LOGGER_NAME));
+    // only works first run
+
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
+
 
     assertQ("Show Log Levels OK",
             req(CommonParams.QT,"/admin/logging")
@@ -121,8 +128,10 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
                 "set", PARENT_LOGGER_NAME+":TRACE")
             ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='TRACE']"
             );
+
     assertEquals(Level.TRACE, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
+
     
     // NOTE: LoggeringHandler doesn't actually "remove" the LoggerConfig, ...
     // evidently so people using they UI can see that it was explicitly turned "OFF" ?
@@ -131,8 +140,13 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
             "set", PARENT_LOGGER_NAME+":null")
         ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='OFF']"
         );
+
+
     assertEquals(Level.OFF, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
     assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
+
+
+    ctx.close();
 
     
   }
