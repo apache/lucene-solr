@@ -104,6 +104,12 @@ public final class HnswGraphBuilder {
     if (searchStrategy == VectorValues.SearchStrategy.NONE) {
       throw new IllegalStateException("No distance function");
     }
+    if (maxConn <= 0) {
+      throw new IllegalArgumentException("maxConn must be positive");
+    }
+    if (beamWidth <= 0) {
+      throw new IllegalArgumentException("beamWidth must be positive");
+    }
     this.maxConn = maxConn;
     this.beamWidth = beamWidth;
     boundedVectors = new BoundedVectorValues(vectorValues);

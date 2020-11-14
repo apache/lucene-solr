@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
+import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
@@ -47,9 +48,20 @@ public class TestKnnGraph extends LuceneTestCase {
 
   private static final String KNN_GRAPH_FIELD = "vector";
 
+  private static int maxConn;
+
   @Before
   public void setup() {
     randSeed = random().nextLong();
+    if (random().nextBoolean()) {
+      maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
+      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(1000) + 1;
+    }
+  }
+
+  @After
+  public void cleanup() {
+    HnswGraphBuilder.DEFAULT_MAX_CONN = maxConn;
   }
 
   /**
@@ -111,6 +123,18 @@ public class TestKnnGraph extends LuceneTestCase {
         iw.forceMerge(1);
       }
       assertConsistentGraph(iw, values);
+    }
+  }
+
+  private void dumpGraph(KnnGraphValues values, int size) throws IOException {
+    for (int node = 0; node < size; node++) {
+      int n;
+      System.out.print("" + node + ":");
+      values.seek(node);
+      while ((n = values.nextNeighbor()) != NO_MORE_DOCS) {
+        System.out.print(" " + n);
+      }
+      System.out.println();
     }
   }
 
@@ -223,7 +247,6 @@ public class TestKnnGraph extends LuceneTestCase {
         int[][] graph = new int[reader.maxDoc()][];
         boolean foundOrphan= false;
         int graphSize = 0;
-        int node = -1;
         for (int i = 0; i < reader.maxDoc(); i++) {
           int nextDocWithVectors = vectorValues.advance(i);
           //System.out.println("advanced to " + nextDocWithVectors);
@@ -236,7 +259,7 @@ public class TestKnnGraph extends LuceneTestCase {
             break;
           }
           int id = Integer.parseInt(reader.document(i).get("id"));
-          graphValues.seek(++node);
+          graphValues.seek(graphSize);
           // documents with KnnGraphValues have the expected vectors
           float[] scratch = vectorValues.vectorValue();
           assertArrayEquals("vector did not match for doc " + i + ", id=" + id + ": " + Arrays.toString(scratch),
@@ -267,10 +290,14 @@ public class TestKnnGraph extends LuceneTestCase {
         } else {
           assertTrue("Graph has " + graphSize + " nodes, but one of them has no neighbors", graphSize > 1);
         }
-        // assert that the graph in each leaf is connected and undirected (ie links are reciprocated)
-        // assertReciprocal(graph);
-        assertConnected(graph);
-        assertMaxConn(graph, HnswGraphBuilder.DEFAULT_MAX_CONN);
+        if (HnswGraphBuilder.DEFAULT_MAX_CONN > graphSize) {
+          // assert that the graph in each leaf is connected and undirected (ie links are reciprocated)
+          assertReciprocal(graph);
+          assertConnected(graph);
+        } else {
+          // assert that max-connections was respected
+          assertMaxConn(graph, HnswGraphBuilder.DEFAULT_MAX_CONN);
+        }
         totalGraphDocs += graphSize;
       }
     }
@@ -332,6 +359,9 @@ public class TestKnnGraph extends LuceneTestCase {
           queue.add(j);
         }
       }
+    }
+    for (int i = 0; i < count; i++) {
+      assertTrue("Attempted to walk entire graph but never visited " + i, visited.contains(i));
     }
     // we visited each node exactly once
     assertEquals("Attempted to walk entire graph but only visited " + visited.size(), count, visited.size());
