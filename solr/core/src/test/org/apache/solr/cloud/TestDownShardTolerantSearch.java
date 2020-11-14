@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -67,21 +68,14 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
-    Thread.sleep(100);
-
-    try {
-      response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      // a remote node we are proxied too may still think this is live, try again
+    while (true) {
       try {
         response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-      } catch (BaseHttpSolrClient.RemoteExecutionException e1) {
-        try {
-          response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-        } catch (BaseHttpSolrClient.RemoteExecutionException e2) {
-          log.info("Live nodes is {}", cluster.getSolrClient().getZkStateReader().getLiveNodes());
-          // a remote node we are proxied too may still think this is live, try again
-          response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+        break;
+      } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+        // a remote node we are proxied too may still think this is live, try again
+        if (!e.getMessage().contains("Connection refused")) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
     }
