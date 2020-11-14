@@ -14,19 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
+import org.junit.Assert;
 
-apply plugin: 'java-library'
+/**
+ * This test is for manually causing assertion failures or errors (to
+ * trigger the event for occasional needs of testing the test framework
+ * itself from command line).
+ */
+public class TestPleaseFail extends LuceneTestCase {
+  public void testFail() {
+    Assert.assertNull("(intentional failure)", System.getProperty("please.fail"));
+  }
 
-description = 'Faceted indexing and search capabilities'
-
-dependencies { 
-  api project(':lucene:core')
-
-  implementation 'com.carrotsearch:hppc'
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:queries')
-  // Required for opening older indexes for backward compatibility tests
-  testCompile group: 'org.apache.lucene', name: 'lucene-codecs', version: '8.6.3'
+  public void testError() {
+    if (System.getProperty("please.fail") != null) {
+      throw new RuntimeException("(intentional error)");
+    }
+  }
 }

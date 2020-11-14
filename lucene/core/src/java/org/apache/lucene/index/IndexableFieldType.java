@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.Analyzer; // javadocs
 public interface IndexableFieldType {
 
   /** True if the field's value should be stored */
-  public boolean stored();
+  boolean stored();
   
   /** 
    * True if this field's value should be analyzed by the
@@ -39,7 +39,7 @@ public interface IndexableFieldType {
    */
   // TODO: shouldn't we remove this?  Whether/how a field is
   // tokenized is an impl detail under Field?
-  public boolean tokenized();
+  boolean tokenized();
 
   /** 
    * True if this field's indexed form should be also stored 
@@ -52,7 +52,7 @@ public interface IndexableFieldType {
    * This option is illegal if {@link #indexOptions()} returns
    * IndexOptions.NONE.
    */
-  public boolean storeTermVectors();
+  boolean storeTermVectors();
 
   /** 
    * True if this field's token character offsets should also
@@ -61,7 +61,7 @@ public interface IndexableFieldType {
    * This option is illegal if term vectors are not enabled for the field
    * ({@link #storeTermVectors()} is false)
    */
-  public boolean storeTermVectorOffsets();
+  boolean storeTermVectorOffsets();
 
   /** 
    * True if this field's token positions should also be stored
@@ -70,7 +70,7 @@ public interface IndexableFieldType {
    * This option is illegal if term vectors are not enabled for the field
    * ({@link #storeTermVectors()} is false). 
    */
-  public boolean storeTermVectorPositions();
+  boolean storeTermVectorPositions();
   
   /** 
    * True if this field's token payloads should also be stored
@@ -79,7 +79,7 @@ public interface IndexableFieldType {
    * This option is illegal if term vector positions are not enabled 
    * for the field ({@link #storeTermVectors()} is false).
    */
-  public boolean storeTermVectorPayloads();
+  boolean storeTermVectorPayloads();
 
   /**
    * True if normalization values should be omitted for the field.
@@ -87,42 +87,42 @@ public interface IndexableFieldType {
    * This saves memory, but at the expense of scoring quality (length normalization
    * will be disabled), and if you omit norms, you cannot use index-time boosts. 
    */
-  public boolean omitNorms();
+  boolean omitNorms();
 
   /** {@link IndexOptions}, describing what should be
    *  recorded into the inverted index */
-  public IndexOptions indexOptions();
+  IndexOptions indexOptions();
 
   /** 
    * DocValues {@link DocValuesType}: how the field's value will be indexed
    * into docValues.
    */
-  public DocValuesType docValuesType();
+  DocValuesType docValuesType();
 
   /**
    * If this is positive (representing the number of point dimensions), the field is indexed as a point.
    */
-  public int pointDimensionCount();
+  int pointDimensionCount();
 
   /**
    * The number of dimensions used for the index key
    */
-  public int pointIndexDimensionCount();
+  int pointIndexDimensionCount();
 
   /**
    * The number of bytes in each dimension's values.
    */
-  public int pointNumBytes();
+  int pointNumBytes();
 
   /**
    * The number of dimensions of the field's vector value
    */
-  public int vectorDimension();
+  int vectorDimension();
 
   /**
    * The {@link VectorValues.SearchStrategy} of the field's vector value
    */
-  public VectorValues.SearchStrategy vectorSearchStrategy();
+  VectorValues.SearchStrategy vectorSearchStrategy();
 
   /**
    * Attributes for the field type.
@@ -132,5 +132,5 @@ public interface IndexableFieldType {
    *
    * @return Map
    */
-  public Map<String, String> getAttributes();
+  Map<String, String> getAttributes();
 }

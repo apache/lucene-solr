@@ -9,6 +9,8 @@ New Features
 
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
+* LUCENE-9004: Approximate nearest vector search via NSW graphs
+
 System Requirements
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
@@ -156,6 +158,9 @@ Improvements
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
   from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* LUCENE-9450: Use BinaryDocValues for the taxonomy index instead of StoredFields.
+  Add backwards compatibility tests for the taxonomy index. (Gautam Worah, Michael McCandless)
+
 * LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
 
 Bug fixes
@@ -217,6 +222,9 @@ New Features
 * LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
 
 * LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)  
+
+* LUCENE-9378: Doc values now allow configuring how to trade compression for
+  retrieval speed. (Adrien Grand)
 
 Improvements
 ---------------------

@@ -277,7 +277,8 @@ configure(project(":solr:test-framework")) {
 // Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
 // (by removing all the packages which are part of lucene-core)
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
-configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lucene:core' }) {
+// LUCENE-9499: This workaround should be applied only to test-framework (we have no split package in other modules).
+configure(project(":lucene:test-framework")) {
   project.tasks.withType(RenderJavadocTask) {
     doLast {
       Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
