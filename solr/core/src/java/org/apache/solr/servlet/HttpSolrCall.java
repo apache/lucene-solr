@@ -1049,16 +1049,14 @@ public class HttpSolrCall {
       return null;
     }
 
-    Set<String> liveNodes = clusterState.getLiveNodes();
-
     if (isPreferLeader) {
       List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
-      SolrCore core = randomlyGetSolrCore(liveNodes, leaderReplicas);
+      SolrCore core = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), leaderReplicas);
       if (core != null) return core;
     }
 
     List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
-    return randomlyGetSolrCore(liveNodes, replicas);
+    return randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), replicas);
   }
 
   private SolrCore randomlyGetSolrCore(Set<String> liveNodes, List<Replica> replicas) {
@@ -1078,7 +1076,7 @@ public class HttpSolrCall {
   private SolrCore checkProps(Replica zkProps) {
     String corename;
     SolrCore core = null;
-    if (cores.getZkController().getNodeName().equals(zkProps.getStr(NODE_NAME_PROP))) {
+    if (cores.getZkController().getNodeName().equals(zkProps.getNodeName())) {
       core = cores.getCore(zkProps.getName());
     }
     return core;
@@ -1107,7 +1105,7 @@ public class HttpSolrCall {
   protected String getRemoteCoreUrl(String collectionName, String origCorename) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, false);
-    Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
+    Collection<Slice> slices = (docCollection != null) ? docCollection.getActiveSlices() : null;
     List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;
 
@@ -1121,7 +1119,7 @@ public class HttpSolrCall {
         getSlicesForCollections(clusterState, activeSlices, false);
       }
     } else {
-      activeSlices.addAll(Arrays.asList(slices));
+      activeSlices.addAll(slices);
     }
 
     for (Slice s: activeSlices) {
@@ -1158,7 +1156,7 @@ public class HttpSolrCall {
                             String origCorename, ClusterState clusterState, List<Slice> slices,
                             boolean byCoreName, boolean activeReplicas) {
     String coreUrl;
-    Set<String> liveNodes = clusterState.getLiveNodes();
+
     Collections.shuffle(slices, random);
 
     for (Slice slice : slices) {
@@ -1166,7 +1164,7 @@ public class HttpSolrCall {
       Collections.shuffle(randomizedReplicas, random);
 
       for (Replica replica : randomizedReplicas) {
-        if (!activeReplicas || (liveNodes.contains(replica.getNodeName())
+        if (!activeReplicas || (cores.getZkController().zkStateReader.getLiveNodes().contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE)) {
 
           if (byCoreName && (origCorename == null || !origCorename.equals(replica.getStr(CORE_NAME_PROP)))) {
