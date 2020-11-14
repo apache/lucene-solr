@@ -945,7 +945,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
     } catch (Exception exc) {
       ParWork.propagateInterrupt("Request failed", exc);
-      Throwable rootCause = SolrException.getRootCause(exc);
+      Throwable rootCause = SolrException.getRootCause(exc); // TODO: with http2solrclient, we are getting remoteexception here instead of real root
       // don't do retry support for admin requests
       // or if the request doesn't have a collection specified
       // or request is v2 api and its method is not GET
@@ -968,7 +968,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       boolean wasCommError =
           (rootCause instanceof ConnectException ||
               rootCause instanceof SocketException ||
-              wasCommError(rootCause));
+              wasCommError(rootCause) || rootCause.getMessage().contains("Connection refused"));
 
       log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
           inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);
