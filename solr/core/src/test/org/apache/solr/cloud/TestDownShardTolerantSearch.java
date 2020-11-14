@@ -71,15 +71,15 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
       response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       // a remote node we are proxied too may still think this is live, try again
-      Thread.sleep(250);
       try {
         response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
       } catch (BaseHttpSolrClient.RemoteExecutionException e1) {
-        // a remote node we are proxied too may still think this is live, try again
-        Thread.sleep(1000);
-
-        response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-
+        try {
+          response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+        } catch (BaseHttpSolrClient.RemoteExecutionException e2) {
+          // a remote node we are proxied too may still think this is live, try again
+          response = cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
+        }
       }
     }
 

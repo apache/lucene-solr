@@ -163,7 +163,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
-  protected static String initialRootLogLevel;
+  protected static volatile String initialRootLogLevel;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();

@@ -761,7 +761,7 @@ public class HttpSolrCall {
       }
 
       if (failException.get() != null) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, failException.get());
+        sendError(503, failException.get().getMessage());
       }
 
     }
