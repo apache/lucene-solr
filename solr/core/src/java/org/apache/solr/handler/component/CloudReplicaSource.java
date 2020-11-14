@@ -118,7 +118,7 @@ class CloudReplicaSource implements ReplicaSource {
     this.slices = new String[sliceOrUrls.size()];
     this.replicas = new List[sliceOrUrls.size()];
     this.builder = builder;
-    
+
     clusterState = builder.zkStateReader.getClusterState();
     this.zkStateReader = builder.zkStateReader;
     this.collection = clusterState.getCollection(builder.collection);
