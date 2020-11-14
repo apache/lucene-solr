@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,7 +55,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String name;
   private final Map<String, Slice> slices;
   private final Map<String, Slice> activeSlices;
-  private final Slice[] activeSlicesArr;
   private final Map<String, List<Replica>> nodeNameReplicas;
   private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
@@ -104,7 +104,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         addNodeNameReplica(replica);
       }
     }
-    this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
     assert name != null && slices != null;
   }
@@ -193,14 +192,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Return the list of active slices for this collection.
    */
   public Collection<Slice> getActiveSlices() {
-    return activeSlices.values();
-  }
-
-  /**
-   * Return array of active slices for this collection (performance optimization).
-   */
-  public Slice[] getActiveSlicesArr() {
-    return activeSlicesArr;
+    List<Slice> slices = new ArrayList<>(activeSlices.values());
+    Collections.shuffle(slices);
+    return slices;
   }
 
   /**

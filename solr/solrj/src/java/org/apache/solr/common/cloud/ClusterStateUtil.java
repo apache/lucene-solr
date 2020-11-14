@@ -157,8 +157,8 @@ public class ClusterStateUtil {
   }
   
   public static int getLiveAndActiveReplicaCount(ZkStateReader zkStateReader, String collection) {
-    Slice[] slices;
-    slices = zkStateReader.getClusterState().getCollection(collection).getActiveSlicesArr();
+    Collection<Slice> slices;
+    slices = zkStateReader.getClusterState().getCollection(collection).getActiveSlices();
     int liveAndActive = 0;
     for (Slice slice : slices) {
       for (Replica replica : slice.getReplicas()) {

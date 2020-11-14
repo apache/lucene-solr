@@ -476,11 +476,11 @@ public final class DocExpirationUpdateProcessorFactory
     String col = desc.getCollectionName();
 
     DocCollection docCollection = zk.getClusterState().getCollection(col);
-    if (docCollection.getActiveSlicesArr().length == 0) {
+    if (docCollection.getActiveSlices().size() == 0) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
-    List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
+    List<Slice> slices = new ArrayList<>(docCollection.getActiveSlices());
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
     Replica firstSliceLeader = slices.get(0).getLeader();
     if (null == firstSliceLeader) {

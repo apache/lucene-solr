@@ -504,8 +504,8 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         Map<String, Number> perReg = totals
             .computeIfAbsent(Group.collection, g -> new HashMap<>())
             .computeIfAbsent(registry, r -> new HashMap<>());
-        Slice[] slices = coll.getActiveSlicesArr();
-        perReg.put(NUM_SHARDS_KEY, slices.length);
+        Collection<Slice> slices = coll.getActiveSlices();
+        perReg.put(NUM_SHARDS_KEY, slices.size());
         DoubleAdder numActiveReplicas = new DoubleAdder();
         for (Slice s : slices) {
           s.forEach(r -> {

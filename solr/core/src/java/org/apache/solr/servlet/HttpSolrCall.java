@@ -1089,8 +1089,8 @@ public class HttpSolrCall {
         if (entry.getValue() == null) {
           continue;
         }
-        final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        slices.addAll(Arrays.asList(activeCollectionSlices));
+        Collection<Slice> activeCollectionSlices = entry.getValue().getActiveSlices();
+        slices.addAll(activeCollectionSlices);
       }
     } else {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {

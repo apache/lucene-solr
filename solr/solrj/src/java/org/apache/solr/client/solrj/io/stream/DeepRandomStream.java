@@ -67,6 +67,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 public class DeepRandomStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
+  public static final Slice[] SLICES = new Slice[0];
 
   protected String zkHost;
   protected String collection;
@@ -290,7 +291,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     List<Slice> slices = allCollections.stream()
         .map(collectionsMap::get)
         .filter(Objects::nonNull)
-        .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
+        .flatMap(docCol -> docCol.getActiveSlices().stream())
         .collect(Collectors.toList());
     if (!slices.isEmpty()) {
       return slices.toArray(new Slice[slices.size()]);
@@ -299,7 +300,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     // Check collection case insensitive
     for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
       if(entry.getKey().equalsIgnoreCase(collectionName)) {
-        return entry.getValue().getActiveSlicesArr();
+        return entry.getValue().getActiveSlices().toArray(SLICES);
       }
     }
 
