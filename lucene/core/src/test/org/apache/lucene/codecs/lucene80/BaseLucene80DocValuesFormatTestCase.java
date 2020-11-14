@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -278,7 +279,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
     final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
-    final DocValuesFormat dv = getCodec().docValuesFormat();
+    final DocValuesFormat dv = ((PerFieldDocValuesFormat) getCodec().docValuesFormat()).getDocValuesFormatForField("random_field_name");
     conf.setCodec(new AssertingCodec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
