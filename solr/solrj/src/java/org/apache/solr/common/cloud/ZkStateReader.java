@@ -1022,7 +1022,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       String coreNodeName = entry.getValue().getName();
 
-      if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(thisCoreNodeName)) {
+      if (liveNodes.contains(nodeProps.getNodeName()) && !coreNodeName.equals(thisCoreNodeName)) {
         if (mustMatchStateFilter == null || mustMatchStateFilter == nodeProps.getState()) {
           if (mustNotMatchStateFilter == null || mustNotMatchStateFilter != nodeProps.getState()) {
             nodes.add(nodeProps);

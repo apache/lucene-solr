@@ -481,7 +481,7 @@ public class LeaderElector implements Closeable {
     Collections.sort(seqs, Comparator.comparingInt(LeaderElector::getSeq).thenComparing(o -> o));
   }
 
-  void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+  synchronized  void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     ElectionWatcher watcher = this.watcher;
     if (electionContexts != null) {
       ElectionContext prevContext = electionContexts.put(contextKey, context);
@@ -492,6 +492,8 @@ public class LeaderElector implements Closeable {
     if (watcher != null) watcher.close();
     this.context.close();
     this.context = context;
+    this.close();
+    isClosed = false;
     joinElection(context, true, joinAtHead);
   }
 
