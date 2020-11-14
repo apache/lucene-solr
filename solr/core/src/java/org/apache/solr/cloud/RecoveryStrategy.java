@@ -662,7 +662,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), slice);
+        sendPrepRecoveryCmd(leader.getCoreUrl(), leader.getName(), slice);
 
 
         // we wait a bit so that any updates on the leader
@@ -914,7 +914,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener(latch));
       prevSendPreRecoveryHttpUriRequest = result;
       try {
-        latch.await();
+        boolean success = latch.await(5, TimeUnit.SECONDS);
+        if (!success) {
+          throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout waiting for prep recovery cmd on leader");
+        }
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
       } finally {

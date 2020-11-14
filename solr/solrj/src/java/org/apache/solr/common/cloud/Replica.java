@@ -75,6 +75,26 @@ public class Replica extends ZkNodeProps {
     public String toString() {
       return super.toString().toLowerCase(Locale.ROOT);
     }
+
+    public static String getShortState(State state) {
+      if (state.equals(RECOVERY_FAILED)) {
+        return "f";
+      }
+      return state.toString().substring(0,1).toLowerCase(Locale.ROOT);
+    }
+
+    public static State shortStateToState(String shortState) {
+      if (shortState.equals("a")) {
+        return State.ACTIVE;
+      } else if (shortState.equals("r")) {
+        return State.RECOVERING;
+      } else if (shortState.equals("d")) {
+        return State.DOWN;
+      } else if (shortState.equals("f")) {
+        return State.RECOVERY_FAILED;
+      }
+      throw new IllegalStateException("Unknown state: " + shortState);
+    }
     
     /** Converts the state string to a State instance. */
     public static State getState(String stateStr) {
@@ -236,7 +256,6 @@ public class Replica extends ZkNodeProps {
     if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
     return sb.toString();
   }
-
 
   @Override
   public String toString() {

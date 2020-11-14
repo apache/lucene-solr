@@ -178,7 +178,7 @@ public class ZkStateWriter {
                   for (Replica replica : replicas) {
                     if (replica.getState() != Replica.State.DOWN) {
                       replica.setState(Replica.State.DOWN);
-                      updates.getProperties().put(replica.getName(), "down");
+                      updates.getProperties().put(replica.getName(), Replica.State.getShortState(Replica.State.DOWN));
                       dirtyState.add(docColl.getName());
                     }
                   }
@@ -220,12 +220,12 @@ public class ZkStateWriter {
                         r.getProperties().remove("leader");
                       }
                     }
-                    updates.getProperties().put(replica.getName(), "leader");
+                    updates.getProperties().put(replica.getName(), "l");
                     dirtyState.add(collection);
                   } else {
 
                     Replica.State state = Replica.State.getState(setState);
-                    updates.getProperties().put(replica.getName(), setState);
+                    updates.getProperties().put(replica.getName(), Replica.State.getShortState(state));
                     // log.info("set state {} {}", state, replica);
                     replica.setState(state);
                     dirtyState.add(collection);

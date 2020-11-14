@@ -1391,64 +1391,71 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     private void processStateUpdates(String stateUpdatesPath) throws KeeperException, InterruptedException {
-      byte[] data = new byte[0];
-      while (true) {
-        try {
-          data = getZkClient().getData(stateUpdatesPath, watcher, null, true);
-          break;
-        } catch (KeeperException.NoNodeException e) {
-          if (watcher != null) {
-            // Leave an exists watch in place in case a state.json is created later.
-            Stat exists = zkClient.exists(stateUpdatesPath, watcher, true);
-            if (exists != null) {
-              // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
-              // Loop and try again.
-              continue;
+      try {
+        byte[] data = null;
+        while (true) {
+          try {
+            data = getZkClient().getData(stateUpdatesPath, watcher, null, true);
+            break;
+          } catch (KeeperException.NoNodeException e) {
+            if (watcher != null) {
+              // Leave an exists watch in place in case a state.json is created later.
+              Stat exists = zkClient.exists(stateUpdatesPath, watcher, true);
+              if (exists != null) {
+                // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
+                // Loop and try again.
+                continue;
+              }
             }
+            break;
           }
-          break;
         }
-      }
-      if (data == null) {
-        return;
-      }
+        if (data == null) {
+          return;
+        }
 
-      Map<String,Object> m = (Map) fromJSON(data);
-      log.info("Got additional state updates {}", m);
-      if (m.size() == 0) {
-        return;
-      }
+        Map<String,Object> m = (Map) fromJSON(data);
+        log.info("Got additional state updates {}", m);
+        if (m.size() == 0) {
+          return;
+        }
 
-      Integer version = Integer.parseInt((String) m.get("_cs_ver_"));
-      log.info("Got additional state updates with version {}", version);
+        Integer version = Integer.parseInt((String) m.get("_cs_ver_"));
+        log.info("Got additional state updates with version {}", version);
 
-      m.remove("_cs_ver_");
-      
-      Set<Entry<String,Object>> entrySet = m.entrySet();
-      DocCollection docCollection = clusterState.getCollectionOrNull(coll);
+        m.remove("_cs_ver_");
 
-      Map<String,ClusterState.CollectionRef> result = new LinkedHashMap<>();
-      List<String> changedCollections = new ArrayList<>();
-      if (docCollection != null) {
-        for (Entry<String,Object> entry : entrySet) {
-          String core = entry.getKey();
-          String state = (String) entry.getValue();
-          log.info("Got additional state update {} {}", core, state);
-          Replica replica = docCollection.getReplica(core);
-          if (replica != null) {
+        Set<Entry<String,Object>> entrySet = m.entrySet();
+        DocCollection docCollection = clusterState.getCollectionOrNull(coll);
 
-            if (!replica.getState().toString().equals(state)) {
+        Map<String,ClusterState.CollectionRef> result = new LinkedHashMap<>();
+        List<String> changedCollections = new ArrayList<>();
+
+        if (docCollection != null) {
+          for (Entry<String,Object> entry : entrySet) {
+            String core = entry.getKey();
+            Replica.State state = null;
+            if (!entry.getValue().equals("l")) {
+              state = Replica.State.shortStateToState((String) entry.getValue());
+            } else {
+              state = Replica.State.ACTIVE;
+            }
+            log.info("Got additional state update {} {}", core, state == null ? "leader" : state);
+            Replica replica = docCollection.getReplica(core);
+            if (replica != null) {
+
+              //     if (replica.getState() != state || entry.getValue().equals("l")) {
               Slice slice = docCollection.getSlice(replica.getSlice());
               Map<String,Replica> replicasMap = new HashMap(slice.getReplicasMap());
 
               Map properties = new HashMap(replica.getProperties());
-              if (state.equals("leader")) {
+              if (entry.getValue().equals("l")) {
                 log.info("state is leader, set to active and leader prop");
                 properties.put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE);
                 properties.put("leader", "true");
               } else {
                 log.info("std state, set to {}", state);
-                properties.put(ZkStateReader.STATE_PROP, state);
+                properties.put(ZkStateReader.STATE_PROP, state.toString());
               }
 
               Replica newReplica = new Replica(core, properties, coll, replica.getSlice(), ZkStateReader.this);
@@ -1478,44 +1485,48 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
               updateWatchedCollection(coll, newDocCollection);
 
+              //  }
+            } else {
+              log.info("Could not find core to update local state {} {}", core, state);
             }
-          } else {
-            log.info("Could not find core to update local state {} {}", core, state);
           }
+          if (changedCollections.size() > 0) {
+            Set<String> liveNodes = ZkStateReader.this.liveNodes; // volatile read
+            // Add collections
+            for (Map.Entry<String,DocCollection> entry : watchedCollectionStates.entrySet()) {
+              if (!entry.getKey().equals(coll)) {
+                result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
+              }
+            }
+
+            // Finally, add any lazy collections that aren't already accounted for.
+            for (Map.Entry<String,LazyCollectionRef> entry : lazyCollectionStates.entrySet()) {
+              if (!entry.getKey().equals(coll)) {
+                result.putIfAbsent(entry.getKey(), entry.getValue());
+              }
+            }
+
+            ClusterState cs = new ClusterState(liveNodes, result, -1);
+            log.info("Set a new clusterstate based on update diff {}", cs);
+            ZkStateReader.this.clusterState = cs;
+
+            notifyCloudCollectionsListeners(true);
+
+            log.info("Notify state watchers for changed collections {}", changedCollections);
+            for (String collection : changedCollections) {
+              notifyStateWatchers(collection, cs.getCollection(collection));
+            }
+          }
+
+          //          for (Map.Entry<String,DocCollection> entry : watchedCollectionStates.entrySet()) {
+          //            if (changedCollections.contains(entry.getKey())) {
+          //              clusterState = clusterState.copyWith(entry.getKey(), stateClusterState.getCollectionOrNull(entry.getKey()));
+          //            }
+          //          }
         }
-        if (changedCollections.size() > 0) {
-          Set<String> liveNodes = ZkStateReader.this.liveNodes; // volatile read
-          // Add collections
-          for (Map.Entry<String,DocCollection> entry : watchedCollectionStates.entrySet()) {
-            if (!entry.getKey().equals(coll)) {
-              result.put(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
-            }
-          }
 
-          // Finally, add any lazy collections that aren't already accounted for.
-          for (Map.Entry<String,LazyCollectionRef> entry : lazyCollectionStates.entrySet()) {
-            if (!entry.getKey().equals(coll)) {
-              result.putIfAbsent(entry.getKey(), entry.getValue());
-            }
-          }
-
-          ClusterState cs = new ClusterState(liveNodes, result, -1);
-          log.info("Set a new clusterstate based on update diff {}", cs);
-          ZkStateReader.this.clusterState = cs;
-
-          notifyCloudCollectionsListeners(true);
-
-          log.info("Notify state watchers for changed collections {}", changedCollections);
-          for (String collection : changedCollections) {
-            notifyStateWatchers(collection, cs.getCollection(collection));
-          }
-        }
-
-        //          for (Map.Entry<String,DocCollection> entry : watchedCollectionStates.entrySet()) {
-        //            if (changedCollections.contains(entry.getKey())) {
-        //              clusterState = clusterState.copyWith(entry.getKey(), stateClusterState.getCollectionOrNull(entry.getKey()));
-        //            }
-        //          }
+      } catch (Exception e) {
+        log.error("exeption trying to process additional updates", e);
       }
 
     }
