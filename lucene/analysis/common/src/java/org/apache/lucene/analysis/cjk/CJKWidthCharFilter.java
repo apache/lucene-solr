@@ -70,10 +70,12 @@ public class CJKWidthCharFilter extends BaseCharFilter {
   private int prevChar = -1;
   private int inputOff = 0;
 
+  /** Default constructor that takes a {@link Reader}. */
   public CJKWidthCharFilter(Reader in) {
     super(in);
   }
 
+  @Override
   public int read() throws IOException {
     while(true) {
       final int ch = input.read();
