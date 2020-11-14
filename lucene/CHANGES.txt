@@ -156,6 +156,8 @@ Improvements
 * LUCENE-9531: Consolidated CharStream and FastCharStream classes: these have been moved
   from each query parser package to org.apache.lucene.queryparser.charstream (Dawid Weiss).
 
+* LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
