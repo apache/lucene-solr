@@ -63,10 +63,26 @@ jar {
   }
 }
 
-// Add two folders to default packaging.
 assemblePackaging {
+  // Add two folders to default packaging.
   from(projectDir, {
     include "bin/**"
     include "conf/**"
   })
+  // Add all libs except those provided by SolrJ & Logging
+  from ({
+    def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
+      if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
+        return !dep.dependencyProject.path.startsWith(":solr")
+      } else {
+        return true
+      }
+    }
+    return externalLibs - project(':solr:server').configurations.getByName('libExt')
+  }, {
+    into "lib"
+  })
+
+
+  into deps
 }
