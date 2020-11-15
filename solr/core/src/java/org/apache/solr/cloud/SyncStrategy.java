@@ -80,10 +80,7 @@ public class SyncStrategy implements Closeable {
       log.info("Sync replicas to {}", leaderProps.getCoreUrl());
     }
 
-    if (core.getUpdateHandler().getUpdateLog() == null) {
-      log.error("No UpdateLog found - cannot sync");
-      return PeerSync.PeerSyncResult.failure();
-    }
+
     this.zkController = zkController;
     return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
   }

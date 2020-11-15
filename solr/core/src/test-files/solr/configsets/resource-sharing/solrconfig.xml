@@ -37,7 +37,9 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-
+    <updateLog>
+      <str name="dir">${solr.data.dir:}</str>
+    </updateLog>
   </updateHandler>
   <searchComponent name="testComponent" class="org.apache.solr.handler.component.ResourceSharingTestComponent" />
 

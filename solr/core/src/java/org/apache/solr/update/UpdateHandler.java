@@ -163,16 +163,22 @@ UpdateHandler implements SolrInfoBean, Closeable {
       } else {
         ourUpdateLog = updateLog;
       }
+      ulog = ourUpdateLog;
+
+      if (ulog == null) {
+        log.info("No UpdateLog configured for UpdateHandler {} {} skip={}", updateLog, ulogPluginInfo, skipUpdateLog);
+      }
     } catch (Throwable e) {
+      log.error("Could not initialize the UpdateHandler", e);
       IOUtils.closeQuietly(ourUpdateLog);
       assert ObjectReleaseTracker.release(this);
       if (e instanceof Error) {
         throw e;
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    } finally {
-      ulog = ourUpdateLog;
     }
+
+
   }
 
   /**
