@@ -98,11 +98,6 @@ public class CJKWidthCharFilter extends BaseCharFilter {
           final int prevCumulativeDiff = getLastCumulativeDiff();
           addOffCorrectMap(inputOff - 1 - prevCumulativeDiff, prevCumulativeDiff + 1);
           return ret;
-        } else {
-          // failed to combine the voice mark; shouldn't consume it.
-          ret = prevChar;
-          prevChar = KANA_NORM[ch - 0xFF65];
-          return ret;
         }
       }
 
