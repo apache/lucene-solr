@@ -48,7 +48,7 @@ public class TestKnnGraph extends LuceneTestCase {
 
   private static final String KNN_GRAPH_FIELD = "vector";
 
-  private static int maxConn;
+  private static int maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
 
   @Before
   public void setup() {
