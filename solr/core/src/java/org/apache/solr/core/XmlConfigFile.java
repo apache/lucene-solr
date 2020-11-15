@@ -37,6 +37,7 @@ import java.util.TreeSet;
 
 import net.sf.saxon.Configuration;
 import net.sf.saxon.dom.DocumentOverNodeInfo;
+import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.event.Sender;
 import net.sf.saxon.lib.ParseOptions;
 import net.sf.saxon.lib.Validation;
@@ -196,6 +197,9 @@ public class XmlConfigFile { // formerly simply "Config"
       conf2.setDocumentNumberAllocator(conf1.getDocumentNumberAllocator());
       conf2.setNamePool(conf1.getNamePool());
 
+      PipelineConfiguration plc = conf2.makePipelineConfiguration();
+      plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
+
       ParseOptions parseOptions = conf2.getParseOptions();
       if (is.getSystemId() != null) {
         parseOptions.setEntityResolver(loader.getSysIdResolver());
@@ -208,7 +212,7 @@ public class XmlConfigFile { // formerly simply "Config"
       parseOptions.setSchemaValidationMode(0);
 
       TinyDocumentImpl docTree = null;
-      SolrTinyBuilder builder = new SolrTinyBuilder(conf2.makePipelineConfiguration(), substituteProps);
+      SolrTinyBuilder builder = new SolrTinyBuilder(plc, substituteProps);
       try {
         //builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
 
@@ -217,7 +221,6 @@ public class XmlConfigFile { // formerly simply "Config"
       } finally {
         builder.close();
         builder.reset();
-        if (conf2 != null) conf2.close();
       }
 
       this.tree = docTree;

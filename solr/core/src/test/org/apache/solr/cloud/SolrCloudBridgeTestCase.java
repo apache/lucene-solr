@@ -129,7 +129,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static String schemaString;
   protected volatile static String solrconfigString;
   protected volatile static String solrxmlString = "solr.xml";
-  protected volatile static boolean uploadSelectCollection1Config = false;
+  protected volatile static boolean uploadSelectCollection1Config = true;
   protected volatile static boolean formatZk = true;
 
   protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
