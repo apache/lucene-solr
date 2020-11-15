@@ -88,17 +88,15 @@ public class CJKWidthCharFilter extends BaseCharFilter {
 
       inputOff++;
       int ret = -1;
-      if (prevChar >= 0x30A6 && prevChar <= 0x30FD && (ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK)) {
-        // try to combine the voice mark
-        if (combineVoiceMark(ch)) {
-          // successfully combined voice mark with the previous char (full-width katakana).
-          ret = prevChar;
-          prevChar = -1;
-          // offset needs to be corrected
-          final int prevCumulativeDiff = getLastCumulativeDiff();
-          addOffCorrectMap(inputOff - 1 - prevCumulativeDiff, prevCumulativeDiff + 1);
-          return ret;
-        }
+      // if the current char is a voice mark, then try to combine it with the previous char.
+      if ((ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK) && combineVoiceMark(ch)) {
+        // successfully combined. returns the combined char immediately
+        ret = prevChar;
+        prevChar = -1;
+        // offset needs to be corrected
+        final int prevCumulativeDiff = getLastCumulativeDiff();
+        addOffCorrectMap(inputOff - 1 - prevCumulativeDiff, prevCumulativeDiff + 1);
+        return ret;
       }
 
       if (prevChar != -1) {
