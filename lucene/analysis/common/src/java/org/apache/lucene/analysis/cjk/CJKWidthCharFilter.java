@@ -89,14 +89,16 @@ public class CJKWidthCharFilter extends BaseCharFilter {
       inputOff++;
       int ret = -1;
       // if the current char is a voice mark, then try to combine it with the previous char.
-      if ((ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK) && combineVoiceMark(ch)) {
-        // successfully combined. returns the combined char immediately
-        ret = prevChar;
-        prevChar = -1;
-        // offset needs to be corrected
-        final int prevCumulativeDiff = getLastCumulativeDiff();
-        addOffCorrectMap(inputOff - 1 - prevCumulativeDiff, prevCumulativeDiff + 1);
-        return ret;
+      if ((ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK)) {
+        final int combinedChar = combineVoiceMark(prevChar, ch);
+        if (prevChar != combinedChar) {
+          // successfully combined. returns the combined char immediately
+          prevChar = -1;
+          // offset needs to be corrected
+          final int prevCumulativeDiff = getLastCumulativeDiff();
+          addOffCorrectMap(inputOff - 1 - prevCumulativeDiff, prevCumulativeDiff + 1);
+          return combinedChar;
+        }
       }
 
       if (prevChar != -1) {
@@ -120,17 +122,15 @@ public class CJKWidthCharFilter extends BaseCharFilter {
     }
   }
 
-  /** returns true if we successfully combined the voice mark */
-  private boolean combineVoiceMark(int voiceMark) {
+  /** returns combined char if we successfully combined the voice mark, otherwise original char */
+  private int combineVoiceMark(int ch, int voiceMark) {
     assert voiceMark == HW_KATAKANA_SEMI_VOICED_MARK || voiceMark == HW_KATAKANA_VOICED_MARK;
-    int prev = prevChar;
-    if (prevChar >= 0x30A6 && prevChar <= 0x30FD) {
-      prevChar += (voiceMark == HW_KATAKANA_SEMI_VOICED_MARK)
+    if (ch >= 0x30A6 && ch <= 0x30FD) {
+      ch += (voiceMark == HW_KATAKANA_SEMI_VOICED_MARK)
         ? KANA_COMBINE_SEMI_VOICED[prevChar - 0x30A6]
         : KANA_COMBINE_VOICED[prevChar - 0x30A6];
-      return prevChar != prev;
     }
-    return false;
+    return ch;
   }
 
   @Override
