@@ -101,7 +101,7 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
 public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
-  public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
+  public final boolean configEditing_disabled;
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private Lock reloadLock = new ReentrantLock(true);
 
@@ -113,12 +113,16 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
   static {
     Map<String, SolrConfig.SolrPluginInfo> map = new HashMap<>();
-    for (SolrConfig.SolrPluginInfo plugin : SolrConfig.plugins) {
+    SolrConfig.plugins.forEach(plugin -> {
       if (plugin.options.contains(REQUIRE_NAME) || plugin.options.contains(REQUIRE_NAME_IN_OVERLAY)) {
         map.put(plugin.getCleanTag().toLowerCase(Locale.ROOT), plugin);
       }
-    }
+    });
     namedPlugins = Collections.unmodifiableMap(map);
+  }
+
+  public SolrConfigHandler() {
+    configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   }
 
   @Override

@@ -458,7 +458,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         // TODO: we should be explicitly looking for file not found exceptions
         // and logging if it's not the expected IOException
         // hopefully no problem, assume no overlay.json file
-        log.error("Failed to open resource file {}", ConfigOverlay.RESOURCE_NAME);
         return new ConfigOverlay(Collections.EMPTY_MAP, -1);
       }
       
@@ -547,6 +546,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
               "Found " + result.size() + " configuration sections when at most "
                   + "1 is allowed matching expression: " + pluginInfo.getCleanTag());
     }
+    log.info("Add plugin {} {}", requireName, result);
     if (!result.isEmpty()) pluginStore.put(pluginInfo.clazz.getName(), result);
   }
 
@@ -587,9 +587,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 
-  protected UpdateHandlerInfo updateHandlerInfo;
+  protected final UpdateHandlerInfo updateHandlerInfo;
 
-  private Map<String, List<PluginInfo>> pluginStore = new ConcurrentHashMap<>();
+  private final Map<String, List<PluginInfo>> pluginStore = new ConcurrentHashMap<>();
 
   public final int maxWarmingSearchers;
   public final boolean useColdSearcher;

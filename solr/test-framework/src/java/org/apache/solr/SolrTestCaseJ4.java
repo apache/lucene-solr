@@ -1353,6 +1353,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     String response = updateJ(jsonAdd(sdoc), params);
     Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    log.info("Response was {}", rsp);
     List lst = (List)rsp.get("adds");
     if (lst == null || lst.size() == 0) return null;
     return (Long) lst.get(1);

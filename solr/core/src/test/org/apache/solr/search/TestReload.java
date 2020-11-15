@@ -32,7 +32,9 @@ public class TestReload extends TestRTGBase {
   public void testGetRealtimeReload() throws Exception {
     clearIndex();
     assertU(commit());
-    long version = addAndGetVersion(sdoc("id","1") , null);
+    Long version = addAndGetVersion(sdoc("id","1") , null);
+
+    assertNotNull("did not find doc 1 returned in response", version);
 
     assertU(commit("softCommit","true"));   // should cause a RTG searcher to be opened
 
