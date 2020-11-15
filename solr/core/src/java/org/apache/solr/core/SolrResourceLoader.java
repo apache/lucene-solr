@@ -175,7 +175,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public SystemIdResolver getSysIdResolver() {
-    return  sysIdResolver;
+    return sysIdResolver;
   }
 
   /**

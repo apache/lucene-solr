@@ -67,6 +67,7 @@ import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestInjection;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -455,8 +456,13 @@ public class SolrTestCase extends LuceneTestCase {
     throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
   }
 
+  @After
+  public void afterSolrTestCase() throws Exception {
+
+  }
+
   @AfterClass
-  public static void afterSolrTestCase() throws Exception {
+  public static void afterSolrTestCaseClass() throws Exception {
     log.info("*******************************************************************");
     log.info("@After Class ------------------------------------------------------");
     try {
@@ -513,6 +519,7 @@ public class SolrTestCase extends LuceneTestCase {
 //                  + testTime);
       }
     } finally {
+      System.clearProperty("enable.update.log");
       Class<? extends Object> clazz = null;
       Long tooLongTime = 0L;
       String times = null;

@@ -69,14 +69,14 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
   public InputStream openResource(String resource) throws IOException {
     InputStream is;
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
-
+    if (log.isDebugEnabled()) log.debug("open resource {}", resource);
 
     try {
 
       Stat stat = new Stat();
       byte[] bytes = zkController.getZkClient().getData(file, null, stat);
       if (bytes == null) {
-
+        log.error("resource not found {}", resource);
         throw new SolrResourceNotFoundException("Can't find resource '" + resource
                 + "' in classpath or '" + configSetZkPath + "', cwd="
                 + System.getProperty("user.dir"));
@@ -86,10 +86,12 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
     } catch (KeeperException.NoNodeException e) {
+      log.error("resource not found {}", resource);
       throw new SolrResourceNotFoundException("Can't find resource '" + resource
               + "' in classpath or '" + configSetZkPath + "', cwd="
               + System.getProperty("user.dir"));
     } catch (KeeperException e) {
+      log.error("zookeeper exception trying to open resource {}", resource);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error opening " + file, e);
     }
   }

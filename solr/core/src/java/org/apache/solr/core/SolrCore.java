@@ -1078,9 +1078,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       initSearcher(prev);
 
-      // Finally tell anyone who wants to know
-      resourceLoader.inform(resourceLoader);
-
       this.updateHandler.informEventListeners(this);
 
       infoRegistry.put("core", this);
@@ -1093,6 +1090,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       bufferUpdatesIfConstructing(coreDescriptor);
 
+      registerConfListener();
+
       this.ruleExpiryLock = new ReentrantLock();
       this.snapshotDelLock = new ReentrantLock();
 
@@ -1104,10 +1103,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // from the core.
       resourceLoader.inform(infoRegistry);
 
+      // Finally tell anyone who wants to know
+      resourceLoader.inform(resourceLoader);
 
       resourceLoader.inform(this); // last call before the latch is released.
-
-      registerConfListener();
 
       searcherReadyLatch.countDown();
 

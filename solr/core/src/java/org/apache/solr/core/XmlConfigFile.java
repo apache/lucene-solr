@@ -196,27 +196,16 @@ public class XmlConfigFile { // formerly simply "Config"
 
       conf2.setDocumentNumberAllocator(conf1.getDocumentNumberAllocator());
       conf2.setNamePool(conf1.getNamePool());
-
+      conf2.setURIResolver(loader.getSysIdResolver().asURIResolver());
       PipelineConfiguration plc = conf2.makePipelineConfiguration();
-      plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
-
-      ParseOptions parseOptions = conf2.getParseOptions();
-      if (is.getSystemId() != null) {
-        parseOptions.setEntityResolver(loader.getSysIdResolver());
-      }
-
-      parseOptions.setXIncludeAware(true);
-      parseOptions.setExpandAttributeDefaults(true);
-      parseOptions.setPleaseCloseAfterUse(true);
-      //        parseOptions.setSchemaValidationMode(Validation.STRIP);
-      parseOptions.setSchemaValidationMode(0);
-
-      TinyDocumentImpl docTree = null;
+      //plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
+      conf2.getParseOptions().setEntityResolver(loader.getSysIdResolver());
+      TinyDocumentImpl docTree;
       SolrTinyBuilder builder = new SolrTinyBuilder(plc, substituteProps);
       try {
         //builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
 
-        Sender.send(source, builder, parseOptions);
+        Sender.send(source, builder, conf2.getParseOptions());
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
       } finally {
         builder.close();
