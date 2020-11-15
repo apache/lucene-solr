@@ -399,7 +399,7 @@ public class SolrCmdDistributor implements Closeable {
   }
 
   public static class StdNode extends Node {
-    private final ZkStateReader zkStateReader;
+    protected final ZkStateReader zkStateReader;
     protected Replica nodeProps;
     protected String collection;
     protected String shardId;
@@ -508,8 +508,6 @@ public class SolrCmdDistributor implements Closeable {
   // RetryNodes are used in the case of 'forward to leader' where we want
   // to try the latest leader on a fail in the case the leader just went down.
   public static class ForwardNode extends StdNode {
-    
-    private ZkStateReader zkStateReader;
     
     public ForwardNode(ZkStateReader zkStateReader, Replica nodeProps, String collection, String shardId) {
       super(zkStateReader, nodeProps, collection, shardId);
