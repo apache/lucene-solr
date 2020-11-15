@@ -458,6 +458,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         // TODO: we should be explicitly looking for file not found exceptions
         // and logging if it's not the expected IOException
         // hopefully no problem, assume no overlay.json file
+        log.error("Failed to open resource file {}", ConfigOverlay.RESOURCE_NAME);
         return new ConfigOverlay(Collections.EMPTY_MAP, -1);
       }
       
@@ -776,7 +777,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
     if (info != null &&
         (info.options.contains(REQUIRE_NAME) || info.options.contains(REQUIRE_NAME_IN_OVERLAY))) {
-      Map<String, Map> infos = overlay.getNamedPlugins(info.getCleanTag());
+      Map<String,Map> infos;
+      synchronized (this) {
+        infos = overlay.getNamedPlugins(info.getCleanTag());
+      }
       if (!infos.isEmpty()) {
         LinkedHashMap<String, PluginInfo> map = new LinkedHashMap<>();
         if (result != null) for (PluginInfo pluginInfo : result) {
@@ -894,7 +898,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   // nocommit
   public int getInt(String path, int def) {
-    Object val = overlay.getXPathProperty(path);
+    Object val;
+    synchronized (this) {
+      val = overlay.getXPathProperty(path);
+    }
     if (val != null) return Integer.parseInt(val.toString());
     try {
       path = super.normalize(path);
@@ -905,7 +912,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   public boolean getBool(String path, boolean def) {
-    Object val = overlay.getXPathProperty(path);
+    Object val;
+    synchronized (this) {
+      val = overlay.getXPathProperty(path);
+    }
     if (val != null) return Boolean.parseBoolean(val.toString());
     try {
       path = super.normalize(path);
@@ -916,7 +926,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   public String get(String path) {
-    Object val = overlay.getXPathProperty(path, true);
+    Object val;
+    synchronized (this) {
+      val = overlay.getXPathProperty(path, true);
+    }
     try {
       path = super.normalize(path);
       return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path);
@@ -926,7 +939,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   public String get(String path, String def) {
-    Object val = overlay.getXPathProperty(path, true);
+    Object val;
+    synchronized (this) {
+      val = overlay.getXPathProperty(path, true);
+    }
     try {
       path = super.normalize(path);
       return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path, def);
@@ -959,7 +975,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
           items.put(info.name, info);
         }
-        for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
+
+        synchronized (this) {
+          for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
+        }
         result.put(tag, items);
       } else {
         if (plugin.options.contains(MULTI_OK)) {
@@ -1010,7 +1029,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-  private volatile ConfigOverlay overlay;
+  private ConfigOverlay overlay;
 
   public synchronized ConfigOverlay getOverlay() {
     if (overlay == null) {
