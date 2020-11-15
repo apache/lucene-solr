@@ -55,7 +55,7 @@
   </requestHandler>
 
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog>
+    <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>

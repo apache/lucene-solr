@@ -140,7 +140,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
-    
+
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     

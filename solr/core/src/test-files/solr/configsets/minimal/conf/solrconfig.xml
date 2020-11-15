@@ -33,7 +33,7 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-    <updateLog>
+    <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.data.dir:}</str>
     </updateLog>
   </updateHandler>

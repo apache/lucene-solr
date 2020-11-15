@@ -31,7 +31,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog>
+    <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.data.dir:}</str>
     </updateLog>
   </updateHandler>

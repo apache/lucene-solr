@@ -34,7 +34,7 @@
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <updateHandler class="solr.DirectUpdateHandler2">
-    <updateLog>
+    <updateLog enable="${enable.update.log:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
