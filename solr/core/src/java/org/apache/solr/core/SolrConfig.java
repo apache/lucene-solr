@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -587,7 +588,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   protected UpdateHandlerInfo updateHandlerInfo;
 
-  private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<>();
+  private Map<String, List<PluginInfo>> pluginStore = new ConcurrentHashMap<>();
 
   public final int maxWarmingSearchers;
   public final boolean useColdSearcher;
