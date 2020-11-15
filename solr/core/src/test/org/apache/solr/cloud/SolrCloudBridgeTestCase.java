@@ -84,7 +84,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected static String COLLECTION = "collection1";
   protected static String  DEFAULT_COLLECTION = COLLECTION;
 
-  protected static CloudHttp2SolrClient cloudClient;
+  protected volatile static CloudHttp2SolrClient cloudClient;
   
   protected static final String SHARD1 = "s1";
   
@@ -113,13 +113,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   protected static String[] fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
   
-  protected static int numJettys = 3;
+  protected volatile static int numJettys = 3;
   
-  protected static int sliceCount = 2;
+  protected volatile static int sliceCount = 2;
   
-  protected static int replicationFactor = 1;
+  protected volatile static int replicationFactor = 1;
 
-  protected static boolean enableProxy = false;
+  protected volatile static boolean enableProxy = false;
   
   protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected volatile static boolean createCollection1 = true;
@@ -134,15 +134,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
 
-  Pattern filenameExclusions = Pattern.compile(".*solrconfig(?:-|_).*?\\.xml|.*schema(?:-|_).*?\\.xml");
+  final Pattern filenameExclusions = Pattern.compile(".*solrconfig(?:-|_).*?\\.xml|.*schema(?:-|_).*?\\.xml");
   
   public static Path TEST_PATH() { return SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath(); }
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
-
-
-
+    
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
