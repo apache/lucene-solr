@@ -126,7 +126,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
     this(core, null);
   }
   
-  public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
+  public UpdateHandler(SolrCore core, UpdateLog updateLog) {
     UpdateLog ourUpdateLog = null;
     assert ObjectReleaseTracker.track(this);
     try {
@@ -163,7 +163,18 @@ UpdateHandler implements SolrInfoBean, Closeable {
       } else {
         ourUpdateLog = updateLog;
       }
-      ulog = ourUpdateLog;
+
+      if (ourUpdateLog != null) {
+        ulog = ourUpdateLog;
+      } else {
+        if (core.getCoreContainer().isZooKeeperAware()) {
+          // TODO: workaround rare test issue where updatelog is not found
+          ulog = new UpdateLog();
+          ourUpdateLog.init(this, core);
+        } else {
+          ulog = null;
+        }
+      }
 
       if (ulog == null) {
         log.info("No UpdateLog configured for UpdateHandler {} {} skip={}", updateLog, ulogPluginInfo, skipUpdateLog);
@@ -177,7 +188,6 @@ UpdateHandler implements SolrInfoBean, Closeable {
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
 
   }
 

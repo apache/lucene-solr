@@ -83,12 +83,12 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     
     // check that we can't escape with absolute file paths:
     for (String path : Arrays.asList("/etc/passwd", "/windows/notepad.exe")) {
-      ioe = expectThrows(IOException.class, () -> {
+      try {
         resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
-      });
-      assertTrue(ioe.getMessage().startsWith("Can't find resource")
-          || ioe.getMessage().contains("access denied")
-          || ioe.getMessage().contains("is outside resource loader dir"));
+        fail("Should have failed");
+      } catch (Exception e) {
+        assertTrue(e.getMessage().startsWith("Can't find resource") || e.getMessage().contains("access denied") || e.getMessage().contains("is outside resource loader dir"));
+      }
     }
   }
 
