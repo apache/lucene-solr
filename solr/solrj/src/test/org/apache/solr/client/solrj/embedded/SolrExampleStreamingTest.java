@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
@@ -37,6 +38,7 @@ import org.junit.BeforeClass;
  * @since solr 1.3
  */
 @Slow
+@LuceneTestCase.Nightly
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
   protected static JettySolrRunner jetty;

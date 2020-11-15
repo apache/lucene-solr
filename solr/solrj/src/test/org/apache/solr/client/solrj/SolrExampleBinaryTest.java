@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -29,6 +30,7 @@ import org.junit.BeforeClass;
  * codec for communication. 
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@LuceneTestCase.Nightly
 public class SolrExampleBinaryTest extends SolrExampleTests {
 
   public SolrClient createNewSolrClient(JettySolrRunner jetty)

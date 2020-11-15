@@ -1389,6 +1389,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         Integer version = Integer.parseInt((String) m.get("_cs_ver_"));
         log.info("Got additional state updates with version {}", version);
 
+
+
         m.remove("_cs_ver_");
 
         Set<Entry<String,Object>> entrySet = m.entrySet();
@@ -1398,6 +1400,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         List<String> changedCollections = new ArrayList<>();
 
         if (docCollection != null) {
+          if (version < docCollection.getZNodeVersion()) {
+            log.info("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
+          }
           for (Entry<String,Object> entry : entrySet) {
             String core = entry.getKey();
             Replica.State state = null;

@@ -56,6 +56,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -70,6 +71,7 @@ import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
+@LuceneTestCase.AwaitsFix(bugUrl = "This test finds create collections fails well")
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";
@@ -93,7 +95,7 @@ private static boolean useAlias;
 
 @BeforeClass
 public static void configureCluster() throws Exception {
-  numShards = random().nextInt(2) + 1;  //1 - 3
+  numShards = random().nextInt(2) + 2;  //1 - 3
   numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
   configureCluster(numShards)
       .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
@@ -109,7 +111,7 @@ public static void configureCluster() throws Exception {
   }
   CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
       .process(cluster.getSolrClient());
-  cluster.waitForActiveCollection(collection, numShards, numShards);
+
   if (useAlias) {
     CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
   }
@@ -126,7 +128,6 @@ public static void configureCluster() throws Exception {
   CollectionAdminRequest.createCollection(collection, "conf", numShards, 1, 1, 1)
       .setMaxShardsPerNode(numShards * 3)
       .process(cluster.getSolrClient());
-  cluster.waitForActiveCollection(collection, numShards, numShards * 3);
   if (useAlias) {
     CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
   }

@@ -573,12 +573,12 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   public void clearIndex(String collection) {
 
-    try {
-      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
-          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString()), collection);
-    } catch (Exception e) {
-      log.warn("Error clearing index {}", e.getMessage());
-    }
+//    try {
+//      deleteByQueryAndGetVersion("*:*", params("_version_", Long.toString(-Long.MAX_VALUE),
+//          DISTRIB_UPDATE_PARAM, DistributedUpdateProcessor.DistribPhase.FROMLEADER.toString()), collection);
+//    } catch (Exception e) {
+//      log.warn("Error clearing index {}", e.getMessage());
+//    }
     try {
     new UpdateRequest()
         .deleteByQuery("*:*")
