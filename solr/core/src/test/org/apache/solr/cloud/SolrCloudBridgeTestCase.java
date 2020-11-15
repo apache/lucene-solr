@@ -141,11 +141,15 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
 
+
+
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     
     cluster = configureCluster(numJettys).formatZk(formatZk).withSolrXml(TEST_PATH().resolve(solrxmlString)).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
-    
+
+    cluster.getZkClient().clean("/configs/_default");
+
     SolrZkClient zkClient = cluster.getZkClient();
 
     if (!zkClient.exists("/configs/_default")) {
