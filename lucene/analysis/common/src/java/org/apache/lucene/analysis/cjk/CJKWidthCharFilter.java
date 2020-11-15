@@ -89,7 +89,7 @@ public class CJKWidthCharFilter extends BaseCharFilter {
       inputOff++;
       int ret = -1;
       // if the current char is a voice mark, then try to combine it with the previous char.
-      if ((ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK)) {
+      if (ch == HW_KATAKANA_SEMI_VOICED_MARK || ch == HW_KATAKANA_VOICED_MARK) {
         final int combinedChar = combineVoiceMark(prevChar, ch);
         if (prevChar != combinedChar) {
           // successfully combined. returns the combined char immediately
