@@ -111,8 +111,6 @@ else
     GC_TUNE="$GC_TUNE"
 fi
 
-EXTRA_JVM_ARGUMENTS="-Dlog4j.configurationFile=file:"$BASEDIR"/../../server/resources/log4j2-console.xml"
-
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
   [ -n "$CLASSPATH" ] && CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
@@ -151,7 +149,6 @@ exec "$JAVACMD" \
   $JAVA_MEM_OPTS \
   $GC_TUNE \
   $JAVA_OPTS \
-  $EXTRA_JVM_ARGUMENTS \
   $ZK_CREDS_AND_ACLS \
   -classpath "$CLASSPATH" \
   -Dapp.name="solr-exporter" \

@@ -1,4 +1,6 @@
-/*
+import groovy.transform.Field
+
+@Field private String mainClass/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +17,10 @@
  * limitations under the License.
  */
 
-apply plugin: 'application'
+apply plugin: 'java-library'
+// this is actually more of an 'application' but we don't want all of what Gradle adds
 
 description = 'Prometheus exporter for exposing metrics from Solr using Metrics API and Search API'
-
-application {
-  mainClass = 'org.apache.solr.prometheus.exporter.SolrExporter'
-  applicationDefaultJvmArgs = [
-      "-Dlog4j.configurationFile=file:../../server/resources/log4j2-console.xml"
-  ]
-}
 
 dependencies {
   implementation project(':solr:solrj')
@@ -47,6 +43,24 @@ dependencies {
   runtimeOnly 'com.lmax:disruptor'
 
   testImplementation project(':solr:test-framework')
+}
+
+ext {
+  mainClass = 'org.apache.solr.prometheus.exporter.SolrExporter'
+}
+
+task run(type: JavaExec) {
+  group = 'application'
+  description = 'Run the main class with JavaExecTask'
+  main = project.ext.mainClass
+  classpath = sourceSets.main.runtimeClasspath
+  systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
+}
+
+jar {
+  manifest {
+    attributes('Main-Class': project.ext.mainClass)
+  }
 }
 
 // Add two folders to default packaging.
