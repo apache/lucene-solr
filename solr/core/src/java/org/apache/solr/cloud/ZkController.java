@@ -1103,7 +1103,14 @@ public class ZkController implements Closeable, Runnable {
         });
         if (log.isDebugEnabled()) log.debug("get cluster lock");
         if (!lock.lock()) {
-          lockWaitLatch.await();
+          boolean success = false;
+          while (!success) {
+            if (isClosed()) {
+              log.warn("Closed, not getting cluster lock");
+              return;
+            }
+            success = lockWaitLatch.await(500, TimeUnit.MILLISECONDS);
+          }
         }
         try {
 

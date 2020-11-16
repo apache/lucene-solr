@@ -171,11 +171,11 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         assertFalse(r.getName().endsWith("_n1")); // make sure node was replaced
       }
     }
-    try {
-      CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
-      // nocommit fails with Error from server at null: Cannot unload non-existent core [replacenodetest_coll_shard4_replica_n27]}
-    }
+//    try {
+//      CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
+//    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+//      // nocommit fails with Error from server at null: Cannot unload non-existent core [replacenodetest_coll_shard4_replica_n27]}
+//    }
   }
 
   public static  CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(String sourceNode, String targetNode, Boolean parallel) {

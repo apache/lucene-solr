@@ -36,6 +36,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -53,6 +54,7 @@ import org.apache.solr.update.UpdateLog.RecoveryInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -771,24 +773,33 @@ public class RecoveryStrategy implements Runnable, Closeable {
           // Since we sleep at 2 seconds sub-intervals in
           // order to check if we were closed, 30 is chosen as the maximum loopCount (2s * 30 = 1m).
 
+          if (isClosed()) {
+            log.info("RecoveryStrategy has been closed");
+            return;
+          }
 
+          long wait = startingRecoveryDelayMilliSeconds;
 
-            if (isClosed()) {
-              log.info("RecoveryStrategy has been closed");
-              return;
+          if (retries.get() > 1 && retries.get() < 10) {
+            wait = (Math.max(500, startingRecoveryDelayMilliSeconds)) * retries.get();
+          } else if (retries.get() > 0) {
+            wait = TimeUnit.SECONDS.toMillis(60);
+          }
+
+          log.info("Wait [{}] ms before trying to recover again (attempt={})", wait, retries);
+
+          if (wait > 1000) {
+            TimeOut timeout = new TimeOut(wait, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+            while (!timeout.hasTimedOut()) {
+              if (isClosed()) {
+                log.info("RecoveryStrategy has been closed");
+                return;
+              }
+              Thread.sleep(1000);
             }
-
-            long wait = startingRecoveryDelayMilliSeconds;
-
-            if (retries.get() > 1 && retries.get() < 10) {
-              wait = (Math.max(500, startingRecoveryDelayMilliSeconds)) * retries.get();
-            } else if (retries.get() > 0) {
-              wait = TimeUnit.SECONDS.toMillis(60);
-            }
-
-            log.info("Wait [{}] seconds before trying to recover again (attempt={})", wait, retries);
-
+          } else {
             Thread.sleep(wait);
+          }
 
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e, true);
