@@ -160,13 +160,16 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
         Thread.sleep(100);
         errmessages.clear();
+        MapWriter m = null;
         MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
-        MapWriter m = (MapWriter) respMap._get("overlay/props", null);
-        if(m == null) {
-          errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
-          continue;
+        if (respMap != null) {
+           m = (MapWriter) respMap._get("overlay/props", null);
         }
 
+        if (respMap == null || m == null) {
+            errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
+            continue;
+        }
 
         Object o = m._get(asList("query", cacheName, "size"), null);
         if(!val1.equals(o.toString())) errmessages.add(StrUtils.formatString("'size' property not set, expected = {0}, actual {1}", val1, o));
