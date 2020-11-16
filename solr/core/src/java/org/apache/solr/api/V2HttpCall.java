@@ -136,7 +136,7 @@ public class V2HttpCall extends HttpSolrCall {
           initAdminRequest(path);
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for " + origCorename);
+          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no core retrieved for core name:  " + origCorename + ". Path : "+ path);
         }
       }
 
