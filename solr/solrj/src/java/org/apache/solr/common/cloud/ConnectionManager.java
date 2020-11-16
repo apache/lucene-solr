@@ -156,7 +156,7 @@ public class ConnectionManager implements Watcher, Closeable {
       likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
       disconnectedLatch = new CountDownLatch(1);
       lastConnectedState = 1;
-      log.info("Connected, notify any wait");
+      if (log.isDebugEnabled()) log.debug("Connected, notify any wait");
       connectedLatch.countDown();
       //    for (ConnectedListener listener : connectedListeners) {
       //      try {
@@ -235,7 +235,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
       if (state == KeeperState.SyncConnected) {
         if (isClosed()) return;
-        log.info("zkClient has connected");
+        if (log.isDebugEnabled()) log.debug("zkClient has connected");
         // nocommit - maybe use root shared
         client.zkConnManagerCallbackExecutor.execute(() -> {
           connected();
@@ -362,7 +362,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public void close() {
-    log.info("Close called on ZK ConnectionManager");
+    if (log.isDebugEnabled()) log.debug("Close called on ZK ConnectionManager");
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
 
@@ -389,7 +389,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   public void waitForConnected(long waitForConnection)
           throws TimeoutException, InterruptedException {
-    log.info("Waiting for client to connect to ZooKeeper");
+    if (log.isDebugEnabled()) log.debug("Waiting for client to connect to ZooKeeper");
     TimeOut timeout = new TimeOut(waitForConnection, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()  && !isClosed()) {
       if (client.isConnected()) return;
@@ -406,7 +406,7 @@ public class ConnectionManager implements Watcher, Closeable {
       return;
     }
 
-    log.info("Client is connected to ZooKeeper");
+    if (log.isDebugEnabled()) log.debug("Client is connected to ZooKeeper");
   }
 
 //  public void waitForDisconnected(long waitForDisconnected)

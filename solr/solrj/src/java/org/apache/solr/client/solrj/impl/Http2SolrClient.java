@@ -223,12 +223,12 @@ public class Http2SolrClient extends SolrClient {
       if (sslOnJava8OrLower && !builder.useHttp1_1) {
         log.warn("Create Http2SolrClient with HTTP/1.1 transport since Java 8 or lower versions does not support SSL + HTTP/2");
       } else {
-        log.info("Create Http2SolrClient with HTTP/1.1 transport");
+        if (log.isDebugEnabled()) log.debug("Create Http2SolrClient with HTTP/1.1 transport");
       }
       SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(6);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     } else {
-      log.info("Create Http2SolrClient with HTTP/2 transport");
+      if (log.isDebugEnabled()) log.debug("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
       http2client.setSelectors(6);
       http2client.setMaxConcurrentPushedStreams(512);

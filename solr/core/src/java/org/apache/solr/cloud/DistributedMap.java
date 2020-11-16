@@ -44,7 +44,7 @@ public class DistributedMap {
   protected static final String PREFIX = "mn-";
 
   public DistributedMap(SolrZkClient zookeeper, String dir) throws KeeperException {
-    log.info("create DistributedMap dir={}", dir);
+    if (log.isDebugEnabled()) log.debug("create DistributedMap dir={}", dir);
     this.dir = dir;
     this.zookeeper = zookeeper;
   }

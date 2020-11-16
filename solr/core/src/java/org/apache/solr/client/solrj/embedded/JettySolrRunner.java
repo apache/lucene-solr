@@ -394,7 +394,7 @@ public class JettySolrRunner implements Closeable {
         @Override
         public void lifeCycleStarted(LifeCycle arg0) {
 
-          log.info("Jetty loaded and ready to go");
+          if (log.isDebugEnabled()) log.debug("Jetty loaded and ready to go");
           root.getServletContext().setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
           root.getServletContext().setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
           root.getServletContext().setAttribute(SolrDispatchFilter.INIT_CALL, (Runnable) () -> {
@@ -626,7 +626,7 @@ public class JettySolrRunner implements Closeable {
     int tryCnt = 1;
     while (tryCnt < 3) {
       try {
-        log.info(" {} try number {} ...", port, tryCnt);
+        if (log.isDebugEnabled()) log.debug(" {} try number {} ...", port, tryCnt);
         server.start();
         break;
       } catch (IOException ioe) {

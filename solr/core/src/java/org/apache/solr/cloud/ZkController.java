@@ -1005,7 +1005,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Supressing upload of default config set");
     }
 
-    log.info("Creating final {} node", "/cluster/init");
+    if (log.isDebugEnabled()) log.debug("Creating final {} node", "/cluster/init");
     zkClient.mkdir( "/cluster/init");
 
   }
@@ -1221,10 +1221,10 @@ public class ZkController implements Closeable, Runnable {
         // start the overseer first as following code may need it's processing
         worker.collect("startOverseer", () -> {
           ElectionContext context = getOverseerContext();
-          log.info("Overseer setting up context {}", context.leaderProps);
+          if (log.isDebugEnabled()) log.debug("Overseer setting up context {}", context.leaderProps.getNodeName());
           overseerElector.setup(context);
           try {
-            log.info("Overseer joining election {}", context.leaderProps);
+            log.info("Overseer joining election {}", context.leaderProps.getNodeName());
             overseerElector.joinElection(context, false);
           } catch (KeeperException e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1333,9 +1333,8 @@ public class ZkController implements Closeable, Runnable {
   private void createEphemeralLiveNode() {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-    log.info("Register node as live in ZooKeeper:" + nodePath);
 
-    log.info("Create our ephemeral live node");
+    log.info("Create our ephemeral live node {}", ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
 
     createLiveNodeImpl(nodePath);
   }

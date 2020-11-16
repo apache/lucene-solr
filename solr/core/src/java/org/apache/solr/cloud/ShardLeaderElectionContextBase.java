@@ -30,6 +30,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -131,7 +133,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           } catch (NoNodeException e) {
             // fine
           }
-          log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
+          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration.");
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
@@ -166,8 +168,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       // The setData call used to get the parent version is also the trigger to
       // increment the version. We also do a sanity check that our leaderSeqPath exists.
 
+      ZkNodeProps props = new ZkNodeProps().plus(leaderProps.getProperties());
+      props.getProperties().remove(ZkStateReader.STATE_PROP);
+
       ops.add(Op.check(leaderSeqPath, -1));
-      ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
+      ops.add(Op.create(leaderPath, Utils.toJSON(props), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
       ops.add(Op.setData(parent, null, -1));
       List<OpResult> results;
 
