@@ -14,6 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import com.google.common.base.Preconditions
+import com.google.common.base.Strings
+
 apply plugin: 'base'
 apply plugin: 'com.palantir.docker'
 
@@ -39,17 +43,12 @@ def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DO
 docker {
   name = dockerImageName
   files file('include')
-  buildArgs(['BASE_IMAGE' : baseDockerImage,
-             'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package',
-             'SOLR_VERSION': "${version}",
-             'GITHUB_URL': githubUrlOrMirror])
+  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}", 'GITHUB_URL': githubUrlOrMirror])
 }
 
 tasks.docker {
   // In order to create the solr docker image, the solr package image must be created first.
-  dependsOn dockerPackage.tasks.docker
-
-  inputs.file('Dockerfile') // https://github.com/palantir/gradle-docker/issues/413
+  dependsOn(dockerPackage.tasks.docker)
 
   // Print information on the image after it has been created
   doLast {
@@ -59,29 +58,66 @@ tasks.docker {
   }
 }
 
-task testDocker {
-  group 'verification'
-  dependsOn 'docker'
+abstract class DockerTestSuite extends DefaultTask {
+  private String solrImageName = null;
+  private List<String> tests = new ArrayList<>();
+  private List<String> ignore = new ArrayList<>();
 
-  def testFiles = fileTree("tests/cases")
-  inputs.files(testFiles).skipWhenEmpty()
+  @OutputDirectory
+  abstract DirectoryProperty getOutputDir()
 
-  def solrImageName = dockerImageName
-  inputs.property('solrImageName', dockerImageName)
+  public void setSolrImageName(String solrImageName) {
+    this.solrImageName = solrImageName
+  }
 
-  def outputDir = "$buildDir/tmp/tests"
-  outputs.dir(outputDir)
+  public String getSolrImageName() {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(solrImageName), "solrImageName is a required dockerTests configuration item.")
+    return solrImageName
+  }
 
-  doLast {
+  @Option(option = "tests", description = "Only run these specified tests, comma separated.")
+  public void setTests(List<String> tests) {
+    this.tests = tests;
+  }
+
+  @Input
+  public List<String> getTests() {
+    return tests;
+  }
+
+  @Option(option = "ignore", description = "Ignore these tests, comma separated.")
+  public void setIgnore(List<String> ignore) {
+    this.ignore = ignore;
+  }
+
+  @Input
+  public List<String> getIgnore() {
+    return ignore;
+  }
+
+  @TaskAction
+  void execute() {
     // Print information on the image before it is tested
-    logger.lifecycle("Testing Solr Image: $solrImageName\n")
-    testFiles.files.stream().filter{it.name.equals("test.sh")}.forEach {testFile ->
-      def testName = testFile.parentFile.name
-      project.exec {
-        environment "TEST_DIR", testFile.parent
-        environment "BUILD_DIR", "$outputDir/$testName"
-        commandLine "bash", testFile, solrImageName
+    project.logger.lifecycle("Testing Solr Image: $solrImageName\n")
+    def sourceDir = project.file("tests/cases")
+    sourceDir.eachFile  { file ->
+      def testName = file.getName()
+      def testCaseBuildDir = outputDir.dir(testName).get().toString()
+
+      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
+      def runTest = !this.tests.isEmpty() ? tests.contains(testName) : !ignore.contains(testName)
+      if (runTest) {
+        project.exec {
+          environment "TEST_DIR", "$file"
+          environment "BUILD_DIR", "$testCaseBuildDir"
+          commandLine "bash", "$file/test.sh", solrImageName
+        }
       }
     }
   }
+}
+
+task testDocker(type: DockerTestSuite) {
+  outputDir = project.file("$buildDir/tmp/tests")
+  solrImageName = dockerImageName
 }
