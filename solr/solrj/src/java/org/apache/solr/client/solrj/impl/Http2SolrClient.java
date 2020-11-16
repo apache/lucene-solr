@@ -1046,7 +1046,7 @@ public class Http2SolrClient extends SolrClient {
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
     private Integer connectionTimeout;
-    private Integer maxConnectionsPerHost = 4;
+    private Integer maxConnectionsPerHost = 16;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     protected Map<String,String> headers = new ConcurrentHashMap<>();
