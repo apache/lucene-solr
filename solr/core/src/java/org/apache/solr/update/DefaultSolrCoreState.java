@@ -342,7 +342,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         // we check to see if there is already one waiting to go
         // after the current one, and if there is, bail
         boolean locked = recoveryLock.tryLock();
-        try {
+
           if (!locked && recoveryWaiting.get() > 0) {
             return;
           }
@@ -370,14 +370,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           recoveryThrottle.markAttemptingAction();
 
           recoveryStrat = recoveryStrategyBuilder.create(core.getCoreContainer(), core.getCoreDescriptor(), DefaultSolrCoreState.this);
+          recoveryStrat.setRecoveryLock(recoveryLock);
           recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
 
           log.info("Running recovery");
           recoveryStrat.run();
 
-        } finally {
-          if (recoveryLock.isHeldByCurrentThread()) recoveryLock.unlock();
-        }
       } catch (AlreadyClosedException e) {
 
       } catch (Exception e) {

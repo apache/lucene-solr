@@ -72,6 +72,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class may change in future and customisations are not supported between versions in terms of API or back compat
@@ -83,6 +84,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   private volatile CountDownLatch latch;
   private volatile ReplicationHandler replicationHandler;
+  private volatile ReentrantLock recoveryLock;
+
+  public final void setRecoveryLock(ReentrantLock recoveryLock) {
+    this.recoveryLock = recoveryLock;
+  }
 
   public static class Builder implements NamedListInitializedPlugin {
     private NamedList args;
@@ -356,6 +362,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       ParWork.propagateInterrupt(e);
       log.error("", e);
       return;
+    } finally {
+      try {
+        recoveryLock.unlock();
+      } catch (NullPointerException e) {}
     }
 
   }
