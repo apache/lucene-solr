@@ -352,7 +352,10 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("socketTimeout", "15000");
       System.setProperty("connTimeout", "10000");
       System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "0");
-      System.setProperty("solr.cloud.starting-recovery-delay-milli-seconds", "500");
+      System.setProperty("solr.cloud.starting-recovery-delay-milli-seconds", "0");
+
+
+      System.setProperty("solr.zkstatewriter.throttle", "0");
 
       System.setProperty("solr.waitForState", "15"); // secs
 

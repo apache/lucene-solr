@@ -867,7 +867,7 @@ public class JettySolrRunner implements Closeable {
     @Override
     public void service(HttpServletRequest req, HttpServletResponse res)
         throws IOException {
-      res.sendError(404, "Can not find: " + req.getRequestURI());
+      res.sendError(404, "Can not find (404 from jetty Solr Runner): " + req.getRequestURI());
     }
   }
 

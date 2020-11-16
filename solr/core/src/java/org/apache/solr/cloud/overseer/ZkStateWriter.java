@@ -75,7 +75,7 @@ public class ZkStateWriter {
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
 
-  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", 50, new TimeSource.NanoTimeSource(){
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 50), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
       ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
     }

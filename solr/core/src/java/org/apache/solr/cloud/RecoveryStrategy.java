@@ -110,7 +110,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       .getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 0);
   private volatile int maxRetries = 500;
   private volatile int startingRecoveryDelayMilliSeconds = Integer
-          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 1000);
+          .getInteger("solr.cloud.starting-recovery-delay-milli-seconds", 0);
 
   public static interface RecoveryListener {
     public void recovered();
@@ -770,16 +770,26 @@ public class RecoveryStrategy implements Runnable, Closeable {
           // Wait an exponential interval between retries, start at 2 seconds and work up to a minute.
           // Since we sleep at 2 seconds sub-intervals in
           // order to check if we were closed, 30 is chosen as the maximum loopCount (2s * 30 = 1m).
-          double loopCount = Math.min(Math.pow(2, retries.get() - 1), 30);
-          log.info("Wait [{}] seconds before trying to recover again (attempt={})",
-              loopCount * startingRecoveryDelayMilliSeconds, retries);
-          for (int i = 0; i < loopCount; i++) {
+
+
+
             if (isClosed()) {
               log.info("RecoveryStrategy has been closed");
-              break; // check if someone closed us
+              return;
             }
-            Thread.sleep(startingRecoveryDelayMilliSeconds);
-          }
+
+            long wait = startingRecoveryDelayMilliSeconds;
+
+            if (retries.get() > 1 && retries.get() < 10) {
+              wait = (Math.max(500, startingRecoveryDelayMilliSeconds)) * retries.get();
+            } else if (retries.get() > 0) {
+              wait = TimeUnit.SECONDS.toMillis(60);
+            }
+
+            log.info("Wait [{}] seconds before trying to recover again (attempt={})", wait, retries);
+
+            Thread.sleep(wait);
+
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e, true);
           return;

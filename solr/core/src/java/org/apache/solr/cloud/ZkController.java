@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistributedLock;
+import org.apache.solr.client.solrj.cloud.LockListener;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
@@ -1087,10 +1088,22 @@ public class ZkController implements Closeable, Runnable {
       }
       boolean createdClusterNodes = false;
       try {
-        DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"));
+        CountDownLatch lockWaitLatch = new CountDownLatch(1);
+        DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"),
+        new LockListener(){
+          @Override
+          public void lockAcquired() {
+            lockWaitLatch.countDown();
+          }
+
+          @Override
+          public void lockReleased() {
+
+          }
+        });
         if (log.isDebugEnabled()) log.debug("get cluster lock");
-        while (!lock.lock()) {
-          Thread.sleep(150);
+        if (!lock.lock()) {
+          lockWaitLatch.await();
         }
         try {
 
@@ -1169,7 +1182,7 @@ public class ZkController implements Closeable, Runnable {
 
         } finally {
           if (log.isDebugEnabled()) log.debug("release cluster lock");
-          if (lock.isOwner()) lock.unlock();
+          lock.unlock();
         }
         if (!createdClusterNodes) {
           // wait?

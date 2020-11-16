@@ -307,7 +307,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     // Make sure the file exists, is readable and is not a hidden file
     if (!zkClient.exists(adminFile)) {
       log.error("Can not find: {}", adminFile);
-      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: "
+      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find admin file: "
           + adminFile));
       return null;
     }
