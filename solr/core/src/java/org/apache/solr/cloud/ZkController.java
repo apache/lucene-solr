@@ -1310,6 +1310,7 @@ public class ZkController implements Closeable, Runnable {
     dataMap.put(nodePath, null);
     createModeMap.put(nodePath, CreateMode.EPHEMERAL);
     try {
+      zkClient.setData(ZkStateReader.LIVE_NODES_ZKNODE, (byte[]) null, true);
       try {
         zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
       } catch (KeeperException.NodeExistsException e) {
@@ -1328,6 +1329,7 @@ public class ZkController implements Closeable, Runnable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     try {
+      zkClient.setData(ZkStateReader.LIVE_NODES_ZKNODE, (byte[]) null, true);
       zkClient.delete(nodePath, -1);
     } catch (NoNodeException e) {
       // okay

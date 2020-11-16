@@ -197,6 +197,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private volatile SortedSet<String> liveNodes = emptySortedSet();
 
+  private volatile int liveNodesVersion = 0;
+
   private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
   private final ZkConfigManager configManager;
@@ -744,6 +746,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     SortedSet<String> newLiveNodes = null;
 
     try {
+      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      if (stat != null) {
+        if (stat.getVersion() < this.liveNodesVersion) {
+          return;
+        }
+
+        this.liveNodesVersion = stat.getVersion();
+      }
       List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, true);
       newLiveNodes = new TreeSet<>(nodeList);
     } catch (KeeperException.NoNodeException e) {
