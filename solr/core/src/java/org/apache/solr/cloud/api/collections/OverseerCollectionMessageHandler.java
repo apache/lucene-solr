@@ -699,7 +699,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return response;
   }
 
-  AddReplicaCmd.Response  addReplicaWithResp(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
+  AddReplicaCmd.Response addReplicaWithResp(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
 
     AddReplicaCmd.Response response = ((AddReplicaCmd) commandMap.get(ADDREPLICA)).call(clusterState, message, results);

@@ -243,7 +243,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     try {
       log.info("waiting for created replicas shard={} {}", shard, coreNames);
-      zkStateReader.waitForState(collectionName, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
+      zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
         if (collectionState == null) {
           return false;
         }
@@ -270,9 +270,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       });
     } catch (TimeoutException | InterruptedException e) {
       log.error("addReplica", e);
-      if (asyncId == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 

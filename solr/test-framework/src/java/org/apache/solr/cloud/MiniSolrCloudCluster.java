@@ -290,8 +290,15 @@ public class MiniSolrCloudCluster {
       if (!externalZkServer) {
         Path zkDir = baseDir.resolve(ZOOKEEPER_SERVER1_DATA);
         this.zkServer = new ZkTestServer(zkDir);
+        try {
+          this.zkServer.run(formatZk);
+        } catch (Exception e) {
+          log.error("Error starting Zk Test Server, trying again ...");
+          zkTestServer.shutdown();
+          zkTestServer = new ZkTestServer(zkDir);
+          zkTestServer.run();
+        }
 
-        this.zkServer.run(formatZk);
         SolrZkClient zkClient = this.zkServer.getZkClient();
 
         log.info("Using zkClient host={} to create solr.xml", zkClient.getZkServerAddress());
@@ -318,7 +325,7 @@ public class MiniSolrCloudCluster {
       }
 
       try {
-        try (ParWork worker = new ParWork(this)) {
+        try (ParWork worker = new ParWork(this, false, true)) {
           worker.collect("start-jettys", startups);
         }
       } catch (Exception e) {
@@ -712,7 +719,7 @@ public class MiniSolrCloudCluster {
       }
       jettys.clear();
 
-      try (ParWork parWork = new ParWork(this, true)) {
+      try (ParWork parWork = new ParWork(this, true, true)) {
         parWork.collect(shutdowns);
       }
 

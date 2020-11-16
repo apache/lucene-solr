@@ -187,11 +187,11 @@ public class DeleteReplicaCmd implements Cmd {
            }
          }
 
-//         try {
-//           waitForCoreNodeGone(collectionName, shard, replicaName, 30000);
-//         } catch (Exception e) {
-//           log.error("", e);
-//         }
+         try {
+           waitForCoreNodeGone(collectionName, shard, replicaName, 10000); // nocommit timeout
+         } catch (Exception e) {
+           log.error("", e);
+         }
          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
          return response;
        }
@@ -390,5 +390,23 @@ public class DeleteReplicaCmd implements Cmd {
     response.clusterState = clusterState;
 
     return response;
+  }
+
+  boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
+    try {
+      ocmh.zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (l, c) -> {
+        if (c == null)
+          return true;
+        Slice slice = c.getSlice(shard);
+        if(slice == null || slice.getReplica(replicaName) == null) {
+          return true;
+        }
+        return false;
+      });
+    } catch (TimeoutException e) {
+      return false;
+    }
+
+    return true;
   }
 }

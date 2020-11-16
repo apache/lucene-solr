@@ -82,6 +82,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.AlreadyClosedException;
@@ -198,6 +199,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
   private final CoreDescriptor coreDescriptor;
+  public volatile boolean old_reloaded;
   private volatile String name;
 
   private String logid; // used to show what name is set
@@ -1626,6 +1628,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.isClosed = true;
       searcherExecutor.shutdown();
+
+      if (coreContainer.isZooKeeperAware() && !old_reloaded) {
+        LeaderElector elector = coreContainer.getZkController().getShardLeaderElector(name);
+        if (elector != null) {
+          IOUtils.closeQuietly(elector);
+          coreContainer.getZkController().removeShardLeaderElector(name);
+        }
+      }
 
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();

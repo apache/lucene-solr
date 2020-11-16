@@ -855,6 +855,7 @@ public class CoreContainer implements Closeable {
       status |= CORE_DISCOVERY_COMPLETE;
 
       for (final CoreDescriptor cd : cds) {
+        if (log.isDebugEnabled()) log.debug("Process core descriptor {} {} {}", cd.getName(), cd.isTransient(), cd.isLoadOnStartup());
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
           solrCores.addCoreDescriptor(cd);
         } else {
@@ -1633,6 +1634,7 @@ public class CoreContainer implements Closeable {
           newCore = core.reload(coreConfig);
          try {
            if (getZkController() != null) {
+             core.old_reloaded = true;
              docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
              // turn off indexing now, before the new core is registered
              if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
@@ -1741,7 +1743,7 @@ public class CoreContainer implements Closeable {
   public void unload(String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
     log.info("Unload SolrCore {} deleteIndexDir={} deleteDataDir={} deleteInstanceDir={}", name, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
-
+    SolrException exception = null;
     if (name != null) {
 
       if (isZooKeeperAware()) {
@@ -1784,6 +1786,7 @@ public class CoreContainer implements Closeable {
       }
 
     } finally {
+
       if (isZooKeeperAware()) {
         // cancel recovery in cloud mode
         if (core != null) {
@@ -1798,15 +1801,11 @@ public class CoreContainer implements Closeable {
         if (cd != null && zkSys.zkController.getZkClient().isConnected()) {
           try {
             zkSys.getZkController().unregister(name, cd);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Interrupted while unregistering core [" + name + "] from cloud state");
-          } catch (KeeperException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
           } catch (AlreadyClosedException e) {
 
           } catch (Exception e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+            log.error("Error unregistering core [" + name + "] from cloud state", e);
+            exception = new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
           }
         }
 
@@ -1826,9 +1825,21 @@ public class CoreContainer implements Closeable {
       if (core != null) {
         core.closeAndWait();
       }
+
+      if (exception != null) {
+        throw exception;
+      }
     } catch (TimeoutException e) {
       log.error("Timeout waiting for SolrCore close on unload", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close on unload", e);
+    } finally {
+      if (deleteInstanceDir && cd != null) {
+        try {
+          FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
+        } catch (IOException e) {
+          SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
+        }
+      }
     }
   }
 
@@ -1904,52 +1915,44 @@ public class CoreContainer implements Closeable {
   public SolrCore getCore(String name, boolean incRefCount) {
     SolrCore core = null;
     CoreDescriptor desc = null;
-    for (int i = 0; i < 2; i++) {
-      // Do this in two phases since we don't want to lock access to the cores over a load.
-      core = solrCores.getCoreFromAnyList(name, incRefCount);
 
-      // If a core is loaded, we're done just return it.
-      if (core != null) {
-        return core;
-      }
+    // Do this in two phases since we don't want to lock access to the cores over a load.
+    core = solrCores.getCoreFromAnyList(name, incRefCount);
 
-      // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
-      desc = solrCores.getCoreDescriptor(name);
-
-      // if there was an error initializing this core, throw a 500
-      // error with the details for clients attempting to access it.
-      CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
-      if (null != loadFailure) {
-        throw new SolrCoreInitializationException(name, loadFailure.exception);
-      }
-      // This is a bit of awkwardness where SolrCloud and transient cores don't play nice together. For transient cores,
-      // we have to allow them to be created at any time there hasn't been a core load failure (use reload to cure that).
-      // But for TestConfigSetsAPI.testUploadWithScriptUpdateProcessor, this needs to _not_ try to load the core if
-      // the core is null and there was an error. If you change this, be sure to run both TestConfiSetsAPI and
-      // TestLazyCores
-      if (isZooKeeperAware()) {
-        solrCores.waitForLoadingCoreToFinish(name, 15000);
-      } else {
-        break;
-      }
+    // If a core is loaded, we're done just return it.
+    if (core != null) {
+      return core;
     }
 
-    if (desc == null || isZooKeeperAware()) return null;
+    // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
+    desc = solrCores.getCoreDescriptor(name);
+
+    // if there was an error initializing this core, throw a 500
+    // error with the details for clients attempting to access it.
+    CoreLoadFailure loadFailure = getCoreInitFailures().get(name);
+    if (null != loadFailure) {
+      throw new SolrCoreInitializationException(name, loadFailure.exception);
+    }
 
     // This will put an entry in pending core ops if the core isn't loaded. Here's where moving the
     // waitAddPendingCoreOps to createFromDescriptor would introduce a race condition.
 
     // todo: ensure only transient?
-    if (core == null) {
+    if (core == null && desc != null) {
       // nocommit - this does not seem right - should stop a core from loading on startup, before zk reg, not from getCore ...
       //      if (isZooKeeperAware()) {
       //        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
       //      }
-      core = createFromDescriptor(desc, false); // This should throw an error if it fails.
+
+      // nocommit: this can recreate a core when it's not transient - no good!
+      if (desc.isTransient() || !desc.isLoadOnStartup()) {
+        core = createFromDescriptor(desc, false); // This should throw an error if it fails.
+      }
     }
 
-    core.open();
-
+    if (core != null) {
+      core.open();
+    }
 
     return core;
   }

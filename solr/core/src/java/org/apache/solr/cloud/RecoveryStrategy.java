@@ -85,6 +85,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RecoveryStrategy implements Runnable, Closeable {
 
   private volatile CountDownLatch latch;
+  private volatile ReplicationHandler replicationHandler;
 
   public static class Builder implements NamedListInitializedPlugin {
     private NamedList args;
@@ -134,18 +135,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private volatile Replica.Type replicaType;
   private volatile CoreDescriptor coreDescriptor;
 
-  private volatile SolrCore core;
-
   private final CoreContainer cc;
 
   protected RecoveryStrategy(CoreContainer cc, CoreDescriptor cd, RecoveryListener recoveryListener) {
     // ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.coreName = cd.getName();
-    this.core = cc.getCore(coreName, false);
-    if (core == null) {
-      close = true;
-    }
+
     this.recoveryListener = recoveryListener;
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
@@ -190,40 +186,33 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   final public void close() {
     close = true;
-    ReplicationHandler replicationHandler = null;
-    if (core != null) {
-      SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
-      replicationHandler = (ReplicationHandler) handler;
-    }
 
-    try {
-      try (ParWork closer = new ParWork(this, true, true)) {
-        closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
-          try {
-            prevSendPreRecoveryHttpUriRequest.cancel();
-            prevSendPreRecoveryHttpUriRequest = null;
-          } catch (NullPointerException e) {
-            // expected
-          }
-        });
+    try (ParWork closer = new ParWork(this, true, true)) {
+      closer.collect("prevSendPreRecoveryHttpUriRequestAbort", () -> {
+        try {
+          prevSendPreRecoveryHttpUriRequest.cancel();
+          prevSendPreRecoveryHttpUriRequest = null;
+        } catch (NullPointerException e) {
+          // expected
+        }
+      });
 
+      if (replicationHandler != null) {
         ReplicationHandler finalReplicationHandler = replicationHandler;
         closer.collect("abortFetch", () -> {
           if (finalReplicationHandler != null) finalReplicationHandler.abortFetch();
         });
-
-        closer.collect("latch", () -> {
-          try {
-            latch.countDown();
-          } catch (NullPointerException e) {
-            // expected
-          }
-        });
-
       }
-    } finally {
-      core = null;
+      closer.collect("latch", () -> {
+        try {
+          latch.countDown();
+        } catch (NullPointerException e) {
+          // expected
+        }
+      });
+
     }
+
     log.warn("Stopping recovery for core=[{}]", coreName);
     //ObjectReleaseTracker.release(this);
   }
@@ -259,7 +248,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Attempting to replicate from [{}].", leaderprops);
 
     // send commit
-    commitOnLeader(leaderUrl);
+    commitOnLeader(core, leaderUrl);
 
     // use rep handler directly, so we can do this sync rather than async
     SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
@@ -330,7 +319,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   }
 
-  final private void commitOnLeader(String leaderUrl) throws SolrServerException,
+  final private void commitOnLeader(SolrCore core, String leaderUrl) throws SolrServerException,
       IOException {
     log.info("send commit to leader {}", leaderUrl);
     Http2SolrClient client = core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient();
@@ -346,40 +335,37 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   @Override
   final public void run() {
-    try {
 
-      // set request info for logging
+    // set request info for logging
 
+    log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
 
-        if (core == null) {
-          SolrException.log(log, "SolrCore not found - cannot recover:" + coreName);
-          return;
-        }
+    try (SolrCore core = cc.getCore(coreName)) {
+      if (core == null) {
+        close = true;
+        return;
+      }
 
-        log.info("Starting recovery process. recoveringAfterStartup={}", recoveringAfterStartup);
+      SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
+      replicationHandler = (ReplicationHandler) handler;
 
-        try {
-          doRecovery(core);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e, true);
-          return;
-        } catch (AlreadyClosedException e) {
-          return;
-        } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          log.error("", e);
-          return;
-        }
-
-    } finally {
-      core = null;
+      doRecovery(core);
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e, true);
+      return;
+    } catch (AlreadyClosedException e) {
+      return;
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      log.error("", e);
+      return;
     }
+
   }
 
   final public void doRecovery(SolrCore core) throws Exception {
     // we can lose our core descriptor, so store it now
     this.coreDescriptor = core.getCoreDescriptor();
-
     if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
       doSyncOrReplicateRecovery(core);
     } else {
@@ -662,7 +648,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        sendPrepRecoveryCmd(leader.getCoreUrl(), leader.getName(), slice);
+        sendPrepRecoveryCmd(core, leader.getCoreUrl(), leader.getName(), slice);
 
 
         // we wait a bit so that any updates on the leader
@@ -884,7 +870,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return close;
   }
 
-  final private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
+  final private void sendPrepRecoveryCmd(SolrCore core, String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException {
 
     if (coreDescriptor.getCollectionName() == null) {

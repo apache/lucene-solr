@@ -175,16 +175,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
 
   @Override
-  public void init(FilterConfig config) throws ServletException
-  {
+  public void init(FilterConfig config) throws ServletException {
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     if (log.isTraceEnabled()) {
       log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
     }
 
     Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
-    if (extraProperties == null)
-      extraProperties = new Properties();
+    if (extraProperties == null) extraProperties = new Properties();
 
     Runnable initCall = (Runnable) config.getServletContext().getAttribute(INIT_CALL);
     if (initCall != null) {
@@ -192,51 +190,50 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
 
     CoreContainer coresInit = null;
-    try{
-
-    StartupLoggingUtils.checkLogDir();
-    if (log.isInfoEnabled()) {
-      log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
-    }
-    logWelcomeBanner();
-    String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
-    if (muteConsole != null && !Arrays.asList("false","0","off","no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
-      StartupLoggingUtils.muteConsole();
-    }
-    String logLevel = System.getProperty(SOLR_LOG_LEVEL);
-    if (logLevel != null) {
-      log.info("Log level override, property solr.log.level={}", logLevel);
-      StartupLoggingUtils.changeLogLevel(logLevel);
-    }
-
-    String exclude = config.getInitParameter("excludePatterns");
-    if(exclude != null) {
-      String[] excludeArray = exclude.split(",");
-      excludePatterns = new ArrayList<>();
-      for (String element : excludeArray) {
-        excludePatterns.add(Pattern.compile(element));
-      }
-    }
     try {
 
-      String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
-      coresInit = createCoreContainer(solrHomePath, extraProperties);
-      SolrPaths.ensureUserFilesDataDir(solrHomePath);
-      setupJvmMetrics(coresInit);
-      if (log.isDebugEnabled()) {
-        log.debug("user.dir={}", System.getProperty("user.dir"));
+      StartupLoggingUtils.checkLogDir();
+      if (log.isInfoEnabled()) {
+        log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
       }
-    }
-    catch( Throwable t ) {
-      // catch this so our filter still works
-      log.error( "Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log( t );
-      if (t instanceof Error) {
-        throw (Error) t;
+      logWelcomeBanner();
+      String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
+      if (muteConsole != null && !Arrays.asList("false", "0", "off", "no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
+        StartupLoggingUtils.muteConsole();
       }
-    }
-    }finally{
+      String logLevel = System.getProperty(SOLR_LOG_LEVEL);
+      if (logLevel != null) {
+        log.info("Log level override, property solr.log.level={}", logLevel);
+        StartupLoggingUtils.changeLogLevel(logLevel);
+      }
+
+      String exclude = config.getInitParameter("excludePatterns");
+      if (exclude != null) {
+        String[] excludeArray = exclude.split(",");
+        excludePatterns = new ArrayList<>();
+        for (String element : excludeArray) {
+          excludePatterns.add(Pattern.compile(element));
+        }
+      }
+      try {
+
+        String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
+        final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
+        coresInit = createCoreContainer(solrHomePath, extraProperties);
+        SolrPaths.ensureUserFilesDataDir(solrHomePath);
+        setupJvmMetrics(coresInit);
+        if (log.isDebugEnabled()) {
+          log.debug("user.dir={}", System.getProperty("user.dir"));
+        }
+      } catch (Throwable t) {
+        // catch this so our filter still works
+        log.error("Could not start Solr. Check solr/home property and the logs");
+        SolrCore.log(t);
+        if (t instanceof Error) {
+          throw (Error) t;
+        }
+      }
+    } finally {
       log.trace("SolrDispatchFilter.init() done");
       if (cores != null) {
         this.httpClient = cores.getUpdateShardHandler().getTheSharedHttpClient().getHttpClient();
@@ -487,9 +484,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
+
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         Action result = call.call();
+        if (log.isDebugEnabled()) log.debug("Call type is {}", result);
         switch (result) {
           case PASSTHROUGH:
             chain.doFilter(request, response);
@@ -548,8 +547,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String path = ServletUtils.getPathAfterContext(request);
 
     if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+      if (log.isDebugEnabled()) log.debug("V2 http call");
       return new V2HttpCall(this, cores, request, response, false);
     } else {
+      if (log.isDebugEnabled()) log.debug("V1 http call");
       return new HttpSolrCall(this, cores, request, response, retry);
     }
   }

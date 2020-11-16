@@ -446,11 +446,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return sb.toString();
   }
 
-  private volatile boolean destroyServersCalled = false;
+
   protected void destroyServers() throws Exception {
 
-//    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
-//    destroyServersCalled = true;
   }
   
   public JettySolrRunner createJetty(File solrHome, String dataDir) throws Exception {

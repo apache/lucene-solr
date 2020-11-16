@@ -571,12 +571,12 @@ public class IndexFetcher {
           final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? Long.valueOf(bytesDownloaded / timeTakenSeconds) : null);
           log.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
               isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
-
+          successfulInstall = true;
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
             downloadConfFiles(confFilesToDownload, latestGeneration);
-            if (isFullCopyNeeded) {
+            if (isFullCopyNeeded && successfulInstall) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;
             } else {
@@ -602,14 +602,15 @@ public class IndexFetcher {
             }
           } else {
             terminateAndWaitFsyncService();
-            if (isFullCopyNeeded) {
+            if (isFullCopyNeeded && successfulInstall) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (!successfulInstall) {
                 log.error("Modify index props failed");
               }
               if (successfulInstall) deleteTmpIdxDir = false;
-            } else {
+            } else if (successfulInstall) {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+
               if (!successfulInstall) {
                 log.error("Move index files failed");
               }
@@ -622,13 +623,13 @@ public class IndexFetcher {
         } finally {
           solrCore.searchEnabled = true;
           solrCore.indexEnabled = true;
-          if (!isFullCopyNeeded) {
+          if (!isFullCopyNeeded && successfulInstall) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
         }
 
         // we must reload the core after we open the IW back up
-       if (successfulInstall && (reloadCore || forceCoreReload)) {
+       if (successfulInstall && (reloadCore || forceCoreReload) && !isFullCopyNeeded) {
          if (log.isInfoEnabled()) {
            log.info("Reloading SolrCore {}", solrCore.getName());
          }
@@ -954,7 +955,7 @@ public class IndexFetcher {
       if (!status) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to create temporary config folder: " + tmpconfDir.getName());
       }
-      try (ParWork work = new ParWork(this, true)) {
+      try (ParWork work = new ParWork(this, false)) {
         for (Map<String,Object> file : confFilesToDownload) {
           work.collect("fetchConfigFile", () -> {
             try {
@@ -1027,7 +1028,9 @@ public class IndexFetcher {
       log.warn("WARNING: clearing disk space ahead of time to avoid running out of space, could cause problems with current SolrCore approxTotalSpaceReqd{}, usableSpace={}", atsr, usableSpace);
       deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
-    try (ParWork parWork = new ParWork(this, true)) {
+    try {
+      // nocommit
+    //try (ParWork parWork = new ParWork(this, false)) {
       for (Map<String,Object> file : filesToDownload) {
         String filename = (String) file.get(NAME);
         long size = (Long) file.get(SIZE);
@@ -1035,7 +1038,7 @@ public class IndexFetcher {
         boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
 
         boolean finalDoDifferentialCopy = doDifferentialCopy;
-        parWork.collect("IndexFetcher", () -> {
+      //  parWork.collect("IndexFetcher", () -> {
           if (log.isDebugEnabled()) {
             log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
           }
@@ -1067,9 +1070,9 @@ public class IndexFetcher {
               log.debug("Skipping download for {} because it already exists", file.get(NAME));
             }
           }
-        });
+     //   });
 
-      }
+       }
     } finally {
       fileFetchRequests.clear();
     }

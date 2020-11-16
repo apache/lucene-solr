@@ -441,11 +441,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .setCreateNodeSet("") // empty node set prevents creation of cores
             .process(cloudClient).getStatus());
 
-    cloudClient.waitForState(DEFAULT_COLLECTION, 10, TimeUnit.SECONDS,
-            // expect sliceCount active shards, but no active replicas
-            SolrCloudTestCase.clusterShape(sliceCount, 0));
-
-
     AtomicInteger numOtherReplicas = new AtomicInteger(numJettys - getPullReplicaCount() * sliceCount);
 
     if (log.isInfoEnabled()) {
@@ -454,7 +449,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     AtomicInteger addReplicas = new AtomicInteger();
-    try (ParWork create = new ParWork(this)) {
+    try (ParWork create = new ParWork(this, false, true)) {
       for (int i = 1; i <= numJettys; i++) {
         if (sb.length() > 0) sb.append(',');
         int cnt = this.jettyIntCntr.incrementAndGet();
@@ -1703,14 +1698,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  private volatile boolean destroyServersCalled = false;
   @Override
   protected void destroyServers() throws Exception {
-    System.out.println("AFDZKTB destroy!");
-//    if (destroyServersCalled) throw new RuntimeException("destroyServers already called");
-//    destroyServersCalled = true;
-
-    try (ParWork closer = new ParWork(this)) {
+    try (ParWork closer = new ParWork(this, false, true)) {
       closer.collect(commonCloudSolrClient, coreClients, controlClientCloud, cloudClient);
     }
     coreClients.clear();

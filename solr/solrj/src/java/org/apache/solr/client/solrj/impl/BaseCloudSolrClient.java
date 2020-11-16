@@ -954,7 +954,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           throw (SolrServerException)exc;
         } else if (exc instanceof IOException) {
           throw (IOException)exc;
-        }else if (exc instanceof RuntimeException) {
+        } else if (exc instanceof RuntimeException) {
           throw (RuntimeException) exc;
         }
         else {
@@ -968,7 +968,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       boolean wasCommError =
           (rootCause instanceof ConnectException ||
               rootCause instanceof SocketException ||
-              wasCommError(rootCause) || rootCause.getMessage().contains("Connection refused"));
+              wasCommError(rootCause));
 
       log.error("Request to collection {} failed due to ({}) {}, retry={} commError={} errorCode={} ",
           inputCollections, errorCode, rootCause, retryCount, wasCommError, errorCode);

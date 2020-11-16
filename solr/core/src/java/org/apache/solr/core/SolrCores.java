@@ -113,7 +113,7 @@ class SolrCores implements Closeable {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
 
-    try (ParWork closer = new ParWork(this, true)) {
+    try (ParWork closer = new ParWork(this, true, true)) {
       cores.forEach((s, core) -> {
         closer.collect("closeCore-" + core.getName(), () -> {
           MDCLoggingContext.setCore(core);
@@ -280,6 +280,8 @@ class SolrCores implements Closeable {
     if (name == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot unload non-existent core [null]");
     }
+
+    if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
 
     SolrCore ret = cores.remove(name);
     // It could have been a newly-created core. It could have been a transient core. The newly-created cores

@@ -92,8 +92,26 @@ public class ZkStateWriter {
 
     this.reader = zkStateReader;
     this.stats = stats;
+
     zkStateReader.forciblyRefreshAllClusterStateSlow();
+
+    zkStateReader.getZkClient().printLayout();
+
     cs = zkStateReader.getClusterState();
+
+    cs.forEachCollection(collection -> {
+      String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
+      if (log.isDebugEnabled()) log.debug("clear state updates on new overseer for collection {}", collection.getName());
+      try {
+        reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(new ZkNodeProps()), -1, true);
+      } catch (KeeperException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    });
+
+    if (log.isDebugEnabled()) log.debug("zkStateWriter starting with cs {}", cs);
   }
 
   public void enqueueUpdate(ClusterState clusterState, ZkNodeProps message, boolean stateUpdate) throws Exception {

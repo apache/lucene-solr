@@ -253,7 +253,6 @@ public class Replica extends ZkNodeProps {
     sb.append(baseUrl);
     if (!baseUrl.endsWith("/")) sb.append("/");
     sb.append(coreName);
-    if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
     return sb.toString();
   }
 

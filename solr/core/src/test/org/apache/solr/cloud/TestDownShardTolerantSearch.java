@@ -68,18 +68,8 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
     try (SolrClient client = cluster.buildSolrClient()) {
-      for (int i = 0; i < 10; i++) {
 
-        try {
-          response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-          break;
-        } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-          // a remote node we are proxied too may still think this is live, try again
-          if (!e.getMessage().contains("Connection refused")) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-        }
-      }
+      response = client.query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
 
       assertThat(response.getStatus(), is(0));
       assertTrue(response.getResults().getNumFound() > 0);

@@ -1076,13 +1076,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
     }
-
-    if ((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) {
-      log.error("ClusterState says we are the leader, but locally we don't think so");
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-          "ClusterState says we are the leader (" + zkController.getBaseUrl()
-              + "/" + req.getCore().getName() + "), but locally we don't think so. Request came from " + from);
-    }
   }
 
   @Override

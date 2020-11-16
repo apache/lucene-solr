@@ -353,6 +353,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Collection<String> safeCopy = new ArrayList<>(watchedCollectionStates.keySet());
       Set<String> updatedCollections = new HashSet<>();
       for (String coll : safeCopy) {
+
         DocCollection newState = fetchCollectionState(coll, null);
         if (updateWatchedCollection(coll, newState)) {
           updatedCollections.add(coll);
@@ -546,7 +547,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    *                           and that should fire notifications
    */
   private void constructState(Set<String> changedCollections) {
-    log.info("construct new cluster state on structure change");
+    if (log.isDebugEnabled()) log.debug("construct new cluster state on structure change");
     Set<String> liveNodes = this.liveNodes; // volatile read
 
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>();
@@ -655,7 +656,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   private void notifyCloudCollectionsListeners(boolean notifyIfSame) {
-    log.info("Notify cloud collection listeners {}", notifyIfSame);
+    if (log.isDebugEnabled()) log.debug("Notify cloud collection listeners {}", notifyIfSame);
     Set<String> newCollections;
     Set<String> oldCollections;
     boolean fire = false;
@@ -666,11 +667,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         fire = true;
       }
     }
-    log.info("Should fire listeners? {}", fire);
+    if (log.isDebugEnabled()) log.debug("Should fire listeners? {}", fire);
     if (fire) {
       try (ParWork worker = new ParWork(this, true, true)) {
         cloudCollectionsListeners.forEach(listener -> {
-          log.info("fire listeners {}", listener);
+          if (log.isDebugEnabled()) log.debug("fire listeners {}", listener);
           listener.onChange(oldCollections, newCollections);
           worker.collect("cloudCollectionsListeners", () -> {
             listener.onChange(oldCollections, newCollections);
@@ -1381,13 +1382,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
 
         Map<String,Object> m = (Map) fromJSON(data);
-        log.info("Got additional state updates {}", m);
+        if (log.isDebugEnabled()) log.debug("Got additional state updates {}", m);
         if (m.size() == 0) {
           return;
         }
 
         Integer version = Integer.parseInt((String) m.get("_cs_ver_"));
-        log.info("Got additional state updates with version {}", version);
+        if (log.isDebugEnabled()) log.debug("Got additional state updates with version {}", version);
 
 
 
@@ -1401,7 +1402,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
         if (docCollection != null) {
           if (version < docCollection.getZNodeVersion()) {
-            log.info("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
+            if (log.isDebugEnabled()) log.debug("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
           }
           for (Entry<String,Object> entry : entrySet) {
             String core = entry.getKey();
@@ -1421,17 +1422,17 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
               Map properties = new HashMap(replica.getProperties());
               if (entry.getValue().equals("l")) {
-                log.info("state is leader, set to active and leader prop");
+                if (log.isDebugEnabled()) log.debug("state is leader, set to active and leader prop");
                 properties.put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE);
                 properties.put("leader", "true");
               } else {
-                log.info("std state, set to {}", state);
+                if (log.isDebugEnabled()) log.debug("std state, set to {}", state);
                 properties.put(ZkStateReader.STATE_PROP, state.toString());
               }
 
               Replica newReplica = new Replica(core, properties, coll, replica.getSlice(), ZkStateReader.this);
 
-              log.info("add new replica {}", newReplica);
+              if (log.isDebugEnabled()) log.debug("add new replica {}", newReplica);
 
               replicasMap.put(core, newReplica);
 
@@ -1446,7 +1447,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               Map<String,Slice> newSlices = new HashMap<>(docCollection.getSlicesMap());
               newSlices.put(slice.getName(), newSlice);
 
-              log.info("add new slice leader={} {}", newSlice.getLeader(), newSlice);
+              if (log.isDebugEnabled()) log.debug("add new slice leader={} {}", newSlice.getLeader(), newSlice);
 
               DocCollection newDocCollection = new DocCollection(coll, newSlices, docCollection.getProperties(), docCollection.getRouter(), version);
               docCollection = newDocCollection;
@@ -1458,7 +1459,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
               //  }
             } else {
-              log.info("Could not find core to update local state {} {}", core, state);
+              if (log.isDebugEnabled()) log.debug("Could not find core to update local state {} {}", core, state);
             }
           }
           if (changedCollections.size() > 0) {
@@ -1478,12 +1479,12 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             }
 
             ClusterState cs = new ClusterState(liveNodes, result, -1);
-            log.info("Set a new clusterstate based on update diff {}", cs);
+            if (log.isDebugEnabled()) log.debug("Set a new clusterstate based on update diff {}", cs);
             ZkStateReader.this.clusterState = cs;
 
             notifyCloudCollectionsListeners(true);
 
-            log.info("Notify state watchers for changed collections {}", changedCollections);
+            if (log.isDebugEnabled()) log.debug("Notify state watchers for changed collections {}", changedCollections);
             for (String collection : changedCollections) {
               notifyStateWatchers(collection, cs.getCollection(collection));
             }
@@ -1854,7 +1855,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * </p>
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
-    log.info("registerDocCollectionWatcher {}", collection);
+    if (log.isDebugEnabled()) log.debug("registerDocCollectionWatcher {}", collection);
 
     if (collection == null) {
       throw new IllegalArgumentException("Collection cannot be null");
@@ -2121,7 +2122,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           break;
         }
       } else {
-        if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
+        log.info("old state is {}, new state is {}", oldState.getZNodeVersion(), newState.getZNodeVersion());
+        if (oldState.getZNodeVersion() > newState.getZNodeVersion()) {
           // no change to state, but we might have been triggered by the addition of a
           // state watcher, so run notifications
           updated = true;
@@ -2193,7 +2195,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   private void notifyStateWatchers(String collection, DocCollection collectionState) {
-    log.info("Notify state watchers {} {}", collectionWatches.keySet(), collectionState);
+    if (log.isDebugEnabled()) log.debug("Notify state watchers {} {}", collectionWatches.keySet(), collectionState);
     synchronized (collectionWatches) {
       try {
         notifications.submit(new Notification(collection, collectionState, collectionWatches));
@@ -2229,7 +2231,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         });
       }
       for (DocCollectionWatcher watcher : watchers) {
-        log.info("Notify DocCollectionWatcher {} {}", watcher, collectionState);
+        if (log.isDebugEnabled()) log.debug("Notify DocCollectionWatcher {} {}", watcher, collectionState);
         try {
           if (watcher.onStateChanged(collectionState)) {
             removeDocCollectionWatcher(collection, watcher);

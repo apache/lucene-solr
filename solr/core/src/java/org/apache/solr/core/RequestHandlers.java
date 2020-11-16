@@ -77,6 +77,7 @@ public final class RequestHandlers implements Closeable {
    * @return the previous handler at the given path or null
    */
   public SolrRequestHandler register( String handlerName, SolrRequestHandler handler ) {
+    if (log.isDebugEnabled()) log.debug("register request handler {} {}", handlerName, handler);
     String norm = normalize(handlerName);
     if (handler == null) {
       return handlers.remove(norm);

@@ -86,8 +86,8 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
   // ReplicaListTransformer logic and more complex collection layouts
   @Test
   public void testUpdateRequestRouteLogic() {
-    final String shard1Route = mockSolr.baseUrl()+SHARD1_PATH+"/";
-    final String shard2Route = mockSolr.baseUrl()+SHARD2_PATH+"/";
+    final String shard1Route = mockSolr.baseUrl()+SHARD1_PATH;
+    final String shard2Route = mockSolr.baseUrl()+SHARD2_PATH;
 
     final int numDocs = 20;
     UpdateRequest ur = buildUpdateRequest(numDocs);
@@ -149,9 +149,9 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
     assertNotNull(routeResponses);
     assertEquals(2, routeResponses.size());
     assertEquals(2, rr.getRoutes().size());
-    NamedList<Object> shard1Response = (NamedList<Object>) routeResponses.get(mockSolr.baseUrl()+SHARD1_PATH+"/");
+    NamedList<Object> shard1Response = (NamedList<Object>) routeResponses.get(mockSolr.baseUrl()+SHARD1_PATH);
     assertNotNull(shard1Response);
-    NamedList<Object> shard2Response = (NamedList<Object>) routeResponses.get(mockSolr.baseUrl()+SHARD2_PATH+"/");
+    NamedList<Object> shard2Response = (NamedList<Object>) routeResponses.get(mockSolr.baseUrl()+SHARD2_PATH);
     assertNotNull(shard2Response);
   }
 
