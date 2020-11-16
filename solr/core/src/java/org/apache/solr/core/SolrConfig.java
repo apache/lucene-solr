@@ -540,14 +540,16 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     List<PluginInfo> result = readPluginInfos(pluginInfo.tag, requireName, requireClass);
 
+    if (result.isEmpty()) {
+      return;
+    }
+
     if (1 < result.size() && !pluginInfo.options.contains(MULTI_OK)) {
-      throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-              "Found " + result.size() + " configuration sections when at most "
-                  + "1 is allowed matching expression: " + pluginInfo.getCleanTag());
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Found " + result.size() + " configuration sections when at most " + "1 is allowed matching expression: " + pluginInfo.getCleanTag());
     }
     log.info("Add plugin {} {}", requireName, result);
-    if (!result.isEmpty()) pluginStore.put(pluginInfo.clazz.getName(), result);
+    pluginStore.put(pluginInfo.clazz.getName(), result);
   }
 
   public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {

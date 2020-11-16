@@ -580,9 +580,7 @@ public class SolrCloudTestCase extends SolrTestCase {
 //      log.warn("Error clearing index {}", e.getMessage());
 //    }
     try {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), collection);
+      new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), collection);
     } catch (Exception e) {
       log.warn("Error clearing index {}", e.getMessage());
     }

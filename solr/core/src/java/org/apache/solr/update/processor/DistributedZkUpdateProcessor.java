@@ -478,9 +478,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Replica leader;
         try {
           leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
+        } catch (Exception e) {
+          log.error("Exception finding leader for shard " + sliceName, e);
+          continue;
         }
 
         // TODO: What if leaders changed in the meantime?
@@ -500,7 +500,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
 
-      outParams.remove("commit"); // this will be distributed from the local commit
+     // outParams.remove("commit"); // this will be distributed from the local commit
 
 
       if (params.get(UpdateRequest.MIN_REPFACT) != null) {

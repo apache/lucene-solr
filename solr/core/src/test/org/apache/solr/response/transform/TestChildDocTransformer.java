@@ -16,11 +16,13 @@
  */
 package org.apache.solr.response.transform;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -29,11 +31,13 @@ import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.core.StringContains.containsString;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String ID_FIELD = "id";
   private String[] titleVals = new String[2];
 
@@ -45,6 +49,12 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
   @After
   public void cleanup() throws Exception {
     clearIndex();
+    try {
+      delQ("*:*");
+    } catch (Exception e) {
+      log.warn("Error clearing index {}", e.getMessage());
+    }
+    commit();
   }
 
   @Test

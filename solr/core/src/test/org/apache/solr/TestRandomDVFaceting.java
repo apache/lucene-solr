@@ -48,6 +48,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
+    System.setProperty("enable.update.log", "false");
     // This tests explicitly compares Trie DV with non-DV Trie with DV Points
     // so we don't want randomized DocValues on all Trie fields
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "false");

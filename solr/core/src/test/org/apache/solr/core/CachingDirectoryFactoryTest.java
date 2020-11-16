@@ -106,6 +106,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
           for (int i = 0; i < cnt; i++) {
             tracker.refCnt.decrementAndGet();
             df.release(tracker.dir);
+            dirs.remove(tracker);
           }
         }
       }

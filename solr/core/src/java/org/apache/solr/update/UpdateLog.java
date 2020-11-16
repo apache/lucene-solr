@@ -456,6 +456,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
     } catch (Throwable e) {
+      log.error("Error trying to init update log", e);
       ParWork.propagateInterrupt(e);
       assert ObjectReleaseTracker.release(this);
       if (e instanceof Error) {

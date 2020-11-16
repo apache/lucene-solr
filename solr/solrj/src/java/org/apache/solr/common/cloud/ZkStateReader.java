@@ -168,7 +168,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   protected volatile ClusterState stateClusterState = new ClusterState(Collections.emptySet(), Collections.emptyMap());
 
 
-  private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "5000"));
+  private final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "1000"));
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 

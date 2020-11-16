@@ -26,6 +26,7 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log", "false");
     initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
   }
 

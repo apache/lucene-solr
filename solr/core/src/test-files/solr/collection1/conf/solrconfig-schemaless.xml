@@ -19,6 +19,12 @@
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <updateHandler>
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+  </updateHandler>
+
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <!-- This is intentionally commented out, see SOLR-8131 -->
@@ -29,11 +35,6 @@
 
   <codecFactory class="solr.SchemaCodecFactory"/>
 
-  <updateHandler>
-    <updateLog enable="${enable.update.log:true}">
-      <str name="dir">${solr.ulog.dir:}</str>
-    </updateLog>
-  </updateHandler>
 
   <requestDispatcher>
     <requestParsers enableStreamBody="true" />

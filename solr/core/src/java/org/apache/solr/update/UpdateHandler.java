@@ -167,8 +167,9 @@ UpdateHandler implements SolrInfoBean, Closeable {
       if (ourUpdateLog != null) {
         ulog = ourUpdateLog;
       } else {
-        if (core.getCoreContainer().isZooKeeperAware() && (ulogPluginInfo == null || !ulogPluginInfo.isEnabled())) {
-          // TODO: workaround rare test issue where updatelog is not found
+        if ((ulogPluginInfo == null || ulogPluginInfo.isEnabled())
+            && (System.getProperty("enable.update.log") != null && Boolean.getBoolean("enable.update.log")) && VersionInfo.getAndCheckVersionField(core.getLatestSchema()) != null) {
+          // TODO: workaround rare test issue where updatelog config is not found
           ourUpdateLog = new UpdateLog();
           ourUpdateLog.init(this, core);
           ulog = ourUpdateLog;
