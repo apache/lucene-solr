@@ -731,7 +731,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         cd.loadExtraProperties(); //Reload the extra properties
         coreMetricManager.close();
         core = new SolrCore(coreContainer, getName(), coreConfig, cd, getDataDir(), updateHandler, solrDelPolicy, currentCore, true);
-
+        core.start();
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
         core.getSearcher(true, false, null, true);
@@ -1095,25 +1095,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.ruleExpiryLock = new ReentrantLock();
       this.snapshotDelLock = new ReentrantLock();
 
-      // register any SolrInfoMBeans SolrResourceLoader initialized
-      //
-      // this must happen after the latch is released, because a JMX server impl may
-      // choose to block on registering until properties can be fetched from an MBean,
-      // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
-      // from the core.
-      resourceLoader.inform(infoRegistry);
-
-      // Finally tell anyone who wants to know
-      resourceLoader.inform(resourceLoader);
-
-      resourceLoader.inform(this); // last call before the latch is released.
-
-      searcherReadyLatch.countDown();
-
-      // seed version buckets with max from index during core initialization ... requires a searcher!
-      //if (!reload) { // TODO: reload could move to a different index?
-        seedVersionBuckets();
-     // }
     } catch (Throwable e) {
       log.error("Error while creating SolrCore", e);
       // release the latch, otherwise we block trying to do the close. This
@@ -1140,6 +1121,28 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
+  }
+
+  public void start() {
+    // register any SolrInfoMBeans SolrResourceLoader initialized
+    //
+    // this must happen after the latch is released, because a JMX server impl may
+    // choose to block on registering until properties can be fetched from an MBean,
+    // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
+    // from the core.
+    resourceLoader.inform(infoRegistry);
+
+    // Finally tell anyone who wants to know
+    resourceLoader.inform(resourceLoader);
+
+    resourceLoader.inform(this); // last call before the latch is released.
+
+    searcherReadyLatch.countDown();
+
+    // seed version buckets with max from index during core initialization ... requires a searcher!
+    if (!isReloaded) { // TODO: reload could move to a different index?
+      seedVersionBuckets();
+    }
   }
 
   public void seedVersionBuckets() {

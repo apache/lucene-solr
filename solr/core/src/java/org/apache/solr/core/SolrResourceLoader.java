@@ -653,7 +653,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
               aware.inform(core);
             } catch (Exception e) {
               ParWork.propagateInterrupt("Exception informing for SolrCore", e);
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for SolrCore", e);
+              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception informing for SolrCore: " + e.getMessage(), e);
             }
             waitingForCore.remove(aware);
           });
@@ -665,7 +665,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   /**
    * Tell all {@link ResourceLoaderAware} instances about the loader
    */
-  public void inform(ResourceLoader loader) throws IOException {
+  public void inform(ResourceLoader loader) {
     while (waitingForResources.size() > 0) {
       try (ParWork worker = new ParWork(this, false, true)) {
         waitingForResources.forEach(r -> {

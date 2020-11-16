@@ -1334,7 +1334,8 @@ public class CoreContainer implements Closeable {
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
-        log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
+        log.info("Creating SolrCore '{}' using configuration from {} solrconfig={}, trusted={}", dcore.getName(),
+            coreConfig.getName(), coreConfig.getSolrConfig().getName(), dcore.isConfigSetTrusted());
       }
       try {
         if (isShutDown) {
@@ -1348,6 +1349,8 @@ public class CoreContainer implements Closeable {
 
       registerCore(dcore, core, isZooKeeperAware(), false);
       registered = true;
+
+      core.start();
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
@@ -1961,8 +1964,6 @@ public class CoreContainer implements Closeable {
       //      }
       core = createFromDescriptor(desc, false); // This should throw an error if it fails.
     }
-
-
 
     core.open();
 

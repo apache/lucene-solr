@@ -281,12 +281,8 @@ public class IndexSchema {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
-    try {
-      readSchema(is);
-      loader.inform(loader);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    readSchema(is);
+    loader.inform(loader);
   }
 
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
