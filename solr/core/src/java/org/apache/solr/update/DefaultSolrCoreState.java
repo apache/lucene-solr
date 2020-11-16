@@ -62,7 +62,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   // Use the readLock to retrieve the current IndexWriter (may be lazily opened)
   // Use the writeLock for changing index writers
-  private final ReentrantReadWriteLock iwLock = new ReentrantReadWriteLock();
+  private final ReentrantReadWriteLock iwLock = new ReentrantReadWriteLock(true);
 
   private volatile SolrIndexWriter indexWriter = null;
   private final DirectoryFactory directoryFactory;
@@ -313,14 +313,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public synchronized void doRecovery(CoreContainer cc, CoreDescriptor cd) {
+  public void doRecovery(CoreContainer cc, CoreDescriptor cd) {
     try (SolrCore core = cc.getCore(cd.getName())) {
       doRecovery(core);
     }
   }
 
   @Override
-  public synchronized void doRecovery(SolrCore core) {
+  public void doRecovery(SolrCore core) {
     if (prepForClose || core.getCoreContainer().isShutDown() || closed) {
       return;
     }
