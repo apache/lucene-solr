@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.backward_codecs.lucene60.Lucene60PointsFormat;
-import org.apache.lucene.backward_codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.codecs.PointsReader;
