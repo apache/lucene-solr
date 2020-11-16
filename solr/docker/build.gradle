@@ -1,0 +1,123 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import com.google.common.base.Preconditions
+import com.google.common.base.Strings
+
+apply plugin: 'base'
+apply plugin: 'com.palantir.docker'
+
+subprojects {
+  apply plugin: 'base'
+  apply plugin: 'com.palantir.docker'
+}
+
+description = 'Solr Docker image'
+
+def dockerPackage = project(':solr:docker:package')
+
+dependencies {
+  docker dockerPackage
+}
+
+def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
+def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
+def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
+def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
+
+docker {
+  name = dockerImageName
+  files file('include')
+  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}", 'GITHUB_URL': githubUrlOrMirror])
+}
+
+tasks.docker {
+  // In order to create the solr docker image, the solr package image must be created first.
+  dependsOn(dockerPackage.tasks.docker)
+
+  // Print information on the image after it has been created
+  doLast {
+    project.logger.lifecycle("Solr Docker Image Created")
+    project.logger.lifecycle("\tName: $dockerImageName")
+    project.logger.lifecycle("\tBase Image: $baseDockerImage")
+  }
+}
+
+abstract class DockerTestSuite extends DefaultTask {
+  private String solrImageName = null;
+  private List<String> tests = new ArrayList<>();
+  private List<String> ignore = new ArrayList<>();
+
+  @OutputDirectory
+  abstract DirectoryProperty getOutputDir()
+
+  public void setSolrImageName(String solrImageName) {
+    this.solrImageName = solrImageName
+  }
+
+  public String getSolrImageName() {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(solrImageName), "solrImageName is a required dockerTests configuration item.")
+    return solrImageName
+  }
+
+  @Option(option = "tests", description = "Only run these specified tests, comma separated.")
+  public void setTests(List<String> tests) {
+    this.tests = tests;
+  }
+
+  @Input
+  public List<String> getTests() {
+    return tests;
+  }
+
+  @Option(option = "ignore", description = "Ignore these tests, comma separated.")
+  public void setIgnore(List<String> ignore) {
+    this.ignore = ignore;
+  }
+
+  @Input
+  public List<String> getIgnore() {
+    return ignore;
+  }
+
+  @TaskAction
+  void execute() {
+    // Print information on the image before it is tested
+    project.logger.lifecycle("Testing Solr Image: $solrImageName\n")
+    def sourceDir = project.file("tests/cases")
+    sourceDir.eachFile  { file ->
+      def testName = file.getName()
+      def testCaseBuildDir = outputDir.dir(testName).get().toString()
+
+      // If specific tests are specified, only run those. Otherwise run all that are not ignored.
+      def runTest = !this.tests.isEmpty() ? tests.contains(testName) : !ignore.contains(testName)
+      if (runTest) {
+        project.exec {
+          environment "TEST_DIR", "$file"
+          environment "BUILD_DIR", "$testCaseBuildDir"
+          commandLine "bash", "$file/test.sh", solrImageName
+        }
+      }
+    }
+  }
+}
+
+task testDocker(type: DockerTestSuite) {
+  outputDir = project.file("$buildDir/tmp/tests")
+  solrImageName = dockerImageName
+}

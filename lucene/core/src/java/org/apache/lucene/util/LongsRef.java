@@ -72,7 +72,7 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   public int hashCode() {
     final int prime = 31;
     int result = 0;
-    final long end = offset + length;
+    final long end = (long) offset + length;
     for(int i = offset; i < end; i++) {
       result = prime * result + (int) (longs[i] ^ (longs[i]>>>32));
     }
@@ -106,7 +106,7 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('[');
-    final long end = offset + length;
+    final long end = (long) offset + length;
     for(int i=offset;i<end;i++) {
       if (i > offset) {
         sb.append(' ');

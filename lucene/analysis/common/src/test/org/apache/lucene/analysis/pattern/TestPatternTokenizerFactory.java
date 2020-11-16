@@ -21,7 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 /** Simple Tests to ensure this factory is working */
 public class TestPatternTokenizerFactory extends BaseTokenStreamFactoryTestCase {

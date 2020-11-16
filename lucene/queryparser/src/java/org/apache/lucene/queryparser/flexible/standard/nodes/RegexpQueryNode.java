@@ -26,10 +26,10 @@ import org.apache.lucene.util.BytesRef;
 /**
  * A {@link RegexpQueryNode} represents {@link RegexpQuery} query Examples: /[a-z]|[0-9]/
  */
-public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode,
-FieldableNode {
+public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode, FieldableNode {
   private CharSequence text;
   private CharSequence field;
+
   /**
    * @param field
    *          - field name
@@ -44,6 +44,16 @@ FieldableNode {
       int end) {
     this.field = field;
     this.text = text.subSequence(begin, end);
+  }
+
+  /**
+   * @param field
+   *          - field name
+   * @param text
+   *          - value that contains a regular expression
+   */
+  public RegexpQueryNode(CharSequence field, CharSequence text) {
+    this(field, text, 0, text.length());
   }
 
   public BytesRef textToBytesRef() {

@@ -23,4 +23,3 @@ dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')
 }
-

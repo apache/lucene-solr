@@ -44,7 +44,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.cloud.rule.SnitchContext;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -74,7 +73,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private Map<String, Object> snitchSession = new HashMap<>();
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
-  private Map<String, String> withCollectionsMap = new HashMap<>();
 
   public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
     this.solrClient = solrClient;
@@ -100,9 +98,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     all.forEach((collName, ref) -> {
       DocCollection coll = ref.get();
       if (coll == null) return;
-      if (coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION) != null) {
-        withCollectionsMap.put(coll.getName(), (String) coll.getProperties().get(CollectionAdminParams.WITH_COLLECTION));
-      }
       coll.forEachReplica((shard, replica) -> {
         Map<String, Map<String, List<Replica>>> nodeData = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(replica.getNodeName(), k -> new HashMap<>());
         Map<String, List<Replica>> collData = nodeData.computeIfAbsent(collName, k -> new HashMap<>());
@@ -147,9 +142,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
   @Override
   public Map<String, Map<String, List<Replica>>> getReplicaInfo(String node, Collection<String> keys) {
-    @SuppressWarnings({"unchecked"})
-    Map<String, Map<String, List<Replica>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, Utils.NEW_HASHMAP_FUN);
-    if (!keys.isEmpty()) {
+    Map<String, Map<String, List<Replica>>> result = nodeVsCollectionVsShardVsReplicaInfo.computeIfAbsent(node, o -> new HashMap<>());    if (!keys.isEmpty()) {
       Map<String, Pair<String, Replica>> metricsKeyVsTagReplica = new HashMap<>();
       forEachReplica(result, r -> {
         for (String key : keys) {
@@ -269,31 +262,33 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       try {
         SimpleSolrResponse rsp = snitchContext.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
         NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
-
-        if (requestedTags.contains(Variable.FREEDISK.tagName)) {
-          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
-          if (n != null) ctx.getTags().put(Variable.FREEDISK.tagName, Variable.FREEDISK.convertVal(n));
-        }
-        if (requestedTags.contains(Variable.TOTALDISK.tagName)) {
-          Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
-          if (n != null) ctx.getTags().put(Variable.TOTALDISK.tagName, Variable.TOTALDISK.convertVal(n));
-        }
-        if (requestedTags.contains(CORES)) {
-          NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
-          int count = 0;
-          for (String leafCoreMetricName : new String[]{"lazy", "loaded", "unloaded"}) {
-            Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
-            if (n != null) count += n.intValue();
+        if (metrics != null) {
+          // metrics enabled
+          if (requestedTags.contains(Variable.FREEDISK.tagName)) {
+            Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.usableSpace");
+            if (n != null) ctx.getTags().put(Variable.FREEDISK.tagName, Variable.FREEDISK.convertVal(n));
           }
-          ctx.getTags().put(CORES, count);
-        }
-        if (requestedTags.contains(SYSLOADAVG)) {
-          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
-          if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
-        }
-        if (requestedTags.contains(HEAPUSAGE)) {
-          Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");
-          if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
+          if (requestedTags.contains(Variable.TOTALDISK.tagName)) {
+            Object n = Utils.getObjectByPath(metrics, true, "solr.node/CONTAINER.fs.totalSpace");
+            if (n != null) ctx.getTags().put(Variable.TOTALDISK.tagName, Variable.TOTALDISK.convertVal(n));
+          }
+          if (requestedTags.contains(CORES)) {
+            NamedList<?> node = (NamedList<?>) metrics.get("solr.node");
+            int count = 0;
+            for (String leafCoreMetricName : new String[]{"lazy", "loaded", "unloaded"}) {
+              Number n = (Number) node.get("CONTAINER.cores." + leafCoreMetricName);
+              if (n != null) count += n.intValue();
+            }
+            ctx.getTags().put(CORES, count);
+          }
+          if (requestedTags.contains(SYSLOADAVG)) {
+            Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
+            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
+          }
+          if (requestedTags.contains(HEAPUSAGE)) {
+            Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");
+            if (n != null) ctx.getTags().put(HEAPUSAGE, n.doubleValue() * 100.0d);
+          }
         }
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error getting remote info", e);

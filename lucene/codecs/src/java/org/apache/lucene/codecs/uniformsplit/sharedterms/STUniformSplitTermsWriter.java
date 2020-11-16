@@ -335,7 +335,7 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     Collection<FieldMetadata> writeSharedTerms(STBlockWriter blockWriter, IndexDictionary.Builder dictionaryBuilder) throws IOException;
   }
 
-  protected class SegmentPostings {
+  final class SegmentPostings {
 
     final int segmentIndex;
     final BlockTermState termState;

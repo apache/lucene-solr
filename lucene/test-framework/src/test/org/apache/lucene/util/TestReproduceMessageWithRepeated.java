@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 
@@ -39,14 +38,12 @@ public class TestReproduceMessageWithRepeated extends WithNestedTests {
   }
 
   @Test
-  public void testRepeatedMessage() throws Exception { 
-    String syserr = runAndReturnSyserr();
-    Assert.assertTrue(syserr.contains(" -Dtests.method=testMe "));
+  public void testRepeatedMessage() throws Exception {
+    TestReproduceMessage.checkTestName(runAndReturnSyserr(), Nested.class.getSimpleName() + ".testMe");
   }
 
   private String runAndReturnSyserr() {
     JUnitCore.runClasses(Nested.class);
-    String err = getSysErr();
-    return err;
+    return getSysErr();
   }
 }

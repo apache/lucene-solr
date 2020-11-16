@@ -36,13 +36,19 @@ import org.apache.tools.ant.BuildException
 
 configure(subprojects.findAll { it.path.startsWith(':solr') }) {
   plugins.withType(JavaPlugin) {
-    task validateLogCalls(type: ValidateLogCallsTask) {
+    task validateLogCalls(type: ValidateLogCallsTask) { task ->
       description "Checks that log calls are either validated or conform to efficient patterns."
       group "verification"
 
+      // This task has no proper outputs.
+      setupDummyOutputs(task)
+
       sourceFiles = files(sourceSets*.java)
     }
-  }
+ 
+    // Add log validation to per-project checks as well.
+    check.dependsOn validateLogCalls
+ }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
@@ -61,7 +67,7 @@ class ValidateLogCallsTask extends DefaultTask {
     boolean violation = false
 
     // If the line has been explicitly OK'd, then it's OK!
-    if (line.replaceAll("\\s", "").toLowerCase().contains("//logok")) {
+    if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
       return
     }
     // Strip all of the comments, things in quotes and the like.
@@ -127,7 +133,7 @@ class ValidateLogCallsTask extends DefaultTask {
     }
 
     // Always report toString(). Note, this over-reports some constructs
-    // but just add //logOK if it's really OK.
+    // but just add //nowarn if it's really OK.
     if (violation == false) {
       if (line.contains("toString(") == true && prevLineNotIf) {
         cause = "Line contains toString"
@@ -145,27 +151,13 @@ class ValidateLogCallsTask extends DefaultTask {
     return
   }
 
-// Require all our logger definitions lower case "log", except a couple of special ones.
+// Require all our logger definitions lower case "log", except if they have //nowarn
   def checkLogName(File file, String line) {
     // It's many times faster to do check this way than use a regex
     if (line.contains("static ") && line.contains("getLogger") && line.contains(" log ") == false) {
-      String name = file.name
-      if (name.equals("LoggerFactory.java")) {
+      if (line.replaceAll("\\s", "").toLowerCase().contains("//nowarn")) {
         return
       }
-      if (name.equals("SolrCore.java") && (line.contains("requestLog") || line.contains("slowLog"))) {
-        return
-      }
-      if (name.equals("StartupLoggingUtils.java") && line.contains("getLoggerImplStr")) {
-        return
-      }
-      // Apparently the Hadoop code expectes upper-case LOG, so...
-
-      if ((name.equals("HttpServer2.java") || name.equals("BlockPoolSlice.java") || name.equals("FileUtil.java"))
-        && line.contains(" LOG ")) {
-        return
-      }
-
       reportViolation("Change the logger name to lower-case 'log' in " + file.name + " " + line + " project" + project)
     }
   }
@@ -229,11 +221,6 @@ class ValidateLogCallsTask extends DefaultTask {
 
   @InputFiles
   FileCollection sourceFiles
-
-  ValidateLogCallsTask() {
-    // No explicit outputs (outputs always up to date).
-    outputs.upToDateWhen { true }
-  }
 
   @TaskAction
   def checkLogLines() {

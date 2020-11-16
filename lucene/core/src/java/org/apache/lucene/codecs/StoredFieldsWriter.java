@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -51,7 +52,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * 
  * @lucene.experimental
  */
-public abstract class StoredFieldsWriter implements Closeable {
+public abstract class StoredFieldsWriter implements Closeable, Accountable {
   
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */

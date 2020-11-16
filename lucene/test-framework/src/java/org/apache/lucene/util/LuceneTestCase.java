@@ -1003,7 +1003,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       c.setCheckPendingFlushUpdate(false);
     }
-    c.setMaxCommitMergeWaitMillis(rarely() ?  atLeast(r, 1000) : atLeast(r, 200));
+    c.setMaxFullFlushMergeWaitMillis(rarely() ?  atLeast(r, 1000) : atLeast(r, 200));
     return c;
   }
 
@@ -1863,19 +1863,6 @@ public abstract class LuceneTestCase extends Assert {
   @AfterClass
   public static void restoreCPUCoreCount() {
     System.clearProperty(ConcurrentMergeScheduler.DEFAULT_CPU_CORE_COUNT_PROPERTY);
-  }
-
-  @BeforeClass
-  public static void setupSpins() {
-    // Randomize IOUtils.spins() count so CMS varies its dynamic defaults, and this also "fixes" core
-    // count from the master seed so it will always be the same on reproduce:
-    boolean spins = random().nextBoolean();
-    System.setProperty(ConcurrentMergeScheduler.DEFAULT_SPINS_PROPERTY, Boolean.toString(spins));
-  }
-
-  @AfterClass
-  public static void restoreSpins() {
-    System.clearProperty(ConcurrentMergeScheduler.DEFAULT_SPINS_PROPERTY);
   }
 
   /**

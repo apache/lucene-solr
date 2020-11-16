@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -81,7 +82,7 @@ public class CloudUtil {
 
           if (thisCnn != null && thisCnn.equals(cnn)
               && !thisBaseUrl.equals(baseUrl)) {
-            if (cc.getLoadedCoreNames().contains(desc.getName())) {
+            if (cc.isLoaded(desc.getName())) {
               cc.unload(desc.getName());
             }
 
@@ -93,7 +94,7 @@ public class CloudUtil {
             }
             log.error("{}",
                 new SolrException(ErrorCode.SERVER_ERROR, "Will not load SolrCore " + desc.getName()
-                    + " because it has been replaced due to failover.")); // logOk
+                    + " because it has been replaced due to failover.")); // nowarn
             throw new SolrException(ErrorCode.SERVER_ERROR,
                 "Will not load SolrCore " + desc.getName()
                     + " because it has been replaced due to failover.");
@@ -285,5 +286,15 @@ public class CloudUtil {
     };
   }
 
-
+  /**
+   * Builds a string with sorted {@link CoreContainer#getLoadedCoreNames()} while truncating to the first 20 cores.
+   */
+  static String getLoadedCoreNamesAsString(CoreContainer coreContainer) {
+    List<String> loadedCoreNames = coreContainer.getLoadedCoreNames();
+    if (loadedCoreNames.size() <= 20) {
+      loadedCoreNames.sort(null);
+    }
+    return loadedCoreNames.stream().limit(20).collect(Collectors.toList())
+            + (loadedCoreNames.size() > 20 ? "...(truncated from " + loadedCoreNames.size() + " cores)" : "");
+  }
 }

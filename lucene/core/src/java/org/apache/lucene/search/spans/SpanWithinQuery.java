@@ -52,6 +52,10 @@ public final class SpanWithinQuery extends SpanContainQuery {
                                       bigWeight, littleWeight, boost);
   }
 
+  /**
+   * Creates SpanWithinQuery scorer instances
+   * @lucene.internal
+   */
   public class SpanWithinWeight extends SpanContainWeight {
 
     public SpanWithinWeight(IndexSearcher searcher, Map<Term, TermStates> terms,

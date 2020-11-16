@@ -18,7 +18,6 @@ package org.apache.solr.rest;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
-import org.restlet.ext.servlet.ServerServlet;
 
 import java.nio.file.Path;
 import java.util.Properties;
@@ -26,9 +25,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * Base class for Solr Restlet-based tests. Creates jetty and test harness
- * with solrconfig.xml and schema-rest.xml, including "extra" servlets for
- * all Solr Restlet Application subclasses.
+ * Base class for Solr Rest-oriented API tests. Creates jetty and test harness
+ * with solrconfig.xml and schema-rest.xml.
  *
  * Use RestTestBase instead if you need to specialize the solrconfig,
  * the schema, or jetty/test harness creation; otherwise you'll get
@@ -51,9 +49,6 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     System.setProperty("configSetBaseDir", TEST_HOME());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrSchemaRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrSchemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrSchemaRestApi, "/schema/*");  // '/schema/*' matches '/schema', '/schema/', and '/schema/whatever...'
 
     Properties props = new Properties();
     props.setProperty("name", DEFAULT_TEST_CORENAME);

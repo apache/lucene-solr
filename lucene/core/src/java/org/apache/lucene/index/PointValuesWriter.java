@@ -37,10 +37,10 @@ class PointValuesWriter {
   private int lastDocID = -1;
   private final int packedBytesLength;
 
-  public PointValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
+  PointValuesWriter(ByteBlockPool.Allocator allocator, Counter bytesUsed, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
-    this.iwBytesUsed = docWriter.bytesUsed;
-    this.bytes = new ByteBlockPool(docWriter.byteBlockAllocator);
+    this.iwBytesUsed = bytesUsed;
+    this.bytes = new ByteBlockPool(allocator);
     docIDs = new int[16];
     iwBytesUsed.addAndGet(16 * Integer.BYTES);
     packedBytesLength = fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes();

@@ -1,5 +1,4 @@
-#!/bin/sh
-
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -74,7 +73,7 @@ then
   REPO="$BASEDIR"/lib
 fi
 
-CLASSPATH=$CLASSPATH_PREFIX
+CLASSPATH=$CLASSPATH_PREFIX:$BASEDIR/conf
 for JAR in $(find "$REPO" -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
@@ -100,6 +99,10 @@ do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 for JAR in $(find "$BASEDIR"/../../server/solr-webapp/webapp/WEB-INF/lib -name '*.jar')
+do
+  CLASSPATH="$CLASSPATH":"$JAR"
+done
+for JAR in $(find "$BASEDIR"/../../server/lib/ext -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
@@ -131,15 +134,42 @@ if $cygwin; then
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
 
+# Convert Environment Variables to Command Line Options
+EXPORTER_ARGS=()
+
+if [[ -n "$CONFIG_FILE" ]]; then
+  EXPORTER_ARGS+=(-f "$CONFIG_FILE")
+fi
+
+if [[ -n "$PORT" ]]; then
+  EXPORTER_ARGS+=(-p "$PORT")
+fi
+
+if [[ -n "$SCRAPE_INTERVAL" ]]; then
+  EXPORTER_ARGS+=(-s "$SCRAPE_INTERVAL")
+fi
+
+if [[ -n "$NUM_THREADS" ]]; then
+  EXPORTER_ARGS+=(-n "$NUM_THREADS")
+fi
+
+if [[ -n "$ZK_HOST" ]]; then
+  EXPORTER_ARGS+=(-z "$ZK_HOST")
+elif [[ -n "$SOLR_URL" ]]; then
+  EXPORTER_ARGS+=(-b "$SOLR_URL")
+fi
+
 exec "$JAVACMD" \
   $JAVA_MEM_OPTS \
   $GC_TUNE \
   $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
+  $ZK_CREDS_AND_ACLS \
   -classpath "$CLASSPATH" \
   -Dapp.name="solr-exporter" \
   -Dapp.pid="$$" \
   -Dapp.repo="$REPO" \
   -Dbasedir="$BASEDIR" \
   org.apache.solr.prometheus.exporter.SolrExporter \
+  "${EXPORTER_ARGS[@]}" \
   "$@"

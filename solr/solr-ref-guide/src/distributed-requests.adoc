@@ -83,8 +83,8 @@ To add a `shardHandlerFactory` to the standard search handler, provide a configu
 <requestHandler name="/select" class="solr.SearchHandler">
   <!-- other params go here -->
   <shardHandlerFactory class="HttpShardHandlerFactory">
-    <int name="socketTimeOut">1000</int>
-    <int name="connTimeOut">5000</int>
+    <int name="socketTimeout">1000</int>
+    <int name="connTimeout">5000</int>
   </shardHandlerFactory>
 </requestHandler>
 ----

@@ -34,25 +34,25 @@ public final class OfflinePointWriter implements PointWriter {
   final Directory tempDir;
   public final IndexOutput out;
   public final String name;
-  final int packedBytesLength;
+  final BKDConfig config;
   long count;
   private boolean closed;
   final long expectedCount;
 
   /** Create a new writer with an unknown number of incoming points */
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength,
+  public OfflinePointWriter(BKDConfig config, Directory tempDir, String tempFileNamePrefix,
                             String desc, long expectedCount) throws IOException {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
     this.name = out.getName();
     this.tempDir = tempDir;
-    this.packedBytesLength = packedBytesLength;
+    this.config = config;
     this.expectedCount = expectedCount;
   }
 
   @Override
   public void append(byte[] packedValue, int docID) throws IOException {
     assert closed == false : "Point writer is already closed";
-    assert packedValue.length == packedBytesLength : "[packedValue] must have length [" + packedBytesLength + "] but was [" + packedValue.length + "]";
+    assert packedValue.length == config.packedBytesLength : "[packedValue] must have length [" + config.packedBytesLength + "] but was [" + packedValue.length + "]";
     out.writeBytes(packedValue, 0, packedValue.length);
     out.writeInt(docID);
     count++;
@@ -63,7 +63,7 @@ public final class OfflinePointWriter implements PointWriter {
   public void append(PointValue pointValue) throws IOException {
     assert closed == false : "Point writer is already closed";
     BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
-    assert packedValueDocID.length == packedBytesLength + Integer.BYTES : "[packedValue and docID] must have length [" + (packedBytesLength + Integer.BYTES) + "] but was [" + packedValueDocID.length + "]";
+    assert packedValueDocID.length == config.bytesPerDoc : "[packedValue and docID] must have length [" + (config.bytesPerDoc) + "] but was [" + packedValueDocID.length + "]";
     out.writeBytes(packedValueDocID.bytes, packedValueDocID.offset, packedValueDocID.length);
     count++;
     assert expectedCount == 0 || count <= expectedCount : "expectedCount=" + expectedCount + " vs count=" + count;
@@ -71,7 +71,7 @@ public final class OfflinePointWriter implements PointWriter {
 
   @Override
   public PointReader getReader(long start, long length) throws IOException {
-    byte[] buffer  = new byte[packedBytesLength + Integer.BYTES];
+    byte[] buffer  = new byte[config.bytesPerDoc];
     return getReader(start, length,  buffer);
   }
 
@@ -79,7 +79,7 @@ public final class OfflinePointWriter implements PointWriter {
     assert closed: "point writer is still open and trying to get a reader";
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;
-    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, reusableBuffer);
+    return new OfflinePointReader(config, tempDir, name, start, length, reusableBuffer);
   }
 
   @Override

@@ -117,7 +117,7 @@ You can also define named caches for your own application code to use. You can l
                           regenerator="org.mycompany.mypackage.MyRegenerator" />
 ----
 
-If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as`: regenerator="solr.NoOpRegenerator"`.
+If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator"`.
 
 == Query Sizing and Warming
 
@@ -172,24 +172,49 @@ This parameter sets the maximum number of documents to cache for any entry in th
 <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 ----
 
-=== useCircuitBreakers
+=== circuitBreaker
 
-Global control flag for enabling circuit breakers.
+This set of configurations control the behaviour of circuit breakers.
 
 [source,xml]
 ----
-<useCircuitBreakers>true</useCircuitBreakers>
+<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
+  <!-- All specific configs in this section -->
+</circuitBreaker>
 ----
 
-=== memoryCircuitBreakerThresholdPct
+To control whether Circuit Breakers are globally enabled, use the "enabled" attribute.
+
+=== Memory Circuit Breaker Settings
+
+To turn memory circuit breaker on/off, use the following flag:
+[source,xml]
+----
+<str name="memEnabled">true</str>
+----
 
 Memory threshold in percentage for JVM heap usage defined in percentage of maximum heap allocated
 to the JVM (-Xmx). Ideally, this value should be in the range of 75-80% of maximum heap allocated
-to the JVM.
+to the JVM. The enabled flag can be used to control the specific toggle for this circuit breaker.
 
 [source,xml]
 ----
-<memoryCircuitBreakerThresholdPct>75</memoryCircuitBreakerThresholdPct>
+<str name="memThreshold">75</str>
+----
+
+=== CPU Circuit Breaker Settings
+
+To control turning on/off this feature, use the following flag:
+[source,xml]
+----
+<str name="cpuEnabled">true</str>
+----
+
+Defines the triggering threshold in terms of the average per minute CPU load. The enabled flag can be used to control the specific toggle for this circuit breaker.
+
+[source,xml]
+----
+<str name="cpuThreshold">75</str>
 ----
 
 === useColdSearcher

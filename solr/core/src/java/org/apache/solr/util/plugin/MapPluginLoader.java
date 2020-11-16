@@ -18,7 +18,7 @@ package org.apache.solr.util.plugin;
 
 import java.util.Map;
 
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
