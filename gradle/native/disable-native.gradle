@@ -18,7 +18,7 @@
 // This is the master switch to disable all tasks that compile
 // native (cpp) code.
 rootProject.ext {
-  buildNative = propertyOrDefault("build.native", true).toBoolean()
+  buildNative = propertyOrDefault("build.native", false).toBoolean()
 }
 
 // Explicitly list all projects that should be configured for native extensions.
