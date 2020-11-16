@@ -208,6 +208,8 @@ Other Changes
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
+* SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.

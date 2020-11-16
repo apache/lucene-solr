@@ -1892,6 +1892,10 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
+if [ -n "$SOLR_PORT_ADVERTISE" ]; then
+  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
+fi
+
 if [ -n "$SOLR_JETTY_HOST" ]; then
   SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
@@ -2244,7 +2248,7 @@ function start_solr() {
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
-    "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
+    "-Djetty.port=$SOLR_PORT"  "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \

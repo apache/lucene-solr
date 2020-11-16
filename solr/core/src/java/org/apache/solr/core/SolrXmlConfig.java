@@ -42,6 +42,7 @@ import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.PropertiesUtil;
@@ -393,8 +394,12 @@ public class SolrXmlConfig {
 
   private static CloudConfig fillSolrCloudSection(NamedList<Object> nl) {
 
+    int hostPort = parseInt("hostPort", removeValue(nl, "hostPort"));
+    if (hostPort <= 0) {
+      // Default to the port that jetty is listening on, or 8983 if that is not provided.
+      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+    }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    int hostPort = parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
