@@ -165,6 +165,26 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       return this;
     }
 
+    public Builder POST() {
+      this.method = METHOD.POST;
+      return this;
+    }
+
+    public Builder GET() {
+      this.method = METHOD.GET;
+      return this;
+    }
+
+    public Builder PUT() {
+      this.method = METHOD.PUT;
+      return this;
+    }
+
+    public Builder DELETE() {
+      this.method = METHOD.DELETE;
+      return this;
+    }
+
     /**
      * Only for testing. It's always true otherwise
      */

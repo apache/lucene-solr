@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -62,6 +63,8 @@ import org.slf4j.LoggerFactory;
 
 public class AnnotatedApi extends Api implements PermissionNameProvider , Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
+          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
@@ -222,7 +225,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider , Closea
     final String command;
     final MethodHandle method;
     final Object obj;
-    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+
     int paramsCount;
     @SuppressWarnings({"rawtypes"})
     Class parameterClass;
