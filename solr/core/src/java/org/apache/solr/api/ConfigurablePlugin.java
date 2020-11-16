@@ -17,11 +17,13 @@
 
 package org.apache.solr.api;
 
+import org.apache.solr.common.MapWriter;
+
 /**Implement this interface if your plugin needs to accept some configuration
  * 
  * @param <T> the configuration Object type
  */
-public interface ConfigurablePlugin<T> {
+public interface ConfigurablePlugin<T extends MapWriter> {
 
   /**This is invoked soon after the Object is initialized
    * 

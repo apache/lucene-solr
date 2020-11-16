@@ -391,9 +391,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
       if (instance instanceof ConfigurablePlugin) {
-        Class c = getConfigClass((ConfigurablePlugin<?>) instance);
+        Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
         if (c != null) {
-          Object initVal = mapper.readValue(Utils.toJSON(holder.original), c);
+          MapWriter initVal = mapper.readValue(Utils.toJSON(holder.original), c);
           ((ConfigurablePlugin) instance).configure(initVal);
         }
       }
