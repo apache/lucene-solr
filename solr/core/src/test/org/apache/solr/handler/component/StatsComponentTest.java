@@ -1622,6 +1622,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   /** @see #testHllOptions */
+  @Nightly
   public void testCardinality() throws Exception {
     SolrCore core = h.getCore();
     // insure we have the same hasher a_l would use
@@ -1887,6 +1888,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // simple percentiles test
+  @Nightly
   public void testPercentiles() throws Exception {
     
     // NOTE: deliberately not in numeric order

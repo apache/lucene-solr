@@ -1624,14 +1624,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.isClosed = true;
       searcherExecutor.shutdown();
 
-      if (coreContainer.isZooKeeperAware() && !old_reloaded) {
-        LeaderElector elector = coreContainer.getZkController().getShardLeaderElector(name);
-        if (elector != null) {
-          IOUtils.closeQuietly(elector);
-          coreContainer.getZkController().removeShardLeaderElector(name);
-        }
-      }
-
       closer.collect("snapshotsDir", () -> {
         Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
         this.directoryFactory.doneWithDirectory(snapshotsDir);

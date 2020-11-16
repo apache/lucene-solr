@@ -1743,9 +1743,9 @@ public class CoreContainer implements Closeable {
 
       if (isZooKeeperAware()) {
         IOUtils.closeQuietly(getZkController().getShardLeaderElector(name));
+        getZkController().removeShardLeaderElector(name);
       }
 
-      // check for core-init errors first
       CoreLoadFailure loadFailure = coreInitFailures.remove(name);
       if (loadFailure != null) {
         // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
