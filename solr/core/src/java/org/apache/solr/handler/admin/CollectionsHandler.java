@@ -229,8 +229,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
       CollectionOperation operation = CollectionOperation.get(action);
-      if (log.isInfoEnabled()) {
-        log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
+      if (log.isDebugEnabled()) {
+        log.debug("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
             , action.toLower(), req.getParamString(), operation.sendToOCPQueue);
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
