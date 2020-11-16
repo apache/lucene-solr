@@ -18,6 +18,10 @@ System Requirements
 
 API Changes
 
+* LUCENE-8982: Separate out native code to another module to allow cpp
+  build with gradle. This also changes the name of the native "posix-support"
+  library to LuceneNativeIO. (Zachary Chen, Dawid Weiss)
+
 * LUCENE-9562: All binary analysis packages (and corresponding
   Maven artifacts) with names containing '-analyzers-' have been renamed
   to '-analysis-'. (Dawid Weiss)
