@@ -143,12 +143,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     assertNull(dq.peek(100));
     
 
-   // assertFalse(dq.isDirty());
-    assertEquals(1, dq.watcherCount());
 
     forceSessionExpire();
 
-    assertEquals(0, dq.watcherCount());
 
     // Rerun the earlier test make sure updates are still seen, post reconnection.
     future = testExecutor.submit(() -> new String(dq.peek(true), UTF8));
@@ -171,28 +168,23 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     String dqZNode = "/distqueue/test";
     ZkDistributedQueue dq = makeDistributedQueue(dqZNode);
     assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
-    assertEquals(1, dq.watcherCount());
+
     assertTrue(dq.peekElements(1, 1, s1 -> true).isEmpty());
-    assertEquals(1, dq.watcherCount());
+
     assertNull(dq.peek());
-    assertEquals(1, dq.watcherCount());
+
     assertNull(dq.peek(1));
-    assertEquals(1, dq.watcherCount());
+
 
     dq.offer("hello world".getBytes(UTF8));
     assertNotNull(dq.peek()); // synchronously available
     // dirty and watcher state indeterminate here, race with watcher
     Thread.sleep(100); // watcher should have fired now
     assertNotNull(dq.peek());
-    // in case of race condition, childWatcher is kicked off after peek()
-    if (dq.watcherCount() == 0) {
-      dq.poll();
-      dq.offer("hello world".getBytes(UTF8));
-      dq.peek();
-    }
-    assertEquals(1, dq.watcherCount());
+
+
     assertFalse(dq.peekElements(1, 1, s -> true).isEmpty());
-    assertEquals(1, dq.watcherCount());
+
   }
 
   @Test
