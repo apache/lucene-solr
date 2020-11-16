@@ -32,6 +32,8 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -101,9 +103,36 @@ public class Assign {
     return returnShardId;
   }
 
-  private static String buildSolrCoreName(String collectionName, String shard, Replica.Type type, int replicaNum) {
+  private static String buildSolrCoreName(DocCollection collection, String shard, Replica.Type type, int replicaNum) {
     // TODO: Adding the suffix is great for debugging, but may be an issue if at some point we want to support a way to change replica type
-    return String.format(Locale.ROOT, "%s_%s_r_%s%s", collectionName, shard, type.name().substring(0,1).toLowerCase(Locale.ROOT), replicaNum);
+
+    String namePrefix = String.format(Locale.ROOT, "%s_%s_r_%s", collection.getName(), shard, type.name().substring(0, 1).toLowerCase(Locale.ROOT));
+
+    Pattern pattern = Pattern.compile(".*?(\\d+)");
+    int max = 0;
+    Slice slice = collection.getSlice(shard);
+    if (slice != null) {
+
+      Collection<Replica> replicas = slice.getReplicas();
+
+
+      if (replicas.size() > 0) {
+        max = 1;
+        for (Replica replica : replicas) {
+          log.info("compare names {} {}", namePrefix, replica.getName());
+          Matcher matcher = pattern.matcher(replica.getName());
+          if (matcher.matches()) {
+            log.info("names are a match {} {}", namePrefix, replica.getName());
+            int val = Integer.parseInt(matcher.group(1));
+            max = Math.max(max, val);
+          }
+        }
+      }
+    }
+
+    String corename = String.format(Locale.ROOT, "%s%s", namePrefix, max + 1);
+    log.info("Built SolrCore name {}", corename);
+    return corename;
   }
 
   public static int defaultCounterValue(DocCollection coll, String shard) {
@@ -123,9 +152,9 @@ public class Assign {
     return coll.getSlice(shard).getReplicas().size() + 1;
   }
 
-  public static String buildSolrCoreName(DocCollection coll, String collectionName, String shard, Replica.Type type) {
+  public static String buildSolrCoreName(DocCollection coll, String shard, Replica.Type type) {
     int defaultValue = defaultCounterValue(coll, shard);
-    String coreName = buildSolrCoreName(collectionName, shard, type, defaultValue);
+    String coreName = buildSolrCoreName(coll, shard, type, defaultValue);
 
     return coreName;
   }

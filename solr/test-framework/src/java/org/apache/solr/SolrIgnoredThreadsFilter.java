@@ -62,17 +62,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
 
 
-//    if (threadName.startsWith("SessionTracker") || threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment.
-//      return true;
-//    }
-
-    // randomizedtesting claims this leaks, but the thread is already TERMINATED state
-    // I think it can be resolved, but for now ...
-    if (threadName.startsWith("executeInOrderTest") || threadName.startsWith("testStress") ||
-            threadName.startsWith("testLockWhenQueueIsFull_test") || threadName.startsWith("testRunInParallel")
-            ||  threadName.startsWith("replayUpdatesExecutor")) {
+    if (threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment - only seems to happen in very low resource env
       return true;
     }
+
 
     if (threadName.startsWith("ConnnectionExpirer")) { // org.apache.solr.cloud.TestDistributedMap.classMethod can leak this in TERMINATED state, should go away with apache httpclient
       return true;

@@ -216,7 +216,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           }
         }
         DocCollection coll = clusterState.getCollectionOrNull(collectionName);
-        String coreName = Assign.buildSolrCoreName(coll, collectionName, replicaPosition.shard, replicaPosition.type);
+        String coreName = Assign.buildSolrCoreName(coll, replicaPosition.shard, replicaPosition.type);
         if (log.isDebugEnabled()) log.debug(formatString("Creating core {0} as part of shard {1} of collection {2} on {3}", coreName, replicaPosition.shard, collectionName, nodeName));
 
         String baseUrl = zkStateReader.getBaseUrlForNodeName(nodeName);

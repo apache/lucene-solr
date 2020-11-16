@@ -365,7 +365,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (log.isDebugEnabled()) log.debug("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
 
     if (coreName == null) {
-      coreName = Assign.buildSolrCoreName(coll, coll.getName(), shard, replicaType);
+      coreName = Assign.buildSolrCoreName(coll, shard, replicaType);
     }
     if (log.isDebugEnabled()) log.debug("Returning CreateReplica command coreName={}", coreName);
 

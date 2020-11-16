@@ -502,7 +502,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String sliceName = replicaPosition.shard;
         String subShardNodeName = replicaPosition.node;
-        String solrCoreName = Assign.buildSolrCoreName(collection, collectionName, sliceName, replicaPosition.type);
+        String solrCoreName = Assign.buildSolrCoreName(collection, sliceName, replicaPosition.type);
 
         log.debug("Creating replica shard {} as part of slice {} of collection {} on {}"
             , solrCoreName, sliceName, collectionName, subShardNodeName);
@@ -982,7 +982,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       String subSlice = parentSlice.getName() + "_" + i;
       subSlices.add(subSlice);
 
-      String subShardName = Assign.buildSolrCoreName(collection, collection.getName(), subSlice,
+      String subShardName = Assign.buildSolrCoreName(collection, subSlice,
           firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
       subShardNames.add(subShardName);
     }

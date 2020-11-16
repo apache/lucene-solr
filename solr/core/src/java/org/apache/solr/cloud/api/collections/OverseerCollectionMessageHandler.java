@@ -492,7 +492,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @SuppressWarnings("unchecked")
   AddReplicaCmd.Response deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
           throws Exception {
-    return ((DeleteReplicaCmd) commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, message, results);
+    return ((DeleteReplicaCmd) commandMap.get(DELETEREPLICA)).call(clusterState, message, results);
   }
 
   void deleteCoreNode(String collectionName, String replicaName, Replica replica, String core) throws Exception {

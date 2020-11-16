@@ -77,33 +77,17 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
-
-
-      // HACK implementation detail...
-      //
-      // we know that in the current implementation, waitForState invokes the predicate twice
-      // independently of the current state of the collection and/or wether the predicate succeeds.
-      // If this implementation detail changes, (ie: so that it's only invoked once)
-      // then this number needs to change -- but the test fundementally depends on the implementation
-      // calling the predicate at least once, which should also be neccessary for any future impl
-      // (to verify that it didn't "miss" the state change when creating the watcher)
-      final CountDownLatch latch = new CountDownLatch(1);
       
       final Future<?> backgroundWaitForState = executor.submit
         (() -> {
           try {
-            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS, new LatchCountingPredicateWrapper(latch, clusterShape(1, 1)));
+            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS, clusterShape(1, 1));
           } catch (Exception e) {
             log.error("background thread got exception", e);
             throw new RuntimeException(e);
           }
           return;
         }, null);
-      
-      log.info("Awaiting latch...");
-      if (! latch.await(15, TimeUnit.SECONDS)) {
-        fail("timed out Waiting a ridiculous amount of time for the waitForState latch -- did impl change?");
-      }
 
       log.info("Shutdown 1 node");
       final JettySolrRunner nodeToStop = cluster.getJettySolrRunner(0);

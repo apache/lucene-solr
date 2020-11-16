@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -31,6 +32,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,12 +58,33 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
+    AddReplicaCmd.Response resp = null;
     if (!singleReplicas.isEmpty()) {
       results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());
     } else {
-      cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
+      ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
+      OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr("operation"));
+      resp = cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC), shardHandler, shardRequestTracker);
+
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      AddReplicaCmd.Response finalResp = resp;
+      response.asyncFinalRunner = () -> {
+        try {
+          if (log.isDebugEnabled())  log.debug("Processs responses");
+          shardRequestTracker.processResponses(results, shardHandler, true, "Delete node command failed");
+        } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+        finalResp.asyncFinalRunner.call();
+        return null;
+      };
     }
-    return null;
+
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+   // response
+    return response;
   }
 
   // collect names of replicas that cannot be deleted
@@ -93,37 +116,49 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  static void cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
+  static AddReplicaCmd.Response cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
                               OverseerCollectionMessageHandler ocmh,
                               String node,
-                              String async) throws InterruptedException {
-    try (ParWork worker = new ParWork("cleanupReplicas")) {
-      for (ZkNodeProps sReplica : sourceReplicas) {
-        worker.collect("      worker.addCollect(\"deleteNodeReplicas\");\n", () -> {
-          ZkNodeProps sourceReplica = sReplica;
-          String coll = sourceReplica.getStr(COLLECTION_PROP);
-          String shard = sourceReplica.getStr(SHARD_ID_PROP);
-          String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
-          log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
-          @SuppressWarnings({"rawtypes"})
-          NamedList deleteResult = new NamedList();
-          try {
-            if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
-            // nocommit - return results from deleteReplica cmd
-            ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult);
-          } catch (KeeperException e) {
-            log.warn("Error deleting ", e);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-          }catch (Exception e) {
-            log.warn("Error deleting ", e);
-            throw e;
-          }
-        });
+                              String async, ShardHandler shardHandler, OverseerCollectionMessageHandler.ShardRequestTracker  shardRequestTracker) throws InterruptedException {
+    List<AddReplicaCmd.Response> responses = new ArrayList<>(sourceReplicas.size());
+    for (ZkNodeProps sReplica : sourceReplicas) {
+
+      ZkNodeProps sourceReplica = sReplica;
+      String coll = sourceReplica.getStr(COLLECTION_PROP);
+      String shard = sourceReplica.getStr(SHARD_ID_PROP);
+      String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
+      log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
+      @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
+      try {
+        // nocommit - return results from deleteReplica cmd
+        AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult);
+        clusterState = resp.clusterState;
+        responses.add(resp);
+      } catch (KeeperException e) {
+        log.warn("Error deleting ", e);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      } catch (Exception e) {
+        log.warn("Error deleting ", e);
+        throw e;
       }
+
     }
+
+    AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+    response.clusterState = clusterState;
+    response.asyncFinalRunner = () -> {
+      for (AddReplicaCmd.Response r : responses) {
+        if (r.asyncFinalRunner != null) {
+          r.asyncFinalRunner.call();
+        }
+      }
+      return null;
+    };
+   // response
+    return response;
   }
 
 

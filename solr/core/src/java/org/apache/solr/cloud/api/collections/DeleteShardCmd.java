@@ -43,6 +43,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +112,9 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String asyncId = message.getStr(ASYNC);
     List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
+
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
+    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr("operation"));
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
 
@@ -123,7 +127,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         try {
 
           // nocommit - return results from deleteReplica cmd
-          AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult);
+          AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, shardHandler, shardRequestTracker, deleteResult);
           if (resp.asyncFinalRunner != null) {
             finalizers.add(resp.asyncFinalRunner);
           }
@@ -155,6 +159,14 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     response.asyncFinalRunner = () -> {
       for (OverseerCollectionMessageHandler.Finalize finalize : finalizers) {
         finalize.call();
+      }
+
+      try {
+        if (log.isDebugEnabled())  log.debug("Processs responses");
+        shardRequestTracker.processResponses(results, shardHandler, true, "Delete shard command failed");
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       return new AddReplicaCmd.Response();
     };
