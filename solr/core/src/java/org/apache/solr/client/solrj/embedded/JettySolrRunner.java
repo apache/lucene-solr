@@ -347,7 +347,7 @@ public class JettySolrRunner implements Closeable {
         http2ConnectionFactory.setStreamIdleTimeout(TimeUnit.MINUTES.toMillis(10));
 
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory(http2ConnectionFactory.getProtocol(), http1ConnectionFactory.getProtocol());
-        alpn.setDefaultProtocol(http2ConnectionFactory.getProtocol());
+        alpn.setDefaultProtocol(http1ConnectionFactory.getProtocol());
         connector.addConnectionFactory(alpn);
         connector.addConnectionFactory(http1ConnectionFactory);
         connector.addConnectionFactory(http2ConnectionFactory);

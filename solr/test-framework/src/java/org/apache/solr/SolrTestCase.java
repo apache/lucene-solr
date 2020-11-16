@@ -170,6 +170,17 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   /**
+   * Annotation for test classes that always need SSL
+   */
+  @Documented
+  @Inherited
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface AlwaysUseSSL {
+
+  }
+
+  /**
    * Annotation for test classes that want to disable SSL
    */
   @Documented
@@ -558,13 +569,15 @@ public class SolrTestCase extends LuceneTestCase {
   }
 
   private static SSLTestConfig buildSSLConfig() {
-
-    if (!TEST_NIGHTLY) {
+    Class<?> targetClass = RandomizedContext.current().getTargetClass();
+    final SolrTestCase.AlwaysUseSSL alwaysUseSSL = (SolrTestCase.AlwaysUseSSL) targetClass.getAnnotation(
+        SolrTestCase.AlwaysUseSSL.class);
+    if (!TEST_NIGHTLY && alwaysUseSSL == null) {
       return new SSLTestConfig();
     }
 
     RandomizeSSL.SSLRandomizer sslRandomizer =
-            RandomizeSSL.SSLRandomizer.getSSLRandomizerForClass(RandomizedContext.current().getTargetClass());
+            RandomizeSSL.SSLRandomizer.getSSLRandomizerForClass(targetClass);
 
     if (Constants.MAC_OS_X) {
       // see SOLR-9039
