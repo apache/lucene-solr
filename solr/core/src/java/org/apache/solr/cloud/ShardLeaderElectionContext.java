@@ -123,7 +123,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
     String coreName = leaderProps.getName();
 
-    log.info("Run leader process for shard election {}", coreName);
+    log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard core={}", context.leaderProps.getSlice(), coreName);
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         log.error("No SolrCore found, cannot become leader {}", coreName);
@@ -267,10 +267,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         assert zkController != null;
         assert zkController.getOverseer() != null;
 
-        log.info("Publish leader state");
-        zkController.publish(zkNodes);
+        log.info("I am the new leader, publishing as active: " + leaderProps.getCoreUrl() + " " + shardId);
 
-        log.info("I am the new leader: " + leaderProps.getCoreUrl() + " " + shardId);
+        zkController.publish(zkNodes);
 
       } catch (AlreadyClosedException | InterruptedException e) {
         ParWork.propagateInterrupt("Already closed or interrupted, bailing..", e);

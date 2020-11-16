@@ -47,11 +47,11 @@ public class OverseerTaskExecutorTask implements Runnable {
       return;
     }
 
-    log.info("Queue operation is {}", operation);
+    if (log.isDebugEnabled()) log.debug("Queue operation is {}", operation);
 
-    log.info("Process message {} {}", message, operation);
+    if (log.isDebugEnabled()) log.debug("Process message {} {}", message, operation);
 
-    log.info("Enqueue message {}", operation);
+    if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
     zkStateWriter.enqueueUpdate(null, message, true);
 
 
@@ -101,7 +101,7 @@ public class OverseerTaskExecutorTask implements Runnable {
 
   @Override
   public void run() {
-    log.info("OverseerTaskExecutorTask, going to process message {}", message);
+    if (log.isDebugEnabled()) log.debug("OverseerTaskExecutorTask, going to process message {}", message);
 
     try {
       processQueueItem(message);

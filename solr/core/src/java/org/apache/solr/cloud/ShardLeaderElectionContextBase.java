@@ -179,7 +179,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           SetDataResult dresult = (SetDataResult) result;
           Stat stat = dresult.getStat();
           leaderZkNodeParentVersion = stat.getVersion();
-          log.info("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
+          if (log.isDebugEnabled()) log.debug("Got leaderZkNodeParentVersion {}", leaderZkNodeParentVersion);
         }
       }
       //assert leaderZkNodeParentVersion != null;

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -160,7 +159,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       }
       // If latchEventType is not null, only fire if the type matches
 
-      log.info("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
 
       if (latchEventType == null || event.getType() == latchEventType) {
         lock.lock();
@@ -220,7 +219,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
    */
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
-    log.info("offer operation to the Overseeer queue {}", Utils.fromJSON(data));
+    if (log.isDebugEnabled()) log.debug("offer operation to the Overseeer queue {}", Utils.fromJSON(data));
     if (shuttingDown.get()) {
       throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
     }
@@ -230,25 +229,25 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // otherwise we may miss the response.
       String watchID = createResponseNode();
 
-      log.info("watchId for response node {}, setting a watch ... ", watchID);
+      if (log.isDebugEnabled()) log.debug("watchId for response node {}, setting a watch ... ", watchID);
 
       LatchWatcher watcher = new LatchWatcher(Watcher.Event.EventType.NodeDataChanged);
       Stat stat = zookeeper.exists(watchID, watcher, true);
 
       // create the request node
      String path = createRequestNode(data, watchID);
-      log.info("created request node at {}", path);
+      if (log.isDebugEnabled()) log.debug("created request node at {}", path);
       if (stat != null) {
         pendingResponses.incrementAndGet();
-        log.info("wait on latch {}", timeout);
+        if (log.isDebugEnabled()) log.debug("wait on latch {}", timeout);
         watcher.await(timeout);
       }
       byte[] bytes = zookeeper.getData(watchID, null, null, true);
-      log.info("get data from response node {} {} {}", watchID, bytes == null ? null : bytes.length, watcher.getWatchedEvent());
+      if (log.isDebugEnabled()) log.debug("get data from response node {} {} {}", watchID, bytes == null ? null : bytes.length, watcher.getWatchedEvent());
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
-      log.info("delete response node... {}", watchID);
+      if (log.isDebugEnabled()) log.debug("delete response node... {}", watchID);
     //  zookeeper.delete(watchID, -1, true);
       return event;
     } finally {
@@ -300,31 +299,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       sb.append("]");
       log.debug("Returning topN elements: {}", sb);
     }
-  }
-
-
-  /**
-   *
-   * Gets last element of the Queue without removing it.
-   */
-  public String getTailId() throws KeeperException, InterruptedException {
-    log.info("getTailId");
-    // TODO: could we use getChildren here?  Unsure what freshness guarantee the caller needs.
-    TreeSet<String> orderedChildren = fetchZkChildren(null);
-    log.info("getTailId found {} children", orderedChildren);
-    for (String headNode : orderedChildren.descendingSet())
-      if (headNode != null) {
-        try {
-          QueueEvent queueEvent = new QueueEvent(dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode,
-              null, null, true), null);
-          log.info("return {}", queueEvent.getId());
-          return queueEvent.getId();
-        } catch (KeeperException.NoNodeException e) {
-          // Another client removed the node first, try next
-          log.info("no node found {}", dir + "/" + headNode);
-        }
-      }
-    return null;
   }
 
   public static class QueueEvent {

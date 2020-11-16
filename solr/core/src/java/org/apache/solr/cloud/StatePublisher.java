@@ -64,7 +64,7 @@ public class StatePublisher implements Closeable {
         try {
           message = workQueue.poll(5, TimeUnit.SECONDS);
           if (message != null) {
-            log.info("Got state message " + message);
+            if (log.isDebugEnabled()) log.debug("Got state message " + message);
             if (message == TERMINATE_OP) {
               return;
             }
@@ -73,7 +73,7 @@ public class StatePublisher implements Closeable {
 
             while (message != null) {
               message = workQueue.poll(0, TimeUnit.SECONDS);
-              log.info("Got state message " + message);
+              if (log.isDebugEnabled()) log.debug("Got state message " + message);
               if (message != null) {
                 if (message == TERMINATE_OP) {
                   return;

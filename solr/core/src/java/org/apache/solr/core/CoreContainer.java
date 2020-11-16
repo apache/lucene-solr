@@ -990,7 +990,6 @@ public class CoreContainer implements Closeable {
   @Override
   public void close() throws IOException {
     assert closeTracker.close();
-    log.info("Closing CoreContainer");
     isShutDown = true;
 
     if (solrCores != null) {

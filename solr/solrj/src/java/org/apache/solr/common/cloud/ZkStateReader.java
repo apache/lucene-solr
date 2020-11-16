@@ -411,7 +411,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       throw new AlreadyClosedException();
     }
 
-    log.info("createClusterStateWatchersAndUpdate");
+    if (log.isDebugEnabled()) log.debug("createClusterStateWatchersAndUpdate");
     CountDownLatch latch = new CountDownLatch(1);
 
     Watcher watcher = new Watcher() {
@@ -421,7 +421,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         if (EventType.None.equals(event.getType())) {
           return;
         }
-        log.info("Got event on live node watcher {}", event.toString());
+        if (log.isDebugEnabled()) log.debug("Got event on live node watcher {}", event.toString());
         if (event.getType() == EventType.NodeCreated) {
           latch.countDown();
         } else {
@@ -444,13 +444,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     try {
       Stat stat = zkClient.exists("/cluster/init", watcher);
       if (stat == null) {
-        log.info("Collections znode not found, waiting on latch");
+        if (log.isDebugEnabled()) log.debug("Collections znode not found, waiting on latch");
         try {
           boolean success = latch.await(10000, TimeUnit.MILLISECONDS);
           if (!success) {
             log.warn("Timed waiting to see {} node in zk \n{}", "/cluster/init", clusterState);
           }
-          log.info("Done waiting on latch");
+          if (log.isDebugEnabled()) log.debug("Done waiting on latch");
         } catch (InterruptedException e) {
           log.warn("", e);
           return;
@@ -820,7 +820,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   public void close() {
-    log.info("Closing ZkStateReader");
+    if (log.isDebugEnabled()) log.debug("Closing ZkStateReader");
     assert closeTracker.close();
     this.closed = true;
     if (notifications != null) {
@@ -1323,13 +1323,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     public void watchStateUpdates() {
-      log.info("watch for additional state updates {}", coll);
+      if (log.isDebugEnabled()) log.debug("watch for additional state updates {}", coll);
       String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(coll);
 
       watcher = new Watcher() {
         @Override
         public void process(WatchedEvent event) {
-          log.info("_statupdates event {}", event);
+          if (log.isDebugEnabled()) log.debug("_statupdates event {}", event);
           try {
 
 //            if (event.getType() == EventType.NodeDataChanged ||
@@ -1420,7 +1420,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             } else {
               state = Replica.State.ACTIVE;
             }
-            log.info("Got additional state update {} {}", core, state == null ? "leader" : state);
+            if (log.isDebugEnabled()) log.debug("Got additional state update {} {}", core, state == null ? "leader" : state);
             Replica replica = docCollection.getReplica(core);
             if (replica != null) {
 

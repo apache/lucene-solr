@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -45,14 +44,12 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
 
   private final OverseerCollectionMessageHandler ocmh;
   private final CollectionAction operation;
-  private final OverseerNodePrioritizer overseerPrioritizer;
 
 
 
-  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
+  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation) {
     this.ocmh = ocmh;
     this.operation = operation;
-    this.overseerPrioritizer = prioritizer;
   }
 
   @Override

@@ -361,7 +361,7 @@ public class HttpSolrCall {
         for (Map.Entry<String,Integer> entry : entries) {
           String collection = entry.getKey();
           Integer version = entry.getValue();
-          log.info("ensure states are at at least client version {} for collection {}", version, collection);
+          if (log.isDebugEnabled()) log.debug("ensure states are at at least client version {} for collection {}", version, collection);
           DocCollection docCollection = cores.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
           if (docCollection != null && docCollection.getZNodeVersion() < version) {
             cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
@@ -1034,7 +1034,7 @@ public class HttpSolrCall {
       for (String pair : pairs) {
         String[] pcs = StringUtils.split(pair, ':');
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
-          log.info("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
+          if (log.isDebugEnabled()) log.debug("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
 
           if (result == null) result = new HashMap<>();
           result.put(pcs[0], Integer.parseInt(pcs[1]));

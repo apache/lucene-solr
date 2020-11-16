@@ -107,7 +107,7 @@ public class LeaderElector implements Closeable {
           InterruptedException, IOException {
     //if (checkClosed(context)) return false;
 
-    log.info("Check if I am leader {}", context.getClass().getSimpleName());
+    if (log.isDebugEnabled()) log.debug("Check if I am leader {}", context.getClass().getSimpleName());
     if (isClosed) {
       log.info("elector is closed, won't join election");
     }
@@ -154,7 +154,7 @@ public class LeaderElector implements Closeable {
 
     if (leaderSeqNodeName.equals(seqs.get(0))) {
       // I am the leader
-      log.info("I am the potential leader {}, running leader process", context.leaderProps);
+      if (log.isDebugEnabled()) log.debug("I am the potential leader {}, running leader process", context.leaderProps.getName());
 
       try {
         if (isClosed || (zkController != null && zkController.getCoreContainer().isShutDown())) {
@@ -362,7 +362,7 @@ public class LeaderElector implements Closeable {
 
     int seq = getSeq(context.leaderSeqPath);
 
-    log.info("Do checkIfIamLeader");
+    if (log.isDebugEnabled()) log.debug("Do checkIfIamLeader");
 
     boolean tryagain = checkIfIamLeader(context, replacement);
 

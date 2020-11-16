@@ -833,8 +833,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       if (currentSearcher == null) {
         // firstSearcher event
         try {
-          if (log.isInfoEnabled()) {
-            log.info("Loading spell index for spellchecker: {}", checker.getDictionaryName());
+          if (log.isDebugEnabled()) {
+            log.debug("Loading spell index for spellchecker: {}", checker.getDictionaryName());
           }
           checker.reload(core, newSearcher);
         } catch (IOException e) {

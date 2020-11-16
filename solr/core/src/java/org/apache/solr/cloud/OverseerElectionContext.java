@@ -80,8 +80,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
     super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
 
-    log.info("Registered as Overseer leader, starting Overseer ...");
-
     if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShudownCalled()
         && !overseer.isDone()) {
       log.info("Starting overseer after winnning Overseer election {}", id);
@@ -112,7 +110,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       }
       closer.collect("overseer", () -> {
         try {
-          overseer.doClose();
+          overseer.close();
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           log.error("Exception closing Overseer", e);

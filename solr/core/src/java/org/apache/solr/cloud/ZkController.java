@@ -667,7 +667,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public void disconnect(boolean publishDown) {
-    log.info("disconnect");
+    if (log.isDebugEnabled()) log.debug("disconnect");
     this.dcCalled = true;
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect( "replicateFromLeaders", replicateFromLeaders);
@@ -703,7 +703,7 @@ public class ZkController implements Closeable, Runnable {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
-    log.info("Closing ZkController");
+    if (log.isDebugEnabled()) log.debug("Closing ZkController");
     //assert closeTracker.close();
 
     IOUtils.closeQuietly(overseerElector);
@@ -718,16 +718,6 @@ public class ZkController implements Closeable, Runnable {
 
     this.isClosed = true;
 
-    try (ParWork closer = new ParWork(this, true, true)) {
-      closer.collect(overseer);
-      closer.collect(replicateFromLeaders);
-      closer.collect(electionContexts);
-      closer.collect(collectionToTerms);
-      closer.collect(sysPropsCacher);
-      closer.collect(cloudManager);
-      closer.collect(cloudSolrClient);
-      closer.collect(overseerContexts);
-    }
 
     try {
       if (statePublisher != null) {
@@ -736,6 +726,17 @@ public class ZkController implements Closeable, Runnable {
       IOUtils.closeQuietly(statePublisher);
     } catch (Exception e) {
       log.error("Exception closing state publisher");
+    }
+
+
+    try (ParWork closer = new ParWork(this, true, true)) {
+      closer.collect(replicateFromLeaders);
+      closer.collect(electionContexts);
+      closer.collect(collectionToTerms);
+      closer.collect(sysPropsCacher);
+      closer.collect(cloudManager);
+      closer.collect(cloudSolrClient);
+      closer.collect(overseerContexts);
     }
 
     IOUtils.closeQuietly(zkStateReader);
@@ -1466,7 +1467,7 @@ public class ZkController implements Closeable, Runnable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
 
-      log.info("Wait to see leader for {}, {}", collection, shardId);
+      if (log.isDebugEnabled()) log.debug("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = null;
       for (int i = 0; i < 15; i++) {
         try {

@@ -318,7 +318,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
 
     if (operation.sendToOCPQueue) {
-      log.info("send request to Overseer queue and wait for response ... " + props);
+      if (log.isDebugEnabled()) log.debug("send request to Overseer queue and wait for response ... " + props);
       ZkNodeProps zkProps = new ZkNodeProps(props);
       SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
       rsp.getValues().addAll(overseerResponse.getResponse());
@@ -327,10 +327,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         log.error("Exception", exp);
         rsp.setException(exp);
       }
-      log.info("Overseer is done, response={}", rsp.getValues());
+      if (log.isDebugEnabled()) log.debug("Overseer is done, response={}", rsp.getValues());
     } else {
       // submits and doesn't wait for anything (no response)
-      log.info("send request to Overseer queue and don't wait for anything (no response) ... " + props);
+      if (log.isDebugEnabled()) log.debug("send request to Overseer queue and don't wait for anything (no response) ... " + props);
       coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
     }
 
@@ -346,13 +346,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m, long timeout) throws KeeperException, InterruptedException {
-    log.info("send message to OCP {}", m);
+    if (log.isDebugEnabled()) log.debug("send message to OCP {}", m);
     String operation = m.getStr(QUEUE_OPERATION);
     if (operation == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
     }
     if (m.get(ASYNC) != null) {
-      log.info("request is async");
+      if (log.isDebugEnabled()) log.debug("request is async");
       String asyncId = m.getStr(ASYNC);
 
       if (asyncId.equals("-1")) {
@@ -387,17 +387,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return new OverseerSolrResponse(r);
     }
 
-    log.info("request is not async");
+    if (log.isDebugEnabled()) log.debug("request is not async");
 
     long time = System.nanoTime();
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      log.info("got a response, lets deserialize {}", Utils.toJSON(m));
+      if (log.isDebugEnabled()) log.debug("got a response, lets deserialize {}", Utils.toJSON(m));
       return OverseerSolrResponseSerializer.deserialize(event.getBytes());
     } else {
-      log.info("no data in response, checking for timeout");
+      if (log.isDebugEnabled()) log.debug("no data in response, checking for timeout");
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection time out:" + timeout / 1000 + "s");
@@ -412,7 +412,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         // nocommit - look into we may still need this
         // we have to assume success - it was too quick for us to catch the response
 
-        log.info("We did not find the response, there was also no timeout and we did not get a watched event ...");
+        if (log.isDebugEnabled()) log.debug("We did not find the response, there was also no timeout and we did not get a watched event ...");
 
         NamedList<Object> resp = new NamedList<>();
         resp.add("success", "true");

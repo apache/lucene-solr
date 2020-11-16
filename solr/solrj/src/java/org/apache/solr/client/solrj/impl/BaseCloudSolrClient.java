@@ -882,7 +882,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       StringBuilder stateVerParamBuilder = null;
-      log.info("build version params for collections {}", requestedCollectionNames);
+      if (log.isDebugEnabled()) log.debug("build version params for collections {}", requestedCollectionNames);
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getZkStateReader().getClusterState().getCollectionOrNull(requestedCollection);

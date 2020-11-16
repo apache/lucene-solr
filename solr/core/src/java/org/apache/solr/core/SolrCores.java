@@ -90,7 +90,7 @@ class SolrCores implements Closeable {
   // We are shutting down. You can't hold the lock on the various lists of cores while they shut down, so we need to
   // make a temporary copy of the names and shut them down outside the lock.
   public void close() {
-    log.info("Closing SolrCores");
+    if (log.isDebugEnabled()) log.debug("Closing SolrCores");
     this.closed = true;
 
     waitForLoadingCoresToFinish(15000);
