@@ -40,10 +40,8 @@ import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug flakey
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
   private CloseableHttpClient httpClient;
   private CloudSolrClient solrClient;

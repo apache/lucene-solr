@@ -71,6 +71,8 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+
 public class ZkTestServer implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -533,6 +535,11 @@ public class ZkTestServer implements Closeable {
 
   public synchronized void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER dataDir={}", this.zkDir);
+
+    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
+      System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
+    }
+
     // docs say no config for netty yet
    // System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
    // System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");

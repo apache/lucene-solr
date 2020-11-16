@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,7 +38,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.rrd4j.core.RrdDb;
 
@@ -45,7 +45,7 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
-@Ignore // nocommit debug
+@LuceneTestCase.Nightly
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private volatile static SolrCloudManager cloudManager;

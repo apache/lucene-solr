@@ -315,9 +315,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     final HttpRequestBase method = createMethod(request, null);
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = (Future<NamedList<Object>>) ((PerThreadExecService) ParWork.getMyPerThreadExecutor()).submit(() -> {
+      mrr.future = ParWork.getMyPerThreadExecutor().submit(() -> {
         try {
-          executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
+          return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
         } catch (SolrServerException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

@@ -27,7 +27,6 @@ import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.util.StrUtils.split;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-@Ignore // nocommit debug
 public class ZookeeperReadAPITest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -74,7 +72,6 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
           basezkls + "/configs",
           Utils.JSONCONSUMER);
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
-      assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:conf:dataLength", ':'))));
 
       o = Utils.executeGET(client.getHttpClient(),
           basezk + "/configs",

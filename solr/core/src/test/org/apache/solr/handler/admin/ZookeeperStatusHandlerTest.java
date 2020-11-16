@@ -40,7 +40,6 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
@@ -51,7 +50,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Ignore // nocommit
 public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -160,23 +158,17 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   }
 
   @Test(expected = SolrException.class)
-  @Ignore // nocommit debug
   public void validateNotWhitelisted() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
      zsh.validateZkRawResponse(Collections.singletonList("mntr is not executed because it is not in the whitelist."),
           "zoo1:2181", "mntr");
-    }  catch (Exception e) {
-      fail("Error closing ZookeeperStatusHandler");
     }
   }
 
   @Test(expected = SolrException.class)
-  @Ignore // nocommit debug
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
       zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
-    } catch (Exception e) {
-      fail("Error closing ZookeeperStatusHandler");
     }
   }
 

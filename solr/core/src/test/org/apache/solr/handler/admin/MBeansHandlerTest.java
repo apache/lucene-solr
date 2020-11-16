@@ -34,7 +34,6 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +93,6 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit - maybe have to wait till mbean is populated?
   public void testAddedMBeanDiff() throws Exception {
     String xml = h.query(req(
         CommonParams.QT,"/admin/mbeans",
@@ -114,7 +112,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
     xml = h.query(req);
 
     NamedList<NamedList<NamedList<Object>>> nl = SolrInfoMBeanHandler.fromXML(xml);
-    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADD ADMIN./admin/mbeans.totalTime"));
+    assertNotNull(((NamedList)nl.get("ADMIN").get("/admin/mbeans").get("stats")).get("ADMIN./admin/mbeans.totalTime"));
   }
 
   @Test
