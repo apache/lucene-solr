@@ -38,12 +38,12 @@
 
 #ifdef LINUX
 /*
- * Class:     org_apache_lucene_store_NativePosixUtil
+ * Class:     org_apache_lucene_misc_store_NativePosixUtil
  * Method:    posix_fadvise
  * Signature: (Ljava/io/FileDescriptor;JJI)V
  */
 extern "C"
-JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1fadvise(JNIEnv *env, jclass _ignore, jobject fileDescriptor, jlong offset, jlong len, jint advice)
+JNIEXPORT jint JNICALL Java_org_apache_lucene_misc_store_NativePosixUtil_posix_1fadvise(JNIEnv *env, jclass _ignore, jobject fileDescriptor, jlong offset, jlong len, jint advice)
 {
   jfieldID field_fd;
   jmethodID const_fdesc;
@@ -103,12 +103,12 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1fadvi
 #endif
 
 /*
- * Class:     org_apache_lucene_store_NativePosixUtil
+ * Class:     org_apache_lucene_misc_store_NativePosixUtil
  * Method:    open_direct
  * Signature: (Ljava/lang/String;Z)Ljava/io/FileDescriptor;
  */
 extern "C"
-JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1direct(JNIEnv *env, jclass _ignore, jstring filename, jboolean readOnly)
+JNIEXPORT jobject JNICALL Java_org_apache_lucene_misc_store_NativePosixUtil_open_1direct(JNIEnv *env, jclass _ignore, jstring filename, jboolean readOnly)
 {
   jfieldID field_fd;
   jmethodID const_fdesc;
@@ -169,12 +169,12 @@ JNIEXPORT jobject JNICALL Java_org_apache_lucene_store_NativePosixUtil_open_1dir
 }
 
 /*
- * Class:     org_apache_lucene_store_NativePosixUtil
+ * Class:     org_apache_lucene_misc_store_NativePosixUtil
  * Method:    pread
  * Signature: (Ljava/io/FileDescriptor;JLjava/nio/ByteBuffer;)I
  */
 extern "C"
-JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_NativePosixUtil_pread(JNIEnv *env, jclass _ignore, jobject jfd, jlong pos, jobject byteBuf)
+JNIEXPORT jlong JNICALL Java_org_apache_lucene_misc_store_NativePosixUtil_pread(JNIEnv *env, jclass _ignore, jobject jfd, jlong pos, jobject byteBuf)
 {
   // get int fd:
   jclass class_fdesc = env->FindClass("java/io/FileDescriptor");
@@ -214,12 +214,12 @@ JNIEXPORT jlong JNICALL Java_org_apache_lucene_store_NativePosixUtil_pread(JNIEn
 }
 
 /*
- * Class:     org_apache_lucene_store_NativePosixUtil
+ * Class:     org_apache_lucene_misc_store_NativePosixUtil
  * Method:    posix_madvise
  * Signature: (Ljava/nio/ByteBuffer;I)I
  */
 extern "C"
-JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1madvise(JNIEnv *env, jclass _ignore, jobject buffer, jint advice) {
+JNIEXPORT jint JNICALL Java_org_apache_lucene_misc_store_NativePosixUtil_posix_1madvise(JNIEnv *env, jclass _ignore, jobject buffer, jint advice) {
   void *p = env->GetDirectBufferAddress(buffer);
   if (p == NULL) {
     return -1;
@@ -280,12 +280,12 @@ JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_posix_1madvi
 
 
 /*
- * Class:     org_apache_lucene_store_NativePosixUtil
+ * Class:     org_apache_lucene_misc_store_NativePosixUtil
  * Method:    madvise
  * Signature: (Ljava/nio/ByteBuffer;I)I
  */
 extern "C"
-JNIEXPORT jint JNICALL Java_org_apache_lucene_store_NativePosixUtil_madvise(JNIEnv *env, jclass _ignore, jobject buffer, jint advice) {
+JNIEXPORT jint JNICALL Java_org_apache_lucene_misc_store_NativePosixUtil_madvise(JNIEnv *env, jclass _ignore, jobject buffer, jint advice) {
   void *p = env->GetDirectBufferAddress(buffer);
   if (p == NULL) {
     return -1;
