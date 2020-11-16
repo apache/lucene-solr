@@ -1418,30 +1418,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return updateLogDir;
   }
 
-  /**
-   * Close the core, if it is still in use waits until is no longer in use.
-   *
-   * @see #close()
-   * @see #isClosed()
-   */
-  public void closeAndWait() throws TimeoutException {
-    close();
-    int timeouts = 180;
-    TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    synchronized (closeAndWait) {
-      while (!isClosed()) {
-        try {
-          closeAndWait.wait(500);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-        if (timeout.hasTimedOut()) {
-          throw new TimeoutException("Timeout waiting for SolrCore close timeout=" + timeouts + "s");
-        }
-      }
-    }
-  }
-
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
@@ -1588,6 +1564,41 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
+    int count = refCount.decrementAndGet();
+    if (log.isDebugEnabled()) log.debug("close refcount {} {}", this, count);
+    if (count > 0) return;
+    if (count < 0) {
+      log.warn("Too many close [count:{}] on {}", count, this);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
+    }
+  }
+
+
+  /**
+   * Close the core, if it is still in use waits until is no longer in use.
+   *
+   * @see #close()
+   * @see #isClosed()
+   */
+  public void closeAndWait(boolean decref) throws TimeoutException {
+    if (decref) {
+      close();
+    }
+    int timeouts = 180;
+    TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    synchronized (closeAndWait) {
+      while (!isClosed()) {
+        try {
+          closeAndWait.wait(500);
+          log.warn("close count is {}", refCount.get());
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+        }
+        if (timeout.hasTimedOut()) {
+          throw new TimeoutException("Timeout waiting for SolrCore close timeout=" + timeouts + "s");
+        }
+      }
+    }
     if (getUpdateHandler() != null && getUpdateHandler().getSolrCoreState() != null) {
       synchronized (getUpdateHandler().getSolrCoreState().getReloadLock()) {
         doClose();
@@ -1598,13 +1609,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private void doClose() {
-    int count = refCount.decrementAndGet();
-    if (log.isTraceEnabled()) log.trace("close refcount {} {}", this, count);
-    if (count > 0) return;
-    if (count < 0) {
-      log.warn("Too many close [count:{}] on {}", count, this);
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Too many closes on SolrCore");
-    }
     log.info("{} CLOSING SolrCore {}", logid, this);
     this.closing = true;
     searcherReadyLatch.countDown();
@@ -1779,7 +1783,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Whether this core is closed.
    */
   public boolean isClosed() {
-    return refCount.get() < 0;
+    return refCount.get() == 0;
   }
 
   public boolean isClosing() {

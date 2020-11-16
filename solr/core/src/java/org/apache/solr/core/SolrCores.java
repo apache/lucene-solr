@@ -118,7 +118,7 @@ class SolrCores implements Closeable {
         closer.collect("closeCore-" + core.getName(), () -> {
           MDCLoggingContext.setCore(core);
           try {
-            core.closeAndWait();
+            core.closeAndWait(true);
           } catch (Throwable e) {
             log.error("Error closing SolrCore", e);
             ParWork.propagateInterrupt("Error shutting down core", e);
@@ -133,7 +133,7 @@ class SolrCores implements Closeable {
         closer.collect("closeCore-" + core.getName(), () -> {
           MDCLoggingContext.setCore(core);
           try {
-            core.closeAndWait();
+            core.closeAndWait(true);
           } catch (Throwable e) {
             log.error("Error closing SolrCore", e);
             ParWork.propagateInterrupt("Error shutting down core", e);
@@ -244,13 +244,13 @@ class SolrCores implements Closeable {
       SolrCore c0 = cores.get(n0);
       SolrCore c1 = cores.get(n1);
       if (c0 == null) { // Might be an unloaded transient core
-        c0 = container.getCore(n0, false);
+        c0 = container.getCore(n0);
         if (c0 == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n0);
         }
       }
       if (c1 == null) { // Might be an unloaded transient core
-        c1 = container.getCore(n1, false);
+        c1 = container.getCore(n1);
         if (c1 == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + n1);
         }
@@ -294,16 +294,16 @@ class SolrCores implements Closeable {
   }
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
-  SolrCore getCoreFromAnyList(String name, boolean incRefCount) {
+  SolrCore getCoreFromAnyList(String name) {
     if (closed) {
       throw new AlreadyClosedException("SolrCores has been closed");
     }
     SolrCore core = cores.get(name);
-    if (core == null && getTransientCacheHandler() != null) {
+    if (core == null && residentDesciptors.get(name) != null && residentDesciptors.get(name).isTransient() &&  getTransientCacheHandler() != null) {
       core = getTransientCacheHandler().getCore(name);
     }
 
-    if (core != null && incRefCount) {
+    if (core != null) {
       core.open();
     }
 

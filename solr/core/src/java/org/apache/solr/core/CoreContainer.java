@@ -1150,7 +1150,7 @@ public class CoreContainer implements Closeable {
     return coresLocator;
   }
 
-  protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean skipRecovery) {
+  protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean skipRecovery, boolean closeOld) {
 
     log.info("registerCore name={}, registerInZk={}, skipRecovery={}", cd.getName(), registerInZk, skipRecovery);
 
@@ -1180,7 +1180,7 @@ public class CoreContainer implements Closeable {
       return null;
     } else {
       log.info("replacing core: " + cd.getName());
-      old.close();
+      if (closeOld) old.close();
       if (registerInZk) {
         zkSys.registerInZk(core, skipRecovery);
       }
@@ -1343,7 +1343,7 @@ public class CoreContainer implements Closeable {
 
       core.start();
 
-      registerCore(dcore, core, isZooKeeperAware(), false);
+      registerCore(dcore, core, isZooKeeperAware(), false, true);
       registered = true;
 
 
@@ -1606,101 +1606,103 @@ public class CoreContainer implements Closeable {
       throw new AlreadyClosedException();
     }
     SolrCore newCore = null;
-    try (SolrCore core = solrCores.getCoreFromAnyList(name, true)) {
-      if (core != null) {
+    SolrCore core = solrCores.getCoreFromAnyList(name);
+    if (core != null) {
 
-        // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
-        // CoreDescriptor and we need to reload it from the disk files
-        CoreDescriptor cd = core.getCoreDescriptor();
-        //        if (core.getDirectoryFactory().isPersistent()) {
-        //          cd = reloadCoreDescriptor(core.getCoreDescriptor());
-        //        } else {
-        //          cd = core.getCoreDescriptor();
-        //        }
-        //        solrCores.addCoreDescriptor(cd);
-        Closeable oldCore = null;
-        boolean success = false;
+      // The underlying core properties files may have changed, we don't really know. So we have a (perhaps) stale
+      // CoreDescriptor and we need to reload it from the disk files
+      CoreDescriptor cd = core.getCoreDescriptor();
+      //        if (core.getDirectoryFactory().isPersistent()) {
+      //          cd = reloadCoreDescriptor(core.getCoreDescriptor());
+      //        } else {
+      //          cd = core.getCoreDescriptor();
+      //        }
+      //        solrCores.addCoreDescriptor(cd);
+      Closeable oldCore = null;
+      boolean success = false;
+      try {
+        solrCores.waitForLoadingCoreToFinish(name, 15000);
+        ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
+        log.info("Reloading SolrCore '{}' using configuration from {}", name, coreConfig.getName());
+        DocCollection docCollection = null;
+        newCore = core.reload(coreConfig);
         try {
-          solrCores.waitForLoadingCoreToFinish(name, 15000);
-          ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
-          log.info("Reloading SolrCore '{}' using configuration from {}", name, coreConfig.getName());
-          DocCollection docCollection = null;
-          newCore = core.reload(coreConfig);
-         try {
-           if (getZkController() != null) {
-             core.old_reloaded = true;
-             docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
-             // turn off indexing now, before the new core is registered
-             if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
-               newCore.readOnly = true;
-             }
-           }
-
-           registerCore(cd, newCore, false, false);
-         } catch (Exception e) {
-           log.error("Exception registering reloaded core", e);
-           newCore.close();
-           throw new SolrException(ErrorCode.SERVER_ERROR, e);
-         }
-
-          // force commit on old core if the new one is readOnly and prevent any new updates
-          if (newCore.readOnly) {
-            RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
-            if (iwRef != null) {
-              IndexWriter iw = iwRef.get();
-              // switch old core to readOnly
-              core.readOnly = true;
-              try {
-                if (iw != null) {
-                  iw.commit();
-                }
-              } finally {
-                iwRef.decref();
-              }
+          if (getZkController() != null) {
+            core.old_reloaded = true;
+            docCollection = getZkController().getClusterState().getCollection(cd.getCollectionName());
+            // turn off indexing now, before the new core is registered
+            if (docCollection.getBool(ZkStateReader.READ_ONLY, false)) {
+              newCore.readOnly = true;
             }
           }
 
-          if (docCollection != null) {
-            Replica replica = docCollection.getReplica(cd.getName());
-            assert replica != null;
-            if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
-              getZkController().stopReplicationFromLeader(core.getName());
-              if (!cd.getCloudDescriptor().isLeader()) {
-                getZkController().startReplicationFromLeader(newCore.getName(), true);
-              }
-
-            } else if (replica.getType() == Replica.Type.PULL) {
-              getZkController().startReplicationFromLeader(newCore.getName(), false);
-            }
-          }
-          success = true;
-        } catch (SolrCoreState.CoreIsClosedException e) {
-          throw e;
+          registerCore(cd, newCore, false, false, false);
         } catch (Exception e) {
-          ParWork.propagateInterrupt("Exception reloading SolrCore", e);
-          SolrException exp = new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
-          try {
-            coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+          log.error("Exception registering reloaded core", e);
+          newCore.close();
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
 
-          } catch (Exception e1) {
-            ParWork.propagateInterrupt(e1);
-            exp.addSuppressed(e1);
-          }
-          throw exp;
-        } finally {
-          if (!success) {
-            ParWork.close(newCore);
+        // force commit on old core if the new one is readOnly and prevent any new updates
+        if (newCore.readOnly) {
+          RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
+          if (iwRef != null) {
+            IndexWriter iw = iwRef.get();
+            // switch old core to readOnly
+            core.readOnly = true;
+            try {
+              if (iw != null) {
+                iw.commit();
+              }
+            } finally {
+              iwRef.decref();
+            }
           }
         }
-      } else {
-        CoreLoadFailure clf = coreInitFailures.get(name);
-        if (clf != null) {
-          createFromDescriptor(clf.cd, false);
-        } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name);
+
+        if (docCollection != null) {
+          Replica replica = docCollection.getReplica(cd.getName());
+          assert replica != null;
+          if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
+            getZkController().stopReplicationFromLeader(core.getName());
+            if (!cd.getCloudDescriptor().isLeader()) {
+              getZkController().startReplicationFromLeader(newCore.getName(), true);
+            }
+
+          } else if (replica.getType() == Replica.Type.PULL) {
+            getZkController().startReplicationFromLeader(newCore.getName(), false);
+          }
+        }
+        core.close();
+        core.closeAndWait(true);
+        success = true;
+      } catch (SolrCoreState.CoreIsClosedException e) {
+        throw e;
+      } catch (Exception e) {
+        ParWork.propagateInterrupt("Exception reloading SolrCore", e);
+        SolrException exp = new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
+        try {
+          coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+
+        } catch (Exception e1) {
+          ParWork.propagateInterrupt(e1);
+          exp.addSuppressed(e1);
+        }
+        throw exp;
+      } finally {
+        if (!success) {
+          ParWork.close(newCore);
         }
       }
+    } else {
+      CoreLoadFailure clf = coreInitFailures.get(name);
+      if (clf != null) {
+        createFromDescriptor(clf.cd, false);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name);
+      }
     }
+
   }
 
   /**
@@ -1817,7 +1819,7 @@ public class CoreContainer implements Closeable {
 
     try {
       if (core != null) {
-        core.closeAndWait();
+        core.closeAndWait(true);
       }
 
       if (exception != null) {
@@ -1859,7 +1861,7 @@ public class CoreContainer implements Closeable {
         cd.setProperty("name", toName);
         solrCores.addCoreDescriptor(cd);
         core.setName(toName);
-        registerCore(cd, core, isZooKeeperAware(), false);
+        registerCore(cd, core, isZooKeeperAware(), false, true);
         SolrCore old = solrCores.remove(name);
 
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());
@@ -1895,23 +1897,11 @@ public class CoreContainer implements Closeable {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name) {
-    return getCore(name, true);
-  }
-
-  /**
-   * Gets a core by name and increase its refcount.
-   *
-   * @param name the core name
-   * @return the core if found, null if a SolrCore by this name does not exist
-   * @throws SolrCoreInitializationException if a SolrCore with this name failed to be initialized
-   * @see SolrCore#close()
-   */
-  public SolrCore getCore(String name, boolean incRefCount) {
     SolrCore core = null;
     CoreDescriptor desc = null;
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
-    core = solrCores.getCoreFromAnyList(name, incRefCount);
+    core = solrCores.getCoreFromAnyList(name);
 
     // If a core is loaded, we're done just return it.
     if (core != null) {
@@ -1943,11 +1933,6 @@ public class CoreContainer implements Closeable {
         core = createFromDescriptor(desc, false); // This should throw an error if it fails.
       }
     }
-
-    if (core != null) {
-      core.open();
-    }
-
     return core;
   }
 
