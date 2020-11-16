@@ -731,7 +731,12 @@ public class IndexFetcher {
         }
         try {
           if (indexDir != null) {
-            core.getDirectoryFactory().release(indexDir);
+            try {
+              core.getDirectoryFactory().release(indexDir);
+            } catch (IllegalArgumentException e) {
+              if (log.isDebugEnabled()) log.debug("Error realing directory in IndexFetcher", e);
+              // could already be removed
+            }
           }
         } catch (Exception e) {
           SolrException.log(log, e);

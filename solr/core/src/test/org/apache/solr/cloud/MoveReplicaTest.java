@@ -53,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
-@Ignore // nocommit
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -119,9 +118,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     create.setMaxShardsPerNode(2);
     cloudClient.request(create);
 
-    // wait for recovery
-    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * create.getTotaleReplicaCount());
-
     addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
@@ -153,19 +149,16 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     // wait for async request success
     boolean success = false;
-    for (int i = 0; i < 600; i++) {
+    for (int i = 0; i < 200; i++) {
       CollectionAdminRequest.RequestStatusResponse rsp = requestStatus.process(cloudClient);
       if (rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
         success = true;
         break;
       }
       assertNotSame(rsp.getRequestStatus(), RequestStatusState.FAILED);
-      Thread.sleep(250);
+      Thread.sleep(50);
     }
     assertTrue(success);
-
-    // wait for recovery
-    cluster.waitForActiveCollection(coll, create.getNumShards(), create.getNumShards() * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
 
     assertEquals(100,  cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
 
@@ -183,14 +176,13 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertNotNull(targetNode);
 
-    // nocommit  I think above get node logic is flakey Collection: MoveReplicaTest_coll_true node: 127.0.0.1:35129_solr does not have any replica belonging to shard: s1
-//    moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
-//    moveReplica.setInPlaceMove(inPlaceMove);
-//    moveReplica.process(cloudClient);
-//
-//    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
-//
-//    checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
+    moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
+    moveReplica.setInPlaceMove(inPlaceMove);
+    moveReplica.process(cloudClient);
+
+    assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+
+    checkNumOfCores(cloudClient, replica.getNodeName(), coll, sourceNumCores);
   }
 
   //Commented out 5-Dec-2017

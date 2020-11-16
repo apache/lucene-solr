@@ -1346,11 +1346,11 @@ public class CoreContainer implements Closeable {
         core = processCoreCreateException(e, dcore, coreConfig);
       }
 
+      core.start();
 
       registerCore(dcore, core, isZooKeeperAware(), false);
       registered = true;
 
-      core.start();
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
@@ -1782,16 +1782,7 @@ public class CoreContainer implements Closeable {
       if (cd == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
       }
-      if (cd != null) {
-        SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
-        solrCores.removeCoreDescriptor(cd);
-        coresLocator.delete(this, cd);
-        if (core == null) {
-          // transient core
-          SolrCore.deleteUnloadedCore(cd, deleteDataDir, deleteInstanceDir);
-          return;
-        }
-      }
+
     } finally {
       if (isZooKeeperAware()) {
         // cancel recovery in cloud mode
@@ -1838,14 +1829,6 @@ public class CoreContainer implements Closeable {
     } catch (TimeoutException e) {
       log.error("Timeout waiting for SolrCore close on unload", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close on unload", e);
-    } finally {
-      if (deleteInstanceDir && cd != null) {
-        try {
-          FileUtils.deleteDirectory(cd.getInstanceDir().toFile());
-        } catch (IOException e) {
-          SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
-        }
-      }
     }
   }
 

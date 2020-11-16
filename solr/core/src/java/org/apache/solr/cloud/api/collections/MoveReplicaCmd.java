@@ -121,7 +121,8 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       Slice slice = coll.getSlice(shardId);
       List<Replica> sliceReplicas = new ArrayList<>(slice.getReplicas(r -> sourceNode.equals(r.getNodeName())));
       if (sliceReplicas.isEmpty()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + collection + " node: " + sourceNode + " does not have any replica belonging to shard: " + shardId);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + collection +
+            " node: " + sourceNode + " does not have any replica belonging to shard: " + shardId + " collection=" + coll);
       }
       Collections.shuffle(sliceReplicas, OverseerCollectionMessageHandler.RANDOM);
       replica = sliceReplicas.iterator().next();
@@ -156,24 +157,26 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     assert slice != null;
     Object dataDir = replica.get("dataDir");
     boolean isSharedFS = replica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && dataDir != null;
-    OverseerCollectionMessageHandler.Finalize finalizer = null;
+
+    AddReplicaCmd.Response resp = null;
     if (isSharedFS && inPlaceMove) {
       log.debug("-- moveHdfsReplica");
+      // nocommit TODO
       moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     } else {
       log.debug("-- moveNormalReplica (inPlaceMove={}, isSharedFS={}", inPlaceMove, isSharedFS);
-      finalizer = moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
+      resp = moveNormalReplica(clusterState, results, targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     }
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    OverseerCollectionMessageHandler.Finalize finalIzer = finalizer;
+    OverseerCollectionMessageHandler.Finalize finalizer = resp.asyncFinalRunner;
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
       public AddReplicaCmd.Response call() {
-        if (finalIzer != null) {
+        if (finalizer != null) {
           try {
-            finalIzer.call();
+            finalizer.call();
           } catch (Exception e) {
             log.error("Exception during MoveReplica", e);
           }
@@ -183,7 +186,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     };
 
-    response.clusterState = clusterState;
+    response.clusterState = null;
 
     return response;
   }
@@ -281,7 +284,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  private OverseerCollectionMessageHandler.Finalize moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String targetNode, String async, DocCollection coll,
+  private AddReplicaCmd.Response moveNormalReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String targetNode, String async, DocCollection coll,
       Replica replica, Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String newCoreName = Assign.buildSolrCoreName(coll, coll.getName(), slice.getName(), replica.getType());
     ZkNodeProps addReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), CoreAdminParams.NODE, targetNode, CoreAdminParams.NAME, newCoreName,
@@ -293,64 +296,56 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     AddReplicaCmd.Response response = ocmh.addReplicaWithResp(clusterState, addReplicasProps, addResult);
 
-    DocCollection docColl = response.clusterState.getCollectionOrNull(coll.getName());
-    Map<String, DocCollection> collectionStates;
-    if (docColl != null) {
-      collectionStates = new HashMap<>();
-      collectionStates.put(docColl.getName(), docColl);
-    } else {
-      collectionStates = new HashMap<>();
-    }
-    ClusterState cs = new ClusterState(response.clusterState.getLiveNodes(), collectionStates);
-    ocmh.overseer.getZkStateWriter().enqueueUpdate(cs, null,false);
+    ocmh.overseer.getZkStateWriter().enqueueUpdate(response.clusterState, null,false);
     ocmh.overseer.writePendingUpdates();
 
 
     // wait for the other replica to be active if the source replica was a leader
 
+    AddReplicaCmd.Response finalResponse = new AddReplicaCmd.Response();
+    
+    finalResponse.clusterState = response.clusterState;
 
+    finalResponse.asyncFinalRunner = () -> {
+      log.debug("Waiting for leader's replica to recover.");
 
-    return new OverseerCollectionMessageHandler.Finalize() {
-      @Override
-      public AddReplicaCmd.Response call() throws Exception {
-        log.debug("Waiting for leader's replica to recover.");
+      response.asyncFinalRunner.call();
 
-        response.asyncFinalRunner.call();
+      if (addResult.get("failure") != null) {
+        String errorString = String
+            .format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" + " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
+        log.warn(errorString);
+        results.add("failure", errorString);
 
-        if (addResult.get("failure") != null) {
-          String errorString = String
-              .format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" + " on node=%s, failure=%s", coll.getName(), slice.getName(), targetNode, addResult.get("failure"));
+        AddReplicaCmd.Response response1 = new AddReplicaCmd.Response();
+        return response1;
+      } else {
+
+        AddReplicaCmd.Response response1 = new AddReplicaCmd.Response();
+
+        ZkNodeProps removeReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), REPLICA_PROP, replica.getName());
+        if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
+        @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
+        try {
+          response1.clusterState = ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult).clusterState;
+        } catch (SolrException e) {
+          deleteResult.add("failure", e.toString());
+        }
+        if (deleteResult.get("failure") != null) {
+          String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s", coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
           log.warn(errorString);
           results.add("failure", errorString);
-
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-          return response;
         } else {
-
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-
-          ZkNodeProps removeReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), REPLICA_PROP, replica.getName());
-          if (async != null) removeReplicasProps.getProperties().put(ASYNC, async);
-          @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
-          try {
-            response.clusterState = ocmh.deleteReplica(clusterState, removeReplicasProps, deleteResult).clusterState;
-          } catch (SolrException e) {
-            deleteResult.add("failure", e.toString());
-          }
-          if (deleteResult.get("failure") != null) {
-            String errorString = String.format(Locale.ROOT, "Failed to cleanup replica collection=%s shard=%s name=%s, failure=%s", coll.getName(), slice.getName(), replica.getName(), deleteResult.get("failure"));
-            log.warn(errorString);
-            results.add("failure", errorString);
-          } else {
-            String successString = String
-                .format(Locale.ROOT, "MOVEREPLICA action completed successfully, moved replica=%s at node=%s " + "to replica=%s at node=%s", replica.getName(), replica.getNodeName(), newCoreName,
-                    targetNode);
-            results.add("success", successString);
-          }
-
-          return response;
+          String successString = String
+              .format(Locale.ROOT, "MOVEREPLICA action completed successfully, moved replica=%s at node=%s " + "to replica=%s at node=%s", replica.getName(), replica.getNodeName(), newCoreName,
+                  targetNode);
+          results.add("success", successString);
         }
+
+        return response1;
       }
     };
+    
+    return finalResponse;
   }
 }
