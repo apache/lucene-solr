@@ -300,6 +300,24 @@ public class ZkController implements Closeable, Runnable {
   // ref is held as a HashSet since we clone the set before notifying to avoid synchronizing too long
   private final Set<OnReconnect> reconnectListeners = ConcurrentHashMap.newKeySet();
 
+  private static class MyLockListener implements LockListener {
+    private final CountDownLatch lockWaitLatch;
+
+    public MyLockListener(CountDownLatch lockWaitLatch) {
+      this.lockWaitLatch = lockWaitLatch;
+    }
+
+    @Override
+    public void lockAcquired() {
+      lockWaitLatch.countDown();
+    }
+
+    @Override
+    public void lockReleased() {
+
+    }
+  }
+
   private class RegisterCoreAsync implements Callable<Object> {
 
     CoreDescriptor descriptor;
@@ -1030,99 +1048,83 @@ public class ZkController implements Closeable, Runnable {
 
   private void init() {
     // nocommit
-//    Runtime.getRuntime().addShutdownHook(new Thread() {
-//      public void run() {
-//        shutdown();
-//        ParWork.close(ParWork.getExecutor());
-//      }
-//
-//    });
-    synchronized (initLock) {
-      log.info("making shutdown watcher for cluster");
-      try {
-        zkClient.exists(CLUSTER_SHUTDOWN, new Watcher() {
-          @Override
-          public void process(WatchedEvent event) {
-            if (Event.EventType.None.equals(event.getType())) {
+    //    Runtime.getRuntime().addShutdownHook(new Thread() {
+    //      public void run() {
+    //        shutdown();
+    //        ParWork.close(ParWork.getExecutor());
+    //      }
+    //
+    //    });
+    //   synchronized (initLock) {
+    log.info("making shutdown watcher for cluster");
+    try {
+      zkClient.exists(CLUSTER_SHUTDOWN, new Watcher() {
+        @Override
+        public void process(WatchedEvent event) {
+          if (Event.EventType.None.equals(event.getType())) {
+            return;
+          }
+
+          log.info("Got even for shutdown {}" + event);
+          if (event.getType().equals(Event.EventType.NodeCreated)) {
+            log.info("Shutdown zk node created, shutting down");
+            shutdown();
+          } else {
+            log.info("Remaking shutdown watcher");
+            Stat stat = null;
+            try {
+              stat = zkClient.exists(CLUSTER_SHUTDOWN, this);
+            } catch (KeeperException e) {
+              SolrException.log(log, e);
+              return;
+            } catch (InterruptedException e) {
+              SolrException.log(log, e);
               return;
             }
-
-            log.info("Got even for shutdown {}" + event);
-            if (event.getType().equals(Event.EventType.NodeCreated)) {
-              log.info("Shutdown zk node created, shutting down");
+            if (stat != null) {
+              log.info("Got shutdown even while remaking watcher, shutting down");
               shutdown();
-            } else {
-              log.info("Remaking shutdown watcher");
-              Stat stat = null;
-              try {
-                stat = zkClient.exists(CLUSTER_SHUTDOWN, this);
-              } catch (KeeperException e) {
-                SolrException.log(log, e);
-                return;
-              } catch (InterruptedException e) {
-                SolrException.log(log, e);
-                return;
-              }
-              if (stat != null) {
-                log.info("Got shutdown even while remaking watcher, shutting down");
-                shutdown();
-              }
             }
-          }
-        });
-
-      } catch (KeeperException e) {
-        log.error("Zk Exception", e);
-        return;
-      } catch (InterruptedException e) {
-        log.info("interrupted");
-        return;
-      }
-      try {
-        zkClient.mkdirs("/cluster/cluster_lock");
-      } catch (KeeperException.NodeExistsException e) {
-        // okay
-      } catch (KeeperException e) {
-        log.error("Zk Exception", e);
-        return;
-      }
-      boolean createdClusterNodes = false;
-      try {
-        CountDownLatch lockWaitLatch = new CountDownLatch(1);
-        DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"),
-        new LockListener(){
-          @Override
-          public void lockAcquired() {
-            lockWaitLatch.countDown();
-          }
-
-          @Override
-          public void lockReleased() {
-
-          }
-        });
-        if (log.isDebugEnabled()) log.debug("get cluster lock");
-        if (!lock.lock()) {
-          boolean success = false;
-          while (!success) {
-            if (isClosed()) {
-              log.warn("Closed, not getting cluster lock");
-              return;
-            }
-            success = lockWaitLatch.await(500, TimeUnit.MILLISECONDS);
           }
         }
-        try {
+      });
+
+    } catch (KeeperException e) {
+      log.error("Zk Exception", e);
+      return;
+    } catch (InterruptedException e) {
+      log.info("interrupted");
+      return;
+    }
+    try {
+      zkClient.mkdirs("/cluster/cluster_lock");
+    } catch (KeeperException.NodeExistsException e) {
+      // okay
+    } catch (KeeperException e) {
+      log.error("Zk Exception", e);
+      return;
+    }
+    boolean createdClusterNodes = false;
+    try {
+      CountDownLatch lockWaitLatch = new CountDownLatch(1);
+      boolean create = false;
+      DistributedLock lock = new DistributedLock(zkClient, "/cluster/cluster_lock", zkClient.getZkACLProvider().getACLsToAdd("/cluster/cluster_lock"), new MyLockListener(lockWaitLatch));
+      try {
+        //  if (log.isDebugEnabled()) log.debug("get cluster lock");
+        if (lock.lock()) {
+          create = true;
+        }
+        if (create) {
 
           if (log.isDebugEnabled()) log.debug("got cluster lock");
-          CountDownLatch latch = new CountDownLatch(1);
-          zkClient.getSolrZooKeeper().sync("/cluster/init", (rc, path, ctx) -> {
-            latch.countDown();
-          }, new Object());
-          boolean success = latch.await(10, TimeUnit.SECONDS);
-          if (!success) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout calling sync on collection zknode");
-          }
+          //          CountDownLatch latch = new CountDownLatch(1);
+          //          zkClient.getSolrZooKeeper().sync("/cluster/init", (rc, path, ctx) -> {
+          //            latch.countDown();
+          //          }, new Object());
+          //          boolean success = latch.await(10, TimeUnit.SECONDS);
+          //          if (!success) {
+          //            throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout calling sync on collection zknode");
+          //          }
           if (!zkClient.exists("/cluster/init")) {
             try {
               createClusterZkNodes(zkClient);
@@ -1136,134 +1138,132 @@ public class ZkController implements Closeable, Runnable {
             if (log.isDebugEnabled()) log.debug("Cluster zk nodes already exist");
             int currentLiveNodes = zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
             if (log.isDebugEnabled()) log.debug("Current live nodes {}", currentLiveNodes);
-//          if (currentLiveNodes == 0) {
-//            log.info("Delete Overseer queues");
-//            // cluster is in a startup state, clear zk queues
-//            List<String> pathsToDelete = Arrays.asList(new String[]{Overseer.OVERSEER_QUEUE, Overseer.OVERSEER_QUEUE_WORK,
-//                    Overseer.OVERSEER_COLLECTION_QUEUE_WORK, Overseer.OVERSEER_COLLECTION_MAP_RUNNING,
-//                    Overseer.OVERSEER_COLLECTION_MAP_COMPLETED, Overseer.OVERSEER_COLLECTION_MAP_FAILURE, Overseer.OVERSEER_ASYNC_IDS});
-//            CountDownLatch latch = new CountDownLatch(pathsToDelete.size());
-//            int[] code = new int[1];
-//            String[] path = new String[1];
-//            boolean[] failed = new boolean[1];
-//
-//            for (String delPath : pathsToDelete) {
-//              zkClient.getSolrZooKeeper().delete(delPath, -1,
-//                      (resultCode, zkpath, context) -> {
-//                        code[0] = resultCode;
-//                        if (resultCode != 0) {
-//                          failed[0] = true;
-//                          path[0] = "" + zkpath;
-//                        }
-//
-//                        latch.countDown();
-//                      }, "");
-//            }
-//            boolean success = false;
-//            log.info("Wait for delete Overseer queues");
-//            try {
-//              success = latch.await(15, TimeUnit.SECONDS);
-//            } catch (InterruptedException e) {
-//              ParWork.propegateInterrupt(e);
-//
-//              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//            }
-//
-//            // nocommit, still haackey, do fails right
-//            if (code[0] != 0) {
-//              System.out.println("fail code: "+ code[0]);
-//              KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
-//              if (e instanceof  NoNodeException) {
-//                // okay
-//              } else {
-//                throw e;
-//              }
-//
-//            }
-//
-//            if (!success) {
-//              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
-//            }
-//          }
+            //          if (currentLiveNodes == 0) {
+            //            log.info("Delete Overseer queues");
+            //            // cluster is in a startup state, clear zk queues
+            //            List<String> pathsToDelete = Arrays.asList(new String[]{Overseer.OVERSEER_QUEUE, Overseer.OVERSEER_QUEUE_WORK,
+            //                    Overseer.OVERSEER_COLLECTION_QUEUE_WORK, Overseer.OVERSEER_COLLECTION_MAP_RUNNING,
+            //                    Overseer.OVERSEER_COLLECTION_MAP_COMPLETED, Overseer.OVERSEER_COLLECTION_MAP_FAILURE, Overseer.OVERSEER_ASYNC_IDS});
+            //            CountDownLatch latch = new CountDownLatch(pathsToDelete.size());
+            //            int[] code = new int[1];
+            //            String[] path = new String[1];
+            //            boolean[] failed = new boolean[1];
+            //
+            //            for (String delPath : pathsToDelete) {
+            //              zkClient.getSolrZooKeeper().delete(delPath, -1,
+            //                      (resultCode, zkpath, context) -> {
+            //                        code[0] = resultCode;
+            //                        if (resultCode != 0) {
+            //                          failed[0] = true;
+            //                          path[0] = "" + zkpath;
+            //                        }
+            //
+            //                        latch.countDown();
+            //                      }, "");
+            //            }
+            //            boolean success = false;
+            //            log.info("Wait for delete Overseer queues");
+            //            try {
+            //              success = latch.await(15, TimeUnit.SECONDS);
+            //            } catch (InterruptedException e) {
+            //              ParWork.propegateInterrupt(e);
+            //
+            //              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+            //            }
+            //
+            //            // nocommit, still haackey, do fails right
+            //            if (code[0] != 0) {
+            //              System.out.println("fail code: "+ code[0]);
+            //              KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
+            //              if (e instanceof  NoNodeException) {
+            //                // okay
+            //              } else {
+            //                throw e;
+            //              }
+            //
+            //            }
+            //
+            //            if (!success) {
+            //              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
+            //            }
+            //          }
           }
-
-        } finally {
-          if (log.isDebugEnabled()) log.debug("release cluster lock");
-          lock.unlock();
         }
-        if (!createdClusterNodes) {
-          // wait?
-        }
-
-        zkStateReader = new ZkStateReader(zkClient, () -> {
-          if (cc != null) cc.securityNodeChanged();
-        });
-        this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
-
-        zkStateReader.createClusterStateWatchersAndUpdate();
-
-        this.overseer = new Overseer(cc.getUpdateShardHandler(),
-                CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
-        this.overseerRunningMap = Overseer.getRunningMap(zkClient);
-        this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
-        this.overseerFailureMap = Overseer.getFailureMap(zkClient);
-        this.asyncIdsMap = Overseer.getAsyncIdsMap(zkClient);
-        this.overseerJobQueue = overseer.getStateUpdateQueue();
-        this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
-        this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-        this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(),
-                getNodeName(), zkStateReader);
-        overseerElector = new LeaderElector(this, new ContextKey("overseer", "overseer"), overseerContexts);
-        try (ParWork worker = new ParWork(this, false, true)) {
-          // start the overseer first as following code may need it's processing
-          worker.collect("startOverseer", () -> {
-            ElectionContext context = getOverseerContext();
-            log.info("Overseer setting up context {}", context.leaderProps);
-            overseerElector.setup(context);
-            try {
-              log.info("Overseer joining election {}", context.leaderProps);
-              overseerElector.joinElection(context, false);
-            } catch (KeeperException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            } catch (IOException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-          });
-
-//          worker.collect("publishDownState", () -> {
-//            try {
-//              Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
-//              if (stat != null && stat.getNumChildren() > 0) {
-//                publishDownStates();
-//              }
-//            } catch (InterruptedException e) {
-//              ParWork.propagateInterrupt(e);
-//              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-//            } catch (KeeperException e) {
-//              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-//            }
-//          });
-        }
-        statePublisher = new StatePublisher(overseerJobQueue);
-        statePublisher.start();
-
-        // Do this last to signal we're up.
-        createEphemeralLiveNode();
-
-        //  publishAndWaitForDownStates();
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-      } catch (KeeperException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+      } finally {
+        if (log.isDebugEnabled()) log.debug("release cluster lock");
+        lock.unlock();
+        lock.close();
       }
+
+      if (!createdClusterNodes) {
+        // wait?
+      }
+
+      zkStateReader = new ZkStateReader(zkClient, () -> {
+        if (cc != null) cc.securityNodeChanged();
+      });
+      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
+
+      zkStateReader.createClusterStateWatchersAndUpdate();
+
+      this.overseer = new Overseer(cc.getUpdateShardHandler(), CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
+      this.overseerRunningMap = Overseer.getRunningMap(zkClient);
+      this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
+      this.overseerFailureMap = Overseer.getFailureMap(zkClient);
+      this.asyncIdsMap = Overseer.getAsyncIdsMap(zkClient);
+      this.overseerJobQueue = overseer.getStateUpdateQueue();
+      this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
+      this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
+      this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(), getNodeName(), zkStateReader);
+      overseerElector = new LeaderElector(this, new ContextKey("overseer", "overseer"), overseerContexts);
+      try (ParWork worker = new ParWork(this, false, true)) {
+        // start the overseer first as following code may need it's processing
+        worker.collect("startOverseer", () -> {
+          ElectionContext context = getOverseerContext();
+          log.info("Overseer setting up context {}", context.leaderProps);
+          overseerElector.setup(context);
+          try {
+            log.info("Overseer joining election {}", context.leaderProps);
+            overseerElector.joinElection(context, false);
+          } catch (KeeperException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
+
+        //          worker.collect("publishDownState", () -> {
+        //            try {
+        //              Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
+        //              if (stat != null && stat.getNumChildren() > 0) {
+        //                publishDownStates();
+        //              }
+        //            } catch (InterruptedException e) {
+        //              ParWork.propagateInterrupt(e);
+        //              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        //            } catch (KeeperException e) {
+        //              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        //            }
+        //          });
+      }
+      statePublisher = new StatePublisher(overseerJobQueue);
+      statePublisher.start();
+
+      // Do this last to signal we're up.
+      createEphemeralLiveNode();
+
+      //  publishAndWaitForDownStates();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
+    //  }
   }
 
   private synchronized void shutdown() {
@@ -1467,7 +1467,19 @@ public class ZkController implements Closeable, Runnable {
       }
 
       log.info("Wait to see leader for {}, {}", collection, shardId);
-      Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 15000);
+      Replica leader = null;
+      for (int i = 0; i < 15; i++) {
+        try {
+          if (isClosed()) {
+            throw new AlreadyClosedException();
+          }
+
+          leader = zkStateReader.getLeaderRetry(collection, shardId, 3000);
+          break;
+        } catch (TimeoutException timeoutException) {
+
+        }
+      }
 
       String ourUrl = replica.getCoreUrl();
       boolean isLeader = leader.getName() .equals(coreName);

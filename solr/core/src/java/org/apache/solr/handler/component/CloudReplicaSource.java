@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -228,6 +229,8 @@ class CloudReplicaSource implements ReplicaSource {
                 sliceName, collectionName, clusterState.getCollectionOrNull(collectionName));
           }
           throw e;
+        } catch (TimeoutException e) {
+          e.printStackTrace();
         }
       }
       return replica.getName().equals(shardLeader.getName());

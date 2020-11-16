@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -190,7 +191,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         try {
           leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 1000);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "Exception finding leader for shard " + cloudDesc.getShardId(), e);
@@ -563,7 +564,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           cmdDistrib.distribDelete(cmd, myReplicas, params, false, rollupReplicationTracker, leaderReplicationTracker);
         }
       }
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | TimeoutException e) {
       ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted", e);
     }
@@ -609,7 +610,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), props, collection, shardId));
         }
       }
-    } catch (InterruptedException e) {
+    } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
@@ -637,7 +638,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     try {
       return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId()).getCoreUrl();
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | TimeoutException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
     }
@@ -781,7 +782,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leaderReplica, collection, shardId));
       }
 
-    } catch (InterruptedException e) {
+    } catch (InterruptedException | TimeoutException e) {
       ParWork.propagateInterrupt(e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
@@ -867,7 +868,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
-  protected boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException {
+  protected boolean amISubShardLeader(DocCollection coll, Slice parentSlice, String id, SolrInputDocument doc) throws InterruptedException, TimeoutException {
     // Am I the leader of a shard in "construction/recovery" state?
     String myShardId = cloudDesc.getShardId();
     Slice mySlice = coll.getSlice(myShardId);

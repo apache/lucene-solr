@@ -1041,7 +1041,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             if (leader.equals(zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
               return false;
             }
-          } catch (InterruptedException e) {
+          } catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
           }
           return true;

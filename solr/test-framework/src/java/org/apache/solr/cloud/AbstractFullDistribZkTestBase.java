@@ -2122,7 +2122,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("Summary of the cluster: {}", builder);
   }
 
-  protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
+  protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException, TimeoutException {
     log.info("waitForReplicationFromReplicas: {}", collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     Map<String, CoreContainer> containers = new HashMap<>();

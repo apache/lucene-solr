@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -142,7 +143,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     return null;
   }
 
-  private String getLeader(String collection) throws InterruptedException {
+  private String getLeader(String collection) throws InterruptedException, TimeoutException {
 
     ZkNodeProps props = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
     String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);

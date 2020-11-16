@@ -52,6 +52,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
@@ -375,7 +376,13 @@ public class IndexFetcher {
     try {
       if (fetchFromLeader) {
         assert !solrCore.isClosed(): "Replication should be stopped before closing the core";
-        Replica replica = getLeaderReplica();
+        Replica replica = null;
+        try {
+          replica = getLeaderReplica();
+        } catch (TimeoutException e) {
+          log.warn("Leader is not available. Index fetch failed due to not finding leader: {}", masterUrl, e);
+          return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
+        }
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
         if (solrCore.getCoreDescriptor().getName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
@@ -680,7 +687,7 @@ public class IndexFetcher {
     }
   }
 
-  private Replica getLeaderReplica() throws InterruptedException {
+  private Replica getLeaderReplica() throws InterruptedException, TimeoutException {
     ZkController zkController = solrCore.getCoreContainer().getZkController();
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
     Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(

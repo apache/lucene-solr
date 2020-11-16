@@ -862,7 +862,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     return closed;
   }
 
-  public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
+  public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException, TimeoutException {
     Replica replica = getLeaderRetry(collection, shard, timeout);
     return replica.getCoreUrl();
   }
@@ -898,14 +898,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
+  public Replica getLeaderRetry(String collection, String shard) throws InterruptedException, TimeoutException {
     return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }
 
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
+  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException, TimeoutException {
 
     DocCollection coll = getClusterState().getCollectionOrNull(collection);
 
@@ -913,7 +913,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Slice slice = coll.getSlice(shard);
       if (slice != null) {
         Replica leader = slice.getLeader();
-        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
+        if (leader != null && leader.getState() == Replica.State.ACTIVE && isNodeLive(leader.getNodeName())) {
           return leader;
         }
       }
@@ -934,7 +934,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if (replica.get("leader") != null && replica.get("leader").equals("true") && replica.getState() == Replica.State.ACTIVE) {
+          if (replica.get("leader") != null && replica.get("leader").equals("true") && replica.getState() == Replica.State.ACTIVE && isNodeLive(replica.getNodeName())) {
             returnLeader.set(replica);
             return true;
           }
@@ -943,7 +943,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         return false;
       });
     } catch (TimeoutException e) {
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
+      throw new TimeoutException("No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + clusterState.getLiveNodes());
     }
