@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene80;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.util.TestUtil;
 
-apply plugin: 'java-library'
+/**
+ * Tests Lucene80DocValuesFormat
+ */
+public class TestBestCompressionLucene80DocValuesFormat extends BaseLucene80DocValuesFormatTestCase {
+  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION));
 
-description = 'Faceted indexing and search capabilities'
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
 
-dependencies { 
-  api project(':lucene:core')
-
-  implementation 'com.carrotsearch:hppc'
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:queries')
-  // Required for opening older indexes for backward compatibility tests
-  testCompile group: 'org.apache.lucene', name: 'lucene-codecs', version: '8.6.3'
 }

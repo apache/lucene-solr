@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'java-library'
-
-description = 'Faceted indexing and search capabilities'
-
-dependencies { 
-  api project(':lucene:core')
-
-  implementation 'com.carrotsearch:hppc'
-
-  testImplementation project(':lucene:test-framework')
-  testImplementation project(':lucene:queries')
-  // Required for opening older indexes for backward compatibility tests
-  testCompile group: 'org.apache.lucene', name: 'lucene-codecs', version: '8.6.3'
-}
+/**
+ * Navigable Small-World graph, nominally Hierarchical but currently only has a single
+ * layer. Provides efficient approximate nearest neighbor search for high dimensional vectors.
+ */
+package org.apache.lucene.util.hnsw;
