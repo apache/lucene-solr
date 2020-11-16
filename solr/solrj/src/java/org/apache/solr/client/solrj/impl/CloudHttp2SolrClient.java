@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;

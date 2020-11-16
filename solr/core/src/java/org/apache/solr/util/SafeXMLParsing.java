@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;

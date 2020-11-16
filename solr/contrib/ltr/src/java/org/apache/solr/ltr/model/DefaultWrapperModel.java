@@ -17,7 +17,12 @@
 
 package org.apache.solr.ltr.model;
 
-import java.io.BufferedReader;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.ltr.feature.Feature;
+import org.apache.solr.ltr.norm.Normalizer;
+import org.noggit.JSONParser;
+import org.noggit.ObjectBuilder;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -25,12 +30,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.ltr.feature.Feature;
-import org.apache.solr.ltr.norm.Normalizer;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 /**
  * A scoring model that fetches the wrapped model from {@link SolrResourceLoader}.

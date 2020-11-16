@@ -16,7 +16,19 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.parsers.DocumentBuilder;
+import net.sf.saxon.om.NodeInfo;
+import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.DOMUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import java.io.File;
@@ -31,23 +43,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import net.sf.saxon.om.NodeInfo;
-import net.sf.saxon.tree.tiny.TinyDocumentImpl;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
-import org.apache.solr.util.BaseTestHarness;
-import org.apache.solr.util.DOMUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 /**
  * Tests the useDocValuesAsStored functionality.

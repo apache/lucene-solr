@@ -18,13 +18,7 @@ package org.apache.solr.core;
 
 import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.om.AttributeInfo;
-import net.sf.saxon.om.AttributeMap;
-import net.sf.saxon.om.NamespaceMap;
-import net.sf.saxon.om.NodeName;
-import net.sf.saxon.s9api.Location;
 import net.sf.saxon.tree.tiny.TinyBuilder;
-import net.sf.saxon.type.SchemaType;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.PropertiesUtil;
 
 import java.util.Properties;

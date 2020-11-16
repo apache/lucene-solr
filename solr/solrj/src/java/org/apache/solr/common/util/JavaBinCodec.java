@@ -16,6 +16,23 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.solr.common.ConditionalKeyMapWriter;
+import org.apache.solr.common.EnumFieldValue;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.IteratorWriter.ItemWriter;
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.PushWriter;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.CommonParams;
+import org.noggit.CharArr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,27 +55,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import com.ctc.wstx.shaded.msv_core.verifier.jaxp.DocumentBuilderFactoryImpl;
-import org.apache.solr.common.ConditionalKeyMapWriter;
-import org.apache.solr.common.EnumFieldValue;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.PushWriter;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.params.CommonParams;
-import org.noggit.CharArr;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * Defines a space-efficient serialization/deserialization format for transferring data.

@@ -17,13 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -39,8 +32,13 @@ import org.apache.solr.handler.TestSQLHandler;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 //@Ignore // nocommit - need to fix the driver and this test again
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {

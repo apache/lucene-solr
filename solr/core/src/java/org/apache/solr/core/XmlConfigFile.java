@@ -16,39 +16,14 @@
  */
 package org.apache.solr.core;
 
-import javax.xml.namespace.QName;
-import javax.xml.transform.sax.SAXSource;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 import net.sf.saxon.Configuration;
-import net.sf.saxon.dom.DocumentOverNodeInfo;
 import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.event.Sender;
-import net.sf.saxon.lib.ParseOptions;
-import net.sf.saxon.lib.Validation;
-import net.sf.saxon.om.NamePool;
 import net.sf.saxon.om.NodeInfo;
-import net.sf.saxon.om.TreeInfo;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -56,7 +31,6 @@ import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.xml.sax.InputSource;

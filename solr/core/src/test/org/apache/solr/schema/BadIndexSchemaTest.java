@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.core.AbstractBadConfigTestBase;
-import org.junit.Ignore;
 
 public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
 

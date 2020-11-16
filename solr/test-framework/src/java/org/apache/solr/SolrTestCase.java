@@ -511,8 +511,8 @@ public class SolrTestCase extends LuceneTestCase {
 
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
       if (!failed && !TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
-        log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: "
-                + testTime);
+        log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: {}"
+               , testTime);
 //          fail(
 //              "This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: "
 //                  + testTime);

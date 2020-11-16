@@ -16,16 +16,11 @@
  */
 package org.apache.solr.internal.csv;
 
+import org.apache.solr.SolrTestCase;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.Random;
-
-import junit.framework.TestCase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
-
-import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
 
 /**
  * CSVPrinterTest

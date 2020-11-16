@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;

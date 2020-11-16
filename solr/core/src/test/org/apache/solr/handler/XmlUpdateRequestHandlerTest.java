@@ -28,7 +28,6 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.xml.stream.XMLInputFactory;

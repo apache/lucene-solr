@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.EventParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Iterator;

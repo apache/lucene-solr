@@ -61,7 +61,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;

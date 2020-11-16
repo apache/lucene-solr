@@ -31,7 +31,6 @@ import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.JsonStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.ZooKeeperStorageIO;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

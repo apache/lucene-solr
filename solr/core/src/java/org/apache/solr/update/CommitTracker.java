@@ -32,7 +32,6 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;

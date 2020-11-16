@@ -29,7 +29,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;

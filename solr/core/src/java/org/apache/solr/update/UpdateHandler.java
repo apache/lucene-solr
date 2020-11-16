@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**

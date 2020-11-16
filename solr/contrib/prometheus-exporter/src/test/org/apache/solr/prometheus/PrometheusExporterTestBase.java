@@ -19,7 +19,6 @@ package org.apache.solr.prometheus;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.BeforeClass;

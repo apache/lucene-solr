@@ -21,7 +21,6 @@ package org.apache.solr.cloud.api.collections;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;

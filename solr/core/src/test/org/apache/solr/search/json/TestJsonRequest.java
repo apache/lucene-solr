@@ -30,7 +30,6 @@ import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 

@@ -41,7 +41,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;

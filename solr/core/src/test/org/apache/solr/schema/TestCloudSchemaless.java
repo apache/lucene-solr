@@ -16,29 +16,23 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.BaseTestHarness;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.cloud.SolrCloudBridgeTestCase;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.BaseTestHarness;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests a schemaless collection configuration with SolrCloud

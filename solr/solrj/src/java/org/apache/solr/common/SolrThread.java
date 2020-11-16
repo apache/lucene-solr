@@ -1,6 +1,5 @@
 package org.apache.solr.common;
 
-import org.apache.solr.common.util.ExecutorUtil;
 
 import java.util.concurrent.ExecutorService;
 

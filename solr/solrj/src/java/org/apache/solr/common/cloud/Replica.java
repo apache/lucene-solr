@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;

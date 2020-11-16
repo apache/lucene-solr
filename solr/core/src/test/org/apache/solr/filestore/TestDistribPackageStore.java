@@ -17,6 +17,32 @@
 
 package org.apache.solr.filestore;
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.packagemanager.PackageUtils;
+import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.junit.After;
+import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
+import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
+import static org.hamcrest.CoreMatchers.containsString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -28,36 +54,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.V2Response;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.NavigableObject;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.packagemanager.PackageUtils;
-import org.apache.solr.util.LogLevel;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
-import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {

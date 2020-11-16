@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.OverseerTaskProcessor;

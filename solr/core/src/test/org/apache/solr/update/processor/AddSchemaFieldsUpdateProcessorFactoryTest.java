@@ -31,7 +31,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 
 /**
  * Tests for the field mutating update processors

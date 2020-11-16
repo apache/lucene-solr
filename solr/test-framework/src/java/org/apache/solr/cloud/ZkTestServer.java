@@ -51,8 +51,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -169,7 +167,9 @@ public class ZkTestServer implements Closeable {
 
       public void updateForWatch(String key, Watcher watcher) {
         if (watcher != null) {
-          if (log.isDebugEnabled()) log.debug("Watch added: {}: {}", desc, key);
+          if (log.isDebugEnabled()) {
+            log.debug("Watch added: {}: {}", desc, key);
+          }
           long count = counters.incrementAndGet(key);
           Long lastCount = maxCounters.get(key);
           if (lastCount == null || count > lastCount) {
@@ -185,7 +185,9 @@ public class ZkTestServer implements Closeable {
       }
 
       public void updateForFire(WatchedEvent event) {
-        if (log.isDebugEnabled()) log.debug("Watch fired: {}: {}", desc, event.getPath());
+        if (log.isDebugEnabled()) {
+          log.debug("Watch fired: {}: {}", desc, event.getPath());
+        }
         counters.decrementAndGet(event.getPath());
       }
 

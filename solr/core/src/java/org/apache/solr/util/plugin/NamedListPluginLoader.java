@@ -20,7 +20,6 @@ import java.util.Map;
 
 import net.sf.saxon.om.NodeInfo;
 import org.apache.solr.util.DOMUtil;
-import org.w3c.dom.Node;
 
 /**
  *

@@ -35,7 +35,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 /**
  *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so

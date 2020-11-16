@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

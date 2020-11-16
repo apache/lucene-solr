@@ -557,7 +557,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     try (ParWork closer = new ParWork(this)) {
 
-      log.info("creating replicas: " + createReplicaRequests);
+      log.info("creating replicas: {}", createReplicaRequests);
       synchronized (createReplicaRequests) {
         for (CollectionAdminRequest r : createReplicaRequests) {
 
@@ -575,7 +575,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
       closer.addCollect();
-      log.info("creating pull replicas: " + createPullReplicaRequests);
+      log.info("creating pull replicas: {}", createPullReplicaRequests);
       synchronized (createPullReplicaRequests) {
         for (CollectionAdminRequest r : createPullReplicaRequests) {
           closer.collect("createPullReplicaRequests", () -> {

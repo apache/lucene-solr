@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.impl.HttpSolrClient;

@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Ignore;
 
 @Nightly // nocommit speedup
 public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {

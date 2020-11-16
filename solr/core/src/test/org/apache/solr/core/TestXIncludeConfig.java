@@ -16,13 +16,11 @@
  */
 package org.apache.solr.core;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 

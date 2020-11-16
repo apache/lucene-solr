@@ -17,16 +17,14 @@
 
 package org.apache.solr.client.solrj.routing;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.MockZkStateReader;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 

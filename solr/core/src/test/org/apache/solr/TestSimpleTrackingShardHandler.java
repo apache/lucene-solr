@@ -21,7 +21,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;
-import org.junit.Ignore;
 
 import java.util.List;
 import java.util.Collections;

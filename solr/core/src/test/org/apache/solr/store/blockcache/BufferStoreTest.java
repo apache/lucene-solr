@@ -16,9 +16,6 @@
  */
 package org.apache.solr.store.blockcache;
 
-import java.math.BigDecimal;
-import java.util.Map;
-
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
@@ -27,8 +24,10 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 public class BufferStoreTest extends SolrTestCase {
   private final static int blockSize = 1024;

@@ -16,10 +16,7 @@
  */
 package org.apache.solr.handler.loader;
 
-import com.ctc.wstx.cfg.InputConfigFlags;
 import com.ctc.wstx.sax.WstxSAXParser;
-import com.ctc.wstx.sax.WstxSAXParserFactory;
-import com.ctc.wstx.stax.WstxInputFactory;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -55,8 +52,6 @@ import org.xml.sax.XMLReader;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;

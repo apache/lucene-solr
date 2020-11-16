@@ -23,7 +23,6 @@ import java.util.List;
 import net.sf.saxon.om.NodeInfo;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.core.XmlConfigFile;
-import org.w3c.dom.Node;
 
 public class MetricsConfiguration {
 

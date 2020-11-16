@@ -18,12 +18,9 @@ package org.apache.solr;
 
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
-import org.apache.solr.common.util.StrUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class JSONTestUtil {

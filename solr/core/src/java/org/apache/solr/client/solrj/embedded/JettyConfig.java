@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import javax.servlet.Filter;
 import java.util.LinkedHashMap;

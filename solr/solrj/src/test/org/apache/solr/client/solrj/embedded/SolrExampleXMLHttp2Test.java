@@ -22,7 +22,6 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.eclipse.jetty.util.Jetty;
 import org.junit.BeforeClass;
 
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {

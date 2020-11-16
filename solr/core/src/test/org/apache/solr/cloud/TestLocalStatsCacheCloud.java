@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.LogLevel;
-import org.junit.Ignore;
 
 /**
  *

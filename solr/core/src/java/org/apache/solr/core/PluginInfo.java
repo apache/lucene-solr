@@ -22,8 +22,6 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.DOMUtil;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;

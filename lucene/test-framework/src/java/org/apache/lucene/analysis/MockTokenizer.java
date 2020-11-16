@@ -16,17 +16,14 @@
  */
 package org.apache.lucene.analysis;
 
-import java.io.IOException;
-import java.nio.CharBuffer;
-import java.util.Random;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
+import java.io.IOException;
+import java.nio.CharBuffer;
 
 /**
  * Tokenizer for testing.

@@ -38,7 +38,6 @@ import org.apache.solr.update.SolrIndexConfigTest;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
-import org.junit.Ignore;
 
 /** @see SolrIndexConfigTest */
 public class TestMergePolicyConfig extends SolrTestCaseJ4 {

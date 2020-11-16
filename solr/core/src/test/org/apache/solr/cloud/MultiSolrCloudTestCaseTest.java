@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {

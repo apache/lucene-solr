@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

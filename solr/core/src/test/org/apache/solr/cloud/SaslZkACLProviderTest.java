@@ -23,8 +23,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;

@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

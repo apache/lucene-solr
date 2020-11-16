@@ -16,6 +16,15 @@
  */
 package org.apache.solr.rest.schema.analysis;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.util.RestTestBase;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -25,19 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.apache.solr.common.util.Utils.toJSONString;
 
 public class TestManagedSynonymFilterFactory extends RestTestBase {
   

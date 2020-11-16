@@ -42,7 +42,6 @@ import org.apache.solr.request.macro.MacroExpander;
 import org.apache.solr.util.hll.HLL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 // Related tests:

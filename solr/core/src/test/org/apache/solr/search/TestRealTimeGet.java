@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -34,7 +33,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.core.SolrCore.verbose;

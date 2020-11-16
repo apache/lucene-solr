@@ -22,7 +22,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 // nocommit - speed this up - waits for zkwriter to see its own state after delete

@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {

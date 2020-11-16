@@ -25,7 +25,6 @@ import org.apache.lucene.queryparser.xml.TestCoreParser;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

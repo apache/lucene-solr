@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Locale;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;

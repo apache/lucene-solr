@@ -3,7 +3,6 @@ package org.apache.solr.common.util;
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.solr.common.AlreadyClosedException;
 
-import java.io.Closeable;
 import java.io.PrintWriter;
 
 public class CloseTracker {

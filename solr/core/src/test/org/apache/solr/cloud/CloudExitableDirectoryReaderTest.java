@@ -16,11 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricRegistry;
@@ -33,16 +28,13 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.facet.FacetModule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +44,9 @@ import static org.apache.solr.cloud.TrollingIndexReaderFactory.Trap;
 import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchClass;
 import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchCount;
 import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
+import java.lang.invoke.MethodHandles;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 

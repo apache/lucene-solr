@@ -114,7 +114,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
             ParWork.propagateInterrupt(e);
             return;
           }
-          log.error("REQUEST FAILED for id=" + id, e);
+          log.error("REQUEST FAILED for id={}", id, e);
           deleteFails.add(deleteId);
         }
       }
@@ -138,7 +138,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           return;
         }
         addFailed = true;
-        log.error("REQUEST FAILED for id=" + id, e);
+        log.error("REQUEST FAILED for id={}", id, e);
 
         addFails.add(id);
       }
@@ -157,8 +157,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
       }
     }
     
-    log.info("added docs:" + numAdds + " with " + (addFails.size() + deleteFails.size()) + " fails"
-        + " deletes:" + numDeletes);
+    log.info("added docs: {} with {} fails and deletes: {}", numAdds, (addFails.size() + deleteFails.size()), numDeletes);
   }
   
   @Override

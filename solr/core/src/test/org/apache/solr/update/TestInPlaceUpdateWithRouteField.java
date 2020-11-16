@@ -46,7 +46,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.AwaitsFix(bugUrl = "strange semi rare fail: Default currency code is not supported by this JVM: HOSS")

@@ -16,16 +16,13 @@
  */
 package org.apache.solr.client.solrj;
 
-import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.junit.Test;
+
+import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 
 /**
  * 

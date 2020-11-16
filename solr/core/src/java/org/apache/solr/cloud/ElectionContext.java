@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;

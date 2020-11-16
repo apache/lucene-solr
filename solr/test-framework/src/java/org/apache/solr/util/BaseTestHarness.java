@@ -17,30 +17,21 @@
 package org.apache.solr.util;
 
 import net.sf.saxon.Configuration;
-import net.sf.saxon.dom.DocumentBuilderImpl;
 import net.sf.saxon.event.Sender;
 import net.sf.saxon.lib.ParseOptions;
 import net.sf.saxon.lib.Validation;
 import net.sf.saxon.trans.XPathException;
-import net.sf.saxon.trans.XmlCatalogResolver;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
-import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrTinyBuilder;
-import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
-import org.apache.solr.schema.IndexSchema;
-import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -48,11 +39,8 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 
 abstract public class BaseTestHarness {
 

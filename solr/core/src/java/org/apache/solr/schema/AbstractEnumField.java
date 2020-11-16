@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
@@ -29,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.jute.Index;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;

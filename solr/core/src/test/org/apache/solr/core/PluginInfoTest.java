@@ -23,7 +23,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.DOMUtilTestBase;
 import org.junit.Test;
-import org.w3c.dom.Node;
 
 /**
  * TestCase  for PluginInfo.

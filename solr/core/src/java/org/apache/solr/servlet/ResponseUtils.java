@@ -17,8 +17,6 @@
 package org.apache.solr.servlet;
 
 import java.io.PrintWriter;
-import java.io.StringWriter;
-
 import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;

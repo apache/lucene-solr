@@ -281,10 +281,10 @@
 
     <!-- A general text field that has reasonable, generic
          cross-language defaults: it tokenizes with StandardTokenizer,
-	       removes stop words from case-insensitive "stopwords.txt"
-	       (empty by default), and down cases.  At query time only, it
-	       also applies synonyms.
-	  -->
+           removes stop words from case-insensitive "stopwords.txt"
+           (empty by default), and down cases.  At query time only, it
+           also applies synonyms.
+      -->
     <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
       <analyzer type="index">
         <tokenizer name="standard"/>
@@ -311,7 +311,7 @@
          This makes it a bit more useful then TextField in many situations, but the trade-off
          is that it takes up more space on disk; which is why it's not used in place of TextField
          for every fieldType in this _default schema.
-	  -->
+      -->
     <dynamicField name="*_t_sort" type="text_gen_sort" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="*_txt_sort" type="text_gen_sort" indexed="true" stored="true"/>
     <fieldType name="text_gen_sort" class="solr.SortableTextField" positionIncrementGap="100" multiValued="true">
@@ -350,7 +350,7 @@
         <filter name="keywordMarker" protected="protwords.txt"/>
         <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
         <filter name="englishMinimalStem"/>
-	      -->
+          -->
         <filter name="porterStem"/>
       </analyzer>
       <analyzer type="query">
@@ -365,7 +365,7 @@
         <filter name="keywordMarker" protected="protwords.txt"/>
         <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
         <filter name="englishMinimalStem"/>
-	      -->
+          -->
         <filter name="porterStem"/>
       </analyzer>
     </fieldType>
@@ -444,7 +444,7 @@
     </fieldType>
 
     <!-- Just like text_general except it reverses the characters of
-	       each token, to enable more efficient leading wildcard queries.
+           each token, to enable more efficient leading wildcard queries.
     -->
     <dynamicField name="*_txt_rev" type="text_general_rev"  indexed="true"  stored="true"/>
     <fieldType name="text_general_rev" class="solr.TextField" positionIncrementGap="100">

@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

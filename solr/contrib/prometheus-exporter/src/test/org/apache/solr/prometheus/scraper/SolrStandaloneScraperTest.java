@@ -17,31 +17,28 @@
 
 package org.apache.solr.prometheus.scraper;
 
+import io.prometheus.client.Collector;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.prometheus.PrometheusExporterTestBase;
+import org.apache.solr.prometheus.collector.MetricSamples;
+import org.apache.solr.prometheus.exporter.MetricsConfiguration;
+import org.apache.solr.prometheus.utils.Helpers;
+import org.apache.solr.util.RestTestBase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-
-import io.prometheus.client.Collector;
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.prometheus.PrometheusExporterTestBase;
-import org.apache.solr.prometheus.collector.MetricSamples;
-import org.apache.solr.prometheus.exporter.MetricsConfiguration;
-import org.apache.solr.prometheus.utils.Helpers;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.util.RestTestBase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
 
 public class SolrStandaloneScraperTest extends RestTestBase {
 

@@ -29,7 +29,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

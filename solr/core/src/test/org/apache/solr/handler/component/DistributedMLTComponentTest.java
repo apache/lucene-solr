@@ -31,7 +31,6 @@ import org.apache.solr.search.stats.LRUStatsCache;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

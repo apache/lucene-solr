@@ -39,7 +39,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.EphemeralDirectoryFactory;
-import org.apache.solr.core.RAMDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;

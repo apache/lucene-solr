@@ -52,7 +52,6 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
 

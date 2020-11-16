@@ -37,8 +37,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 // nocommit - i have a workaround for this threadleak
 @Ignore
 @LuceneTestCase.Nightly

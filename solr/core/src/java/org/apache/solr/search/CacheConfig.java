@@ -16,6 +16,20 @@
  */
 package org.apache.solr.search;
 
+import net.sf.saxon.om.NodeInfo;
+import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.DOMUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
@@ -25,23 +39,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.sf.saxon.om.NodeInfo;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.DOMUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Contains the knowledge of how cache config is

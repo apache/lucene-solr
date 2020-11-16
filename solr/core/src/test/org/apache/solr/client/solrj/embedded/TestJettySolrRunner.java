@@ -20,7 +20,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;

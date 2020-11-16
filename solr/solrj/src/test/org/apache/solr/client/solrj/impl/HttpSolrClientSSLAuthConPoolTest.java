@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 
-import java.net.URL;
 import java.util.Arrays;
 
 import org.apache.solr.util.RandomizeSSL;

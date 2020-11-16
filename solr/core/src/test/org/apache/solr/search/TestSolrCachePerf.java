@@ -29,7 +29,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**

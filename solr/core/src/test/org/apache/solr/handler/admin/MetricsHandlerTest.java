@@ -19,8 +19,6 @@ package org.apache.solr.handler.admin;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.codahale.metrics.Counter;
 import org.apache.solr.SolrTestCaseJ4;
