@@ -49,15 +49,8 @@ import org.apache.lucene.util.SuppressForbidden;
  * to the provided Directory instance.
  *
  * <p>See <a
- * href="{@docRoot}/overview-summary.html#NativeUnixDirectory">Overview</a>
+ * href="{@docRoot}/overview-summary.html#DirectIODirectory">Overview</a>
  * for more details.
- *
- * <p>To use this you must compile
- * NativePosixUtil.cpp (exposes Linux-specific APIs through
- * JNI) for your platform, by running <code>./gradlew build</code>, and then putting the resulting
- * <code>libLuceneNativeIO.so</code> or <code>libLuceneNativeIO.dylib</code>
- * (from <code>lucene/misc/native/build/lib/release/platform/</code>) onto your dynamic
- * linker search path.
  *
  * <p><b>WARNING</b>: this code is very new and quite easily
  * could contain horrible bugs.  For example, here's one
@@ -72,7 +65,7 @@ import org.apache.lucene.util.SuppressForbidden;
  *
  * @lucene.experimental
  */
-public class NativeUnixDirectory extends FSDirectory {
+public class DirectIODirectory extends FSDirectory {
 
   // TODO: this is OS dependent, but likely 512 is the LCD
   private final static long ALIGN = 512;
@@ -105,7 +98,7 @@ public class NativeUnixDirectory extends FSDirectory {
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public NativeUnixDirectory(Path path, int mergeBufferSize, long minBytesDirect, LockFactory lockFactory, Directory delegate) throws IOException {
+  public DirectIODirectory(Path path, int mergeBufferSize, long minBytesDirect, LockFactory lockFactory, Directory delegate) throws IOException {
     super(path, lockFactory);
     if ((mergeBufferSize & ALIGN) != 0) {
       throw new IllegalArgumentException("mergeBufferSize must be 0 mod " + ALIGN + " (got: " + mergeBufferSize + ")");
@@ -122,7 +115,7 @@ public class NativeUnixDirectory extends FSDirectory {
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public NativeUnixDirectory(Path path, LockFactory lockFactory, Directory delegate) throws IOException {
+  public DirectIODirectory(Path path, LockFactory lockFactory, Directory delegate) throws IOException {
     this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, lockFactory, delegate);
   }  
 
@@ -132,7 +125,7 @@ public class NativeUnixDirectory extends FSDirectory {
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public NativeUnixDirectory(Path path, Directory delegate) throws IOException {
+  public DirectIODirectory(Path path, Directory delegate) throws IOException {
     this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, FSLockFactory.getDefault(), delegate);
   }  
 
@@ -142,7 +135,7 @@ public class NativeUnixDirectory extends FSDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect || fileLength(name) < minBytesDirect) {
       return delegate.openInput(name, context);
     } else {
-      return new NativeUnixIndexInput(getDirectory().resolve(name), mergeBufferSize);
+      return new DirectIOIndexInput(getDirectory().resolve(name), mergeBufferSize);
     }
   }
 
@@ -152,11 +145,11 @@ public class NativeUnixDirectory extends FSDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect) {
       return delegate.createOutput(name, context);
     } else {
-      return new NativeUnixIndexOutput(getDirectory().resolve(name), name, mergeBufferSize);
+      return new DirectIOIndexOutput(getDirectory().resolve(name), name, mergeBufferSize);
     }
   }
 
-  private final static class NativeUnixIndexOutput extends IndexOutput {
+  private final static class DirectIOIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
     private final int bufferSize;
@@ -169,14 +162,14 @@ public class NativeUnixDirectory extends FSDirectory {
     private boolean isOpen;
 
     @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
-    public NativeUnixIndexOutput(Path path, String name, int bufferSize) throws IOException {
-      super("NativeUnixIndexOutput(path=\"" + path.toString() + "\")", name);
+    public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
+      super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
+      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+                                  com.sun.nio.file.ExtendedOpenOption.DIRECT);
       int blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
       this.bufferSize = bufferSize;
       buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
-      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
-              com.sun.nio.file.ExtendedOpenOption.DIRECT);
 
       isOpen = true;
     }
@@ -272,7 +265,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
   }
 
-  private final static class NativeUnixIndexInput extends IndexInput {
+  private final static class DirectIOIndexInput extends IndexInput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
     private final int blockSize;
@@ -284,13 +277,13 @@ public class NativeUnixDirectory extends FSDirectory {
     private int bufferPos;
 
     @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
-    public NativeUnixIndexInput(Path path, int bufferSize) throws IOException {
-      super("NativeUnixIndexInput(path=\"" + path + "\")");
+    public DirectIOIndexInput(Path path, int bufferSize) throws IOException {
+      super("DirectIOIndexInput(path=\"" + path + "\")");
 
+      channel = FileChannel.open(path, StandardOpenOption.READ, com.sun.nio.file.ExtendedOpenOption.DIRECT);
       blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
       this.bufferSize = bufferSize;
       buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
-      channel = FileChannel.open(path, StandardOpenOption.READ, com.sun.nio.file.ExtendedOpenOption.DIRECT);
 
       isOpen = true;
       isClone = false;
@@ -300,7 +293,7 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     // for clone
-    public NativeUnixIndexInput(NativeUnixIndexInput other) throws IOException {
+    public DirectIOIndexInput(DirectIOIndexInput other) throws IOException {
       super(other.toString());
       channel = other.channel;
       this.bufferSize = other.bufferSize;
@@ -407,9 +400,9 @@ public class NativeUnixDirectory extends FSDirectory {
     }
 
     @Override
-    public NativeUnixIndexInput clone() {
+    public DirectIOIndexInput clone() {
       try {
-        return new NativeUnixIndexInput(this);
+        return new DirectIOIndexInput(this);
       } catch (IOException ioe) {
         throw new RuntimeException("IOException during clone: " + this, ioe);
       }

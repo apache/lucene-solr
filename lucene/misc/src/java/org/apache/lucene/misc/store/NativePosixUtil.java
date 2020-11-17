@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Provides JNI access to native methods such as madvise() for
- * {@link NativeUnixDirectory}
+ * {@link DirectIODirectory}
  */
 public final class NativePosixUtil {
   public final static int NORMAL = 0;

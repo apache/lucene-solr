@@ -18,29 +18,37 @@ package org.apache.lucene.misc.store;
 
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
 
 import java.io.IOException;
-import java.util.EnumSet;
+import java.nio.file.Files;
 
-public class NativeUnixDirectoryTest extends LuceneTestCase {
-  @Rule
-  public static TestRule requiresNative = new NativeLibEnableRule(
-      EnumSet.of(NativeLibEnableRule.OperatingSystem.MAC,
-          NativeLibEnableRule.OperatingSystem.FREE_BSD,
-          NativeLibEnableRule.OperatingSystem.LINUX));
+import static org.apache.lucene.misc.store.DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT;
 
-  public void testLibraryLoaded() throws IOException {
+public class DirectIODirectoryTest extends LuceneTestCase {
+
+  public void testWriteReadMergeInfo() throws IOException {
     try (ByteBuffersDirectory ramDir = new ByteBuffersDirectory();
-         Directory dir = new NativeUnixDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST), ramDir)) {
+         Directory dir = new DirectIODirectory(RandomizedTest.newTempDir(LifecycleScope.TEST), ramDir)) {
+
+      final long blockSize = Files.getFileStore(createTempFile()).getBlockSize();
+      final long minBytesDirect = Double.valueOf(Math.ceil(DEFAULT_MIN_BYTES_DIRECT / blockSize)).longValue() *
+                                    blockSize;
+      // Need to worry about overflows here?
+      final int writtenByteLength = Math.toIntExact(minBytesDirect);
+
       MergeInfo mergeInfo = new MergeInfo(1000, Integer.MAX_VALUE, true, 1);
-      dir.createOutput("test", new IOContext(mergeInfo)).close();
+      final IOContext context = new IOContext(mergeInfo);
+
+      IndexOutput indexOutput = dir.createOutput("test", context);
+      indexOutput.writeBytes(new byte[writtenByteLength], 0, writtenByteLength);
+      IndexInput indexInput = dir.openInput("test", context);
+
+      assertEquals("The length of bytes read should equal to written", writtenByteLength, indexInput.length());
+
+      indexOutput.close();
+      indexInput.close();
     }
   }
 }
