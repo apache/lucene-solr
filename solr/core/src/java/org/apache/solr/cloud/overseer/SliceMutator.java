@@ -296,7 +296,7 @@ public class SliceMutator {
     }
     slice = collection.getSlice(shard);
     if (slice == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Slice not found " + slice);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Slice not found " + shard);
     }
     Map<String,Replica> replicasCopy = slice.getReplicasCopy();
 

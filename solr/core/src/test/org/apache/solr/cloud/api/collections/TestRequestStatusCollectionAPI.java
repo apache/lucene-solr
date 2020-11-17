@@ -30,7 +30,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +45,6 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testRequestCollectionStatus() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -107,7 +105,7 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.SPLITSHARD.toString());
     params.set("collection", "collection2");
-    params.set("shard", "shard1");
+    params.set("shard", SHARD1);
     params.set(CommonAdminParams.ASYNC, "1001");
     try {
       sendRequest(params);
@@ -128,9 +126,8 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
     }
 
     assertEquals("found [1001] in completed tasks", message);
-    // create * 2 + preprecovery *2 + split + req_apply_upd * 2 =7
-    assertEquals("expecting "+(2+2+1+2)+" shard responses at "+splitResponse,
-        (2+2+1+2), numResponsesCompleted(splitResponse));
+    assertEquals("expecting "+(2+2)+" shard responses at "+splitResponse,
+        (2+2), numResponsesCompleted(splitResponse));
 
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
@@ -159,8 +156,6 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
     }
 
     assertEquals("found [1002] in failed tasks", message);
-
-    cluster.waitForActiveCollection("collection2", 4, 4);
 
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
