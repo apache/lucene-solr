@@ -230,6 +230,8 @@ New Features
 * LUCENE-9378: Doc values now allow configuring how to trade compression for
   retrieval speed. (Adrien Grand)
 
+* LUCENE-9413: Add CJKWidthCharFilter and its factory (Tomoko Uchida)
+
 Improvements
 ---------------------
 
