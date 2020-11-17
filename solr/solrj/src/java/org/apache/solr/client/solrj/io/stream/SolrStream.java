@@ -117,11 +117,10 @@ public class SolrStream extends TupleStream {
   public void open() throws IOException {
 
     // Reuse the same client per node vs. having one per replica
-    String url = getNodeUrl();
     if(cache == null) {
-      client = new HttpSolrClient.Builder(url).build();
+      client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
-      client = cache.getHttpSolrClient(url);
+      client = cache.getHttpSolrClient(baseUrl);
     }
 
     try {
@@ -129,21 +128,10 @@ public class SolrStream extends TupleStream {
       if (!distrib) {
         ((ModifiableSolrParams) requestParams).add("distrib","false");
       }
-      tupleStreamParser = constructParser(client, requestParams);
+      tupleStreamParser = constructParser(requestParams);
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
-  }
-
-  private String getNodeUrl() {
-    String nodeUrl = baseUrl;
-    if (core != null) {
-      int coreAt = nodeUrl.indexOf(core);
-      if (coreAt != -1) {
-        nodeUrl = nodeUrl.substring(0,coreAt);
-      }
-    }
-    return nodeUrl;
   }
 
   /**
@@ -288,8 +276,7 @@ public class SolrStream extends TupleStream {
     return fields;
   }
 
-  // temporary...
-  public TupleStreamParser constructParser(SolrClient server, SolrParams requestParams) throws IOException, SolrServerException {
+  private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
     String p = requestParams.get("qt");
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
@@ -302,18 +289,8 @@ public class SolrStream extends TupleStream {
     QueryRequest query = new QueryRequest(requestParams);
 
     // in order to reuse HttpSolrClient objects per node, we need to cache them without the core name in the URL
-    // but if we do that, then we need to add the core to the path for making the request
-    // however, since this method is public, we can't assume the server arg is the same as our client from open!
-    String coreInPath = null;
-    if (server instanceof HttpSolrClient && core != null) {
-      String coreInUrl = "/"+core;
-      if (!((HttpSolrClient) server).getBaseURL().contains(coreInUrl)) {
-        coreInPath = coreInUrl; // core is not in the SolrClient's URL, so we need to add to the request path
-      }
-    }
-
-    if (coreInPath != null) {
-      query.setPath(coreInPath + (p != null ? p : "/select"));
+    if (core != null) {
+      query.setPath("/"+core + (p != null ? p : "/select"));
     } else {
       query.setPath(p);
     }
@@ -325,7 +302,7 @@ public class SolrStream extends TupleStream {
       query.setBasicAuthCredentials(user, password);
     }
 
-    NamedList<Object> genericResponse = server.request(query);
+    NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
     this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
     if (CommonParams.JAVABIN.equals(wt)) {
