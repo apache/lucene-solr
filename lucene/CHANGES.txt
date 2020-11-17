@@ -18,6 +18,10 @@ System Requirements
 
 API Changes
 
+* LUCENE-8982: Separate out native code to another module to allow cpp
+  build with gradle. This also changes the name of the native "posix-support"
+  library to LuceneNativeIO. (Zachary Chen, Dawid Weiss)
+
 * LUCENE-9562: All binary analysis packages (and corresponding
   Maven artifacts) with names containing '-analyzers-' have been renamed
   to '-analysis-'. (Dawid Weiss)
@@ -160,6 +164,8 @@ Improvements
 
 * LUCENE-9450: Use BinaryDocValues for the taxonomy index instead of StoredFields.
   Add backwards compatibility tests for the taxonomy index. (Gautam Worah, Michael McCandless)
+
+* LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
 
 Bug fixes
 

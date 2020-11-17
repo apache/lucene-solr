@@ -33,7 +33,7 @@ public final class NativePosixUtil {
   public final static int NOREUSE = 5;
 
   static {
-    System.loadLibrary("NativePosixUtil");
+    System.loadLibrary("LuceneNativeIO");
   }
 
   private static native int posix_fadvise(FileDescriptor fd, long offset, long len, int advise) throws IOException;

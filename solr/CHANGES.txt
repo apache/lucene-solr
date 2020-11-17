@@ -176,6 +176,8 @@ Improvements
 
 * SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
 
+* SOLR-14977 : ContainerPlugins should be configurable with custom objects (noble, ab)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)

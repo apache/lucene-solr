@@ -15,13 +15,19 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
+package org.apache.solr.api;
 
-description = 'Index tools and other miscellaneous code'
+import org.apache.solr.common.MapWriter;
 
-dependencies {
-  api project(':lucene:core')
-  testImplementation project(':lucene:test-framework')
+/**Implement this interface if your plugin needs to accept some configuration
+ * 
+ * @param <T> the configuration Object type
+ */
+public interface ConfigurablePlugin<T extends MapWriter> {
 
-  nativeDeps project(":lucene:misc:native")
+  /**This is invoked soon after the Object is initialized
+   * 
+   * @param cfg value deserialized from JSON
+   */
+  void configure(T cfg);
 }

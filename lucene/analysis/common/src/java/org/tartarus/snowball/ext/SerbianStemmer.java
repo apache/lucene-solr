@@ -2257,9 +2257,8 @@ private static final char g_ca[] = {119, 95, 23, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 private static final char g_rg[] = {1 };
 
-private int I_p3;
-private int I_p2;
 private int I_p1;
+private boolean B_no_diacritics;
 
 
 private boolean r_cyr_to_lat() {
@@ -2516,7 +2515,7 @@ private boolean r_prelude() {
 }
 
 private boolean r_mark_regions() {
-  I_p3 = 0;
+  B_no_diacritics = true;
   int v_1 = cursor;
   lab0: {
     golab1: while(true)
@@ -2534,11 +2533,10 @@ private boolean r_mark_regions() {
       }
       cursor++;
     }
-    I_p3 = cursor;
+    B_no_diacritics = false;
   }
   cursor = v_1;
   I_p1 = limit;
-  I_p2 = 0;
   int v_3 = cursor;
   lab3: {
     golab4: while(true)
@@ -2557,59 +2555,55 @@ private boolean r_mark_regions() {
       cursor++;
     }
     I_p1 = cursor;
-  }
-  cursor = v_3;
-  int v_5 = cursor;
-  lab6: {
-    golab7: while(true)
+    if (!(I_p1 < 2))
     {
-      lab8: {
-        if (!(eq_s("r")))
+      break lab3;
+    }
+    golab6: while(true)
+    {
+      lab7: {
+        if (!(out_grouping(g_v, 97, 117)))
         {
-          break lab8;
+          break lab7;
         }
-        break golab7;
+        break golab6;
       }
       if (cursor >= limit)
       {
-        break lab6;
+        break lab3;
       }
       cursor++;
     }
-    I_p2 = cursor;
-    if (!((I_p1 - I_p2) > 1))
+    I_p1 = cursor;
+  }
+  cursor = v_3;
+  int v_6 = cursor;
+  lab8: {
+    golab9: while(true)
     {
-      break lab6;
-    }
-    I_p1 = I_p2;
-  }
-  cursor = v_5;
-  if (!(I_p1 < 2))
-  {
-    return false;
-  }
-  lab9: {
-    int v_7 = cursor;
-    lab10: {
-      if (!(I_p1 == I_p2))
-      {
-        break lab10;
-      }
-      golab11: while(true)
-      {
-        lab12: {
-          if (!(eq_s("r")))
-          {
-            break lab12;
-          }
-          break golab11;
-        }
-        if (cursor >= limit)
+      lab10: {
+        if (!(eq_s("r")))
         {
           break lab10;
         }
-        cursor++;
+        break golab9;
       }
+      if (cursor >= limit)
+      {
+        break lab8;
+      }
+      cursor++;
+    }
+    lab11: {
+      int v_8 = cursor;
+      lab12: {
+        if (!(cursor >= 2))
+        {
+          break lab12;
+        }
+        break lab11;
+      }
+      cursor = v_8;
       golab13: while(true)
       {
         lab14: {
@@ -2621,62 +2615,23 @@ private boolean r_mark_regions() {
         }
         if (cursor >= limit)
         {
-          break lab10;
+          break lab8;
         }
         cursor++;
       }
-      break lab9;
     }
-    cursor = v_7;
-    if (!(I_p1 != I_p2))
+    if (!((I_p1 - cursor) > 1))
     {
-      return false;
+      break lab8;
     }
-    golab15: while(true)
-    {
-      lab16: {
-        if (!(in_grouping(g_v, 97, 117)))
-        {
-          break lab16;
-        }
-        break golab15;
-      }
-      if (cursor >= limit)
-      {
-        return false;
-      }
-      cursor++;
-    }
-    golab17: while(true)
-    {
-      lab18: {
-        if (!(out_grouping(g_v, 97, 117)))
-        {
-          break lab18;
-        }
-        break golab17;
-      }
-      if (cursor >= limit)
-      {
-        return false;
-      }
-      cursor++;
-    }
+    I_p1 = cursor;
   }
-  I_p1 = cursor;
+  cursor = v_6;
   return true;
 }
 
 private boolean r_R1() {
   if (!(I_p1 <= cursor))
-  {
-    return false;
-  }
-  return true;
-}
-
-private boolean r_R2() {
-  if (!(I_p3 == 0))
   {
     return false;
   }
@@ -2712,7 +2667,7 @@ private boolean r_Step_1() {
       slice_from("\u010Dajni");
       break;
     case 7:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2788,7 +2743,7 @@ private boolean r_Step_1() {
       slice_from("du\u0161ni");
       break;
     case 31:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2855,7 +2810,7 @@ private boolean r_Step_1() {
       slice_from("\u0161avi");
       break;
     case 52:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2868,7 +2823,7 @@ private boolean r_Step_1() {
       slice_from("a\u010Dka");
       break;
     case 55:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2878,7 +2833,7 @@ private boolean r_Step_1() {
       slice_from("u\u0161ka");
       break;
     case 57:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2906,7 +2861,7 @@ private boolean r_Step_1() {
       slice_from("ti\u010Dni");
       break;
     case 65:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2931,7 +2886,7 @@ private boolean r_Step_1() {
       slice_from("osti");
       break;
     case 72:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -2992,7 +2947,7 @@ private boolean r_Step_1() {
       slice_from("a\u0161ni");
       break;
     case 91:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -3377,308 +3332,308 @@ private boolean r_Step_2() {
       slice_from("at");
       break;
     case 121:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("luc");
       break;
     case 122:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("snj");
       break;
     case 123:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("os");
       break;
     case 124:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ac");
       break;
     case 125:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ec");
       break;
     case 126:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("uc");
       break;
     case 127:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("rosi");
       break;
     case 128:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("aca");
       break;
     case 129:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("jas");
       break;
     case 130:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("tas");
       break;
     case 131:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("gas");
       break;
     case 132:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("nas");
       break;
     case 133:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("kas");
       break;
     case 134:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("vas");
       break;
     case 135:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("bas");
       break;
     case 136:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("as");
       break;
     case 137:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("cin");
       break;
     case 138:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("astaj");
       break;
     case 139:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("istaj");
       break;
     case 140:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ostaj");
       break;
     case 141:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("asta");
       break;
     case 142:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ista");
       break;
     case 143:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("osta");
       break;
     case 144:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ava");
       break;
     case 145:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("eva");
       break;
     case 146:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("iva");
       break;
     case 147:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("uva");
       break;
     case 148:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ova");
       break;
     case 149:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("jeti");
       break;
     case 150:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("inj");
       break;
     case 151:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ist");
       break;
     case 152:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("es");
       break;
     case 153:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("et");
       break;
     case 154:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("is");
       break;
     case 155:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ir");
       break;
     case 156:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ur");
       break;
     case 157:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("uj");
       break;
     case 158:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ni");
       break;
     case 159:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("sn");
       break;
     case 160:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("ta");
       break;
     case 161:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("a");
       break;
     case 162:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("i");
       break;
     case 163:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
       slice_from("e");
       break;
     case 164:
-      if (!r_R2())
+      if (!(B_no_diacritics))
       {
         return false;
       }
@@ -3706,9 +3661,7 @@ private boolean r_Step_3() {
 public boolean stem() {
   r_cyr_to_lat();
   r_prelude();
-  int v_3 = cursor;
   r_mark_regions();
-  cursor = v_3;
   limit_backward = cursor;
   cursor = limit;
   int v_4 = limit - cursor;
