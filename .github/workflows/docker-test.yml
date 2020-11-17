@@ -17,6 +17,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      SOLR_DOCKER_IMAGE_REPO: github-pr/solr
+      SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
+
     steps:
     # Setup
     - uses: actions/checkout@v2

@@ -27,6 +27,8 @@ import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
@@ -158,7 +160,7 @@ public class SimpleTextVectorReader extends VectorReader {
     }
   }
 
-  private static class SimpleTextVectorValues extends VectorValues implements VectorValues.RandomAccess {
+  private static class SimpleTextVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final FieldEntry entry;
@@ -205,7 +207,7 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public RandomAccessVectorValues randomAccess() {
       return this;
     }
 
@@ -236,15 +238,15 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     private void readAllVectors() throws IOException {
-      for (int i = 0; i < values.length; i++) {
-        readVector(values[i]);
+      for (float[] value : values) {
+        readVector(value);
       }
     }
 
     private void readVector(float[] value) throws IOException {
       SimpleTextUtil.readLine(in, scratch);
-      // skip leading " [" and strip trailing "]"
-      String s = new BytesRef(scratch.bytes(), 2, scratch.length() - 3).utf8ToString();
+      // skip leading "[" and strip trailing "]"
+      String s = new BytesRef(scratch.bytes(), 1, scratch.length() - 2).utf8ToString();
       String[] floatStrings = s.split(",");
       assert floatStrings.length == value.length : " read " + s + " when expecting " + value.length + " floats";
       for (int i = 0; i < floatStrings.length; i++) {

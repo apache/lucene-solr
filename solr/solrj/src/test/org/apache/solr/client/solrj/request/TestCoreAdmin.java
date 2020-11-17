@@ -193,6 +193,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     names = cores.getAllCoreNames();
     assertFalse(names.toString(), names.contains("coreRenamed"));
     assertTrue(names.toString(), names.contains("core1"));
+    assertEquals(names.size(), cores.getNumAllCores());
   }
 
   @Test

@@ -150,6 +150,35 @@ public class SolrMetricManager {
   }
 
   /**
+   * Return an object used for representing a null (missing) numeric value.
+   */
+  public Object nullNumber() {
+    return metricsConfig.getNullNumber();
+  }
+
+  /**
+   * Return an object used for representing a "Not A Number" (NaN) value.
+   */
+  public Object notANumber() {
+    return metricsConfig.getNotANumber();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) string value.
+   */
+  public Object nullString() {
+    return metricsConfig.getNullString();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) object value.
+   */
+  public Object nullObject() {
+    return metricsConfig.getNullObject();
+  }
+
+
+  /**
    * An implementation of {@link MetricFilter} that selects metrics
    * with names that start with one of prefixes.
    */
