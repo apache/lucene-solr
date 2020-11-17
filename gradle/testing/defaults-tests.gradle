@@ -105,6 +105,7 @@ allprojects {
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
+      jvmArgs '--illegal-access=deny'
 
       systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
       systemProperty 'java.awt.headless', 'true'

@@ -32,7 +32,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
