@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.analysis.cjk;
 
-
-import org.apache.lucene.analysis.CharFilterFactory;
-
 import java.io.Reader;
 import java.util.Map;
+
+import org.apache.lucene.analysis.util.CharFilterFactory;
 
 /**
  * Factory for {@link CJKWidthCharFilter}.
@@ -37,11 +36,6 @@ public class CJKWidthCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
-  }
-
-  /** Default ctor for compatibility with SPI */
-  public CJKWidthCharFilterFactory() {
-    throw defaultCtorException();
   }
 
   @Override

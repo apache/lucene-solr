@@ -17,7 +17,7 @@
 
 package org.apache.lucene.analysis.cjk;
 
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 import java.io.Reader;
