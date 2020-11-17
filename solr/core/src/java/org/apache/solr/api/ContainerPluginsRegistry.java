@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -69,7 +72,8 @@ import static org.apache.solr.common.util.Utils.makeMap;
 public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -114,6 +118,30 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return currentPlugins.get(name);
   }
 
+  static class PluginMetaHolder {
+    private final Map<String, Object> original;
+    private final PluginMeta meta;
+
+    PluginMetaHolder(Map<String, Object> original) throws IOException {
+      this.original = original;
+      meta = mapper.readValue(Utils.toJSON(original), PluginMeta.class);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof PluginMetaHolder) {
+        PluginMetaHolder that = (PluginMetaHolder) obj;
+        return Objects.equals(this.original,that.original);
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return original.hashCode();
+    }
+  }
+  @SuppressWarnings("unchecked")
   public synchronized void refresh() {
     Map<String, Object> pluginInfos = null;
     try {
@@ -122,19 +150,18 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       log.error("Could not read plugins data", e);
       return;
     }
-    Map<String,PluginMeta> newState = new HashMap<>(pluginInfos.size());
+    Map<String,PluginMetaHolder> newState = new HashMap<>(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       try {
-        newState.put(e.getKey(),
-            mapper.readValue(Utils.toJSON(e.getValue()), PluginMeta.class));
+        newState.put(e.getKey(),new PluginMetaHolder((Map<String, Object>) e.getValue()));
       } catch (Exception exp) {
         log.error("Invalid apiInfo configuration :", exp);
       }
     }
 
-    Map<String, PluginMeta> currentState = new HashMap<>();
+    Map<String, PluginMetaHolder> currentState = new HashMap<>();
     for (Map.Entry<String, ApiInfo> e : currentPlugins.entrySet()) {
-      currentState.put(e.getKey(), e.getValue().info);
+      currentState.put(e.getKey(), e.getValue().holder);
     }
     Map<String, Diff> diff = compareMaps(currentState, newState);
     if (diff == null) return;//nothing has changed
@@ -153,10 +180,10 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         }
       } else {
         //ADDED or UPDATED
-        PluginMeta info = newState.get(e.getKey());
+        PluginMetaHolder info = newState.get(e.getKey());
         ApiInfo apiInfo = null;
         List<String> errs = new ArrayList<>();
-        apiInfo = new ApiInfo(info, errs);
+        apiInfo = new ApiInfo(info,errs);
         if (!errs.isEmpty()) {
           log.error(StrUtils.join(errs, ','));
           continue;
@@ -243,8 +270,10 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
 
+    private final PluginMetaHolder holder;
+
     @JsonProperty
-    private final PluginMeta info;
+    private PluginMeta info;
 
     @JsonProperty(value = "package")
     public final String pkg;
@@ -272,8 +301,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       return info.copy();
     }
     @SuppressWarnings({"unchecked","rawtypes"})
-    public ApiInfo(PluginMeta info, List<String> errs) {
-      this.info = info;
+    public ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
+      this.holder = infoHolder;
+      this.info = infoHolder.meta;
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
@@ -349,7 +379,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
     }
 
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void init() throws Exception {
       if (this.holders != null) return;
       Constructor constructor = klas.getConstructors()[0];
@@ -359,6 +389,13 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
+      }
+      if (instance instanceof ConfigurablePlugin) {
+        Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
+        if (c != null) {
+          MapWriter initVal = mapper.readValue(Utils.toJSON(holder.original), c);
+          ((ConfigurablePlugin) instance).configure(initVal);
+        }
       }
       if (instance instanceof ResourceLoaderAware) {
         try {
@@ -372,9 +409,34 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
+
   }
 
-  public ApiInfo createInfo(PluginMeta info, List<String> errs) {
+  /**Get the generic type of a {@link ConfigurablePlugin}
+   */
+  @SuppressWarnings("rawtypes")
+  public static Class getConfigClass(ConfigurablePlugin<?> o) {
+    Class klas = o.getClass();
+    do {
+      Type[] interfaces = klas.getGenericInterfaces();
+      for (Type type : interfaces) {
+        if (type instanceof ParameterizedType) {
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          if (parameterizedType.getRawType() == ConfigurablePlugin.class) {
+            return (Class) parameterizedType.getActualTypeArguments()[0];
+          }
+        }
+      }
+      klas = klas.getSuperclass();
+    } while (klas != null && klas != Object.class);
+    return null;
+  }
+
+  public ApiInfo createInfo(Map<String,Object> info, List<String> errs) throws IOException {
+    return new ApiInfo(new PluginMetaHolder(info), errs);
+
+  }
+  public ApiInfo createInfo(PluginMetaHolder info, List<String> errs) {
     return new ApiInfo(info, errs);
 
   }
