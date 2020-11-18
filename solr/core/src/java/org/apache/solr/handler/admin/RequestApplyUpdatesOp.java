@@ -38,6 +38,13 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       if (core == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core [" + cname + "] not found");
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
+
+      // if updateLog is disabled, stop rejecting updates
+      if (updateLog == null) {
+        core.getUpdateHandler().stopRejectingUpdates();
+        return;
+      }
+
       if (updateLog.getState() != UpdateLog.State.BUFFERING) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core " + cname + " not in buffering state");
       }

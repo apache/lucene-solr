@@ -149,15 +149,18 @@ public class SolrIndexSplitter {
     Directory parentDirectory = searcher.getRawReader().directory();
     Lock parentDirectoryLock = null;
     UpdateLog ulog = parentCore.getUpdateHandler().getUpdateLog();
-    if (ulog == null && splitMethod == SplitMethod.LINK) {
-      log.warn("No updateLog in parent core, switching to use potentially slower 'splitMethod=rewrite'");
-      splitMethod = SplitMethod.REWRITE;
+    if (ulog == null) {
+      log.warn("No updateLog in parent core, so updates will be rejected during split.");
     }
     if (splitMethod == SplitMethod.LINK) {
       RTimerTree t = timings.sub("closeParentIW");
       try {
-        // start buffering updates
-        ulog.bufferUpdates();
+        // if updateLog is enabled, start buffering updates; if not, reject updates
+        if (ulog != null) {
+          ulog.bufferUpdates();
+        } else {
+          parentCore.getUpdateHandler().startRejectingUpdates();
+        }
         parentCore.getSolrCoreState().closeIndexWriter(parentCore, false);
         // make sure we can lock the directory for our exclusive use
         parentDirectoryLock = parentDirectory.obtainLock(IndexWriter.WRITE_LOCK_NAME);
@@ -169,7 +172,11 @@ public class SolrIndexSplitter {
         }
         try {
           parentCore.getSolrCoreState().openIndexWriter(parentCore);
-          ulog.applyBufferedUpdates();
+          if (ulog != null) {
+            ulog.applyBufferedUpdates();
+          } else {
+            parentCore.getUpdateHandler().stopRejectingUpdates();
+          }
         } catch (Exception e1) {
           log.error("Error reopening IndexWriter after failed close", e1);
           log.error("Original error closing IndexWriter:", e);
@@ -192,10 +199,13 @@ public class SolrIndexSplitter {
         IOUtils.closeWhileHandlingException(parentDirectoryLock);
         RTimerTree t = timings.sub("reopenParentIW");
         parentCore.getSolrCoreState().openIndexWriter(parentCore);
-        t.stop();
-        t = timings.sub("parentApplyBufferedUpdates");
-        ulog.applyBufferedUpdates();
-        t.stop();
+        if (ulog != null) {
+          t = timings.sub("parentApplyBufferedUpdates");
+          ulog.applyBufferedUpdates();
+          t.stop();
+        } else {
+          parentCore.getUpdateHandler().stopRejectingUpdates();
+        }
         if (log.isInfoEnabled()) {
           log.info("Splitting in 'link' mode {}: re-opened parent IndexWriter.", (success ? "finished" : "FAILED"));
         }
