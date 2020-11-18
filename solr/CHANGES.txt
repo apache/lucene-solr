@@ -167,6 +167,8 @@ New Features
 
 * SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
 
+* SOLR-14560: Add interleaving support in Learning To Rank. (Alessandro Benedetti, Christine Poerschke)
+
 Improvements
 ---------------------
 * SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
