@@ -26,6 +26,8 @@ import java.util.List;
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
@@ -135,7 +137,7 @@ public abstract class VectorWriter implements Closeable {
    * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a reverse ordinal
    * mapping for documents having values in order to support random access by dense ordinal.
    */
-  private static class VectorValuesMerger extends VectorValues {
+  private static class VectorValuesMerger extends VectorValues implements RandomAccessVectorValuesProducer {
     private final List<VectorValuesSub> subs;
     private final DocIDMerger<VectorValuesSub> docIdMerger;
     private final int[] ordBase;
@@ -198,7 +200,7 @@ public abstract class VectorWriter implements Closeable {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public RandomAccessVectorValues randomAccess() {
       return new MergerRandomAccess();
     }
 
@@ -227,14 +229,23 @@ public abstract class VectorWriter implements Closeable {
       return subs.get(0).values.searchStrategy();
     }
 
-    class MergerRandomAccess implements VectorValues.RandomAccess {
+    @Override
+    public TopDocs search(float[] target, int k, int fanout) throws IOException {
+      throw new UnsupportedOperationException();
+    }
 
-      private final List<RandomAccess> raSubs;
+    class MergerRandomAccess implements RandomAccessVectorValues {
+
+      private final List<RandomAccessVectorValues> raSubs;
 
       MergerRandomAccess() {
         raSubs = new ArrayList<>(subs.size());
         for (VectorValuesSub sub : subs) {
-          raSubs.add(sub.values.randomAccess());
+          if (sub.values instanceof RandomAccessVectorValuesProducer) {
+            raSubs.add(((RandomAccessVectorValuesProducer) sub.values).randomAccess());
+          } else {
+            throw new IllegalStateException("Cannot merge VectorValues without support for random access");
+          }
         }
       }
 
@@ -272,12 +283,6 @@ public abstract class VectorWriter implements Closeable {
       public BytesRef binaryValue(int targetOrd) throws IOException {
         throw new UnsupportedOperationException();
       }
-
-      @Override
-      public TopDocs search(float[] target, int k, int fanout) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
     }
   }
 }
