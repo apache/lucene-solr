@@ -247,6 +247,14 @@ Optimizations
 * LUCENE-9536: Reduced memory usage for OrdinalMap when a segment has all
   values. (Julie Tibshirani via Adrien Grand)
 
+Bug Fixes
+---------------------
+
+* LUCENE-9508: DocumentsWriter was only stalling threads for 1 second allowing
+  documents to be indexed even the DocumentsWriter wasn't able to keep up flushing.
+  Unless IW can't make progress due to an ill behaving DWPT this issue was barely
+  noticeable. (Simon Willnauer)
+
 Other
 ---------------------
 
