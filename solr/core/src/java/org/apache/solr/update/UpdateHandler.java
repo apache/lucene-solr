@@ -49,6 +49,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   protected final UpdateLog ulog;
 
+  // SolrCloud supports disabling UpdateLog, so we use a separate state variable to manage rejecting updates
+  private boolean rejectingUpdates;
+
   protected SolrMetricsContext solrMetricsContext;
 
   private void parseEventListeners() {
@@ -106,6 +109,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
+    this.rejectingUpdates = false;
     idField = core.getLatestSchema().getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
@@ -131,6 +135,8 @@ public abstract class UpdateHandler implements SolrInfoBean {
       }
       ulog.init(ulogPluginInfo);
       ulog.init(this, core);
+    } else if (updateLog == null && ulogPluginInfo != null && !ulogPluginInfo.isEnabled()) {
+      ulog = null;
     } else {
       ulog = updateLog;
     }
@@ -202,5 +208,17 @@ public abstract class UpdateHandler implements SolrInfoBean {
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
+  }
+
+  public void startRejectingUpdates() {
+    this.rejectingUpdates = true;
+  }
+
+  public void stopRejectingUpdates() {
+    this.rejectingUpdates = false;
+  }
+
+  public boolean isRejectingUpdates() {
+    return this.rejectingUpdates;
   }
 }

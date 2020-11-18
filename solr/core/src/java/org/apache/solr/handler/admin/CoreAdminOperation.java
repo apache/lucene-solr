@@ -181,7 +181,13 @@ enum CoreAdminOperation implements CoreAdminOp {
     try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
       if (core == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, "Core [" + cname + "] does not exist");
+
+      // if updateLog is disabled, fail request
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
+      if (updateLog == null) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "UpdateLog is disabled, so there is no buffer to write to.");
+      }
+
       if (updateLog.getState() != UpdateLog.State.ACTIVE) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Core " + cname + " not in active state");
       }

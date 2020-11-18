@@ -21,11 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.update.MergeIndexesCommand;
-import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,19 +48,23 @@ public abstract class UpdateRequestProcessor implements Closeable {
   }
 
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    failRequestIfCoreIsInRejectingState(cmd);
     if (next != null) next.processAdd(cmd);
   }
 
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+    failRequestIfCoreIsInRejectingState(cmd);
     if (next != null) next.processDelete(cmd);
   }
 
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    failRequestIfCoreIsInRejectingState(cmd);
     if (next != null) next.processMergeIndexes(cmd);
   }
 
   public void processCommit(CommitUpdateCommand cmd) throws IOException
   {
+    failRequestIfCoreIsInRejectingState(cmd);
     if (next != null) next.processCommit(cmd);
   }
 
@@ -73,6 +73,7 @@ public abstract class UpdateRequestProcessor implements Closeable {
    */
   public void processRollback(RollbackUpdateCommand cmd) throws IOException
   {
+    failRequestIfCoreIsInRejectingState(cmd);
     if (next != null) next.processRollback(cmd);
   }
 
@@ -91,6 +92,13 @@ public abstract class UpdateRequestProcessor implements Closeable {
         SolrException.log(log, "Exception closing processor", e);
       }
       p = p.next;
+    }
+  }
+
+  protected void failRequestIfCoreIsInRejectingState(UpdateCommand cmd) throws SolrException {
+    if (cmd.getReq().getCore().getUpdateHandler().isRejectingUpdates()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The core associated with this request is"
+              + " currently rejecting requests.");
     }
   }
 

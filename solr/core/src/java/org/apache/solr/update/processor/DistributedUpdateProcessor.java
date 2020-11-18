@@ -911,6 +911,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   void setupRequest(UpdateCommand cmd) {
+    super.failRequestIfCoreIsInRejectingState(cmd);
+
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
   }

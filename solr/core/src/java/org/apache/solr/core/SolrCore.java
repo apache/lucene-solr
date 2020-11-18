@@ -1122,8 +1122,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       final DocCollection collection = clusterState.getCollection(coreDescriptor.getCloudDescriptor().getCollectionName());
       final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
       if (slice.getState() == Slice.State.CONSTRUCTION) {
-        // set update log to buffer before publishing the core
-        getUpdateHandler().getUpdateLog().bufferUpdates();
+        // set update log to buffer before publishing the core, if updateLog is enabled; otherwise, reject updates
+        if (getUpdateHandler().getUpdateLog() != null) {
+          getUpdateHandler().getUpdateLog().bufferUpdates();
+        } else {
+          log.info("UpdateLog is disabled; no update buffering in this state.");
+          getUpdateHandler().startRejectingUpdates();
+        }
       }
     }
   }
