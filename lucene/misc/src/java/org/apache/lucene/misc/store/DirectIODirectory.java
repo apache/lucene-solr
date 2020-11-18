@@ -63,7 +63,7 @@ import org.apache.lucene.util.SuppressForbidden;
  * and OS X; other Unixes should work but have not been
  * tested!  Use at your own risk.
  *
- * Throws UnsupportedOperationException if the operating system or
+ * <p>Throws UnsupportedOperationException if the operating system or
  * file system does not support Direct I/O or a sufficient equivalent.
  *
  * @lucene.experimental
