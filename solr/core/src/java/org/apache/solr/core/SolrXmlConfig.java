@@ -42,7 +42,6 @@ import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.PropertiesUtil;
