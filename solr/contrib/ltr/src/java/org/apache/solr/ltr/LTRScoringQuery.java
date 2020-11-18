@@ -104,6 +104,10 @@ public class LTRScoringQuery extends Query implements Accountable {
     return ltrScoringModel;
   }
 
+  public String getScoringModelName() {
+    return ltrScoringModel.getName();
+  }
+
   public void setFeatureLogger(FeatureLogger fl) {
     this.fl = fl;
   }
