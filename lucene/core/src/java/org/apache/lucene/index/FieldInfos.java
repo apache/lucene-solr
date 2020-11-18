@@ -481,6 +481,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       indexOptions.clear();
       docValuesType.clear();
       dimensions.clear();
+      lowestUnassignedFieldNumber = -1;
     }
 
     synchronized void setIndexOptions(int number, String name, IndexOptions indexOptions) {

@@ -184,6 +184,9 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
+* LUCENE-9617: Reset lowestUnassignedFieldNumber on FieldNumbers.clear(), to avoid leaking
+  field numbers on IndexWriter.deleteAll(). (Michael Froh)
+
 Other
 
 * LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
