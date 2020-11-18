@@ -63,6 +63,9 @@ import org.apache.lucene.util.SuppressForbidden;
  * and OS X; other Unixes should work but have not been
  * tested!  Use at your own risk.
  *
+ * Throws UnsupportedOperationException if the operating system or
+ * file system does not support Direct I/O or a sufficient equivalent.
+ *
  * @lucene.experimental
  */
 public class DirectIODirectory extends FSDirectory {
@@ -132,6 +135,7 @@ public class DirectIODirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
+    ensureCanRead(name);
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect || fileLength(name) < minBytesDirect) {
       return delegate.openInput(name, context);
     } else {
@@ -161,6 +165,11 @@ public class DirectIODirectory extends FSDirectory {
     private long fileLength;
     private boolean isOpen;
 
+    /**
+     * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO bypassing OS buffer
+     * @throws UnsupportedOperationException if the operating system or
+     * file system does not support Direct I/O or a sufficient equivalent.
+     */
     @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
     public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
@@ -276,6 +285,11 @@ public class DirectIODirectory extends FSDirectory {
     private long filePos;
     private int bufferPos;
 
+    /**
+     * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing OS buffer
+     * @throws UnsupportedOperationException if the operating system or
+     * file system does not support Direct I/O or a sufficient equivalent.
+     */
     @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
     public DirectIOIndexInput(Path path, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");

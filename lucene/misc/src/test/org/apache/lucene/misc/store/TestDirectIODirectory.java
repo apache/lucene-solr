@@ -19,19 +19,16 @@ package org.apache.lucene.misc.store;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.apache.lucene.misc.store.DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT;
 
-public class DirectIODirectoryTest extends LuceneTestCase {
-
-  public void testWriteReadMergeInfo() throws IOException {
-    try (ByteBuffersDirectory ramDir = new ByteBuffersDirectory();
-         Directory dir = new DirectIODirectory(RandomizedTest.newTempDir(LifecycleScope.TEST), ramDir)) {
-
+public class TestDirectIODirectory extends BaseDirectoryTestCase {
+  public void testWriteReadWithDirectIO() throws IOException {
+    try(Directory dir = getDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST))) {
       final long blockSize = Files.getFileStore(createTempFile()).getBlockSize();
       final long minBytesDirect = Double.valueOf(Math.ceil(DEFAULT_MIN_BYTES_DIRECT / blockSize)).longValue() *
                                     blockSize;
@@ -50,5 +47,11 @@ public class DirectIODirectoryTest extends LuceneTestCase {
       indexOutput.close();
       indexInput.close();
     }
+  }
+
+  @Override
+  protected Directory getDirectory(Path path) throws IOException {
+    Directory delegate = FSDirectory.open(path);
+    return new DirectIODirectory(path, delegate);
   }
 }
