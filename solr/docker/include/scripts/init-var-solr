@@ -33,15 +33,13 @@ function check_dir_writability {
 if [ ! -d "$DIR/data" ]; then
     #echo "Creating $DIR/data"
     check_dir_writability "$DIR"
-    mkdir "$DIR/data"
-    chmod 0770 "$DIR/data"
+    mkdir -m0770 "$DIR/data"
 fi
 
 if [ ! -d "$DIR/logs" ]; then
     #echo "Creating $DIR/logs"
     check_dir_writability "$DIR"
-    mkdir "$DIR/logs"
-    chmod 0770 "$DIR/logs"
+    mkdir -m0770 "$DIR/logs"
 fi
 
 if [ ! -f "$DIR/data/solr.xml" ]; then
