@@ -497,9 +497,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       throw new SolrServerException("No collection param specified on request and no default collection has been set.");
     }
 
-    //Check to see if the collection is an alias. Updates to multi-collection aliases are ok as long
+    // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as long
     // as they are routed aliases
-    List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
+    List<String> aliasedCollections = new ArrayList<>(resolveAliases(Collections.singletonList(collection), false));
     if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
@@ -1098,9 +1098,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
+      // fetch scheme outside the loop because it can be expensive in case of HttpClusterStateProvider
+      String urlScheme = getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http");
       for (String liveNode : liveNodes) {
-        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
-            getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode, urlScheme));
       }
 
     } else { // Typical...
@@ -1178,7 +1179,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
-      if (getClusterStateProvider().getState(collectionName) == null) {
+      if (getDocCollection(collectionName, -1) == null) {
         // perhaps it's an alias
         uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
@@ -1226,7 +1227,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       //no such collection exists
       return null;
     }
-    if (!ref.isLazilyLoaded()) {
+    if (getClusterStateProvider() instanceof ZkClientClusterStateProvider && !ref.isLazilyLoaded()) {
       //it is readily available just return it
       return ref.get();
     }
