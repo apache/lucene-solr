@@ -53,7 +53,7 @@ import org.apache.lucene.util.packed.DirectWriter;
  *         accumulating the {@link Long#bitCount(long) bit counts} of the visited longs.
  *         Advancing &gt;= 512 documents is performed by skipping to the start of the needed 512 document
  *         sub-block and iterating to the specific document within that block. The index for the
- *         sub-block that is skipped to is retrieved from a rank-table positioned beforethe bit set.
+ *         sub-block that is skipped to is retrieved from a rank-table positioned before the bit set.
  *         The rank-table holds the origo index numbers for all 512 documents sub-blocks, represented
  *         as an unsigned short for each 128 blocks.
  *     <li>ALL: This strategy is used when a block contains exactly 65536 documents, meaning that
@@ -169,6 +169,7 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_BIN_COMPRESSED = 1;  
+  /** This version introduces configurable compression and records ordinals like we record numeric values. */
   static final int VERSION_CONFIGURABLE_COMPRESSION = 2;
   static final int VERSION_CURRENT = VERSION_CONFIGURABLE_COMPRESSION;
 
