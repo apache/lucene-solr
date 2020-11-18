@@ -50,7 +50,6 @@ public class LTRInterleavingRescorer extends LTRRescorer {
         this.originalRankingIndex = i;
       }
     }
-    // TODO: throw exception if this.rerankingQueries.length is not 2
   }
 
   /**
