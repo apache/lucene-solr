@@ -38,12 +38,6 @@ import org.apache.solr.common.util.Utils;
  * {@link org.apache.solr.cloud.api.collections.Assign} class.</p>
  */
 public class PlacementPluginConfigImpl implements PlacementPluginConfig {
-  /**
-   * The key in {@code clusterprops.json} under which the plugin factory and the plugin configuration are defined.
-   */
-  final public static String PLACEMENT_PLUGIN_CONFIG_KEY = "placement-plugin";
-  /** Name of the property containing the factory class */
-  final public static String CONFIG_CLASS = "class";
 
   // Separating configs into typed maps based on the element names in solr.xml
   private final Map<String, String> stringConfigs;
@@ -126,18 +120,18 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
 
     for (Map.Entry<String, Object> e : pluginConfig.entrySet()) {
       String key = e.getKey();
-      if (CONFIG_CLASS.equals(key)) {
+      if (PlacementPluginConfig.FACTORY_CLASS.equals(key)) {
         continue;
       }
 
       if (key == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing config name attribute in parameter of " + PLACEMENT_PLUGIN_CONFIG_KEY);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing config name attribute in parameter of " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY);
       }
 
       Object value = e.getValue();
 
       if (value == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing config value for parameter " + key + " of " + PLACEMENT_PLUGIN_CONFIG_KEY);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Missing config value for parameter " + key + " of " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY);
       }
 
       if (value instanceof String) {
@@ -150,7 +144,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
         doubleConfigs.put(key, (Double) value);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported config type " + value.getClass().getName() +
-            " for parameter " + key + " of " + PLACEMENT_PLUGIN_CONFIG_KEY);
+            " for parameter " + key + " of " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY);
       }
     }
 
@@ -172,13 +166,13 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
   @SuppressWarnings({"unchecked"})
   public static PlacementPlugin getPlacementPlugin(SolrCloudManager solrCloudManager) {
     Map<String, Object> props = solrCloudManager.getClusterStateProvider().getClusterProperties();
-    Map<String, Object> pluginConfigMap = (Map<String, Object>) props.get(PLACEMENT_PLUGIN_CONFIG_KEY);
+    Map<String, Object> pluginConfigMap = (Map<String, Object>) props.get(PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY);
 
     if (pluginConfigMap == null) {
       return null;
     }
 
-    String pluginFactoryClassName = (String) pluginConfigMap.get(CONFIG_CLASS);
+    String pluginFactoryClassName = (String) pluginConfigMap.get(PlacementPluginConfig.FACTORY_CLASS);
 
     // Get the configured plugin factory class. Is there a way to load a resource in Solr without being in the context of
     // CoreContainer? Here the placement code is unrelated to the presence of cores (and one can imagine it running on
@@ -193,7 +187,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
       placementPluginFactory = factoryClazz.getConstructor().newInstance(); // no args constructor - that's why we introduced a factory...
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unable to instantiate placement-plugin factory: " +
-              Utils.toJSONString(pluginConfigMap) + " please review /clusterprops.json config for " + PLACEMENT_PLUGIN_CONFIG_KEY, e);
+              Utils.toJSONString(pluginConfigMap) + " please review /clusterprops.json config for " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY, e);
     }
 
     // Translate the config from the properties where they are defined into the abstraction seen by the plugin

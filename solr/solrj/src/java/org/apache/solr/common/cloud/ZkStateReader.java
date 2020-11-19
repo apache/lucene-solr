@@ -138,6 +138,10 @@ public class ZkStateReader implements SolrCloseable {
 
   public static final String REPLICA_TYPE = "type";
 
+  public static final String CONTAINER_PLUGINS = "plugin";
+
+  public static final String PLACEMENT_PLUGIN = "placement-plugin";
+
   /**
    * A view of the current state of all collections.
    */
@@ -222,7 +226,10 @@ public class ZkStateReader implements SolrCloseable {
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
-      CollectionAdminParams.DEFAULTS);
+      CollectionAdminParams.DEFAULTS,
+      CONTAINER_PLUGINS,
+      PLACEMENT_PLUGIN
+      );
 
   /**
    * Returns config set name for collection.
