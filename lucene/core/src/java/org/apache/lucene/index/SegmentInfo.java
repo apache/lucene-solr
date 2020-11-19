@@ -276,8 +276,8 @@ public final class SegmentInfo {
    *  segment. */
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
-    for (String f : files) {
-      setFiles.add(namedForThisSegment(f));
+    for (String file : files) {
+      setFiles.add(namedForThisSegment(file));
     }
   }
 

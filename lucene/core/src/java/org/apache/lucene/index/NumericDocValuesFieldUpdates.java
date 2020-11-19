@@ -87,8 +87,8 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
 
   @Override
   synchronized void add(int doc, long value) {
-    int add = add(doc);
-    values.set(add, value-minValue);
+    int index = add(doc);
+    values.set(index, value-minValue);
   }
 
   @Override
