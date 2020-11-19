@@ -28,9 +28,9 @@ import java.util.function.Predicate;
  */
 final class ApproximatePriorityQueue<T> {
 
-  // Indexes between 0 and 63 are sparely populated, and indexes that are
+  // Indexes between 0 and 63 are sparsely populated, and indexes that are
   // greater than or equal to 64 are densely populated
-  // Items closed to the beginning of this list are more likely to have a
+  // Items close to the beginning of this list are more likely to have a
   // higher weight.
   private final List<T> slots = new ArrayList<>(Long.SIZE);
 
@@ -47,18 +47,21 @@ final class ApproximatePriorityQueue<T> {
    * Add an entry to this queue that has the provided weight.
    */
   void add(T entry, long weight) {
-    if (entry == null) {
-      throw new NullPointerException();
-    }
+    assert entry != null;
 
+    // The expected slot of an item is the number of leading zeros of its weight,
+    // ie. the larger the weight, the closer an item is to the start of the array.
     final int expectedSlot = Long.numberOfLeadingZeros(weight);
 
-    // If the slot is already taken, we take the next one that is free.
+    // If the slot is already taken, we look for the next one that is free.
+    // The above bitwise operation is equivalent to looping over slots until finding one that is free.
     final long freeSlots = ~usedSlots;
     int destinationSlot = expectedSlot + Long.numberOfTrailingZeros(freeSlots >>> expectedSlot);
+    assert destinationSlot >= expectedSlot;
     if (destinationSlot < Long.SIZE) {
       usedSlots |= 1L << destinationSlot;
-      slots.set(destinationSlot, entry);
+      T previous = slots.set(destinationSlot, entry);
+      assert previous == null;
     } else {
       slots.add(entry);
     }
