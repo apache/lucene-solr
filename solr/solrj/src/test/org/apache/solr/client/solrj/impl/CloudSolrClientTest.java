@@ -399,18 +399,18 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   /**
-   * Tests if the specification of 'preferLocalShards' in the query-params
+   * Tests if the specification of 'shards.preference=replica.location:local' in the query-params
    * limits the distributed query to locally hosted shards only
    */
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  public void preferLocalShardsTest() throws Exception {
+  public void queryWithLocalShardsPreferenceRulesTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
 
     int liveNodes = cluster.getJettySolrRunners().size();
 
-    // For preferLocalShards to succeed in a test, every shard should have
+    // For this case every shard should have
     // all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
@@ -423,25 +423,17 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add(id, "3", "a_t", "hello2")
         .commit(getRandomClient(), collectionName);
 
-    // Run the actual test for 'preferLocalShards'
-    queryWithShardsPreferenceRules(getRandomClient(), false, collectionName);
-    queryWithShardsPreferenceRules(getRandomClient(), true, collectionName);
+    queryWithShardsPreferenceRules(getRandomClient(), collectionName);
   }
 
   @SuppressWarnings("deprecation")
   private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient,
-                                              boolean useShardsPreference,
-                                              String collectionName)
-      throws Exception
+                                              String collectionName) throws Exception
   {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
-    if (useShardsPreference) {
-      qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
-    } else {
-      qParams.add(CommonParams.PREFER_LOCAL_SHARDS, "true");
-    }
+    qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 
@@ -953,26 +945,18 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .commit(getRandomClient(), collectionName);
 
     // Run the actual tests for 'shards.preference=replica.type:*'
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", false, collectionName);
-    // Test to verify that preferLocalShards=true doesn't break this
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", collectionName);
     CollectionAdminRequest.deleteCollection(collectionName)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   private void queryWithPreferReplicaTypes(CloudSolrClient cloudClient,
                                            String preferReplicaTypes,
-                                           boolean preferLocalShards,
                                            String collectionName)
       throws Exception
   {
@@ -989,13 +973,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       rule.append(':');
       rule.append(type);
     });
-    if (preferLocalShards) {
-      if (rule.length() != 0) {
-        rule.append(',');
-      }
-      rule.append(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION);
-      rule.append(":local");
-    }
     qParams.add(ShardParams.SHARDS_PREFERENCE, rule.toString());  
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);

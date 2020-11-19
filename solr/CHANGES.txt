@@ -153,6 +153,9 @@ Other Changes
 
 * SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
 
+* SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
+  (Alex Bulygin via Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
