@@ -36,6 +36,7 @@ import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SimplePostTool;
@@ -116,6 +117,21 @@ public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
       assertEquals("Wrong UUID string returned", s, document.getFieldValue("uuid"));
     }
 
+    req.close();
+  }
+
+  public void testOmitHeader() throws Exception {
+    SolrQueryRequest req = req("q", "*:*", "omitHeader", "true");
+    SolrQueryResponse rsp = h.queryAndResponse(null, req);
+
+    NamedList<Object> res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    assertNull(res.get("responseHeader"));
+    req.close();
+
+    req = req("q", "*:*");
+    rsp = h.queryAndResponse(null, req);
+    res = BinaryResponseWriter.getParsedResponse(req, rsp);
+    assertNotNull(res.get("responseHeader"));
     req.close();
   }
 

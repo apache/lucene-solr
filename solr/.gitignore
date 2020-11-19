@@ -1,5 +1,3 @@
-*.iml
-
 /bin/*.pid
 
 /core/test-lib/
@@ -24,3 +22,6 @@
 
 *.out
 *.err
+
+lib/
+test-lib/

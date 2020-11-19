@@ -23,7 +23,7 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/docker-solr/scripts:$PATH" \
+    PATH="/opt/solr/bin:/opt/docker-solr/scripts:/opt/solr/contrib/prometheus-exporter/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \
@@ -38,6 +38,9 @@ RUN set -ex; \
 COPY --chown=0:0 scripts /opt/docker-solr/scripts
 
 ARG SOLR_VERSION
+
+# Used by solr-fg
+ENV SOLR_VERSION $SOLR_VERSION
 
 COPY --from=solr_package "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz"
 

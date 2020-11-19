@@ -86,7 +86,7 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
       throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
     }
-    boolean doNoMinMax = min <= 0 && max == Integer.MAX_VALUE;
+    boolean doNoMinMax = min <= 1 && max == Integer.MAX_VALUE;
     if (scoreMode.needsScores() == false && doNoMinMax) {
       // We don't need scores then quickly change the query to not uses the scores:
       GlobalOrdinalsQuery globalOrdinalsQuery = new GlobalOrdinalsQuery(collector.collectedOrds, joinField, globalOrds,

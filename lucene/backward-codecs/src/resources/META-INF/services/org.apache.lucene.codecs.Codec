@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.lucene80.Lucene80Codec
-org.apache.lucene.codecs.lucene84.Lucene84Codec
-org.apache.lucene.codecs.lucene86.Lucene86Codec
+org.apache.lucene.backward_codecs.lucene80.Lucene80Codec
+org.apache.lucene.backward_codecs.lucene84.Lucene84Codec
+org.apache.lucene.backward_codecs.lucene86.Lucene86Codec
+org.apache.lucene.backward_codecs.lucene87.Lucene87Codec

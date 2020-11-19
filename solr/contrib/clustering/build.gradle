@@ -18,14 +18,12 @@
 
 apply plugin: 'java-library'
 
-description = 'Clustering Integraton'
+description = 'Search Results Clustering Integraton'
 
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')
-  implementation('org.carrot2:carrot2-mini', {
-    exclude group: "org.simpleframework", module: "simple-xml"
-  })
+  implementation 'org.carrot2:carrot2-core'
 
   testImplementation project(':solr:test-framework')
 }

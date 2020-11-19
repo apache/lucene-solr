@@ -456,7 +456,6 @@ public class Overseer implements SolrCloseable {
             }
             break;
           case MODIFYCOLLECTION:
-            CollectionsHandler.verifyRuleParams(zkController.getCoreContainer() ,message.getProperties());
             return Collections.singletonList(new CollectionMutator(getSolrCloudManager()).modifyCollection(clusterState,message));
           default:
             throw new RuntimeException("unknown operation:" + operation
@@ -656,6 +655,8 @@ public class Overseer implements SolrCloseable {
       }
     });
 
+    getCoreContainer().getClusterSingletons().startClusterSingletons();
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -775,6 +776,13 @@ public class Overseer implements SolrCloseable {
     }
   }
 
+  /**
+   * Start {@link ClusterSingleton} plugins when we become the leader.
+   */
+
+  /**
+   * Stop {@link ClusterSingleton} plugins when we lose leadership.
+   */
   public Stats getStats() {
     return stats;
   }
@@ -814,8 +822,13 @@ public class Overseer implements SolrCloseable {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
     }
+    // stop singletons only on the leader
+    if (!this.closed) {
+      getCoreContainer().getClusterSingletons().stopClusterSingletons();
+    }
     this.closed = true;
     doClose();
+
 
     assert ObjectReleaseTracker.release(this);
   }
