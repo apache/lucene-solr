@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 
@@ -110,7 +110,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
    * <p>Configuration properties {@code class} and {@code name} are reserved: for defining the plugin factory class and
    * a human readable plugin name. All other properties are plugin specific.</p>
    *
-   * <p>See configuration example and how-to in {@link SamplePluginAffinityReplicaPlacement}.</p>
+   * <p>See configuration example and how-to in {@link AffinityPlacementFactory}.</p>
    */
   static PlacementPluginConfig createConfigFromProperties(Map<String, Object> pluginConfig) {
     final Map<String, String> stringConfigs = new HashMap<>();

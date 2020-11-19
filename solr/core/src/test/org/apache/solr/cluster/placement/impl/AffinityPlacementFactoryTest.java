@@ -22,7 +22,7 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
-import org.apache.solr.cluster.placement.plugins.SamplePluginAffinityReplicaPlacement;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Unit test for {@link SamplePluginAffinityReplicaPlacement}
+ * Unit test for {@link AffinityPlacementFactory}
  */
-public class SamplePluginAffinityReplicaPlacementTest extends Assert {
+public class AffinityPlacementFactoryTest extends Assert {
 
     private static PlacementPlugin plugin;
 
@@ -41,7 +41,7 @@ public class SamplePluginAffinityReplicaPlacementTest extends Assert {
     public static void setupPlugin() {
         PlacementPluginConfig config = PlacementPluginConfigImpl.createConfigFromProperties(
                 Map.of("minimalFreeDiskGB", 10L, "deprioritizedFreeDiskGB", 50L));
-        plugin = new SamplePluginAffinityReplicaPlacement.Factory().createPluginInstance(config);
+        plugin = new AffinityPlacementFactory().createPluginInstance(config);
     }
 
     @Test
