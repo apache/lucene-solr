@@ -46,14 +46,18 @@ abstract class ConjunctionIntervalIterator extends IntervalIterator {
   @Override
   public int nextDoc() throws IOException {
     int doc = approximation.nextDoc();
-    reset();
+    if (doc != NO_MORE_DOCS) {
+      reset();
+    }
     return doc;
   }
 
   @Override
   public int advance(int target) throws IOException {
     int doc = approximation.advance(target);
-    reset();
+    if (doc != NO_MORE_DOCS) {
+      reset();
+    }
     return doc;
   }
 
