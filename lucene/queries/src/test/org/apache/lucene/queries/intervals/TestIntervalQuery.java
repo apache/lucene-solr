@@ -331,4 +331,10 @@ public class TestIntervalQuery extends LuceneTestCase {
     expectThrows(IllegalArgumentException.class, () -> new IntervalQuery(field, source, 1, -1f));
   }
 
+  public void testAdvanceBehavior() {
+    Query q = new IntervalQuery(field,
+        Intervals.containing(Intervals.term("w1"), new MockIntervalSource()));
+    expectThrows(AssertionError.class, ()-> checkHits(q, new int[]{ 0, 1, 2, 3, 4 }));
+  }
+
 }
