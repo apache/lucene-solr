@@ -66,7 +66,7 @@ public class SolrExporter {
   private static final String[] ARG_CONFIG_FLAGS = {"-f", "--config-file"};
   private static final String ARG_CONFIG_METAVAR = "CONFIG";
   private static final String ARG_CONFIG_DEST = "configFile";
-  private static final String ARG_CONFIG_DEFAULT = "conf/solr-exporter-config.xml";
+  private static final String ARG_CONFIG_DEFAULT = "solr-exporter-config.xml";
   private static final String ARG_CONFIG_HELP = "Specify the configuration file; the default is " + ARG_CONFIG_DEFAULT + ".";
 
   private static final String[] ARG_SCRAPE_INTERVAL_FLAGS = {"-s", "--scrape-interval"};
@@ -200,7 +200,7 @@ public class SolrExporter {
           res.getInt(ARG_NUM_THREADS_DEST),
           res.getInt(ARG_SCRAPE_INTERVAL_DEST),
           scrapeConfiguration,
-          loadMetricsConfiguration(Paths.get(res.getString(ARG_CONFIG_DEST))));
+          loadMetricsConfiguration(res.getString(ARG_CONFIG_DEST)));
 
       log.info("Starting Solr Prometheus Exporting");
       solrExporter.start();
@@ -212,11 +212,11 @@ public class SolrExporter {
     }
   }
 
-  private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
+  private static MetricsConfiguration loadMetricsConfiguration(String configPath) {
     try {
       return MetricsConfiguration.from(configPath);
     } catch (Exception e) {
-      log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());
+      log.error("Could not load scrape configuration from {}", configPath);
       throw new RuntimeException(e);
     }
   }

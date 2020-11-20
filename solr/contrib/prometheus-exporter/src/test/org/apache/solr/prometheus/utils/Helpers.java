@@ -31,7 +31,7 @@ import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 public class Helpers {
 
   public static MetricsConfiguration loadConfiguration(String pathRsrc) throws Exception {
-    return MetricsConfiguration.from(SolrTestCaseJ4.getFile(pathRsrc).toPath());
+    return MetricsConfiguration.from(SolrTestCaseJ4.getFile(pathRsrc).getPath());
   }
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {
