@@ -46,6 +46,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     protected boolean singleSort; // singleSort is true, if sort is based on a single sort field.
     protected boolean hitsThresholdReached;
     protected boolean queueFull;
+    private boolean usesIndexSort;
 
     protected NumericComparator(String field, T missingValue, boolean reverse, int sortPos, int bytesCount) {
         this.field = field;
@@ -65,17 +66,22 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         singleSort = true;
     }
 
+    @Override
+    public void usesIndexSort() {
+        this.usesIndexSort = true;
+    }
+
     /**
      * Leaf comparator for {@link NumericComparator} that provides skipping functionality
      */
     public abstract class NumericLeafComparator implements LeafFieldComparator {
         protected final NumericDocValues docValues;
         private final PointValues pointValues;
+        private final boolean enableSkipping; // if skipping functionality should be enabled
         private final int maxDoc;
         private final byte[] minValueAsBytes;
         private final byte[] maxValueAsBytes;
-
-        private boolean enableSkipping; // if skipping functionality should be enabled
+        
         private DocIdSetIterator competitiveIterator;
         private long iteratorCost;
         private int maxDocVisited = 0;
@@ -83,7 +89,8 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         public NumericLeafComparator(LeafReaderContext context) throws IOException {
             this.docValues = getNumericDocValues(context, field);
-            this.pointValues = primarySort ? context.reader().getPointValues(field) : null;
+            // sort optimization is enabled when this comparator is used for primary sort and search sort is not a part of the index sort
+            this.pointValues = (primarySort && usesIndexSort == false) ? context.reader().getPointValues(field) : null;
             if (pointValues != null) {
                 this.enableSkipping = true; // skipping is enabled on primarySort and when points are available
                 this.maxDoc = context.reader().maxDoc();
@@ -102,12 +109,6 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         /** Retrieves the NumericDocValues for the field in this segment */
         protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
             return DocValues.getNumeric(context.reader(), field);
-        }
-
-        @Override
-        public void usesIndexSort() {
-            // disable skipping functionality on index sort, as early termination in this case is handled in TopFieldCollector
-            this.enableSkipping = false;
         }
 
         @Override

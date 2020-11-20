@@ -142,6 +142,14 @@ public abstract class FieldComparator<T> {
   public void setSingleSort() {
   }
 
+  /**
+   * Informs the comparator that the search sort is congruent with the index sort.
+   * Some comparators provide skipping functionality, that can be disabled on index sort,
+   * as in this case early termination is already handled in TopFieldCollector.
+   */
+  public void usesIndexSort() {
+  }
+
   /** Sorts by descending relevance.  NOTE: if you are
    *  sorting only by descending relevance and then
    *  secondarily by ascending docID, performance is faster
