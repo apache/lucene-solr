@@ -745,7 +745,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       maybeThrowDeterministicException();
     }
     if (!LuceneTestCase.slowFileExists(in, name)) {
-      throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
+      throw new NoSuchFileException(name + " in dir=" + in);
     }
 
     // cannot open a file for input if it's still open for output.

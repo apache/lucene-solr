@@ -23,6 +23,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
 
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
@@ -151,6 +152,37 @@ public class DirectIODirectory extends FSDirectory {
     } else {
       return new DirectIOIndexOutput(getDirectory().resolve(name), name, mergeBufferSize);
     }
+  }
+
+  @Override
+  public void deleteFile(String name) throws IOException {
+    delegate.deleteFile(name);
+  }
+
+  @Override
+  public Set<String> getPendingDeletions() throws IOException {
+    return delegate.getPendingDeletions();
+  }
+
+  @Override
+  public String[] listAll() throws IOException {
+    return delegate.listAll();
+  }
+
+  @Override
+  public long fileLength(String name) throws IOException {
+    return delegate.fileLength(name);
+  }
+
+  @Override
+  public void rename(String source, String dest) throws IOException {
+    delegate.rename(source, dest);
+  }
+
+  @Override
+  public void close() throws IOException {
+    delegate.close();
+    super.close();
   }
 
   private final static class DirectIOIndexOutput extends IndexOutput {

@@ -19,6 +19,7 @@ package org.apache.lucene.misc.store;
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,7 +52,7 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    Directory delegate = FSDirectory.open(path);
+    Directory delegate = LuceneTestCase.newFSDirectory(path);
     return new DirectIODirectory(path, delegate);
   }
 }
