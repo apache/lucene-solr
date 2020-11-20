@@ -113,6 +113,10 @@ class ChildDocTransformer extends DocTransformer {
       final Map<String, Multimap<String, SolrDocument>> pendingParentPathsToChildren = new HashMap<>();
 
       final int firstChildId = segBaseId + segPrevRootId + 1;
+
+      // The current path of the child document that is being processed, will be used to determine the limit
+      String currDocPath = null;
+      // number of matches for the current level
       int matches = 0;
       // Loop each child ID up to the parent (exclusive).
       for (int docId = firstChildId; docId < rootDocId; ++docId) {
@@ -138,17 +142,24 @@ class ChildDocTransformer extends DocTransformer {
         // Do we need to do anything with this doc (either ancestor or matched the child query)
         if (isAncestor || childDocSet == null || childDocSet.exists(docId)) {
 
+          if (currDocPath == null || currDocPath != trimLastPound(fullDocPath)) {
+            matches = 0;
+            currDocPath = trimLastPound(fullDocPath);
+          }
+          
           // If we reached the limit, only add if it's an ancestor or non 1st level child document
           if (limit != -1 && matches >= limit) {
             break;
           }
 
+          ++matches;
+
           // get parent path
           String parentDocPath = getParentPath(fullDocPath);
-          final boolean isFirstLevelChildDoc = Objects.equals(parentDocPath, rootDocPath);
-          if (isFirstLevelChildDoc) {
-            ++matches; // note: includes ancestors that are not necessarily in childDocSet
-          }
+          //  final boolean isFirstLevelChildDoc = Objects.equals(parentDocPath, rootDocPath);
+          // if (isFirstLevelChildDoc) {
+          //   ++matches; // note: includes ancestors that are not necessarily in childDocSet
+          // }
 
           // load the doc
           SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, childReturnFields);
