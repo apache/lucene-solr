@@ -96,8 +96,11 @@ public abstract class UpdateRequestProcessor implements Closeable {
   }
 
   protected void failRequestIfCoreIsInRejectingState(UpdateCommand cmd) throws SolrException {
-    if (cmd.getReq().getCore().getUpdateHandler().isRejectingUpdates()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The core associated with this request is"
+    if (cmd.getReq() != null &&
+            cmd.getReq().getCore() != null &&
+            cmd.getReq().getCore().getUpdateHandler() != null &&
+            cmd.getReq().getCore().getUpdateHandler().isRejectingUpdates()) {
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "The core associated with this request is"
               + " currently rejecting requests.");
     }
   }
