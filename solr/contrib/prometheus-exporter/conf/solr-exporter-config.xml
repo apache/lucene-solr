@@ -284,26 +284,16 @@
             overseer metrics
           -->
           <str>
-            .metrics["solr.overseer"] | to_entries | .[] | select(.key == "queue.stateUpdateQueueSize") as $object |
+            .metrics | to_entries | .[] | select(.key | startswith("solr.overseer")) as $object |
+            $object.value as $value | $value | to_entries | .[] |
+            select(.key | startswith("queue.") and endswith("QueueSize")) as $object |$object.key | split(".")[1] as $tmp | $tmp | split("Size")[0] as $queue |
             $object.value as $value |
             {
-            name         : "solr_metrics_overseer_stateUpdateQueueSize",
+            name         : "solr_metrics_overseer_queue_size",
             type         : "GAUGE",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
-            label_names  : ["queueSize"],
-            label_values : ["stateUpdateQueueSize"],
-            value        : $value
-            }
-          </str>
-          <str>
-            .metrics["solr.overseer"] | to_entries | .[] | select(.key == "queue.collectionWorkQueueSize") as $object |
-            $object.value as $value |
-            {
-            name         : "solr_metrics_overseer_collectionWorkQueueSize",
-            type         : "GAUGE",
-            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
-            label_names  : ["queueSize"],
-            label_values : ["collectionWorkQueueSize"],
+            help         : "-",
+            label_names  : ["name"],
+            label_values : [$queue],
             value        : $value
             }
           </str>
