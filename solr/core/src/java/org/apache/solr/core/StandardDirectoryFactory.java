@@ -84,24 +84,11 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     
     return super.normalize(cpath);
   }
-  
-  @Override
-  public boolean exists(String path) throws IOException {
-    // we go by the persistent storage ... 
-    File dirFile = new File(path);
-    return dirFile.canRead() && dirFile.list().length > 0;
-  }
-  
+
   public boolean isPersistent() {
     return true;
   }
-  
-  @Override
-  public boolean isAbsolute(String path) {
-    // back compat
-    return new File(path).isAbsolute();
-  }
-  
+
   @Override
   protected void removeDirectory(CacheValue cacheValue) throws IOException {
     File dirFile = new File(cacheValue.path);
