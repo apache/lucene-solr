@@ -19,23 +19,30 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -43,16 +50,17 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Test that updates are not lost silently when UpdateLog is disabled.
+ */
 public class UpdateLogDisabledTest extends SolrCloudTestCase {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    private final String COLLECTION_NAME = "ulog-disabled-test-collection";
 
     @BeforeClass
     public static void setupCluster() throws Exception {
         System.setProperty("metricsEnabled", "true");
         configureCluster(1)
-                .addConfig("conf", configset("cloud-minimal-update-log-disabled"))
+                .addConfig("ulogDisabled", configset("cloud-minimal-update-log-disabled"))
                 .configure();
     }
 
@@ -69,10 +77,14 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
         cluster.deleteAllCollections();
     }
 
+    /**
+     * Create a collection using the test configset with updateLog disabled.
+     * @return the CloudSolrClient for the test cluster
+     * @throws Exception
+     */
     CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
-
         CollectionAdminRequest
-                .createCollection(collectionName, "conf", 1, repFactor)
+                .createCollection(collectionName, "ulogDisabled", 1, repFactor)
                 .process(cluster.getSolrClient());
 
         cluster.waitForActiveCollection(collectionName, 1, repFactor);
@@ -82,13 +94,19 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
         return client;
     }
 
-
+    /**
+     * Return the number of docs indexed to the default collection, created by createCollection method.
+     * @param client for the test cluster
+     * @return number of documents indexed
+     * @throws Exception
+     */
     long getNumDocs(CloudSolrClient client) throws Exception {
         String collectionName = client.getDefaultCollection();
         DocCollection collection = client.getZkStateReader().getClusterState().getCollection(collectionName);
         Collection<Slice> slices = collection.getSlices();
 
         long totCount = 0;
+        final HashSet<String> actual = new HashSet<>();
         for (Slice slice : slices) {
             if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
             long lastReplicaCount = -1;
@@ -96,7 +114,11 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
                 SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
                 long numFound = 0;
                 try {
-                    numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
+                    SolrDocumentList docsFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults();
+                    for (SolrDocument document : docsFound) {
+                        actual.add(document.getFieldValue("id").toString());
+                    }
+                    numFound = docsFound.getNumFound();
                     log.info("Replica count={} for {}", numFound, replica);
                 } finally {
                     replicaClient.close();
@@ -115,63 +137,80 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
         return totCount;
     }
 
-    void doLiveSplitShard(String collectionName, int repFactor, int nThreads) throws Exception {
+    /**
+     * Test that a collection created with updateLog disabled rejects updates during split.
+     * @throws Exception
+     */
+    @Test
+    public void testLiveSplit() throws Exception {
+        String collectionName = "testLiveSplit";
+        int repFactor = 1;
+        int nThreads = 8;
         final CloudSolrClient client = createCollection(collectionName, repFactor);
 
-        final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();  // what the index should contain
-        final AtomicBoolean doIndex = new AtomicBoolean(true);
-        final AtomicInteger docsAttemptedIndex = new AtomicInteger();
-        final AtomicInteger docsFailedIndex = new AtomicInteger();
+        // what the index should and should not contain
+        final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String,Long> attempted = new ConcurrentHashMap<>();
+        final ConcurrentHashMap<String,Long> failed = new ConcurrentHashMap<>();
 
+        // variables for managing concurrent updates
+        final AtomicBoolean doIndex = new AtomicBoolean(true);
         final AtomicInteger docsIndexed = new AtomicInteger();
-        int docCountBeforeSplit;
+        final AtomicInteger docsIndexAttempted = new AtomicInteger();
+        final AtomicInteger failures = new AtomicInteger();
+
+        long numDocsBefore = getNumDocs(client);
+        log.info("Number of docs indexed before threads are kicked off: " + numDocsBefore);
+
+        // allows waiting for a given number of updates
+        final AtomicReference<CountDownLatch> updateLatch = new AtomicReference<>(new CountDownLatch(random().nextInt(4)));
         Thread[] indexThreads = new Thread[nThreads];
         try {
-
             for (int i=0; i<nThreads; i++) {
                 indexThreads[i] = new Thread(() -> {
                     while (doIndex.get()) {
+                        String docId = "doc_x";
                         try {
-                            // Thread.sleep(10);  // cap indexing rate at 100 docs per second per thread
-                            int currDoc = docsAttemptedIndex.incrementAndGet();
-                            String docId = "doc_" + currDoc;
+                            int currDoc = docsIndexAttempted.incrementAndGet();
+                            docId = "doc_" + currDoc;
+                            attempted.put(docId, 1L);
 
-                            // Try all docs in the same update request
                             UpdateRequest updateReq = new UpdateRequest();
                             updateReq.add(sdoc("id", docId));
-                            // UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
                             UpdateResponse ursp = updateReq.process(client, collectionName);
-                            assertEquals(0, ursp.getStatus());  // for now, don't accept any failures
+
                             if (ursp.getStatus() == 0) {
                                 model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
+                                docsIndexed.incrementAndGet();
+                            } else {
+
                             }
-                            docsIndexed.incrementAndGet();
                         } catch (Exception e) {
                             assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting requests."));
-                            docsFailedIndex.incrementAndGet();
-                            break;
+                            failures.incrementAndGet();
+                            failed.put(docId, 1L);
                         }
+                        updateLatch.get().countDown();
                     }
                 });
             }
 
+            // kick off indexing threads
             for (Thread thread : indexThreads) {
                 thread.start();
             }
 
-            Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
-            docCountBeforeSplit = model.size();
-
+            // wait for some documents to be indexed before splitting
+            updateLatch.get().await();
             CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
-                    .setShardName("shard1");
+                    .setShardName("shard1").setSplitMethod(SolrIndexSplitter.SplitMethod.LINK.name());
             splitShard.process(client);
             waitForState("Timed out waiting for sub shards to be active.",
-                    collectionName, activeClusterShape(2, 3*repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
+                    collectionName, activeClusterShape(2, 3 * repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
 
-            // make sure that docs were able to be indexed during the split
-            assertTrue(model.size() > docCountBeforeSplit);
-            assertTrue(docsAttemptedIndex.get() > docsIndexed.get());
-            assertTrue(docsFailedIndex.get() > 0);
+            // wait for a few more docs to be indexed after split
+            updateLatch.set(new CountDownLatch(random().nextInt(4)));
+            updateLatch.get().await();
         } finally {
             // shut down the indexers
             doIndex.set(false);
@@ -180,35 +219,148 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
             }
         }
 
-        client.commit();  // final commit is needed for visibility
+        // final commit is needed for visibility
+        client.commit();
 
+        // ensure that documents either failed or succeeded
+        assertFalse(model.keySet().removeAll(failed.keySet()));
+
+        // verify that number of docs accessible to client matches those successfully indexed
         long numDocs = getNumDocs(client);
+        HashSet<String> indexedNotInModel = new HashSet<>();
+        HashSet<String> indexedAndInFailed = new HashSet<>();
+        HashSet<String> indexedAndAttempted = new HashSet<>();
         if (numDocs != model.size()) {
-            SolrDocumentList results = client.query(new SolrQuery("q","*:*", "fl","id", "rows", Integer.toString(model.size()) )).getResults();
-            Map<String,Long> leftover = new HashMap<>(model);
+            long numIndexed = docsIndexed.get();
+            SolrDocumentList results = client.query(new SolrQuery("q","*:*", "fl","id", "rows",
+                    Long.toString(Long.max(numDocs,numIndexed)))).getResults();
             for (SolrDocument doc : results) {
                 String id = (String) doc.get("id");
-                leftover.remove(id);
+                if (!model.containsKey(id)) {
+                    indexedNotInModel.add(id);
+                }
+                if (failed.containsKey(id)) {
+                    indexedAndInFailed.add(id);
+                }
+                if (!attempted.containsKey(id)) {
+                    indexedAndAttempted.add(id);
+                }
             }
-            log.error("MISSING DOCUMENTS: {}", leftover);
+            log.error("Outersection with failed: " + indexedAndInFailed + ", outersection with model: " + indexedNotInModel);
         }
 
         assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
-        log.info("Number of documents indexed and queried : {}", numDocs);
+        log.info("Number of documents indexed and queried : " + numDocs + " failures during splitting=" + failures.get());
     }
 
-
-
+    /**
+     * Create a core, start rejecting updates, and ensure that indexing requests fail.
+     * @throws Exception
+     */
     @Test
-    public void testLiveSplit() throws Exception {
-        // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to 1 and looping the test
-        // until you get another failure.
-        // You may need to further instrument things like DistributedZkUpdateProcessor to display the cluster state for the collection, etc.
-        // Using more threads increases the chance to hit a concurrency bug, but too many threads can overwhelm single-threaded buffering
-        // replay after the low level index split and result in subShard leaders that can't catch up and
-        // become active (a known issue that still needs to be resolved.)
-        doLiveSplitShard(COLLECTION_NAME, 1, 4);
+    public void testRequestFailsWhenRejecting() throws Exception {
+        SolrCore core = null;
+        try {
+            String collectionName = "testRequestFailedWhenRejecting";
+            createCollection(collectionName, 1);
+
+            // wait for collection to be created
+            ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
+            DocCollection collection = clusterState.getCollection(collectionName);
+            Slice shard = collection.getSlice("shard1");
+            CoreContainer cc = null;
+            for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+                if (solrRunner.getNodeName().equals(shard.getLeader().getNodeName())) {
+                    cc = solrRunner.getCoreContainer();
+                }
+            }
+
+            assertNotNull("Core container not found.", cc);
+
+            // attempt to index a document - should succeed
+            SolrInputDocument doc1 = new SolrInputDocument();
+            doc1.setField("id", "1");
+            UpdateRequest req = new UpdateRequest();
+            req.add(doc1);
+            UpdateResponse resp = req.commit(cluster.getSolrClient(), collectionName);
+
+            assertEquals(resp.getStatus(), 0);
+
+            // start rejecting updates for this core
+            core = cc.getCore(shard.getLeader().getCoreName());
+            core.getUpdateHandler().startRejectingUpdates();
+
+            // attempt to index a document - should fail
+            SolrInputDocument doc2 = new SolrInputDocument();
+            doc2.setField("id", "2");
+            req = new UpdateRequest();
+            req.add(doc2);
+            req.commit(cluster.getSolrClient(), collectionName);
+
+            fail("Update request should have failed with exception");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting requests."));
+        } finally {
+            if (core != null) {
+                core.close();
+            }
+        }
     }
 
+    /**
+     * Create a core, start rejecting updates; then stop rejecting updates, and ensure that indexing requests succeed.
+     * @throws Exception
+     */
+    @Test
+    public void testRequestSucceedsWhenNotRejecting() throws Exception {
+        SolrCore core = null;
+        try {
+            String collectionName = "testRequestFailedWhenRejecting";
+            createCollection(collectionName, 1);
 
+            // get core container for node with leader replica
+            ClusterState clusterState = cluster.getSolrClient().getZkStateReader().getClusterState();
+            DocCollection collection = clusterState.getCollection(collectionName);
+            Slice shard = collection.getSlice("shard1");
+            CoreContainer cc = null;
+            for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+                if (solrRunner.getNodeName().equals(shard.getLeader().getNodeName())) {
+                    cc = solrRunner.getCoreContainer();
+                }
+            }
+            assertNotNull("Core container not found.", cc);
+
+            // attempt to index a document - should succeed
+            SolrInputDocument doc1 = new SolrInputDocument();
+            doc1.setField("id", "1");
+            UpdateRequest req = new UpdateRequest();
+            req.add(doc1);
+            UpdateResponse resp = req.commit(cluster.getSolrClient(), collectionName);
+            assertEquals(resp.getStatus(), 0);
+
+            // start rejecting updates for this core
+            core = cc.getCore(shard.getLeader().getCoreName());
+            core.getUpdateHandler().startRejectingUpdates();
+
+            // stop rejecting updates for this core
+            core.getUpdateHandler().stopRejectingUpdates();
+
+            // attempt to index another document - should succeed
+            SolrInputDocument doc2 = new SolrInputDocument();
+            doc2.setField("id", "2");
+            req = new UpdateRequest();
+            req.add(doc2);
+            resp = req.commit(cluster.getSolrClient(), collectionName);
+
+            // assert that both docs were successfully indexed
+            assertEquals(resp.getStatus(), 0);
+            assertEquals(2, getNumDocs(cluster.getSolrClient()));
+        } catch (Exception e) {
+            fail("Encountered unexpected exception: " + e.getMessage());
+        } finally {
+            if (core != null) {
+                core.close();
+            }
+        }
+    }
 }
