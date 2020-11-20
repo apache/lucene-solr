@@ -205,6 +205,8 @@ Bug Fixes
 
 * SOLR-14851: Http2SolrClient doesn't handle keystore type correctly (Andras Salamon via janhoy)
 
+* SOLR-15009: Correctly propogate exceptions from DirectoryFactory.exists (Mike Drob)
+
 Other Changes
 ---------------------
 
