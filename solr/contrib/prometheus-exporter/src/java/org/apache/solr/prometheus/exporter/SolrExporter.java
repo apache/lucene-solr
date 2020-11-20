@@ -19,8 +19,6 @@ package org.apache.solr.prometheus.exporter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 
