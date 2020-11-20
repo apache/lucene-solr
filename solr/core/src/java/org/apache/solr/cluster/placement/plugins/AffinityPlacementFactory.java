@@ -67,6 +67,52 @@ import java.util.stream.Collectors;
     "set-placement-plugin" : null
   }' http://localhost:8983/api/cluster
  * </pre>
+ *
+ *
+ * <p>{@link AffinityPlacementPlugin} implements placing replicas in a way that replicate past Autoscaling config defined
+ * <a href="https://github.com/lucidworks/fusion-cloud-native/blob/master/policy.json#L16">here</a>.</p>
+ *
+ * <p>This specification is doing the following:
+ * <p><i>Spread replicas per shard as evenly as possible across multiple availability zones (given by a sys prop),
+ * assign replicas based on replica type to specific kinds of nodes (another sys prop), and avoid having more than
+ * one replica per shard on the same node.<br>
+ * Only after these constraints are satisfied do minimize cores per node or disk usage.</i></p>
+ *
+ * <p>Overall strategy of this plugin:</p>
+ * <ul><li>
+ *     The set of nodes in the cluster is obtained and transformed into 3 independent sets (that can overlap) of nodes
+ *     accepting each of the three replica types.
+ * </li><li>
+ *     For each shard on which placing replicas is required and then for each replica type to place (starting with NRT,
+ *     then TLOG then PULL): <ul>
+ *         <li>The set of candidates nodes corresponding to the replica type is used and from that set are removed nodes
+ *         that already have a replica (of any type) for that shard</li>
+ *         <li>If there are not enough nodes, an error is thrown (this is checked further down during processing).</li>
+ *         <li>The number of (already existing) replicas of the current type on each Availability Zone is collected.</li>
+ *         <li>Separate the set of available nodes to as many subsets (possibly some are empty) as there are Availability Zones
+ *         defined for the candidate nodes</li>
+ *         <li>In each AZ nodes subset, sort the nodes by increasing total number of cores count, with possibly a condition
+ *         that pushes nodes with low disk space to the end of the list? Or a weighted combination of the relative
+ *         importance of these two factors? Some randomization? Marking as non available nodes with not enough disk space?
+ *         These and other are likely aspects to be played with once the plugin is tested or observed to be running in prod,
+ *         don't expect the initial code drop(s) to do all of that.</li>
+ *         <li>Iterate over the number of replicas to place (for the current replica type for the current shard):
+ *         <ul>
+ *             <li>Based on the number of replicas per AZ collected previously, pick the non empty set of nodes having the
+ *             lowest number of replicas. Then pick the first node in that set. That's the node the replica is placed one.
+ *             Remove the node from the set of available nodes for the given AZ and increase the number of replicas placed
+ *             on that AZ.</li>
+ *         </ul></li>
+ *         <li>During this process, the number of cores on the nodes in general is tracked to take into account placement
+ *         decisions so that not all shards decide to put their replicas on the same nodes (they might though if these are
+ *         the less loaded nodes).</li>
+ *     </ul>
+ * </li>
+ * </ul>
+ *
+ * <p>This code is a realistic placement computation, based on a few assumptions. The code is written in such a way to
+ * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
+ * to allow configuration base option selection as well...</p>
  */
 public class AffinityPlacementFactory implements PlacementPluginFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -88,52 +134,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
   }
 
   /**
-   * <p>Implements placing replicas in a way that replicate past Autoscaling config defined
-   * <a href="https://github.com/lucidworks/fusion-cloud-native/blob/master/policy.json#L16">here</a>.</p>
-   *
-   * <p>This specification is doing the following:
-   * <p><i>Spread replicas per shard as evenly as possible across multiple availability zones (given by a sys prop),
-   * assign replicas based on replica type to specific kinds of nodes (another sys prop), and avoid having more than
-   * one replica per shard on the same node.<br>
-   * Only after these constraints are satisfied do minimize cores per node or disk usage.</i></p>
-   *
-   * <p>Overall strategy of this plugin:</p>
-   * <ul><li>
-   *     The set of nodes in the cluster is obtained and transformed into 3 independent sets (that can overlap) of nodes
-   *     accepting each of the three replica types.
-   * </li><li>
-   *     For each shard on which placing replicas is required and then for each replica type to place (starting with NRT,
-   *     then TLOG then PULL): <ul>
-   *         <li>The set of candidates nodes corresponding to the replica type is used and from that set are removed nodes
-   *         that already have a replica (of any type) for that shard</li>
-   *         <li>If there are not enough nodes, an error is thrown (this is checked further down during processing).</li>
-   *         <li>The number of (already existing) replicas of the current type on each Availability Zone is collected.</li>
-   *         <li>Separate the set of available nodes to as many subsets (possibly some are empty) as there are Availability Zones
-   *         defined for the candidate nodes</li>
-   *         <li>In each AZ nodes subset, sort the nodes by increasing total number of cores count, with possibly a condition
-   *         that pushes nodes with low disk space to the end of the list? Or a weighted combination of the relative
-   *         importance of these two factors? Some randomization? Marking as non available nodes with not enough disk space?
-   *         These and other are likely aspects to be played with once the plugin is tested or observed to be running in prod,
-   *         don't expect the initial code drop(s) to do all of that.</li>
-   *         <li>Iterate over the number of replicas to place (for the current replica type for the current shard):
-   *         <ul>
-   *             <li>Based on the number of replicas per AZ collected previously, pick the non empty set of nodes having the
-   *             lowest number of replicas. Then pick the first node in that set. That's the node the replica is placed one.
-   *             Remove the node from the set of available nodes for the given AZ and increase the number of replicas placed
-   *             on that AZ.</li>
-   *         </ul></li>
-   *         <li>During this process, the number of cores on the nodes in general is tracked to take into account placement
-   *         decisions so that not all shards decide to put their replicas on the same nodes (they might though if these are
-   *         the less loaded nodes).</li>
-   *     </ul>
-   * </li>
-   * </ul>
-   *
-   * <p>This code is a realistic placement computation, based on a few assumptions. The code is written in such a way to
-   * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
-   * to allow configuration base option selection as well...</p>
-   *
-   * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this plugin.
+   * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this plugin and details
+   * on what the plugin does.
    */
   static private class AffinityPlacementPlugin implements PlacementPlugin {
     /**

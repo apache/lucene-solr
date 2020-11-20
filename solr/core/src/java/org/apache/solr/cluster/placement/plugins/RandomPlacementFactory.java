@@ -30,7 +30,8 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 
 /**
- * <p>Factory for creating {@link RandomPlacementPlugin}.</p>
+ * <p>Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random placement for new
+ * collection creation while preventing two replicas of same shard from being placed on same node..</p>
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
  */
@@ -41,9 +42,6 @@ public class RandomPlacementFactory implements PlacementPluginFactory {
     return new RandomPlacementPlugin();
   }
 
-  /**
-   * Implements random placement for new collection creation while preventing two replicas of same shard from being placed on same node.
-   */
   static private class RandomPlacementPlugin implements PlacementPlugin {
 
     public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,

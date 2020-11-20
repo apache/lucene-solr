@@ -165,7 +165,7 @@ public class AffinityPlacementFactoryTest extends Assert {
         long start = System.nanoTime();
         PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
         long end = System.nanoTime();
-        log.info("ComputePlacement: {} nodes, {} shards, {} total replicas, elapsed time {} ms.", numNodes, numShards, TOTAL_REPLICAS, TimeUnit.NANOSECONDS.toMillis(end - start));
+        log.info("ComputePlacement: {} nodes, {} shards, {} total replicas, elapsed time {} ms.", numNodes, numShards, TOTAL_REPLICAS, TimeUnit.NANOSECONDS.toMillis(end - start)); //nowarn
         assertEquals("incorrect number of calculated placements", TOTAL_REPLICAS,
             pp.getReplicaPlacements().size());
         // check that replicas are correctly placed

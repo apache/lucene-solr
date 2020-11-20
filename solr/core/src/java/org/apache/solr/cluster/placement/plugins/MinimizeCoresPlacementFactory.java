@@ -34,7 +34,9 @@ import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * <p>Factory for creating {@link MinimizeCoresPlacementPlugin}.</p>
+ * <p>Factory for creating {@link MinimizeCoresPlacementPlugin}, a Placement plugin implementing placing replicas
+ * to minimize number of cores per {@link Node}, while not placing two replicas of the same shard on the same node.
+ * This code is meant as an educational example of a placement plugin.</p>
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
  */
@@ -45,10 +47,6 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory {
     return new MinimizeCoresPlacementPlugin();
   }
 
-  /**
-   * Placement plugin implementing placing replicas to minimize number of cores per {@link Node}, while not placing two
-   * replicas of the same shard on the same node. This code is meant as an educational example of a placement plugin.
-   */
   static private class MinimizeCoresPlacementPlugin implements PlacementPlugin {
 
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
