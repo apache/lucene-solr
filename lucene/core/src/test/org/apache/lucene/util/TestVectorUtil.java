@@ -25,7 +25,7 @@ public class TestVectorUtil extends LuceneTestCase {
   public void testSelfDotProduct() {
     // the dot product of a vector with itself is equal to the sum of the squares of its components
     float[] v = randomVector();
-    assertEquals(l2(v), VectorUtil.dotProduct(v, v), 1e-5);
+    assertEquals(l2(v), VectorUtil.dotProduct(v, v), 1e-4);
   }
 
   public void testOrthogonalDotProduct() {
@@ -36,13 +36,13 @@ public class TestVectorUtil extends LuceneTestCase {
     float[] u = new float[2];
     u[0] = v[1];
     u[1] = -v[0];
-    assertEquals(0, VectorUtil.dotProduct(u, v), 1e-5);
+    assertEquals(0, VectorUtil.dotProduct(u, v), 1e-4);
   }
 
   public void testSelfSquareDistance() {
     // the l2 distance of a vector with itself is zero
     float[] v = randomVector();
-    assertEquals(0, VectorUtil.squareDistance(v, v), 1e-5);
+    assertEquals(0, VectorUtil.squareDistance(v, v), 1e-4);
   }
 
   public void testBasicSquareDistance() {
@@ -53,7 +53,7 @@ public class TestVectorUtil extends LuceneTestCase {
     // the square distance of a vector with its inverse is equal to four times the sum of squares of its components
     float[] v = randomVector();
     float[] u = negative(v);
-    assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), 1e-5);
+    assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), 1e-4);
   }
 
   private float l2(float[] v) {
