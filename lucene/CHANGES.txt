@@ -184,8 +184,8 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
-* LUCENE-9617: Reset lowestUnassignedFieldNumber on FieldNumbers.clear(), to avoid leaking
-  field numbers on IndexWriter.deleteAll(). (Michael Froh)
+* LUCENE-9617: Fix per-field memory leak in IndexWriter.deleteAll(). Reset next available internal
+  field number to 0 on FieldInfos.clear(), to avoid wasting FieldInfo references. (Michael Froh)
 
 Other
 

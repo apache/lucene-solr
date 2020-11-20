@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -36,6 +38,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -355,17 +358,17 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nTEST: now final deleteAll");
     }
-    
+
     modifier.deleteAll();
     for (Thread thread : threads) {
       thread.join();
     }
-    
+
     if (VERBOSE) {
       System.out.println("\nTEST: now close");
     }
     modifier.close();
-    
+
     DirectoryReader reader = DirectoryReader.open(dir);
     if (VERBOSE) {
       System.out.println("\nTEST: got reader=" + reader);
@@ -453,6 +456,50 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
 
+  // Verify that we can call deleteAll repeatedly without leaking field numbers such that we trigger OOME
+  // on creation of FieldInfos. See https://issues.apache.org/jira/browse/LUCENE-9617
+  @Nightly // Takes 1-2 minutes to run on a 16-core machine
+  public void testDeleteAllRepeated() throws IOException, InterruptedException {
+    final int breakingFieldCount = 50_000_000;
+    try  (Directory dir = newDirectory()) {
+      // Avoid flushing until the end of the test to save time.
+      IndexWriterConfig conf = newIndexWriterConfig()
+              .setMaxBufferedDocs(1000)
+              .setRAMBufferSizeMB(1000)
+              .setRAMPerThreadHardLimitMB(1000)
+              .setCheckPendingFlushUpdate(false);
+      try (IndexWriter modifier = new IndexWriter(dir, conf)) {
+        Document document = new Document();
+        int fieldsPerDoc = 1_000;
+        for (int i = 0; i < fieldsPerDoc; i++) {
+          document.add(new StoredField("field" + i, ""));
+        }
+        AtomicLong numFields = new AtomicLong(0);
+        List<Thread> threads = new ArrayList<>();
+        int nThreads = atLeast(8);
+        for (int i = 0; i < nThreads; i++) {
+          Thread t = new Thread(() -> {
+            try {
+              while (numFields.getAndAdd(fieldsPerDoc) < breakingFieldCount) {
+                modifier.addDocument(document);
+                modifier.deleteAll();
+              }
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+          t.start();
+          threads.add(t);
+        }
+        for (Thread t : threads) {
+          t.join();
+        }
+        // Add one last document and flush to build FieldInfos.
+        modifier.addDocument(document);
+        modifier.flush();
+      }
+    }
+  }
 
   private void updateDoc(IndexWriter modifier, int id, int value)
       throws IOException {
@@ -944,7 +991,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.close();
     dir.close();
   }
-  
+
   public void testDeleteAllSlowly() throws Exception {
     final Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -982,7 +1029,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  
+
   // TODO: this test can hit pathological cases (IW settings?) where it runs for far too long
   @Nightly
   public void testIndexingThenDeleting() throws Exception {
