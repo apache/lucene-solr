@@ -47,8 +47,7 @@ tasks.withType(CppCompile).configureEach {
   // is present.
   systemIncludes.from file("${javaHome}/include")
 
-  for (def path : [
-          file("${javaHome}/include/win32")]) {
+  for (def path : [file("${javaHome}/include/win32")]) {
     if (path.exists()) {
       systemIncludes.from path
     }
