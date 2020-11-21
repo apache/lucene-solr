@@ -1194,9 +1194,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       });
 
       // Make sure we cannot open it for reading:
-      expectThrows(NoSuchFileException.class, () -> {      
-        fsDir.openInput(fileName, IOContext.DEFAULT);
-      });
+      expectThrowsAnyOf(
+              Arrays.asList(NoSuchFileException.class, FileNotFoundException.class),
+              () -> {
+                fsDir.openInput(fileName, IOContext.DEFAULT);
+              });
     }
   }
 
