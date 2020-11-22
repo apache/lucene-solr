@@ -204,6 +204,8 @@ Bug Fixes
 * SOLR-14983: Fix response returning original score instead of reranked score due to query and filter combining.
   (Krishan Goyal, Jason Baik, Christine Poerschke)
 
+* SOLR-14993: Unable to download zookeeper files of 1byte in size (Erick Erickson, Allen Sooredoo)
+
 Other Changes
 ---------------------
 
