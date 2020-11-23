@@ -41,12 +41,15 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9581: Japanese tokenizer should discard the compound token instead of disabling the decomposition
+  of long tokens when discardCompoundToken is activated. (Jim Ferenczi)
 
 Other
 ---------------------
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
+
 
 ======================= Lucene 8.7.0 =======================
 
