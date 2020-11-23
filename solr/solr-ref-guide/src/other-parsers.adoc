@@ -1012,7 +1012,8 @@ If `true`, multiples the computed payload factor by the score of the original qu
 
 === Payload Check Parser
 
-`PayloadCheckQParser` only matches when the matching terms also have the specified payloads.
+`PayloadCheckQParser` only matches when the matching terms also have the specified payloads.  The matching by default is an equals behavior,
+however, inequality matching can also be performed to support greater than(gt), less than(lt), greater than or equal(gte), less than or equal(lte) when doing the payload matching.
 
 This parser accepts the following parameters:
 
@@ -1026,12 +1027,22 @@ Each specified payload will be encoded using the encoder determined from the fie
 +
 `DelimitedPayloadTokenFilter` 'identity' encoded payloads also work here, as well as float and integer encoded ones.
 
+`op`::
+The inequality operation to apply to the payload check.  This will test for the payload on the term to be greater than / less than the payload value provided in the payloads parameter.  Valid values are: gt,gte,lt,lte,eq (default behavior is eq)
+ 
 *Example*
 
 [source,text]
-----
 {!payload_check f=words_dps payloads="VERB NOUN"}searching stuff
-----
+
+[source,text]
+Find all documents with "foo" where "foo" has a payload with a value of greater than or equal to 0.75
+{!payload_check f=words_dpf payloads="0.75" op="gte"}foo
+
+[source,text]
+Find all documents with "foo bar" where term "foo" has a payload greater than 9 and "bar" has a payload greater than 5
+{!payload_check f=words_dpi payloads="9 5" op="gt"}foo bar
+
 
 == Prefix Query Parser
 
