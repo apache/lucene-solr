@@ -25,12 +25,14 @@ import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
+import org.apache.lucene.geo.XYPoint;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -199,6 +201,32 @@ public class TestXYShape extends LuceneTestCase {
     q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
     assertEquals(expectedDisjoint, s.count(q));
 
+    IOUtils.close(r, dir);
+  }
+
+  public void testContainsWrappingBooleanQuery() throws Exception {
+
+    float[] ys = new float[] {-30, -30, 30, 30, -30};
+    float[] xs = new float[] {-30, 30, 30, -30, -30};
+    XYPolygon polygon = new XYPolygon(xs, ys);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    XYGeometry[] geometries = new XYGeometry[] { new XYRectangle(0, 1, 0, 1), new XYPoint(4, 4) };
+    // geometries within the polygon
+    Query q = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, geometries);
+    TopDocs topDocs = s.search(q, 1);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertEquals(1.0, topDocs.scoreDocs[0].score, 0.0);
     IOUtils.close(r, dir);
   }
 

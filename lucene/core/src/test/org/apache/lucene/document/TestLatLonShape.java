@@ -25,6 +25,7 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
@@ -36,6 +37,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -826,6 +828,32 @@ public class TestLatLonShape extends LuceneTestCase {
     Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
     assertEquals(0, s.count(q));
 
+    IOUtils.close(r, dir);
+  }
+
+  public void testContainsWrappingBooleanQuery() throws Exception {
+
+    double[] lats = new double[] {-30, -30, 30, 30, -30};
+    double[] lons = new double[] {-30, 30, 30, -30, -30};
+    Polygon polygon = new Polygon(lats, lons);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    LatLonGeometry[] geometries = new LatLonGeometry[] { new Rectangle(0, 1, 0, 1), new Point(4, 4) };
+    // geometries within the polygon
+    Query q = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, geometries);
+    TopDocs topDocs = s.search(q, 1);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertEquals(1.0, topDocs.scoreDocs[0].score, 0.0);
     IOUtils.close(r, dir);
   }
 
