@@ -122,11 +122,6 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] fields = line.split("\t", 2);
         String sourceText = fields[0];
         String[] tmpExpectedTokens = fields[1].split("\\s+");
-        if (sourceText.equals("京都大学硬式野球部")) {
-          // This is the only case that tokenization result is different from discardCompoundToken=false
-          tmpExpectedTokens[0] = "京都";
-          tmpExpectedTokens[1] = "大学";
-        }
 
         List<String> expectedTokenList = new ArrayList<>();
         for(int tokIDX=0;tokIDX<tmpExpectedTokens.length;tokIDX++) {

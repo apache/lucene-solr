@@ -108,13 +108,13 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     a.close();
     a = new JapaneseAnalyzer();
     assertAnalyzesToPositions(a, "京都大学硬式野球部",
-                     new String[] { "京都",
-                                    "大学",
-                                    "硬式",
-                                    "野球",
-                                    "部" },
-                              new int[] {1, 1, 1, 1, 1},
-                              new int[] {1, 1, 1, 1, 1});
+            new String[] { "京都大",
+                    "学",
+                    "硬式",
+                    "野球",
+                    "部" },
+            new int[] {1, 1, 1, 1, 1},
+            new int[] {1, 1, 1, 1, 1});
     // toDotFile(a, "成田空港", "/mnt/scratch/out.dot");
     a.close();
   }

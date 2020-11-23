@@ -247,10 +247,17 @@ Optimizations
 * LUCENE-9536: Reduced memory usage for OrdinalMap when a segment has all
   values. (Julie Tibshirani via Adrien Grand)
 
+Bug Fixes
+---------------------
+
+* LUCENE-9581: Japanese tokenizer should discard the compound token instead of disabling the decomposition
+  of long tokens when discardCompoundToken is activated. (Jim Ferenczi)
+
 Other
 ---------------------
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
+
 
 ======================= Lucene 8.7.0 =======================
 
