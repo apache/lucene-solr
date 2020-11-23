@@ -234,12 +234,6 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     assertFalse(floatLTQuery.equals(intLTEQuery));
     assertFalse(floatLTQuery.equals(intGTQuery));
     assertFalse(floatLTQuery.equals(intGTEQuery));
-    
-    // eq operator should be default, which is a byte comparison (so payload type should / is ignored
-    SpanQuery stringEQQuery1 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1), PayloadType.STRING, "eq");
-    SpanQuery stringEQQuery2 = new SpanPayloadCheckQuery(sq1, Collections.singletonList(payload1));
-    
-    assertTrue(stringEQQuery1.equals(stringEQQuery2));
 
   }
 
