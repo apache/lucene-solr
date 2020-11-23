@@ -33,6 +33,7 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -1004,11 +1005,10 @@ public class BKDWriter implements Closeable {
     metaOut.writeVLong(pointCount);
     metaOut.writeVInt(docsSeen.cardinality());
     metaOut.writeVInt(packedIndex.length);
-    metaOut.writeLong(dataStartFP);
+    EndiannessReverserUtil.writeLong(metaOut, dataStartFP);
     // If metaOut and indexOut are the same file, we account for the fact that
     // writing a long makes the index start 8 bytes later.
-    metaOut.writeLong(indexOut.getFilePointer() + (metaOut == indexOut ? Long.BYTES : 0));
-
+    EndiannessReverserUtil.writeLong(metaOut, indexOut.getFilePointer() + (metaOut == indexOut ? Long.BYTES : 0));
     indexOut.writeBytes(packedIndex, 0, packedIndex.length);
   }
 

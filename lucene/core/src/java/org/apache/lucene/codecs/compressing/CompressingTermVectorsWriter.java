@@ -40,6 +40,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -587,7 +588,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
     // start offsets
     for (int i = 0; i < fieldNums.length; ++i) {
-      vectorsStream.writeInt(Float.floatToRawIntBits(charsPerTerm[i]));
+      EndiannessReverserUtil.writeInt(vectorsStream, Float.floatToRawIntBits(charsPerTerm[i]));
     }
 
     writer.reset(vectorsStream);

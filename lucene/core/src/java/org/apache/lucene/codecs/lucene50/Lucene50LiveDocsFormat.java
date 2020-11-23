@@ -28,6 +28,7 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
@@ -73,7 +74,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
                                      info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
         long data[] = new long[FixedBitSet.bits2words(length)];
         for (int i = 0; i < data.length; i++) {
-          data[i] = input.readLong();
+          data[i] = EndiannessReverserUtil.readLong(input);
         }
         FixedBitSet fbs = new FixedBitSet(data, length);
         if (fbs.length() - fbs.cardinality() != info.getDelCount()) {
@@ -107,7 +108,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
             delCount += 1;
           }
         }
-        output.writeLong(currentBits);
+        EndiannessReverserUtil.writeLong(output, currentBits);
       }
       CodecUtil.writeFooter(output);
     }

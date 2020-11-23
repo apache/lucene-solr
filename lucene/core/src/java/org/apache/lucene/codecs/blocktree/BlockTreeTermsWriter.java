@@ -39,6 +39,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -1040,9 +1041,9 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         fieldMeta.copyTo(metaOut);
       }
       CodecUtil.writeFooter(indexOut);
-      metaOut.writeLong(indexOut.getFilePointer());
+      EndiannessReverserUtil.writeLong(metaOut, indexOut.getFilePointer());
       CodecUtil.writeFooter(termsOut);
-      metaOut.writeLong(termsOut.getFilePointer());
+      EndiannessReverserUtil.writeLong(metaOut, termsOut.getFilePointer());
       CodecUtil.writeFooter(metaOut);
       success = true;
     } finally {

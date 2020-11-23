@@ -38,6 +38,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -357,11 +358,11 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       out.writeByte((byte) (0x80 | (1 + intVal)));
     } else if ((floatBits >>> 31) == 0) {
       // other positive floats: 4 bytes
-      out.writeInt(floatBits);
+      EndiannessReverserUtil.writeInt(out, floatBits);
     } else {
       // other negative float: 5 bytes
       out.writeByte((byte) 0xFF);
-      out.writeInt(floatBits);
+      EndiannessReverserUtil.writeInt(out, floatBits);
     }
   }
   
@@ -386,7 +387,6 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static void writeZDouble(DataOutput out, double d) throws IOException {
     int intVal = (int) d;
     final long doubleBits = Double.doubleToLongBits(d);
-    
     if (d == intVal &&
         intVal >= -1 && 
         intVal <= 0x7C &&
@@ -397,14 +397,14 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     } else if (d == (float) d) {
       // d has an accurate float representation: 5 bytes
       out.writeByte((byte) 0xFE);
-      out.writeInt(Float.floatToIntBits((float) d));
+      EndiannessReverserUtil.writeInt(out, Float.floatToIntBits((float) d));
     } else if ((doubleBits >>> 63) == 0) {
       // other positive doubles: 8 bytes
-      out.writeLong(doubleBits);
+      EndiannessReverserUtil.writeLong(out, doubleBits);
     } else {
       // other negative doubles: 9 bytes
       out.writeByte((byte) 0xFF);
-      out.writeLong(doubleBits);
+      EndiannessReverserUtil.writeLong(out, doubleBits);
     }
   }
 

@@ -17,6 +17,8 @@
 
 package org.apache.lucene.util.fst;
 
+import org.apache.lucene.store.EndiannessReverserUtil;
+
 import java.io.IOException;
 
 /**
@@ -167,6 +169,6 @@ class BitTableUtil {
   }
 
   private static int bitCount8Bytes(FST.BytesReader reader) throws IOException {
-    return Long.bitCount(reader.readLong());
+    return Long.bitCount(EndiannessReverserUtil.readLong(reader));
   }
 }

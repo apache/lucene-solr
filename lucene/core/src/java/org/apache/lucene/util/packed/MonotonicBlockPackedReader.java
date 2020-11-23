@@ -24,6 +24,7 @@ import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongValues;
@@ -63,7 +64,7 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
     long sumBPV = 0;
     for (int i = 0; i < numBlocks; ++i) {
       minValues[i] = in.readZLong();
-      averages[i] = Float.intBitsToFloat(in.readInt());
+      averages[i] = Float.intBitsToFloat(EndiannessReverserUtil.readInt(in));
       final int bitsPerValue = in.readVInt();
       sumBPV += bitsPerValue;
       if (bitsPerValue > 64) {

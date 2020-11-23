@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
@@ -61,7 +62,7 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     boolean success = false;
     try {
       if (meta != null) {
-        meta.writeInt(-1); // write EOF marker
+        EndiannessReverserUtil.writeInt(meta, -1); // write EOF marker
         CodecUtil.writeFooter(meta); // write checksum
       }
       if (data != null) {
@@ -92,36 +93,36 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     }
     assert numDocsWithValue <= maxDoc;
 
-    meta.writeInt(field.number);
+    EndiannessReverserUtil.writeInt(meta, field.number);
 
     if (numDocsWithValue == 0) {
-      meta.writeLong(-2); // docsWithFieldOffset
-      meta.writeLong(0L); // docsWithFieldLength
-      meta.writeShort((short) -1); // jumpTableEntryCount
+      EndiannessReverserUtil.writeLong(meta, -2); // docsWithFieldOffset
+      EndiannessReverserUtil.writeLong(meta, 0L); // docsWithFieldLength
+      EndiannessReverserUtil.writeShort(meta, (short) -1); // jumpTableEntryCount
       meta.writeByte((byte) -1); // denseRankPower
     } else if (numDocsWithValue == maxDoc) {
-      meta.writeLong(-1); // docsWithFieldOffset
-      meta.writeLong(0L); // docsWithFieldLength
-      meta.writeShort((short) -1); // jumpTableEntryCount
+      EndiannessReverserUtil.writeLong(meta, -1); // docsWithFieldOffset
+      EndiannessReverserUtil.writeLong(meta, 0L); // docsWithFieldLength
+      EndiannessReverserUtil.writeShort(meta, (short) -1); // jumpTableEntryCount
       meta.writeByte((byte) -1); // denseRankPower
     } else {
       long offset = data.getFilePointer();
-      meta.writeLong(offset); // docsWithFieldOffset
+      EndiannessReverserUtil.writeLong(meta, offset); // docsWithFieldOffset
       values = normsProducer.getNorms(field);
       final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
-      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
-      meta.writeShort(jumpTableEntryCount);
+      EndiannessReverserUtil.writeLong(meta, data.getFilePointer() - offset); // docsWithFieldLength
+      EndiannessReverserUtil.writeShort(meta, jumpTableEntryCount);
       meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
-    meta.writeInt(numDocsWithValue);
+    EndiannessReverserUtil.writeInt(meta, numDocsWithValue);
     int numBytesPerValue = numBytesPerValue(min, max);
 
     meta.writeByte((byte) numBytesPerValue);
     if (numBytesPerValue == 0) {
-      meta.writeLong(min);
+      EndiannessReverserUtil.writeLong(meta, min);
     } else {
-      meta.writeLong(data.getFilePointer()); // normsOffset
+      EndiannessReverserUtil.writeLong(meta, data.getFilePointer()); // normsOffset
       values = normsProducer.getNorms(field);
       writeValues(values, numBytesPerValue, data);
     }
@@ -149,13 +150,13 @@ final class Lucene80NormsConsumer extends NormsConsumer {
           out.writeByte((byte) value);
           break;
         case 2:
-          out.writeShort((short) value);
+          EndiannessReverserUtil.writeShort(out, (short) value);
           break;
         case 4:
-          out.writeInt((int) value);
+          EndiannessReverserUtil.writeInt(out, (int) value);
           break;
         case 8:
-          out.writeLong(value);
+          EndiannessReverserUtil.writeLong(out, value);
           break;
         default:
           throw new AssertionError();

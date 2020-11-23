@@ -120,10 +120,11 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   @Override
   public int readInt() throws IOException {
     if (4 <= (bufferLength - bufferPosition)) {
-      return ((buffer[bufferPosition++] & 0xFF) << 24)
-          | ((buffer[bufferPosition++] & 0xFF) << 16)
-          | ((buffer[bufferPosition++] & 0xFF) << 8)
-          | (buffer[bufferPosition++] & 0xFF);
+      final byte b1 = buffer[bufferPosition++];
+      final byte b2 = buffer[bufferPosition++];
+      final byte b3 = buffer[bufferPosition++];
+      final byte b4 = buffer[bufferPosition++];
+      return (b4 << 24) | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
     } else {
       return super.readInt();
     }
@@ -132,15 +133,16 @@ public abstract class CustomBufferedIndexInput extends IndexInput {
   @Override
   public long readLong() throws IOException {
     if (8 <= (bufferLength - bufferPosition)) {
-      final int i1 = ((buffer[bufferPosition++] & 0xff) << 24)
-          | ((buffer[bufferPosition++] & 0xff) << 16)
-          | ((buffer[bufferPosition++] & 0xff) << 8)
-          | (buffer[bufferPosition++] & 0xff);
-      final int i2 = ((buffer[bufferPosition++] & 0xff) << 24)
-          | ((buffer[bufferPosition++] & 0xff) << 16)
-          | ((buffer[bufferPosition++] & 0xff) << 8)
-          | (buffer[bufferPosition++] & 0xff);
-      return (((long) i1) << 32) | (i2 & 0xFFFFFFFFL);
+      final byte b1 = buffer[bufferPosition++];
+      final byte b2 = buffer[bufferPosition++];
+      final byte b3 = buffer[bufferPosition++];
+      final byte b4 = buffer[bufferPosition++];
+      final byte b5 = buffer[bufferPosition++];
+      final byte b6 = buffer[bufferPosition++];
+      final byte b7 = buffer[bufferPosition++];
+      final byte b8 = buffer[bufferPosition++];
+      return ((b8 & 0xFFL) << 56) | (b7 & 0xFFL) << 48 | (b6 & 0xFFL) << 40 | (b5 & 0xFFL) << 32
+              | (b4 & 0xFFL) << 24 | (b3 & 0xFFL) << 16 | (b2 & 0xFFL) << 8 | (b1 & 0xFFL);
     } else {
       return super.readLong();
     }

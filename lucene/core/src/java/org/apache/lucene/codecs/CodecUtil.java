@@ -28,6 +28,7 @@ import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -49,7 +50,7 @@ public final class CodecUtil {
   /**
    * Constant to identify the start of a codec header.
    */
-  public final static int CODEC_MAGIC = 0x3fd76c17;
+  public final static int CODEC_MAGIC = 0x176cd73f;
   /**
    * Constant to identify the start of a codec footer.
    */
@@ -89,7 +90,7 @@ public final class CodecUtil {
     }
     out.writeInt(CODEC_MAGIC);
     out.writeString(codec);
-    out.writeInt(version);
+    writeVersion(out, version);
   }
   
   /**
@@ -208,7 +209,7 @@ public final class CodecUtil {
       throw new CorruptIndexException("codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec, in);
     }
 
-    final int actualVersion = in.readInt();
+    final int actualVersion = readVersion(in);
     if (actualVersion < minVersion) {
       throw new IndexFormatTooOldException(in, actualVersion, minVersion, maxVersion);
     }
@@ -289,7 +290,7 @@ public final class CodecUtil {
 
     // we can't verify these, so we pass-through:
     String codec = in.readString();
-    int version = in.readInt();
+    int version = readVersion(in);
 
     // verify id:
     checkIndexHeaderID(in, expectedID);
@@ -302,7 +303,7 @@ public final class CodecUtil {
     // now write the header we just verified
     out.writeInt(CodecUtil.CODEC_MAGIC);
     out.writeString(codec);
-    out.writeInt(version);
+    writeVersion(out, version);
     out.writeBytes(expectedID, 0, expectedID.length);
     out.writeByte((byte) suffixLength);
     out.writeBytes(suffixBytes, 0, suffixLength);
@@ -553,7 +554,7 @@ public final class CodecUtil {
    * @throws IOException if an i/o error occurs
    */
   static long readCRC(IndexInput input) throws IOException {
-    long value = input.readLong();
+    long value = readChecksum(input);
     if ((value & 0xFFFFFFFF00000000L) != 0) {
       throw new CorruptIndexException("Illegal CRC-32 checksum: " + value, input);
     }
@@ -570,6 +571,23 @@ public final class CodecUtil {
     if ((value & 0xFFFFFFFF00000000L) != 0) {
       throw new IllegalStateException("Illegal CRC-32 checksum: " + value + " (resource=" + output + ")");
     }
-    output.writeLong(value);
+    writeChecksum(output, value);
   }
+  
+  private static int readVersion(DataInput in) throws IOException {
+    return EndiannessReverserUtil.readInt(in);
+  }
+
+  private static void writeVersion(DataOutput out, int version) throws IOException {
+    EndiannessReverserUtil.writeInt(out, version);
+  }
+
+  private static long readChecksum(DataInput in) throws IOException {
+    return EndiannessReverserUtil.readLong(in);
+  }
+
+  private static void writeChecksum(DataOutput out, long checksum) throws IOException {
+    EndiannessReverserUtil.writeLong(out, checksum);
+  }
+  
 }

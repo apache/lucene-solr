@@ -30,6 +30,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Accountable;
@@ -580,7 +581,7 @@ public final class FST<T> implements Accountable {
       out.writeByte((byte) v);
     } else if (inputType == INPUT_TYPE.BYTE2) {
       assert v <= 65535: "v=" + v;
-      out.writeShort((short) v);
+      EndiannessReverserUtil.writeShort(out, (short) v);
     } else {
       out.writeVInt(v);
     }
@@ -594,7 +595,7 @@ public final class FST<T> implements Accountable {
       v = in.readByte() & 0xFF;
     } else if (inputType == INPUT_TYPE.BYTE2) {
       // Unsigned short:
-      v = in.readShort() & 0xFFFF;
+      v = EndiannessReverserUtil.readShort(in) & 0xFFFF;
     } else { 
       v = in.readVInt();
     }

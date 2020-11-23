@@ -96,11 +96,12 @@ public class CopyOneFile implements Closeable {
         // Paranoia: make sure the primary node is not smoking crack, by somehow sending us an already corrupted file whose checksum (in its
         // footer) disagrees with reality:
         long actualChecksumIn = in.readLong();
-        if (actualChecksumIn != checksum) {
+        // CheckSum is written in Big Endian so we need to reverse bytes
+        if (actualChecksumIn != Long.reverseBytes(checksum)) {
           dest.message("file " + tmpName + ": checksum claimed by primary disagrees with the file's footer: claimed checksum=" + checksum + " vs actual=" + actualChecksumIn);
           throw new IOException("file " + name + ": checksum mismatch after file copy");
         }
-        out.writeLong(checksum);
+        out.writeLong(actualChecksumIn);
         bytesCopied += Long.BYTES;
         close();
 

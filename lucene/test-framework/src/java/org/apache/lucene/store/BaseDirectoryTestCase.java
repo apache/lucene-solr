@@ -186,14 +186,14 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   public void testAlignedLittleEndianLongs() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testAlignedLittleEndianLongs"))) {
       try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
-        out.writeLong(Long.reverseBytes(3L));
-        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
-        out.writeLong(Long.reverseBytes(-3L));
+        out.writeLong(3L);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
       }
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         assertEquals(24, input.length());
         long[] l = new long[4];
-        input.readLELongs(l, 1, 3);
+        input.readLongs(l, 1, 3);
         assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
         assertEquals(24, input.getFilePointer());
       }
@@ -204,15 +204,15 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     try (Directory dir = getDirectory(createTempDir("testUnalignedLittleEndianLongs"))) {
       try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
         out.writeByte((byte) 2);
-        out.writeLong(Long.reverseBytes(3L));
-        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
-        out.writeLong(Long.reverseBytes(-3L));
+        out.writeLong(3L);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
       }
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         assertEquals(25, input.length());
         assertEquals(2, input.readByte());
         long[] l = new long[4];
-        input.readLELongs(l, 1, 3);
+        input.readLongs(l, 1, 3);
         assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
         assertEquals(25, input.getFilePointer());
       }
@@ -231,7 +231,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
         input.seek(offset);
         expectThrows(EOFException.class,
-            () -> input.readLELongs(new long[length], 0, length));
+            () -> input.readLongs(new long[length], 0, length));
       }
     }
   }

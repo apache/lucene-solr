@@ -42,6 +42,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -485,7 +486,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       // average number of chars per term
       final float[] charsPerTerm = new float[fieldNums.length];
       for (int i = 0; i < charsPerTerm.length; ++i) {
-        charsPerTerm[i] = Float.intBitsToFloat(vectorsStream.readInt());
+        charsPerTerm[i] = Float.intBitsToFloat(EndiannessReverserUtil.readInt(vectorsStream));
       }
       startOffsets = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
       lengths = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);

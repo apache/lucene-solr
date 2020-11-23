@@ -167,7 +167,7 @@ public class TestCodecUtil extends LuceneTestCase {
     output.writeString("this is the data");
     output.writeInt(CodecUtil.FOOTER_MAGIC);
     output.writeInt(0);
-    output.writeLong(1234567); // write a bogus checksum
+    output.writeLong(Long.reverseBytes(1234567)); // write a bogus checksum
     output.close();
 
     ChecksumIndexInput input = new BufferedChecksumIndexInput(new ByteBuffersIndexInput(out.toDataInput(), "temp"));
@@ -238,10 +238,10 @@ public class TestCodecUtil extends LuceneTestCase {
   public void testReadBogusCRC() throws Exception {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
     IndexOutput output = new ByteBuffersIndexOutput(out, "temp", "temp");
-    output.writeLong(-1L); // bad
-    output.writeLong(1L << 32); // bad
-    output.writeLong(-(1L << 32)); // bad
-    output.writeLong((1L << 32) - 1); // ok
+    output.writeLong(Long.reverseBytes(-1L)); // bad
+    output.writeLong(Long.reverseBytes(1L << 32)); // bad
+    output.writeLong(Long.reverseBytes(-(1L << 32))); // bad
+    output.writeLong(Long.reverseBytes((1L << 32) - 1)); // ok
     output.close();
     IndexInput input = new BufferedChecksumIndexInput(new ByteBuffersIndexInput(out.toDataInput(), "temp"));
     // read 3 bogus values

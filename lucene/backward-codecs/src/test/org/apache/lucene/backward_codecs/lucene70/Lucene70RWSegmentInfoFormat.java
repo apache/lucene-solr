@@ -30,6 +30,7 @@ import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Version;
@@ -56,23 +57,23 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
         throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
       }
       // Write the Lucene version that created this segment, since 3.1
-      output.writeInt(version.major);
-      output.writeInt(version.minor);
-      output.writeInt(version.bugfix);
+      EndiannessReverserUtil.writeInt(output, version.major);
+      EndiannessReverserUtil.writeInt(output, version.minor);
+      EndiannessReverserUtil.writeInt(output, version.bugfix);
 
       // Write the min Lucene version that contributed docs to the segment, since 7.0
       if (si.getMinVersion() != null) {
         output.writeByte((byte) 1);
         Version minVersion = si.getMinVersion();
-        output.writeInt(minVersion.major);
-        output.writeInt(minVersion.minor);
-        output.writeInt(minVersion.bugfix);
+        EndiannessReverserUtil.writeInt(output, minVersion.major);
+        EndiannessReverserUtil.writeInt(output, minVersion.minor);
+        EndiannessReverserUtil.writeInt(output, minVersion.bugfix);
       } else {
         output.writeByte((byte) 0);
       }
 
       assert version.prerelease == 0;
-      output.writeInt(si.maxDoc());
+      EndiannessReverserUtil.writeInt(output, si.maxDoc());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeMapOfStrings(si.getDiagnostics());
@@ -177,19 +178,19 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
               break;
             case LONG:
               output.writeByte((byte) 1);
-              output.writeLong(((Long) missingValue).longValue());
+              EndiannessReverserUtil.writeLong(output, ((Long) missingValue).longValue());
               break;
             case INT:
               output.writeByte((byte) 1);
-              output.writeInt(((Integer) missingValue).intValue());
+              EndiannessReverserUtil.writeInt(output, ((Integer) missingValue).intValue());
               break;
             case DOUBLE:
               output.writeByte((byte) 1);
-              output.writeLong(Double.doubleToLongBits(((Double) missingValue).doubleValue()));
+              EndiannessReverserUtil.writeLong(output, Double.doubleToLongBits(((Double) missingValue).doubleValue()));
               break;
             case FLOAT:
               output.writeByte((byte) 1);
-              output.writeInt(Float.floatToIntBits(((Float) missingValue).floatValue()));
+              EndiannessReverserUtil.writeInt(output, Float.floatToIntBits(((Float) missingValue).floatValue()));
               break;
             default:
               throw new IllegalStateException("Unexpected sort type: " + sortField.getType());

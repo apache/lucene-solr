@@ -17,6 +17,7 @@
 package org.apache.lucene.util.packed;
 
 
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
@@ -61,30 +62,30 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
           rawValue = in.readByte();
           break;
         case 2:
-          rawValue = in.readShort();
+          rawValue = EndiannessReverserUtil.readShort(in); 
           break;
         case 3:
-          rawValue = ((long)in.readShort() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long) EndiannessReverserUtil.readShort(in) << 8) | (in.readByte() & 0xFFL);
           break;
         case 4:
-          rawValue = in.readInt();
+          rawValue = EndiannessReverserUtil.readInt(in);
           break;
         case 5:
-          rawValue = ((long)in.readInt() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long) EndiannessReverserUtil.readInt(in) << 8) | (in.readByte() & 0xFFL);
           break;
         case 6:
-          rawValue = ((long)in.readInt() << 16) | (in.readShort() & 0xFFFFL);
+          rawValue = ((long) EndiannessReverserUtil.readInt(in) << 16) | (EndiannessReverserUtil.readShort(in) & 0xFFFFL);
           break;
         case 7:
-          rawValue = ((long)in.readInt() << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long) EndiannessReverserUtil.readInt(in) << 24) | ((EndiannessReverserUtil.readShort(in) & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
           break;
         case 8:
-          rawValue = in.readLong();
+          rawValue = EndiannessReverserUtil.readLong(in);
           break;
         case 9:
           // We must be very careful not to shift out relevant bits. So we account for right shift
           // we would normally do on return here, and reset it.
-          rawValue = (in.readLong() << (8 - shiftRightBits)) | ((in.readByte() & 0xFFL) >>> shiftRightBits);
+          rawValue = (EndiannessReverserUtil.readLong(in) << (8 - shiftRightBits)) | ((in.readByte() & 0xFFL) >>> shiftRightBits);
           shiftRightBits = 0;
           break;
         default:

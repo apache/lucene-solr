@@ -61,6 +61,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -296,13 +297,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     int b = in.readByte() & 0xFF;
     if (b == 0xFF) {
       // negative value
-      return Float.intBitsToFloat(in.readInt());
+      return Float.intBitsToFloat(EndiannessReverserUtil.readInt(in));
     } else if ((b & 0x80) != 0) {
       // small integer [-1..125]
       return (b & 0x7f) - 1;
     } else {
       // positive float
-      int bits = b << 24 | ((in.readShort() & 0xFFFF) << 8) | (in.readByte() & 0xFF);
+      int bits = b << 24 | ((EndiannessReverserUtil.readShort(in) & 0xFFFF) << 8) | (in.readByte() & 0xFF);
       return Float.intBitsToFloat(bits);
     }
   }
@@ -315,16 +316,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     int b = in.readByte() & 0xFF;
     if (b == 0xFF) {
       // negative value
-      return Double.longBitsToDouble(in.readLong());
+      return Double.longBitsToDouble(EndiannessReverserUtil.readLong(in));
     } else if (b == 0xFE) {
       // float
-      return Float.intBitsToFloat(in.readInt());
+      return Float.intBitsToFloat(EndiannessReverserUtil.readInt(in));
     } else if ((b & 0x80) != 0) {
       // small integer [-1..124]
       return (b & 0x7f) - 1;
     } else {
       // positive double
-      long bits = ((long) b) << 56 | ((in.readInt() & 0xFFFFFFFFL) << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+      long bits = ((long) b) << 56 | ((EndiannessReverserUtil.readInt(in) & 0xFFFFFFFFL) << 24) |
+              ((EndiannessReverserUtil.readShort(in) & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
       return Double.longBitsToDouble(bits);
     }
   }
@@ -607,7 +609,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         assert bytes.length == length;
         documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
       }
-
+      
       return new SerializedDocument(documentInput, length, numStoredFields);
     }
 

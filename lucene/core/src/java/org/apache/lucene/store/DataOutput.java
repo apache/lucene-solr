@@ -67,18 +67,18 @@ public abstract class DataOutput {
    * @see DataInput#readInt()
    */
   public void writeInt(int i) throws IOException {
-    writeByte((byte)(i >> 24));
-    writeByte((byte)(i >> 16));
-    writeByte((byte)(i >>  8));
     writeByte((byte) i);
+    writeByte((byte)(i >>  8));
+    writeByte((byte)(i >> 16));
+    writeByte((byte)(i >> 24));
   }
   
   /** Writes a short as two bytes.
    * @see DataInput#readShort()
    */
   public void writeShort(short i) throws IOException {
-    writeByte((byte)(i >>  8));
     writeByte((byte) i);
+    writeByte((byte)(i >>  8));
   }
 
   /** Writes an int in a variable-length format.  Writes between one and
@@ -210,8 +210,14 @@ public abstract class DataOutput {
    * @see DataInput#readLong()
    */
   public void writeLong(long i) throws IOException {
-    writeInt((int) (i >> 32));
-    writeInt((int) i);
+    writeByte((byte) i);
+    writeByte((byte)(i >>  8));
+    writeByte((byte)(i >> 16));
+    writeByte((byte)(i >> 24));
+    writeByte((byte)(i >> 32));
+    writeByte((byte)(i >> 40));
+    writeByte((byte)(i >> 48));
+    writeByte((byte)(i >> 56));
   }
 
   /** Writes an long in a variable-length format.  Writes between one and nine

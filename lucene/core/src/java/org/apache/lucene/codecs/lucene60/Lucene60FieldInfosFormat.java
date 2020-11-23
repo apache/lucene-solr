@@ -35,6 +35,7 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -143,7 +144,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
           
           // DV Types are packed in one byte
           final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
-          final long dvGen = input.readLong();
+          final long dvGen = EndiannessReverserUtil.readLong(input);
           Map<String,String> attributes = input.readMapOfStrings();
           // just use the last field's map if its the same
           if (attributes.equals(lastAttributes)) {
@@ -290,7 +291,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
 
         // pack the DV type and hasNorms in one byte
         output.writeByte(docValuesByte(fi.getDocValuesType()));
-        output.writeLong(fi.getDocValuesGen());
+        EndiannessReverserUtil.writeLong(output, fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
         output.writeVInt(fi.getPointDimensionCount());
         if (fi.getPointDimensionCount() != 0) {

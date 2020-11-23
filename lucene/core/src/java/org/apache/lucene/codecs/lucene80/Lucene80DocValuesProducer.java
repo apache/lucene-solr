@@ -40,6 +40,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.BytesRef;
@@ -114,7 +115,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private void readFields(ChecksumIndexInput meta, FieldInfos infos) throws IOException {
-    for (int fieldNumber = meta.readInt(); fieldNumber != -1; fieldNumber = meta.readInt()) {
+    for (int fieldNumber = EndiannessReverserUtil.readInt(meta); fieldNumber != -1; fieldNumber = EndiannessReverserUtil.readInt(meta)) {
       FieldInfo info = infos.fieldInfo(fieldNumber);
       if (info == null) {
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
@@ -143,12 +144,12 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private void readNumeric(ChecksumIndexInput meta, NumericEntry entry) throws IOException {
-    entry.docsWithFieldOffset = meta.readLong();
-    entry.docsWithFieldLength = meta.readLong();
-    entry.jumpTableEntryCount = meta.readShort();
+    entry.docsWithFieldOffset = EndiannessReverserUtil.readLong(meta);
+    entry.docsWithFieldLength = EndiannessReverserUtil.readLong(meta);
+    entry.jumpTableEntryCount = EndiannessReverserUtil.readShort(meta);
     entry.denseRankPower = meta.readByte();
-    entry.numValues = meta.readLong();
-    int tableSize = meta.readInt();
+    entry.numValues = EndiannessReverserUtil.readLong(meta);
+    int tableSize = EndiannessReverserUtil.readInt(meta);
     if (tableSize > 256) {
       throw new CorruptIndexException("invalid table size: " + tableSize, meta);
     }
@@ -156,7 +157,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       entry.table = new long[tableSize];
       ramBytesUsed += RamUsageEstimator.sizeOf(entry.table);
       for (int i = 0; i < tableSize; ++i) {
-        entry.table[i] = meta.readLong();
+        entry.table[i] = EndiannessReverserUtil.readLong(meta);
       }
     }
     if (tableSize < -1) {
@@ -165,11 +166,11 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       entry.blockShift = -1;
     }
     entry.bitsPerValue = meta.readByte();
-    entry.minValue = meta.readLong();
-    entry.gcd = meta.readLong();
-    entry.valuesOffset = meta.readLong();
-    entry.valuesLength = meta.readLong();
-    entry.valueJumpTableOffset = meta.readLong();
+    entry.minValue = EndiannessReverserUtil.readLong(meta);
+    entry.gcd = EndiannessReverserUtil.readLong(meta);
+    entry.valuesOffset = EndiannessReverserUtil.readLong(meta);
+    entry.valuesLength = EndiannessReverserUtil.readLong(meta);
+    entry.valueJumpTableOffset = EndiannessReverserUtil.readLong(meta);
   }
 
   private BinaryEntry readBinary(ChecksumIndexInput meta) throws IOException {
@@ -188,17 +189,17 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     } else {
       entry.compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
     }
-    entry.dataOffset = meta.readLong();
-    entry.dataLength = meta.readLong();
-    entry.docsWithFieldOffset = meta.readLong();
-    entry.docsWithFieldLength = meta.readLong();
-    entry.jumpTableEntryCount = meta.readShort();
+    entry.dataOffset = EndiannessReverserUtil.readLong(meta);
+    entry.dataLength = EndiannessReverserUtil.readLong(meta);
+    entry.docsWithFieldOffset = EndiannessReverserUtil.readLong(meta);
+    entry.docsWithFieldLength = EndiannessReverserUtil.readLong(meta);
+    entry.jumpTableEntryCount = EndiannessReverserUtil.readShort(meta);
     entry.denseRankPower = meta.readByte();
-    entry.numDocsWithField = meta.readInt();
-    entry.minLength = meta.readInt();
-    entry.maxLength = meta.readInt();
+    entry.numDocsWithField = EndiannessReverserUtil.readInt(meta);
+    entry.minLength = EndiannessReverserUtil.readInt(meta);
+    entry.maxLength = EndiannessReverserUtil.readInt(meta);
     if ((entry.compressed && entry.numDocsWithField > 0) ||  entry.minLength < entry.maxLength) {
-      entry.addressesOffset = meta.readLong();
+      entry.addressesOffset = EndiannessReverserUtil.readLong(meta);
 
       // Old count of uncompressed addresses 
       long numAddresses = entry.numDocsWithField + 1L;
@@ -213,21 +214,21 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final int blockShift = meta.readVInt();
       entry.addressesMeta = DirectMonotonicReader.loadMeta(meta, numAddresses, blockShift);
       ramBytesUsed += entry.addressesMeta.ramBytesUsed();
-      entry.addressesLength = meta.readLong();
+      entry.addressesLength = EndiannessReverserUtil.readLong(meta);
     }
     return entry;
   }
 
   private SortedEntry readSorted(ChecksumIndexInput meta) throws IOException {
     SortedEntry entry = new SortedEntry();
-    entry.docsWithFieldOffset = meta.readLong();
-    entry.docsWithFieldLength = meta.readLong();
-    entry.jumpTableEntryCount = meta.readShort();
+    entry.docsWithFieldOffset = EndiannessReverserUtil.readLong(meta);
+    entry.docsWithFieldLength = EndiannessReverserUtil.readLong(meta);
+    entry.jumpTableEntryCount = EndiannessReverserUtil.readShort(meta);
     entry.denseRankPower = meta.readByte();
-    entry.numDocsWithField = meta.readInt();
+    entry.numDocsWithField = EndiannessReverserUtil.readInt(meta);
     entry.bitsPerValue = meta.readByte();
-    entry.ordsOffset = meta.readLong();
-    entry.ordsLength = meta.readLong();
+    entry.ordsOffset = EndiannessReverserUtil.readLong(meta);
+    entry.ordsLength = EndiannessReverserUtil.readLong(meta);
     readTermDict(meta, entry);
     return entry;
   }
@@ -244,53 +245,53 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       default:
         throw new CorruptIndexException("Invalid multiValued flag: " + multiValued, meta);
     }
-    entry.docsWithFieldOffset = meta.readLong();
-    entry.docsWithFieldLength = meta.readLong();
-    entry.jumpTableEntryCount = meta.readShort();
+    entry.docsWithFieldOffset = EndiannessReverserUtil.readLong(meta);
+    entry.docsWithFieldLength = EndiannessReverserUtil.readLong(meta);
+    entry.jumpTableEntryCount = EndiannessReverserUtil.readShort(meta);
     entry.denseRankPower = meta.readByte();
     entry.bitsPerValue = meta.readByte();
-    entry.ordsOffset = meta.readLong();
-    entry.ordsLength = meta.readLong();
-    entry.numDocsWithField = meta.readInt();
-    entry.addressesOffset = meta.readLong();
+    entry.ordsOffset = EndiannessReverserUtil.readLong(meta);
+    entry.ordsLength = EndiannessReverserUtil.readLong(meta);
+    entry.numDocsWithField = EndiannessReverserUtil.readInt(meta);
+    entry.addressesOffset = EndiannessReverserUtil.readLong(meta);
     final int blockShift = meta.readVInt();
     entry.addressesMeta = DirectMonotonicReader.loadMeta(meta, entry.numDocsWithField + 1, blockShift);
     ramBytesUsed += entry.addressesMeta.ramBytesUsed();
-    entry.addressesLength = meta.readLong();
+    entry.addressesLength = EndiannessReverserUtil.readLong(meta);
     readTermDict(meta, entry);
     return entry;
   }
 
   private static void readTermDict(ChecksumIndexInput meta, TermsDictEntry entry) throws IOException {
     entry.termsDictSize = meta.readVLong();
-    entry.termsDictBlockShift = meta.readInt();
-    final int blockShift = meta.readInt();
+    entry.termsDictBlockShift = EndiannessReverserUtil.readInt(meta);
+    final int blockShift = EndiannessReverserUtil.readInt(meta);
     final long addressesSize = (entry.termsDictSize + (1L << entry.termsDictBlockShift) - 1) >>> entry.termsDictBlockShift;
     entry.termsAddressesMeta = DirectMonotonicReader.loadMeta(meta, addressesSize, blockShift);
-    entry.maxTermLength = meta.readInt();
-    entry.termsDataOffset = meta.readLong();
-    entry.termsDataLength = meta.readLong();
-    entry.termsAddressesOffset = meta.readLong();
-    entry.termsAddressesLength = meta.readLong();
-    entry.termsDictIndexShift = meta.readInt();
+    entry.maxTermLength = EndiannessReverserUtil.readInt(meta);
+    entry.termsDataOffset = EndiannessReverserUtil.readLong(meta);
+    entry.termsDataLength = EndiannessReverserUtil.readLong(meta);
+    entry.termsAddressesOffset = EndiannessReverserUtil.readLong(meta);
+    entry.termsAddressesLength = EndiannessReverserUtil.readLong(meta);
+    entry.termsDictIndexShift = EndiannessReverserUtil.readInt(meta);
     final long indexSize = (entry.termsDictSize + (1L << entry.termsDictIndexShift) - 1) >>> entry.termsDictIndexShift;
     entry.termsIndexAddressesMeta = DirectMonotonicReader.loadMeta(meta, 1 + indexSize, blockShift);
-    entry.termsIndexOffset = meta.readLong();
-    entry.termsIndexLength = meta.readLong();
-    entry.termsIndexAddressesOffset = meta.readLong();
-    entry.termsIndexAddressesLength = meta.readLong();
+    entry.termsIndexOffset = EndiannessReverserUtil.readLong(meta);
+    entry.termsIndexLength = EndiannessReverserUtil.readLong(meta);
+    entry.termsIndexAddressesOffset = EndiannessReverserUtil.readLong(meta);
+    entry.termsIndexAddressesLength = EndiannessReverserUtil.readLong(meta);
   }
 
   private SortedNumericEntry readSortedNumeric(ChecksumIndexInput meta) throws IOException {
     SortedNumericEntry entry = new SortedNumericEntry();
     readNumeric(meta, entry);
-    entry.numDocsWithField = meta.readInt();
+    entry.numDocsWithField = EndiannessReverserUtil.readInt(meta);
     if (entry.numDocsWithField != entry.numValues) {
-      entry.addressesOffset = meta.readLong();
+      entry.addressesOffset = EndiannessReverserUtil.readLong(meta);
       final int blockShift = meta.readVInt();
       entry.addressesMeta = DirectMonotonicReader.loadMeta(meta, entry.numDocsWithField + 1, blockShift);
       ramBytesUsed += entry.addressesMeta.ramBytesUsed();
-      entry.addressesLength = meta.readLong();
+      entry.addressesLength = EndiannessReverserUtil.readLong(meta);
     }
     return entry;
   }
@@ -582,6 +583,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
           @Override
           public long get(long index) {
             try {
+              //TODO
               return vBPVReader.getLongValue(index);
             } catch (IOException e) {
               throw new RuntimeException(e);
@@ -1559,17 +1561,17 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         do {
           // If the needed block is the one directly following the current block, it is cheaper to avoid the cache
           if (rankSlice != null && block != this.block+1) {
-            blockEndOffset = rankSlice.readLong(block*Long.BYTES)-entry.valuesOffset;
+            blockEndOffset = EndiannessReverserUtil.readLong(rankSlice, block*Long.BYTES) - entry.valuesOffset;
             this.block = block-1;
           }
           offset = blockEndOffset;
           bitsPerValue = slice.readByte(offset++);
-          delta = slice.readLong(offset);
+          delta = EndiannessReverserUtil.readLong(slice, offset);
           offset += Long.BYTES;
           if (bitsPerValue == 0) {
             blockEndOffset = offset;
           } else {
-            final int length = slice.readInt(offset);
+            final int length = EndiannessReverserUtil.readInt(slice, offset);
             offset += Integer.BYTES;
             blockEndOffset = offset + length;
           }

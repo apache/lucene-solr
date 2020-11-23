@@ -32,6 +32,7 @@ import org.apache.lucene.search.comparators.IntComparator;
 import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
@@ -106,20 +107,21 @@ public class SortedNumericSortField extends SortField {
 
     @Override
     public SortField readSortField(DataInput in) throws IOException {
-      SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
-      if (in.readInt() == 1) {
+     
+      SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), EndiannessReverserUtil.readInt(in) == 1, readSelectorType(in));
+      if (EndiannessReverserUtil.readInt(in) == 1) {
         switch (sf.type) {
           case INT:
-            sf.setMissingValue(in.readInt());
+            sf.setMissingValue(EndiannessReverserUtil.readInt(in));
             break;
           case LONG:
-            sf.setMissingValue(in.readLong());
+            sf.setMissingValue(EndiannessReverserUtil.readLong(in));
             break;
           case FLOAT:
-            sf.setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
+            sf.setMissingValue(NumericUtils.sortableIntToFloat(EndiannessReverserUtil.readInt(in)));
             break;
           case DOUBLE:
-            sf.setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
+            sf.setMissingValue(NumericUtils.sortableLongToDouble(EndiannessReverserUtil.readLong(in)));
             break;
           default:
             throw new AssertionError();
@@ -136,7 +138,7 @@ public class SortedNumericSortField extends SortField {
   }
 
   private static SortedNumericSelector.Type readSelectorType(DataInput in) throws IOException {
-    int selectorType = in.readInt();
+    int selectorType = EndiannessReverserUtil.readInt(in);
     if (selectorType >= SortedNumericSelector.Type.values().length) {
       throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown selector type " + selectorType);
     }
@@ -146,26 +148,26 @@ public class SortedNumericSortField extends SortField {
   private void serialize(DataOutput out) throws IOException {
     out.writeString(getField());
     out.writeString(type.toString());
-    out.writeInt(reverse ? 1 : 0);
-    out.writeInt(selector.ordinal());
+    EndiannessReverserUtil.writeInt(out, reverse ? 1 : 0);
+    EndiannessReverserUtil.writeInt(out, selector.ordinal());
     if (missingValue == null) {
       out.writeInt(0);
     }
     else {
-      out.writeInt(1);
+      EndiannessReverserUtil.writeInt(out, 1);
       // oh for switch expressions...
       switch (type) {
         case INT:
-          out.writeInt((int)missingValue);
+          EndiannessReverserUtil.writeInt(out, (int)missingValue);
           break;
         case LONG:
-          out.writeLong((long)missingValue);
+          EndiannessReverserUtil.writeLong(out, (long)missingValue);
           break;
         case FLOAT:
-          out.writeInt(NumericUtils.floatToSortableInt((float)missingValue));
+          EndiannessReverserUtil.writeInt(out, NumericUtils.floatToSortableInt((float)missingValue));
           break;
         case DOUBLE:
-          out.writeLong(NumericUtils.doubleToSortableLong((double)missingValue));
+          EndiannessReverserUtil.writeLong(out, NumericUtils.doubleToSortableLong((double)missingValue));
           break;
         default:
           throw new AssertionError();

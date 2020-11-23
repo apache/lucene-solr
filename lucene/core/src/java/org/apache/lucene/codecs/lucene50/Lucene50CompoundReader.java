@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
@@ -116,8 +117,8 @@ final class Lucene50CompoundReader extends CompoundDirectory {
           if (previous != null) {
             throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
           }
-          fileEntry.offset = entriesStream.readLong();
-          fileEntry.length = entriesStream.readLong();
+          fileEntry.offset = EndiannessReverserUtil.readLong(entriesStream); 
+          fileEntry.length = EndiannessReverserUtil.readLong(entriesStream);
         }
       } catch (Throwable exception) {
         priorE = exception;

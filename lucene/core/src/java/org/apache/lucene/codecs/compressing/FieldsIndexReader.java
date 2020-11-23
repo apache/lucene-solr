@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
@@ -47,15 +48,15 @@ final class FieldsIndexReader extends FieldsIndex {
   private final long maxPointer;
 
   FieldsIndexReader(Directory dir, String name, String suffix, String extension, String codecName, byte[] id, IndexInput metaIn) throws IOException {
-    maxDoc = metaIn.readInt();
-    blockShift = metaIn.readInt();
-    numChunks = metaIn.readInt();
-    docsStartPointer = metaIn.readLong();
+    maxDoc = EndiannessReverserUtil.readInt(metaIn);
+    blockShift = EndiannessReverserUtil.readInt(metaIn);
+    numChunks = EndiannessReverserUtil.readInt(metaIn);
+    docsStartPointer = EndiannessReverserUtil.readLong(metaIn);
     docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-    docsEndPointer = startPointersStartPointer = metaIn.readLong();
+    docsEndPointer = startPointersStartPointer = EndiannessReverserUtil.readLong(metaIn);
     startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-    startPointersEndPointer = metaIn.readLong();
-    maxPointer = metaIn.readLong();
+    startPointersEndPointer = EndiannessReverserUtil.readLong(metaIn);
+    maxPointer = EndiannessReverserUtil.readLong(metaIn);
 
     indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extension), IOContext.READ);
     boolean success = false;

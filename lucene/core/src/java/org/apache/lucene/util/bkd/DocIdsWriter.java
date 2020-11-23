@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
@@ -52,13 +53,13 @@ class DocIdsWriter {
       if (max <= 0xffffff) {
         out.writeByte((byte) 24);
         for (int i = 0; i < count; ++i) {
-          out.writeShort((short) (docIds[start + i] >>> 8));
+          EndiannessReverserUtil.writeShort(out, (short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
         out.writeByte((byte) 32);
         for (int i = 0; i < count; ++i) {
-          out.writeInt(docIds[start + i]);
+          EndiannessReverserUtil.writeInt(out, docIds[start + i]);
         }
       }
     }
@@ -92,16 +93,16 @@ class DocIdsWriter {
 
   static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; i++) {
-      docIDs[i] = in.readInt();
+      docIDs[i] = EndiannessReverserUtil.readInt(in);
     }
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+      long l1 = EndiannessReverserUtil.readLong(in);
+      long l2 = EndiannessReverserUtil.readLong(in);
+      long l3 = EndiannessReverserUtil.readLong(in);
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -112,7 +113,7 @@ class DocIdsWriter {
       docIDs[i+7] = (int) l3 & 0xffffff;
     }
     for (; i < count; ++i) {
-      docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
+      docIDs[i] = (Short.toUnsignedInt(EndiannessReverserUtil.readShort(in)) << 8) | Byte.toUnsignedInt(in.readByte());
     }
   }
 
@@ -144,16 +145,16 @@ class DocIdsWriter {
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count; i++) {
-      visitor.visit(in.readInt());
+      visitor.visit(EndiannessReverserUtil.readInt(in));
     }
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
-      long l1 = in.readLong();
-      long l2 = in.readLong();
-      long l3 = in.readLong();
+      long l1 = EndiannessReverserUtil.readLong(in);
+      long l2 = EndiannessReverserUtil.readLong(in);
+      long l3 = EndiannessReverserUtil.readLong(in);
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
@@ -164,7 +165,7 @@ class DocIdsWriter {
       visitor.visit((int) l3 & 0xffffff);
     }
     for (; i < count; ++i) {
-      visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
+      visitor.visit((Short.toUnsignedInt(EndiannessReverserUtil.readShort(in)) << 8) | Byte.toUnsignedInt(in.readByte()));
     }
   }
 }

@@ -43,6 +43,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -126,7 +127,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int VERSION_74 = 9;
   /** The version that recorded SegmentCommitInfo IDs */
   public static final int VERSION_86 = 10;
-  static final int VERSION_CURRENT = VERSION_86;
+  /** The version Changes the endianness of dataInput / dataOutput */
+  public static final int VERSION_90 = 11;
+  static final int VERSION_CURRENT = VERSION_90;
 
   /** Name of the generation reference file name */
   private static final String OLD_SEGMENTS_GEN = "segments.gen";
@@ -303,33 +306,36 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   }
 
   /** Read the commit from the provided {@link ChecksumIndexInput}. */
-  public static final SegmentInfos readCommit(Directory directory, ChecksumIndexInput input, long generation) throws IOException {
+  public static final SegmentInfos readCommit(Directory directory, ChecksumIndexInput inputCodec, long generation) throws IOException {
     Throwable priorE = null;
     int format = -1;
     try {
       // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
       // to read the magic ourselves.
-      int magic = input.readInt();
+      int magic = inputCodec.readInt();
       if (magic != CodecUtil.CODEC_MAGIC) {
-        throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
+        throw new IndexFormatTooOldException(inputCodec, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
       }
-      format = CodecUtil.checkHeaderNoMagic(input, "segments", VERSION_70, VERSION_CURRENT);
+      format = CodecUtil.checkHeaderNoMagic(inputCodec, "segments", VERSION_70, VERSION_CURRENT);
       byte id[] = new byte[StringHelper.ID_LENGTH];
-      input.readBytes(id, 0, id.length);
-      CodecUtil.checkIndexHeaderSuffix(input, Long.toString(generation, Character.MAX_RADIX));
+      inputCodec.readBytes(id, 0, id.length);
+      CodecUtil.checkIndexHeaderSuffix(inputCodec, Long.toString(generation, Character.MAX_RADIX));
 
-      Version luceneVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
-      int indexCreatedVersion = input.readVInt();
+      Version luceneVersion = Version.fromBits(inputCodec.readVInt(), inputCodec.readVInt(), inputCodec.readVInt());
+      int indexCreatedVersion = inputCodec.readVInt();
       if (luceneVersion.major < indexCreatedVersion) {
         throw new CorruptIndexException("Creation version [" + indexCreatedVersion
-            + ".x] can't be greater than the version that wrote the segment infos: [" + luceneVersion + "]" , input);
+            + ".x] can't be greater than the version that wrote the segment infos: [" + luceneVersion + "]" , inputCodec);
       }
 
       if (indexCreatedVersion < Version.LATEST.major - 1) {
-        throw new IndexFormatTooOldException(input, "This index was initially created with Lucene "
+        throw new IndexFormatTooOldException(inputCodec, "This index was initially created with Lucene "
             + indexCreatedVersion + ".x while the current version is " + Version.LATEST
             + " and Lucene only supports reading the current and previous major versions.");
       }
+
+      // Wrap IndexInput for Big endian indexes
+      final DataInput input = format < VERSION_90 ? new EndiannessReverserIndexInput(inputCodec) : inputCodec;
 
       SegmentInfos infos = new SegmentInfos(indexCreatedVersion);
       infos.id = id;
@@ -438,7 +444,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       priorE = t;
     } finally {
       if (format >= VERSION_70) { // oldest supported version
-        CodecUtil.checkFooter(input, priorE);
+        CodecUtil.checkFooter(inputCodec, priorE);
       } else {
         throw IOUtils.rethrowAlways(priorE);
       }

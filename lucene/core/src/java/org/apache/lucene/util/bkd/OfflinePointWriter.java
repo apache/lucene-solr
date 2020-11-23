@@ -54,7 +54,10 @@ public final class OfflinePointWriter implements PointWriter {
     assert closed == false : "Point writer is already closed";
     assert packedValue.length == config.packedBytesLength : "[packedValue] must have length [" + config.packedBytesLength + "] but was [" + packedValue.length + "]";
     out.writeBytes(packedValue, 0, packedValue.length);
-    out.writeInt(docID);
+    out.writeByte((byte) (docID >> 24));
+    out.writeByte((byte) (docID >> 16));
+    out.writeByte((byte) (docID >> 8));
+    out.writeByte((byte) (docID >> 0));
     count++;
     assert expectedCount == 0 || count <= expectedCount:  "expectedCount=" + expectedCount + " vs count=" + count;
   }

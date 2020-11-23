@@ -28,6 +28,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -107,10 +108,10 @@ public final class FieldsIndexWriter implements Closeable {
     try (IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
       CodecUtil.writeIndexHeader(dataOut, codecName + "Idx", VERSION_CURRENT, id, suffix);
 
-      metaOut.writeInt(numDocs);
-      metaOut.writeInt(blockShift);
-      metaOut.writeInt(totalChunks + 1);
-      metaOut.writeLong(dataOut.getFilePointer());
+      EndiannessReverserUtil.writeInt(metaOut, numDocs);
+      EndiannessReverserUtil.writeInt(metaOut, blockShift);
+      EndiannessReverserUtil.writeInt(metaOut, totalChunks + 1);
+      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
 
       try (ChecksumIndexInput docsIn = dir.openChecksumInput(docsOut.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(docsIn, codecName + "Docs", VERSION_CURRENT, VERSION_CURRENT);
@@ -136,7 +137,7 @@ public final class FieldsIndexWriter implements Closeable {
       dir.deleteFile(docsOut.getName());
       docsOut = null;
 
-      metaOut.writeLong(dataOut.getFilePointer());
+      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
       try (ChecksumIndexInput filePointersIn = dir.openChecksumInput(filePointersOut.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(filePointersIn, codecName + "FilePointers", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
@@ -161,9 +162,9 @@ public final class FieldsIndexWriter implements Closeable {
       dir.deleteFile(filePointersOut.getName());
       filePointersOut = null;
 
-      metaOut.writeLong(dataOut.getFilePointer());
-      metaOut.writeLong(maxPointer);
-
+      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
+      EndiannessReverserUtil.writeLong(metaOut, maxPointer);
+      
       CodecUtil.writeFooter(dataOut);
     }
   }

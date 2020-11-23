@@ -27,6 +27,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
@@ -103,7 +104,7 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
           // adding a public method to CodecUtil to do that is somewhat dangerous:
           data.writeInt(CodecUtil.FOOTER_MAGIC);
           data.writeInt(0);
-          data.writeLong(checksum);
+          EndiannessReverserUtil.writeLong(data, checksum);
         }
         long endOffset = data.getFilePointer();
         
@@ -111,8 +112,8 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
         
         // write entry for file
         entries.writeString(IndexFileNames.stripSegmentName(file));
-        entries.writeLong(startOffset);
-        entries.writeLong(length);
+        EndiannessReverserUtil.writeLong(entries, startOffset);
+        EndiannessReverserUtil.writeLong(entries, length);
       }
       
       CodecUtil.writeFooter(data);

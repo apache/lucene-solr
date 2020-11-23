@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
@@ -86,8 +87,8 @@ public final class BKDReader extends PointValues {
     int numIndexBytes = metaIn.readVInt();
     long indexStartPointer;
     if (version >= BKDWriter.VERSION_META_FILE) {
-      minLeafBlockFP = metaIn.readLong();
-      indexStartPointer = metaIn.readLong();
+      minLeafBlockFP = EndiannessReverserUtil.readLong(metaIn);
+      indexStartPointer = EndiannessReverserUtil.readLong(metaIn);
     } else {
       indexStartPointer = indexIn.getFilePointer();
       minLeafBlockFP = indexIn.readVLong();

@@ -116,9 +116,8 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }
-
-  @Override
-  public void readLELongs(long[] dst, int offset, int length) throws IOException {
+  
+  public void readLongs(long[] dst, int offset, int length) throws IOException {
     // ByteBuffer#getLong could work but it has some per-long overhead and there
     // is no ByteBuffer#getLongs to read multiple longs at once. So we use the
     // below trick in order to be able to leverage LongBuffer#get(long[]) to
@@ -133,7 +132,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         // because #asLongBuffer() has some cost that we don't want to pay on
         // each invocation of #readLELongs.
         if (i < curBuf.limit()) {
-          curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
+          curLongBufferViews[i] = curBuf.duplicate().order(ByteOrder.LITTLE_ENDIAN).position(i).asLongBuffer();
         } else {
           curLongBufferViews[i] = EMPTY_LONGBUFFER;
         }
@@ -145,7 +144,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       // if the above call succeeded, then we know the below sum cannot overflow
       curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
-      super.readLELongs(dst, offset, length);
+      super.readLongs(dst, offset, length);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
@@ -332,7 +331,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected ByteBufferIndexInput newCloneInstance(String newResourceDescription, ByteBuffer[] newBuffers, int offset, long length) {
     if (newBuffers.length == 1) {
       newBuffers[0].position(offset);
-      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice(), length, chunkSizePower, this.guard);
+      return new SingleBufferImpl(newResourceDescription, newBuffers[0].slice().order(ByteOrder.LITTLE_ENDIAN), length, chunkSizePower, this.guard);
     } else {
       return new MultiBufferImpl(newResourceDescription, newBuffers, offset, length, chunkSizePower, guard);
     }
@@ -351,7 +350,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     final ByteBuffer slices[] = new ByteBuffer[endIndex - startIndex + 1];
     
     for (int i = 0; i < slices.length; i++) {
-      slices[i] = buffers[startIndex + i].duplicate();
+      slices[i] = buffers[startIndex + i].duplicate().order(ByteOrder.LITTLE_ENDIAN);
     }
 
     // set the last buffer's limit for the sliced view.
@@ -394,6 +393,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     SingleBufferImpl(String resourceDescription, ByteBuffer buffer, long length, int chunkSizePower, ByteBufferGuard guard) {
       super(resourceDescription, new ByteBuffer[] { buffer }, length, chunkSizePower, guard);
       this.curBufIndex = 0;
+      assert buffer.order() == ByteOrder.LITTLE_ENDIAN;
       setCurBuf(buffer);
       buffer.position(0);
     }

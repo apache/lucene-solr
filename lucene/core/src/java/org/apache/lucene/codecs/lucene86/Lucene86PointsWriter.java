@@ -34,6 +34,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDConfig;
@@ -122,7 +123,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
       if (values instanceof MutablePointValues) {
         Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
         if (finalizer != null) {
-          metaOut.writeInt(fieldInfo.number);
+          EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
           finalizer.run();
         }
         return;
@@ -147,7 +148,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
       Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
       if (finalizer != null) {
-        metaOut.writeInt(fieldInfo.number);
+        EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
         finalizer.run();
       }
     }
@@ -236,7 +237,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
             Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
             if (finalizer != null) {
-              metaOut.writeInt(fieldInfo.number);
+              EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
               finalizer.run();
             }
           }
@@ -255,11 +256,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-    metaOut.writeInt(-1);
+    EndiannessReverserUtil.writeInt(metaOut, -1);
     CodecUtil.writeFooter(indexOut);
     CodecUtil.writeFooter(dataOut);
-    metaOut.writeLong(indexOut.getFilePointer());
-    metaOut.writeLong(dataOut.getFilePointer());
+    EndiannessReverserUtil.writeLong(metaOut, indexOut.getFilePointer());
+    EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
     CodecUtil.writeFooter(metaOut);
   }
 

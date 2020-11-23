@@ -92,15 +92,20 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeByte(byte)
    */
   public short readShort() throws IOException {
-    return (short) (((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF));
+    final byte b1 = readByte();
+    final byte b2 = readByte();
+    return (short) ((b2 << 8) | (b1 & 0xFF));
   }
 
   /** Reads four bytes and returns an int.
    * @see DataOutput#writeInt(int)
    */
   public int readInt() throws IOException {
-    return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
-         | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
+    final byte b1 = readByte();
+    final byte b2 = readByte();
+    final byte b3 = readByte();
+    final byte b4 = readByte();
+    return (b4 << 24) | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
   }
 
   /** Reads an int stored in variable-length format.  Reads between one and
@@ -155,26 +160,25 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeLong(long)
    */
   public long readLong() throws IOException {
-    return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
+    final byte b1 = readByte();
+    final byte b2 = readByte();
+    final byte b3 = readByte();
+    final byte b4 = readByte();
+    final byte b5 = readByte();
+    final byte b6 = readByte();
+    final byte b7 = readByte();
+    final byte b8 = readByte();
+    return ((b8 & 0xFFL) << 56) | (b7 & 0xFFL) << 48 | (b6 & 0xFFL) << 40 | (b5 & 0xFFL) << 32
+            | (b4 & 0xFFL) << 24 | (b3 & 0xFFL) << 16 | (b2 & 0xFFL) << 8 | (b1 & 0xFFL);
   }
 
   /**
-   * Read a specified number of longs with the little endian byte order.
-   * <p>This method can be used to read longs whose bytes have been
-   * {@link Long#reverseBytes reversed} at write time:
-   * <pre class="prettyprint">
-   * for (long l : longs) {
-   *   output.writeLong(Long.reverseBytes(l));
-   * }
-   * </pre>
-   * @lucene.experimental
+   * Read a specified number of longs.
    */
-  // TODO: LUCENE-9047: Make the entire DataInput/DataOutput API little endian
-  // Then this would just be `readLongs`?
-  public void readLELongs(long[] dst, int offset, int length) throws IOException {
+  public void readLongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);
     for (int i = 0; i < length; ++i) {
-      dst[offset + i] = Long.reverseBytes(readLong());
+      dst[offset + i] = readLong();
     }
   }
 

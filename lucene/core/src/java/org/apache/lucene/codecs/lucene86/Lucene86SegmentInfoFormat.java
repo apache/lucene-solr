@@ -36,6 +36,7 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Version;
@@ -96,7 +97,7 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
             VERSION_START,
             VERSION_CURRENT,
             segmentID, "");
-        final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+        final Version version = Version.fromBits(EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input));
         byte hasMinVersion = input.readByte();
         final Version minVersion;
         switch (hasMinVersion) {
@@ -104,13 +105,13 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
             minVersion = null;
             break;
           case 1:
-            minVersion = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+            minVersion = Version.fromBits(EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input));
             break;
           default:
             throw new CorruptIndexException("Illegal boolean value " + hasMinVersion, input);
         }
 
-        final int docCount = input.readInt();
+        final int docCount = EndiannessReverserUtil.readInt(input);
         if (docCount < 0) {
           throw new CorruptIndexException("invalid docCount: " + docCount, input);
         }
@@ -163,23 +164,23 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
         throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
       }
       // Write the Lucene version that created this segment, since 3.1
-      output.writeInt(version.major);
-      output.writeInt(version.minor);
-      output.writeInt(version.bugfix);
+      EndiannessReverserUtil.writeInt(output, version.major);
+      EndiannessReverserUtil.writeInt(output, version.minor);
+      EndiannessReverserUtil.writeInt(output, version.bugfix);
 
       // Write the min Lucene version that contributed docs to the segment, since 7.0
       if (si.getMinVersion() != null) {
         output.writeByte((byte) 1);
         Version minVersion = si.getMinVersion();
-        output.writeInt(minVersion.major);
-        output.writeInt(minVersion.minor);
-        output.writeInt(minVersion.bugfix);
+        EndiannessReverserUtil.writeInt(output, minVersion.major);
+        EndiannessReverserUtil.writeInt(output, minVersion.minor);
+        EndiannessReverserUtil.writeInt(output, minVersion.bugfix);
       } else {
         output.writeByte((byte) 0);
       }
 
       assert version.prerelease == 0;
-      output.writeInt(si.maxDoc());
+      EndiannessReverserUtil.writeInt(output, si.maxDoc());
 
       output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
       output.writeMapOfStrings(si.getDiagnostics());

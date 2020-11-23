@@ -20,6 +20,7 @@ package org.apache.lucene.util.fst;
 import java.util.Arrays;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -353,7 +354,7 @@ public class TestBytesStore extends LuceneTestCase {
           }
 
           r.skipBytes(skipBytes);
-          assertEquals(expectedInt, r.readInt());
+          assertEquals(expectedInt, EndiannessReverserUtil.readInt(r));
         }
       }
     }

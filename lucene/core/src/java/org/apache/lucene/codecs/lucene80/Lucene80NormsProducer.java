@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.IOUtils;
@@ -193,7 +194,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   }
 
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
-    for (int fieldNumber = meta.readInt(); fieldNumber != -1; fieldNumber = meta.readInt()) {
+    for (int fieldNumber = EndiannessReverserUtil.readInt(meta); fieldNumber != -1; fieldNumber = EndiannessReverserUtil.readInt(meta)) {
       FieldInfo info = infos.fieldInfo(fieldNumber);
       if (info == null) {
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
@@ -201,11 +202,11 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
         throw new CorruptIndexException("Invalid field: " + info.name, meta);
       }
       NormsEntry entry = new NormsEntry();
-      entry.docsWithFieldOffset = meta.readLong();
-      entry.docsWithFieldLength = meta.readLong();
-      entry.jumpTableEntryCount = meta.readShort();
+      entry.docsWithFieldOffset = EndiannessReverserUtil.readLong(meta);
+      entry.docsWithFieldLength = EndiannessReverserUtil.readLong(meta);
+      entry.jumpTableEntryCount = EndiannessReverserUtil.readShort(meta);
       entry.denseRankPower = meta.readByte();
-      entry.numDocsWithField = meta.readInt();
+      entry.numDocsWithField = EndiannessReverserUtil.readInt(meta);
       entry.bytesPerNorm = meta.readByte();
       switch (entry.bytesPerNorm) {
         case 0: case 1: case 2: case 4: case 8:
@@ -213,7 +214,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
         default:
           throw new CorruptIndexException("Invalid bytesPerValue: " + entry.bytesPerNorm + ", field: " + info.name, meta);
       }
-      entry.normsOffset = meta.readLong();
+      entry.normsOffset = EndiannessReverserUtil.readLong(meta);
       norms.put(info.number, entry);
     }
   }
@@ -276,13 +277,15 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       public short readShort() throws IOException {
         inF.seek(offset);
         offset += Short.BYTES;
-        return inF.readShort();
+        // NEEDS to be LE
+        return inF.readShort(); 
       }
 
       @Override
       public long readLong() throws IOException {
         inF.seek(offset);
         offset += Long.BYTES;
+        // NEEDS to be LE
         return inF.readLong();
       }
 
@@ -353,21 +356,21 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
           return new DenseNormsIterator(maxDoc) {
             @Override
             public long longValue() throws IOException {
-              return slice.readShort(((long) doc) << 1);
+              return EndiannessReverserUtil.readShort(slice, ((long) doc) << 1);
             }
           };
         case 4:
           return new DenseNormsIterator(maxDoc) {
             @Override
             public long longValue() throws IOException {
-              return slice.readInt(((long) doc) << 2);
+              return EndiannessReverserUtil.readInt(slice, ((long) doc) << 2);
             }
           };
         case 8:
           return new DenseNormsIterator(maxDoc) {
             @Override
             public long longValue() throws IOException {
-              return slice.readLong(((long) doc) << 3);
+              return EndiannessReverserUtil.readLong(slice, ((long) doc) << 3);
             }
           };
         default:
@@ -401,21 +404,21 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
           return new SparseNormsIterator(disi) {
             @Override
             public long longValue() throws IOException {
-              return slice.readShort(((long) disi.index()) << 1);
+              return EndiannessReverserUtil.readShort(slice, ((long) disi.index()) << 1);
             }
           };
         case 4:
           return new SparseNormsIterator(disi) {
             @Override
             public long longValue() throws IOException {
-              return slice.readInt(((long) disi.index()) << 2);
+              return EndiannessReverserUtil.readInt(slice, ((long) disi.index()) << 2);
             }
           };
         case 8:
           return new SparseNormsIterator(disi) {
             @Override
             public long longValue() throws IOException {
-              return slice.readLong(((long) disi.index()) << 3);
+              return EndiannessReverserUtil.readLong(slice, ((long) disi.index()) << 3);
             }
           };
         default:

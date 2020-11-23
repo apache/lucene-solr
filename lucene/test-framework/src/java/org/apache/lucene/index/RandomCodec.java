@@ -48,6 +48,7 @@ import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDConfig;
@@ -139,7 +140,7 @@ public class RandomCodec extends AssertingCodec {
                 // We could have 0 points on merge since all docs with dimensional fields may be deleted:
                 Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
                 if (finalizer != null) {
-                  metaOut.writeInt(fieldInfo.number);
+                  EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
                   finalizer.run();
                 }
               }

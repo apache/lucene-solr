@@ -36,6 +36,7 @@ import org.apache.lucene.search.SortedSetSortField;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Version;
 
@@ -95,7 +96,7 @@ public class Lucene70SegmentInfoFormat extends SegmentInfoFormat {
                                                 Lucene70SegmentInfoFormat.VERSION_START,
                                                 Lucene70SegmentInfoFormat.VERSION_CURRENT,
                                                 segmentID, "");
-        final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+        final Version version = Version.fromBits(EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input));
         byte hasMinVersion = input.readByte();
         final Version minVersion;
         switch (hasMinVersion) {
@@ -103,13 +104,13 @@ public class Lucene70SegmentInfoFormat extends SegmentInfoFormat {
             minVersion = null;
             break;
           case 1:
-            minVersion = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+            minVersion = Version.fromBits(EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input), EndiannessReverserUtil.readInt(input));
             break;
           default:
             throw new CorruptIndexException("Illegal boolean value " + hasMinVersion, input);
         }
 
-        final int docCount = input.readInt();
+        final int docCount = EndiannessReverserUtil.readInt(input);
         if (docCount < 0) {
           throw new CorruptIndexException("invalid docCount: " + docCount, input);
         }
@@ -222,25 +223,25 @@ public class Lucene70SegmentInfoFormat extends SegmentInfoFormat {
                 if (b != 1) {
                   throw new CorruptIndexException("invalid missing value flag: " + b, input);
                 }
-                missingValue = input.readLong();
+                missingValue = EndiannessReverserUtil.readLong(input);
                 break;
               case INT:
                 if (b != 1) {
                   throw new CorruptIndexException("invalid missing value flag: " + b, input);
                 }
-                missingValue = input.readInt();
+                missingValue = EndiannessReverserUtil.readInt(input);
                 break;
               case DOUBLE:
                 if (b != 1) {
                   throw new CorruptIndexException("invalid missing value flag: " + b, input);
                 }
-                missingValue = Double.longBitsToDouble(input.readLong());
+                missingValue = Double.longBitsToDouble(EndiannessReverserUtil.readLong(input));
                 break;
               case FLOAT:
                 if (b != 1) {
                   throw new CorruptIndexException("invalid missing value flag: " + b, input);
                 }
-                missingValue = Float.intBitsToFloat(input.readInt());
+                missingValue = Float.intBitsToFloat(EndiannessReverserUtil.readInt(input));
                 break;
               default:
                 throw new AssertionError("unhandled sortType=" + sortType);

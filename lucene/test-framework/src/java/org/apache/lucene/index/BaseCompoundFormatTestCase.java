@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -818,7 +819,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       os.writeInt(0);
 
       long checksum = os.getChecksum();
-      os.writeLong(checksum+1);
+      EndiannessReverserUtil.writeLong(os, checksum+1);
     }
 
     si.setFiles(Collections.singletonList(subFile));
@@ -839,7 +840,7 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
       os.writeInt(CodecUtil.FOOTER_MAGIC);
       os.writeInt(0);
       long checksum = os.getChecksum();
-      os.writeLong(checksum);
+      EndiannessReverserUtil.writeLong(os, checksum);
     }
 
     si.setFiles(Collections.singletonList(subFile));

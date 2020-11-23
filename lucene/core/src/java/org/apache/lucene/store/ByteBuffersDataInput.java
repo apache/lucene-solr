@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 import java.io.EOFException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
   public ByteBuffersDataInput(List<ByteBuffer> buffers) {
     ensureAssumptions(buffers);
 
-    this.blocks = buffers.stream().map(buf -> buf.asReadOnlyBuffer()).toArray(ByteBuffer[]::new);
+    this.blocks = buffers.stream().map(buf -> buf.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN)).toArray(ByteBuffer[]::new);
 
     if (blocks.length == 1) {
       this.blockBits = 32;
@@ -169,8 +170,9 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Short.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getShort(blockOffset);
     } else {
-      return (short) ((readByte(pos    ) & 0xFF) << 8 | 
-                      (readByte(pos + 1) & 0xFF));
+      final byte b1 = readByte(pos);
+      final byte b2 = readByte(pos + 1);
+      return (short) ((b2 & 0xFF) << 8 | (b1 & 0xFF));
     }
   }
 
@@ -181,10 +183,11 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Integer.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getInt(blockOffset);
     } else {
-      return ((readByte(pos    )       ) << 24 |
-              (readByte(pos + 1) & 0xFF) << 16 |
-              (readByte(pos + 2) & 0xFF) << 8  |
-              (readByte(pos + 3) & 0xFF));
+      final byte b1 = readByte(pos);
+      final byte b2 = readByte(pos + 1);
+      final byte b3 = readByte(pos + 2);
+      final byte b4 = readByte(pos + 3);
+      return (b4 & 0xFF) << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
     }
   }
 
@@ -195,7 +198,16 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Long.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getLong(blockOffset);
     } else {
-      return (((long) readInt(pos)) << 32) | (readInt(pos + 4) & 0xFFFFFFFFL);
+      final byte b1 = readByte(pos);
+      final byte b2 = readByte(pos + 1);
+      final byte b3 = readByte(pos + 2);
+      final byte b4 = readByte(pos + 3);
+      final byte b5 = readByte(pos + 4);
+      final byte b6 = readByte(pos + 5);
+      final byte b7 = readByte(pos + 6);
+      final byte b8 = readByte(pos + 7);
+      return (b8 & 0xFFL) << 56 | (b7 & 0xFFL) << 48 | (b6 & 0xFFL) << 40 | (b5 & 0xFFL) << 32
+              | (b4 & 0xFFL) << 24 | (b3 & 0xFFL) << 16 | (b2 & 0xFFL) << 8 | (b1 & 0xFFL);
     }
   }
 
@@ -288,7 +300,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     ensureAssumptions(buffers);
 
     if (buffers.size() == 1) {
-      ByteBuffer cloned = buffers.get(0).asReadOnlyBuffer();
+      ByteBuffer cloned = buffers.get(0).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
       cloned.position(Math.toIntExact(cloned.position() + offset));
       cloned.limit(Math.toIntExact(cloned.position() + length));
       return Arrays.asList(cloned);
@@ -306,11 +318,11 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
         buffers.subList(Math.toIntExact(absStart / blockBytes), 
                         Math.toIntExact(absEnd / blockBytes + (endOffset == 0 ? 0 : 1)))
           .stream()
-          .map(buf -> buf.asReadOnlyBuffer())
+          .map(buf -> buf.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN))
           .collect(Collectors.toCollection(ArrayList::new));
 
       if (endOffset == 0) {
-        cloned.add(ByteBuffer.allocate(0));
+        cloned.add(ByteBuffer.allocate(0).order(ByteOrder.LITTLE_ENDIAN));
       }
 
       cloned.get(0).position(Math.toIntExact(absStart & blockMask));
