@@ -92,7 +92,7 @@ public class MetricsConfiguration {
     Document document;
     Path path = Path.of(resource);
     if (Files.exists(path)) {
-      document = dbf.newDocumentBuilder().parse(path.toAbsolutePath().toString());
+      document = dbf.newDocumentBuilder().parse(path.toUri().toASCIIString());
     } else {
       try (InputStream configInputStream = MethodHandles.lookup().lookupClass().getClassLoader().getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
         document = dbf.newDocumentBuilder().parse(configInputStream);
