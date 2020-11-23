@@ -250,13 +250,17 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* LUCENE-9581: Japanese tokenizer should discard the compound token instead of disabling the decomposition
+  of long tokens when discardCompoundToken is activated. (Jim Ferenczi)
+
 * LUCENE-9595: Make Component2D#withinPoint implementations consistent with ShapeQuery logic.
   (Ignacio Vera)   
-
+  
 Other
 ---------------------
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
+
 
 ======================= Lucene 8.7.0 =======================
 
