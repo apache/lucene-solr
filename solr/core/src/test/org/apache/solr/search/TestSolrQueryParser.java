@@ -133,6 +133,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             
     assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
+    assertU(adoc("id", "31", "bind", "true"));
+    assertU(adoc("id", "32", "bind", "false"));
     assertU(commit());
   }
 
@@ -181,6 +183,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     }
   }
   
+  @Test
+  public void TestAnd(){
+    assertQ(req("q", "bind:(true false)", "q.op", "AND")
+        , "//*[@numFound='0']"
+    );
+  }
+
   @Test
   public void testPhrase() {
     // "text" field's type has WordDelimiterGraphFilter (WDGFF) and autoGeneratePhraseQueries=true

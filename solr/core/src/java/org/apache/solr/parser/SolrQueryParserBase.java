@@ -1045,7 +1045,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           BooleanQuery.Builder booleanBuilder = newBooleanQuery();
           for (String externalVal : rawq.getExternalVals()) {
             Query subq = ft.getFieldQuery(this.parser, rawq.sfield, externalVal);
-            booleanBuilder.add(subq, BooleanClause.Occur.SHOULD);
+            booleanBuilder.add(subq, operator == AND_OPERATOR ? BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD);
           }
           normal = QueryUtils.build(booleanBuilder, parser);
         }
