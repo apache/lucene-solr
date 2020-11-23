@@ -52,20 +52,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  public void interleavingLtrTooManyModelsTest() throws Exception {
-    final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "*, score");
-    query.add("rows", "4");
-    query.add("fv", "true");
-    query.add("rq", "{!ltr model=modelA model=modelB model=C reRankDocs=100}");
-
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide one or two models in the request"));
-  }
-
-  @Test
   public void ltrModelIdDoesNotExistTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -91,20 +77,6 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     assert (res.contains("the model 0 is empty"));
-  }
-
-  @Test
-  public void interleavingLtrModelIsEmptyTest() throws Exception {
-    final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "*, score");
-    query.add("rows", "4");
-    query.add("fv", "true");
-    query.add("rq", "{!ltr model=6029760550880411648 model=\"\" reRankDocs=100}");
-
-    final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("the model 1 is empty"));
   }
 
   @Test
