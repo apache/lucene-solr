@@ -125,7 +125,8 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
     switch (scratchTriangle.type) {
       case POINT: {
-        return Component2D.WithinRelation.DISJOINT;
+        return  encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY) 
+                ? Component2D.WithinRelation.NOTWITHIN : Component2D.WithinRelation.DISJOINT;
       }
       case LINE: {
         return encodedRectangle.withinLine(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,

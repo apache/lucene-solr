@@ -26,6 +26,7 @@ import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -826,5 +827,50 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(0, s.count(q));
 
     IOUtils.close(r, dir);
+  }
+
+  public void testContainsIndexedGeometryCollection() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Polygon polygon = new Polygon(new double[] {-64, -64, 64, 64, -64}, new double[] {-132, 132, 132, -132, -132});
+    Field[] polygonFields = LatLonShape.createIndexableFields(FIELDNAME, polygon);
+    // POINT(5, 5) inside the indexed polygon
+    Field[] pointFields = LatLonShape.createIndexableFields(FIELDNAME, 5, 5);
+    int numDocs = random().nextInt(1000);
+    // index the same multi geometry many times
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      for (Field f : polygonFields) {
+        doc.add(f);
+      }
+      for(int j = 0; j < 10; j++) {
+        for (Field f : pointFields) {
+          doc.add(f);
+        }
+      }
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry 
+    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is 
+    // inside the query as well, hence the result is 0.
+    Polygon polygonQuery = new Polygon(new double[] {4, 4, 6, 6, 4}, new double[] {4, 6, 6, 4, 4});
+    Query query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, polygonQuery);
+    assertEquals(0, searcher.count(query));
+
+    Rectangle rectangle = new Rectangle(4.0, 6.0, 4.0, 6.0);
+    query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, rectangle);
+    assertEquals(0, searcher.count(query));
+    
+    Circle circle = new Circle(5, 5, 10000);
+    query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
+    assertEquals(0, searcher.count(query));
+    
+    IOUtils.close(w, reader, dir);
   }
 }
