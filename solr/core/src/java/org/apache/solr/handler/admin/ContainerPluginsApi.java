@@ -19,16 +19,13 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Command;
-import org.apache.solr.api.CustomContainerPlugins;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -94,7 +91,7 @@ public class ContainerPluginsApi {
           payload.addError(info.name + " already exists");
           return null;
         }
-        map.put(info.name, info);
+        map.put(info.name, payload.getDataMap());
         return map;
       });
     }
@@ -122,14 +119,19 @@ public class ContainerPluginsApi {
           payload.addError("No such plugin: " + info.name);
           return null;
         } else {
-          map.put(info.name, info);
+          Map<String, Object> jsonObj = payload.getDataMap();
+          if(Objects.equals(jsonObj, existing)) {
+            //no need to change anything
+            return null;
+          }
+          map.put(info.name, jsonObj);
           return map;
         }
       });
     }
   }
 
-  private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) {
+  private void validateConfig(PayloadObj<PluginMeta> payload, PluginMeta info) throws IOException {
     if (info.klass.indexOf(':') > 0) {
       if (info.version == null) {
         payload.addError("Using package. must provide a packageVersion");
@@ -137,7 +139,7 @@ public class ContainerPluginsApi {
       }
     }
     List<String> errs = new ArrayList<>();
-    CustomContainerPlugins.ApiInfo apiInfo = coreContainer.getCustomContainerPlugins().createInfo(info, errs);
+    ContainerPluginsRegistry.ApiInfo apiInfo = coreContainer.getContainerPluginsRegistry().createInfo( payload.getDataMap(),  errs);
     if (!errs.isEmpty()) {
       for (String err : errs) payload.addError(err);
       return;

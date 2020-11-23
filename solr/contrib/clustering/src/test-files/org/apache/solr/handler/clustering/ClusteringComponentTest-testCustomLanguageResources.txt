@@ -1,0 +1,2 @@
+- Lang: English
+- was[-, -] bar[ignoredWord, ignoredLabel] baz[-, ignoredLabel]

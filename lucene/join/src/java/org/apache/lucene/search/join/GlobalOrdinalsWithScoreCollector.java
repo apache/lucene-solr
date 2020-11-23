@@ -47,7 +47,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       throw new IllegalStateException("Can't collect more than [" + Integer.MAX_VALUE + "] ids");
     }
     this.field = field;
-    this.doMinMax = !(min <= 0 && max == Integer.MAX_VALUE);
+    this.doMinMax = min > 1 || max < Integer.MAX_VALUE;
     this.min = min;
     this.max = max;;
     this.ordinalMap = ordinalMap;

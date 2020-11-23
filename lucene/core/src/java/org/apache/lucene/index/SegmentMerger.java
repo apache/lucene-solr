@@ -224,7 +224,7 @@ final class SegmentMerger {
     int numMerged = merger.merge();
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
-      mergeState.infoStream.message("SM", ((t1 - t0) / 1000000) + " msec to merge vector values [" + numMerged + " docs]");
+      mergeState.infoStream.message("SM", ((t1 - t0) / 1000000) + " msec to merge " + formatName + " [" + numMerged + " docs]");
     }
     return numMerged;
   }
@@ -237,8 +237,7 @@ final class SegmentMerger {
     merger.merge();
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
-      mergeState.infoStream.message("SM", ((t1 - t0) / 1000000) + " msec to merge vector values [" + numMerged + " docs]");
+      mergeState.infoStream.message("SM", ((t1 - t0) / 1000000) + " msec to merge " + formatName + " [" + numMerged + " docs]");
     }
   }
-
 }

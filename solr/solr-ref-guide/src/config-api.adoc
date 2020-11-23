@@ -126,8 +126,7 @@ The output of this command will look similar to:
         "class": "solr.SearchHandler",
         "defaults":{
           "echoParams": "explicit",
-          "rows":10,
-          "preferLocalShards":false
+          "rows":10
         }}}}
 }
 ----

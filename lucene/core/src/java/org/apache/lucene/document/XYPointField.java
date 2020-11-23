@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.FieldInfo;
@@ -40,6 +41,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
+ *   <li>{@link #newGeometryQuery newGeometryQuery()} for matching points within an arbitrary geometry collection.
  * </ul>
  * <p>
  * If you also need per-document operations such as sort by distance, add a separate {@link XYDocValuesField} instance.
@@ -167,6 +169,17 @@ public class XYPointField extends Field {
    * @see Polygon
    */
   public static Query newPolygonQuery(String field, XYPolygon... polygons) {
-    return new XYPointInGeometryQuery(field, polygons);
+    return newGeometryQuery(field, polygons);
+  }
+
+  /** create a query to find all indexed shapes that intersect a provided geometry collection. XYLine geometries are not supported.
+   * @param field field name. must not be null.
+   * @param xyGeometries array of geometries. must not be null or empty.
+   * @return query matching points within this geometry collection.
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null, empty or contains a null or XYLine geometry.
+   * @see XYGeometry
+   **/
+  public static Query newGeometryQuery(String field, XYGeometry... xyGeometries) {
+    return new XYPointInGeometryQuery(field, xyGeometries);
   }
 }

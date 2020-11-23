@@ -190,7 +190,7 @@ public final class SlowCodecReaderWrapper {
       }
     };
   }
-  
+
   private static NormsProducer readerToNormsProducer(final LeafReader reader) {
     return new NormsProducer() {
 

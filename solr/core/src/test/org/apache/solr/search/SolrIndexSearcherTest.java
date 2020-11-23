@@ -19,12 +19,21 @@ package org.apache.solr.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.Rescorer;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -187,6 +196,120 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     });
   }
   
+  public void testReranking() throws Exception {
+    float fixedScore = 1.23f;
+    for (boolean doFilter : new boolean[]{ false, true }) {
+      for (boolean doSort : new boolean[]{ false, true }) {
+        for (int getDocSetFlag : new int[]{ 0, SolrIndexSearcher.GET_DOCSET }) {
+          implTestReranking(doFilter, doSort, getDocSetFlag, null); // don't fix score i.e. no re-ranking
+          implTestReranking(doFilter, doSort, getDocSetFlag, fixedScore); // fix score to be non-zero and non-one
+          fixedScore *= 2;
+        }
+      }
+    }
+  }
+
+  private void implTestReranking(boolean doFilter, boolean doSort, int getDocSetFlag, Float fixedScore) throws Exception {
+    h.getCore().withSearcher(searcher -> {
+
+      final QueryCommand cmd = new QueryCommand();
+      cmd.setFlags(SolrIndexSearcher.GET_SCORES | getDocSetFlag);
+
+      if (doSort) {
+        cmd.setSort(new Sort(SortField.FIELD_SCORE, new SortField("id", SortField.Type.STRING)));
+      }
+
+      if (doFilter) {
+        cmd.setFilterList(new TermQuery(new Term("field4_t", Integer.toString(NUM_DOCS - 1))));
+      }
+
+      cmd.setQuery(new TermQuery(new Term("field1_s", "foo")));
+
+      final float expectedScore;
+      if (fixedScore == null) {
+        expectedScore = 1f;
+      } else {
+        expectedScore = fixedScore.floatValue();
+        cmd.setQuery(new FixedScoreReRankQuery(cmd.getQuery(), expectedScore));
+      }
+
+      final QueryResult qr = new QueryResult();
+      searcher.search(qr, cmd);
+
+      // check score for the first document
+      final DocIterator iter = qr.getDocList().iterator();
+      iter.next();
+      assertEquals(expectedScore, iter.score(), 0);
+
+      return null;
+    });
+
+  }
+
+  private static final class FixedScoreReRankQuery extends RankQuery {
+
+    private Query q;
+    final private float fixedScore;
+
+    public FixedScoreReRankQuery(Query q, float fixedScore) {
+      this.q = q;
+      this.fixedScore = fixedScore;
+    }
+
+    public Weight createWeight(IndexSearcher indexSearcher, ScoreMode scoreMode, float boost) throws IOException {
+      return q.createWeight(indexSearcher, scoreMode, boost);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      q.visit(visitor);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return this == obj;
+    }
+
+    @Override
+    public int hashCode() {
+      return q.hashCode();
+    }
+
+    @Override
+    public String toString(String field) {
+      return q.toString(field);
+    }
+
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+      return new ReRankCollector(len, len, new Rescorer() {
+        @Override
+        public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) {
+          for (ScoreDoc scoreDoc : firstPassTopDocs.scoreDocs) {
+            scoreDoc.score = fixedScore;
+          }
+          return firstPassTopDocs;
+        }
+
+        @Override
+        public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) {
+          return firstPassExplanation;
+        }
+      }, cmd, searcher, null);
+    }
+
+    @Override
+    public MergeStrategy getMergeStrategy() {
+      return null;
+    }
+
+    public RankQuery wrap(Query q) {
+      this.q = q;
+      return this;
+    }
+  }
+
   public void testMinExactWithFilters() throws Exception {
     
     h.getCore().withSearcher(searcher -> {

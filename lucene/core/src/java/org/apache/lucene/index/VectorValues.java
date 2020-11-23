@@ -23,6 +23,9 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
+import static org.apache.lucene.util.VectorUtil.dotProduct;
+import static org.apache.lucene.util.VectorUtil.squareDistance;
+
 /**
  * This class provides access to per-document floating point vector values indexed as {@link
  * org.apache.lucene.document.VectorField}.
@@ -75,76 +78,75 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
-   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
-   * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
-   * will retrieve independent copies that do not overwrite each others' returned values.
+   * Return the k nearest neighbor documents as determined by comparison of their vector values
+   * for this field, to the given vector, by the field's search strategy. If the search strategy is
+   * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
+   * vectors. Unlike relevance scores, vector scores may be negative.
+   * @param target the vector-valued query
+   * @param k      the number of docs to return
+   * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
+   * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
    */
-  public abstract RandomAccess randomAccess();
-
-  /**
-   * Provides random access to vectors by dense ordinal.
-   *
-   * @lucene.experimental
-   */
-  public interface RandomAccess {
-
-    /**
-     * Return the number of vector values
-     */
-    int size();
-
-    /**
-     * Return the dimension of the returned vector values
-     */
-    int dimension();
-
-    /**
-     * Return the search strategy used to compare these vectors
-     */
-    SearchStrategy searchStrategy();
-
-    /**
-     * Return the vector value indexed at the given ordinal. The provided floating point array may
-     * be shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    float[] vectorValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-     * these are the bytes corresponding to the float array. The provided bytes may be shared and overwritten 
-     * by subsequent calls to this method and {@link #vectorValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    BytesRef binaryValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the k nearest neighbor documents as determined by comparison of their vector values
-     * for this field, to the given vector, by the field's search strategy. If the search strategy is
-     * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
-     * vectors. Unlike relevance scores, vector scores may be negative.
-     * @param target the vector-valued query
-     * @param k      the number of docs to return
-     * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
-     * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
-     */
-    TopDocs search(float[] target, int k, int fanout) throws IOException;
-  }
+  public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
 
   /**
    * Search strategy. This is a label describing the method used during indexing and searching of the vectors in order to
    * determine the nearest neighbors.
    */
   public enum SearchStrategy {
-    /** No search strategy is provided. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
+
+    /** No search strategy is provided. Note: {@link VectorValues#search(float[], int, int)}
      * is not supported for fields specifying this strategy. */
     NONE,
 
     /** HNSW graph built using Euclidean distance */
-    EUCLIDEAN_HNSW,
+    EUCLIDEAN_HNSW(true),
 
     /** HNSW graph buit using dot product */
-    DOT_PRODUCT_HNSW
+    DOT_PRODUCT_HNSW;
+
+    /** If true, the scores associated with vector comparisons in this strategy are in reverse order; that is,
+     * lower scores represent more similar vectors. Otherwise, if false, higher scores represent more similar vectors.
+     */
+    public final boolean reversed;
+
+    SearchStrategy(boolean reversed) {
+      this.reversed = reversed;
+    }
+
+    SearchStrategy() {
+      reversed = false;
+    }
+
+    /**
+     * Calculates a similarity score between the two vectors with a specified function.
+     * @param v1 a vector
+     * @param v2 another vector, of the same dimension
+     * @return the value of the strategy's score function applied to the two vectors
+     */
+    public float compare(float[] v1, float[] v2) {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+          return squareDistance(v1, v2);
+        case DOT_PRODUCT_HNSW:
+          return dotProduct(v1, v2);
+        default:
+          throw new IllegalStateException("Incomparable search strategy: " + this);
+      }
+    }
+
+    /**
+     * Return true if vectors indexed using this strategy will be indexed using an HNSW graph
+     */
+    public boolean isHnsw() {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+        case DOT_PRODUCT_HNSW:
+          return true;
+        default:
+          return false;
+      }
+    }
   }
 
   /**
@@ -174,7 +176,7 @@ public abstract class VectorValues extends DocIdSetIterator {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public TopDocs search(float[] target, int k, int fanout) {
       throw new UnsupportedOperationException();
     }
 

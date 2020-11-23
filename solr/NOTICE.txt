@@ -221,7 +221,7 @@ and Edmond Nolan.
 The Polish analyzer (stempel) comes with a default
 stopword list that is BSD-licensed created by the Carrot2 project. The file resides
 in stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
-See http://project.carrot2.org/license.html.
+See https://project.carrot2.org/license.html.
 
 The SmartChineseAnalyzer source code (smartcn) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
@@ -439,13 +439,12 @@ http://sourceforge.jp/projects/jsonic/
 =========================================================================
 ==     Carrot2 Notice                                                  ==
 =========================================================================
-Copyright (C) 2002-2010, Dawid Weiss, Stanislaw Osinski.
+Copyright (C) 2002-2020, Dawid Weiss, Stanislaw Osinski.
 Portions (C) Contributors listed in "carrot2.CONTRIBUTORS" file.
 All rights reserved.
 
 This product includes software developed by the Carrot2 Project.
-
-See http://project.carrot2.org/
+See https://project.carrot2.org/
 
 =========================================================================
 ==     Guava Notice                                                    ==

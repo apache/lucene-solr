@@ -278,13 +278,6 @@ public interface CommonParams {
    */
   String REQUEST_PURPOSE = "requestPurpose";
 
-  /**
-   * When querying a node, prefer local node's cores for distributed queries.
-   * @deprecated Use {@code ShardParams.SHARDS_PREFERENCE}
-   */
-  @Deprecated // SOLR-14035
-  String PREFER_LOCAL_SHARDS = "preferLocalShards";
-
   String JAVABIN = "javabin";
 
   String JSON = "json";

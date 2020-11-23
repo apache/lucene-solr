@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -193,7 +194,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
-    fullPathField = new StringField(Consts.FULL, "", Field.Store.YES);
+    fullPathField = new StringField(Consts.FULL, "", Field.Store.NO);
 
     nextID = indexWriter.getDocStats().maxDoc;
 
@@ -492,8 +493,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     Document d = new Document();
     d.add(parentStreamField);
 
-    fullPathField.setStringValue(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
+    String fieldPath = FacetsConfig.pathToString(categoryPath.components, categoryPath.length);
+    fullPathField.setStringValue(fieldPath);
     d.add(fullPathField);
+    d.add(new BinaryDocValuesField(Consts.FULL, new BytesRef(fieldPath)));
 
     // Note that we do no pass an Analyzer here because the fields that are
     // added to the Document are untokenized or contains their own TokenStream.
