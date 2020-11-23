@@ -24,6 +24,8 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,22 +79,22 @@ public class MetricsConfiguration {
     return searchConfiguration;
   }
 
-  public static MetricsConfiguration from(String path) throws Exception {
+  public static MetricsConfiguration from(String resource) throws Exception {
     // See solr-core XmlConfigFile
     final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
       dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
     } catch (UnsupportedOperationException e) {
-      log.warn("{} XML parser doesn't support XInclude option", path);
+      log.warn("{} XML parser doesn't support XInclude option", resource);
     }
 
     Document document;
-    File file = new File(path);
-    if (file.isFile()) {
-      document = dbf.newDocumentBuilder().parse(file);
+    Path path = Path.of(resource);
+    if (Files.exists(path)) {
+      document = dbf.newDocumentBuilder().parse(path.toAbsolutePath().toString());
     } else {
-      try (InputStream configInputStream = MethodHandles.lookup().lookupClass().getClassLoader().getResourceAsStream(path.replace(File.separatorChar, '/'))) {
+      try (InputStream configInputStream = MethodHandles.lookup().lookupClass().getClassLoader().getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
         document = dbf.newDocumentBuilder().parse(configInputStream);
       }
     }
