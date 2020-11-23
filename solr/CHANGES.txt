@@ -144,14 +144,10 @@ Other Changes
 * SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
   removed in LUCENE-9576. (ab)
 
-* SOLR-14957: Add Prometheus Exporter to docker PATH. Fix classpath issues. (Houston Putman)
-
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
-
-* SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
 
 Bug Fixes
 ---------------------
