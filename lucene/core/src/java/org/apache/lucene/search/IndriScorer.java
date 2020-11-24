@@ -2,10 +2,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-
 /**
  * The Indri parent scorer that stores the boost so that 
  * IndriScorers can use the boost outside of the term.

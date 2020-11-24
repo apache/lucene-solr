@@ -29,6 +29,11 @@ public class TestCachingCollector extends LuceneTestCase {
     
     @Override
     public float score() { return 0; }
+    
+    @Override
+    public float smoothingScore(int docId) throws IOException {
+      return 0;
+    }
 
     @Override
     public int docID() { return 0; }

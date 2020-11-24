@@ -47,6 +47,11 @@ public class FilterScorable extends Scorable {
   }
 
   @Override
+  public float smoothingScore(int docId) throws IOException {
+    return 0;
+  }
+  
+  @Override
   public int docID() {
     return in.docID();
   }
@@ -55,4 +60,5 @@ public class FilterScorable extends Scorable {
   public Collection<ChildScorable> getChildren() throws IOException {
     return Collections.singletonList(new ChildScorable(in, "FILTER"));
   }
+
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search;
 
+import java.io.IOException;
 
 /** Used by {@link BulkScorer}s that need to pass a {@link
  *  Scorable} to {@link LeafCollector#setScorer}. */
@@ -31,5 +32,10 @@ final class ScoreAndDoc extends Scorable {
   @Override
   public float score() {
     return score;
+  }
+
+  @Override
+  public float smoothingScore(int docId) throws IOException {
+    return 0;
   }
 }

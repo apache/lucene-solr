@@ -53,6 +53,11 @@ public final class ScoreCachingWrappingScorer extends Scorable {
 
     return curScore;
   }
+  
+  @Override
+  public float smoothingScore(int docId) throws IOException {
+    return 0;
+  }
 
   @Override
   public void setMinCompetitiveScore(float minScore) throws IOException {
@@ -68,4 +73,5 @@ public final class ScoreCachingWrappingScorer extends Scorable {
   public Collection<ChildScorable> getChildren() {
     return Collections.singleton(new ChildScorable(in, "CACHED"));
   }
+
 }
