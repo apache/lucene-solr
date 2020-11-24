@@ -291,15 +291,17 @@ public class Builders {
             if (sysprops == null) {
                 sysprops = new HashMap<>();
             }
-            sysprops.put(key, value);
+            String name = AttributeFetcherImpl.getSystemPropertySnitchTag(key);
+            sysprops.put(name, value);
             return this;
         }
 
-        NodeBuilder setMetric(String key, Double value) {
+        NodeBuilder setMetric(AttributeFetcher.NodeMetricRegistry registry, String key, Double value) {
             if (metrics == null) {
                 metrics = new HashMap<>();
             }
-            metrics.put(key, value);
+            String name = AttributeFetcherImpl.getMetricSnitchTag(key, registry);
+            metrics.put(name, value);
             return this;
         }
 

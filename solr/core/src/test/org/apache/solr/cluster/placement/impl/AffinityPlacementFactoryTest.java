@@ -183,19 +183,38 @@ public class AffinityPlacementFactoryTest extends Assert {
             cluster.getLiveNodes(), 2, 2, 2);
 
         PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
-
-        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, clusterBuilder.buildAttributeFetcher(), placementPlanFactory);
+        AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
         // 2 shards, 6 replicas
         assertEquals(12, pp.getReplicaPlacements().size());
-        List<ReplicaPlacement> placements = new ArrayList<>(pp.getReplicaPlacements());
-        Collections.sort(placements, Comparator
-            .comparing((ReplicaPlacement p) -> p.getNode().getName())
-            .thenComparing((ReplicaPlacement p) -> p.getShardName())
-            .thenComparing((ReplicaPlacement p) -> p.getReplicaType())
-        );
-        log.info(placements.toString());  //nowarn
-        // AZ -> shard -> replica count
-        //Map<String, Map<String, AtomicInteger>>
+//        List<ReplicaPlacement> placements = new ArrayList<>(pp.getReplicaPlacements());
+//        Collections.sort(placements, Comparator
+//            .comparing((ReplicaPlacement p) -> p.getNode().getName())
+//            .thenComparing((ReplicaPlacement p) -> p.getShardName())
+//            .thenComparing((ReplicaPlacement p) -> p.getReplicaType())
+//        );
+        // shard -> AZ -> replica count
+        Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
+        AttributeValues attributeValues = attributeFetcher.fetchAttributes();
+        for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
+            Optional<String> azOptional = attributeValues.getSystemProperty(rp.getNode(), AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP);
+            if (!azOptional.isPresent()) {
+                fail("missing AZ sysprop for node " + rp.getNode());
+            }
+            String az = azOptional.get();
+            replicas.computeIfAbsent(rp.getReplicaType(), type -> new HashMap<>())
+                .computeIfAbsent(rp.getShardName(), shard -> new HashMap<>())
+                .computeIfAbsent(az, zone -> new AtomicInteger()).incrementAndGet();
+        }
+        replicas.forEach((type, perTypeReplicas) -> {
+            perTypeReplicas.forEach((shard, azCounts) -> {
+                assertEquals("number of AZs", 2, azCounts.size());
+                azCounts.forEach((az, count) -> {
+                    assertTrue("too few replicas shard=" + shard + ", type=" + type + ", az=" + az,
+                        count.get() >= 1);
+                });
+            });
+        });
     }
 
     @Test
