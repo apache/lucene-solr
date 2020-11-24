@@ -78,6 +78,13 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    **/
   public static final String RERANK_DOCS = "reRankDocs";
 
+  /** query parser plugin: default interleaving algorithm **/
+  public static final String DEFAULT_INTERLEAVING_ALGORITHM = Interleaving.TEAM_DRAFT;
+
+  /** query parser plugin:the param that selects the interleaving algorithm to use **/
+  public static final String INTERLEAVING_ALGORITHM = "interleavingAlgorithm";
+
+
   @Override
   @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
@@ -209,8 +216,9 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
         SolrQueryRequestContextUtils.setScoringQueries(req, new LTRScoringQuery[] { rerankingQuery });
         return new LTRQuery(rerankingQuery, reRankDocs);
       } else {
+        String interleavingAlgorithm = localParams.get(INTERLEAVING_ALGORITHM, DEFAULT_INTERLEAVING_ALGORITHM);
         SolrQueryRequestContextUtils.setScoringQueries(req, rerankingQueries);
-        return new LTRInterleavingQuery(Interleaving.getImplementation(Interleaving.TEAM_DRAFT),rerankingQueries, reRankDocs);
+        return new LTRInterleavingQuery(Interleaving.getImplementation(interleavingAlgorithm), rerankingQueries, reRankDocs);
       }
     }
   }
