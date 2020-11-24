@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
-import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
@@ -119,25 +118,22 @@ public class AffinityPlacementFactoryTest extends Assert {
         Node node2 = new ClusterAbstractionsForTest.NodeImpl("node2");
         Set<Node> liveNodes = Set.of(node1, node2);
 
-        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = new ClusterAbstractionsForTest.SolrCollectionImpl(collectionName, Map.of());
+        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection;
         // Make sure new collections are not visible in the cluster state and existing ones are
         final Map<String, SolrCollection> clusterCollections;
-        final Map<String, Shard> shards;
         if (hasExistingCollection) {
             // An existing collection with a single replica on node 1. Note that new collections already exist by the time the plugin is called, but are empty
-            shards = PluginTestHelper.createShardsAndReplicas(solrCollection, 1, 1, Set.of(node1));
-            solrCollection.setShards(shards);
+            solrCollection = PluginTestHelper.createCollection(collectionName, Map.of(), 1, 1, 0, 0, Set.of(node1));
             clusterCollections = Map.of(solrCollection.getName(), solrCollection);
         } else {
             // A new collection has the shards defined ok but no replicas
-            shards = PluginTestHelper.createShardsAndReplicas(solrCollection, 1, 0, Set.of());
-            solrCollection.setShards(shards);
+            solrCollection = PluginTestHelper.createCollection(collectionName, Map.of(), 1, 0, 0, 0, Set.of());
             clusterCollections = Map.of();
         }
 
         Cluster cluster = new ClusterAbstractionsForTest.ClusterImpl(liveNodes, clusterCollections);
         // Place a new replica for the (only) existing shard of the collection
-        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, Set.of(shards.keySet().iterator().next()), liveNodes, 1, 0, 0);
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, Set.of(solrCollection.shards().iterator().next().getShardName()), liveNodes, 1, 0, 0);
         // More cores on node2
         Map<Node, Integer> nodeToCoreCount = Map.of(node1, 1, node2, 10);
         // A lot of free disk on the two nodes
@@ -155,6 +151,54 @@ public class AffinityPlacementFactoryTest extends Assert {
     }
 
     @Test
+    public void testAvailabilityZones() throws Exception {
+        String collectionName = "testCollection";
+
+        int NUM_NODES = 6;
+        final Set<Node> liveNodes = new HashSet<>();
+        final Map<Node, Long> nodeToFreeDisk = new HashMap<>();
+        final Map<Node, Integer> nodeToCoreCount = new HashMap<>();
+        final Map<String, Map<Node, String>> zones = Map.of(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, new HashMap<>());
+        final Map<Node, String> sysprops = zones.get(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP);
+        for (int i = 0; i < NUM_NODES; i++) {
+            Node node = new ClusterAbstractionsForTest.NodeImpl("node_" + i);
+            liveNodes.add(node);
+            nodeToFreeDisk.put(node, 100L);
+            nodeToCoreCount.put(node, 0);
+            if (i < NUM_NODES / 2) {
+                sysprops.put(node, "az1");
+            } else {
+                sysprops.put(node, "az2");
+            }
+        }
+
+        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = PluginTestHelper.createCollection(collectionName,
+            Map.of(), 2, 0, 0, 0, liveNodes);
+        ClusterAbstractionsForTest.ClusterImpl cluster = new ClusterAbstractionsForTest.ClusterImpl(liveNodes, Map.of());
+
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), liveNodes, 2, 2, 2);
+
+        AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(),
+            zones, Map.of());
+        AttributeFetcher attributeFetcher = new AttributeFetcherForTest(attributeValues);
+        PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
+
+        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+        // 2 shards, 5 replicas
+        assertEquals(12, pp.getReplicaPlacements().size());
+        List<ReplicaPlacement> placements = new ArrayList<>(pp.getReplicaPlacements());
+        Collections.sort(placements, Comparator
+            .comparing((ReplicaPlacement p) -> p.getNode().getName())
+            .thenComparing((ReplicaPlacement p) -> p.getShardName())
+            .thenComparing((ReplicaPlacement p) -> p.getReplicaType())
+        );
+        log.info(placements.toString());  //nowarn
+        // AZ -> shard -> replica count
+        //Map<String, Map<String, AtomicInteger>>
+    }
+
+    @Test
+    //@Ignore
     public void testScalability() throws Exception {
         log.info("==== numNodes ====");
         runTestScalability(1000, 100, 40, 40, 20);
@@ -194,13 +238,16 @@ public class AffinityPlacementFactoryTest extends Assert {
             nodeToFreeDisk.put(node, Long.valueOf(numNodes));
             nodeToCoreCount.put(node, 0);
         }
-        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = new ClusterAbstractionsForTest.SolrCollectionImpl(collectionName, Map.of());
-        Map<String, Shard> shards = PluginTestHelper.createShardsAndReplicas(solrCollection, numShards, 0, Set.of());
-        solrCollection.setShards(shards);
+        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection =
+            PluginTestHelper.createCollection(collectionName, Map.of(), numShards, 0, 0, 0, Set.of());
 
         Cluster cluster = new ClusterAbstractionsForTest.ClusterImpl(liveNodes, Map.of());
-        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, shards.keySet(), liveNodes,
-            nrtReplicas, tlogReplicas, pullReplicas);
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
+            // XXX awkward!
+            // StreamSupport.stream(solrCollection.shards().spliterator(), false)
+            //     .map(Shard::getShardName).collect(Collectors.toSet()),
+            solrCollection.getShardNames(),
+            liveNodes, nrtReplicas, tlogReplicas, pullReplicas);
 
         AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         AttributeFetcher attributeFetcher = new AttributeFetcherForTest(attributeValues);

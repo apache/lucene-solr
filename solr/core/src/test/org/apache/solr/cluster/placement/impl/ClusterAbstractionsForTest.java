@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.*;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,12 +29,12 @@ import java.util.stream.Collectors;
 class ClusterAbstractionsForTest {
 
     static class ClusterImpl implements Cluster {
-        private final Set<Node> liveNodes;
-        private final Map<String, SolrCollection> collections;
+        private final Set<Node> liveNodes = new HashSet<>();
+        private final Map<String, SolrCollection> collections = new HashMap<>();
 
         ClusterImpl(Set<Node> liveNodes, Map<String, SolrCollection> collections) {
-            this.liveNodes = liveNodes;
-            this.collections = collections;
+            this.liveNodes.addAll(liveNodes);
+            this.collections.putAll(collections);
         }
 
         @Override
@@ -57,6 +56,33 @@ class ClusterAbstractionsForTest {
         @Override
         public Iterable<SolrCollection> collections() {
             return ClusterImpl.this::iterator;
+        }
+
+        // for unit tests
+
+        ClusterImpl addNode(Node node) {
+            liveNodes.add(node);
+            return this;
+        }
+
+        ClusterImpl removeNode(Node node) {
+            liveNodes.remove(node);
+            return this;
+        }
+
+        ClusterImpl putCollection(SolrCollection collection) {
+            collections.put(collection.getName(), collection);
+            return this;
+        }
+
+        ClusterImpl removeCollection(String name) {
+            collections.remove(name);
+            return this;
+        }
+
+        ClusterImpl removeAllCollections() {
+            collections.clear();
+            return this;
         }
     }
 
@@ -120,6 +146,10 @@ class ClusterAbstractionsForTest {
          */
         void setShards(Map<String, Shard> shards) {
             this.shards = shards;
+        }
+
+        Set<String> getShardNames() {
+            return shards.keySet();
         }
 
         @Override

@@ -29,24 +29,49 @@ import java.util.Set;
 
 public class PluginTestHelper {
 
+    static ClusterAbstractionsForTest.SolrCollectionImpl createCollection(String name, Map<String, String> properties,
+                                           int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas, Set<Node> nodes) {
+        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = new ClusterAbstractionsForTest.SolrCollectionImpl(name, properties);
+        Map<String, Shard> shards = createShardsAndReplicas(solrCollection, numShards, nrtReplicas, tlogReplicas, pullReplicas, nodes);
+        solrCollection.setShards(shards);
+        return solrCollection;
+    }
+
     /**
      * Builds the representation of shards for a collection, based on the number of shards and replicas for each to create.
      * The replicas are allocated to the provided nodes in a round robin way. The leader is set to the last replica of each shard.
      */
-    static Map<String, Shard> createShardsAndReplicas(SolrCollection collection, int numShards, int numNrtReplicas, Set<Node> nodes) {
+    static Map<String, Shard> createShardsAndReplicas(SolrCollection collection, int numShards,
+                                                      int nrtReplicas, int tlogReplicas, int pullReplicas,
+                                                      Set<Node> nodes) {
         Iterator<Node> nodeIterator = nodes.iterator();
 
         Map<String, Shard> shards = new HashMap<>();
 
         for (int s = 0; s < numShards; s++) {
-            String shardName = collection.getName() + "_s" + s;
+            // "traditional" shard name
+            String shardName = "shard" + (s + 1);
 
             ClusterAbstractionsForTest.ShardImpl shard = new ClusterAbstractionsForTest.ShardImpl(shardName, collection, Shard.ShardState.ACTIVE);
 
             Map<String, Replica> replicas = new HashMap<>();
+
             Replica leader = null;
-            for (int r = 0; r < numNrtReplicas; r++) {
-                String replicaName = shardName + "_r" + r;
+            int totalReplicas = nrtReplicas + tlogReplicas + pullReplicas;
+            for (int r = 0; r < totalReplicas; r++) {
+                Replica.ReplicaType type;
+                String suffix;
+                if (r < nrtReplicas) {
+                    type = Replica.ReplicaType.NRT;
+                    suffix = "n";
+                } else if (r < nrtReplicas + tlogReplicas) {
+                    type = Replica.ReplicaType.TLOG;
+                    suffix = "t";
+                } else {
+                    type = Replica.ReplicaType.PULL;
+                    suffix = "p";
+                }
+                String replicaName = shardName + "_replica_" + suffix + r;
                 String coreName = replicaName + "_c";
                 final Node node;
                 if (!nodeIterator.hasNext()) {
@@ -55,10 +80,12 @@ public class PluginTestHelper {
                 // If the nodes set is empty, this call will fail
                 node = nodeIterator.next();
 
-                Replica replica = new ClusterAbstractionsForTest.ReplicaImpl(replicaName, coreName, shard, Replica.ReplicaType.NRT, Replica.ReplicaState.ACTIVE, node);
+                Replica replica = new ClusterAbstractionsForTest.ReplicaImpl(replicaName, coreName, shard, type, Replica.ReplicaState.ACTIVE, node);
 
                 replicas.put(replica.getReplicaName(), replica);
-                leader = replica;
+                if (replica.getType() == Replica.ReplicaType.NRT) {
+                    leader = replica;
+                }
             }
 
             shard.setReplicas(replicas, leader);

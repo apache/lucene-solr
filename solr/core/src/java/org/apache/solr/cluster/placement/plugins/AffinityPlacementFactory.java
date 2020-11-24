@@ -118,6 +118,26 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
+   * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
+   * is any string, different strings denote different availability zones.
+   *
+   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone
+   * {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is not the name of a real Availability Zone :).
+   */
+  public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
+
+  /**
+   * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
+   * The value of that system property is a comma separated list or a single string of value names of
+   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
+   * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
+   */
+  public static final String REPLICA_TYPE_SYSPROP = "replica_type";
+
+  /** This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe) */
+  public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
+
+  /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow the factory to do one
    * time costly operations if needed, and to only have to instantiate a default constructor class by name, rather than
    * having to call a constructor with more parameters (if we were to instantiate the plugin class directly without going
@@ -138,26 +158,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    * on what the plugin does.
    */
   static private class AffinityPlacementPlugin implements PlacementPlugin {
-    /**
-     * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
-     * is any string, different strings denote different availability zones.
-     *
-     * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone
-     * {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is not the name of a real Availability Zone :).
-     */
-    public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
-    /** This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe) */
-    public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
-
-    /**
-     * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
-     * The value of that system property is a comma separated list or a single string of value names of
-     * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
-     * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
-     *
-     * <p>See {@link #getNodesPerReplicaType}.
-     */
-    public static final String REPLICA_TYPE_SYSPROP = "replica_type";
 
     /**
      * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -486,7 +486,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
        * The data we sort on is not part of the {@link Node} instances but has to be retrieved from the attributes and configuration.
        * The number of cores per node is passed in a map whereas the free disk is fetched from the attributes due to the
        * fact that we update the number of cores per node as we do allocations, but we do not update the free disk. The
-       * attrValues correpsonding to the number of cores per node are the initial values, but we want to comapre the actual
+       * attrValues corresponding to the number of cores per node are the initial values, but we want to compare the actual
        * value taking into account placement decisions already made during the current execution of the placement plugin.
        */
       CoresAndDiskComparator(AttributeValues attrValues, Map<Node, Integer> coresOnNodes, long deprioritizedFreeDiskGB) {
