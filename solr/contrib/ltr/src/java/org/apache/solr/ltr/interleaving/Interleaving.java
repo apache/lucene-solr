@@ -18,6 +18,7 @@
 package org.apache.solr.ltr.interleaving;
 
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 
 /**
@@ -36,8 +37,10 @@ public interface Interleaving {
    static Interleaving getImplementation(String algorithm) {
       switch(algorithm) {
          case TEAM_DRAFT:
-         default:
             return new TeamDraftInterleaving();
+         default:
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Unknown Interleaving algorithm: " + algorithm);
       }
    }
 }
