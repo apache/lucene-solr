@@ -100,6 +100,11 @@ public abstract class ValueSource {
     public float score() {
       return score;
     }
+
+    @Override
+    public float smoothingScore(int docId) throws IOException {
+      return 0;
+    }
   }
 
   /**
