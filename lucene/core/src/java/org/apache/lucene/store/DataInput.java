@@ -94,7 +94,7 @@ public abstract class DataInput implements Cloneable {
   public short readShort() throws IOException {
     final byte b1 = readByte();
     final byte b2 = readByte();
-    return (short) ((b2 << 8) | (b1 & 0xFF));
+    return (short) (((b2 & 0xFF) << 8) | (b1 & 0xFF));
   }
 
   /** Reads four bytes and returns an int.
@@ -105,7 +105,7 @@ public abstract class DataInput implements Cloneable {
     final byte b2 = readByte();
     final byte b3 = readByte();
     final byte b4 = readByte();
-    return (b4 << 24) | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+    return ((b4 & 0xFF) << 24) | ((b3 & 0xFF) << 16) | ((b2 & 0xFF) << 8) | (b1 & 0xFF);
   }
 
   /** Reads an int stored in variable-length format.  Reads between one and
