@@ -250,6 +250,11 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* LUCENE-9508: DocumentsWriter was only stalling threads for 1 second allowing
+  documents to be indexed even the DocumentsWriter wasn't able to keep up flushing.
+  Unless IW can't make progress due to an ill behaving DWPT this issue was barely
+  noticeable. (Simon Willnauer)
+
 * LUCENE-9581: Japanese tokenizer should discard the compound token instead of disabling the decomposition
   of long tokens when discardCompoundToken is activated. (Jim Ferenczi)
 
