@@ -27,7 +27,6 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 
 /** 
  * SortField for {@link SortedSetDocValues}.
@@ -87,8 +86,8 @@ public class SortedSetSortField extends SortField {
 
     @Override
     public SortField readSortField(DataInput in) throws IOException {
-      SortField sf = new SortedSetSortField(in.readString(), EndiannessReverserUtil.readInt(in) == 1, readSelectorType(in));
-      int missingValue = EndiannessReverserUtil.readInt(in);
+      SortField sf = new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
+      int missingValue = in.readInt();
       if (missingValue == 1) {
         sf.setMissingValue(SortField.STRING_FIRST);
       }
@@ -106,7 +105,7 @@ public class SortedSetSortField extends SortField {
   }
 
   private static SortedSetSelector.Type readSelectorType(DataInput in) throws IOException {
-    int type = EndiannessReverserUtil.readInt(in);
+    int type = in.readInt();
     if (type >= SortedSetSelector.Type.values().length) {
       throw new IllegalArgumentException("Cannot deserialize SortedSetSortField: unknown selector type " + type);
     }
@@ -115,14 +114,16 @@ public class SortedSetSortField extends SortField {
 
   private void serialize(DataOutput out) throws IOException {
     out.writeString(getField());
-    EndiannessReverserUtil.writeInt(out, reverse ? 1 : 0);
-    EndiannessReverserUtil.writeInt(out, selector.ordinal());
+    out.writeInt(reverse ? 1 : 0);
+    out.writeInt(selector.ordinal());
     if (missingValue == SortField.STRING_FIRST) {
-      EndiannessReverserUtil.writeInt(out, 1);
-    } else if (missingValue == SortField.STRING_LAST) {
-      EndiannessReverserUtil.writeInt(out, 2);
-    } else {
-      EndiannessReverserUtil.writeInt(out, 0);
+      out.writeInt(1);
+    }
+    else if (missingValue == SortField.STRING_LAST) {
+      out.writeInt(2);
+    }
+    else {
+      out.writeInt(0);
     }
   }
   

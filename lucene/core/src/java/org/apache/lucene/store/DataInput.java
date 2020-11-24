@@ -160,20 +160,13 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeLong(long)
    */
   public long readLong() throws IOException {
-    final byte b1 = readByte();
-    final byte b2 = readByte();
-    final byte b3 = readByte();
-    final byte b4 = readByte();
-    final byte b5 = readByte();
-    final byte b6 = readByte();
-    final byte b7 = readByte();
-    final byte b8 = readByte();
-    return ((b8 & 0xFFL) << 56) | (b7 & 0xFFL) << 48 | (b6 & 0xFFL) << 40 | (b5 & 0xFFL) << 32
-            | (b4 & 0xFFL) << 24 | (b3 & 0xFFL) << 16 | (b2 & 0xFFL) << 8 | (b1 & 0xFFL);
+    return  (readInt() & 0xFFFFFFFFL) | (((long)readInt()) << 32);
   }
 
   /**
    * Read a specified number of longs.
+   *
+   * @lucene.experimental
    */
   public void readLongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);

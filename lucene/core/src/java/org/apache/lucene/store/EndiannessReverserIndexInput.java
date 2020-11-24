@@ -21,17 +21,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * And {@link IndexInput} wrapper that changes the endianness of the provides
+ * A {@link IndexInput} wrapper that changes the endianness of the provided
  * index input.
  *
  * @lucene.internal
  */
-public class EndiannessReverserIndexInput extends IndexInput {
+public final class EndiannessReverserIndexInput extends IndexInput {
   
   private final IndexInput in;
   
   public EndiannessReverserIndexInput(IndexInput in) {
-    super("Endianness reverser Index wrapper");
+    super("Endianness reverser Index Input wrapper");
     this.in = in;
   }
 

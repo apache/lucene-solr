@@ -210,14 +210,8 @@ public abstract class DataOutput {
    * @see DataInput#readLong()
    */
   public void writeLong(long i) throws IOException {
-    writeByte((byte) i);
-    writeByte((byte)(i >>  8));
-    writeByte((byte)(i >> 16));
-    writeByte((byte)(i >> 24));
-    writeByte((byte)(i >> 32));
-    writeByte((byte)(i >> 40));
-    writeByte((byte)(i >> 48));
-    writeByte((byte)(i >> 56));
+    writeInt((int) i);
+    writeInt((int) (i >> 32));
   }
 
   /** Writes an long in a variable-length format.  Writes between one and nine

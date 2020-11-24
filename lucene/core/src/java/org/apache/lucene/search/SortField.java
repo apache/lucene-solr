@@ -31,7 +31,6 @@ import org.apache.lucene.search.comparators.IntComparator;
 import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
@@ -149,12 +148,12 @@ public class SortField {
 
     @Override
     public SortField readSortField(DataInput in) throws IOException {
-      SortField sf = new SortField(in.readString(), readType(in), EndiannessReverserUtil.readInt(in) == 1);
-      if (EndiannessReverserUtil.readInt(in) == 1) {
+      SortField sf = new SortField(in.readString(), readType(in), in.readInt() == 1);
+      if (in.readInt() == 1) {
         // missing object
         switch (sf.type) {
           case STRING:
-            int missingString = EndiannessReverserUtil.readInt(in);
+            int missingString = in.readInt();
             if (missingString == 1) {
               sf.setMissingValue(STRING_FIRST);
             }
@@ -163,16 +162,16 @@ public class SortField {
             }
             break;
           case INT:
-            sf.setMissingValue(EndiannessReverserUtil.readInt(in));
+            sf.setMissingValue(in.readInt());
             break;
           case LONG:
-            sf.setMissingValue(EndiannessReverserUtil.readLong(in));
+            sf.setMissingValue(in.readLong());
             break;
           case FLOAT:
-            sf.setMissingValue(NumericUtils.sortableIntToFloat(EndiannessReverserUtil.readInt(in)));
+            sf.setMissingValue(NumericUtils.sortableIntToFloat(in.readInt()));
             break;
           case DOUBLE:
-            sf.setMissingValue(NumericUtils.sortableLongToDouble(EndiannessReverserUtil.readLong(in)));
+            sf.setMissingValue(NumericUtils.sortableLongToDouble(in.readLong()));
             break;
           default:
             throw new IllegalArgumentException("Cannot deserialize sort of type " + sf.type);
@@ -200,35 +199,35 @@ public class SortField {
   private void serialize(DataOutput out) throws IOException {
     out.writeString(field);
     out.writeString(type.toString());
-    EndiannessReverserUtil.writeInt(out, reverse ? 1 : 0);
+    out.writeInt(reverse ? 1 : 0);
     if (missingValue == null) {
-      EndiannessReverserUtil.writeInt(out, 0);
+      out.writeInt(0);
     }
     else {
-      EndiannessReverserUtil.writeInt(out, 1);
+      out.writeInt(1);
       switch (type) {
         case STRING:
           if (missingValue == STRING_LAST) {
-            EndiannessReverserUtil.writeInt(out, 0);
+            out.writeInt(0);
           }
           else if (missingValue == STRING_FIRST) {
-            EndiannessReverserUtil.writeInt(out, 1);
+            out.writeInt(1);
           }
           else {
             throw new IllegalArgumentException("Cannot serialize missing value of " + missingValue + " for type STRING");
           }
           break;
         case INT:
-          EndiannessReverserUtil.writeInt(out, (int)missingValue);
+          out.writeInt((int)missingValue);
           break;
         case LONG:
-          EndiannessReverserUtil.writeLong(out, (long)missingValue);
+          out.writeLong((long)missingValue);
           break;
         case FLOAT:
-          EndiannessReverserUtil.writeInt(out, NumericUtils.floatToSortableInt((float)missingValue));
+          out.writeInt(NumericUtils.floatToSortableInt((float)missingValue));
           break;
         case DOUBLE:
-          EndiannessReverserUtil.writeLong(out, NumericUtils.doubleToSortableLong((double)missingValue));
+          out.writeLong(NumericUtils.doubleToSortableLong((double)missingValue));
           break;
         default:
           throw new IllegalArgumentException("Cannot serialize SortField of type " + type);

@@ -28,7 +28,6 @@ import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -575,19 +574,18 @@ public final class CodecUtil {
   }
   
   private static int readVersion(DataInput in) throws IOException {
-    return EndiannessReverserUtil.readInt(in);
+    return Integer.reverseBytes(in.readInt());
   }
 
   private static void writeVersion(DataOutput out, int version) throws IOException {
-    EndiannessReverserUtil.writeInt(out, version);
+    out.writeInt(Integer.reverseBytes(version));
   }
 
   private static long readChecksum(DataInput in) throws IOException {
-    return EndiannessReverserUtil.readLong(in);
+    return Long.reverseBytes(in.readLong());
   }
 
   private static void writeChecksum(DataOutput out, long checksum) throws IOException {
-    EndiannessReverserUtil.writeLong(out, checksum);
+    out.writeLong(Long.reverseBytes(checksum));
   }
-  
 }
