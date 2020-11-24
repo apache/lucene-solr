@@ -153,6 +153,9 @@ Other Changes
 
 * SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
 
+* SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
+  (Alex Bulygin via Christine Poerschke)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -167,6 +170,8 @@ New Features
 
 * SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
 
+* SOLR-14560: Add interleaving support in Learning To Rank. (Alessandro Benedetti, Christine Poerschke)
+
 Improvements
 ---------------------
 * SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
@@ -177,6 +182,8 @@ Improvements
 * SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
 
 * SOLR-14977 : ContainerPlugins should be configurable with custom objects (noble, ab)
+
+* SOLR-15015 : Add interleaving algorithm parameter support in Learning To Rank (Alessandro Benedetti)
 
 Optimizations
 ---------------------
@@ -198,6 +205,8 @@ Bug Fixes
 
 * SOLR-14983: Fix response returning original score instead of reranked score due to query and filter combining.
   (Krishan Goyal, Jason Baik, Christine Poerschke)
+
+* SOLR-14993: Unable to download zookeeper files of 1byte in size (Erick Erickson, Allen Sooredoo)
 
 Other Changes
 ---------------------

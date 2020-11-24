@@ -16,10 +16,12 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -142,6 +144,24 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
     }
   }
 
+  // SOLR-14993
+  @Test
+  public void testOneByteFile() throws Exception {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+      byte[] oneByte = new byte[1];
+      oneByte[0] = 0x30;
+      zkClient.makePath("/test1byte/one", oneByte, true);
+
+      Path tmpDest = Paths.get(createTempDir().toFile().getAbsolutePath(), "MustBeOne");
+      ZkMaintenanceUtils.downloadFromZK(zkClient, "/test1byte/one", tmpDest);
+
+      try (FileInputStream fis = new FileInputStream(tmpDest.toFile())) {
+        byte[] data = fis.readAllBytes();
+        assertEquals("Should have downloaded a one-byte file", data.length,  1);
+        assertEquals("contents of the one-byte file should be 0x30", 0x30, data[0]);
+      }
+    }
+  }
   private List<String> getTraverseedZNodes(SolrZkClient zkClient, String path, ZkMaintenanceUtils.VISIT_ORDER visitOrder) throws KeeperException, InterruptedException {
     List<String> result = new ArrayList<>();
     ZkMaintenanceUtils.traverseZkTree(zkClient, path, visitOrder, new ZkMaintenanceUtils.ZkVisitor() {

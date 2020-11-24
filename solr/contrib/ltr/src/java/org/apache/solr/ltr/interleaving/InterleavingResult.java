@@ -14,23 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.params;
 
-import org.apache.solr.SolrTestCase;
+package org.apache.solr.ltr.interleaving;
 
-/**
- * Unit test for {@link CommonParams}
- *
- * This class tests backwards compatibility of CommonParams parameter constants.
- * If someone accidentally changes those constants then this test will flag that up.
- */
-public class CommonParamsTest extends SolrTestCase
-{
-  public void testStart() { assertEquals("start", CommonParams.START); }
-  public void testStartDefault() { assertEquals(0, CommonParams.START_DEFAULT); }
+import java.util.ArrayList;
+import java.util.Set;
 
-  public void testRows() { assertEquals("rows", CommonParams.ROWS); }
-  public void testRowsDefault() { assertEquals(10, CommonParams.ROWS_DEFAULT); }
-  
-  public void testMinExactCount() { assertEquals("minExactCount", CommonParams.MIN_EXACT_COUNT); }
+import org.apache.lucene.search.ScoreDoc;
+
+public class InterleavingResult {
+  final private ScoreDoc[] interleavedResults;
+  final private ArrayList<Set<Integer>> interleavingPicks;
+
+  public InterleavingResult(ScoreDoc[] interleavedResults, ArrayList<Set<Integer>> interleavingPicks) {
+    this.interleavedResults = interleavedResults;
+    this.interleavingPicks = interleavingPicks;
+  }
+
+  public ScoreDoc[] getInterleavedResults() {
+    return interleavedResults;
+  }
+
+  public ArrayList<Set<Integer>> getInterleavingPicks() {
+    return interleavingPicks;
+  }
+
 }

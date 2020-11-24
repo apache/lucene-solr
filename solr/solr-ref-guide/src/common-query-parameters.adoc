@@ -347,7 +347,6 @@ This is what happens if a similar request is sent that adds `echoParams=all` to 
     "params": {
       "q": "solr",
       "df": "text",
-      "preferLocalShards": "false",
       "indent": "true",
       "echoParams": "all",
       "rows": "10",

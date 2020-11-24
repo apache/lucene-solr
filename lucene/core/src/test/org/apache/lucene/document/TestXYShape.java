@@ -202,6 +202,51 @@ public class TestXYShape extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
+  public void testContainsIndexedGeometryCollection() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    XYPolygon polygon = new XYPolygon(new float[] {-132, 132, 132, -132, -132}, new float[] {-64, -64, 64, 64, -64});
+    Field[] polygonFields = XYShape.createIndexableFields(FIELDNAME, polygon);
+    // POINT(5, 5) inside the indexed polygon
+    Field[] pointFields = XYShape.createIndexableFields(FIELDNAME, 5, 5);
+    int numDocs = random().nextInt(1000);
+    // index the same multi geometry many times
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      for (Field f : polygonFields) {
+        doc.add(f);
+      }
+      for(int j = 0; j < 10; j++) {
+        for (Field f : pointFields) {
+          doc.add(f);
+        }
+      }
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry 
+    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is 
+    // inside the query as well, hence the result is 0.
+    XYPolygon polygonQuery = new XYPolygon(new float[] {4, 6, 6, 4, 4}, new float[] {4, 4, 6, 6, 4});
+    Query query = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, polygonQuery);
+    assertEquals(0, searcher.count(query));
+
+    XYRectangle rectangle = new XYRectangle(4, 6, 4, 6);
+    query = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, rectangle);
+    assertEquals(0, searcher.count(query));
+
+    XYCircle circle = new XYCircle(5, 5, 1);
+    query = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
+    assertEquals(0, searcher.count(query));
+
+    IOUtils.close(w, reader, dir);
+  }
+
   private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
     return ( r1.minX <=  r2.minX &&  r1.minY <= r2.minY && r1.maxX >= r2.maxX && r1.maxY >= r2.maxY);
   }

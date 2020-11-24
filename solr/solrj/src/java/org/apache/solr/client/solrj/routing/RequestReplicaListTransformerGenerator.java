@@ -26,7 +26,6 @@ import java.util.Random;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
@@ -81,23 +80,11 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    @SuppressWarnings("deprecation")
-    final boolean preferLocalShards = requestParams.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
     defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
     final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 
-    if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
-      if (preferLocalShards && !shardsPreferenceSpec.isEmpty()) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "preferLocalShards is deprecated and must not be used with shards.preference"
-        );
-      }
+    if (!shardsPreferenceSpec.isEmpty()) {
       List<PreferenceRule> preferenceRules = PreferenceRule.from(shardsPreferenceSpec);
-      if (preferLocalShards) {
-        preferenceRules.add(new PreferenceRule(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION, ShardParams.REPLICA_LOCAL));
-      }
-
       NodePreferenceRulesComparator replicaComp =
           new NodePreferenceRulesComparator(
               preferenceRules,

@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.params;
+package org.apache.solr.ltr.interleaving;
 
-import org.apache.solr.SolrTestCase;
+public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoringQuery {
 
-/**
- * Unit test for {@link CommonParams}
- *
- * This class tests backwards compatibility of CommonParams parameter constants.
- * If someone accidentally changes those constants then this test will flag that up.
- */
-public class CommonParamsTest extends SolrTestCase
-{
-  public void testStart() { assertEquals("start", CommonParams.START); }
-  public void testStartDefault() { assertEquals(0, CommonParams.START_DEFAULT); }
+  private final String originalRankingModelName;
 
-  public void testRows() { assertEquals("rows", CommonParams.ROWS); }
-  public void testRowsDefault() { assertEquals(10, CommonParams.ROWS_DEFAULT); }
-  
-  public void testMinExactCount() { assertEquals("minExactCount", CommonParams.MIN_EXACT_COUNT); }
+  public OriginalRankingLTRScoringQuery(String originalRankingModelName) {
+    super(null /* LTRScoringModel */);
+    this.originalRankingModelName = originalRankingModelName;
+  }
+
+  @Override
+  public String getScoringModelName() {
+    return this.originalRankingModelName;
+  }
+
 }
