@@ -25,69 +25,69 @@ import java.util.Set;
 
 public class AttributeFetcherForTest implements AttributeFetcher {
 
-    private final AttributeValues attributeValues;
+  private final AttributeValues attributeValues;
 
-    AttributeFetcherForTest(AttributeValues attributeValues) {
-        this.attributeValues = attributeValues;
-    }
+  AttributeFetcherForTest(AttributeValues attributeValues) {
+    this.attributeValues = attributeValues;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeCoreCount() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeCoreCount() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeDiskType() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeDiskType() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeFreeDisk() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeFreeDisk() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeTotalDisk() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeTotalDisk() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeHeapUsage() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeHeapUsage() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeSystemLoadAverage() {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeSystemLoadAverage() {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeSystemProperty(String name) {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeSystemProperty(String name) {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestNodeEnvironmentVariable(String name) {
-        throw new UnsupportedOperationException("Not yet implemented...");
-    }
+  @Override
+  public AttributeFetcher requestNodeEnvironmentVariable(String name) {
+    throw new UnsupportedOperationException("Not yet implemented...");
+  }
 
-    @Override
-    public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
-        return this;
-    }
+  @Override
+  public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher fetchFrom(Set<Node> nodes) {
-        return this;
-    }
+  @Override
+  public AttributeFetcher fetchFrom(Set<Node> nodes) {
+    return this;
+  }
 
-    @Override
-    public AttributeFetcher requestMetric(String scope, String metricName) {
-        throw new UnsupportedOperationException("Not yet implemented...");
-    }
+  @Override
+  public AttributeFetcher requestMetric(String scope, String metricName) {
+    throw new UnsupportedOperationException("Not yet implemented...");
+  }
 
-    @Override
-    public AttributeValues fetchAttributes() {
-        return attributeValues;
-    }
+  @Override
+  public AttributeValues fetchAttributes() {
+    return attributeValues;
+  }
 }
