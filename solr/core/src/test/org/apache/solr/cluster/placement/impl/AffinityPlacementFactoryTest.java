@@ -31,10 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,6 +58,53 @@ public class AffinityPlacementFactoryTest extends Assert {
     @Test
     public void testBasicPlacementExistingCollection() throws Exception {
         testBasicPlacementInternal(true);
+    }
+
+    @Test
+    public void testBasicPlacementNewCollection2() throws Exception {
+        testBasicInternal2(false);
+    }
+
+    @Test
+    public void testBasicPlacementExistingCollection2() throws Exception {
+        testBasicInternal2(true);
+    }
+
+    private void testBasicInternal2(boolean hasExistingCollection) throws Exception {
+        String collectionName = "testCollection";
+
+        Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(2);
+        LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
+        nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB(100L);
+        nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB(100L);
+
+        Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+
+        if (hasExistingCollection) {
+            // Existing collection has replicas for its shards and is visible in the cluster state
+            collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
+            clusterBuilder.addCollection(collectionBuilder);
+        } else {
+            // New collection to create has the shards defined but no replicas and is not present in cluster state
+            collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+        }
+
+        Cluster cluster = clusterBuilder.build();
+        AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+
+        SolrCollection solrCollection = collectionBuilder.build();
+        List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+        // Place a new replica for the (only) existing shard of the collection
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
+                Set.of(solrCollection.shards().iterator().next().getShardName()), new HashSet<>(liveNodes),
+                1, 0, 0);
+
+        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, new PlacementPlanFactoryImpl());
+
+        assertEquals(1, pp.getReplicaPlacements().size());
+        ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
+        assertEquals(hasExistingCollection ? liveNodes.get(1) : liveNodes.get(0), rp.getNode());
     }
 
     /**

@@ -33,7 +33,7 @@ class ClusterAbstractionsForTest {
         private final Set<Node> liveNodes;
         private final Map<String, SolrCollection> collections;
 
-        ClusterImpl(Set<Node> liveNodes, Map<String, SolrCollection> collections) throws IOException {
+        ClusterImpl(Set<Node> liveNodes, Map<String, SolrCollection> collections) {
             this.liveNodes = liveNodes;
             this.collections = collections;
         }
@@ -88,7 +88,7 @@ class ClusterAbstractionsForTest {
         /**
          * This class ends up as a key in Maps in {@link org.apache.solr.cluster.placement.AttributeValues}.
          * It is important to implement this method comparing node names given that new instances of {@link Node} are created
-         * with names equal to existing instances (See {@link ReplicaImpl} constructor).
+         * with names equal to existing instances (See {@link Builders.NodeBuilder#build()}).
          */
         public boolean equals(Object obj) {
             if (obj == null) { return false; }
