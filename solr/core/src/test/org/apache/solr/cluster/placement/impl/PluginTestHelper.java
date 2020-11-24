@@ -60,18 +60,14 @@ public class PluginTestHelper {
             int totalReplicas = nrtReplicas + tlogReplicas + pullReplicas;
             for (int r = 0; r < totalReplicas; r++) {
                 Replica.ReplicaType type;
-                String suffix;
                 if (r < nrtReplicas) {
                     type = Replica.ReplicaType.NRT;
-                    suffix = "n";
                 } else if (r < nrtReplicas + tlogReplicas) {
                     type = Replica.ReplicaType.TLOG;
-                    suffix = "t";
                 } else {
                     type = Replica.ReplicaType.PULL;
-                    suffix = "p";
                 }
-                String replicaName = shardName + "_replica_" + suffix + r;
+                String replicaName = shardName + "_replica_" + type.getSuffixChar() + r;
                 String coreName = replicaName + "_c";
                 final Node node;
                 if (!nodeIterator.hasNext()) {

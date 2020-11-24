@@ -144,7 +144,7 @@ public class Builders {
                 for (Pair<Replica.ReplicaType, Integer> tc : replicaTypes) {
                     Replica.ReplicaType type = tc.first();
                     int count = tc.second();
-                    String replicaPrefix = collectionName + "_" + shardName + "_replica_" + type.name().toLowerCase(Locale.ROOT).charAt(0);
+                    String replicaPrefix = collectionName + "_" + shardName + "_replica_" + type.getSuffixChar();
                     for (int r = 0; r < count; r++) {
                         String replicaName = replicaPrefix + r;
                         String coreName = replicaName + "_c";
