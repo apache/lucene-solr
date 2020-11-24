@@ -167,6 +167,11 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
+    public Set<String> getShardNames() {
+      return shards.keySet();
+    }
+
+    @Override
     public String getCustomProperty(String customPropertyName) {
       return docCollection.getStr(customPropertyName);
     }

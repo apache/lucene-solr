@@ -27,7 +27,7 @@ public class Builders {
     ClusterBuilder initializeNodes(int countNodes) {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
-        nodeBuilders.add(new NodeBuilder().setNodeName("node" + n)); // Default name, can be changed
+        nodeBuilders.add(new NodeBuilder().setNodeName("node_" + n)); // Default name, can be changed
       }
       return this;
     }
@@ -128,9 +128,10 @@ public class Builders {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
       shardBuilders = new LinkedList<>();
+      int replicaNumber = 0;
 
-      for (int s = 0; s < countShards; s++) {
-        String shardName = "shard" + (s + 1);
+      for (int shardNumber = 1; shardNumber <= countShards; shardNumber++) {
+        String shardName = "shard" + shardNumber;
 
         LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
@@ -146,7 +147,7 @@ public class Builders {
           int count = tc.second();
           String replicaPrefix = collectionName + "_" + shardName + "_replica_" + type.getSuffixChar();
           for (int r = 0; r < count; r++) {
-            String replicaName = replicaPrefix + r;
+            String replicaName = replicaPrefix + replicaNumber++;
             String coreName = replicaName + "_c";
             if (!nodeIterator.hasNext()) {
               nodeIterator = nodes.iterator();

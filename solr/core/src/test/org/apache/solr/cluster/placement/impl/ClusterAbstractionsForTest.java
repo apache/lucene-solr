@@ -156,10 +156,6 @@ class ClusterAbstractionsForTest {
       this.shards = shards;
     }
 
-    Set<String> getShardNames() {
-      return shards.keySet();
-    }
-
     @Override
     public String getName() {
       return collectionName;
@@ -179,6 +175,11 @@ class ClusterAbstractionsForTest {
     @Override
     public Iterable<Shard> shards() {
       return SolrCollectionImpl.this::iterator;
+    }
+
+    @Override
+    public Set<String> getShardNames() {
+      return shards.keySet();
     }
 
     @Override
