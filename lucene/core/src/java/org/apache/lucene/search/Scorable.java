@@ -25,17 +25,24 @@ import java.util.Collections;
  * Allows access to the score of a Query
  */
 public abstract class Scorable {
-
+  
   /**
    * Returns the score of the current document matching the query.
    */
   public abstract float score() throws IOException;
-
+  
+  /**
+   * Returns the smoothing score of the current document matching the query.
+   * This score is used when the query/term does not appear in the document.
+   * This can return 0 or a smoothing score.
+   */
+  public abstract float smoothingScore(int docId) throws IOException;
+  
   /**
    * Returns the doc ID that is currently being scored.
    */
   public abstract int docID();
-
+  
   /**
    * Optional method: Tell the scorer that its iterator may safely ignore all
    * documents whose score is less than the given {@code minScore}. This is a
@@ -48,39 +55,43 @@ public abstract class Scorable {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     // no-op by default
   }
-
+  
   /**
    * Returns child sub-scorers positioned on the current document
+   * 
    * @lucene.experimental
    */
   public Collection<ChildScorable> getChildren() throws IOException {
     return Collections.emptyList();
   }
-
-  /** A child Scorer and its relationship to its parent.
-   * the meaning of the relationship depends upon the parent query.
-   * @lucene.experimental */
+  
+  /**
+   * A child Scorer and its relationship to its parent. the meaning of the
+   * relationship depends upon the parent query.
+   * 
+   * @lucene.experimental
+   */
   public static class ChildScorable {
     /**
-     * Child Scorer. (note this is typically a direct child, and may
-     * itself also have children).
+     * Child Scorer. (note this is typically a direct child, and may itself also
+     * have children).
      */
     public final Scorable child;
     /**
      * An arbitrary string relating this scorer to the parent.
      */
     public final String relationship;
-
+    
     /**
      * Creates a new ChildScorer node with the specified relationship.
      * <p>
-     * The relationship can be any be any string that makes sense to
-     * the parent Scorer.
+     * The relationship can be any be any string that makes sense to the parent
+     * Scorer.
      */
     public ChildScorable(Scorable child, String relationship) {
       this.child = child;
       this.relationship = relationship;
     }
   }
-
+  
 }
