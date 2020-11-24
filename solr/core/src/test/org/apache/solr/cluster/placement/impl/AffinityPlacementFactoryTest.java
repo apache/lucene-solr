@@ -218,6 +218,73 @@ public class AffinityPlacementFactoryTest extends Assert {
     }
 
     @Test
+    public void testReplicaType() throws Exception {
+        String collectionName = "testCollection";
+        int NUM_NODES = 6;
+        Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
+        for (int i = 0; i < NUM_NODES; i++) {
+            Builders.NodeBuilder nodeBuilder = clusterBuilder.getNodeBuilders().get(i);
+            nodeBuilder.setCoreCount(0);
+            nodeBuilder.setFreeDiskGB(100L);
+            if (i < NUM_NODES / 2) {
+                nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Nrt,Tlog");
+                nodeBuilder.setSysprop("group", "one");
+            } else {
+                nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Pull, foobar");
+                nodeBuilder.setSysprop("group", "two");
+            }
+        }
+
+        Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+        collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getNodeBuilders());
+        clusterBuilder.addCollection(collectionBuilder);
+
+        Cluster cluster = clusterBuilder.build();
+
+        SolrCollection solrCollection = cluster.getCollection(collectionName);
+
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
+            StreamSupport.stream(solrCollection.shards().spliterator(), false)
+                .map(Shard::getShardName).collect(Collectors.toSet()),
+            cluster.getLiveNodes(), 2, 2, 2);
+
+        PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
+        AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+        // 2 shards, 6 replicas
+        assertEquals(12, pp.getReplicaPlacements().size());
+        // shard -> group -> replica count
+        Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
+        AttributeValues attributeValues = attributeFetcher.fetchAttributes();
+        for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
+            Optional<String> groupOptional = attributeValues.getSystemProperty(rp.getNode(), "group");
+            if (!groupOptional.isPresent()) {
+                fail("missing group sysprop for node " + rp.getNode());
+            }
+            String group = groupOptional.get();
+            if (group.equals("one")) {
+                assertTrue("wrong replica type in group one",
+                    (rp.getReplicaType() == Replica.ReplicaType.NRT) || rp.getReplicaType() == Replica.ReplicaType.TLOG);
+            } else {
+                assertEquals("wrong replica type in group two", Replica.ReplicaType.PULL, rp.getReplicaType());
+            }
+            replicas.computeIfAbsent(rp.getReplicaType(), type -> new HashMap<>())
+                .computeIfAbsent(rp.getShardName(), shard -> new HashMap<>())
+                .computeIfAbsent(group, g -> new AtomicInteger()).incrementAndGet();
+        }
+        replicas.forEach((type, perTypeReplicas) -> {
+            perTypeReplicas.forEach((shard, groupCounts) -> {
+                assertEquals("number of groups", 1, groupCounts.size());
+                groupCounts.forEach((group, count) -> {
+                    assertTrue("too few replicas shard=" + shard + ", type=" + type + ", group=" + group,
+                        count.get() >= 1);
+                });
+            });
+        });
+
+    }
+
+    @Test
     //@Ignore
     public void testScalability() throws Exception {
         log.info("==== numNodes ====");
