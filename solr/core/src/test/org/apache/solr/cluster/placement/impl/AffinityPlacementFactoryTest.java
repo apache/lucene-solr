@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
@@ -33,6 +34,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Unit test for {@link AffinityPlacementFactory}
@@ -153,38 +156,36 @@ public class AffinityPlacementFactoryTest extends Assert {
     @Test
     public void testAvailabilityZones() throws Exception {
         String collectionName = "testCollection";
-
         int NUM_NODES = 6;
-        final Set<Node> liveNodes = new HashSet<>();
-        final Map<Node, Long> nodeToFreeDisk = new HashMap<>();
-        final Map<Node, Integer> nodeToCoreCount = new HashMap<>();
-        final Map<String, Map<Node, String>> zones = Map.of(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, new HashMap<>());
-        final Map<Node, String> sysprops = zones.get(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP);
+        Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
         for (int i = 0; i < NUM_NODES; i++) {
-            Node node = new ClusterAbstractionsForTest.NodeImpl("node_" + i);
-            liveNodes.add(node);
-            nodeToFreeDisk.put(node, 100L);
-            nodeToCoreCount.put(node, 0);
+            Builders.NodeBuilder nodeBuilder = clusterBuilder.getNodeBuilders().get(i);
+            nodeBuilder.setCoreCount(0);
+            nodeBuilder.setFreeDiskGB(100L);
             if (i < NUM_NODES / 2) {
-                sysprops.put(node, "az1");
+                nodeBuilder.setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "az1");
             } else {
-                sysprops.put(node, "az2");
+                nodeBuilder.setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "az2");
             }
         }
 
-        ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = PluginTestHelper.createCollection(collectionName,
-            Map.of(), 2, 0, 0, 0, liveNodes);
-        ClusterAbstractionsForTest.ClusterImpl cluster = new ClusterAbstractionsForTest.ClusterImpl(liveNodes, Map.of());
+        Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+        collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getNodeBuilders());
+        clusterBuilder.addCollection(collectionBuilder);
 
-        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), liveNodes, 2, 2, 2);
+        Cluster cluster = clusterBuilder.build();
 
-        AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(),
-            zones, Map.of());
-        AttributeFetcher attributeFetcher = new AttributeFetcherForTest(attributeValues);
+        SolrCollection solrCollection = cluster.getCollection(collectionName);
+
+        PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
+            StreamSupport.stream(solrCollection.shards().spliterator(), false)
+                 .map(Shard::getShardName).collect(Collectors.toSet()),
+            cluster.getLiveNodes(), 2, 2, 2);
+
         PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
 
-        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
-        // 2 shards, 5 replicas
+        PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, clusterBuilder.buildAttributeFetcher(), placementPlanFactory);
+        // 2 shards, 6 replicas
         assertEquals(12, pp.getReplicaPlacements().size());
         List<ReplicaPlacement> placements = new ArrayList<>(pp.getReplicaPlacements());
         Collections.sort(placements, Comparator

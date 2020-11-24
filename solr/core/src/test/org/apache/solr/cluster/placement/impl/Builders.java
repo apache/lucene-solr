@@ -68,6 +68,8 @@ public class Builders {
         AttributeFetcher buildAttributeFetcher() {
             Map<Node, Integer> nodeToCoreCount = new HashMap<>();
             Map<Node, Long> nodeToFreeDisk = new HashMap<>();
+            Map<String, Map<Node, String>> sysprops = new HashMap<>();
+            Map<String, Map<Node, Double>> metrics = new HashMap<>();
 
             // TODO And a few more missing and will be added...
 
@@ -82,9 +84,21 @@ public class Builders {
                 if (nodeBuilder.getFreeDiskGB() != null) {
                     nodeToFreeDisk.put(node, nodeBuilder.getFreeDiskGB());
                 }
+                if (nodeBuilder.getSysprops() != null) {
+                    nodeBuilder.getSysprops().forEach((name, value) -> {
+                        sysprops.computeIfAbsent(name, n -> new HashMap<>())
+                            .put(node, value);
+                    });
+                }
+                if (nodeBuilder.getMetrics() != null) {
+                    nodeBuilder.getMetrics().forEach((name, value) -> {
+                        metrics.computeIfAbsent(name, n -> new HashMap<>())
+                            .put(node, value);
+                    });
+                }
             }
 
-            AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(), sysprops, metrics);
             return new AttributeFetcherForTest(attributeValues);
         }
     }
@@ -116,7 +130,7 @@ public class Builders {
             shardBuilders = new LinkedList<>();
 
             for (int s = 0; s < countShards; s++) {
-                String shardName = collectionName + "_s" + s;
+                String shardName = "shard" + (s + 1);
 
                 LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
                 ReplicaBuilder leader = null;
@@ -130,7 +144,7 @@ public class Builders {
                 for (Pair<Replica.ReplicaType, Integer> tc : replicaTypes) {
                     Replica.ReplicaType type = tc.first();
                     int count = tc.second();
-                    String replicaPrefix = shardName + "_" + type.name() + "_";
+                    String replicaPrefix = collectionName + "_" + shardName + "_replica_" + type.name().toLowerCase(Locale.ROOT).charAt(0);
                     for (int r = 0; r < count; r++) {
                         String replicaName = replicaPrefix + r;
                         String coreName = replicaName + "_c";
@@ -255,6 +269,8 @@ public class Builders {
         private String nodeName = null;
         private Integer coreCount = null;
         private Long freeDiskGB = null;
+        private Map<String, String> sysprops = null;
+        private Map<String, Double> metrics = null;
 
         NodeBuilder setNodeName(String nodeName) {
             this.nodeName = nodeName;
@@ -271,12 +287,36 @@ public class Builders {
             return this;
         }
 
+        NodeBuilder setSysprop(String key, String value) {
+            if (sysprops == null) {
+                sysprops = new HashMap<>();
+            }
+            sysprops.put(key, value);
+            return this;
+        }
+
+        NodeBuilder setMetric(String key, Double value) {
+            if (metrics == null) {
+                metrics = new HashMap<>();
+            }
+            metrics.put(key, value);
+            return this;
+        }
+
         Integer getCoreCount() {
             return coreCount;
         }
 
         Long getFreeDiskGB() {
             return freeDiskGB;
+        }
+
+        Map<String, String> getSysprops() {
+            return sysprops;
+        }
+
+        Map<String, Double> getMetrics() {
+            return metrics;
         }
 
         Node build() {
