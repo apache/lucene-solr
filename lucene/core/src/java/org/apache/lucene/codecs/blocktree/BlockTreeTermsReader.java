@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -101,8 +100,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** Metadata is written to its own file. */
   public static final int VERSION_META_FILE = 6;
 
+  /** Input /Output is changed to little endian. */
+  public static final int VERSION_LITTLE_ENDIAN = 7;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_META_FILE;
+  public static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -170,8 +172,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             indexMetaIn = termsMetaIn = metaIn;
             postingsReader.init(metaIn, state);
           } else {
-            seekDir(termsIn);
-            seekDir(indexIn);
+            seekDir(termsIn, version);
+            seekDir(indexIn, version);
             indexMetaIn = indexIn;
             termsMetaIn = termsIn;
           }
@@ -222,8 +224,13 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             }
           }
           if (version >= VERSION_META_FILE) {
-            indexLength = EndiannessReverserUtil.readLong(metaIn);
-            termsLength = EndiannessReverserUtil.readLong(metaIn);
+            if (version < VERSION_LITTLE_ENDIAN) {
+              indexLength = Long.reverseBytes(metaIn.readLong());
+              termsLength = Long.reverseBytes(metaIn.readLong());
+            } else {
+              indexLength = metaIn.readLong();
+              termsLength = metaIn.readLong();
+            }
           }
         } catch (Throwable exception) {
           priorE = exception;
@@ -271,9 +278,12 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Seek {@code input} to the directory offset. */
-  private static void seekDir(IndexInput input) throws IOException {
+  private static void seekDir(IndexInput input, int version) throws IOException {
     input.seek(input.length() - CodecUtil.footerLength() - 8);
-    long offset = EndiannessReverserUtil.readLong(input);
+    long offset = input.readLong();
+    if (version < VERSION_LITTLE_ENDIAN) {
+      offset = Long.reverseBytes(offset);
+    }
     input.seek(offset);
   }
 
