@@ -42,7 +42,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -54,6 +53,7 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_LITTLE_ENDIAN;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.META_VERSION_START;
@@ -486,7 +486,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       // average number of chars per term
       final float[] charsPerTerm = new float[fieldNums.length];
       for (int i = 0; i < charsPerTerm.length; ++i) {
-        charsPerTerm[i] = Float.intBitsToFloat(EndiannessReverserUtil.readInt(vectorsStream));
+        if (version < VERSION_LITTLE_ENDIAN) {
+          charsPerTerm[i] = Float.intBitsToFloat(Integer.reverseBytes(vectorsStream.readInt()));
+        } else {
+          charsPerTerm[i] = Float.intBitsToFloat(vectorsStream.readInt());
+        }
       }
       startOffsets = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
       lengths = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);

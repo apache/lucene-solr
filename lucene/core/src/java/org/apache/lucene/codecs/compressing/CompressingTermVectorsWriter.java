@@ -40,7 +40,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -71,7 +70,9 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  static final int VERSION_CURRENT = VERSION_META;
+  /** DataInput / DataOutput move to little endian */
+  static final int VERSION_LITTLE_ENDIAN = 4;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
   static final int META_VERSION_START = 0;
 
   static final int PACKED_BLOCK_SIZE = 64;
@@ -588,7 +589,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
     // start offsets
     for (int i = 0; i < fieldNums.length; ++i) {
-      EndiannessReverserUtil.writeInt(vectorsStream, Float.floatToRawIntBits(charsPerTerm[i]));
+      vectorsStream.writeInt(Float.floatToRawIntBits(charsPerTerm[i]));
     }
 
     writer.reset(vectorsStream);

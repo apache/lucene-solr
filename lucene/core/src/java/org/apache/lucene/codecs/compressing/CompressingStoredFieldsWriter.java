@@ -77,7 +77,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  /** DataInput / DataOutput move to little eindian */
+  /** DataInput / DataOutput move to little endian */
   static final int VERSION_LITTLE_ENDIAN = 4;
   static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
   static final int META_VERSION_START = 0;
