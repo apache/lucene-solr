@@ -6,7 +6,6 @@ Prior to version 9, changes were in Solr's CHANGES.txt
 
 Improvements
 ----------------------
-
 * SOLR-14972: Change default port of prometheus exporter to 8989 
   because it clashed with default embedded zookeeper port (janhoy)
 
