@@ -108,7 +108,6 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
         long totCount = 0;
         final HashSet<String> actual = new HashSet<>();
         for (Slice slice : slices) {
-            if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
             long lastReplicaCount = -1;
             for (Replica replica : slice.getReplicas()) {
                 SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
@@ -128,6 +127,7 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
                 }
                 lastReplicaCount = numFound;
             }
+            if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
             totCount += lastReplicaCount;
         }
 
@@ -182,11 +182,9 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
                             if (ursp.getStatus() == 0) {
                                 model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
                                 docsIndexed.incrementAndGet();
-                            } else {
-
                             }
                         } catch (Exception e) {
-                            assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting requests."));
+                            assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting updates."));
                             failures.incrementAndGet();
                             failed.put(docId, 1L);
                         }
@@ -245,8 +243,13 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
                 if (!attempted.containsKey(id)) {
                     indexedAndAttempted.add(id);
                 }
+                if (attempted.containsKey(id)) {
+                    attempted.remove(id);
+                }
             }
-            log.error("Outersection with failed: " + indexedAndInFailed + ", outersection with model: " + indexedNotInModel);
+
+            log.error("Num docs queryable: " + numDocs + ", num docs indexed without failure: " + model.size() +
+                    ", num docs failed but indexed: " + indexedAndInFailed.size() + ", num docs failed: " + attempted.size());
         }
 
         assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
@@ -299,7 +302,7 @@ public class UpdateLogDisabledTest extends SolrCloudTestCase {
 
             fail("Update request should have failed with exception");
         } catch (Exception e) {
-            assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting requests."));
+            assertTrue(e.getMessage().contains("The core associated with this request is currently rejecting updates."));
         } finally {
             if (core != null) {
                 core.close();

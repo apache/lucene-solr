@@ -207,7 +207,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-
     assert TestInjection.injectFailUpdateRequests();
 
     setupRequest(cmd);
@@ -934,8 +933,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   void setupRequest(UpdateCommand cmd) {
-    super.failRequestIfCoreIsInRejectingState(cmd);
-
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
   }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,23 +49,23 @@ public abstract class UpdateRequestProcessor implements Closeable {
   }
 
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    failRequestIfCoreIsInRejectingState(cmd);
+    failRequestIfCoreIsInRejectingState(cmd.getReq());
     if (next != null) next.processAdd(cmd);
   }
 
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    failRequestIfCoreIsInRejectingState(cmd);
+    failRequestIfCoreIsInRejectingState(cmd.getReq());
     if (next != null) next.processDelete(cmd);
   }
 
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    failRequestIfCoreIsInRejectingState(cmd);
+    failRequestIfCoreIsInRejectingState(cmd.getReq());
     if (next != null) next.processMergeIndexes(cmd);
   }
 
   public void processCommit(CommitUpdateCommand cmd) throws IOException
   {
-    failRequestIfCoreIsInRejectingState(cmd);
+    failRequestIfCoreIsInRejectingState(cmd.getReq());
     if (next != null) next.processCommit(cmd);
   }
 
@@ -73,7 +74,7 @@ public abstract class UpdateRequestProcessor implements Closeable {
    */
   public void processRollback(RollbackUpdateCommand cmd) throws IOException
   {
-    failRequestIfCoreIsInRejectingState(cmd);
+    failRequestIfCoreIsInRejectingState(cmd.getReq());
     if (next != null) next.processRollback(cmd);
   }
 
@@ -95,13 +96,13 @@ public abstract class UpdateRequestProcessor implements Closeable {
     }
   }
 
-  protected void failRequestIfCoreIsInRejectingState(UpdateCommand cmd) throws SolrException {
-    if (cmd.getReq() != null &&
-            cmd.getReq().getCore() != null &&
-            cmd.getReq().getCore().getUpdateHandler() != null &&
-            cmd.getReq().getCore().getUpdateHandler().isRejectingUpdates()) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "The core associated with this request is"
-              + " currently rejecting requests.");
+  static public void failRequestIfCoreIsInRejectingState(SolrQueryRequest request) throws SolrException {
+    if (request != null &&
+            request.getCore() != null &&
+            request.getCore().getUpdateHandler() != null &&
+            request.getCore().getUpdateHandler().isRejectingUpdates()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The core associated with this request is"
+              + " currently rejecting updates. Core: " + request.getCore().getName());
     }
   }
 
