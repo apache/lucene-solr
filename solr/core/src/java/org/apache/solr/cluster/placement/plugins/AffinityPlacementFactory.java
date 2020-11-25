@@ -140,6 +140,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
   /**
+   * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
+   * Set to 0 or less to disable.
+   */
+  public static final String MINIMAL_FREE_DISK_GB = "minimalFreeDiskGB";
+
+  /**
+   * Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless
+   * of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free
+   * disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this
+   * amount of free space).
+   */
+  public static final String PRIORITIZED_FREE_DISK_GB = "prioritizedFreeDiskGB";
+
+  /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow the factory to do one
    * time costly operations if needed, and to only have to instantiate a default constructor class by name, rather than
    * having to call a constructor with more parameters (if we were to instantiate the plugin class directly without going
@@ -150,9 +164,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
   @Override
   public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-    final long minimalFreeDiskGB = config.getLongConfig("minimalFreeDiskGB", 20L);
-    final long deprioritizedFreeDiskGB = config.getLongConfig("deprioritizedFreeDiskGB", 100L);
-    return new AffinityPlacementPlugin(minimalFreeDiskGB, deprioritizedFreeDiskGB);
+    final long minimalFreeDiskGB = config.getLongConfig(MINIMAL_FREE_DISK_GB, 20L);
+    final long prioritizedFreeDiskGB = config.getLongConfig(PRIORITIZED_FREE_DISK_GB, 100L);
+    return new AffinityPlacementPlugin(minimalFreeDiskGB, prioritizedFreeDiskGB);
   }
 
   /**
@@ -161,28 +175,18 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    */
   static class AffinityPlacementPlugin implements PlacementPlugin {
 
-    /**
-     * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
-     * Set to 0 or less to disable.
-     */
     private final long minimalFreeDiskGB;
 
-    /**
-     * Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless
-     * of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free
-     * disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this
-     * amount of free space).
-     */
-    private final long deprioritizedFreeDiskGB;
+    private final long prioritizedFreeDiskGB;
 
     private Random random = new Random();
 
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
      */
-    private AffinityPlacementPlugin(long minimalFreeDiskGB, long deprioritizedFreeDiskGB) {
+    private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
-      this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
+      this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
     }
 
     @VisibleForTesting
@@ -415,7 +419,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
         azByExistingReplicas.put(azToNumReplicas.get(e.getKey()), new AzWithNodes(e.getKey(), e.getValue()));
       }
 
-      CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, coresOnNodes, deprioritizedFreeDiskGB);
+      CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
       // Now we have for each AZ on which we might have a chance of placing a replica, the list of candidate nodes for replicas
       // (candidate: does not already have a replica of this shard and is in the corresponding AZ).
@@ -488,7 +492,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
     static class CoresAndDiskComparator implements Comparator<Node> {
       private final AttributeValues attrValues;
       private final Map<Node, Integer> coresOnNodes;
-      private final long deprioritizedFreeDiskGB;
+      private final long prioritizedFreeDiskGB;
 
 
       /**
@@ -498,17 +502,17 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
        * attrValues corresponding to the number of cores per node are the initial values, but we want to compare the actual
        * value taking into account placement decisions already made during the current execution of the placement plugin.
        */
-      CoresAndDiskComparator(AttributeValues attrValues, Map<Node, Integer> coresOnNodes, long deprioritizedFreeDiskGB) {
+      CoresAndDiskComparator(AttributeValues attrValues, Map<Node, Integer> coresOnNodes, long prioritizedFreeDiskGB) {
         this.attrValues = attrValues;
         this.coresOnNodes = coresOnNodes;
-        this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
+        this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       }
 
       @Override
       public int compare(Node a, Node b) {
         // Note all nodes do have free disk defined. This has been verified earlier.
-        boolean aHasLowFreeSpace = attrValues.getFreeDisk(a).get() < deprioritizedFreeDiskGB;
-        boolean bHasLowFreeSpace = attrValues.getFreeDisk(b).get() < deprioritizedFreeDiskGB;
+        boolean aHasLowFreeSpace = attrValues.getFreeDisk(a).get() < prioritizedFreeDiskGB;
+        boolean bHasLowFreeSpace = attrValues.getFreeDisk(b).get() < prioritizedFreeDiskGB;
         if (aHasLowFreeSpace != bHasLowFreeSpace) {
           // A node with low free space should be considered > node with high free space since it needs to come later in sort order
           return Boolean.compare(aHasLowFreeSpace, bHasLowFreeSpace);

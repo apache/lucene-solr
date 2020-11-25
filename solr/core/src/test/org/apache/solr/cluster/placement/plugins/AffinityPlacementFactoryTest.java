@@ -142,12 +142,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
     // 2 shards, 6 replicas
     assertEquals(12, pp.getReplicaPlacements().size());
-//        List<ReplicaPlacement> placements = new ArrayList<>(pp.getReplicaPlacements());
-//        Collections.sort(placements, Comparator
-//            .comparing((ReplicaPlacement p) -> p.getNode().getName())
-//            .thenComparing((ReplicaPlacement p) -> p.getShardName())
-//            .thenComparing((ReplicaPlacement p) -> p.getReplicaType())
-//        );
     // shard -> AZ -> replica count
     Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
@@ -237,6 +231,46 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       });
     });
 
+  }
+
+  @Test
+  public void testFreeDiskConstraints() throws Exception {
+    String collectionName = "testCollection";
+    int NUM_NODES = 3;
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
+    Node smallNode = null;
+    for (int i = 0; i < NUM_NODES; i++) {
+      Builders.NodeBuilder nodeBuilder = clusterBuilder.getNodeBuilders().get(i);
+      nodeBuilder.setCoreCount(0);
+      if (i == 0) {
+        // default minimalFreeDiskGB == 20
+        nodeBuilder.setFreeDiskGB(1L);
+        smallNode = nodeBuilder.build();
+      } else {
+        nodeBuilder.setFreeDiskGB(100L);
+      }
+    }
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    Cluster cluster = clusterBuilder.build();
+
+    SolrCollection solrCollection = cluster.getCollection(collectionName);
+
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
+        StreamSupport.stream(solrCollection.shards().spliterator(), false)
+            .map(Shard::getShardName).collect(Collectors.toSet()),
+        cluster.getLiveNodes(), 2, 0, 2);
+
+    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
+    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    assertEquals(8, pp.getReplicaPlacements().size());
+    for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
+      assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+    }
   }
 
   @Test
