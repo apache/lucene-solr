@@ -111,6 +111,9 @@ Bug Fixes
   matches the dynamic rule. The copyFields are rebuilt with replace-field and replace-field-type, if required
   (Andrew Shumway, Munendra S N)
 
+* SOLR-12539: Handle parsing of values for 'other', 'include', and 'excludeTags' in JSON facets when specified as
+  comma-separated values with extra spaces (hossman, Munendra S N)
+
 Other Changes
 ---------------------
 
