@@ -38,7 +38,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -78,7 +77,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int VERSION_OFFHEAP_INDEX = 2;
   /** Version where all metadata were moved to the meta file. */
   static final int VERSION_META = 3;
-  static final int VERSION_CURRENT = VERSION_META;
+  /** DataInput / DataOutput move to little eindian */
+  static final int VERSION_LITTLE_ENDIAN = 4;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
   static final int META_VERSION_START = 0;
 
   private final String segment;
@@ -358,11 +359,13 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       out.writeByte((byte) (0x80 | (1 + intVal)));
     } else if ((floatBits >>> 31) == 0) {
       // other positive floats: 4 bytes
-      EndiannessReverserUtil.writeInt(out, floatBits);
+      out.writeByte((byte)(floatBits >> 24));
+      out.writeShort((short)(floatBits >>> 8));
+      out.writeByte((byte)floatBits);
     } else {
       // other negative float: 5 bytes
       out.writeByte((byte) 0xFF);
-      EndiannessReverserUtil.writeInt(out, floatBits);
+      out.writeInt(floatBits);
     }
   }
   
@@ -397,14 +400,17 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     } else if (d == (float) d) {
       // d has an accurate float representation: 5 bytes
       out.writeByte((byte) 0xFE);
-      EndiannessReverserUtil.writeInt(out, Float.floatToIntBits((float) d));
+      out.writeInt(Float.floatToIntBits((float) d));
     } else if ((doubleBits >>> 63) == 0) {
       // other positive doubles: 8 bytes
-      EndiannessReverserUtil.writeLong(out, doubleBits);
+      out.writeByte((byte)(doubleBits >> 56));
+      out.writeInt((int)(doubleBits >>> 24));
+      out.writeShort((short)(doubleBits >>> 8));
+      out.writeByte((byte)(doubleBits));
     } else {
       // other negative doubles: 9 bytes
       out.writeByte((byte) 0xFF);
-      EndiannessReverserUtil.writeLong(out, doubleBits);
+      out.writeLong(doubleBits);
     }
   }
 

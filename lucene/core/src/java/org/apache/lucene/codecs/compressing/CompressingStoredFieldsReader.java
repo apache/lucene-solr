@@ -37,6 +37,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_LITTLE_ENDIAN;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
@@ -61,7 +62,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -237,7 +237,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
   }
 
-  private static void readField(DataInput in, StoredFieldVisitor visitor, FieldInfo info, int bits) throws IOException {
+  private static void readField(DataInput in, StoredFieldVisitor visitor, FieldInfo info, int bits, int version) throws IOException {
     switch (bits & TYPE_MASK) {
       case BYTE_ARR:
         int length = in.readVInt();
@@ -252,20 +252,20 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         visitor.intField(info, in.readZInt());
         break;
       case NUMERIC_FLOAT:
-        visitor.floatField(info, readZFloat(in));
+        visitor.floatField(info, readZFloat(in, version));
         break;
       case NUMERIC_LONG:
         visitor.longField(info, readTLong(in));
         break;
       case NUMERIC_DOUBLE:
-        visitor.doubleField(info, readZDouble(in));
+        visitor.doubleField(info, readZDouble(in, version));
         break;
       default:
         throw new AssertionError("Unknown type flag: " + Integer.toHexString(bits));
     }
   }
 
-  private static void skipField(DataInput in, int bits) throws IOException {
+  private static void skipField(DataInput in, int bits, int version) throws IOException {
     switch (bits & TYPE_MASK) {
       case BYTE_ARR:
       case STRING:
@@ -276,13 +276,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         in.readZInt();
         break;
       case NUMERIC_FLOAT:
-        readZFloat(in);
+        readZFloat(in, version);
         break;
       case NUMERIC_LONG:
         readTLong(in);
         break;
       case NUMERIC_DOUBLE:
-        readZDouble(in);
+        readZDouble(in, version);
         break;
       default:
         throw new AssertionError("Unknown type flag: " + Integer.toHexString(bits));
@@ -293,17 +293,42 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
    * Reads a float in a variable-length format.  Reads between one and
    * five bytes. Small integral values typically take fewer bytes.
    */
-  static float readZFloat(DataInput in) throws IOException {
-    int b = in.readByte() & 0xFF;
+  static float readZFloat(DataInput in, int version) throws IOException {
+    if (version < VERSION_LITTLE_ENDIAN) {
+      return readLegacyZFloat(in);
+    } else {
+      return readZFloat(in);
+    }
+  }
+
+  /** common way to read ZFloat */
+  private static float readZFloat(DataInput in) throws IOException {
+    final int b = in.readByte() & 0xFF;
     if (b == 0xFF) {
       // negative value
-      return Float.intBitsToFloat(EndiannessReverserUtil.readInt(in));
+      return Float.intBitsToFloat(in.readInt());
     } else if ((b & 0x80) != 0) {
       // small integer [-1..125]
       return (b & 0x7f) - 1;
     } else {
       // positive float
-      int bits = b << 24 | ((EndiannessReverserUtil.readShort(in) & 0xFFFF) << 8) | (in.readByte() & 0xFF);
+      final int bits = b << 24 | ((in.readShort() & 0xFFFF) << 8) | (in.readByte() & 0xFF);
+      return Float.intBitsToFloat(bits);
+    }
+  }
+
+  /** Legacy way to read ZFloat when stored as Big Endian */
+  private static float readLegacyZFloat(DataInput in) throws IOException {
+    final int b = in.readByte() & 0xFF;
+    if (b == 0xFF) {
+      // negative value
+      return Float.intBitsToFloat(Integer.reverseBytes(in.readInt()));
+    } else if ((b & 0x80) != 0) {
+      // small integer [-1..125]
+      return (b & 0x7f) - 1;
+    } else {
+      // positive float
+      final int bits = b << 24 | ((Short.reverseBytes(in.readShort()) & 0xFFFF) << 8) | (in.readByte() & 0xFF);
       return Float.intBitsToFloat(bits);
     }
   }
@@ -312,21 +337,50 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
    * Reads a double in a variable-length format.  Reads between one and
    * nine bytes. Small integral values typically take fewer bytes.
    */
-  static double readZDouble(DataInput in) throws IOException {
-    int b = in.readByte() & 0xFF;
+  static double readZDouble(DataInput in, int version) throws IOException {
+    if (version < VERSION_LITTLE_ENDIAN) {
+      return readLegacyZDouble(in);
+    } else {
+      return readZDouble(in);
+    }
+  }
+
+  /** common way to read ZDouble */
+  private static double readZDouble(DataInput in) throws IOException {
+    final int b = in.readByte() & 0xFF;
     if (b == 0xFF) {
       // negative value
-      return Double.longBitsToDouble(EndiannessReverserUtil.readLong(in));
+      return Double.longBitsToDouble(in.readLong());
     } else if (b == 0xFE) {
       // float
-      return Float.intBitsToFloat(EndiannessReverserUtil.readInt(in));
+      return Float.intBitsToFloat(in.readInt());
     } else if ((b & 0x80) != 0) {
       // small integer [-1..124]
       return (b & 0x7f) - 1;
     } else {
       // positive double
-      long bits = ((long) b) << 56 | ((EndiannessReverserUtil.readInt(in) & 0xFFFFFFFFL) << 24) |
-              ((EndiannessReverserUtil.readShort(in) & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+      final long bits = ((long) b) << 56 | ((in.readInt() & 0xFFFFFFFFL) << 24) |
+              ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+      return Double.longBitsToDouble(bits);
+    }
+  }
+
+  /** Legacy way to read ZDouble when stored as Big Endian */
+  private static double readLegacyZDouble(DataInput in) throws IOException {
+    final int b = in.readByte() & 0xFF;
+    if (b == 0xFF) {
+      // negative value
+      return Double.longBitsToDouble(Long.reverseBytes(in.readLong()));
+    } else if (b == 0xFE) {
+      // float
+      return Float.intBitsToFloat(Integer.reverseBytes(in.readInt()));
+    } else if ((b & 0x80) != 0) {
+      // small integer [-1..124]
+      return (b & 0x7f) - 1;
+    } else {
+      // positive double
+      final long bits = ((long) b) << 56 | ((Integer.reverseBytes(in.readInt()) & 0xFFFFFFFFL) << 24) |
+              ((Short.reverseBytes(in.readShort()) & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
       return Double.longBitsToDouble(bits);
     }
   }
@@ -640,13 +694,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
       switch(visitor.needsField(fieldInfo)) {
         case YES:
-          readField(doc.in, visitor, fieldInfo, bits);
+          readField(doc.in, visitor, fieldInfo, bits, version);
           break;
         case NO:
           if (fieldIDX == doc.numStoredFields - 1) {// don't skipField on last field value; treat like STOP
             return;
           }
-          skipField(doc.in, bits);
+          skipField(doc.in, bits, version);
           break;
         case STOP:
           return;

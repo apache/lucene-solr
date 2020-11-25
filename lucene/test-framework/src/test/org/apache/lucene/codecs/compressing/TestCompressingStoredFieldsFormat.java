@@ -108,7 +108,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       float f = (float) i;
       CompressingStoredFieldsWriter.writeZFloat(out, f);
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = CompressingStoredFieldsReader.readZFloat(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
 
@@ -133,7 +133,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     for (float f : special) {
       CompressingStoredFieldsWriter.writeZFloat(out, f);
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = CompressingStoredFieldsReader.readZFloat(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
       out.reset(buffer);
@@ -146,7 +146,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       CompressingStoredFieldsWriter.writeZFloat(out, f);
       assertTrue("length=" + out.getPosition() + ", f=" + f, out.getPosition() <= ((Float.floatToIntBits(f) >>> 31) == 1 ? 5 : 4));
       in.reset(buffer, 0, out.getPosition());
-      float g = CompressingStoredFieldsReader.readZFloat(in);
+      float g = CompressingStoredFieldsReader.readZFloat(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(g));
       out.reset(buffer);
@@ -163,7 +163,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       double x = (double) i;
       CompressingStoredFieldsWriter.writeZDouble(out, x);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = CompressingStoredFieldsReader.readZDouble(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
 
@@ -188,7 +188,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     for (double x : special) {
       CompressingStoredFieldsWriter.writeZDouble(out, x);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = CompressingStoredFieldsReader.readZDouble(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
@@ -201,7 +201,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       CompressingStoredFieldsWriter.writeZDouble(out, x);
       assertTrue("length=" + out.getPosition() + ", d=" + x, out.getPosition() <= (x < 0 ? 9 : 8));
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = CompressingStoredFieldsReader.readZDouble(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
@@ -213,7 +213,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       CompressingStoredFieldsWriter.writeZDouble(out, x);
       assertTrue("length=" + out.getPosition() + ", d=" + x, out.getPosition() <= 5);
       in.reset(buffer, 0, out.getPosition());
-      double y = CompressingStoredFieldsReader.readZDouble(in);
+      double y = CompressingStoredFieldsReader.readZDouble(in, CompressingStoredFieldsWriter.VERSION_CURRENT);
       assertTrue(in.eof());
       assertEquals(Double.doubleToLongBits(x), Double.doubleToLongBits(y));
       out.reset(buffer);
