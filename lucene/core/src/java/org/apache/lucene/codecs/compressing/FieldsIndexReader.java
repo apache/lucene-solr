@@ -17,6 +17,7 @@
 package org.apache.lucene.codecs.compressing;
 
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_LITTLE_ENDIAN;
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_START;
 
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
@@ -48,26 +48,39 @@ final class FieldsIndexReader extends FieldsIndex {
   private final long maxPointer;
 
   FieldsIndexReader(Directory dir, String name, String suffix, String extension, String codecName, byte[] id, IndexInput metaIn) throws IOException {
-    maxDoc = EndiannessReverserUtil.readInt(metaIn);
-    blockShift = EndiannessReverserUtil.readInt(metaIn);
-    numChunks = EndiannessReverserUtil.readInt(metaIn);
-    docsStartPointer = EndiannessReverserUtil.readLong(metaIn);
-    docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-    docsEndPointer = startPointersStartPointer = EndiannessReverserUtil.readLong(metaIn);
-    startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-    startPointersEndPointer = EndiannessReverserUtil.readLong(metaIn);
-    maxPointer = EndiannessReverserUtil.readLong(metaIn);
-
+    int version;
     indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extension), IOContext.READ);
     boolean success = false;
     try {
-      CodecUtil.checkIndexHeader(indexInput, codecName + "Idx", VERSION_START, VERSION_CURRENT, id, suffix);
+      version = CodecUtil.checkIndexHeader(indexInput, codecName + "Idx", VERSION_START, VERSION_CURRENT, id, suffix);
       CodecUtil.retrieveChecksum(indexInput);
       success = true;
     } finally {
       if (success == false) {
         indexInput.close();
       }
+    }
+    // Version is in a different file?
+    if (version < VERSION_LITTLE_ENDIAN) {
+      maxDoc = Integer.reverseBytes(metaIn.readInt());
+      blockShift = Integer.reverseBytes(metaIn.readInt());
+      numChunks = Integer.reverseBytes(metaIn.readInt());
+      docsStartPointer = Long.reverseBytes(metaIn.readLong());
+      docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+      docsEndPointer = startPointersStartPointer = Long.reverseBytes(metaIn.readLong());
+      startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+      startPointersEndPointer = Long.reverseBytes(metaIn.readLong());
+      maxPointer = Long.reverseBytes(metaIn.readLong());
+    } else {
+      maxDoc = metaIn.readInt();
+      blockShift = metaIn.readInt();
+      numChunks = metaIn.readInt();
+      docsStartPointer = metaIn.readLong();
+      docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+      docsEndPointer = startPointersStartPointer = metaIn.readLong();
+      startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+      startPointersEndPointer = metaIn.readLong();
+      maxPointer = metaIn.readLong();
     }
     final RandomAccessInput docsSlice = indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
     final RandomAccessInput startPointersSlice = indexInput.randomAccessSlice(startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);

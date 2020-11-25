@@ -28,7 +28,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -48,7 +47,9 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
 public final class FieldsIndexWriter implements Closeable {
 
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = 0;
+  /** DataInput / DataOutput move to little endian */
+  static final int VERSION_LITTLE_ENDIAN = 1;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   private final Directory dir;
   private final String name;
@@ -108,10 +109,10 @@ public final class FieldsIndexWriter implements Closeable {
     try (IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
       CodecUtil.writeIndexHeader(dataOut, codecName + "Idx", VERSION_CURRENT, id, suffix);
 
-      EndiannessReverserUtil.writeInt(metaOut, numDocs);
-      EndiannessReverserUtil.writeInt(metaOut, blockShift);
-      EndiannessReverserUtil.writeInt(metaOut, totalChunks + 1);
-      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
+      metaOut.writeInt(numDocs);
+      metaOut.writeInt(blockShift);
+      metaOut.writeInt(totalChunks + 1);
+      metaOut.writeLong(dataOut.getFilePointer());
 
       try (ChecksumIndexInput docsIn = dir.openChecksumInput(docsOut.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(docsIn, codecName + "Docs", VERSION_CURRENT, VERSION_CURRENT);
@@ -137,7 +138,7 @@ public final class FieldsIndexWriter implements Closeable {
       dir.deleteFile(docsOut.getName());
       docsOut = null;
 
-      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
+      metaOut.writeLong(dataOut.getFilePointer());
       try (ChecksumIndexInput filePointersIn = dir.openChecksumInput(filePointersOut.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(filePointersIn, codecName + "FilePointers", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
@@ -162,8 +163,8 @@ public final class FieldsIndexWriter implements Closeable {
       dir.deleteFile(filePointersOut.getName());
       filePointersOut = null;
 
-      EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
-      EndiannessReverserUtil.writeLong(metaOut, maxPointer);
+      metaOut.writeLong(dataOut.getFilePointer());
+      metaOut.writeLong(maxPointer);
       
       CodecUtil.writeFooter(dataOut);
     }
