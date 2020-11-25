@@ -936,12 +936,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       // - a JSON list of items (conveniently the default toString of EnumSet),
       // - a single quoted string containing the comma separated list
       val = val.replaceAll("\\[|\\]","'");
-
-      // HACK: work around SOLR-12539...
-      //
-      // when sending a single string containing a comma separated list of values, JSON Facets 'other'
-      // parsing can't handle any leading (or trailing?) whitespace
-      val = val.replaceAll("\\s","");
     }
     return ", other:" + val;
   }
