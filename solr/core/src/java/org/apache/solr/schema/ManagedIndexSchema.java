@@ -935,8 +935,9 @@ public final class ManagedIndexSchema extends IndexSchema {
   private void rebuildCopyFields(List<CopyField> oldCopyFields) {
     if (oldCopyFields.size() > 0) {
       for (CopyField copyField : oldCopyFields) {
-        SchemaField source = fields.get(copyField.getSource().getName());
-        SchemaField destination = fields.get(copyField.getDestination().getName());
+        // source or destination either could be explicit field which matches dynamic rule
+        SchemaField source = getFieldOrNull(copyField.getSource().getName());
+        SchemaField destination = getFieldOrNull(copyField.getDestination().getName());
         registerExplicitSrcAndDestFields
             (copyField.getSource().getName(), copyField.getMaxChars(), destination, source);
       }
