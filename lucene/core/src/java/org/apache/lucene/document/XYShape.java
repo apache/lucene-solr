@@ -31,6 +31,7 @@ import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -132,7 +133,7 @@ public class XYShape {
       for (int i = 0; i < xyGeometries.length; i++) {
         builder.add(newGeometryQuery(field, queryRelation, xyGeometries[i]), BooleanClause.Occur.MUST);
       }
-      return builder.build();
+      return new ConstantScoreQuery(builder.build());
     }
     return new XYShapeQuery(field, queryRelation, xyGeometries);
   }
