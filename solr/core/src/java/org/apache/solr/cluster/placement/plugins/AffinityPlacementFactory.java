@@ -17,7 +17,9 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.*;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.Pair;
@@ -157,7 +159,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this plugin and details
    * on what the plugin does.
    */
-  static private class AffinityPlacementPlugin implements PlacementPlugin {
+  static class AffinityPlacementPlugin implements PlacementPlugin {
 
     /**
      * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -173,12 +175,19 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
      */
     private final long deprioritizedFreeDiskGB;
 
+    private Random random = new Random();
+
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
      */
     private AffinityPlacementPlugin(long minimalFreeDiskGB, long deprioritizedFreeDiskGB) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.deprioritizedFreeDiskGB = deprioritizedFreeDiskGB;
+    }
+
+    @VisibleForTesting
+    void setRandom(Random random) {
+      this.random = random;
     }
 
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
@@ -205,7 +214,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
       // All available zones of live nodes. Due to some nodes not being candidates for placement, and some existing replicas
       // being one availability zones that might be offline (i.e. their nodes are not live), this set might contain zones
       // on which it is impossible to place replicas. That's ok.
-      ImmutableSet<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
+      Set<String> availabilityZones = getZonesFromNodes(nodes, attrValues);
 
       // Build the replica placement decisions here
       Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
@@ -225,14 +234,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
       return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
     }
 
-    private ImmutableSet<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {
+    private Set<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {
       Set<String> azs = new HashSet<>();
 
       for (Node n : nodes) {
         azs.add(getNodeAZ(n, attrValues));
       }
 
-      return ImmutableSet.copyOf(azs);
+      return Collections.unmodifiableSet(azs);
     }
 
     /**
@@ -247,7 +256,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
     /**
      * This class captures an availability zone and the nodes that are legitimate targets for replica placement in that
-     * Availability Zone. Instances are used as values in a {@link TreeMap} in which the total number of already
+     * Availability Zone. Instances are used as values in a {@link java.util.TreeMap} in which the total number of already
      * existing replicas in the AZ is the key. This allows easily picking the set of nodes from which to select a node for
      * placement in order to balance the number of replicas per AZ. Picking one of the nodes from the set is done using
      * different criteria unrelated to the Availability Zone (picking the node is based on the {@link CoresAndDiskComparator}
@@ -280,7 +289,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
      */
     private Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
       EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes = new EnumMap<>(Replica.ReplicaType.class);
-      Map<Node, Integer> coresOnNodes = Maps.newHashMap();
+      Map<Node, Integer> coresOnNodes = new HashMap<>();
 
       for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
         replicaTypeToNodes.put(replicaType, new HashSet<>());
@@ -347,7 +356,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
      * </ol>
      */
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-    private void makePlacementDecisions(SolrCollection solrCollection, String shardName, ImmutableSet<String> availabilityZones,
+    private void makePlacementDecisions(SolrCollection solrCollection, String shardName, Set<String> availabilityZones,
                                         Replica.ReplicaType replicaType, int numReplicas, final AttributeValues attrValues,
                                         EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes, Map<Node, Integer> coresOnNodes,
                                         PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements) throws PlacementException {
@@ -356,7 +365,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
       // Count existing replicas per AZ. We count only instances the type of replica for which we need to do placement. This
       // can be changed in the loop below if we want to count all replicas for the shard.
-      Map<String, Integer> azToNumReplicas = Maps.newHashMap();
+      Map<String, Integer> azToNumReplicas = new HashMap<>();
       // Add all "interesting" AZ's, i.e. AZ's for which there's a chance we can do placement.
       for (String az : availabilityZones) {
         azToNumReplicas.put(az, 0);
@@ -391,7 +400,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
       // (or try to place) replicas on AZ's that have fewer replicas
 
       // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to placement candidates.
-      Map<String, List<Node>> nodesPerAz = Maps.newHashMap();
+      Map<String, List<Node>> nodesPerAz = new HashMap<>();
       for (Node node : candidateNodes) {
         String nodeAz = getNodeAZ(node, attrValues);
         List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
@@ -450,7 +459,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
           // unnecessary imbalance).
           // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
           // for placement, not always the same one due to some internal ordering.
-          Collections.shuffle(nodes, new Random());
+          Collections.shuffle(nodes, random);
 
           // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
           nodes.sort(coresAndDiskComparator);

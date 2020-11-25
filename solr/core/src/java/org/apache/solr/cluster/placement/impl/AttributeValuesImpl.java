@@ -34,7 +34,7 @@ public class AttributeValuesImpl implements AttributeValues {
     final Map<String, Map<Node, String>> syspropSnitchToNodeToValue;
     final Map<String, Map<Node, Double>> metricSnitchToNodeToValue;
 
-    AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
+    public AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
                         Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType,
                         Map<Node, Long> nodeToFreeDisk,
                         Map<Node, Long> nodeToTotalDisk,

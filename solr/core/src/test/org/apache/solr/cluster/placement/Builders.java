@@ -1,8 +1,8 @@
-package org.apache.solr.cluster.placement.impl;
+package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.*;
-import org.apache.solr.cluster.placement.AttributeFetcher;
-import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
+import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.common.util.Pair;
 
 import java.util.*;
@@ -20,11 +20,11 @@ public class Builders {
     return new CollectionBuilder(collectionName);
   }
 
-  static class ClusterBuilder {
+  public static class ClusterBuilder {
     private LinkedList<NodeBuilder> nodeBuilders = new LinkedList<>();
     private LinkedList<CollectionBuilder> collectionBuilders = new LinkedList<>();
 
-    ClusterBuilder initializeNodes(int countNodes) {
+    public ClusterBuilder initializeNodes(int countNodes) {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
         nodeBuilders.add(new NodeBuilder().setNodeName("node_" + n)); // Default name, can be changed
@@ -32,21 +32,21 @@ public class Builders {
       return this;
     }
 
-    LinkedList<NodeBuilder> getNodeBuilders() {
+    public LinkedList<NodeBuilder> getNodeBuilders() {
       return nodeBuilders;
     }
 
-    ClusterBuilder addCollection(CollectionBuilder collectionBuilder) {
+    public ClusterBuilder addCollection(CollectionBuilder collectionBuilder) {
       collectionBuilders.add(collectionBuilder);
       return this;
     }
 
-    Cluster build() {
+    public Cluster build() {
       // TODO if converting all tests to use builders change ClusterImpl ctor to use list of nodes
       return new ClusterAbstractionsForTest.ClusterImpl(new HashSet<>(buildLiveNodes()), buildClusterCollections());
     }
 
-    List<Node> buildLiveNodes() {
+    public List<Node> buildLiveNodes() {
       List<Node> liveNodes = new LinkedList<>();
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         liveNodes.add(nodeBuilder.build());
@@ -65,7 +65,7 @@ public class Builders {
       return clusterCollections;
     }
 
-    AttributeFetcher buildAttributeFetcher() {
+    public AttributeFetcher buildAttributeFetcher() {
       Map<Node, Integer> nodeToCoreCount = new HashMap<>();
       Map<Node, Long> nodeToFreeDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
@@ -103,17 +103,17 @@ public class Builders {
     }
   }
 
-  static class CollectionBuilder {
+  public static class CollectionBuilder {
     private final String collectionName;
     private LinkedList<ShardBuilder> shardBuilders = new LinkedList<>();
     private Map<String, String> customProperties = new HashMap<>();
 
 
-    private CollectionBuilder(String collectionName) {
+    public CollectionBuilder(String collectionName) {
       this.collectionName = collectionName;
     }
 
-    private CollectionBuilder addCustomProperty(String name, String value) {
+    public CollectionBuilder addCustomProperty(String name, String value) {
       customProperties.put(name, value);
       return this;
     }
@@ -123,7 +123,7 @@ public class Builders {
      * robin to the nodes. The shard leader is the first NRT replica of each shard (or first TLOG is no NRT).
      * Shard and replica configuration can be modified afterwards, the returned builder hierarchy is a convenient starting point.
      */
-    CollectionBuilder initializeShardsReplicas(int countShards, int countNrtReplicas, int countTlogReplicas,
+    public CollectionBuilder initializeShardsReplicas(int countShards, int countNrtReplicas, int countTlogReplicas,
                                                int countPullReplicas, List<NodeBuilder> nodes) {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
@@ -174,7 +174,7 @@ public class Builders {
       return this;
     }
 
-    SolrCollection build() {
+    public SolrCollection build() {
       ClusterAbstractionsForTest.SolrCollectionImpl solrCollection = new ClusterAbstractionsForTest.SolrCollectionImpl(collectionName, customProperties);
 
       final LinkedHashMap<String, Shard> shards = new LinkedHashMap<>();
@@ -189,27 +189,27 @@ public class Builders {
     }
   }
 
-  static class ShardBuilder {
+  public static class ShardBuilder {
     private String shardName;
     private LinkedList<ReplicaBuilder> replicaBuilders = new LinkedList<>();
     private ReplicaBuilder leaderReplicaBuilder;
 
-    ShardBuilder setShardName(String shardName) {
+    public ShardBuilder setShardName(String shardName) {
       this.shardName = shardName;
       return this;
     }
 
-    ShardBuilder setReplicaBuilders(LinkedList<ReplicaBuilder> replicaBuilders) {
+    public ShardBuilder setReplicaBuilders(LinkedList<ReplicaBuilder> replicaBuilders) {
       this.replicaBuilders = replicaBuilders;
       return this;
     }
 
-    ShardBuilder setLeader(ReplicaBuilder leaderReplicaBuilder) {
+    public ShardBuilder setLeader(ReplicaBuilder leaderReplicaBuilder) {
       this.leaderReplicaBuilder = leaderReplicaBuilder;
       return this;
     }
 
-    Shard build(SolrCollection collection) {
+    public Shard build(SolrCollection collection) {
       ClusterAbstractionsForTest.ShardImpl shard = new ClusterAbstractionsForTest.ShardImpl(shardName, collection, Shard.ShardState.ACTIVE);
 
       final LinkedHashMap<String, Replica> replicas = new LinkedHashMap<>();
@@ -229,66 +229,66 @@ public class Builders {
     }
   }
 
-  static class ReplicaBuilder {
+  public static class ReplicaBuilder {
     private String replicaName;
     private String coreName;
     private Replica.ReplicaType replicaType;
     private Replica.ReplicaState replicaState;
     private NodeBuilder replicaNode;
 
-    ReplicaBuilder setReplicaName(String replicaName) {
+    public ReplicaBuilder setReplicaName(String replicaName) {
       this.replicaName = replicaName;
       return this;
     }
 
-    ReplicaBuilder setCoreName(String coreName) {
+    public ReplicaBuilder setCoreName(String coreName) {
       this.coreName = coreName;
       return this;
     }
 
-    ReplicaBuilder setReplicaType(Replica.ReplicaType replicaType) {
+    public ReplicaBuilder setReplicaType(Replica.ReplicaType replicaType) {
       this.replicaType = replicaType;
       return this;
     }
 
-    ReplicaBuilder setReplicaState(Replica.ReplicaState replicaState) {
+    public ReplicaBuilder setReplicaState(Replica.ReplicaState replicaState) {
       this.replicaState = replicaState;
       return this;
     }
 
-    ReplicaBuilder setReplicaNode(NodeBuilder replicaNode) {
+    public ReplicaBuilder setReplicaNode(NodeBuilder replicaNode) {
       this.replicaNode = replicaNode;
       return this;
     }
 
-    Replica build(Shard shard) {
+    public Replica build(Shard shard) {
       return new ClusterAbstractionsForTest.ReplicaImpl(replicaName, coreName, shard, replicaType, replicaState, replicaNode.build());
     }
   }
 
-  static class NodeBuilder {
+  public static class NodeBuilder {
     private String nodeName = null;
     private Integer coreCount = null;
     private Long freeDiskGB = null;
     private Map<String, String> sysprops = null;
     private Map<String, Double> metrics = null;
 
-    NodeBuilder setNodeName(String nodeName) {
+    public NodeBuilder setNodeName(String nodeName) {
       this.nodeName = nodeName;
       return this;
     }
 
-    NodeBuilder setCoreCount(Integer coreCount) {
+    public NodeBuilder setCoreCount(Integer coreCount) {
       this.coreCount = coreCount;
       return this;
     }
 
-    NodeBuilder setFreeDiskGB(Long freeDiskGB) {
+    public NodeBuilder setFreeDiskGB(Long freeDiskGB) {
       this.freeDiskGB = freeDiskGB;
       return this;
     }
 
-    NodeBuilder setSysprop(String key, String value) {
+    public NodeBuilder setSysprop(String key, String value) {
       if (sysprops == null) {
         sysprops = new HashMap<>();
       }
@@ -297,7 +297,7 @@ public class Builders {
       return this;
     }
 
-    NodeBuilder setMetric(AttributeFetcher.NodeMetricRegistry registry, String key, Double value) {
+    public NodeBuilder setMetric(AttributeFetcher.NodeMetricRegistry registry, String key, Double value) {
       if (metrics == null) {
         metrics = new HashMap<>();
       }
@@ -306,23 +306,23 @@ public class Builders {
       return this;
     }
 
-    Integer getCoreCount() {
+    public Integer getCoreCount() {
       return coreCount;
     }
 
-    Long getFreeDiskGB() {
+    public Long getFreeDiskGB() {
       return freeDiskGB;
     }
 
-    Map<String, String> getSysprops() {
+    public Map<String, String> getSysprops() {
       return sysprops;
     }
 
-    Map<String, Double> getMetrics() {
+    public Map<String, Double> getMetrics() {
       return metrics;
     }
 
-    Node build() {
+    public Node build() {
       // It is ok to build a new instance each time, that instance does the right thing with equals() and hashCode()
       return new ClusterAbstractionsForTest.NodeImpl(nodeName);
     }

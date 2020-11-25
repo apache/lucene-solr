@@ -24,7 +24,7 @@ import org.apache.solr.cluster.placement.*;
 
 import java.util.Set;
 
-class PlacementPlanFactoryImpl implements PlacementPlanFactory {
+public class PlacementPlanFactoryImpl implements PlacementPlanFactory {
     @Override
     public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
         return new PlacementPlanImpl(request, replicaPlacements);

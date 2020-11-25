@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -42,7 +43,13 @@ public class RandomPlacementFactory implements PlacementPluginFactory {
     return new RandomPlacementPlugin();
   }
 
-  static private class RandomPlacementPlugin implements PlacementPlugin {
+  public static class RandomPlacementPlugin implements PlacementPlugin {
+    private Random random = new Random();
+
+    @VisibleForTesting
+    public void setRandom(Random random) {
+      this.random = random;
+    }
 
     public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
                                           PlacementPlanFactory placementPlanFactory) throws PlacementException {
@@ -61,7 +68,7 @@ public class RandomPlacementFactory implements PlacementPluginFactory {
       for (String shardName : request.getShardNames()) {
         // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
         ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
-        Collections.shuffle(nodesToAssign, new Random());
+        Collections.shuffle(nodesToAssign, random);
 
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
           placeForReplicaType(request.getCollection(), nodesToAssign, placementPlanFactory, replicaPlacements, shardName, request, rt);

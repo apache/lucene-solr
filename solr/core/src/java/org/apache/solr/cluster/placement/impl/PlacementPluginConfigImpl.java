@@ -112,7 +112,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
    *
    * <p>See configuration example and how-to in {@link AffinityPlacementFactory}.</p>
    */
-  static PlacementPluginConfig createConfigFromProperties(Map<String, Object> pluginConfig) {
+  public static PlacementPluginConfig createConfigFromProperties(Map<String, Object> pluginConfig) {
     final Map<String, String> stringConfigs = new HashMap<>();
     final Map<String, Long> longConfigs = new HashMap<>();
     final Map<String, Boolean> boolConfigs = new HashMap<>();

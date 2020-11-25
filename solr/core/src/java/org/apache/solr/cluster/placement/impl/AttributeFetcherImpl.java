@@ -218,11 +218,11 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         }
     }
 
-    static String getMetricSnitchTag(String metricName, NodeMetricRegistry registry) {
+    public static String getMetricSnitchTag(String metricName, NodeMetricRegistry registry) {
         return SolrClientNodeStateProvider.METRICS_PREFIX + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(registry), metricName);
     }
 
-    static String getSystemPropertySnitchTag(String name) {
+    public static String getSystemPropertySnitchTag(String name) {
         return ImplicitSnitch.SYSPROP + name;
     }
 }

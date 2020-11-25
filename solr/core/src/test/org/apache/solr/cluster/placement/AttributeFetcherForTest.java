@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl;
+package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.placement.AttributeFetcher;

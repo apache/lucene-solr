@@ -15,16 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl;
+package org.apache.solr.cluster.placement.plugins;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
-import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
-import org.junit.Assert;
+import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
+import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
+import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -40,7 +43,7 @@ import java.util.stream.StreamSupport;
 /**
  * Unit test for {@link AffinityPlacementFactory}
  */
-public class AffinityPlacementFactoryTest extends Assert {
+public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static PlacementPlugin plugin;
@@ -50,6 +53,7 @@ public class AffinityPlacementFactoryTest extends Assert {
     PlacementPluginConfig config = PlacementPluginConfigImpl.createConfigFromProperties(
         Map.of("minimalFreeDiskGB", 10L, "deprioritizedFreeDiskGB", 50L));
     plugin = new AffinityPlacementFactory().createPluginInstance(config);
+    ((AffinityPlacementFactory.AffinityPlacementPlugin) plugin).setRandom(random());
   }
 
   @Test
