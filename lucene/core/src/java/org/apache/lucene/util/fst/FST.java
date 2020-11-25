@@ -30,7 +30,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Accountable;
@@ -120,7 +119,9 @@ public final class FST<T> implements Accountable {
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
   private static final int VERSION_START = 6;
-  private static final int VERSION_CURRENT = 7;
+  private static final int VERSION_LITTLE_ENDIAN = 8;
+  private static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
+
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -149,6 +150,8 @@ public final class FST<T> implements Accountable {
   private long startNode = -1;
 
   public final Outputs<T> outputs;
+
+  private final int version;
 
   /** Represents a single arc. */
   public static final class Arc<T> {
@@ -404,6 +407,7 @@ public final class FST<T> implements Accountable {
     // the stop state w/ no arcs
     bytes.writeByte((byte) 0);
     emptyOutput = null;
+    this.version = VERSION_CURRENT;
   }
 
   private static final int DEFAULT_MAX_BLOCK_BITS = Constants.JRE_IS_64BIT ? 30 : 28;
@@ -422,7 +426,7 @@ public final class FST<T> implements Accountable {
 
     // NOTE: only reads formats VERSION_START up to VERSION_CURRENT; we don't have
     // back-compat promise for FSTs (they are experimental), but we are sometimes able to offer it
-    CodecUtil.checkHeader(metaIn, FILE_FORMAT_NAME, VERSION_START, VERSION_CURRENT);
+    this.version = CodecUtil.checkHeader(metaIn, FILE_FORMAT_NAME, VERSION_START, VERSION_CURRENT);
     if (metaIn.readByte() == 1) {
       // accepts empty string
       // 1 KB blocks:
@@ -581,7 +585,7 @@ public final class FST<T> implements Accountable {
       out.writeByte((byte) v);
     } else if (inputType == INPUT_TYPE.BYTE2) {
       assert v <= 65535: "v=" + v;
-      EndiannessReverserUtil.writeShort(out, (short) v);
+      out.writeShort((short) v);
     } else {
       out.writeVInt(v);
     }
@@ -595,7 +599,11 @@ public final class FST<T> implements Accountable {
       v = in.readByte() & 0xFF;
     } else if (inputType == INPUT_TYPE.BYTE2) {
       // Unsigned short:
-      v = EndiannessReverserUtil.readShort(in) & 0xFFFF;
+      if (version < VERSION_LITTLE_ENDIAN) {
+        v = Short.reverseBytes(in.readShort()) & 0xFFFF;
+      } else {
+        v = in.readShort() & 0xFFFF;
+      }
     } else { 
       v = in.readVInt();
     }
