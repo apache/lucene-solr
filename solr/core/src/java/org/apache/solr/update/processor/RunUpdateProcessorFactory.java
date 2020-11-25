@@ -63,13 +63,13 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
+      failRequestIfCoreIsInRejectingState(cmd.getReq());
 
       if (AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) {
         throw new SolrException
                 (SolrException.ErrorCode.BAD_REQUEST,
                         "RunUpdateProcessor has received an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
       }
-
       updateHandler.addDoc(cmd);
       super.processAdd(cmd);
       changesSinceCommit = true;
@@ -77,6 +77,8 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
     @Override
     public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+      failRequestIfCoreIsInRejectingState(cmd.getReq());
+
       if (cmd.isDeleteById()) {
         updateHandler.delete(cmd);
       } else {
@@ -88,12 +90,16 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
     @Override
     public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+      failRequestIfCoreIsInRejectingState(cmd.getReq());
+
       updateHandler.mergeIndexes(cmd);
       super.processMergeIndexes(cmd);
     }
 
     @Override
     public void processCommit(CommitUpdateCommand cmd) throws IOException {
+      failRequestIfCoreIsInRejectingState(cmd.getReq());
+
       updateHandler.commit(cmd);
       super.processCommit(cmd);
       if (!cmd.softCommit) {
@@ -107,6 +113,8 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
      */
     @Override
     public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+      failRequestIfCoreIsInRejectingState(cmd.getReq());
+
       updateHandler.rollback(cmd);
       super.processRollback(cmd);
       changesSinceCommit = false;

@@ -211,10 +211,12 @@ public abstract class UpdateHandler implements SolrInfoBean {
   }
 
   public void startRejectingUpdates() {
+    log.debug("Start rejecting updates for core " + core.getName());
     this.rejectingUpdates = true;
   }
 
   public void stopRejectingUpdates() {
+    log.debug("Stop rejecting updates for core " + core.getName());
     this.rejectingUpdates = false;
   }
 
