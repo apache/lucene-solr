@@ -371,19 +371,15 @@ final class DocumentsWriter implements Closeable, Accountable {
   private boolean preUpdate() throws IOException {
     ensureOpen();
     boolean hasEvents = false;
-
-    if (flushControl.anyStalledThreads() || (flushControl.numQueuedFlushes() > 0 && config.checkPendingFlushOnUpdate)) {
+    while (flushControl.anyStalledThreads() || (flushControl.numQueuedFlushes() > 0 && config.checkPendingFlushOnUpdate)) {
       // Help out flushing any queued DWPTs so we can un-stall:
-      do {
-        // Try pick up pending threads here if possible
-        DocumentsWriterPerThread flushingDWPT;
-        while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
-          // Don't push the delete here since the update could fail!
-          hasEvents |= doFlush(flushingDWPT);
-        }
-        
-        flushControl.waitIfStalled(); // block if stalled
-      } while (flushControl.numQueuedFlushes() != 0); // still queued DWPTs try help flushing
+      // Try pick up pending threads here if possible
+      DocumentsWriterPerThread flushingDWPT;
+      while ((flushingDWPT = flushControl.nextPendingFlush()) != null) {
+        // Don't push the delete here since the update could fail!
+        hasEvents |= doFlush(flushingDWPT);
+      }
+      flushControl.waitIfStalled(); // block if stalled
     }
     return hasEvents;
   }

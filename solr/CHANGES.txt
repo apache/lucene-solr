@@ -183,6 +183,8 @@ Improvements
 
 * SOLR-14977 : ContainerPlugins should be configurable with custom objects (noble, ab)
 
+* SOLR-15015 : Add interleaving algorithm parameter support in Learning To Rank (Alessandro Benedetti)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
