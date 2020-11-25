@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -388,8 +389,10 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
       return (List<String>)o;
     }
     if (o instanceof String) {
-      // TODO: SOLR-12539 handle spaces in b/w comma & value ie, should the values be trimmed before returning??
-      return StrUtils.splitSmart((String)o, ",", decode);
+      return StrUtils.splitSmart((String)o, ",", decode).stream()
+          .map(String::trim)
+          .filter(s -> !s.isEmpty())
+          .collect(Collectors.toList());
     }
 
     throw err("Expected list of string or comma separated string values for '" + paramName +
