@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
     "set-placement-plugin": {
       "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
       "minimalFreeDiskGB": 10,
-      "deprioritizedFreeDiskGB": 50
+      "prioritizedFreeDiskGB": 50
     }
   }' http://localhost:8983/api/cluster
  * </pre>
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  * "placement-plugin":{
  *     "class":"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
  *     "minimalFreeDiskGB":10,
- *     "deprioritizedFreeDiskGB":50}
+ *     "prioritizedFreeDiskGB":50}
  * </pre>
  *
  * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
