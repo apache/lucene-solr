@@ -75,6 +75,11 @@ public class MaxScoreCollectorTest extends SolrTestCase {
     public float score() throws IOException {
       return nextScore;
     }
+    
+    @Override
+    public float smoothingScore(int docId) throws IOException {
+      return 0;
+    }
 
     @Override
     public int docID() {
