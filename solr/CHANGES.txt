@@ -105,7 +105,11 @@ Bug Fixes
 
 * SOLR-15047: Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group (hossman)
 
- * SOLR-10860: Return proper error code for bad input in case of inplace updates (Tomas Eduardo Fernandez Lobbe, Munendra S N)
+* SOLR-10860: Return proper error code for bad input in case of inplace updates (Tomas Eduardo Fernandez Lobbe, Munendra S N)
+
+* SOLR-14950: Fix error in copyField regeneration when explicit source/destination is not present in schema but
+  matches the dynamic rule. The copyFields are rebuilt with replace-field and replace-field-type, if required
+  (Andrew Shumway, Munendra S N)
 
 Other Changes
 ---------------------
