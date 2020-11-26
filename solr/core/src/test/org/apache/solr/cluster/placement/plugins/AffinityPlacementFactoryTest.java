@@ -28,6 +28,7 @@ import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
+import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -48,10 +49,13 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   private static PlacementPlugin plugin;
 
+  private final static long MINIMAL_FREE_DISK_GB = 10L;
+  private final static long PRIORITIZED_FREE_DISK_GB = 50L;
+
   @BeforeClass
   public static void setupPlugin() {
     PlacementPluginConfig config = PlacementPluginConfigImpl.createConfigFromProperties(
-        Map.of("minimalFreeDiskGB", 10L, "prioritizedFreeDiskGB", 50L));
+        Map.of("minimalFreeDiskGB", MINIMAL_FREE_DISK_GB, "prioritizedFreeDiskGB", PRIORITIZED_FREE_DISK_GB));
     plugin = new AffinityPlacementFactory().createPluginInstance(config);
     ((AffinityPlacementFactory.AffinityPlacementPlugin) plugin).setRandom(random());
   }
@@ -76,8 +80,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(2);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
-    nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB(100L);
-    nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB(100L);
+    nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
 
@@ -106,6 +110,73 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals(1, pp.getReplicaPlacements().size());
     ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
     assertEquals(hasExistingCollection ? liveNodes.get(1) : liveNodes.get(0), rp.getNode());
+  }
+
+  /**
+   * Test not placing replicas on nodes low free disk unless no other option
+   */
+  @Test
+  public void testLowSpaceNode() throws Exception {
+    String collectionName = "testCollection";
+
+    final int LOW_SPACE_NODE_INDEX = 0;
+    final int NO_SPACE_NODE_INDEX = 1;
+
+
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(4);
+    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
+    nodeBuilders.get(LOW_SPACE_NODE_INDEX).setCoreCount(1).setFreeDiskGB(MINIMAL_FREE_DISK_GB + 1); // Low space
+    nodeBuilders.get(NO_SPACE_NODE_INDEX).setCoreCount(10).setFreeDiskGB(1L); // Really not enough space
+    nodeBuilders.get(2).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    nodeBuilders.get(3).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    // The collection to create (shards are defined but no replicas)
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(3, 0, 0, 0, List.of());
+    SolrCollection solrCollection = collectionBuilder.build();
+
+    // Place two replicas of each type for each shard
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+        2, 2, 2);
+
+    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+
+    assertEquals(18, pp.getReplicaPlacements().size()); // 3 shards, 6 replicas total each
+    // Verify no two replicas of same type of same shard placed on same node
+    Set<Pair<Pair<Replica.ReplicaType, String>, Node>> placements = new HashSet<>();
+    for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
+      assertTrue("two replicas of same type for same shard placed on same node",
+          placements.add(new Pair<>(new Pair<>(rp.getReplicaType(), rp.getShardName()), rp.getNode())));
+      assertNotEquals("Replica unnecessarily placed on node with low free space", rp.getNode(), liveNodes.get(LOW_SPACE_NODE_INDEX));
+      assertNotEquals("Replica placed on node with not enough free space", rp.getNode(), liveNodes.get(NO_SPACE_NODE_INDEX));
+    }
+
+    // Verify that if we ask for 3 replicas, the placement will use the low free space node
+    // Place two replicas of each type for each shard
+    placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+        3, 0, 0);
+    pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    assertEquals(9, pp.getReplicaPlacements().size()); // 3 shards, 3 replicas each
+    // Verify no two replicas of same shard placed on same node
+    placements = new HashSet<>();
+    for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
+      assertEquals("Only NRT replicas should be created", Replica.ReplicaType.NRT, rp.getReplicaType());
+      assertTrue("two replicas for same shard placed on same node",
+          placements.add(new Pair<>(new Pair<>(rp.getReplicaType(), rp.getShardName()), rp.getNode())));
+      assertNotEquals("Replica placed on node with not enough free space", rp.getNode(), liveNodes.get(NO_SPACE_NODE_INDEX));
+    }
+
+    // Verify that if we ask for 4 replicas, the placement will fail
+    try {
+      placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+          4, 0, 0);
+      plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+      fail("Placing 4 replicas should not be possible given only three nodes have enough space");
+    } catch (PlacementException e) {
+      // expected
+    }
   }
 
   @Test
