@@ -35,8 +35,8 @@ public class PlacementRequestImpl implements PlacementRequest {
   private final EnumMap<Replica.ReplicaType, Integer> countReplicas = new EnumMap<>(Replica.ReplicaType.class);
 
   public PlacementRequestImpl(SolrCollection solrCollection,
-                               Set<String> shardNames, Set<Node> targetNodes,
-                               int countNrtReplicas, int countTlogReplicas, int countPullReplicas) {
+                              Set<String> shardNames, Set<Node> targetNodes,
+                              int countNrtReplicas, int countTlogReplicas, int countPullReplicas) {
     this.solrCollection = solrCollection;
     this.shardNames = shardNames;
     this.targetNodes = targetNodes;

@@ -41,13 +41,13 @@ import java.util.stream.Collectors;
  *
  * <pre>
  *
-  curl -X POST -H 'Content-type:application/json' -d '{
-    "set-placement-plugin": {
-      "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
-      "minimalFreeDiskGB": 10,
-      "prioritizedFreeDiskGB": 50
-    }
-  }' http://localhost:8983/api/cluster
+ * curl -X POST -H 'Content-type:application/json' -d '{
+ * "set-placement-plugin": {
+ * "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+ * "minimalFreeDiskGB": 10,
+ * "prioritizedFreeDiskGB": 50
+ * }
+ * }' http://localhost:8983/api/cluster
  * </pre>
  *
  * <p>The consequence will be the creation of an element in the Zookeeper file {@code /clusterprops.json} as follows:</p>
@@ -65,9 +65,9 @@ import java.util.stream.Collectors;
  *
  * <pre>
  *
-  curl -X POST -H 'Content-type:application/json' -d '{
-    "set-placement-plugin" : null
-  }' http://localhost:8983/api/cluster
+ * curl -X POST -H 'Content-type:application/json' -d '{
+ * "set-placement-plugin" : null
+ * }' http://localhost:8983/api/cluster
  * </pre>
  *
  *
@@ -136,7 +136,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    */
   public static final String REPLICA_TYPE_SYSPROP = "replica_type";
 
-  /** This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe) */
+  /**
+   * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe)
+   */
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
   /**
@@ -231,7 +233,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
         // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
           makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
-                  attrValues, replicaTypeToNodes, coresOnNodes, placementPlanFactory, replicaPlacements);
+              attrValues, replicaTypeToNodes, coresOnNodes, placementPlanFactory, replicaPlacements);
         }
       }
 
@@ -287,7 +289,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
      * Also builds the number of existing cores on each node present in the returned EnumMap (2nd member of the returned Pair).
      * Nodes for which the number of cores is not available for whatever reason are excluded from acceptable candidate nodes
      * as it would not be possible to make any meaningful placement decisions.
-     * @param nodes all nodes on which this plugin should compute placement
+     *
+     * @param nodes      all nodes on which this plugin should compute placement
      * @param attrValues attributes fetched for the nodes. This method uses system property {@link #REPLICA_TYPE_SYSPROP} as
      *                   well as the number of cores on each node.
      */
@@ -307,7 +310,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
           }
           // We rely later on the fact that the free disk optional is present (see CoresAndDiskComparator), be careful it you change anything here.
           continue;
-        } if (attrValues.getFreeDisk(node).get() < minimalFreeDiskGB) {
+        }
+        if (attrValues.getFreeDisk(node).get() < minimalFreeDiskGB) {
           if (log.isWarnEnabled()) {
             log.warn("Node {} free disk ({}GB) lower than configured minimum {}GB, excluding it from placement decisions.", node.getName(), attrValues.getFreeDisk(node).get(), minimalFreeDiskGB);
           }
@@ -449,7 +453,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
           // This can happen because not enough nodes for the placement request or already too many nodes with replicas of
           // the shard that can't accept new replicas or not enough nodes with enough free disk space.
           throw new PlacementException("Not enough nodes to place " + numReplicas + " replica(s) of type " + replicaType +
-                  " for shard " + shardName + " of collection " + solrCollection.getName());
+              " for shard " + shardName + " of collection " + solrCollection.getName());
         }
 
         AzWithNodes azWithNodes = azWithNodesEntry.getValue();

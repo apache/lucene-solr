@@ -25,13 +25,13 @@ import org.apache.solr.cluster.placement.*;
 import java.util.Set;
 
 public class PlacementPlanFactoryImpl implements PlacementPlanFactory {
-    @Override
-    public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
-        return new PlacementPlanImpl(request, replicaPlacements);
-    }
+  @Override
+  public PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements) {
+    return new PlacementPlanImpl(request, replicaPlacements);
+  }
 
-    @Override
-    public ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
-        return new ReplicaPlacementImpl(solrCollection, shardName, node, replicaType);
-    }
+  @Override
+  public ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType) {
+    return new ReplicaPlacementImpl(solrCollection, shardName, node, replicaType);
+  }
 }

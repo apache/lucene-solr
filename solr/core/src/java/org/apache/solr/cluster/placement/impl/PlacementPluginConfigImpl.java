@@ -85,7 +85,7 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
 
   @Override
   public Long getLongConfig(String configName, long defaultValue) {
-    Long  retval = longConfigs.get(configName);
+    Long retval = longConfigs.get(configName);
     return retval != null ? retval : defaultValue;
   }
 
@@ -181,13 +181,13 @@ public class PlacementPluginConfigImpl implements PlacementPluginConfig {
     PlacementPluginFactory placementPluginFactory;
     try {
       Class<? extends PlacementPluginFactory> factoryClazz =
-              Class.forName(pluginFactoryClassName, true, PlacementPluginConfigImpl.class.getClassLoader())
-                      .asSubclass(PlacementPluginFactory.class);
+          Class.forName(pluginFactoryClassName, true, PlacementPluginConfigImpl.class.getClassLoader())
+              .asSubclass(PlacementPluginFactory.class);
 
       placementPluginFactory = factoryClazz.getConstructor().newInstance(); // no args constructor - that's why we introduced a factory...
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,  "Unable to instantiate placement-plugin factory: " +
-              Utils.toJSONString(pluginConfigMap) + " please review /clusterprops.json config for " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to instantiate placement-plugin factory: " +
+          Utils.toJSONString(pluginConfigMap) + " please review /clusterprops.json config for " + PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY, e);
     }
 
     // Translate the config from the properties where they are defined into the abstraction seen by the plugin
