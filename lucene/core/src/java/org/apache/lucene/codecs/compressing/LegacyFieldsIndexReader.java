@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -87,7 +88,8 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
       if (bitsPerDocBase > 32) {
         throw new CorruptIndexException("Corrupted bitsPerDocBase: " + bitsPerDocBase, fieldsIndexIn);
       }
-      docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
+      final IndexInput fieldsIndexInWrapped = new EndiannessReverserIndexInput(fieldsIndexIn);
+      docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexInWrapped, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
 
       // start pointers
       startPointers[blockCount] = fieldsIndexIn.readVLong();
@@ -96,7 +98,7 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
       if (bitsPerStartPointer > 64) {
         throw new CorruptIndexException("Corrupted bitsPerStartPointer: " + bitsPerStartPointer, fieldsIndexIn);
       }
-      startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
+      startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexInWrapped, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
 
       ++blockCount;
     }

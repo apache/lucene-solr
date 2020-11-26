@@ -33,7 +33,6 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Accountable;
@@ -193,7 +192,8 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
           buffer = ArrayUtil.grow(buffer, spare.length + 4);
         }
         output.reset(buffer);
-        EndiannessReverserUtil.writeInt(output, encodeWeight(iterator.weight()));
+        // flip bytes for lexicography order
+        output.writeInt(Integer.reverseBytes(encodeWeight(iterator.weight())));
         output.writeBytes(spare.bytes, spare.offset, spare.length);
         writer.write(buffer, 0, output.getPosition());
         inputLineCount++;
@@ -221,7 +221,8 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
           break;
         }
         input.reset(scratch.bytes, scratch.offset, scratch.length);
-        int currentScore = EndiannessReverserUtil.readInt(input);
+        // we wrote in in reverse order
+        int currentScore = input.readInt();
 
         int bucket;
         if (line > 0 && currentScore == previousScore) {

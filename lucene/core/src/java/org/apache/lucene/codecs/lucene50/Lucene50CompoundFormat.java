@@ -27,7 +27,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
@@ -82,42 +82,47 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       CodecUtil.writeIndexHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
       CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
       
-      // write number of files
-      entries.writeVInt(si.files().size());
-      for (String file : si.files()) {
-        
-        // write bytes for file
-        long startOffset = data.getFilePointer();
-        try (ChecksumIndexInput in = dir.openChecksumInput(file, IOContext.READONCE)) {
-
-          // just copies the index header, verifying that its id matches what we expect
-          CodecUtil.verifyAndCopyIndexHeader(in, data, si.getId());
-          
-          // copy all bytes except the footer
-          long numBytesToCopy = in.length() - CodecUtil.footerLength() - in.getFilePointer();
-          data.copyBytes(in, numBytesToCopy);
-
-          // verify footer (checksum) matches for the incoming file we are copying
-          long checksum = CodecUtil.checkFooter(in);
-
-          // this is poached from CodecUtil.writeFooter, but we need to use our own checksum, not data.getChecksum(), but I think
-          // adding a public method to CodecUtil to do that is somewhat dangerous:
-          data.writeInt(CodecUtil.FOOTER_MAGIC);
-          data.writeInt(0);
-          EndiannessReverserUtil.writeLong(data, checksum);
-        }
-        long endOffset = data.getFilePointer();
-        
-        long length = endOffset - startOffset;
-        
-        // write entry for file
-        entries.writeString(IndexFileNames.stripSegmentName(file));
-        EndiannessReverserUtil.writeLong(entries, startOffset);
-        EndiannessReverserUtil.writeLong(entries, length);
-      }
+      writeFiles(data, new EndiannessReverserIndexOutput(entries), dir, si);
       
       CodecUtil.writeFooter(data);
       CodecUtil.writeFooter(entries);
+    }
+  }
+  
+  private void writeFiles(IndexOutput data, IndexOutput entries, Directory dir, SegmentInfo si) throws IOException{
+    // write number of files
+    entries.writeVInt(si.files().size());
+    for (String file : si.files()) {
+
+      // write bytes for file
+      long startOffset = data.getFilePointer();
+      try (ChecksumIndexInput in = dir.openChecksumInput(file, IOContext.READONCE)) {
+
+        // just copies the index header, verifying that its id matches what we expect
+        CodecUtil.verifyAndCopyIndexHeader(in, data, si.getId());
+
+        // copy all bytes except the footer
+        long numBytesToCopy = in.length() - CodecUtil.footerLength() - in.getFilePointer();
+        data.copyBytes(in, numBytesToCopy);
+
+        // verify footer (checksum) matches for the incoming file we are copying
+        long checksum = CodecUtil.checkFooter(in);
+
+        // this is poached from CodecUtil.writeFooter, but we need to use our own checksum, not data.getChecksum(), but I think
+        // adding a public method to CodecUtil to do that is somewhat dangerous:
+        data.writeInt(CodecUtil.FOOTER_MAGIC);
+        data.writeInt(0);
+        // Checksum is written in Big endian
+        data.writeLong(Long.reverseBytes(checksum));
+      }
+      long endOffset = data.getFilePointer();
+
+      long length = endOffset - startOffset;
+
+      // write entry for file
+      entries.writeString(IndexFileNames.stripSegmentName(file));
+      entries.writeLong(startOffset);
+      entries.writeLong(length);
     }
   }
 

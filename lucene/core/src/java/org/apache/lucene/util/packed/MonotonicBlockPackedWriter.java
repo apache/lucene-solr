@@ -22,7 +22,6 @@ import static org.apache.lucene.util.packed.MonotonicBlockPackedReader.expected;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.util.BitUtil;
 
 /**
@@ -91,7 +90,7 @@ public final class MonotonicBlockPackedWriter extends AbstractBlockPackedWriter 
     }
 
     out.writeZLong(min);
-    EndiannessReverserUtil.writeInt(out, Float.floatToIntBits(avg));
+    out.writeInt(Float.floatToIntBits(avg));
     if (maxDelta == 0) {
       out.writeVInt(0);
     } else {

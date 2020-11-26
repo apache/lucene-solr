@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
@@ -83,19 +83,22 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
                   Lucene86PointsFormat.VERSION_CURRENT,
                   readState.segmentInfo.getId(),
                   readState.segmentSuffix);
+          IndexInput metaInWrapped = new EndiannessReverserIndexInput(metaIn);
+          IndexInput indexInWrapped = new EndiannessReverserIndexInput(indexIn);
+          IndexInput dataInWrapped = new EndiannessReverserIndexInput(dataIn);
           while (true) {
-            int fieldNumber = EndiannessReverserUtil.readInt(metaIn);
+            int fieldNumber = metaInWrapped.readInt();
             if (fieldNumber == -1) {
               break;
             } else if (fieldNumber < 0) {
               throw new CorruptIndexException("Illegal field number: " + fieldNumber, metaIn);
             }
 
-            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
+            BKDReader reader = new BKDReader(metaInWrapped, indexInWrapped, dataInWrapped);
             readers.put(fieldNumber, reader);
           }
-          indexLength = EndiannessReverserUtil.readLong(metaIn);
-          dataLength =  EndiannessReverserUtil.readLong(metaIn);
+          indexLength = metaInWrapped.readLong();
+          dataLength = metaInWrapped.readLong();
         } catch (Throwable t) {
           priorE = t;
         } finally {
@@ -112,7 +115,6 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
         IOUtils.closeWhileHandlingException(this);
       }
     }
-
   }
 
   /** Returns the underlying {@link BKDReader}.

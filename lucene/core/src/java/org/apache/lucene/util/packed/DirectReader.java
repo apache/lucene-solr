@@ -19,7 +19,6 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.LongValues;
 
@@ -164,7 +163,7 @@ public class DirectReader {
       try {
         long offset = (index * 12) >>> 3;
         int shift = (int) ((index + 1) & 1) << 2;
-        return (EndiannessReverserUtil.readShort(in, this.offset + offset) >>> shift) & 0xFFF;
+        return (in.readShort(this.offset + offset) >>> shift) & 0xFFF;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -183,7 +182,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readShort(in, offset + (index << 1)) & 0xFFFF;
+        return in.readShort(offset + (index << 1)) & 0xFFFF;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -204,7 +203,7 @@ public class DirectReader {
       try {
         long offset = (index * 20) >>> 3;
         // TODO: clean this up...
-        int v = EndiannessReverserUtil.readInt(in, this.offset + offset) >>> 8;
+        int v = in.readInt(this.offset + offset) >>> 8;
         int shift = (int) ((index + 1) & 1) << 2;
         return (v >>> shift) & 0xFFFFF;
       } catch (IOException e) {
@@ -225,7 +224,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readInt(in, offset + index * 3) >>> 8;
+        return in.readInt(offset + index * 3) >>> 8;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -246,7 +245,7 @@ public class DirectReader {
       try {
         long offset = (index * 28) >>> 3;
         int shift = (int) ((index + 1) & 1) << 2;
-        return (EndiannessReverserUtil.readInt(in, this.offset + offset) >>> shift) & 0xFFFFFFFL;
+        return (in.readInt(this.offset + offset) >>> shift) & 0xFFFFFFFL;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -265,7 +264,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readInt(in, this.offset + (index << 2)) & 0xFFFFFFFFL;
+        return in.readInt(this.offset + (index << 2)) & 0xFFFFFFFFL;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -284,7 +283,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readLong(in, this.offset + index * 5) >>> 24;
+        return in.readLong(this.offset + index * 5) >>> 24;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -303,7 +302,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readLong(in, this.offset + index * 6) >>> 16;
+        return in.readLong(this.offset + index * 6) >>> 16;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -322,7 +321,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readLong(in, this.offset + index * 7) >>> 8;
+        return in.readLong(this.offset + index * 7) >>> 8;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -341,7 +340,7 @@ public class DirectReader {
     @Override
     public long get(long index) {
       try {
-        return EndiannessReverserUtil.readLong(in, offset + (index << 3));
+        return in.readLong(offset + (index << 3));
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

@@ -29,6 +29,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -233,7 +234,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       this.termsStart = termsStart;
       termBytesStart = termBytes.getPointer();
       
-      IndexInput clone = in.clone();
+      IndexInput clone = new EndiannessReverserIndexInput(in.clone());
       clone.seek(indexStart);
       
       this.numIndexTerms = numIndexTerms;

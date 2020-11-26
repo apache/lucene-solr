@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
@@ -36,18 +36,20 @@ import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURR
  * Writer for {@link Lucene80NormsFormat}
  */
 final class Lucene80NormsConsumer extends NormsConsumer {
-  IndexOutput data, meta;
+  IndexOutput dataCodec, metaCodec, data, meta;
   final int maxDoc;
 
   Lucene80NormsConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-      data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeIndexHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      this.dataCodec = state.directory.createOutput(dataName, state.context);
+      this.data = new EndiannessReverserIndexOutput(this.dataCodec);
+      CodecUtil.writeIndexHeader(this.dataCodec, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
-      meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeIndexHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      this.metaCodec = state.directory.createOutput(metaName, state.context);
+      this.meta = new EndiannessReverserIndexOutput(this.metaCodec);
+      CodecUtil.writeIndexHeader(this.metaCodec, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
@@ -61,21 +63,21 @@ final class Lucene80NormsConsumer extends NormsConsumer {
   public void close() throws IOException {
     boolean success = false;
     try {
-      if (meta != null) {
-        EndiannessReverserUtil.writeInt(meta, -1); // write EOF marker
-        CodecUtil.writeFooter(meta); // write checksum
+      if (metaCodec != null) {
+        meta.writeInt(-1); // write EOF marker
+        CodecUtil.writeFooter(metaCodec); // write checksum
       }
-      if (data != null) {
-        CodecUtil.writeFooter(data); // write checksum
+      if (dataCodec != null) {
+        CodecUtil.writeFooter(dataCodec); // write checksum
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(data, meta);
+        IOUtils.close(dataCodec, metaCodec);
       } else {
-        IOUtils.closeWhileHandlingException(data, meta);
+        IOUtils.closeWhileHandlingException(dataCodec, metaCodec);
       }
-      meta = data = null;
+      metaCodec = dataCodec = meta = data = null;
     }
   }
 
@@ -93,36 +95,36 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     }
     assert numDocsWithValue <= maxDoc;
 
-    EndiannessReverserUtil.writeInt(meta, field.number);
+    meta.writeInt(field.number);
 
     if (numDocsWithValue == 0) {
-      EndiannessReverserUtil.writeLong(meta, -2); // docsWithFieldOffset
-      EndiannessReverserUtil.writeLong(meta, 0L); // docsWithFieldLength
-      EndiannessReverserUtil.writeShort(meta, (short) -1); // jumpTableEntryCount
+      meta.writeLong(-2); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
       meta.writeByte((byte) -1); // denseRankPower
     } else if (numDocsWithValue == maxDoc) {
-      EndiannessReverserUtil.writeLong(meta, -1); // docsWithFieldOffset
-      EndiannessReverserUtil.writeLong(meta, 0L); // docsWithFieldLength
-      EndiannessReverserUtil.writeShort(meta, (short) -1); // jumpTableEntryCount
+      meta.writeLong(-1); // docsWithFieldOffset
+      meta.writeLong(0L); // docsWithFieldLength
+      meta.writeShort((short) -1); // jumpTableEntryCount
       meta.writeByte((byte) -1); // denseRankPower
     } else {
       long offset = data.getFilePointer();
-      EndiannessReverserUtil.writeLong(meta, offset); // docsWithFieldOffset
+      meta.writeLong(offset); // docsWithFieldOffset
       values = normsProducer.getNorms(field);
       final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
-      EndiannessReverserUtil.writeLong(meta, data.getFilePointer() - offset); // docsWithFieldLength
-      EndiannessReverserUtil.writeShort(meta, jumpTableEntryCount);
+      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+      meta.writeShort(jumpTableEntryCount);
       meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
     }
 
-    EndiannessReverserUtil.writeInt(meta, numDocsWithValue);
+    meta.writeInt(numDocsWithValue);
     int numBytesPerValue = numBytesPerValue(min, max);
 
     meta.writeByte((byte) numBytesPerValue);
     if (numBytesPerValue == 0) {
-      EndiannessReverserUtil.writeLong(meta, min);
+      meta.writeLong(min);
     } else {
-      EndiannessReverserUtil.writeLong(meta, data.getFilePointer()); // normsOffset
+      meta.writeLong(data.getFilePointer()); // normsOffset
       values = normsProducer.getNorms(field);
       writeValues(values, numBytesPerValue, data);
     }
@@ -150,13 +152,13 @@ final class Lucene80NormsConsumer extends NormsConsumer {
           out.writeByte((byte) value);
           break;
         case 2:
-          EndiannessReverserUtil.writeShort(out, (short) value);
+          out.writeShort((short) value);
           break;
         case 4:
-          EndiannessReverserUtil.writeInt(out, (int) value);
+          out.writeInt((int) value);
           break;
         case 8:
-          EndiannessReverserUtil.writeLong(out, value);
+          out.writeLong(value);
           break;
         default:
           throw new AssertionError();

@@ -35,7 +35,8 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -118,44 +119,7 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
                                      Lucene50FieldInfosFormat.FORMAT_START, 
                                      Lucene50FieldInfosFormat.FORMAT_CURRENT,
                                      segmentInfo.getId(), segmentSuffix);
-        
-        final int size = input.readVInt(); //read in the size
-        infos = new FieldInfo[size];
-        
-        // previous field's attribute map, we share when possible:
-        Map<String,String> lastAttributes = Collections.emptyMap();
-        
-        for (int i = 0; i < size; i++) {
-          String name = input.readString();
-          final int fieldNumber = input.readVInt();
-          if (fieldNumber < 0) {
-            throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
-          }
-          byte bits = input.readByte();
-          boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
-          boolean omitNorms = (bits & OMIT_NORMS) != 0;
-          boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-
-          final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
-          
-          // DV Types are packed in one byte
-          final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
-          final long dvGen = EndiannessReverserUtil.readLong(input); 
-          Map<String,String> attributes = input.readMapOfStrings();
-
-          // just use the last field's map if its the same
-          if (attributes.equals(lastAttributes)) {
-            attributes = lastAttributes;
-          }
-          lastAttributes = attributes;
-          try {
-            infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, dvGen, attributes, 0, 0, 0,
-                                     0, VectorValues.SearchStrategy.NONE, false);
-          } catch (IllegalStateException e) {
-            throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
-          }
-        }
+        infos = parseFieldInfos(new EndiannessReverserIndexInput(input));
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -163,6 +127,47 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
       }
       return new FieldInfos(infos);
     }
+  }
+
+  private FieldInfo[] parseFieldInfos(IndexInput input) throws IOException {
+    final int size = input.readVInt(); //read in the size
+    FieldInfo[] infos = new FieldInfo[size];
+
+    // previous field's attribute map, we share when possible:
+    Map<String,String> lastAttributes = Collections.emptyMap();
+
+    for (int i = 0; i < size; i++) {
+      String name = input.readString();
+      final int fieldNumber = input.readVInt();
+      if (fieldNumber < 0) {
+        throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
+      }
+      byte bits = input.readByte();
+      boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
+      boolean omitNorms = (bits & OMIT_NORMS) != 0;
+      boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
+
+      final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
+
+      // DV Types are packed in one byte
+      final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
+      final long dvGen = input.readLong();
+      Map<String,String> attributes = input.readMapOfStrings();
+
+      // just use the last field's map if its the same
+      if (attributes.equals(lastAttributes)) {
+        attributes = lastAttributes;
+      }
+      lastAttributes = attributes;
+      try {
+        infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads,
+                indexOptions, docValuesType, dvGen, attributes, 0, 0, 0,
+                0, VectorValues.SearchStrategy.NONE, false);
+      } catch (IllegalStateException e) {
+        throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
+      }
+    }
+    return infos;
   }
   
   static {
@@ -257,27 +262,31 @@ public final class Lucene50FieldInfosFormat extends FieldInfosFormat {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (IndexOutput output = directory.createOutput(fileName, context)) {
       CodecUtil.writeIndexHeader(output, Lucene50FieldInfosFormat.CODEC_NAME, Lucene50FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
-      output.writeVInt(infos.size());
-      for (FieldInfo fi : infos) {
-        fi.checkConsistency();
-
-        output.writeString(fi.name);
-        output.writeVInt(fi.number);
-
-        byte bits = 0x0;
-        if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
-        if (fi.omitsNorms()) bits |= OMIT_NORMS;
-        if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
-        output.writeByte(bits);
-
-        output.writeByte(indexOptionsByte(fi.getIndexOptions()));
-
-        // pack the DV type and hasNorms in one byte
-        output.writeByte(docValuesByte(fi.getDocValuesType()));
-        EndiannessReverserUtil.writeLong(output, fi.getDocValuesGen());
-        output.writeMapOfStrings(fi.attributes());
-      }
+      writeFieldInfos(new EndiannessReverserIndexOutput(output), infos);
       CodecUtil.writeFooter(output);
+    }
+  }
+
+  private void writeFieldInfos(IndexOutput output, FieldInfos infos) throws IOException {
+    output.writeVInt(infos.size());
+    for (FieldInfo fi : infos) {
+      fi.checkConsistency();
+
+      output.writeString(fi.name);
+      output.writeVInt(fi.number);
+
+      byte bits = 0x0;
+      if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
+      if (fi.omitsNorms()) bits |= OMIT_NORMS;
+      if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+      output.writeByte(bits);
+
+      output.writeByte(indexOptionsByte(fi.getIndexOptions()));
+
+      // pack the DV type and hasNorms in one byte
+      output.writeByte(docValuesByte(fi.getDocValuesType()));
+      output.writeLong(fi.getDocValuesGen());
+      output.writeMapOfStrings(fi.attributes());
     }
   }
   

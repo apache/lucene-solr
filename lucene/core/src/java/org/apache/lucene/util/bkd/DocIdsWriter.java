@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 
 class DocIdsWriter {
@@ -52,14 +51,31 @@ class DocIdsWriter {
       }
       if (max <= 0xffffff) {
         out.writeByte((byte) 24);
-        for (int i = 0; i < count; ++i) {
-          EndiannessReverserUtil.writeShort(out, (short) (docIds[start + i] >>> 8));
+        int i;
+        for (i = 0; i < count - 7; i += 8) {
+          int doc1 = docIds[start + i];
+          int doc2 = docIds[start + i + 1];
+          int doc3 = docIds[start + i + 2];
+          int doc4 = docIds[start + i + 3];
+          int doc5 = docIds[start + i + 4];
+          int doc6 = docIds[start + i + 5];
+          int doc7 = docIds[start + i + 6];
+          int doc8 = docIds[start + i + 7];
+          long l1 = (doc1 & 0xffffffL) << 40 | (doc2 & 0xffffffL) << 16  | ((doc3 >>> 8) & 0xFFFFL);
+          long l2 = (doc3 & 0xFFL) << 56 | (doc4 & 0xffffffL) << 32 | (doc5 & 0xffffffL) << 8 | ((doc6 >> 16) & 0xFFL);
+          long l3 = (doc6 & 0xFFFFL) << 48 | (doc7 & 0xffffffL) << 24 | (doc8 & 0xffffffL);
+          out.writeLong(l1);
+          out.writeLong(l2);
+          out.writeLong(l3);
+        }
+        for (; i < count; ++i) {
+          out.writeShort((short) (docIds[start + i] >>> 8));
           out.writeByte((byte) docIds[start + i]);
         }
       } else {
         out.writeByte((byte) 32);
         for (int i = 0; i < count; ++i) {
-          EndiannessReverserUtil.writeInt(out, docIds[start + i]);
+          out.writeInt(docIds[start + i]);
         }
       }
     }
@@ -93,16 +109,16 @@ class DocIdsWriter {
 
   static <T> void readInts32(IndexInput in, int count, int[] docIDs) throws IOException {
     for (int i = 0; i < count; i++) {
-      docIDs[i] = EndiannessReverserUtil.readInt(in);
+      docIDs[i] = in.readInt();
     }
   }
 
   private static void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
-      long l1 = EndiannessReverserUtil.readLong(in);
-      long l2 = EndiannessReverserUtil.readLong(in);
-      long l3 = EndiannessReverserUtil.readLong(in);
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
       docIDs[i] =  (int) (l1 >>> 40);
       docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
       docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
@@ -113,7 +129,7 @@ class DocIdsWriter {
       docIDs[i+7] = (int) l3 & 0xffffff;
     }
     for (; i < count; ++i) {
-      docIDs[i] = (Short.toUnsignedInt(EndiannessReverserUtil.readShort(in)) << 8) | Byte.toUnsignedInt(in.readByte());
+      docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
   }
 
@@ -145,16 +161,16 @@ class DocIdsWriter {
 
   private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     for (int i = 0; i < count; i++) {
-      visitor.visit(EndiannessReverserUtil.readInt(in));
+      visitor.visit(in.readInt());
     }
   }
 
   private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
-      long l1 = EndiannessReverserUtil.readLong(in);
-      long l2 = EndiannessReverserUtil.readLong(in);
-      long l3 = EndiannessReverserUtil.readLong(in);
+      long l1 = in.readLong();
+      long l2 = in.readLong();
+      long l3 = in.readLong();
       visitor.visit((int) (l1 >>> 40));
       visitor.visit((int) (l1 >>> 16) & 0xffffff);
       visitor.visit((int) (((l1 & 0xffff) << 8) | (l2 >>> 56)));
@@ -165,7 +181,7 @@ class DocIdsWriter {
       visitor.visit((int) l3 & 0xffffff);
     }
     for (; i < count; ++i) {
-      visitor.visit((Short.toUnsignedInt(EndiannessReverserUtil.readShort(in)) << 8) | Byte.toUnsignedInt(in.readByte()));
+      visitor.visit((Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte()));
     }
   }
 }

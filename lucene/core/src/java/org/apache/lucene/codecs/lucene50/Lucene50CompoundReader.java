@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
@@ -108,18 +108,7 @@ final class Lucene50CompoundReader extends CompoundDirectory {
         version = CodecUtil.checkIndexHeader(entriesStream, Lucene50CompoundFormat.ENTRY_CODEC, 
                                                               Lucene50CompoundFormat.VERSION_START, 
                                                               Lucene50CompoundFormat.VERSION_CURRENT, segmentID, "");
-        final int numEntries = entriesStream.readVInt();
-        mapping = new HashMap<>(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-          final FileEntry fileEntry = new FileEntry();
-          final String id = entriesStream.readString();
-          FileEntry previous = mapping.put(id, fileEntry);
-          if (previous != null) {
-            throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
-          }
-          fileEntry.offset = EndiannessReverserUtil.readLong(entriesStream); 
-          fileEntry.length = EndiannessReverserUtil.readLong(entriesStream);
-        }
+        mapping = getMapping(new EndiannessReverserIndexInput(entriesStream));
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -127,6 +116,22 @@ final class Lucene50CompoundReader extends CompoundDirectory {
       }
     }
     return Collections.unmodifiableMap(mapping);
+  }
+  
+  private Map<String,FileEntry> getMapping(IndexInput entriesStream) throws IOException {
+    final int numEntries = entriesStream.readVInt();
+    Map<String,FileEntry> mapping = new HashMap<>(numEntries);
+    for (int i = 0; i < numEntries; i++) {
+      final FileEntry fileEntry = new FileEntry();
+      final String id = entriesStream.readString();
+      FileEntry previous = mapping.put(id, fileEntry);
+      if (previous != null) {
+        throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS ", entriesStream);
+      }
+      fileEntry.offset = entriesStream.readLong();
+      fileEntry.length = entriesStream.readLong();
+    }
+    return mapping;
   }
   
   @Override

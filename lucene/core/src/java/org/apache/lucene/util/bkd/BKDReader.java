@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
@@ -52,7 +51,10 @@ public final class BKDReader extends PointValues {
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned.
    * BKD tree is always stored off-heap. */
   public BKDReader(IndexInput metaIn, IndexInput indexIn, IndexInput dataIn) throws IOException {
-    version = CodecUtil.checkHeader(metaIn, BKDWriter.CODEC_NAME, BKDWriter.VERSION_START, BKDWriter.VERSION_CURRENT);
+    // TODO: maybe we should move this call to the codec
+    metaIn.readInt(); // CODEC MAGIC
+    metaIn.readString(); // actual codec
+    version = metaIn.readInt(); // version, The indexInput must be wrapped, so do not need to reverse it
     final int numDims = metaIn.readVInt();
     final int numIndexDims;
     if (version >= BKDWriter.VERSION_SELECTIVE_INDEXING) {
@@ -87,8 +89,8 @@ public final class BKDReader extends PointValues {
     int numIndexBytes = metaIn.readVInt();
     long indexStartPointer;
     if (version >= BKDWriter.VERSION_META_FILE) {
-      minLeafBlockFP = EndiannessReverserUtil.readLong(metaIn);
-      indexStartPointer = EndiannessReverserUtil.readLong(metaIn);
+      minLeafBlockFP = metaIn.readLong();
+      indexStartPointer = metaIn.readLong();
     } else {
       indexStartPointer = indexIn.getFilePointer();
       minLeafBlockFP = indexIn.readVLong();

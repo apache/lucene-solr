@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
@@ -93,11 +94,12 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
       // such as file truncation.
       CodecUtil.retrieveChecksum(dataIn);
 
+      final IndexInput dataInWrapped = new EndiannessReverserIndexInput(dataIn);
       for(Map.Entry<Integer,Long> ent : fieldToFileOffset.entrySet()) {
         int fieldNumber = ent.getKey();
         long fp = ent.getValue();
-        dataIn.seek(fp);
-        BKDReader reader = new BKDReader(dataIn, dataIn, dataIn);
+        dataInWrapped.seek(fp);
+        BKDReader reader = new BKDReader(dataInWrapped, dataInWrapped, dataInWrapped);
         readers.put(fieldNumber, reader);
       }
 

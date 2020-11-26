@@ -36,6 +36,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDConfig;
@@ -46,7 +47,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
 public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   /** Output used to write the BKD tree data file */
-  protected final IndexOutput dataOut;
+  protected final IndexOutput dataOut, dataOutWrapped;
 
   /** Maps field name to file pointer in the data file where the BKD index is located. */
   protected final Map<String,Long> indexFPs = new HashMap<>();
@@ -66,6 +67,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                          writeState.segmentSuffix,
                                                          Lucene60PointsFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
+    dataOutWrapped = new EndiannessReverserIndexOutput(dataOut);
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
@@ -104,7 +106,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        Runnable finalizer = writer.writeField(dataOut, dataOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer = writer.writeField(dataOutWrapped, dataOutWrapped, dataOutWrapped, fieldInfo.name, (MutablePointValues) values);
         if (finalizer != null) {
           indexFPs.put(fieldInfo.name, dataOut.getFilePointer());
           finalizer.run();
@@ -129,7 +131,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
         });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-      Runnable finalizer = writer.finish(dataOut, dataOut, dataOut);
+      Runnable finalizer = writer.finish(dataOutWrapped, dataOutWrapped, dataOutWrapped);
       if (finalizer != null) {
         indexFPs.put(fieldInfo.name, dataOut.getFilePointer());
         finalizer.run();
@@ -218,7 +220,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            Runnable finalizer = writer.merge(dataOut, dataOut, dataOut, docMaps, bkdReaders);
+            Runnable finalizer = writer.merge(dataOutWrapped, dataOutWrapped, dataOutWrapped, docMaps, bkdReaders);
             if (finalizer != null) {
               indexFPs.put(fieldInfo.name, dataOut.getFilePointer());
               finalizer.run();

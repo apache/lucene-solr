@@ -55,12 +55,12 @@ public final class EndiannessReverserIndexInput extends IndexInput {
 
   @Override
   public short readShort() throws IOException {
-    return EndiannessReverserUtil.readShort(in);
+    return Short.reverseBytes(in.readShort());
   }
 
   @Override
   public int readInt() throws IOException {
-    return EndiannessReverserUtil.readInt(in);
+    return Integer.reverseBytes(in.readInt());
   }
 
   @Override
@@ -75,13 +75,15 @@ public final class EndiannessReverserIndexInput extends IndexInput {
 
   @Override
   public long readLong() throws IOException {
-    return EndiannessReverserUtil.readLong(in); 
+    return Long.reverseBytes(in.readLong()); 
   }
 
   @Override
   public void readLongs(long[] dst, int offset, int length) throws IOException {
-    // This method used to read LE longs, therefore there is no need to reverse the bytes.
     in.readLongs(dst, offset, length);
+    for (int i = 0; i < length; i++) {
+      dst[offset + i] = Long.reverseBytes(dst[offset + i]);
+    }
   }
 
   @Override
@@ -154,11 +156,11 @@ public final class EndiannessReverserIndexInput extends IndexInput {
     return new EndiannessReverserRandomAccessInput(in.randomAccessSlice(offset, length));
   }
   
-  private static class EndiannessReverserRandomAccessInput implements RandomAccessInput {
+  public static class EndiannessReverserRandomAccessInput implements RandomAccessInput {
     
     private final RandomAccessInput in;
     
-    private EndiannessReverserRandomAccessInput(RandomAccessInput in) {
+    public EndiannessReverserRandomAccessInput(RandomAccessInput in) {
       this.in = in;
     }
 
@@ -169,17 +171,17 @@ public final class EndiannessReverserIndexInput extends IndexInput {
 
     @Override
     public short readShort(long pos) throws IOException {
-      return EndiannessReverserUtil.readShort(in, pos);
+      return Short.reverseBytes(in.readShort(pos));
     }
 
     @Override
     public int readInt(long pos) throws IOException {
-      return  EndiannessReverserUtil.readInt(in, pos);
+      return Integer.reverseBytes(in.readInt(pos));
     }
 
     @Override
     public long readLong(long pos) throws IOException {
-      return  EndiannessReverserUtil.readLong(in, pos);
+      return Long.reverseBytes(in.readLong(pos));
     }
   }
 

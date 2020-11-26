@@ -27,6 +27,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersIndexOutput;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -112,11 +114,13 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     private long numTerms;
 
     private ByteBuffersDataOutput offsetsBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
+    private IndexOutput offsets = new EndiannessReverserIndexOutput(new ByteBuffersIndexOutput(offsetsBuffer, "", "wrapper"));
+    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsets, BLOCKSIZE);
     private long currentOffset;
 
     private ByteBuffersDataOutput addressBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
+    private IndexOutput address = new EndiannessReverserIndexOutput(new ByteBuffersIndexOutput(addressBuffer, "", "wrapper"));
+    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(address, BLOCKSIZE);
 
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
 

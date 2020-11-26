@@ -34,7 +34,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDConfig;
@@ -45,7 +45,7 @@ import org.apache.lucene.util.bkd.BKDWriter;
 public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
   /** Outputs used to write the BKD tree data files. */
-  protected final IndexOutput metaOut, indexOut, dataOut;
+  protected final IndexOutput metaOut, indexOut, dataOut, metaOutWrapped, indexOutWrapped, dataOutWrapped;
 
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
@@ -62,6 +62,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                                          writeState.segmentSuffix,
                                                          Lucene86PointsFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
+    dataOutWrapped = new EndiannessReverserIndexOutput(dataOut);
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
@@ -74,6 +75,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
           writeState.segmentSuffix,
           Lucene86PointsFormat.META_EXTENSION);
       metaOut = writeState.directory.createOutput(metaFileName, writeState.context);
+      metaOutWrapped = new EndiannessReverserIndexOutput(metaOut);
       CodecUtil.writeIndexHeader(metaOut,
           Lucene86PointsFormat.META_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
@@ -84,6 +86,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
           writeState.segmentSuffix,
           Lucene86PointsFormat.INDEX_EXTENSION);
       indexOut = writeState.directory.createOutput(indexFileName, writeState.context);
+      indexOutWrapped = new EndiannessReverserIndexOutput(indexOut);
       CodecUtil.writeIndexHeader(indexOut,
           Lucene86PointsFormat.INDEX_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
@@ -121,9 +124,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                                           values.size())) {
 
       if (values instanceof MutablePointValues) {
-        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer = writer.writeField(metaOutWrapped, indexOutWrapped, dataOutWrapped, fieldInfo.name, (MutablePointValues) values);
         if (finalizer != null) {
-          EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
+          metaOutWrapped.writeInt(fieldInfo.number);
           finalizer.run();
         }
         return;
@@ -146,9 +149,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
         });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-      Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
+      Runnable finalizer = writer.finish(metaOutWrapped, indexOutWrapped, dataOutWrapped);
       if (finalizer != null) {
-        EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
+        metaOutWrapped.writeInt(fieldInfo.number);
         finalizer.run();
       }
     }
@@ -235,9 +238,9 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            Runnable finalizer = writer.merge(metaOut, indexOut, dataOut, docMaps, bkdReaders);
+            Runnable finalizer = writer.merge(metaOutWrapped, indexOutWrapped, dataOutWrapped, docMaps, bkdReaders);
             if (finalizer != null) {
-              EndiannessReverserUtil.writeInt(metaOut, fieldInfo.number);
+              metaOutWrapped.writeInt(fieldInfo.number);
               finalizer.run();
             }
           }
@@ -256,11 +259,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-    EndiannessReverserUtil.writeInt(metaOut, -1);
+    metaOutWrapped.writeInt(-1);
     CodecUtil.writeFooter(indexOut);
     CodecUtil.writeFooter(dataOut);
-    EndiannessReverserUtil.writeLong(metaOut, indexOut.getFilePointer());
-    EndiannessReverserUtil.writeLong(metaOut, dataOut.getFilePointer());
+    metaOutWrapped.writeLong(indexOut.getFilePointer());
+    metaOutWrapped.writeLong(dataOut.getFilePointer());
     CodecUtil.writeFooter(metaOut);
   }
 

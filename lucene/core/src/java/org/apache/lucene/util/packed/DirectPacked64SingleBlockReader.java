@@ -19,7 +19,6 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 
 final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
@@ -47,7 +46,7 @@ final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
     try {
       in.seek(startPointer + skip);
 
-      long block = EndiannessReverserUtil.readLong(in);
+      long block = in.readLong();
       final int offsetInBlock = index % valuesPerBlock;
       return (block >>> (offsetInBlock * bitsPerValue)) & mask;
     } catch (IOException e) {

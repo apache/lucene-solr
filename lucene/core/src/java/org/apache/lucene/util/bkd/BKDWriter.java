@@ -33,7 +33,6 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
@@ -514,9 +513,6 @@ public class BKDWriter implements Closeable {
     return oneDimWriter.finish();
   }
 
-  // Reused when writing leaf blocks
-  private final ByteBuffersDataOutput scratchOut = ByteBuffersDataOutput.newResettableInstance();
-
   private class OneDimensionBKDWriter {
 
     final IndexOutput metaOut, indexOut, dataOut;
@@ -655,10 +651,9 @@ public class BKDWriter implements Closeable {
       }
 
       commonPrefixLengths[0] = prefix;
-
-      assert scratchOut.size() == 0;
-      writeLeafBlockDocs(scratchOut, leafDocs, 0, leafCount);
-      writeCommonPrefixes(scratchOut, commonPrefixLengths, leafValues);
+      
+      writeLeafBlockDocs(dataOut, leafDocs, 0, leafCount);
+      writeCommonPrefixes(dataOut, commonPrefixLengths, leafValues);
 
       scratchBytesRef1.length = config.packedBytesLength;
       scratchBytesRef1.bytes = leafValues;
@@ -673,9 +668,7 @@ public class BKDWriter implements Closeable {
       assert valuesInOrderAndBounds(config, leafCount, 0, ArrayUtil.copyOfSubArray(leafValues, 0, config.packedBytesLength),
           ArrayUtil.copyOfSubArray(leafValues, (leafCount - 1) * config.packedBytesLength, leafCount * config.packedBytesLength),
           packedValues, leafDocs, 0);
-      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, leafCount, 0, packedValues, leafCardinality);
-      scratchOut.copyTo(dataOut);
-      scratchOut.reset();
+      writeLeafBlockPackedValues(dataOut, commonPrefixLengths, leafCount, 0, packedValues, leafCardinality);
     }
   }
 
@@ -991,7 +984,10 @@ public class BKDWriter implements Closeable {
   }
   
   private void writeIndex(IndexOutput metaOut, IndexOutput indexOut, int countPerLeaf, int numLeaves, byte[] packedIndex, long dataStartFP) throws IOException {
-    CodecUtil.writeHeader(metaOut, CODEC_NAME, VERSION_CURRENT);
+    // TODO: maybe we should move this call to the codec
+    metaOut.writeInt(Integer.reverseBytes(CodecUtil.CODEC_MAGIC)); // MAGIC we are ignoring it
+    metaOut.writeString(CODEC_NAME); // CODEC NAME we are ignoring it
+    metaOut.writeInt(VERSION_CURRENT); // VERSION (The IndexOutput must be wrapped so we do not need to reverse it)
     metaOut.writeVInt(config.numDims);
     metaOut.writeVInt(config.numIndexDims);
     metaOut.writeVInt(countPerLeaf);
@@ -1005,10 +1001,10 @@ public class BKDWriter implements Closeable {
     metaOut.writeVLong(pointCount);
     metaOut.writeVInt(docsSeen.cardinality());
     metaOut.writeVInt(packedIndex.length);
-    EndiannessReverserUtil.writeLong(metaOut, dataStartFP);
+    metaOut.writeLong(dataStartFP);
     // If metaOut and indexOut are the same file, we account for the fact that
     // writing a long makes the index start 8 bytes later.
-    EndiannessReverserUtil.writeLong(metaOut, indexOut.getFilePointer() + (metaOut == indexOut ? Long.BYTES : 0));
+    metaOut.writeLong(indexOut.getFilePointer() + (metaOut == indexOut ? Long.BYTES : 0));
     indexOut.writeBytes(packedIndex, 0, packedIndex.length);
   }
 
@@ -1354,21 +1350,19 @@ public class BKDWriter implements Closeable {
       }
       // Save the block file pointer:
       leafBlockFPs[leavesOffset] = out.getFilePointer();
-
-      assert scratchOut.size() == 0;
-
+      
       // Write doc IDs
       int[] docIDs = spareDocIds;
       for (int i = from; i < to; ++i) {
         docIDs[i - from] = reader.getDocID(i);
       }
       //System.out.println("writeLeafBlock pos=" + out.getFilePointer());
-      writeLeafBlockDocs(scratchOut, docIDs, 0, count);
+      writeLeafBlockDocs(out, docIDs, 0, count);
 
       // Write the common prefixes:
       reader.getValue(from, scratchBytesRef1);
       System.arraycopy(scratchBytesRef1.bytes, scratchBytesRef1.offset, scratch1, 0, config.packedBytesLength);
-      writeCommonPrefixes(scratchOut, commonPrefixLengths, scratch1);
+      writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
       // Write the full values:
       IntFunction<BytesRef> packedValues = new IntFunction<BytesRef>() {
@@ -1380,9 +1374,7 @@ public class BKDWriter implements Closeable {
       };
       assert valuesInOrderAndBounds(config, count, sortedDim, minPackedValue, maxPackedValue, packedValues,
           docIDs, 0);
-      writeLeafBlockPackedValues(scratchOut, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
-      scratchOut.copyTo(out);
-      scratchOut.reset();
+      writeLeafBlockPackedValues(out, commonPrefixLengths, count, sortedDim, packedValues, leafCardinality);
     } else {
       // inner node
 

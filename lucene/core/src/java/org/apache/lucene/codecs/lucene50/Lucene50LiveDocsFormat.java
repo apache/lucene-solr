@@ -28,8 +28,10 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserUtil;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -72,11 +74,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
       try {
         CodecUtil.checkIndexHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, 
                                      info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-        long data[] = new long[FixedBitSet.bits2words(length)];
-        for (int i = 0; i < data.length; i++) {
-          data[i] = EndiannessReverserUtil.readLong(input);
-        }
-        FixedBitSet fbs = new FixedBitSet(data, length);
+        FixedBitSet fbs = readData(new EndiannessReverserIndexInput(input), length);
         if (fbs.length() - fbs.cardinality() != info.getDelCount()) {
           throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
                                           " info.delcount=" + info.getDelCount(), input);
@@ -90,32 +88,46 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     }
     throw new AssertionError();
   }
+  
+  private FixedBitSet readData(IndexInput input, int length) throws IOException {
+    long data[] = new long[FixedBitSet.bits2words(length)];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = input.readLong();
+    }
+    return new FixedBitSet(data, length);
+  }
 
   @Override
   public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
     long gen = info.getNextDelGen();
     String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
-    int delCount = 0;
+    int delCount;
     try (IndexOutput output = dir.createOutput(name, context)) {
       CodecUtil.writeIndexHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-      final int longCount = FixedBitSet.bits2words(bits.length());
-      for (int i = 0; i < longCount; ++i) {
-        long currentBits = 0;
-        for (int j = i << 6, end = Math.min(j + 63, bits.length() - 1); j <= end; ++j) {
-          if (bits.get(j)) {
-            currentBits |= 1L << j; // mod 64
-          } else {
-            delCount += 1;
-          }
-        }
-        EndiannessReverserUtil.writeLong(output, currentBits);
-      }
+      delCount = writeBits(new EndiannessReverserIndexOutput(output), bits);
       CodecUtil.writeFooter(output);
     }
     if (delCount != info.getDelCount() + newDelCount) {
       throw new CorruptIndexException("bits.deleted=" + delCount + 
           " info.delcount=" + info.getDelCount() + " newdelcount=" + newDelCount, name);
     }
+  }
+  
+  private int writeBits(IndexOutput output, Bits bits) throws IOException {
+    int delCount = 0;
+    final int longCount = FixedBitSet.bits2words(bits.length());
+    for (int i = 0; i < longCount; ++i) {
+      long currentBits = 0;
+      for (int j = i << 6, end = Math.min(j + 63, bits.length() - 1); j <= end; ++j) {
+        if (bits.get(j)) {
+          currentBits |= 1L << j; // mod 64
+        } else {
+          delCount += 1;
+        }
+      }
+      output.writeLong(currentBits);
+    }
+    return delCount;
   }
 
   @Override

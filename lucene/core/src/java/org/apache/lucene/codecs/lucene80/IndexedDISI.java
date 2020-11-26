@@ -20,7 +20,6 @@ import java.io.DataInput;
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RandomAccessInput;
@@ -109,9 +108,9 @@ final class IndexedDISI extends DocIdSetIterator {
   private static void flush(
       int block, FixedBitSet buffer, int cardinality, byte denseRankPower, IndexOutput out) throws IOException {
     assert block >= 0 && block < 65536;
-    EndiannessReverserUtil.writeShort(out, (short) block);
+    out.writeShort((short) block);
     assert cardinality > 0 && cardinality <= 65536;
-    EndiannessReverserUtil.writeShort(out, (short) (cardinality - 1));
+    out.writeShort((short) (cardinality - 1));
     if (cardinality > MAX_ARRAY_LENGTH) {
       if (cardinality != 65536) { // all docs are set
         if (denseRankPower != -1) {
@@ -119,13 +118,13 @@ final class IndexedDISI extends DocIdSetIterator {
           out.writeBytes(rank, rank.length);
         }
         for (long word : buffer.getBits()) {
-          EndiannessReverserUtil.writeLong(out, word);
+          out.writeLong(word);
         }
       }
     } else {
       BitSetIterator it = new BitSetIterator(buffer, cardinality);
       for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-        EndiannessReverserUtil.writeShort(out, (short) doc);
+        out.writeShort((short) doc);
       }
     }
   }
@@ -247,8 +246,8 @@ final class IndexedDISI extends DocIdSetIterator {
       blockCount = 0;
     }
     for (int i = 0 ; i < blockCount ; i++) {
-      EndiannessReverserUtil.writeInt(out, jumps[i*2]); // index
-      EndiannessReverserUtil.writeInt(out, jumps[i*2+1]); // offset
+      out.writeInt(jumps[i*2]); // index
+      out.writeInt(jumps[i*2+1]); // offset
     }
     // As there are at most 32k blocks, the count is a short
     // The jumpTableOffset will be at lastPos - (blockCount * Long.BYTES)
@@ -408,8 +407,8 @@ final class IndexedDISI extends DocIdSetIterator {
     if (jumpTable != null && blockIndex >= (block >> 16)+2) {
       // If the jumpTableEntryCount is exceeded, there are no further bits. Last entry is always NO_MORE_DOCS
       final int inRangeBlockIndex = blockIndex < jumpTableEntryCount ? blockIndex : jumpTableEntryCount-1;
-      final int index = EndiannessReverserUtil.readInt(jumpTable, inRangeBlockIndex*Integer.BYTES*2);
-      final int offset = EndiannessReverserUtil.readInt(jumpTable, inRangeBlockIndex*Integer.BYTES*2+Integer.BYTES);
+      final int index = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2);
+      final int offset = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2+Integer.BYTES);
       this.nextBlockIndex = index-1; // -1 to compensate for the always-added 1 in readBlockHeader
       slice.seek(offset);
       readBlockHeader();
@@ -424,9 +423,9 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   private void readBlockHeader() throws IOException {
-    block = Short.toUnsignedInt(EndiannessReverserUtil.readShort(slice)) << 16;
+    block = Short.toUnsignedInt(slice.readShort()) << 16;
     assert block >= 0;
-    final int numValues = 1 + Short.toUnsignedInt(EndiannessReverserUtil.readShort(slice));
+    final int numValues = 1 + Short.toUnsignedInt(slice.readShort());
     index = nextBlockIndex;
     nextBlockIndex = index + numValues;
     if (numValues <= MAX_ARRAY_LENGTH) {
@@ -476,7 +475,7 @@ final class IndexedDISI extends DocIdSetIterator {
         final int targetInBlock = target & 0xFFFF;
         // TODO: binary search
         for (; disi.index < disi.nextBlockIndex;) {
-          int doc = Short.toUnsignedInt(EndiannessReverserUtil.readShort(disi.slice));
+          int doc = Short.toUnsignedInt(disi.slice.readShort());
           disi.index++;
           if (doc >= targetInBlock) {
             disi.doc = disi.block | doc;
@@ -494,7 +493,7 @@ final class IndexedDISI extends DocIdSetIterator {
           return disi.exists;
         }
         for (; disi.index < disi.nextBlockIndex;) {
-          int doc = Short.toUnsignedInt(EndiannessReverserUtil.readShort(disi.slice));
+          int doc = Short.toUnsignedInt(disi.slice.readShort());
           disi.index++;
           if (doc >= targetInBlock) {
             if (doc != targetInBlock) {
@@ -524,7 +523,7 @@ final class IndexedDISI extends DocIdSetIterator {
         }
 
         for (int i = disi.wordIndex + 1; i <= targetWordIndex; ++i) {
-          disi.word = EndiannessReverserUtil.readLong(disi.slice);
+          disi.word = disi.slice.readLong();
           disi.numberOfOnes += Long.bitCount(disi.word);
         }
         disi.wordIndex = targetWordIndex;
@@ -540,7 +539,7 @@ final class IndexedDISI extends DocIdSetIterator {
         while (++disi.wordIndex < 1024) {
           // This could use the rank cache to skip empty spaces >= 512 bits, but it seems unrealistic
           // that such blocks would be DENSE
-          disi.word = EndiannessReverserUtil.readLong(disi.slice);
+          disi.word = disi.slice.readLong();
           if (disi.word != 0) {
             disi.index = disi.numberOfOnes;
             disi.numberOfOnes += Long.bitCount(disi.word);
@@ -565,7 +564,7 @@ final class IndexedDISI extends DocIdSetIterator {
         }
 
         for (int i = disi.wordIndex + 1; i <= targetWordIndex; ++i) {
-          disi.word = EndiannessReverserUtil.readLong(disi.slice);
+          disi.word = disi.slice.readLong();
           disi.numberOfOnes += Long.bitCount(disi.word);
         }
         disi.wordIndex = targetWordIndex;
@@ -622,7 +621,7 @@ final class IndexedDISI extends DocIdSetIterator {
     // Position the counting logic just after the rank point
     final int rankAlignedWordIndex = rankIndex << disi.denseRankPower >> 6;
     disi.slice.seek(disi.denseBitmapOffset + rankAlignedWordIndex*Long.BYTES);
-    long rankWord = EndiannessReverserUtil.readLong(disi.slice);
+    long rankWord = disi.slice.readLong();
     int denseNOO = rank + Long.bitCount(rankWord);
 
     disi.wordIndex = rankAlignedWordIndex;

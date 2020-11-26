@@ -31,6 +31,8 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -131,6 +133,7 @@ public class TestPackedInts extends LuceneTestCase {
           IndexInput in = d.openInput("out.bin", newIOContext(random()));
           // header = codec header | bitsPerValue | valueCount | format
           CodecUtil.checkHeader(in, PackedInts.CODEC_NAME, PackedInts.VERSION_START, PackedInts.VERSION_CURRENT); // codec header
+          in = new EndiannessReverserIndexInput(in);
           assertEquals(w.bitsPerValue, in.readVInt());
           assertEquals(valueCount, in.readVInt());
           assertEquals(w.getFormat().getId(), in.readVInt());
@@ -139,7 +142,7 @@ public class TestPackedInts extends LuceneTestCase {
         }
 
         {// test reader
-          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          IndexInput in = new EndiannessReverserIndexInput(d.openInput("out.bin", newIOContext(random())));
           PackedInts.Reader r = PackedInts.getReader(in);
           assertEquals(fp, in.getFilePointer());
           for(int i=0;i<valueCount;i++) {
@@ -156,7 +159,7 @@ public class TestPackedInts extends LuceneTestCase {
         }
 
         { // test reader iterator next
-          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          IndexInput in = new EndiannessReverserIndexInput(d.openInput("out.bin", newIOContext(random())));
           PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
           for(int i=0;i<valueCount;i++) {
             assertEquals("index=" + i + " valueCount="
@@ -169,7 +172,7 @@ public class TestPackedInts extends LuceneTestCase {
         }
 
         { // test reader iterator bulk next
-          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          IndexInput in = new EndiannessReverserIndexInput(d.openInput("out.bin", newIOContext(random())));
           PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in, bufferSize);
           int i = 0;
           while (i < valueCount) {
@@ -187,7 +190,7 @@ public class TestPackedInts extends LuceneTestCase {
         }
         
         { // test direct reader get
-          IndexInput in = d.openInput("out.bin", newIOContext(random()));
+          IndexInput in = new EndiannessReverserIndexInput(d.openInput("out.bin", newIOContext(random())));
           PackedInts.Reader intsEnum = PackedInts.getDirectReader(in);
           for (int i = 0; i < valueCount; i++) {
             final String msg = "index=" + i + " valueCount="
@@ -213,7 +216,7 @@ public class TestPackedInts extends LuceneTestCase {
       out.writeLong(0);
     }
     out.close();
-    final IndexInput in = dir.openInput("tests.bin", newIOContext(random()));
+    final IndexInput in = new EndiannessReverserIndexInput(dir.openInput("tests.bin", newIOContext(random())));
     for (int version = PackedInts.VERSION_START; version <= PackedInts.VERSION_CURRENT; ++version) {
       for (int bpv = 1; bpv <= 64; ++bpv) {
         for (PackedInts.Format format : PackedInts.Format.values()) {
@@ -420,7 +423,7 @@ public class TestPackedInts extends LuceneTestCase {
       final long end = out.getFilePointer();
       out.close();
 
-      IndexInput in = dir.openInput("out", newIOContext(random()));
+      IndexInput in = new EndiannessReverserIndexInput(dir.openInput("out", newIOContext(random())));
       Reader reader = PackedInts.getReader(in);
       String msg = "Impl=" + w.getClass().getSimpleName() + ", bitsPerValue=" + bitsPerValue;
       assertEquals(msg, 1, reader.size());
@@ -784,7 +787,7 @@ public class TestPackedInts extends LuceneTestCase {
         mutable.save(out);
         out.close();
 
-        IndexInput in = directory.openInput("packed-ints.bin", IOContext.DEFAULT);
+        IndexInput in = new EndiannessReverserIndexInput(directory.openInput("packed-ints.bin", IOContext.DEFAULT));
         PackedInts.Reader reader = PackedInts.getReader(in);
         assertEquals(valueCount, reader.size());
         if (mutable instanceof Packed64SingleBlock) {
@@ -1103,7 +1106,7 @@ public class TestPackedInts extends LuceneTestCase {
       final long fp = out.getFilePointer();
       out.close();
 
-      IndexInput in1 = dir.openInput("out.bin", IOContext.DEFAULT);
+      IndexInput in1 = new EndiannessReverserIndexInput(dir.openInput("out.bin", IOContext.DEFAULT));
       byte[] buf = new byte[(int) fp];
       in1.readBytes(buf, 0, (int) fp);
       in1.seek(0L);
@@ -1181,7 +1184,7 @@ public class TestPackedInts extends LuceneTestCase {
       }
 
       final Directory dir = newDirectory();
-      final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+      final IndexOutput out = new EndiannessReverserIndexOutput(dir.createOutput("out.bin", IOContext.DEFAULT));
       final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(out, blockSize);
       for (int i = 0; i < valueCount; ++i) {
         assertEquals(i, writer.ord());
@@ -1193,7 +1196,7 @@ public class TestPackedInts extends LuceneTestCase {
       final long fp = out.getFilePointer();
       out.close();
 
-      final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+      final IndexInput in = new EndiannessReverserIndexInput(dir.openInput("out.bin", IOContext.DEFAULT));
       final MonotonicBlockPackedReader reader = MonotonicBlockPackedReader.of(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
       assertEquals(fp, in.getFilePointer());
       for (int i = 0; i < valueCount; ++i) {

@@ -20,7 +20,6 @@ package org.apache.lucene.util.packed;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Accountable;
@@ -85,9 +84,9 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
   public static Meta loadMeta(IndexInput metaIn, long numValues, int blockShift) throws IOException {
     Meta meta = new Meta(numValues, blockShift);
     for (int i = 0; i < meta.numBlocks; ++i) {
-      meta.mins[i] = EndiannessReverserUtil.readLong(metaIn); 
-      meta.avgs[i] = Float.intBitsToFloat(EndiannessReverserUtil.readInt(metaIn));
-      meta.offsets[i] = EndiannessReverserUtil.readLong(metaIn);
+      meta.mins[i] = metaIn.readLong();
+      meta.avgs[i] = Float.intBitsToFloat(metaIn.readInt());
+      meta.offsets[i] = metaIn.readLong();
       meta.bpvs[i] = metaIn.readByte();
     }
     return meta;

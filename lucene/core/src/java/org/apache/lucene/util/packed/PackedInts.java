@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongsRef;
@@ -780,8 +781,9 @@ public class PackedInts {
    * @throws IOException If there is a low-level I/O error
    * @lucene.internal
    */
-  public static Reader getReader(DataInput in) throws IOException {
-    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
+  public static Reader getReader(IndexInput in) throws IOException {
+    // Hack to make test happy as the input is already wrapped. Note this method is only used there
+    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -820,8 +822,9 @@ public class PackedInts {
    * @throws IOException if the structure could not be retrieved.
    * @lucene.internal
    */
-  public static ReaderIterator getReaderIterator(DataInput in, int mem) throws IOException {
-    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
+  public static ReaderIterator getReaderIterator(IndexInput in, int mem) throws IOException {
+    // Hack to make test happy as the input is already wrapped. Note this method is only used there
+    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -873,7 +876,8 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Reader getDirectReader(IndexInput in) throws IOException {
-    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    // Hack to make test happy as the input is already wrapped. Note this method is only used there
+    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();

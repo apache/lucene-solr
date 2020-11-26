@@ -20,7 +20,6 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.EndiannessReverserUtil;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -91,9 +90,9 @@ public final class DirectMonotonicWriter {
       maxDelta |= buffer[i];
     }
 
-    EndiannessReverserUtil.writeLong(meta, min);
-    EndiannessReverserUtil.writeInt(meta, Float.floatToIntBits(avgInc));
-    EndiannessReverserUtil.writeLong(meta, data.getFilePointer() - baseDataPointer);
+    meta.writeLong(min);
+    meta.writeInt(Float.floatToIntBits(avgInc));
+    meta.writeLong(data.getFilePointer() - baseDataPointer);
     if (maxDelta == 0) {
       meta.writeByte((byte) 0);
     } else {

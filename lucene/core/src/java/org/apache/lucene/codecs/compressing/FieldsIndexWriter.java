@@ -28,7 +28,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
@@ -109,6 +111,9 @@ public final class FieldsIndexWriter implements Closeable {
     try (IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
       CodecUtil.writeIndexHeader(dataOut, codecName + "Idx", VERSION_CURRENT, id, suffix);
 
+      // wrapped IndexOutput for PackedInts
+      final IndexOutput metaOutWrapped = new EndiannessReverserIndexOutput(metaOut);
+
       metaOut.writeInt(numDocs);
       metaOut.writeInt(blockShift);
       metaOut.writeInt(totalChunks + 1);
@@ -118,7 +123,7 @@ public final class FieldsIndexWriter implements Closeable {
         CodecUtil.checkHeader(docsIn, codecName + "Docs", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
         try {
-          final DirectMonotonicWriter docs = DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
+          final DirectMonotonicWriter docs = DirectMonotonicWriter.getInstance(metaOutWrapped, dataOut, totalChunks + 1, blockShift);
           long doc = 0;
           docs.add(doc);
           for (int i = 0; i < totalChunks; ++i) {
@@ -143,7 +148,7 @@ public final class FieldsIndexWriter implements Closeable {
         CodecUtil.checkHeader(filePointersIn, codecName + "FilePointers", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
         try {
-          final DirectMonotonicWriter filePointers = DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
+          final DirectMonotonicWriter filePointers = DirectMonotonicWriter.getInstance(metaOutWrapped, dataOut, totalChunks + 1, blockShift);
           long fp = 0;
           for (int i = 0; i < totalChunks; ++i) {
             fp += filePointersIn.readVLong();
