@@ -155,7 +155,13 @@ public final class EndiannessReverserIndexInput extends IndexInput {
   public RandomAccessInput randomAccessSlice(long offset, long length) throws IOException {
     return new EndiannessReverserRandomAccessInput(in.randomAccessSlice(offset, length));
   }
-  
+
+  /**
+   * A {@link RandomAccessInput} wrapper that changes the endianness of the provided
+   * index input.
+   *
+   * @lucene.internal
+   */
   public static class EndiannessReverserRandomAccessInput implements RandomAccessInput {
     
     private final RandomAccessInput in;
