@@ -310,6 +310,9 @@ Bug Fixes
 * SOLR-12539: Handle parsing of values for 'other', 'include', and 'excludeTags' in JSON facets when specified as
   comma-separated values with extra spaces (hossman, Munendra S N)
 
+* SOLR-14514: Avoid picking 'stream' method in JSON facet when any of 'allBuckets', 'numBuckets', and 'missing' parameters are enabled
+  (hossman, Munendra S N)
+
 Other Changes
 ---------------------
 
