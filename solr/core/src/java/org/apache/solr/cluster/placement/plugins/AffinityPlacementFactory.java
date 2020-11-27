@@ -178,6 +178,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory, Configu
     this.config = cfg;
   }
 
+  @VisibleForTesting
+  public AffinityPlacementConfig getConfig() {
+    return config;
+  }
+
   /**
    * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this plugin and details
    * on what the plugin does.

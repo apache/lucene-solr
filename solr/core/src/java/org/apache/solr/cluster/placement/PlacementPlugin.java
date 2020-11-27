@@ -31,11 +31,6 @@ import org.apache.solr.cluster.Cluster;
  */
 public interface PlacementPlugin {
   /**
-   * Name of the property containing the factory class
-   */
-  String FACTORY_CLASS = "class";
-
-  /**
    * <p>Request from plugin code to compute placement. Note this method must be reentrant as a plugin instance may (read
    * will) get multiple such calls in parallel.
    *

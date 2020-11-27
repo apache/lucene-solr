@@ -52,9 +52,11 @@ public class PlacementPluginFactoryLoader {
   /**
    * Helper class to support dynamic reloading of plugin implementations.
    */
-  private static final class DelegatingPlacementPluginFactory implements PlacementPluginFactory {
+  public static final class DelegatingPlacementPluginFactory implements PlacementPluginFactory {
 
     private PlacementPluginFactory delegate;
+    // support for tests to make sure the update is completed
+    private int version;
 
     @Override
     public PlacementPlugin createPluginInstance() {
@@ -67,6 +69,15 @@ public class PlacementPluginFactoryLoader {
 
     public void setDelegate(PlacementPluginFactory delegate) {
       this.delegate = delegate;
+      this.version++;
+    }
+
+    public PlacementPluginFactory getDelegate() {
+      return delegate;
+    }
+
+    public int getVersion() {
+      return version;
     }
   }
 }
