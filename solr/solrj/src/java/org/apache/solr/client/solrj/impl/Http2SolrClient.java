@@ -945,6 +945,10 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setKeyStorePassword
           (System.getProperty("javax.net.ssl.keyStorePassword"));
     }
+    if (null != System.getProperty("javax.net.ssl.keyStoreType")) {
+      sslContextFactory.setKeyStoreType
+              (System.getProperty("javax.net.ssl.keyStoreType"));
+    }
     if (null != System.getProperty("javax.net.ssl.trustStore")) {
       sslContextFactory.setTrustStorePath
           (System.getProperty("javax.net.ssl.trustStore"));
@@ -952,6 +956,10 @@ public class Http2SolrClient extends SolrClient {
     if (null != System.getProperty("javax.net.ssl.trustStorePassword")) {
       sslContextFactory.setTrustStorePassword
           (System.getProperty("javax.net.ssl.trustStorePassword"));
+    }
+    if (null != System.getProperty("javax.net.ssl.trustStoreType")) {
+      sslContextFactory.setTrustStoreType
+              (System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
     sslContextFactory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName"));
