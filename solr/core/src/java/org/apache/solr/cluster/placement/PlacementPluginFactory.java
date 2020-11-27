@@ -18,8 +18,11 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Factory implemented by client code and configured in {@code solr.xml} allowing the creation of instances of
+ * Factory implemented by client code and configured in container plugins allowing the creation of instances of
  * {@link PlacementPlugin} to be used for replica placement computation.
+ * <p>Note: configurable factory implementations should also implement
+ * {@link org.apache.solr.api.ConfigurablePlugin} with the appropriate configuration
+ * bean type.</p>
  */
 public interface PlacementPluginFactory {
   /**
