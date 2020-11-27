@@ -76,7 +76,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
    * When it places a replica for an existing collection, it should pick the node with more cores that doesn't already have a replica for the shard.
    */
   private void testBasicPlacementInternal(boolean hasExistingCollection) throws Exception {
-    String collectionName = "testCollection";
+    String collectionName = "basicCollection";
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(2);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
@@ -117,7 +117,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testLowSpaceNode() throws Exception {
-    String collectionName = "testCollection";
+    String collectionName = "lowSpaceCollection";
 
     final int LOW_SPACE_NODE_INDEX = 0;
     final int NO_SPACE_NODE_INDEX = 1;
@@ -179,9 +179,161 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * Test that existing collection replicas are taken into account to not place more than one replica of a given type
+   * for a given shard per node
+   */
+  @Test
+  public void testPlacementWithExistingReplicas() throws Exception {
+    String collectionName = "existingCollection";
+
+    final int LOW_SPACE_NODE_INDEX = 0;
+    final int NO_SPACE_NODE_INDEX = 1;
+
+
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(4);
+    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
+    int coresOnNode = 10;
+    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
+      nodeBuilder.setCoreCount(coresOnNode).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+      coresOnNode += 10;
+    }
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    // Build the collection letting the code pick up nodes...
+    collectionBuilder.initializeShardsReplicas(2, 2, 1, 0, nodeBuilders);
+    // Now explicitly change the nodes to create the collection distribution we want to test:
+    // (note this collection is an illegal placement: shard 1 has two replicas on node 0. The placement plugin should still
+    // be able to place new replicas as long as they don't break the rules).
+    //  +--------------+----+----+----+----+
+    //  |         Node |  0 |  1 |  2 |  3 |
+    //  |Cores on node | 10 | 20 | 30 | 40 |
+    //  +----------------------------------+
+    //  |   Shard 1:   |    |    |    |    |
+    //  |         NRT  |  X |    |    |  X |
+    //  |         TLOG |  X |    |    |    |
+    //  +----------------------------------+
+    //  |   Shard 2:   |    |    |    |    |
+    //  |         NRT  |    |  X |    |  X |
+    //  |         TLOG |    |    |  X |    |
+    //  +--------------+----+----+----+----+
+
+    // The code below is not ideal... We only modify the parts of the collection that we need to change (replica nodes).
+    // If this only happens in this test then it is likely the simplest approach.
+    // If we need to do this elsewhere, we need to allow the collection builder to accept a sharding/replication
+    // description and place the replicas accordingly on nodes.
+    List<Builders.ShardBuilder> shardBuilders = collectionBuilder.getShardBuilders();
+    List<Builders.ReplicaBuilder> replicas;
+    Builders.ReplicaBuilder replica;
+
+    // Replicas of shard 1
+    replicas = shardBuilders.get(1 - 1).getReplicaBuilders();
+
+    // Shard 1 first NRT goes to node 0
+    replica = replicas.get(0);
+    assertEquals(Replica.ReplicaType.NRT, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(0));
+
+    // Shard 1 second NRT goes to node 3
+    replica = replicas.get(1);
+    assertEquals(Replica.ReplicaType.NRT, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(3));
+
+    // Shard 1 TLOG goes to node 0
+    replica = replicas.get(2);
+    assertEquals(Replica.ReplicaType.TLOG, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(0));
+
+    // Replicas of shard 2
+    replicas = shardBuilders.get(2 - 1).getReplicaBuilders();
+
+    // Shard 2 first NRT goes to node 1
+    replica = replicas.get(0);
+    assertEquals(Replica.ReplicaType.NRT, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(1));
+
+    // Shard 2 second NRT goes to node 3
+    replica = replicas.get(1);
+    assertEquals(Replica.ReplicaType.NRT, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(3));
+
+    // Shard 2 TLOG goes to node 2
+    replica = replicas.get(2);
+    assertEquals(Replica.ReplicaType.TLOG, replica.getReplicaType());
+    replica.setReplicaNode(nodeBuilders.get(2));
+
+    SolrCollection solrCollection = collectionBuilder.build();
+
+
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    // We now request placement of 1 NRT and 1 TLOG for each shard. They must be placed on the most appropriate nodes,
+    // i.e. those that do not already have a replica for the shard and then on the node with the lowest
+    // number of cores. NRT are placed first.
+    // We therefore expect the placement of the new replicas to look like:
+    //  +--------------+----+----+----+----+
+    //  |         Node |  0 |  1 |  2 |  3 |
+    //  |Cores on node | 10 | 20 | 30 | 40 |
+    //  +----------------------------------+
+    //  |   Shard 1:   |    |    |    |    |
+    //  |         NRT  |  X |  N |    |  X |
+    //  |         TLOG |  X |    |  N |    |
+    //  +----------------------------------+
+    //  |   Shard 2:   |    |    |    |    |
+    //  |         NRT  |  N |  X |    |  X |
+    //  |         TLOG |    |  N |  X |    | <-- We don't really expect this. It should be impossible to place this TLOG with 4 nodes
+    //  +--------------+----+----+----+----+
+
+
+    // Place two replicas of each type for each shard
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+        1, 1, 0);
+
+    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+
+    // Let's check that the new replicas are placed where expected.
+    Set<ReplicaPlacement> replicaPlacements = pp.getReplicaPlacements();
+
+    // Each expected placement is represented as a string "shard replica-type node"
+    Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 NRT 0", "2 TLOG 1");
+    verifyPlacements(expectedPlacements, replicaPlacements, shardBuilders, liveNodes);
+  }
+
+
+  /**
+   * Verifies that a computed set of placements does match the expected placement on nodes.
+   * @param expectedPlacements a set of strings of the form {@code "1 NRT 3"} where 1 would be the shard index, NRT the
+   *                           replica type and 3 the node on which the replica is placed. Shards are 1 based. Nodes 0 based.
+   */
+  private static void verifyPlacements(Set<String> expectedPlacements, Set<ReplicaPlacement> computedPlacements,
+                                       List<Builders.ShardBuilder> shardBuilders, List<Node> liveNodes) {
+    assertEquals("Wrong number of computed placements", expectedPlacements.size(), computedPlacements.size());
+
+    // Prepare structures for looking up shard name index and node index
+    Map<String, Integer> shardNumbering = new HashMap<>();
+    int index = 1; // first shard is 1 not 0
+    for (Builders.ShardBuilder sb : shardBuilders) {
+      shardNumbering.put(sb.getShardName(), index++);
+    }
+    Map<Node, Integer> nodeNumbering = new HashMap<>();
+    index = 0;
+    for (Node n : liveNodes) {
+      nodeNumbering.put(n, index++);
+    }
+
+    Set<String> expected = new HashSet<>(expectedPlacements);
+    for (ReplicaPlacement p : computedPlacements) {
+      String lookUpPlacementResult = shardNumbering.get(p.getShardName()) + " " + p.getReplicaType().name() + " " +  nodeNumbering.get(p.getNode());
+      assertTrue(expected.remove(lookUpPlacementResult));
+    }
+  }
+
   @Test
   public void testAvailabilityZones() throws Exception {
-    String collectionName = "testCollection";
+    String collectionName = "azCollection";
     int NUM_NODES = 6;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
     for (int i = 0; i < NUM_NODES; i++) {
@@ -239,7 +391,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReplicaType() throws Exception {
-    String collectionName = "testCollection";
+    String collectionName = "replicaTypeCollection";
     int NUM_NODES = 6;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
     for (int i = 0; i < NUM_NODES; i++) {
@@ -306,7 +458,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFreeDiskConstraints() throws Exception {
-    String collectionName = "testCollection";
+    String collectionName = "freeDiskCollection";
     int NUM_NODES = 3;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(NUM_NODES);
     Node smallNode = null;
@@ -344,8 +496,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Test
-  //@Ignore
+  @Test @Slow
   public void testScalability() throws Exception {
     log.info("==== numNodes ====");
     runTestScalability(1000, 100, 40, 40, 20);
@@ -367,10 +518,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     runTestScalability(5000, 100, 2000, 0, 0);
   }
 
-  private void runTestScalability(int numNodes, int numShards,
-                                  int nrtReplicas, int tlogReplicas,
-                                  int pullReplicas) throws Exception {
-
+  private void runTestScalability(int numNodes, int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas) throws Exception {
     String collectionName = "scaleCollection";
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(numNodes);

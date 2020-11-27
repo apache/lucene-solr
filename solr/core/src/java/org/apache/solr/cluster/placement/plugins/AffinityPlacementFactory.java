@@ -371,7 +371,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
       // Build the set of candidate nodes, i.e. nodes not having (yet) a replica of the given shard
       Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodes.get(replicaType));
 
-      // Count existing replicas per AZ. We count only instances the type of replica for which we need to do placement. This
+      // Count existing replicas per AZ. We count only instances of the type of replica for which we need to do placement. This
       // can be changed in the loop below if we want to count all replicas for the shard.
       Map<String, Integer> azToNumReplicas = new HashMap<>();
       // Add all "interesting" AZ's, i.e. AZ's for which there's a chance we can do placement.

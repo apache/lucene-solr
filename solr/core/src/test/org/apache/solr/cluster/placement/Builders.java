@@ -119,6 +119,13 @@ public class Builders {
     }
 
     /**
+     * @return The internal shards data structure to allow test code to modify the replica distribution to nodes.
+     */
+    public LinkedList<ShardBuilder> getShardBuilders() {
+      return shardBuilders;
+    }
+
+    /**
      * Initializes shard and replica builders for the collection based on passed parameters. Replicas are assigned round
      * robin to the nodes. The shard leader is the first NRT replica of each shard (or first TLOG is no NRT).
      * Shard and replica configuration can be modified afterwards, the returned builder hierarchy is a convenient starting point.
@@ -199,6 +206,14 @@ public class Builders {
       return this;
     }
 
+    public String getShardName() {
+      return shardName;
+    }
+
+    public LinkedList<ReplicaBuilder> getReplicaBuilders() {
+      return replicaBuilders;
+    }
+
     public ShardBuilder setReplicaBuilders(LinkedList<ReplicaBuilder> replicaBuilders) {
       this.replicaBuilders = replicaBuilders;
       return this;
@@ -244,6 +259,10 @@ public class Builders {
     public ReplicaBuilder setCoreName(String coreName) {
       this.coreName = coreName;
       return this;
+    }
+
+    public Replica.ReplicaType getReplicaType() {
+      return replicaType;
     }
 
     public ReplicaBuilder setReplicaType(Replica.ReplicaType replicaType) {
