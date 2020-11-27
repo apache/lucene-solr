@@ -39,7 +39,7 @@ import org.apache.solr.cluster.placement.*;
 public class RandomPlacementFactory implements PlacementPluginFactory {
 
   @Override
-  public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
+  public PlacementPlugin createPluginInstance() {
     return new RandomPlacementPlugin();
   }
 

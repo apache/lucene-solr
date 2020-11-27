@@ -74,6 +74,9 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -257,6 +260,7 @@ public class CoreContainer {
 
   // initially these are the same to collect the plugin-based listeners during init
   private ClusterEventProducer clusterEventProducer;
+  private PlacementPluginFactory placementPluginFactory;
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -895,6 +899,9 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // get the placement plugin
+      placementPluginFactory = PlacementPluginFactoryLoader.load(containerPluginsRegistry);
 
       // create target ClusterEventProducer (possibly from plugins)
       clusterEventProducer = clusterEventProducerFactory.create(containerPluginsRegistry);
@@ -2178,6 +2185,10 @@ public class CoreContainer {
 
   public ClusterEventProducer getClusterEventProducer() {
     return clusterEventProducer;
+  }
+
+  public PlacementPluginFactory getPlacementPluginFactory() {
+    return placementPluginFactory;
   }
 
   static {

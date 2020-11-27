@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.plugins;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
+import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.Pair;
@@ -116,7 +117,7 @@ import java.util.stream.Collectors;
  * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
  * to allow configuration base option selection as well...</p>
  */
-public class AffinityPlacementFactory implements PlacementPluginFactory {
+public class AffinityPlacementFactory implements PlacementPluginFactory, ConfigurablePlugin<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -155,6 +156,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    */
   public static final String PRIORITIZED_FREE_DISK_GB = "prioritizedFreeDiskGB";
 
+  private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
+
   /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow the factory to do one
    * time costly operations if needed, and to only have to instantiate a default constructor class by name, rather than
@@ -165,10 +168,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
   }
 
   @Override
-  public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-    final long minimalFreeDiskGB = config.getLongConfig(MINIMAL_FREE_DISK_GB, 20L);
-    final long prioritizedFreeDiskGB = config.getLongConfig(PRIORITIZED_FREE_DISK_GB, 100L);
-    return new AffinityPlacementPlugin(minimalFreeDiskGB, prioritizedFreeDiskGB);
+  public PlacementPlugin createPluginInstance() {
+    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB);
+  }
+
+  @Override
+  public void configure(AffinityPlacementConfig cfg) {
+    Objects.requireNonNull(cfg, "configuration must never be null");
+    this.config = cfg;
   }
 
   /**

@@ -43,7 +43,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class MinimizeCoresPlacementFactory implements PlacementPluginFactory {
 
   @Override
-  public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
+  public PlacementPlugin createPluginInstance() {
     return new MinimizeCoresPlacementPlugin();
   }
 

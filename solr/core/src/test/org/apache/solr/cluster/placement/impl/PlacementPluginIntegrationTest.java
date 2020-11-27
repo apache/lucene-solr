@@ -5,7 +5,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
+import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
@@ -55,7 +55,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testMinimizeCores() throws Exception {
-    Map<String, Object> config = Map.of(PlacementPluginConfig.FACTORY_CLASS, MinimizeCoresPlacementFactory.class.getName());
+    Map<String, Object> config = Map.of(PlacementPlugin.FACTORY_CLASS, MinimizeCoresPlacementFactory.class.getName());
     V2Request req = new V2Request.Builder("/cluster")
         .forceV2(true)
         .POST()

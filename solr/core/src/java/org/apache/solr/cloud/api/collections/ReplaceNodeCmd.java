@@ -120,7 +120,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               .assignPullReplicas(numPullReplicas)
               .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
               .build();
-          Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.cloudManager, clusterState, clusterState.getCollection(sourceCollection));
+          Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
+              ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+              clusterState, clusterState.getCollection(sourceCollection));
           targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);

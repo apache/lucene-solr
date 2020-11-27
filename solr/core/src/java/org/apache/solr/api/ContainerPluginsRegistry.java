@@ -392,8 +392,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
       if (instance instanceof ConfigurablePlugin) {
         Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
-        if (c != null) {
-          MapWriter initVal = mapper.readValue(Utils.toJSON(holder.original), c);
+        if (c != null && holder.meta.config != null) {
+          MapWriter initVal = mapper.readValue(Utils.toJSON(holder.meta.config), c);
           ((ConfigurablePlugin) instance).configure(initVal);
         }
       }
