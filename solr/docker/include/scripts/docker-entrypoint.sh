@@ -17,6 +17,9 @@ if ! [[ ${SOLR_PORT:-} =~ ^[0-9]+$ ]]; then
   export SOLR_PORT
 fi
 
+# Essential for running Solr
+/opt/docker-solr/scripts/init-var-solr
+
 # when invoked with e.g.: docker run solr -help
 if [ "${1:0:1}" == '-' ]; then
     set -- solr-foreground "$@"
