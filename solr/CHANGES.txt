@@ -7,6 +7,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 ==================  9.0.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
+Docker and contrib modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -144,14 +145,10 @@ Other Changes
 * SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
   removed in LUCENE-9576. (ab)
 
-* SOLR-14957: Add Prometheus Exporter to docker PATH. Fix classpath issues. (Houston Putman)
-
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
-
-* SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
 
 * SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
   (Alex Bulygin via Christine Poerschke)
