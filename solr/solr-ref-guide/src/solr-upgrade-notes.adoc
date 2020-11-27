@@ -66,8 +66,8 @@ The Solr community is working on pluggable API to replace this functionality, wi
 * Similarly, rule-based replica placement strategy has been deprecated and will be replaced
   in Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
 
-* Support for detecting spinning disks will be removed in Lucene 9.0 (LUCENE-9576). Corresponding
-`spins` metrics in Solr are deprecated and will be removed in Solr 9.0.
+* Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
+`spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
 
 *Legacy Scaling (non-SolrCloud) Terminology Updated*
 
