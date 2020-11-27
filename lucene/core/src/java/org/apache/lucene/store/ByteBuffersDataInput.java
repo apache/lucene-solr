@@ -16,28 +16,32 @@
  */
 package org.apache.lucene.store;
 
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.io.EOFException;
+import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * A {@link DataInput} implementing {@link RandomAccessInput} and reading data from a
  * list of {@link ByteBuffer}s.
  */
-public final class ByteBuffersDataInput extends DataInput implements Accountable, RandomAccessInput {
+public final class ByteBuffersDataInput extends DataInput implements
+    Accountable, RandomAccessInput, TypeReader<ByteBuffersDataInput>, TypeReaderDefaults<ByteBuffersDataInput> {
   private final ByteBuffer[] blocks;
   private final int blockBits;
   private final int blockMask;
   private final long size;
   private final long offset;
+  private final ByteOrder byteOrder;
 
   private long pos;
 
@@ -47,7 +51,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
    * buffer can be of an arbitrary remaining length.
    */
   public ByteBuffersDataInput(List<ByteBuffer> buffers) {
-    ensureAssumptions(buffers);
+    this.byteOrder = ensureAssumptions(buffers);
 
     this.blocks = buffers.stream().map(buf -> buf.asReadOnlyBuffer()).toArray(ByteBuffer[]::new);
 
@@ -169,8 +173,12 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Short.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getShort(blockOffset);
     } else {
-      return (short) ((readByte(pos    ) & 0xFF) << 8 | 
-                      (readByte(pos + 1) & 0xFF));
+      if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+        return (short) ((readByte(pos) & 0xFF) << 8 |
+            (readByte(pos + 1) & 0xFF));
+      } else {
+        return (short) ((readByte(pos + 1) & 0xFF) << 8 | (readByte(pos) & 0xFF));
+      }
     }
   }
 
@@ -181,10 +189,17 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Integer.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getInt(blockOffset);
     } else {
-      return ((readByte(pos    )       ) << 24 |
-              (readByte(pos + 1) & 0xFF) << 16 |
-              (readByte(pos + 2) & 0xFF) << 8  |
-              (readByte(pos + 3) & 0xFF));
+      if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+        return ((readByte(pos)) << 24 |
+            (readByte(pos + 1) & 0xFF) << 16 |
+            (readByte(pos + 2) & 0xFF) << 8 |
+            (readByte(pos + 3) & 0xFF));
+      } else {
+        return ((readByte(pos + 3)) << 24 |
+            (readByte(pos + 2) & 0xFF) << 16 |
+            (readByte(pos + 1) & 0xFF) << 8 |
+            (readByte(pos) & 0xFF));
+      }
     }
   }
 
@@ -195,7 +210,11 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Long.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getLong(blockOffset);
     } else {
-      return (((long) readInt(pos)) << 32) | (readInt(pos + 4) & 0xFFFFFFFFL);
+      if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+        return (((long) readInt(pos)) << 32) | (readInt(pos + 4) & 0xFFFFFFFFL);
+      } else {
+        return (((long) readInt(pos + 4)) << 32) | (readInt(pos) & 0xFFFFFFFFL);
+      }
     }
   }
 
@@ -248,14 +267,16 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     return (v & (v - 1)) == 0;
   }
 
-  private static void ensureAssumptions(List<ByteBuffer> buffers) {
+  private static ByteOrder ensureAssumptions(List<ByteBuffer> buffers) {
     if (buffers.isEmpty()) {
       throw new IllegalArgumentException("Buffer list must not be empty.");
     }
 
     if (buffers.size() == 1) {
       // Special case of just a single buffer, conditions don't apply.
+      return buffers.get(0).order();
     } else {
+      ByteOrder byteOrder = buffers.get(0).order();
       final int blockPage = determineBlockPage(buffers);
       
       // First buffer decides on block page length.
@@ -264,9 +285,13 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
             + Integer.toHexString(blockPage));
       }
 
-      // Any block from 2..last-1 should have the same page size.
+      // Any block from 2..last-1 should have the same page size and the same byte order.
       for (int i = 1, last = buffers.size() - 1; i < last; i++) {
         ByteBuffer buffer = buffers.get(i);
+        if (!buffer.order().equals(byteOrder)) {
+          throw new IllegalArgumentException("All buffers must have the same byte order: "
+            + buffer.order() + " != " + buffer.order());
+        }
         if (buffer.position() != 0) {
           throw new IllegalArgumentException("All buffers except for the first one must have position() == 0: " + buffer);
         }
@@ -275,6 +300,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
               + Integer.toHexString(blockPage));
         }
       }
+      return byteOrder;
     }
   }
 
@@ -317,5 +343,67 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
       cloned.get(cloned.size() - 1).limit(endOffset);
       return cloned;
     }
-  }  
+  }
+
+  // -- implement byte-order specific methods efficiently.
+  // Could also be done as a subclass with byte-order specific overrides...
+
+  @Override
+  public ByteOrder getByteOrder() {
+    return byteOrder;
+  }
+
+  @Override
+  public TypeReader<ByteBuffersDataInput> getTypeReader(ByteOrder byteOrder) {
+    if (getByteOrder().equals(byteOrder)) {
+      return this;
+    } else {
+      // Clone the buffers, set byte order no the clones.
+      return new ByteBuffersDataInput(
+          Arrays.stream(blocks)
+              .map(buffer -> buffer.duplicate().order(byteOrder))
+              .collect(Collectors.toList()));
+    }
+  }
+
+  @Override
+  public short readShort() throws IOException {
+    if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+      throw new IOException("implement me.");
+    } else {
+      throw new IOException("implement me.");
+    }
+  }
+
+  @Override
+  public int readInt() throws IOException {
+    if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+      throw new IOException("implement me.");
+    } else {
+      throw new IOException("implement me.");
+    }
+  }
+
+  @Override
+  public long readLong() throws IOException {
+    if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+      throw new IOException("implement me.");
+    } else {
+      throw new IOException("implement me.");
+    }
+  }
+
+  @Override
+  public void readLELongs(long[] dst, int offset, int length) throws IOException {
+    if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+      throw new IOException("implement me.");
+    } else {
+      throw new IOException("implement me.");
+    }
+  }
+
+  @Override
+  public ByteBuffersDataInput input() {
+    return this;
+  }
 }

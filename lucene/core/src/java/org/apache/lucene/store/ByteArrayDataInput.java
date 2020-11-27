@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
  * <b>WARNING:</b> This class omits all low-level checks.
  * @lucene.experimental 
  */
-public final class ByteArrayDataInput extends DataInput {
+public final class ByteArrayDataInput extends DataInput implements BigEndianTypeReaderDefaults<ByteArrayDataInput> {
 
   private byte[] bytes;
 
@@ -80,17 +80,41 @@ public final class ByteArrayDataInput extends DataInput {
     pos += count;
   }
 
+  // NOTE: AIOOBE not EOF if you read too much
+  @Override
+  public byte readByte() {
+    return bytes[pos++];
+  }
+
+  // NOTE: AIOOBE not EOF if you read too much
+  @Override
+  public void readBytes(byte[] b, int offset, int len) {
+    System.arraycopy(bytes, pos, b, offset, len);
+    pos += len;
+  }
+
+  // NOTE: a subset of (this implementation-optimized) big-endian type reader methods follow.
+  // You could swap the defaults (by implementing LittleEndianTypeReader and replacing the
+  // optimized versions with little-endian counterparts); everything should work as before
+  // because getTypeReader() would return the same objecty if little endian order is requested
+  // and provide a wrapper for the opposite endianness.
+
+  @Override
+  public ByteArrayDataInput input() {
+    return this;
+  }
+
   @Override
   public short readShort() {
     return (short) (((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF));
   }
- 
+
   @Override
   public int readInt() {
     return ((bytes[pos++] & 0xFF) << 24) | ((bytes[pos++] & 0xFF) << 16)
       | ((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF);
   }
- 
+
   @Override
   public long readLong() {
     final int i1 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
@@ -120,7 +144,7 @@ public final class ByteArrayDataInput extends DataInput {
     if ((b & 0xF0) == 0) return i;
     throw new RuntimeException("Invalid vInt detected (too many bits)");
   }
- 
+
   @Override
   public long readVLong() {
     byte b = bytes[pos++];
@@ -151,18 +175,5 @@ public final class ByteArrayDataInput extends DataInput {
     i |= (b & 0x7FL) << 56;
     if (b >= 0) return i;
     throw new RuntimeException("Invalid vLong detected (negative values disallowed)");
-  }
-
-  // NOTE: AIOOBE not EOF if you read too much
-  @Override
-  public byte readByte() {
-    return bytes[pos++];
-  }
-
-  // NOTE: AIOOBE not EOF if you read too much
-  @Override
-  public void readBytes(byte[] b, int offset, int len) {
-    System.arraycopy(bytes, pos, b, offset, len);
-    pos += len;
   }
 }
