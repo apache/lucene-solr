@@ -39,7 +39,7 @@ A Learning to Rank model is plugged into the ranking through the {@link org.apac
 a {@link org.apache.solr.search.QParserPlugin}. The plugin will
 read from the request the model (instance of {@link org.apache.solr.ltr.model.LTRScoringModel})
 used to perform the request plus other
-parameters. The plugin will generate a {@link org.apache.solr.ltr.search.LTRQParserPlugin.LTRQuery LTRQuery}:
+parameters. The plugin will generate a {@link org.apache.solr.ltr.search.LTRQuery LTRQuery}:
 a particular {@link org.apache.solr.search.RankQuery}
 that will encapsulate the given model and use it to
 rescore and rerank the document (by using an {@link org.apache.solr.ltr.LTRRescorer}).

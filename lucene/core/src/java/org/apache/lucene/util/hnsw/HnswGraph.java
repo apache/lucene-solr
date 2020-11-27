@@ -40,7 +40,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  *
  * The nomenclature is a bit different here from what's used in those papers:
  *
- * <h3>Hyperparameters</h3>
+ * <h2>Hyperparameters</h2>
  * <ul>
  *   <li><code>numSeed</code> is the equivalent of <code>m</code> in the 2012 paper; it controls the number of random entry points to sample.</li>
  *   <li><code>beamWidth</code> in {@link HnswGraphBuilder} has the same meaning as <code>efConst</code> in the 2016 paper. It is the number of

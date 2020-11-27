@@ -401,8 +401,10 @@ From a java client using SolrJ, index a document. In the code below, the `javax.
 ----
 System.setProperty("javax.net.ssl.keyStore", "/path/to/solr-ssl.keystore.p12");
 System.setProperty("javax.net.ssl.keyStorePassword", "secret");
+System.setProperty("javax.net.ssl.keyStoreType", "pkcs12");
 System.setProperty("javax.net.ssl.trustStore", "/path/to/solr-ssl.keystore.p12");
 System.setProperty("javax.net.ssl.trustStorePassword", "secret");
+System.setProperty("javax.net.ssl.trustStoreType", "pkcs12");
 String zkHost = "127.0.0.1:2181";
 CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList(zkHost),Optional.empty()).build();
 client.setDefaultCollection("mycollection");
