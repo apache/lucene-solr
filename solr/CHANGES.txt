@@ -208,6 +208,8 @@ Bug Fixes
 
 * SOLR-14993: Unable to download zookeeper files of 1byte in size (Erick Erickson, Allen Sooredoo)
 
+* SOLR-14851: Http2SolrClient doesn't handle keystore type correctly (Andras Salamon via janhoy)
+
 Other Changes
 ---------------------
 
