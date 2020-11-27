@@ -83,6 +83,9 @@ Bug Fixes
 
 * SOLR-14939: JSON range faceting to support cache=false parameter. (Christine Poerschke, Mike Drob)
 
+* SOLR-15031: Fix preventing null being wrapped in a QueryValueSource subQuery. Such null queries can be caused by query text
+  resulting in an empty token stream. (Pieter van Boxtel via Mike Drob)
+
 Other Changes
 ---------------------
 
