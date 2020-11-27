@@ -43,7 +43,7 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]
 for an overview of the main new features of Solr 8.7.
 
-When upgrading to 8.6.x users should be aware of the following major changes from 8.6.
+When upgrading to 8.7 users, should be aware of the following major changes from 8.6.
 
 *Autoscaling*
 
