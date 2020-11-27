@@ -122,14 +122,18 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int LOW_SPACE_NODE_INDEX = 0;
     final int NO_SPACE_NODE_INDEX = 1;
 
-
     // Cluster nodes and their attributes
-    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(4);
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(8);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
-    nodeBuilders.get(LOW_SPACE_NODE_INDEX).setCoreCount(1).setFreeDiskGB(MINIMAL_FREE_DISK_GB + 1); // Low space
-    nodeBuilders.get(NO_SPACE_NODE_INDEX).setCoreCount(10).setFreeDiskGB(1L); // Really not enough space
-    nodeBuilders.get(2).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
-    nodeBuilders.get(3).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    for (int i = 0; i < nodeBuilders.size(); i++) {
+      if (i == LOW_SPACE_NODE_INDEX) {
+        nodeBuilders.get(i).setCoreCount(1).setFreeDiskGB(MINIMAL_FREE_DISK_GB + 1); // Low space
+      } else if (i == NO_SPACE_NODE_INDEX) {
+        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB(1L); // Really not enough space
+      } else {
+        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+      }
+    }
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
 
     // The collection to create (shards are defined but no replicas)
@@ -144,36 +148,31 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
 
     assertEquals(18, pp.getReplicaPlacements().size()); // 3 shards, 6 replicas total each
-    // Verify no two replicas of same type of same shard placed on same node
-    Set<Pair<Pair<Replica.ReplicaType, String>, Node>> placements = new HashSet<>();
+    Set<Pair<String, Node>> placements = new HashSet<>();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      assertTrue("two replicas of same type for same shard placed on same node",
-          placements.add(new Pair<>(new Pair<>(rp.getReplicaType(), rp.getShardName()), rp.getNode())));
+      assertTrue("two replicas for same shard placed on same node", placements.add(new Pair<>(rp.getShardName(), rp.getNode())));
       assertNotEquals("Replica unnecessarily placed on node with low free space", rp.getNode(), liveNodes.get(LOW_SPACE_NODE_INDEX));
       assertNotEquals("Replica placed on node with not enough free space", rp.getNode(), liveNodes.get(NO_SPACE_NODE_INDEX));
     }
 
-    // Verify that if we ask for 3 replicas, the placement will use the low free space node
-    // Place two replicas of each type for each shard
+    // Verify that if we ask for 7 replicas, the placement will use the low free space node
     placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
-        3, 0, 0);
+        7, 0, 0);
     pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
-    assertEquals(9, pp.getReplicaPlacements().size()); // 3 shards, 3 replicas each
-    // Verify no two replicas of same shard placed on same node
+    assertEquals(21, pp.getReplicaPlacements().size()); // 3 shards, 7 replicas each
     placements = new HashSet<>();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertEquals("Only NRT replicas should be created", Replica.ReplicaType.NRT, rp.getReplicaType());
-      assertTrue("two replicas for same shard placed on same node",
-          placements.add(new Pair<>(new Pair<>(rp.getReplicaType(), rp.getShardName()), rp.getNode())));
+      assertTrue("two replicas for same shard placed on same node", placements.add(new Pair<>(rp.getShardName(), rp.getNode())));
       assertNotEquals("Replica placed on node with not enough free space", rp.getNode(), liveNodes.get(NO_SPACE_NODE_INDEX));
     }
 
-    // Verify that if we ask for 4 replicas, the placement will fail
+    // Verify that if we ask for 8 replicas, the placement fails
     try {
       placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
-          4, 0, 0);
+          8, 0, 0);
       plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
-      fail("Placing 4 replicas should not be possible given only three nodes have enough space");
+      fail("Placing 8 replicas should not be possible given only 7 nodes have enough space");
     } catch (PlacementException e) {
       // expected
     }
@@ -192,7 +191,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
 
     // Cluster nodes and their attributes
-    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(4);
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeNodes(5);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getNodeBuilders();
     int coresOnNode = 10;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
@@ -205,20 +204,20 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // Build the collection letting the code pick up nodes...
     collectionBuilder.initializeShardsReplicas(2, 2, 1, 0, nodeBuilders);
     // Now explicitly change the nodes to create the collection distribution we want to test:
-    // (note this collection is an illegal placement: shard 1 has two replicas on node 0. The placement plugin should still
-    // be able to place new replicas as long as they don't break the rules).
-    //  +--------------+----+----+----+----+
-    //  |         Node |  0 |  1 |  2 |  3 |
-    //  |Cores on node | 10 | 20 | 30 | 40 |
-    //  +----------------------------------+
-    //  |   Shard 1:   |    |    |    |    |
-    //  |         NRT  |  X |    |    |  X |
-    //  |         TLOG |  X |    |    |    |
-    //  +----------------------------------+
-    //  |   Shard 2:   |    |    |    |    |
-    //  |         NRT  |    |  X |    |  X |
-    //  |         TLOG |    |    |  X |    |
-    //  +--------------+----+----+----+----+
+    // (note this collection is in an illegal state: shard 1 has two replicas on node 0. The placement plugin would NOT
+    // generate such a placement but should still be able to place additional replicas as long as THEY don't break the rules).
+    //  +--------------+----+----+----+----+----+
+    //  |         Node |  0 |  1 |  2 |  3 |  4 |
+    //  |Cores on node | 10 | 20 | 30 | 40 | 50 |
+    //  +----------------------------------+----+
+    //  |   Shard 1:   |    |    |    |    |    |
+    //  |         NRT  |  X |    |    |  X |    |
+    //  |         TLOG |  X |    |    |    |    |
+    //  +----------------------------------+----+
+    //  |   Shard 2:   |    |    |    |    |    |
+    //  |         NRT  |    |  X |    |  X |    |
+    //  |         TLOG |    |    |  X |    |    |
+    //  +--------------+----+----+----+----+----+
 
     // The code below is not ideal... We only modify the parts of the collection that we need to change (replica nodes).
     // If this only happens in this test then it is likely the simplest approach.
@@ -274,18 +273,18 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // i.e. those that do not already have a replica for the shard and then on the node with the lowest
     // number of cores. NRT are placed first.
     // We therefore expect the placement of the new replicas to look like:
-    //  +--------------+----+----+----+----+
-    //  |         Node |  0 |  1 |  2 |  3 |
-    //  |Cores on node | 10 | 20 | 30 | 40 |
-    //  +----------------------------------+
-    //  |   Shard 1:   |    |    |    |    |
-    //  |         NRT  |  X |  N |    |  X |
-    //  |         TLOG |  X |    |  N |    |
-    //  +----------------------------------+
-    //  |   Shard 2:   |    |    |    |    |
-    //  |         NRT  |  N |  X |    |  X |
-    //  |         TLOG |    |  N |  X |    | <-- We don't really expect this. It should be impossible to place this TLOG with 4 nodes
-    //  +--------------+----+----+----+----+
+    //  +--------------+----+----+----+----+----+
+    //  |         Node |  0 |  1 |  2 |  3 |  4 |
+    //  |Cores on node | 10 | 20 | 30 | 40 | 50 |
+    //  +----------------------------------+----+
+    //  |   Shard 1:   |    |    |    |    |    |
+    //  |         NRT  |  X |  N |    |  X |    |
+    //  |         TLOG |  X |    |  N |    |    |
+    //  +----------------------------------+----+
+    //  |   Shard 2:   |    |    |    |    |    |
+    //  |         NRT  |  N |  X |    |  X |    |
+    //  |         TLOG |    |    |  X |    |  N |
+    //  +--------------+----+----+----+----+----+
 
 
     // Place two replicas of each type for each shard
@@ -298,7 +297,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Set<ReplicaPlacement> replicaPlacements = pp.getReplicaPlacements();
 
     // Each expected placement is represented as a string "shard replica-type node"
-    Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 NRT 0", "2 TLOG 1");
+    Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 NRT 0", "2 TLOG 4");
     verifyPlacements(expectedPlacements, replicaPlacements, shardBuilders, liveNodes);
   }
 
@@ -398,11 +397,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       Builders.NodeBuilder nodeBuilder = clusterBuilder.getNodeBuilders().get(i);
       nodeBuilder.setCoreCount(0);
       nodeBuilder.setFreeDiskGB(100L);
-      if (i < NUM_NODES / 2) {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Nrt,Tlog");
+      if (i < NUM_NODES / 3 * 2) {
+        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Nrt, TlOg");
         nodeBuilder.setSysprop("group", "one");
       } else {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Pull, foobar");
+        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Pull,foobar");
         nodeBuilder.setSysprop("group", "two");
       }
     }
@@ -485,12 +484,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection,
         StreamSupport.stream(solrCollection.shards().spliterator(), false)
             .map(Shard::getShardName).collect(Collectors.toSet()),
-        cluster.getLiveNodes(), 2, 0, 2);
+        cluster.getLiveNodes(), 1, 0, 1);
 
     PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
     AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
     PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
-    assertEquals(8, pp.getReplicaPlacements().size());
+    assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
     }

@@ -227,13 +227,25 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
       // Let's now iterate on all shards to create replicas for and start finding home sweet homes for the replicas
       for (String shardName : request.getShardNames()) {
+        // Inventory nodes (if any) that already have a replica of any type for the shard, because we can't be placing
+        // additional replicas on these. This data structure is updated after each replica to node assign and is used to
+        // make sure different replica types are not allocated to the same nodes (protecting same node assignments within
+        // a given replica type is done "by construction" in makePlacementDecisions()).
+        Set<Node> nodesWithReplicas = new HashSet<>();
+        Shard shard = solrCollection.getShard(shardName);
+        if (shard != null) {
+          for (Replica r : shard.replicas()) {
+            nodesWithReplicas.add(r.getNode());
+          }
+        }
+
         // Iterate on the replica types in the enum order. We place more strategic replicas first
         // (NRT is more strategic than TLOG more strategic than PULL). This is in case we eventually decide that less
         // strategic replica placement impossibility is not a problem that should lead to replica placement computation
         // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
           makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
-              attrValues, replicaTypeToNodes, coresOnNodes, placementPlanFactory, replicaPlacements);
+              attrValues, replicaTypeToNodes, nodesWithReplicas, coresOnNodes, placementPlanFactory, replicaPlacements);
         }
       }
 
@@ -353,44 +365,44 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
      * <p>The criteria used in this method are, in this order:
      * <ol>
      *     <li>No more than one replica of a given shard on a given node (strictly enforced)</li>
-     *     <li>Balance as much as possible the number of replicas of the given {@link org.apache.solr.cluster.Replica.ReplicaType} over available AZ's.
+     *     <li>Balance as much as possible replicas of a given {@link org.apache.solr.cluster.Replica.ReplicaType} over available AZ's.
      *     This balancing takes into account existing replicas <b>of the corresponding replica type</b>, if any.</li>
-     *     <li>Place replicas is possible on nodes having more than a certain amount of free disk space (note that nodes with a too small
+     *     <li>Place replicas if possible on nodes having more than a certain amount of free disk space (note that nodes with a too small
      *     amount of free disk space were eliminated as placement targets earlier, in {@link #getNodesPerReplicaType}). There's
      *     a threshold here rather than sorting on the amount of free disk space, because sorting on that value would in
      *     practice lead to never considering the number of cores on a node.</li>
      *     <li>Place replicas on nodes having a smaller number of cores (the number of cores considered
-     *     for this decision includes decisions made during the processing of the placement request)</li>
+     *     for this decision includes previous placement decisions made during the processing of the placement request)</li>
      * </ol>
      */
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
     private void makePlacementDecisions(SolrCollection solrCollection, String shardName, Set<String> availabilityZones,
                                         Replica.ReplicaType replicaType, int numReplicas, final AttributeValues attrValues,
-                                        EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes, Map<Node, Integer> coresOnNodes,
-                                        PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements) throws PlacementException {
-      // Build the set of candidate nodes, i.e. nodes not having (yet) a replica of the given shard
-      Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodes.get(replicaType));
-
-      // Count existing replicas per AZ. We count only instances of the type of replica for which we need to do placement. This
-      // can be changed in the loop below if we want to count all replicas for the shard.
+                                        EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes, Set<Node> nodesWithReplicas,
+                                        Map<Node, Integer> coresOnNodes, PlacementPlanFactory placementPlanFactory,
+                                        Set<ReplicaPlacement> replicaPlacements) throws PlacementException {
+      // Count existing replicas per AZ. We count only instances of the type of replica for which we need to do placement.
+      // If we ever want to balance replicas of any type across AZ's (and not each replica type balanced independently),
+      // we'd have to move this data structure to the caller of this method so it can be reused across different replica
+      // type placements for a given shard. Note then that this change would be risky. For example all NRT's and PULL
+      // replicas for a shard my be correctly balanced over three AZ's, but then all NRT can end up in the same AZ...
       Map<String, Integer> azToNumReplicas = new HashMap<>();
-      // Add all "interesting" AZ's, i.e. AZ's for which there's a chance we can do placement.
       for (String az : availabilityZones) {
         azToNumReplicas.put(az, 0);
       }
+
+      // Build the set of candidate nodes for the placement, i.e. nodes that can accept the replica type
+      Set<Node> candidateNodes = new HashSet<>(replicaTypeToNodes.get(replicaType));
+      // Remove nodes that already have a replica for the shard (no two replicas of same shard can be put on same node)
+      candidateNodes.removeAll(nodesWithReplicas);
 
       Shard shard = solrCollection.getShard(shardName);
       if (shard != null) {
         // shard is non null if we're adding replicas to an already existing collection.
         // If we're creating the collection, the shards do not exist yet.
         for (Replica replica : shard.replicas()) {
-          // Nodes already having any type of replica for the shard can't get another replica.
-          candidateNodes.remove(replica.getNode());
-          // The node's AZ has to be counted as having a replica if it has a replica of the same type as the one we need
-          // to place here (remove the "if" below to balance the number of replicas per AZ across all replica types rather
-          // than within each replica type, but then there's a risk that all NRT replicas for example end up on the same AZ).
-          // Note that if in the cluster nodes are configured to accept a single replica type and not multiple ones, the
-          // two options are equivalent (governed by system property AVAILABILITY_ZONE_SYSPROP on each node)
+          // The node's AZ is counted as having a replica if it has a replica of the same type as the one we need
+          // to place here.
           if (replica.getType() == replicaType) {
             final String az = getNodeAZ(replica.getNode(), attrValues);
             if (azToNumReplicas.containsKey(az)) {
@@ -476,6 +488,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
         }
 
         Node assignTarget = nodes.remove(0);
+
+        // Do not assign that node again for replicas of other replica type for this shard
+        // (this update of the set is not useful in the current execution of this method but for following ones only)
+        nodesWithReplicas.add(assignTarget);
 
         // Insert back a corrected entry for the AZ: one more replica living there and one less node that can accept new replicas
         // (the remaining candidate node list might be empty, in which case it will be cleaned up on the next iteration).
