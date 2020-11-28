@@ -1123,8 +1123,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
     fieldLists.put("sparse_s", getAlternatives("sparse_s"));
     fieldLists.put("multi_ss", getAlternatives("multi_ss"));
 
-    // TODO: if a field will be used as a function source, we can't use multi-valued types for it (currently)
-
     int maxAlt = 0;
     for (List<String> fieldList : fieldLists.values()) {
       maxAlt = Math.max(fieldList.size(), maxAlt);
@@ -1913,24 +1911,24 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
     // stats at top level on multi-valued fields
-    client.testJQ(params(p, "q", "*:*"
+    client.testJQ(params(p, "q", "*:*", "myfield", "${multi_ss}"
         , "json.facet", "{ sum1:'sum(${num_fs})', sumsq1:'sumsq(${num_fs})', avg1:'avg(${num_fs})', mind:'min(${num_fs})', maxd:'max(${num_fs})'" +
             ", mini:'min(${num_is})', maxi:'max(${num_is})', mins:'min(${multi_ss})', maxs:'max(${multi_ss})'" +
             ", stddev:'stddev(${num_fs})', variance:'variance(${num_fs})', median:'percentile(${num_fs}, 50)'" +
-            ", perc:'percentile(${num_fs}, 0,75,100)'" +
+            ", perc:'percentile(${num_fs}, 0,75,100)', maxss:'max($multi_ss)'" +
             " }"
         )
         , "facets=={ 'count':6, " +
             "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0" +
             ", mini:-5, maxi:3, mins:'a', maxs:'b'" +
-            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.25,3.0]" +
+            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.25,3.0], maxss:'b'" +
             "}"
     );
 
     // test sorting by multi-valued
-    client.testJQ(params(p, "q", "*:*"
-        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'avg(${num_is})'}  }}" +
-            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'avg(${num_is})'}  }} }"
+    client.testJQ(params(p, "q", "*:*", "my_field", "${num_is}"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'avg($my_field)'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'avg($my_field)'}  }} }"
         )
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'B', count:3, n1: 0.25}, { val:'A', count:2, n1:0.0}]}" +
