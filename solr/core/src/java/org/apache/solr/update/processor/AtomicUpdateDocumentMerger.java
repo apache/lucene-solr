@@ -16,6 +16,24 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -42,15 +60,6 @@ import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -120,13 +129,8 @@ public class AtomicUpdateDocumentMerger {
               doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
-              Object id = toDoc.containsKey(idField.getName())? toDoc.getFieldValue(idField.getName()):
-                  fromDoc.getFieldValue(idField.getName());
-              String err = "Unknown operation for the an atomic update, operation ignored: " + key;
-              if (id != null) {
-                err = err + " for id:" + id;
-              }
-              throw new SolrException(ErrorCode.BAD_REQUEST, err);
+              throw new SolrException(ErrorCode.BAD_REQUEST,
+                  "Unknown operation for the an atomic update, operation ignored: " + key + " for " + getID(toDoc, schema));
           }
           // validate that the field being modified is not the id field.
           if (idField.getName().equals(sif.getName())) {
@@ -141,6 +145,15 @@ public class AtomicUpdateDocumentMerger {
     }
     
     return toDoc;
+  }
+
+  private static String getID(SolrInputDocument doc, IndexSchema schema) {
+    String id = "";
+    SchemaField sf = schema.getUniqueKeyField();
+    if( sf != null ) {
+      id = "[doc="+doc.getFieldValue( sf.getName() )+"] ";
+    }
+    return id;
   }
 
   /**
@@ -553,7 +566,15 @@ public class AtomicUpdateDocumentMerger {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);
-    return sf.getType().toNativeType(val);
+    try {
+      return sf.getType().toNativeType(val);
+    } catch (SolrException ex) {
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
+          "Error converting field '" + sf.getName() + "'='" +val+"' to native type, msg=" + ex.getMessage(), ex);
+    } catch (Exception ex) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Error converting field '" + sf.getName() + "'='" +val+"' to native type, msg=" + ex.getMessage(), ex);
+    }
   }
 
   private static boolean isChildDoc(Object obj) {
