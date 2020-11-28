@@ -65,6 +65,10 @@ public final class HnswGraph {
   // node values are the ordinals of those vectors.
   private final List<Neighbors> graph;
 
+  // nocommit metrics hack
+  static int searchCount = 0;
+  static int abandonedCandidates = 0;
+
   HnswGraph(int maxConn, VectorValues.SearchStrategy searchStrategy) {
     graph = new ArrayList<>();
     graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
@@ -85,6 +89,7 @@ public final class HnswGraph {
   public static Neighbors search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
+
     // TODO: use unbounded priority queue
     TreeSet<Neighbor> candidates;
     if (searchStrategy.reversed) {
@@ -92,18 +97,21 @@ public final class HnswGraph {
     } else {
       candidates = new TreeSet<>();
     }
-    int size = vectors.size();
-    for (int i = 0; i < numSeed && i < size; i++) {
-      int entryPoint = random.nextInt(size);
-      candidates.add(new Neighbor(entryPoint, searchStrategy.compare(query, vectors.vectorValue(entryPoint))));
-    }
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     Set<Integer> visited = new HashSet<>();
     // TODO: use PriorityQueue's sentinel optimization?
     Neighbors results = Neighbors.create(topK, searchStrategy.reversed);
-    for (Neighbor c : candidates) {
-      visited.add(c.node());
-      results.insertWithOverflow(c);
+
+    int size = vectors.size();
+    int boundedNumSeed = Math.min(numSeed, size);
+    for (int i = 0; i < boundedNumSeed; i++) {
+      int entryPoint = random.nextInt(size);
+      if (visited.add(entryPoint)) {
+        results.insertWithOverflow(new Neighbor(entryPoint, searchStrategy.compare(query, vectors.vectorValue(entryPoint))));
+      }
+    }
+    for (Neighbor c : results) {
+      candidates.add(c);
     }
     // Set the bound to the worst current result and below reject any newly-generated candidates failing
     // to exceed this bound
@@ -133,6 +141,8 @@ public final class HnswGraph {
         }
       }
     }
+    searchCount ++;
+    abandonedCandidates += candidates.size();
     results.setVisitedCount(visited.size());
     return results;
   }
@@ -196,6 +206,10 @@ public final class HnswGraph {
     return graph.size() - 1;
   }
 
+  Neighbors getGraphNeighbors(int node) {
+    return graph.get(node);
+  }
+
   /**
    * Present this graph as KnnGraphValues, used for searching while inserting new nodes.
    */
@@ -217,7 +231,5 @@ public final class HnswGraph {
       }
       return neighborNodes[arcUpTo++];
     }
-
   }
-
 }

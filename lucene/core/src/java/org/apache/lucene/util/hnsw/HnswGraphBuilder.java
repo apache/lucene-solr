@@ -86,8 +86,15 @@ public final class HnswGraphBuilder {
     if (vectors == boundedVectors.raDelegate) {
       throw new IllegalArgumentException("Vectors to build must be independent of the source of vectors provided to HnswGraphBuilder()");
     }
+    long t = System.nanoTime();
     for (int node = 1; node < vectors.size(); node++) {
       insert(vectors.vectorValue(node));
+      if (node % 10000 == 0) {
+        // nocommit use InfoStream
+        long now = System.nanoTime();
+        System.out.println("HnswGraphBuilder.build " + node + " " + (now - t) / 1_000_000 + "ms");
+        t = now;
+      }
     }
     return hnsw;
   }

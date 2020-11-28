@@ -29,6 +29,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -52,6 +53,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SuppressForbidden;
+import org.apache.lucene.util.VectorUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -74,6 +76,7 @@ public class KnnGraphTester {
   private boolean quiet;
   private boolean reindex;
   private int reindexTimeMsec;
+  private Path outputPath;
 
   @SuppressForbidden(reason="uses Random()")
   private KnnGraphTester() {
@@ -83,7 +86,6 @@ public class KnnGraphTester {
     dim = 256;
     topK = 100;
     fanout = topK;
-    indexPath = Paths.get("knn_test_index");
   }
 
   public static void main(String... args) throws Exception {
@@ -91,24 +93,23 @@ public class KnnGraphTester {
   }
 
   private void run(String... args) throws Exception {
-    String operation = null, docVectorsPath = null, queryPath = null;
+    String operation = null;
+    Path docVectorsPath = null, queryPath = null;
     for (int iarg = 0; iarg < args.length; iarg++) {
       String arg = args[iarg];
       switch(arg) {
-        case "-generate":
         case "-search":
         case "-check":
         case "-stats":
           if (operation != null) {
             throw new IllegalArgumentException("Specify only one operation, not both " + arg + " and " + operation);
           }
-          if (iarg == args.length - 1) {
-            throw new IllegalArgumentException("Operation " + arg + " requires a following pathname");
-          }
           operation = arg;
-          docVectorsPath = args[++iarg];
           if (operation.equals("-search")) {
-            queryPath = args[++iarg];
+            if (iarg == args.length - 1) {
+              throw new IllegalArgumentException("Operation " + arg + " requires a following pathname");
+            }
+            queryPath = Paths.get(args[++iarg]);
           }
           break;
         case "-fanout":
@@ -150,8 +151,23 @@ public class KnnGraphTester {
         case "-reindex":
           reindex = true;
           break;
+        case "-topK":
+          if (iarg == args.length - 1) {
+            throw new IllegalArgumentException("-topK requires a following number");
+          }
+          topK = Integer.parseInt(args[++iarg]);
+          break;
+        case "-out":
+          outputPath = Paths.get(args[++iarg]);
+          break;
+        case "-docs":
+          docVectorsPath = Paths.get(args[++iarg]);
+          break;
         case "-forceMerge":
           operation = "-forceMerge";
+          break;
+        case "-echo":
+          System.out.println("KnnGraphTester " + Arrays.toString(args));
           break;
         case "-quiet":
           quiet = true;
@@ -161,23 +177,38 @@ public class KnnGraphTester {
           //usage();
       }
     }
-    if (operation == null) {
+    if (operation == null && reindex == false) {
       usage();
     }
+    indexPath = Paths.get(formatIndexPath(docVectorsPath));
     if (reindex) {
-      reindexTimeMsec = createIndex(Paths.get(docVectorsPath), indexPath);
+      reindexTimeMsec = createIndex(docVectorsPath, indexPath);
     }
-    switch (operation) {
-      case "-search":
-        testSearch(indexPath, Paths.get(queryPath), getNN(Paths.get(docVectorsPath), Paths.get(queryPath)));
-        break;
-      case "-forceMerge":
-        forceMerge();
-        break;
-      case "-stats":
-        printFanoutHist(indexPath);
-        break;
+    if (operation != null) {
+      switch (operation) {
+        case "-search":
+          if (docVectorsPath == null) {
+            throw new IllegalArgumentException("missing -docs arg");
+          }
+          if (outputPath != null) {
+            testSearch(indexPath, queryPath, null);
+          } else {
+            testSearch(indexPath, queryPath, getNN(docVectorsPath, queryPath));
+          }
+          break;
+        case "-forceMerge":
+          forceMerge();
+          break;
+        case "-stats":
+          printFanoutHist(indexPath);
+          break;
+      }
     }
+  }
+
+  private String formatIndexPath(Path docsPath) {
+    // TODO: add more dimensions to the name to guarantee uniqueness?
+    return String.format("%s.index", docsPath.getFileName());
   }
 
   @SuppressForbidden(reason="Prints stuff")
@@ -263,11 +294,17 @@ public class KnnGraphTester {
       long cpuTimeStartNs;
       try (Directory dir = FSDirectory.open(indexPath);
            DirectoryReader reader = DirectoryReader.open(dir)) {
-
+        numDocs = reader.maxDoc();
+        // TODO: skip warmup
         for (int i = 0; i < 1000; i++) {
           // warm up
           targets.get(target);
-          results[i] = doKnnSearch(reader, KNN_FIELD, target, topK, fanout);
+          // do a sanity check on the warmup vectors
+          double length = VectorUtil.dotProduct(target, target);
+          if (Math.abs(length - 1.0d) > 1e-3) {
+            throw new IllegalArgumentException("Got vector of length " + length + ". Vectors compared using dot-product must be unit-length.");
+          }
+          doKnnSearch(reader, KNN_FIELD, target, topK, fanout);
         }
         targets.position(0);
         start = System.nanoTime();
@@ -281,7 +318,12 @@ public class KnnGraphTester {
         for (int i = 0; i < numIters; i++) {
           totalVisited += results[i].totalHits.value;
           for (ScoreDoc doc : results[i].scoreDocs) {
-            doc.doc = Integer.parseInt(reader.document(doc.doc).get("id"));
+            // TODO: we can skip this when there is only one segment and there have never been any merges
+            int id = Integer.parseInt(reader.document(doc.doc).get(ID_FIELD));
+            if (id >= numDocs) {
+              throw new IllegalStateException("id out of range: " + doc.doc + " for docid=" + doc.doc);
+            }
+            doc.doc = id;
           }
         }
       }
@@ -290,14 +332,38 @@ public class KnnGraphTester {
             + "CPU time=" + totalCpuTime + "ms");
       }
     }
-    if (quiet == false) {
-      System.out.println("checking results");
-    }
-    float recall = checkResults(results, nn);
-    totalVisited /= numIters;
-    if (quiet) {
-      System.out.printf(Locale.ROOT, "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n", recall, totalCpuTime / (float) numIters,
-          numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH, totalVisited, reindexTimeMsec);
+    if (outputPath != null) {
+      try (OutputStream out = Files.newOutputStream(outputPath)) {
+        for (int i = 0; i < numIters; i++) {
+          for (ScoreDoc doc : results[i].scoreDocs) {
+            // write each result as a little-endian int
+            out.write((byte) doc.doc);
+            out.write((byte) (doc.doc >> 8));
+            out.write((byte) (doc.doc >> 16));
+            out.write((byte) (doc.doc >> 24));
+          }
+          if (results[i].scoreDocs.length != topK) {
+            // This shouldn't happen, but it does. Pad the results with -1 for now
+            // throw new IllegalStateException("topK=" + topK + " results[" + i + "] length = " + results[i].scoreDocs.length);
+            for (int j = results[i].scoreDocs.length; j < topK; j++) {
+              out.write(0xff);
+              out.write(0xff);
+              out.write(0xff);
+              out.write(0xff);
+            }
+          }
+        }
+      }
+    } else {
+      if (quiet == false) {
+        System.out.println("checking results");
+      }
+      float recall = checkResults(results, nn);
+      totalVisited /= numIters;
+      if (quiet) {
+        System.out.printf(Locale.ROOT, "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n", recall, totalCpuTime / (float) numIters,
+                          numDocs, fanout, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH, totalVisited, reindexTimeMsec);
+      }
     }
   }
 
@@ -310,7 +376,14 @@ public class KnnGraphTester {
         scoreDoc.doc += docBase;
       }
     }
-    return TopDocs.merge(k, results);
+    TopDocs merged = TopDocs.merge(k, results);
+    /*
+    FIXME - this happens! Only for GloVe-100 so far. Maybe because the graph is not navigable?
+    if (merged.scoreDocs.length != k) {
+      throw new IllegalStateException("results length=" + merged.scoreDocs.length + " not " + k);
+    }
+     */
+    return merged;
   }
 
   private float checkResults(TopDocs[] results, int[][] nn) {
@@ -474,19 +547,21 @@ public class KnnGraphTester {
           }
         }
         if (quiet == false) {
-          System.out.println("Done indexing " + numDocs + " documents; now flush");
+          System.out.println("Done writing " + numDocs + " documents; now flush");
         }
       }
     }
     long elapsed = System.nanoTime() - start;
     if (quiet == false) {
       System.out.println("Indexed " + numDocs + " documents in " + elapsed / 1_000_000_000 + "s");
+      System.out.println("Total searches " + HnswGraph.searchCount + " abandoned candidates " + HnswGraph.abandonedCandidates + "; avg="
+          + (HnswGraph.abandonedCandidates / (float) HnswGraph.searchCount));
     }
     return (int) (elapsed / 1_000_000);
   }
 
   private static void usage() {
-    String error = "Usage: TestKnnGraph -generate|-search|-stats|-check {datafile} [-beamWidth N]";
+    String error = "Usage: TestKnnGraph -docs {docs data file} -search {query data file}|-stats|-check [-reindex] [-beamWidth N]";
     System.err.println(error);
     System.exit(1);
   }
