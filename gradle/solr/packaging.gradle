@@ -66,7 +66,10 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
 
     // An aggregate that configures lib, lucene-libs and test-lib in a temporary location.
     task assemblePackaging(type: Sync) {
-      from "README.txt"
+      from(projectDir, {
+        exclude "src"
+        exclude "build*"
+      })
 
       from ({
         def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
