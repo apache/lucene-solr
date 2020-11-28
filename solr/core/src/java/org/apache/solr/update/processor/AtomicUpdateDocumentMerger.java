@@ -483,6 +483,11 @@ public class AtomicUpdateDocumentMerger {
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SolrInputField numericField = toDoc.get(sif.getName());
     SchemaField sf = schema.getField(sif.getName());
+
+    if (sf.getType().getNumberType() == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "'inc' is not supported on non-numeric field " + sf.getName());
+    }
+
     if (numericField != null || sf.getDefaultValue() != null) {
       // TODO: fieldtype needs externalToObject?
       String oldValS = (numericField != null) ?
@@ -491,20 +496,23 @@ public class AtomicUpdateDocumentMerger {
       sf.getType().readableToIndexed(oldValS, term);
       Object oldVal = sf.getType().toObject(sf, term.get());
 
-      String fieldValS = fieldVal.toString();
-      Number result;
+      // behavior similar to doAdd/doSet
+      Object resObj = getNativeFieldValue(sf.getName(), fieldVal);
+      if (!(resObj instanceof Number)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid input '" + resObj + "' for field " + sf.getName());
+      }
+      Number result = (Number)resObj;
       if (oldVal instanceof Long) {
-        result = ((Long) oldVal).longValue() + Long.parseLong(fieldValS);
+        result = ((Long) oldVal).longValue() + result.longValue();
       } else if (oldVal instanceof Float) {
-        result = ((Float) oldVal).floatValue() + Float.parseFloat(fieldValS);
+        result = ((Float) oldVal).floatValue() + result.floatValue();
       } else if (oldVal instanceof Double) {
-        result = ((Double) oldVal).doubleValue() + Double.parseDouble(fieldValS);
+        result = ((Double) oldVal).doubleValue() + result.doubleValue();
       } else {
         // int, short, byte
-        result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
+        result = ((Integer) oldVal).intValue() + result.intValue();
       }
-
-      toDoc.setField(sif.getName(),  result);
+      toDoc.setField(sif.getName(), result);
     } else {
       toDoc.setField(sif.getName(), fieldVal);
     }
