@@ -322,6 +322,9 @@ Bug Fixes
 * SOLR-14514: Avoid picking 'stream' method in JSON facet when any of 'allBuckets', 'numBuckets', and 'missing' parameters are enabled
   (hossman, Munendra S N)
 
+* SOLR-12559: Fix placeholder valuesource 'FIELDNAME' not working with de-referenced values in JSON aggregator parsing.
+  (hossman, Munendra S N)
+
 Other Changes
 ---------------------
 
