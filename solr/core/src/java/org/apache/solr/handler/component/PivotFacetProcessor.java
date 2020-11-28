@@ -16,28 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.params.RequiredSolrParams;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.DocSet;
-import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.PivotListEntry;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.request.SimpleFacets;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.lucene.search.Query;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,6 +24,28 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.SimpleFacets;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.PivotListEntry;
 
 /**
  * Processes all Pivot facet logic for a single node -- both non-distrib, and per-shard
@@ -345,6 +345,9 @@ public class PivotFacetProcessor extends SimpleFacets
    * @param pivotValue String representation of the value, may be null (ie: "missing")
    */
   private int getSubsetSize(DocSet base, SchemaField field, String pivotValue) throws IOException {
+    if (base.size() == 0) {
+      return 0;
+    }
     FieldType ft = field.getType();
     if ( null == pivotValue ) {
       Query query = ft.getRangeQuery(null, field, null, null, false, false);

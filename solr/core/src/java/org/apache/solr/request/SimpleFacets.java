@@ -287,7 +287,7 @@ public class SimpleFacets {
     NamedList<Integer> res = new SimpleOrderedMap<>();
 
     /* Ignore CommonParams.DF - could have init param facet.query assuming
-     * the schema default with query param DF intented to only affect Q.
+     * the schema default with query param DF intended to only affect Q.
      * If user doesn't want schema default for facet.query, they should be
      * explicit.
      */
@@ -306,6 +306,10 @@ public class SimpleFacets {
   }
 
   public void getFacetQueryCount(ParsedParams parsed, NamedList<Integer> res) throws SyntaxError, IOException {
+    if (parsed.docs.size() == 0) {
+      res.add(parsed.key, 0);
+      return;
+    }
     // TODO: slight optimization would prevent double-parsing of any localParams
     // TODO: SOLR-7753
     Query qobj = QParser.getParser(parsed.facetValue, req).getQuery();
@@ -325,6 +329,9 @@ public class SimpleFacets {
    * @see FacetParams#FACET_QUERY
    */
   public int getGroupedFacetQueryCount(Query facetQuery, DocSet docSet) throws IOException {
+    if (docSet.size() == 0) {
+      return 0;
+    }
     // It is okay to retrieve group.field from global because it is never a local param
     String groupField = global.get(GroupParams.GROUP_FIELD);
     if (groupField == null) {
@@ -423,7 +430,7 @@ public class SimpleFacets {
   }
 
   /**
-   * Term counts for use in field faceting that resepcts the specified mincount - 
+   * Term counts for use in field faceting that respects the specified mincount -
    * if mincount is null, the "zeros" param is consulted for the appropriate backcompat 
    * default
    *
@@ -893,7 +900,7 @@ public class SimpleFacets {
       inputStream = inputStream.sorted();
     }
     Stream<SimpleImmutableEntry<String,Integer>> termCountEntries = inputStream
-        .map((term) -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+        .map((term) -> new SimpleImmutableEntry<>(term, baseDocset.size() == 0 ? 0 : numDocs(term, sf, ft, baseDocset)));
     if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
       termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
     }
@@ -903,7 +910,7 @@ public class SimpleFacets {
 
   private int numDocs(String term, final SchemaField sf, final FieldType ft, final DocSet baseDocset) {
     try {
-      return searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
+      return baseDocset.size() == 0? 0: searcher.numDocs(ft.getFieldQuery(null, sf, term), baseDocset);
     } catch (IOException e1) {
       throw new RuntimeException(e1);
     }

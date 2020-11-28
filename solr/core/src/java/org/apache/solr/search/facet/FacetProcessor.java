@@ -419,7 +419,7 @@ public abstract class FacetProcessor<FacetRequestT extends FacetRequest>  {
       }
       count = result.size();  // don't really need this if we are skipping, but it's free.
     } else {
-      if (q == null) {
+      if (q == null || fcontext.base.size() == 0) {
         count = fcontext.base.size();
       } else {
         count = fcontext.searcher.numDocs(q, fcontext.base);
