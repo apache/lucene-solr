@@ -4,6 +4,7 @@ import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.common.util.Pair;
+import org.junit.Assert;
 
 import java.util.*;
 
@@ -21,10 +22,13 @@ public class Builders {
   }
 
   public static class ClusterBuilder {
+    /**
+     * {@link NodeBuilder} for the live nodes of the cluster.
+     */
     private LinkedList<NodeBuilder> nodeBuilders = new LinkedList<>();
     private LinkedList<CollectionBuilder> collectionBuilders = new LinkedList<>();
 
-    public ClusterBuilder initializeNodes(int countNodes) {
+    public ClusterBuilder initializeLiveNodes(int countNodes) {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
         nodeBuilders.add(new NodeBuilder().setNodeName("node_" + n)); // Default name, can be changed
@@ -32,7 +36,7 @@ public class Builders {
       return this;
     }
 
-    public LinkedList<NodeBuilder> getNodeBuilders() {
+    public LinkedList<NodeBuilder> getLiveNodeBuilders() {
       return nodeBuilders;
     }
 
@@ -107,7 +111,7 @@ public class Builders {
     private final String collectionName;
     private LinkedList<ShardBuilder> shardBuilders = new LinkedList<>();
     private Map<String, String> customProperties = new HashMap<>();
-
+    int replicaNumber = 0; // global replica numbering for the collection
 
     public CollectionBuilder(String collectionName) {
       this.collectionName = collectionName;
@@ -126,6 +130,78 @@ public class Builders {
     }
 
     /**
+     * Initializes the collection to a specific shard and replica distribution passed in {@code shardsReplicas}.
+     * @param shardsReplicas A list of shard descriptions, describing the replicas of that shard.
+     *                       Replica description include the replica type and the node on which the replica should be placed.
+     *                       Everything is text to make it easy to design specific collections. For example the following value:
+     *  <pre>{@code
+     *  List.of(
+     *    List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
+     *    List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
+     *  }</pre>
+     *                       Creates a placement that would distribute replicas to nodes (there must be at least 4 nodes)
+     *                       in the following way:
+     *  <pre>{@code
+     *  +--------------+----+----+----+----+
+     *  |         Node |  0 |  1 |  2 |  3 |
+     *  +----------------------------------+
+     *  |   Shard 1:   |    |    |    |    |
+     *  |         NRT  |  X |    |    |  X |
+     *  |         TLOG |  X |    |    |    |
+     *  +----------------------------------+
+     *  |   Shard 2:   |    |    |    |    |
+     *  |         NRT  |    |  X |    |  X |
+     *  |         TLOG |    |    |  X |    |
+     *  +--------------+----+----+----+----+
+     *  }</pre>
+     */
+    public CollectionBuilder customCollectionSetup(List<List<String>> shardsReplicas, List<NodeBuilder> liveNodes) {
+      shardBuilders = new LinkedList<>();
+      int shardNumber = 1; // Shard numbering starts at 1
+      for (List<String> replicasOnNodes : shardsReplicas) {
+        String shardName = buildShardName(shardNumber++);
+        LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
+        ReplicaBuilder leader = null;
+
+        for (String replicaNode : replicasOnNodes) {
+          // replicaNode is like "TLOG 2" meaning a TLOG replica should be placed on node 2
+          String[] splited = replicaNode.split("\\s+");
+          Assert.assertEquals(2, splited.length);
+          Replica.ReplicaType type = Replica.ReplicaType.valueOf(splited[0]);
+          final NodeBuilder node;
+          int nodeIndex = Integer.parseInt(splited[1]);
+          if (nodeIndex < liveNodes.size()) {
+            node = liveNodes.get(nodeIndex);
+          } else {
+            // The collection can have replicas on non live nodes. Let's create such a node here (that is not known to the
+            // cluster). There could be many non live nodes in the collection configuration, they will all reference new
+            // instances such as below of a node unknown to cluster, but all will have the same name (so will be equal if
+            // tested).
+            node = new NodeBuilder().setNodeName("NonLiveNode");
+          }
+          String replicaName = buildReplicaName(shardName, type);
+
+          ReplicaBuilder replicaBuilder = new ReplicaBuilder();
+          replicaBuilder.setReplicaName(replicaName).setCoreName(buildCoreName(replicaName)).setReplicaType(type)
+              .setReplicaState(Replica.ReplicaState.ACTIVE).setReplicaNode(node);
+          replicas.add(replicaBuilder);
+
+          // No way to specify which replica is the leader. Could be done by adding a "*" to the replica definition for example
+          // in the passed shardsReplicas but not implementing this until it is needed :)
+          if (leader == null && type != Replica.ReplicaType.PULL) {
+            leader = replicaBuilder;
+          }
+        }
+
+        ShardBuilder shardBuilder = new ShardBuilder();
+        shardBuilder.setShardName(shardName).setReplicaBuilders(replicas).setLeader(leader);
+        shardBuilders.add(shardBuilder);
+      }
+
+      return this;
+    }
+
+    /**
      * Initializes shard and replica builders for the collection based on passed parameters. Replicas are assigned round
      * robin to the nodes. The shard leader is the first NRT replica of each shard (or first TLOG is no NRT).
      * Shard and replica configuration can be modified afterwards, the returned builder hierarchy is a convenient starting point.
@@ -135,10 +211,9 @@ public class Builders {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
       shardBuilders = new LinkedList<>();
-      int replicaNumber = 0;
 
       for (int shardNumber = 1; shardNumber <= countShards; shardNumber++) {
-        String shardName = "shard" + shardNumber;
+        String shardName = buildShardName(shardNumber);
 
         LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
@@ -152,18 +227,17 @@ public class Builders {
         for (Pair<Replica.ReplicaType, Integer> tc : replicaTypes) {
           Replica.ReplicaType type = tc.first();
           int count = tc.second();
-          String replicaPrefix = collectionName + "_" + shardName + "_replica_" + type.getSuffixChar();
           for (int r = 0; r < count; r++) {
-            String replicaName = replicaPrefix + replicaNumber++;
-            String coreName = replicaName + "_c";
             if (!nodeIterator.hasNext()) {
               nodeIterator = nodes.iterator();
             }
             // If the nodes set is empty, this call will fail
             final NodeBuilder node = nodeIterator.next();
 
+            String replicaName = buildReplicaName(shardName, type);
+
             ReplicaBuilder replicaBuilder = new ReplicaBuilder();
-            replicaBuilder.setReplicaName(replicaName).setCoreName(coreName).setReplicaType(type)
+            replicaBuilder.setReplicaName(replicaName).setCoreName(buildCoreName(replicaName)).setReplicaType(type)
                 .setReplicaState(Replica.ReplicaState.ACTIVE).setReplicaNode(node);
             replicas.add(replicaBuilder);
 
@@ -179,6 +253,18 @@ public class Builders {
       }
 
       return this;
+    }
+
+    private String buildShardName(int shardIndex) {
+      return "shard" + shardIndex;
+    }
+
+    private String buildReplicaName(String shardName, Replica.ReplicaType replicaType) {
+      return collectionName + "_" + shardName + "_replica_" + replicaType.getSuffixChar() + replicaNumber++;
+    }
+
+    private String buildCoreName(String replicaName) {
+      return replicaName + "_c";
     }
 
     public SolrCollection build() {
