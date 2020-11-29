@@ -127,7 +127,7 @@ public class TestSortingCodecReader extends LuceneTestCase {
           doc.add(new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new BinaryDocValuesField("binary_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new SortedSetDocValuesField("sorted_set_dv", new BytesRef(Integer.toString(docId))));
-          doc.add(new VectorField("vector", new float[] { (float) docId }));
+          doc.add(new VectorField("vector", new float[] { 1 }));
           doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
 
           FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
@@ -215,7 +215,7 @@ public class TestSortingCodecReader extends LuceneTestCase {
 
               float[] vectorValue = vectorValues.vectorValue();
               assertEquals(1, vectorValue.length);
-              assertEquals((float) ids.longValue(), vectorValue[0], 0.001f);
+              assertEquals(1, vectorValue[0], 0.001f);
 
               Fields termVectors = leaf.getTermVectors(idNext);
               assertTrue(termVectors.terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));

@@ -207,3 +207,6 @@ This software includes a binary and/or source version of data from
 which can be obtained from
 
   https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.0.3-20170922.tar.gz
+
+The floating point precision conversion in NumericUtils.Float16Converter is derived from work by
+Jeroen van der Zijp, granted for use under the Apache license.

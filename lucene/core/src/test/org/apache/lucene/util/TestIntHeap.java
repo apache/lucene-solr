@@ -18,9 +18,7 @@ package org.apache.lucene.util;
 
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Random;
 
 import static org.apache.lucene.util.IntHeap.Order.MAX;

@@ -30,6 +30,12 @@ package org.apache.lucene.util;
  */
 public abstract class IntHeap {
 
+  /**
+   * Used to specify the ordering of the heap. A min-heap provides access to the minimum element in
+   * constant time, and when bounded, retains the maximum <code>size</code> elements. A max-heap
+   * conversely provides access to the maximum element in constant time, and when bounded retains
+   * the minimum <code>size</code> elements.
+   */
   public enum Order {
     MIN, MAX
   };
@@ -81,9 +87,9 @@ public abstract class IntHeap {
     }
   }
 
-  /** Determines the ordering of objects in this priority queue.  Subclasses
-   *  must define this one method.
-   *  @return <code>true</code> iff parameter <tt>a</tt> is less than parameter <tt>b</tt>.
+  /** Determines the ordering of objects in this priority queue. Subclasses must define this one
+   *  method.
+   *  @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
    */
   protected abstract boolean lessThan(int a, int b);
 
@@ -210,7 +216,10 @@ public abstract class IntHeap {
     return new IntIterator();
   }
 
-  class IntIterator {
+  /**
+   * Iterator over the contents of the heap, returning successive ints.
+   */
+  public class IntIterator {
     int i = 1;
 
     public boolean hasNext() {

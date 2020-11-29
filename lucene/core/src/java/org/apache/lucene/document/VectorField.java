@@ -52,7 +52,8 @@ public class VectorField extends Field {
   }
 
   /** Creates a numeric vector field. Fields are single-valued: each document has either one value
-   * or no value. Vectors of a single field share the same dimension and search strategy.
+   * or no value. Vectors of a single field share the same dimension and search strategy. Note that some strategies
+   * (notably dot-product) require values to be unit-length, which can be enforced using VectorUtil.l2Normalize(float[]).
    *
    *  @param name field name
    *  @param vector value
