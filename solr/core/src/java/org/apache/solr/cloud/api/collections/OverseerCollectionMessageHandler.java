@@ -62,6 +62,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -91,11 +92,11 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
@@ -304,7 +305,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void processRebalanceLeaders(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, CORE_NAME_PROP, ELECTION_NODE_PROP,
-        CORE_NODE_NAME_PROP, BASE_URL_PROP, REJOIN_AT_HEAD_PROP);
+        CORE_NODE_NAME_PROP, NODE_NAME_PROP, REJOIN_AT_HEAD_PROP);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
@@ -314,9 +315,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
     params.set(CORE_NODE_NAME_PROP, message.getStr(CORE_NODE_NAME_PROP));
     params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
-    params.set(BASE_URL_PROP, message.getStr(BASE_URL_PROP));
+    params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
 
-    String baseUrl = message.getStr(BASE_URL_PROP);
+    String baseUrl = UrlScheme.INSTANCE.getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
     ShardRequest sreq = new ShardRequest();
     sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
     // yes, they must use same admin handler path everywhere...
@@ -426,10 +427,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
         ZkStateReader.CORE_NAME_PROP, core,
-        ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
+        ZkStateReader.NODE_NAME_PROP, replica.getNodeName(),
         ZkStateReader.COLLECTION_PROP, collectionName,
-        ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
-        ZkStateReader.BASE_URL_PROP, replica.getStr(ZkStateReader.BASE_URL_PROP));
+        ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
     overseer.offerStateUpdate(Utils.toJSON(m));
   }
 

@@ -109,6 +109,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toMap;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
@@ -190,7 +191,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           .getOrDefault("history", Collections.emptyMap());
       args.putAll(props);
 
-      overseerUrlScheme = cloudManager.getClusterStateProvider().getClusterProperty("urlScheme", "http");
+      overseerUrlScheme = cloudManager.getClusterStateProvider().getClusterProperty(URL_SCHEME, "http");
     } else {
       overseerUrlScheme = "http";
     }

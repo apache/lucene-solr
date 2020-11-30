@@ -375,11 +375,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
-          ZkStateReader.CORE_NAME_PROP, "");
-
       final AtomicInteger retries = new AtomicInteger();
-      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       Node retryNode = new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
         @Override
         public boolean checkRetry(Error err) {
@@ -439,11 +436,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
-          ZkStateReader.CORE_NAME_PROP, "");
-
       final AtomicInteger retries = new AtomicInteger();
-      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       if (nodeType == NodeType.FORWARD) {
         nodes.add(new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
           @Override
@@ -594,11 +588,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
-          ZkStateReader.CORE_NAME_PROP, "");
-
       final AtomicInteger retries = new AtomicInteger();
-      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       Node retryNode;
       if (nodeType == NodeType.FORWARD) {
         retryNode = new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
@@ -711,11 +702,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       streamingClients.setExp(Exp.SOCKET_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
-          ZkStateReader.CORE_NAME_PROP, "");
-
       final AtomicInteger retries = new AtomicInteger();
-      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       ForwardNode retryNode = new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
         @Override
         public boolean checkRetry(Error err) {
@@ -758,11 +746,8 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       streamingClients.setExp(Exp.SOCKET_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(),
-          ZkStateReader.CORE_NAME_PROP, "");
-
       final AtomicInteger retries = new AtomicInteger();
-      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, solrclient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       Node retryNode = new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
         @Override
         public boolean checkRetry(Error err) {
