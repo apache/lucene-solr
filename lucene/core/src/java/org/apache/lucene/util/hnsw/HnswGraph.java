@@ -114,8 +114,7 @@ public final class HnswGraph {
           break;
         }
       }
-      int topCandidateNode = candidates.topNode();
-      candidates.pop();
+      int topCandidateNode = candidates.pop();
       graphValues.seek(topCandidateNode);
       int friendOrd;
       while ((friendOrd = graphValues.nextNeighbor()) != NO_MORE_DOCS) {

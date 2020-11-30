@@ -109,9 +109,10 @@ public class Neighbors {
     return false;
   }
 
-  public void pop() {
-    // This is destructive! Once you pop, you can never add() again.
-    heap.pop();
+  public int pop() {
+    // This is destructive! Once you pop, you can never add() again, because the nbrOrds
+    // encoded in the heap elements become invalid.
+    return node[(short) heap.pop()];
   }
 
   public int topNode() {

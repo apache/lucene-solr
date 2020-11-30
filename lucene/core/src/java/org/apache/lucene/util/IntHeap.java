@@ -32,9 +32,9 @@ public abstract class IntHeap {
 
   /**
    * Used to specify the ordering of the heap. A min-heap provides access to the minimum element in
-   * constant time, and when bounded, retains the maximum <code>size</code> elements. A max-heap
+   * constant time, and when bounded, retains the maximum <code>maxSize</code> elements. A max-heap
    * conversely provides access to the maximum element in constant time, and when bounded retains
-   * the minimum <code>size</code> elements.
+   * the minimum <code>maxSize</code> elements.
    */
   public enum Order {
     MIN, MAX
@@ -58,11 +58,9 @@ public abstract class IntHeap {
     } else {
       if ((maxSize < 1) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
         // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must UNBOUNDED(-1) or > 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
+        throw new IllegalArgumentException("maxSize must be UNBOUNDED(-1) or > 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
       }
-
-      // NOTE: we add +1 because all access to heap is
-      // 1-based not 0-based.  heap[0] is unused.
+      // NOTE: we add +1 because all access to heap is 1-based not 0-based.  heap[0] is unused.
       heapSize = maxSize + 1;
     }
     this.maxSize = maxSize;
@@ -129,8 +127,7 @@ public abstract class IntHeap {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size)
-   * time. 
+  /** Removes and returns the least element of the PriorityQueue in log(size) time.
    * @throws IllegalStateException if the IntHeap is empty.
   */
   public final int pop() {
