@@ -45,7 +45,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.hnsw.HnswGraph;
-import org.apache.lucene.util.hnsw.Neighbors;
+import org.apache.lucene.util.hnsw.NeighborQueue;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -357,10 +357,7 @@ public final class Lucene90VectorReader extends VectorReader {
     public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
       // use a seed that is fixed for the index so we get reproducible results for the same query
       final Random random = new Random(checksumSeed);
-      Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
-      while (results.size() > topK) {
-        results.pop();
-      }
+      NeighborQueue results = HnswGraph.search(vector, topK, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
       int i = 0;
       ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
       boolean reversed = searchStrategy().reversed;
@@ -453,6 +450,11 @@ public final class Lucene90VectorReader extends VectorReader {
       arcCount = dataIn.readInt();
       arc = -1;
       arcUpTo = 0;
+    }
+
+    @Override
+    public int size() {
+      return entry.size();
     }
 
     @Override

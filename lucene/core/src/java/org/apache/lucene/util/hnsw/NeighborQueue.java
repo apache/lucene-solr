@@ -17,33 +17,19 @@
 
 package org.apache.lucene.util.hnsw;
 
-import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.LongHeap;
 import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/** Neighbors encodes the neighbors of a node in the HNSW graph. */
-public class Neighbors {
-
-  private static final int INITIAL_SIZE = 128;
-
-  public static Neighbors create(int maxSize, VectorValues.SearchStrategy searchStrategy) {
-    return new Neighbors(maxSize, searchStrategy, searchStrategy.reversed);
-  }
-
-  public static Neighbors createReversed(int maxSize, VectorValues.SearchStrategy searchStrategy) {
-    return new Neighbors(maxSize, searchStrategy, !searchStrategy.reversed);
-  }
+/** Neighbors encodes the neighbors of a node in the HNSW graph.
+ */
+public class NeighborQueue {
 
   private final LongHeap heap;
-  private final VectorValues.SearchStrategy searchStrategy;
 
   // Used to track the number of neighbors visited during a single graph traversal
   private int visitedCount;
 
-  private Neighbors(int maxSize, VectorValues.SearchStrategy searchStrategy, boolean reversed) {
-    this.searchStrategy = searchStrategy;
+  NeighborQueue(int maxSize, boolean reversed) {
     if (reversed) {
       heap = LongHeap.create(LongHeap.Order.MAX, maxSize);
     } else {
@@ -53,10 +39,6 @@ public class Neighbors {
 
   public int size() {
     return heap.size();
-  }
-
-  public boolean reversed() {
-    return searchStrategy.reversed;
   }
 
   public void add(int newNode, float newScore) {
@@ -75,6 +57,15 @@ public class Neighbors {
     return (int) heap.pop();
   }
 
+  int[] nodes() {
+    int size = size();
+    int[] nodes = new int[size];
+    for (int i = 0; i < size; i++) {
+      nodes[i] = (int) heap.get(i + 1);
+    }
+    return nodes;
+  }
+
   public int topNode() {
     return (int) heap.top();
   }
@@ -83,40 +74,23 @@ public class Neighbors {
     return NumericUtils.sortableIntToFloat((int) (heap.top() >> 32));
   }
 
-  void setVisitedCount(int visitedCount) {
-    this.visitedCount = visitedCount;
-  }
-
   public int visitedCount() {
     return visitedCount;
   }
 
-  public NeighborIterator iterator() {
-    return new NeighborIterator();
+  public NeighborQueue copy(boolean reversed) {
+    int size = size();
+    NeighborQueue copy = new NeighborQueue(size, reversed);
+    copy.heap.pushAll(heap);
+    return copy;
   }
 
-  class NeighborIterator {
-    private long value;
-    private final LongHeap.LongIterator heapIterator = heap.iterator();
-
-    /** Return the next node */
-    public int next() {
-      if (heapIterator.hasNext()) {
-        value = heapIterator.next();
-        return (int) value;
-      }
-      return NO_MORE_DOCS;
-    }
-
-    /** Return the score corresponding to the last node returned by next() */
-    public float score() {
-      return NumericUtils.sortableIntToFloat((int) (value >> 32));
-    }
+  void setVisitedCount(int visitedCount) {
+    this.visitedCount = visitedCount;
   }
 
   @Override
   public String toString() {
     return "Neighbors[" + heap.size() + "]";
   }
-
 }

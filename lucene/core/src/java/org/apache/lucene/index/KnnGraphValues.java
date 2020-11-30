@@ -37,6 +37,11 @@ public abstract class KnnGraphValues {
   public abstract void seek(int target) throws IOException;
 
   /**
+   * Returns the number of nodes in the graph
+   */
+  public abstract int size();
+
+  /**
    * Iterates over the neighbor list. It is illegal to call this method after it returns
    * NO_MORE_DOCS without calling {@link #seek(int)}, which resets the iterator.
    * @return a node ordinal in the graph, or NO_MORE_DOCS if the iteration is complete.
@@ -53,6 +58,11 @@ public abstract class KnnGraphValues {
 
     @Override
     public void seek(int target) {
+    }
+
+    @Override
+    public int size() {
+      return 0;
     }
   };
 }

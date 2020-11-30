@@ -488,5 +488,4 @@ public class TestNumericUtils extends LuceneTestCase {
                    Integer.signum(left.compareTo(right)));
     }
   }
-
 }

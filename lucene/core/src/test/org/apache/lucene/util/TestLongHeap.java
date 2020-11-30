@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import static org.apache.lucene.util.LongHeap.Order.MAX;
@@ -87,8 +86,10 @@ public class TestLongHeap extends LuceneTestCase {
   public void testExceedBounds() {
     LongHeap pq = LongHeap.create(MIN, 1);
     pq.push(2);
-    expectThrows(ArrayIndexOutOfBoundsException.class, () -> pq.push(0));
-    assertEquals(2, pq.size()); // the heap is unusable at this point
+    pq.push(0);
+    //expectThrows(ArrayIndexOutOfBoundsException.class, () -> pq.push(0));
+    assertEquals(2, pq.size()); // the heap has been extended to a new max size
+    assertEquals(0, pq.top());
   }
 
   public void testFixedSize() {
@@ -150,99 +151,45 @@ public class TestLongHeap extends LuceneTestCase {
       lastLeast = newLeast;
     }
   }
-
-  public void testIteratorEmpty() {
-    LongHeap queue = LongHeap.create(MIN, 3);
-    LongHeap.LongIterator it = queue.iterator();
-    assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
-  }
-
-  public void testIteratorOne() {
-    LongHeap queue = LongHeap.create(MIN, 3);
-
-    queue.push(1);
-    LongHeap.LongIterator it = queue.iterator();
-    assertTrue(it.hasNext());
-    assertEquals(1, it.next());
-    assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
-  }
-
-  public void testIteratorTwo() {
-    LongHeap queue = LongHeap.create(MIN, 3);
-
-    queue.push(1);
-    queue.push(2);
-    LongHeap.LongIterator it = queue.iterator();
-    assertTrue(it.hasNext());
-    assertEquals(1, it.next());
-    assertTrue(it.hasNext());
-    assertEquals(2, it.next());
-    assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
-  }
-
-  public void testIteratorRandom() {
-    LongHeap.Order order;
-    if (random().nextBoolean()) {
-      order = MIN;
-    } else {
-      order = MAX;
-    }
-    final int maxSize = TestUtil.nextInt(random(), 1, 20);
-    LongHeap queue = LongHeap.create(order, maxSize);
-    final int iters = atLeast(100);
-    final List<Long> expected = new ArrayList<>();
-    for (int iter = 0; iter < iters; ++iter) {
-      if (queue.size() == 0 || (queue.size() < maxSize && random().nextBoolean())) {
-        final long value = random().nextInt(10);
-        queue.push(value);
-        expected.add(value);
-      } else {
-        expected.remove(Long.valueOf(queue.pop()));
-      }
-      List<Long> actual = new ArrayList<>();
-      LongHeap.LongIterator it = queue.iterator();
-      while (it.hasNext()) {
-        actual.add(it.next());
-      }
-      CollectionUtil.introSort(expected);
-      CollectionUtil.introSort(actual);
-      assertEquals(expected, actual);
-    }
+  public void testInvalid() {
+    expectThrows(IllegalArgumentException.class, () -> LongHeap.create(MAX, -1));
+    expectThrows(IllegalArgumentException.class, () -> LongHeap.create(MAX, 0));
+    expectThrows(IllegalArgumentException.class, () -> LongHeap.create(MAX, ArrayUtil.MAX_ARRAY_LENGTH));
   }
 
   public void testUnbounded() {
-    LongHeap pq = LongHeap.create(MAX, -1);
+    int initialSize = random().nextInt(10) + 1;
+    LongHeap pq = LongHeap.create(MAX, initialSize);
     int num = random().nextInt(100) + 1;
-    long maxValue = Long.MIN_VALUE;
+    long minValue = Long.MAX_VALUE;
+    int count = 0;
     for (int i = 0; i < num; i++) {
       long value = random().nextLong();
       if (random().nextBoolean()) {
         pq.push(value);
+        count++;
       } else {
-        pq.insertWithOverflow(value);
+        boolean full = pq.size() >= initialSize;
+        if (pq.insertWithOverflow(value)) {
+          if (full == false) {
+            count++;
+          }
+        }
       }
-      maxValue = Math.max(maxValue, value);
+      minValue = Math.min(minValue, value);
     }
-    assertEquals(num, pq.size());
-    assertEquals(maxValue, pq.top());
-    long last = maxValue;
-    int count = 0;
+    assertEquals(count, pq.size());
+    long last = Long.MAX_VALUE;
     while (pq.size() > 0) {
+      long top = pq.top();
       long next = pq.pop();
-      ++ count;
+      assertEquals(top, next);
+      -- count;
       assertTrue(next <= last);
       last = next;
     }
-    assertEquals(num, count);
+    assertEquals(0, count);
+    assertEquals(minValue, last);
   }
 
 }
