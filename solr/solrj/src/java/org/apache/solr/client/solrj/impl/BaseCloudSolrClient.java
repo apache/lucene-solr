@@ -71,6 +71,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -83,7 +84,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -1093,14 +1093,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        theUrlList.add(Utils.getBaseUrlForNodeName(liveNodesList.get(0),
-            getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+        theUrlList.add(UrlScheme.INSTANCE.getBaseUrlForNodeName(liveNodesList.get(0)));
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
       for (String liveNode : liveNodes) {
-        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
-            getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+        theUrlList.add(UrlScheme.INSTANCE.getBaseUrlForNodeName(liveNode));
       }
 
     } else { // Typical...

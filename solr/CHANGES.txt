@@ -156,6 +156,9 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
+* SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
+  state back from ZK. (Timothy Potter)
+
 ==================  8.8.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
