@@ -212,6 +212,8 @@ Other Changes
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
+* SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.

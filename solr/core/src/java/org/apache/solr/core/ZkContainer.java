@@ -118,7 +118,8 @@ public class ZkContainer {
         boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
 
         // We may have already loaded NodeConfig from zookeeper with same connect string, so no need to recheck chroot
-        boolean alreadyUsedChroot = cc.getConfig().isFromZookeeper() && zookeeperHost.equals(System.getProperty("zkHost"));
+        boolean alreadyUsedChroot = (cc.getConfig().isFromZookeeper()
+                                     && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
         if(!alreadyUsedChroot && !ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf || zkRunOnly)) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
