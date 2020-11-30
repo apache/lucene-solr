@@ -18,7 +18,9 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Properties;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
@@ -97,4 +99,76 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
     cluster.shutdown();
   }
 
+  public void testMultipleClustersDiffZk() throws Exception {
+    final MiniSolrCloudCluster x = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
+    try {
+      final MiniSolrCloudCluster y = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
+      try {
+        
+        // sanity check we're not talking to ourselves
+        assertNotSame(x.getZkServer(), y.getZkServer());
+        assertNotEquals(x.getZkServer().getZkAddress(), y.getZkServer().getZkAddress());
+        
+        // baseline check
+        assertEquals(1, x.getJettySolrRunners().size());
+        assertZkHost("x", x.getZkServer().getZkAddress(), x.getJettySolrRunners().get(0));
+        
+        assertEquals(1, y.getJettySolrRunners().size());
+        assertZkHost("y", y.getZkServer().getZkAddress(), y.getJettySolrRunners().get(0));
+        
+        // adding nodes should be isolated
+        final JettySolrRunner j2x = x.startJettySolrRunner();
+        assertZkHost("x2", x.getZkServer().getZkAddress(), j2x);
+        assertEquals(2, x.getJettySolrRunners().size());
+        assertEquals(1, y.getJettySolrRunners().size());
+        
+        final JettySolrRunner j2y = y.startJettySolrRunner();
+        assertZkHost("y2", y.getZkServer().getZkAddress(), j2y);
+        assertEquals(2, x.getJettySolrRunners().size());
+        assertEquals(2, y.getJettySolrRunners().size());
+      } finally {
+        y.shutdown();
+      }
+    } finally {
+      x.shutdown();
+    }
+  }
+  
+  public void testJettyUsingSysProp() throws Exception {
+    try {
+      // this cluster will use a sysprop to communicate zkHost to it's nodes -- not node props in the servlet context
+      final MiniSolrCloudCluster x = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
+        @Override
+        public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config) throws Exception {
+          System.setProperty("zkHost", getZkServer().getZkAddress());
+          
+          final Properties nodeProps = new Properties();
+          nodeProps.setProperty("test-from-sysprop", "yup");
+          
+          Path runnerPath = createTempDir(name);
+          JettyConfig newConfig = JettyConfig.builder(config).setContext("/blarfh").build();
+          JettySolrRunner jetty = new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
+          return super.startJettySolrRunner(jetty);
+        }
+      };
+      try {
+        // baseline check
+        assertEquals(1, x.getJettySolrRunners().size());
+        assertZkHost("x", x.getZkServer().getZkAddress(), x.getJettySolrRunners().get(0));
+        
+        // verify MiniSolrCloudCluster's impl didn't change out from under us making test useless
+        assertEquals("yup", x.getJettySolrRunners().get(0).getNodeProperties().getProperty("test-from-sysprop"));
+        assertNull(x.getJettySolrRunners().get(0).getNodeProperties().getProperty("zkHost"));
+        
+      } finally {
+        x.shutdown();
+      }
+    }finally {
+      System.clearProperty("zkHost");
+    }
+  }
+  
+  private static void assertZkHost(final String msg, final String zkHost, final JettySolrRunner node) {
+    assertEquals(zkHost, node.getCoreContainer().getNodeConfig().getCloudConfig().getZkHost());
+  }
 }
