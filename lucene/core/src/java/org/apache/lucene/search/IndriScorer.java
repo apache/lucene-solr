@@ -24,30 +24,30 @@ import java.io.IOException;
  *
  */
 abstract public class IndriScorer extends Scorer {
-
-	private float boost;
-
-	protected IndriScorer(Weight weight, float boost) {
-		super(weight);
-		this.boost = boost;
-	}
-
-	@Override
-	abstract public DocIdSetIterator iterator();
-
-	@Override
-	abstract public float getMaxScore(int upTo) throws IOException;
-
-	@Override
-	abstract public float score() throws IOException;
-
-	abstract public float smoothingScore(int docId) throws IOException;
-
-	@Override
-	abstract public int docID();
-
-	public float getBoost() {
-		return this.boost;
-	}
-
+  
+  private float boost;
+  
+  protected IndriScorer(Weight weight, float boost) {
+    super(weight);
+    this.boost = boost;
+  }
+  
+  @Override
+  abstract public DocIdSetIterator iterator();
+  
+  @Override
+  abstract public float getMaxScore(int upTo) throws IOException;
+  
+  @Override
+  abstract public float score() throws IOException;
+  
+  abstract public float smoothingScore(int docId) throws IOException;
+  
+  @Override
+  abstract public int docID();
+  
+  public float getBoost() {
+    return this.boost;
+  }
+  
 }
