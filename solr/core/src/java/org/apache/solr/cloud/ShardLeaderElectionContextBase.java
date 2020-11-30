@@ -165,7 +165,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
       Replica leader = zkStateReader.getLeader(collection, shardId);
       if (leader != null
-          && leader.getBaseUrl().equals(leaderProps.get(ZkStateReader.BASE_URL_PROP))
+          && leader.getNodeName().equals(leaderProps.get(ZkStateReader.NODE_NAME_PROP))
           && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
         isAlreadyLeader = true;
       }
@@ -174,7 +174,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
+          ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP),
           ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;

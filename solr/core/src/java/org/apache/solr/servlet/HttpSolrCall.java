@@ -116,7 +116,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
@@ -1071,13 +1070,13 @@ public class HttpSolrCall {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getStr(BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
+          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
 
           if (origCorename != null) {
-            coreUrl = replica.getStr(BASE_URL_PROP) + "/" + origCorename;
+            coreUrl = replica.getBaseUrl() + "/" + origCorename;
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {
