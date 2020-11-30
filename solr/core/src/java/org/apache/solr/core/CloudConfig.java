@@ -131,8 +131,7 @@ public class CloudConfig {
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;
 
     private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 120000;
-
-    private String zkHost = System.getProperty("zkHost");
+    private String zkHost;
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
     private final int hostPort;
     private final String hostName;

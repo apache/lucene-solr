@@ -83,6 +83,8 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  private final String defaultZkHost;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
@@ -93,7 +95,7 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     Set<Path> allowPaths) {
+                     String defaultZkHost, Set<Path> allowPaths) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -122,6 +124,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.transientCacheConfig = transientCacheConfig;
     this.tracerConfig = tracerConfig;
+    this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
@@ -257,6 +260,25 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  /** 
+   * This method returns the default "zkHost" value for this node -- either read from the system properties, 
+   * or from the "extra" properties configured explicitly on the SolrDispatchFilter; or null if not specified.
+   *
+   * This is the value that would have been used when attempting locate the solr.xml in ZooKeeper (regardless of wether
+   * the file was actaully loaded from ZK or from local disk)
+   * 
+   * (This value should only be used for "accounting" purposes to track where the node config came from if 
+   * it <em>was</em> loaded from zk -- ie: to check if the chroot has already been applied.
+   * It may be different from the "zkHost" <em>configured</em> in the "cloud" section of the solr.xml,
+   * which should be used for all zk connections made by this node to participate in the cluster)
+   *
+   * @see #getCloudConfig()
+   * @see CloudConfig#getZkHost()
+   */
+  public String getDefaultZkHost() {
+    return defaultZkHost;
+  }
+
   /**
    * Extra file paths that will be allowed for core creation, in addition to
    * SOLR_HOME, SOLR_DATA_HOME and coreRootDir
@@ -292,6 +314,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private PluginInfo transientCacheConfig;
     private PluginInfo tracerConfig;
+    private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
 
     private final Path solrHome;
@@ -452,7 +475,12 @@ public class NodeConfig {
       return this;
     }
 
-   public NodeConfigBuilder setAllowPaths(Set<Path> paths) {
+    public NodeConfigBuilder setDefaultZkHost(String defaultZkHost) {
+      this.defaultZkHost = defaultZkHost;
+      return this;
+    }
+
+    public NodeConfigBuilder setAllowPaths(Set<Path> paths) {
       this.allowPaths = paths;
       return this;
     }
@@ -467,7 +495,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, allowPaths);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, defaultZkHost, allowPaths);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
