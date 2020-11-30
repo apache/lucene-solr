@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /**
- * The Indri parent scorer that stores the boost so that 
- * IndriScorers can use the boost outside of the term.
+ * The Indri parent scorer that stores the boost so that IndriScorers can use
+ * the boost outside of the term.
  *
  */
 abstract public class IndriScorer extends Scorer {
