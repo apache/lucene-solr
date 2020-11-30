@@ -48,7 +48,7 @@ public class FilterScorable extends Scorable {
 
   @Override
   public float smoothingScore(int docId) throws IOException {
-    return 0;
+    return in.smoothingScore(docId);
   }
   
   @Override

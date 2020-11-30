@@ -1,13 +1,18 @@
 /*
- * ===============================================================================================
- * Copyright (c) 2019 Carnegie Mellon University and University of Massachusetts. All Rights
- * Reserved.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Use of the Lemur Toolkit for Language Modeling and Information Retrieval is subject to the terms
- * of the software license set forth in the LICENSE file included with this software, and also
- * available at http://www.lemurproject.org/license.html
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * ================================================================================================
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.lucene.search.similarities;
 
@@ -21,8 +26,13 @@ import org.apache.lucene.search.similarities.LMSimilarity;
 /**
  * Bayesian smoothing using Dirichlet priors as implemented in the Indri Search
  * engine (http://www.lemurproject.org/indri.php). Indri Dirichelet Smoothing!
- * tf_E + mu*P(t|D) P(t|E)= ------------------------ documentLength + documentMu
- * mu*P(t|C) + tf_D where P(t|D)= --------------------- doclen + mu
+ * <pre class="prettyprint">
+ * tf_E + mu*P(t|D) P(t|E)= documentLength + documentMu
+ * mu*P(t|C) + tf_D where P(t|D)= doclen + mu
+ * </pre>
+ * <p>
+ * A larger value for mu, produces more smoothing.  Smoothing is most
+ * important for short documents where the probabilities are more granular. </p>
  */
 public class IndriDirichletSimilarity extends LMSimilarity {
   
