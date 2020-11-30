@@ -17,14 +17,27 @@
 
 package org.apache.solr.prometheus.exporter;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+import java.io.File;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
 import net.thisptr.jackson.jq.exception.JsonQueryException;
-import org.apache.solr.core.XmlConfigFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class MetricsConfiguration {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PrometheusExporterSettings settings;
 
@@ -66,13 +79,36 @@ public class MetricsConfiguration {
     return searchConfiguration;
   }
 
-  public static MetricsConfiguration from(XmlConfigFile config) throws Exception {
-    Node settings = config.getNode("/config/settings", false);
+  public static MetricsConfiguration from(String resource) throws Exception {
+    // See solr-core XmlConfigFile
+    final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    try {
+      dbf.setXIncludeAware(true);
+      dbf.setNamespaceAware(true);
+    } catch (UnsupportedOperationException e) {
+      log.warn("{} XML parser doesn't support XInclude option", resource);
+    }
 
-    Node pingConfig = config.getNode("/config/rules/ping", false);
-    Node metricsConfig = config.getNode("/config/rules/metrics", false);
-    Node collectionsConfig = config.getNode("/config/rules/collections", false);
-    Node searchConfiguration = config.getNode("/config/rules/search", false);
+    Document document;
+    Path path = Path.of(resource);
+    if (Files.exists(path)) {
+      document = dbf.newDocumentBuilder().parse(path.toUri().toASCIIString());
+    } else {
+      try (InputStream configInputStream = MethodHandles.lookup().lookupClass().getClassLoader().getResourceAsStream(resource.replace(File.separatorChar, '/'))) {
+        document = dbf.newDocumentBuilder().parse(configInputStream);
+      }
+    }
+
+    return from(document);
+  }
+
+  public static MetricsConfiguration from(Document config) throws Exception {
+    Node settings = getNode(config, "/config/settings");
+
+    Node pingConfig = getNode(config, "/config/rules/ping");
+    Node metricsConfig = getNode(config, "/config/rules/metrics");
+    Node collectionsConfig = getNode(config, "/config/rules/collections");
+    Node searchConfiguration = getNode(config, "/config/rules/search");
 
     return new MetricsConfiguration(
         settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
@@ -81,6 +117,28 @@ public class MetricsConfiguration {
         toMetricQueries(collectionsConfig),
         toMetricQueries(searchConfiguration)
     );
+  }
+
+  static final XPathFactory xpathFactory = XPathFactory.newInstance();
+
+  private static Node getNode(Document doc, String path) {
+    // Copied from solr-core XmlConfigFile.getNode with simplifications
+    XPath xpath = xpathFactory.newXPath();
+    String xstr = path; //normalize(path);
+
+    try {
+      NodeList nodes = (NodeList) xpath.evaluate(xstr, doc,
+          XPathConstants.NODESET);
+      if (nodes == null || 0 == nodes.getLength()) {
+        return null;
+      }
+      if (1 < nodes.getLength()) {
+        throw new RuntimeException("more than one value");
+      }
+      return nodes.item(0);
+    } catch (Exception e) {
+      throw new RuntimeException("Error in xpath:" + xstr, e);
+    }
   }
 
   private static List<MetricsQuery> toMetricQueries(Node node) throws JsonQueryException {
