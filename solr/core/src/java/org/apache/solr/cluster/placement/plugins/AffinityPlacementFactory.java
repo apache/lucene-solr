@@ -437,65 +437,96 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
       CoresAndDiskComparator coresAndDiskComparator = new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
-      // Now we have for each AZ on which we might have a chance of placing a replica, the list of candidate nodes for replicas
-      // (candidate: does not already have a replica of this shard and is in the corresponding AZ).
-      // We must now select those of the nodes on which we actually place the replicas, and will do that based on the total
-      // number of cores already present on these nodes as well as the free disk space.
-      // We sort once by the order related to number of cores and disk space each list of nodes on an AZ. We do not sort all
-      // of them ahead of time because we might be placing a small number of replicas and it might be wasted work.
       for (int i = 0; i < numReplicas; i++) {
-        // Pick the AZ having the lowest number of replicas for this shard, and if that AZ has available nodes, pick the
-        // most appropriate one (based on number of cores and disk space constraints). In the process, remove entries (AZ's)
-        // that do not have nodes to place replicas on because these are useless to us.
-        Map.Entry<Integer, AzWithNodes> azWithNodesEntry = null;
+        // We have for each AZ on which we might have a chance of placing a replica, the list of candidate nodes for replicas
+        // (candidate: does not already have a replica of this shard and is in the corresponding AZ).
+        // Among the AZ's with the minimal number of replicas of the given replica type for the shard, we must pick the AZ that
+        // offers the best placement (based on number of cores and free disk space). In order to do so, for these "minimal" AZ's
+        // we sort the nodes from best to worst placement candidate (based on the number of cores and free disk space) then pick
+        // the AZ that has the best best node. We don't sort all AZ's because that will not necessarily be needed.
+        int minNumberOfReplicasPerAz = 0; // This value never observed but compiler can't tell
+        Set<Map.Entry<Integer, AzWithNodes>> candidateAzEntries = null;
+        // Iterate over AZ's (in the order of increasing number of replicas on that AZ) and do two things: 1. remove those AZ's that
+        // have no nodes, no use iterating over these again and again (as we compute placement for more replicas), and 2. collect
+        // all those AZ with a minimal number of replicas.
         for (Iterator<Map.Entry<Integer, AzWithNodes>> it = azByExistingReplicas.entries().iterator(); it.hasNext(); ) {
           Map.Entry<Integer, AzWithNodes> entry = it.next();
-          if (!entry.getValue().availableNodesForPlacement.isEmpty()) {
-            azWithNodesEntry = entry;
-            // Remove this entry. Will add it back after a node has been removed from the list of available nodes and the number
-            // of replicas on the AZ has been increased by one (search for "azByExistingReplicas.put" below).
+          int numberOfNodes = entry.getValue().availableNodesForPlacement.size();
+          if (numberOfNodes == 0) {
             it.remove();
-            break;
-          } else {
+          } else { // AZ does have node(s) for placement
+            if (candidateAzEntries == null) {
+              // First AZ with nodes that can take the replica. Initialize tracking structures
+              minNumberOfReplicasPerAz = numberOfNodes;
+              candidateAzEntries = new HashSet<>();
+            }
+            if (minNumberOfReplicasPerAz != numberOfNodes) {
+              // AZ's with more replicas than the minimum number seen are not placement candidates
+              break;
+            }
+            candidateAzEntries.add(entry);
+            // We remove all entries that are candidates: the "winner" will be modified, all entries might also be sorted,
+            // so we'll insert back the updated versions later.
             it.remove();
           }
         }
 
-        if (azWithNodesEntry == null) {
+        if (candidateAzEntries == null) {
           // This can happen because not enough nodes for the placement request or already too many nodes with replicas of
           // the shard that can't accept new replicas or not enough nodes with enough free disk space.
           throw new PlacementException("Not enough nodes to place " + numReplicas + " replica(s) of type " + replicaType +
               " for shard " + shardName + " of collection " + solrCollection.getName());
         }
 
-        AzWithNodes azWithNodes = azWithNodesEntry.getValue();
-        List<Node> nodes = azWithNodes.availableNodesForPlacement;
+        // Iterate over all candidate AZ's, sort them if needed and find the best one to use for this placement
+        Map.Entry<Integer, AzWithNodes> selectedAz = null;
+        Node selectedAzBestNode = null;
+        for (Map.Entry<Integer, AzWithNodes> candidateAzEntry : candidateAzEntries) {
+          AzWithNodes azWithNodes = candidateAzEntry.getValue();
+          List<Node> nodes = azWithNodes.availableNodesForPlacement;
 
-        if (!azWithNodes.hasBeenSorted) {
-          // Make sure we do not tend to use always the same nodes (within an AZ) if all conditions are identical (well, this
-          // likely is not the case since after having added a replica to a node its number of cores increases for the next
-          // placement decision, but let's be defensive here, given that multiple concurrent placement decisions might see
-          // the same initial cluster state, and we want placement to be reasonable even in that case without creating an
-          // unnecessary imbalance).
-          // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
-          // for placement, not always the same one due to some internal ordering.
-          Collections.shuffle(nodes, random);
+          if (!azWithNodes.hasBeenSorted) {
+            // Make sure we do not tend to use always the same nodes (within an AZ) if all conditions are identical (well, this
+            // likely is not the case since after having added a replica to a node its number of cores increases for the next
+            // placement decision, but let's be defensive here, given that multiple concurrent placement decisions might see
+            // the same initial cluster state, and we want placement to be reasonable even in that case without creating an
+            // unnecessary imbalance).
+            // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
+            // for placement, not always the same one due to some internal ordering.
+            Collections.shuffle(nodes, random);
 
-          // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
-          nodes.sort(coresAndDiskComparator);
+            // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
+            nodes.sort(coresAndDiskComparator);
 
-          azWithNodes.hasBeenSorted = true;
+            azWithNodes.hasBeenSorted = true;
+          }
+
+          // Which one is better, the new one or the previous best?
+          if (selectedAz == null || coresAndDiskComparator.compare(nodes.get(0), selectedAzBestNode) < 0) {
+            selectedAz = candidateAzEntry;
+            selectedAzBestNode = nodes.get(0);
+          }
         }
 
+        // Now actually remove the selected node from the winning AZ
+        AzWithNodes azWithNodes = selectedAz.getValue();
+        List<Node> nodes = selectedAz.getValue().availableNodesForPlacement;
         Node assignTarget = nodes.remove(0);
+
+        // Insert back all the qualifying but non winning AZ's removed while searching for the one
+        for (Map.Entry<Integer, AzWithNodes> removedAzs : candidateAzEntries) {
+          if (removedAzs != selectedAz) {
+            azByExistingReplicas.put(removedAzs.getKey(), removedAzs.getValue());
+          }
+        }
+
+        // Insert back a corrected entry for the winning AZ: one more replica living there and one less node that can accept new replicas
+        // (the remaining candidate node list might be empty, in which case it will be cleaned up on the next iteration).
+        azByExistingReplicas.put(selectedAz.getKey() + 1, azWithNodes);
 
         // Do not assign that node again for replicas of other replica type for this shard
         // (this update of the set is not useful in the current execution of this method but for following ones only)
         nodesWithReplicas.add(assignTarget);
-
-        // Insert back a corrected entry for the AZ: one more replica living there and one less node that can accept new replicas
-        // (the remaining candidate node list might be empty, in which case it will be cleaned up on the next iteration).
-        azByExistingReplicas.put(azWithNodesEntry.getKey() + 1, azWithNodes);
 
         // Track that the node has one more core. These values are only used during the current run of the plugin.
         coresOnNodes.merge(assignTarget, 1, Integer::sum);

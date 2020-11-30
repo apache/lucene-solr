@@ -224,6 +224,123 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
 
   /**
+   * Tests placement with multiple criteria: Replica type restricted nodes, Availability zones + existing collection
+   */
+  @Test
+  public void testPlacementMultiCriteria() throws Exception {
+    String collectionName = "multiCollection";
+
+    // Note node numbering is in purpose not following AZ structure
+    final int AZ1_NRT_LOWCORES = 0;
+    final int AZ1_NRT_HIGHCORES = 3;
+    final int AZ1_TLOGPULL_LOWFREEDISK = 5;
+
+    final int AZ2_NRT_MEDCORES = 2;
+    final int AZ2_NRT_HIGHCORES = 1;
+    final int AZ2_TLOGPULL = 7;
+
+    final int AZ3_NRT_LOWCORES = 4;
+    final int AZ3_NRT_HIGHCORES = 6;
+    final int AZ3_TLOGPULL = 8;
+
+    final String AZ1 = "AZ1";
+    final String AZ2 = "AZ2";
+    final String AZ3 = "AZ3";
+
+    final int LOW_CORES = 10;
+    final int MED_CORES = 50;
+    final int HIGH_CORES = 100;
+
+    final String TLOG_PULL_REPLICA_TYPE = "TLOG, PULL";
+    final String NRT_REPLICA_TYPE = "Nrt";
+
+    // Cluster nodes and their attributes.
+    // 3 AZ's with three nodes each, 2 of which can only take NRT, one that can take TLOG or PULL
+    // One of the NRT has less cores than the other
+    // The TLOG/PULL replica on AZ1 doesn't have much free disk space
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
+    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < 9; i++) {
+      final String az;
+      final int numcores;
+      final long freedisk;
+      final String acceptedReplicaType;
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ1_NRT_HIGHCORES || i == AZ1_TLOGPULL_LOWFREEDISK) {
+        az = AZ1;
+      } else if (i == AZ2_NRT_HIGHCORES || i == AZ2_NRT_MEDCORES || i == AZ2_TLOGPULL) {
+        az = AZ2;
+      } else {
+        az = AZ3;
+      }
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ3_NRT_LOWCORES) {
+        numcores = LOW_CORES;
+      } else if (i == AZ2_NRT_MEDCORES) {
+        numcores = MED_CORES;
+      } else {
+        numcores = HIGH_CORES;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK) {
+        freedisk = PRIORITIZED_FREE_DISK_GB - 10;
+      } else {
+        freedisk = PRIORITIZED_FREE_DISK_GB + 10;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK || i == AZ2_TLOGPULL || i == AZ3_TLOGPULL) {
+        acceptedReplicaType = TLOG_PULL_REPLICA_TYPE;
+      } else {
+        acceptedReplicaType = NRT_REPLICA_TYPE;
+      }
+
+      nodeBuilders.get(i).setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, az)
+          .setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, acceptedReplicaType)
+          .setCoreCount(numcores)
+          .setFreeDiskGB(freedisk);
+    }
+
+    // The collection already exists with shards and replicas.
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    List<List<String>> shardsReplicas = List.of(
+        List.of("NRT " + AZ1_NRT_HIGHCORES, "TLOG " + AZ3_TLOGPULL), // shard 1
+        List.of("TLOG " + AZ2_TLOGPULL)); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    SolrCollection solrCollection = collectionBuilder.build();
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    Iterator<Shard> shardit = solrCollection.iterator();
+    String shard1Name = shardit.next().getShardName();
+    String shard2Name = shardit.next().getShardName();
+
+    // Add 2 NRT and one TLOG to each shard.
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+        2, 1, 0);
+    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though
+    // a low core node can take the replica in az1, there's already an NRT replica there and we want spreading across AZ's),
+    // the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has low free disk)
+    // Shard 2: The NRT's should go to AZ1 and AZ3 lowcores because AZ2 has more cores (and there's not NRT in any AZ for
+    // this shard). The TLOG should go to AZ3 because AZ1 TLOG node has low free disk.
+    // Each expected placement is represented as a string "shard replica-type node"
+    Set<String> expectedPlacements = Set.of("1 NRT " + AZ2_NRT_MEDCORES, "1 NRT " + AZ3_NRT_LOWCORES, "1 TLOG " + AZ2_TLOGPULL,
+        "2 NRT " + AZ1_NRT_LOWCORES, "2 NRT " + AZ3_NRT_LOWCORES, "2 TLOG " + AZ3_TLOGPULL);
+    verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
+
+    // If we add 2 PULL to each shard
+    placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+        0, 0, 2);
+    pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    // Shard 1: Given node AZ3_TLOGPULL is taken by the TLOG replica, the PULL should go to AZ1_TLOGPULL_LOWFREEDISK and AZ2_TLOGPULL
+    // Shard 2: Similarly AZ2_TLOGPULL is taken. Replicas should go to AZ1_TLOGPULL_LOWFREEDISK and AZ3_TLOGPULL
+    expectedPlacements = Set.of("1 PULL " + AZ1_TLOGPULL_LOWFREEDISK, "1 PULL " + AZ2_TLOGPULL,
+        "2 PULL " + AZ1_TLOGPULL_LOWFREEDISK, "2 PULL " + AZ3_TLOGPULL);
+    verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
+  }
+
+
+  /**
    * Tests that if a collection has replicas on nodes not currently live, placement for new replicas works ok.
    */
   @Test
@@ -284,7 +401,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   private static void verifyPlacements(Set<String> expectedPlacements, PlacementPlan placementPlan,
                                        List<Builders.ShardBuilder> shardBuilders, List<Node> liveNodes) {
     Set<ReplicaPlacement> computedPlacements = placementPlan.getReplicaPlacements();
-    assertEquals("Wrong number of computed placements", expectedPlacements.size(), computedPlacements.size());
 
     // Prepare structures for looking up shard name index and node index
     Map<String, Integer> shardNumbering = new HashMap<>();
@@ -298,38 +414,37 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       nodeNumbering.put(n, index++);
     }
 
-    // While developing tests (or trying to understand failures), uncomment these lines to help explain failures
-    // TODO translate this into the assertion message in case of failure
-//    logExpectedPlacement(expectedPlacements);
-//    logComputedPlacement(computedPlacements, shardNumbering, nodeNumbering);
+    if (expectedPlacements.size() != computedPlacements.size()) {
+      fail("Wrong number of placements, expected " + expectedPlacements.size() + " computed " + computedPlacements.size() + ". " +
+          getExpectedVsComputedPlacement(expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
+    }
 
     Set<String> expected = new HashSet<>(expectedPlacements);
     for (ReplicaPlacement p : computedPlacements) {
       String lookUpPlacementResult = shardNumbering.get(p.getShardName()) + " " + p.getReplicaType().name() + " " +  nodeNumbering.get(p.getNode());
-      assertTrue(expected.remove(lookUpPlacementResult));
+      if (!expected.remove(lookUpPlacementResult)) {
+        fail("Computed placement [" + lookUpPlacementResult + "] not expected. " +
+            getExpectedVsComputedPlacement(expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
+      }
     }
   }
 
-  private static void logExpectedPlacement(Set<String> expectedPlacements) {
-    if (log.isInfoEnabled()) {
-      StringBuilder sb = new StringBuilder();
-      for (String placement : expectedPlacements) {
-        sb.append("[").append(placement).append("] ");
-      }
-      log.info("Expected placements: " + sb); // nowarn
-    }
-  }
+  private static String getExpectedVsComputedPlacement(Set<String> expectedPlacements, Set<ReplicaPlacement> computedPlacements,
+                                                       Map<String, Integer> shardNumbering, Map<Node, Integer> nodeNumbering) {
 
-  private static void logComputedPlacement(Set<ReplicaPlacement> computedPlacements, Map<String, Integer> shardNumbering, Map<Node, Integer> nodeNumbering) {
-    if (log.isInfoEnabled()) {
-      StringBuilder sb = new StringBuilder();
-      for (ReplicaPlacement placement : computedPlacements) {
-        String lookUpPlacementResult = shardNumbering.get(placement.getShardName()) + " " + placement.getReplicaType().name() + " " +  nodeNumbering.get(placement.getNode());
-
-        sb.append("[").append(lookUpPlacementResult).append("] ");
-      }
-      log.info("Computed placements: " + sb); // nowarn
+    StringBuilder sb = new StringBuilder("Expected placement: ");
+    for (String placement : expectedPlacements) {
+      sb.append("[").append(placement).append("] ");
     }
+
+    sb.append("Computed placement: ");
+    for (ReplicaPlacement placement : computedPlacements) {
+      String lookUpPlacementResult = shardNumbering.get(placement.getShardName()) + " " + placement.getReplicaType().name() + " " +  nodeNumbering.get(placement.getNode());
+
+      sb.append("[").append(lookUpPlacementResult).append("] ");
+    }
+
+    return sb.toString();
   }
 
   @Test
