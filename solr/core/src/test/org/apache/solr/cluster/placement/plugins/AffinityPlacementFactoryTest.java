@@ -73,7 +73,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   /**
    * When this test places a replica for a new collection, it should pick the node with less cores.<p>
    * <p>
-   * When it places a replica for an existing collection, it should pick the node with more cores that doesn't already have a replica for the shard.
+   * When it places a replica for an existing collection, it should pick the node with less cores that doesn't already have a replica for the shard.
    */
   private void testBasicPlacementInternal(boolean hasExistingCollection) throws Exception {
     String collectionName = "basicCollection";
@@ -310,10 +310,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
 
-    Iterator<Shard> shardit = solrCollection.iterator();
-    String shard1Name = shardit.next().getShardName();
-    String shard2Name = shardit.next().getShardName();
-
     // Add 2 NRT and one TLOG to each shard.
     PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         2, 1, 0);
@@ -328,7 +324,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         "2 NRT " + AZ1_NRT_LOWCORES, "2 NRT " + AZ3_NRT_LOWCORES, "2 TLOG " + AZ3_TLOGPULL);
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
 
-    // If we add 2 PULL to each shard
+    // If we add instead 2 PULL replicas to each shard
     placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         0, 0, 2);
     pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
@@ -339,6 +335,49 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
   }
 
+  /**
+   * Tests placement for new collection with nodes with a varying number of cores over multiple AZ's
+   */
+  @Test
+  public void testPlacementAzsCores() throws Exception {
+    String collectionName = "coresAzsCollection";
+
+    // Count cores == node index, and AZ's are: AZ0, AZ0, AZ0, AZ1, AZ1, AZ1, AZ2, AZ2, AZ2.
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
+    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < 9; i++) {
+      nodeBuilders.get(i).setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "AZ" + (i / 3))
+          .setCoreCount(i)
+          .setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    }
+
+    // The collection does not exist, has 1 shard.
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    List<List<String>> shardsReplicas = List.of(List.of());
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    SolrCollection solrCollection = collectionBuilder.build();
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    // Test placing between 1 and 9 NRT replicas. check that it's done in order
+    List<Set<String>> placements = List.of(
+        Set.of("1 NRT 0"),
+        Set.of("1 NRT 0", "1 NRT 3"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2", "1 NRT 5"),
+        Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2", "1 NRT 5", "1 NRT 8"));
+
+    for (int countNrtToPlace = 1; countNrtToPlace <= 9; countNrtToPlace++) {
+      PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
+          countNrtToPlace, 0, 0);
+      PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+      verifyPlacements(placements.get(countNrtToPlace - 1), pp, collectionBuilder.getShardBuilders(), liveNodes);
+    }
+  }
 
   /**
    * Tests that if a collection has replicas on nodes not currently live, placement for new replicas works ok.
