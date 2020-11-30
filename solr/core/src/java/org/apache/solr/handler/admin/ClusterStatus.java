@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
@@ -206,7 +207,7 @@ public class ClusterStatus {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
     }
     if (requestedShards == null || requestedShards.isEmpty()) {
-      return collection;
+      return postProcessCollectionJSON(collection);
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
       Map<String, Object>  selected = new HashMap<>();
@@ -217,11 +218,9 @@ public class ClusterStatus {
         selected.put(selectedShard, shards.get(selectedShard));
         collection.put("shards", selected);
       }
-      return collection;
+      return postProcessCollectionJSON(collection);
     }
   }
-
-
 
   /**
    * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
@@ -256,5 +255,22 @@ public class ClusterStatus {
     }
   }
 
-
+  @SuppressWarnings("unchecked")
+  public static Map<String,Object> postProcessCollectionJSON(Map<String, Object> collection) {
+    final Map<String, Map<String,Object>> shards = collection != null
+        ? (Map<String, Map<String,Object>>)collection.getOrDefault("shards", Collections.emptyMap())
+        : Collections.emptyMap();
+    shards.values().forEach(s -> {
+      final Map<String, Map<String,Object>> replicas =
+          (Map<String, Map<String,Object>>)s.getOrDefault("replicas", Collections.emptyMap());
+      replicas.values().forEach(r -> {
+        String nodeName = (String)r.get(ZkStateReader.NODE_NAME_PROP);
+        if (nodeName != null) {
+          // UI needs the base_url set
+          r.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName));
+        }
+      });
+    });
+    return collection;
+  }
 }

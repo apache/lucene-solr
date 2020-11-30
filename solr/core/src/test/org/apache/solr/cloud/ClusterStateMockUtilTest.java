@@ -29,6 +29,7 @@ import org.junit.Test;
 /**
  * Tests for {@link ClusterStateMockUtil}
  */
+@SolrTestCaseJ4.SuppressSSL // tests expect http scheme
 public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test

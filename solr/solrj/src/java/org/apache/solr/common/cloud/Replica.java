@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+
 public class Replica extends ZkNodeProps {
   
   /**
@@ -133,6 +135,7 @@ public class Replica extends ZkNodeProps {
       this.state = State.ACTIVE;                         //Default to ACTIVE
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
+    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.nodeName));
   }
 
   public String getCollection(){
@@ -164,10 +167,11 @@ public class Replica extends ZkNodeProps {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getStr(ZkStateReader.BASE_URL_PROP), core);
+    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
   }
+
   public String getBaseUrl(){
-    return getStr(ZkStateReader.BASE_URL_PROP);
+    return getStr(BASE_URL_PROP);
   }
 
   /** SolrCore name. */

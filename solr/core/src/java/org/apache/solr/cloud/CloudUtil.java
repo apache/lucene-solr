@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
@@ -77,7 +76,7 @@ public class CloudUtil {
         for (Replica replica : slice.getReplicas()) {
 
           String cnn = replica.getName();
-          String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+          String baseUrl = replica.getBaseUrl();
           log.debug("compare against coreNodeName={} baseUrl={}", cnn, baseUrl);
 
           if (thisCnn != null && thisCnn.equals(cnn)

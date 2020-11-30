@@ -141,7 +141,7 @@ public class ClusterStateUtil {
               // on a live node?
               boolean live = clusterState.liveNodesContain(replica.getNodeName());
               String rcoreNodeName = replica.getName();
-              String rbaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+              String rbaseUrl = replica.getBaseUrl();
               if (live && coreNodeName.equals(rcoreNodeName)
                   && baseUrl.equals(rbaseUrl)) {
                 // found it
