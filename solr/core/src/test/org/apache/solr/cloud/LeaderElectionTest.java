@@ -212,7 +212,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         "shard2", "collection1", "dummynode1", props, zkController);
     elector.setup(context);
     elector.joinElection(context, false);
-    assertEquals(UrlScheme.INSTANCE.getUrlScheme()+"://127.0.0.1/solr/",
+    assertEquals(UrlScheme.INSTANCE.getUrlScheme() + "://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
 
@@ -393,7 +393,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         String leaderUrl = getLeaderUrl("collection1", "parshard" + i);
         int at = leaderUrl.indexOf("://");
         if (at != -1) {
-          leaderUrl = leaderUrl.substring(at+3);
+          leaderUrl = leaderUrl.substring(at + 3);
         }
         assertEquals("2/", leaderUrl);
       }
@@ -428,7 +428,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     // strip off the scheme
     final int at = leaderUrl.indexOf("://");
     if (at != -1) {
-      leaderUrl = leaderUrl.substring(at+3);
+      leaderUrl = leaderUrl.substring(at + 3);
     }
     return Integer.parseInt(leaderUrl.replaceAll("/", ""));
   }
