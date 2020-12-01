@@ -68,6 +68,16 @@ package org.apache.solr.cluster.placement;
  * </pre>
  */
 public interface PlacementPluginConfig {
+
+  /**
+   * The key in {@code clusterprops.json} under which the plugin factory and the plugin configuration are defined.
+   */
+  String PLACEMENT_PLUGIN_CONFIG_KEY = "placement-plugin";
+  /**
+   * Name of the property containing the factory class
+   */
+  String FACTORY_CLASS = "class";
+
   /**
    * @return the configured {@link String} value corresponding to {@code configName} if one exists (could be the empty
    * string) and {@code null} otherwise.
