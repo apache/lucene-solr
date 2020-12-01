@@ -205,6 +205,9 @@ Bug Fixes
 
 * SOLR-14851: Http2SolrClient doesn't handle keystore type correctly (Andras Salamon via janhoy)
 
+* SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
+  (Thomas Mortagne)
+
 Other Changes
 ---------------------
 
