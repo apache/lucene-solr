@@ -210,6 +210,9 @@ Bug Fixes
 
 * SOLR-15009: Correctly propogate exceptions from DirectoryFactory.exists (Mike Drob)
 
+* SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
+  (Thomas Mortagne)
+
 Other Changes
 ---------------------
 
