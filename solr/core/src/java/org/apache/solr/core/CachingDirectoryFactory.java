@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -326,7 +327,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public boolean exists(String path) throws IOException {
     // we go by the persistent storage ...
-    Path dirPath = Path.of(path);
+    Path dirPath = FileSystems.getDefault().getPath(path);
     if (Files.isReadable(dirPath)) {
       try (DirectoryStream<Path> directory = Files.newDirectoryStream(dirPath)) {
         return directory.iterator().hasNext();
