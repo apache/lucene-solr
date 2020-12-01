@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.*;
@@ -181,7 +180,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
 
     private final long prioritizedFreeDiskGB;
 
-    private Random random = new Random();
+    private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
 
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
@@ -189,11 +188,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
     private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
-    }
 
-    @VisibleForTesting
-    void setRandom(Random random) {
-      this.random = random;
+      // We make things reproducible in tests by using test seed if any
+      String seed = System.getProperty("tests.seed");
+      if (seed != null) {
+        replicaPlacementRandom.setSeed(seed.hashCode());
+      }
     }
 
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
@@ -493,7 +493,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
             // unnecessary imbalance).
             // For example, if all nodes have 0 cores and same amount of free disk space, ideally we want to pick a random node
             // for placement, not always the same one due to some internal ordering.
-            Collections.shuffle(nodes, random);
+            Collections.shuffle(nodes, replicaPlacementRandom);
 
             // Sort by increasing number of cores but pushing nodes with low free disk space to the end of the list
             nodes.sort(coresAndDiskComparator);

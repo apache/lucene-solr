@@ -57,7 +57,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementPluginConfig config = PlacementPluginConfigImpl.createConfigFromProperties(
         Map.of("minimalFreeDiskGB", MINIMAL_FREE_DISK_GB, "prioritizedFreeDiskGB", PRIORITIZED_FREE_DISK_GB));
     plugin = new AffinityPlacementFactory().createPluginInstance(config);
-    ((AffinityPlacementFactory.AffinityPlacementPlugin) plugin).setRandom(random());
   }
 
   @Test
