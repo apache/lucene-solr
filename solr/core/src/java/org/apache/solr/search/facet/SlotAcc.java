@@ -278,7 +278,7 @@ public abstract class SlotAcc implements Closeable {
 
   // TODO: we should really have a decoupled value provider...
 // This would enhance reuse and also prevent multiple lookups of same value across diff stats
-  abstract static class FuncSlotAcc extends SlotAcc {
+  public abstract static class FuncSlotAcc extends SlotAcc {
     protected final ValueSource valueSource;
     protected FunctionValues values;
 
@@ -301,9 +301,9 @@ public abstract class SlotAcc implements Closeable {
 // double-slot-func -> func-slot -> slot -> acc
 // double-slot-func -> double-slot -> slot -> acc
 
-  abstract static class DoubleFuncSlotAcc extends FuncSlotAcc {
-    double[] result; // TODO: use DoubleArray
-    double initialValue;
+  public abstract static class DoubleFuncSlotAcc extends FuncSlotAcc {
+    protected double[] result; // TODO: use DoubleArray
+    protected double initialValue;
 
     public DoubleFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       this(values, fcontext, numSlots, 0);
@@ -339,9 +339,9 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  abstract static class LongFuncSlotAcc extends FuncSlotAcc {
-    long[] result;
-    long initialValue;
+  public abstract static class LongFuncSlotAcc extends FuncSlotAcc {
+    protected long[] result;
+    protected long initialValue;
 
     public LongFuncSlotAcc(ValueSource values, FacetContext fcontext, int numSlots, long initialValue) {
       super(values, fcontext, numSlots);
@@ -373,9 +373,9 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  abstract class IntSlotAcc extends SlotAcc {
-    int[] result; // use LongArray32
-    int initialValue;
+  public abstract static class IntSlotAcc extends SlotAcc {
+    protected int[] result; // use LongArray32
+    protected int initialValue;
 
     public IntSlotAcc(FacetContext fcontext, int numSlots, int initialValue) {
       super(fcontext);
