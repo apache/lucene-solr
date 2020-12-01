@@ -16,9 +16,11 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -323,9 +325,14 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public boolean exists(String path) throws IOException {
-    // back compat behavior
-    File dirFile = new File(path);
-    return dirFile.canRead() && dirFile.list().length > 0;
+    // we go by the persistent storage ...
+    Path dirPath = Path.of(path);
+    if (Files.isReadable(dirPath)) {
+      try (DirectoryStream<Path> directory = Files.newDirectoryStream(dirPath)) {
+        return directory.iterator().hasNext();
+      }
+    }
+    return false;
   }
 
   /*

@@ -409,7 +409,7 @@ class RebalanceLeaders {
     propMap.put(QUEUE_OPERATION, REBALANCELEADERS.toLower());
     propMap.put(CORE_NAME_PROP, core);
     propMap.put(CORE_NODE_NAME_PROP, replica.getName());
-    propMap.put(ZkStateReader.BASE_URL_PROP, replica.getProperties().get(ZkStateReader.BASE_URL_PROP));
+    propMap.put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
     propMap.put(REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
     propMap.put(ELECTION_NODE_PROP, electionNode);
     String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());

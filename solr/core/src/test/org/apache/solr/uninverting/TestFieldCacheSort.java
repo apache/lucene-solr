@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.solr.legacy.LegacyDoubleField;
@@ -1590,7 +1591,7 @@ public class TestFieldCacheSort extends SolrTestCase {
   
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(newStringField("f", "", Field.Store.NO));
     doc.add(newStringField("t", "1", Field.Store.NO));
