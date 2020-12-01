@@ -36,13 +36,13 @@ public interface PlacementPlugin {
    *
    * <p>Configuration is passed upon creation of a new instance of this class by {@link PlacementPluginFactory#createPluginInstance}.
    *
-   * @param cluster initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
-   *                accessible from the {@link Cluster} and other reachable instances. These collection will not change
-   *                while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
-   *                therefore modify them if needed.
-   * @param placementRequest request for placing new replicas or moving existing replicas on the cluster.
-   * @param attributeFetcher Factory used by the plugin to fetch additional attributes from the cluster nodes, such as
-   *                         count of coresm ssytem properties etc..
+   * @param cluster              initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
+   *                             accessible from the {@link Cluster} and other reachable instances. These collection will not change
+   *                             while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
+   *                             therefore modify them if needed.
+   * @param placementRequest     request for placing new replicas or moving existing replicas on the cluster.
+   * @param attributeFetcher     Factory used by the plugin to fetch additional attributes from the cluster nodes, such as
+   *                             count of coresm ssytem properties etc..
    * @param placementPlanFactory Factory used to create instances of {@link PlacementPlan} to return computed decision.
    * @return plan satisfying the placement request.
    */

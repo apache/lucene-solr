@@ -42,7 +42,17 @@ public interface Replica {
    * The order of this enum is important from the most to least "important" replica type.
    */
   enum ReplicaType {
-    NRT, TLOG, PULL
+    NRT('n'), TLOG('t'), PULL('p');
+
+    private char suffixChar;
+
+    ReplicaType(char suffixChar) {
+      this.suffixChar = suffixChar;
+    }
+
+    public char getSuffixChar() {
+      return suffixChar;
+    }
   }
 
   enum ReplicaState {
