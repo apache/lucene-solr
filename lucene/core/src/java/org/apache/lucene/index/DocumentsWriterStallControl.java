@@ -103,6 +103,10 @@ final class DocumentsWriterStallControl {
   synchronized boolean hasBlocked() { // for tests
     return numWaiting > 0;
   }
+
+  synchronized int getNumWaiting() { // for tests
+    return numWaiting;
+  }
   
   boolean isHealthy() { // for tests
     return !stalled; // volatile read!

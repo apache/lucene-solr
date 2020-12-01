@@ -4258,4 +4258,47 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
+
+  public void testIndexWriterBlocksOnStall() throws IOException, InterruptedException {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        DocumentsWriterStallControl stallControl = writer.getDocsWriter().flushControl.stallControl;
+        stallControl.updateStalled(true);
+        Thread[] threads = new Thread[random().nextInt(3)+1];
+        AtomicLong numThreadsCompleted = new AtomicLong(0);
+        for (int i = 0; i < threads.length; i++) {
+          threads[i] = new Thread(() -> {
+            Document d = new Document();
+            d.add(new StringField("id", Integer.toString(0), Field.Store.YES));
+            try {
+              writer.addDocument(d);
+            } catch (IOException e) {
+              throw new AssertionError(e);
+            }
+            numThreadsCompleted.incrementAndGet();
+          });
+          threads[i].start();
+        }
+        try {
+          for (int i = 0; i < 10; i++) {
+            synchronized (stallControl) {
+              stallControl.notifyAll();
+            }
+            while (stallControl.getNumWaiting() != threads.length) {
+              // wait for all threads to be stalled again
+              assertEquals(0, writer.getPendingNumDocs());
+              assertEquals(0, numThreadsCompleted.get());
+            }
+          }
+        } finally {
+          stallControl.updateStalled(false);
+          for (Thread t : threads) {
+            t.join();
+          }
+        }
+        writer.commit();
+        assertEquals(threads.length, writer.getDocStats().maxDoc);
+      }
+    }
+  }
 }

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SolrTestCaseJ4.SuppressPointFields(bugUrl="Test explicitly compares Trie to Points, randomization defeats the point")
+@SolrTestCaseJ4.SuppressSSL
 public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -71,8 +71,7 @@ if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
-set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\lucene-libs\*;%BASEDIR%\..\..\server\solr-webapp\webapp\WEB-INF\lib\*;%BASEDIR%\..\..\server\lib\ext\*
-set EXTRA_JVM_ARGUMENTS=-Dlog4j.configurationFile=file:///%BASEDIR%\..\..\server\resources\log4j2-console.xml
+set CLASSPATH=%REPO%\*;%BASEDIR%\conf;%BASEDIR%\..\..\dist\solrj-lib\*;%BASEDIR%\..\..\dist\*;%BASEDIR%\..\..\server\lib\ext\*
 
 @REM Convert Environment Variables to Command Line Options
 set EXPORTER_ARGS=
@@ -88,7 +87,7 @@ goto endInit
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% %ZK_CREDS_AND_ACLS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %EXPORTER_ARGS% %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_MEM% %GC_TUNE% %JAVA_OPTS% %ZK_CREDS_AND_ACLS% -classpath "%CLASSPATH_PREFIX%;%CLASSPATH%" -Dapp.name="solr-exporter" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.apache.solr.prometheus.exporter.SolrExporter %EXPORTER_ARGS% %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 

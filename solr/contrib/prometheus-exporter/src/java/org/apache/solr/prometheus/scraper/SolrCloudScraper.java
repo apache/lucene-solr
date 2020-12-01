@@ -20,13 +20,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.cloud.DocCollection;
@@ -42,7 +41,7 @@ public class SolrCloudScraper extends SolrScraper {
   private final CloudSolrClient solrClient;
   private final SolrClientFactory solrClientFactory;
 
-  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder().build();
+  private Cache<String, HttpSolrClient> hostClientCache = Caffeine.newBuilder().build();
 
   public SolrCloudScraper(CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
     super(executor);
@@ -83,15 +82,8 @@ public class SolrCloudScraper extends SolrScraper {
 
   private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
     return getBaseUrls().stream()
-        .map(url -> {
-          try {
-            return hostClientCache.get(url, () -> solrClientFactory.createStandaloneSolrClient(url));
-          } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-        })
+        .map(url -> hostClientCache.get(url, solrClientFactory::createStandaloneSolrClient))
         .collect(Collectors.toMap(HttpSolrClient::getBaseURL, Function.identity()));
-
   }
 
   @Override

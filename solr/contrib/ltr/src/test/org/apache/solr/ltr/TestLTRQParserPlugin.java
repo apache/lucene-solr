@@ -48,7 +48,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide model in the request"));
+    assert (res.contains("Must provide one or two models in the request"));
   }
 
   @Test
@@ -63,6 +63,20 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
     assert (res.contains("cannot find model"));
+  }
+
+  @Test
+  public void ltrModelIsEmptyTest() throws Exception {
+    final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=\"\" reRankDocs=100}");
+
+    final String res = restTestHarness.query("/query" + query.toQueryString());
+    assert (res.contains("the model 0 is empty"));
   }
 
   @Test

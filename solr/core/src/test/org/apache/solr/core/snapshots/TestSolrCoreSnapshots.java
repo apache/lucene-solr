@@ -56,8 +56,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
@@ -97,8 +95,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     assertEquals(1, shard.getReplicas().size());
     Replica replica = shard.getReplicas().iterator().next();
 
-    String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-    String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
+    String coreName = replica.getCoreName();
     String backupName = TestUtil.randomSimpleString(random(), 1, 5);
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
     String duplicateName = commitName.concat("_duplicate");
