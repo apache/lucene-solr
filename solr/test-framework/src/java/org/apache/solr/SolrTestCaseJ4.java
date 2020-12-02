@@ -818,6 +818,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
+    System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness(solrHome, solrXML);
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -840,6 +841,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static CoreContainer createDefaultCoreContainer(Path solrHome) {
     testSolrHome = requireNonNull(solrHome);
+    System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness("collection1", initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
