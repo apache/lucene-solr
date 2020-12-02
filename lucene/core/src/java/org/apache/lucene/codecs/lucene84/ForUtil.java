@@ -250,17 +250,17 @@ final class ForUtil {
     final int remainingBitsPerLong = shift + bitsPerValue;
     final long maskRemainingBitsPerLong;
     if (nextPrimitive == 8) {
-      maskRemainingBitsPerLong = mask8(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked8(remainingBitsPerLong);
     } else if (nextPrimitive == 16) {
-      maskRemainingBitsPerLong = mask16(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked16(remainingBitsPerLong);
     } else {
-      maskRemainingBitsPerLong = mask32(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked32(remainingBitsPerLong);
     }
 
     int tmpIdx = 0;
     int remainingBitsPerValue = bitsPerValue;
     while (idx < numLongs) {
-      if (remainingBitsPerValue > remainingBitsPerLong) {
+      if (remainingBitsPerValue >= remainingBitsPerLong) {
         remainingBitsPerValue -= remainingBitsPerLong;
         tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
         if (remainingBitsPerValue == 0) {
@@ -270,14 +270,14 @@ final class ForUtil {
       } else {
         final long mask1, mask2;
         if (nextPrimitive == 8) {
-          mask1 = mask8(remainingBitsPerValue);
-          mask2 = mask8(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked8(remainingBitsPerValue);
+          mask2 = masked8(remainingBitsPerLong - remainingBitsPerValue);
         } else if (nextPrimitive == 16) {
-          mask1 = mask16(remainingBitsPerValue);
-          mask2 = mask16(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked16(remainingBitsPerValue);
+          mask2 = masked16(remainingBitsPerLong - remainingBitsPerValue);
         } else {
-          mask1 = mask32(remainingBitsPerValue);
-          mask2 = mask32(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked32(remainingBitsPerValue);
+          mask2 = masked32(remainingBitsPerLong - remainingBitsPerValue);
         }
         tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
@@ -341,6 +341,7 @@ final class ForUtil {
     }
   }
 
+  private static final long MASK8_0 = mask8(0);
   private static final long MASK8_1 = mask8(1);
   private static final long MASK8_2 = mask8(2);
   private static final long MASK8_3 = mask8(3);
@@ -348,6 +349,7 @@ final class ForUtil {
   private static final long MASK8_5 = mask8(5);
   private static final long MASK8_6 = mask8(6);
   private static final long MASK8_7 = mask8(7);
+  private static final long MASK16_0 = mask16(0);
   private static final long MASK16_1 = mask16(1);
   private static final long MASK16_2 = mask16(2);
   private static final long MASK16_3 = mask16(3);
@@ -355,6 +357,7 @@ final class ForUtil {
   private static final long MASK16_5 = mask16(5);
   private static final long MASK16_6 = mask16(6);
   private static final long MASK16_7 = mask16(7);
+  private static final long MASK16_8 = mask16(8);
   private static final long MASK16_9 = mask16(9);
   private static final long MASK16_10 = mask16(10);
   private static final long MASK16_11 = mask16(11);
@@ -362,6 +365,7 @@ final class ForUtil {
   private static final long MASK16_13 = mask16(13);
   private static final long MASK16_14 = mask16(14);
   private static final long MASK16_15 = mask16(15);
+  private static final long MASK32_0 = mask32(0);
   private static final long MASK32_1 = mask32(1);
   private static final long MASK32_2 = mask32(2);
   private static final long MASK32_3 = mask32(3);
@@ -377,6 +381,7 @@ final class ForUtil {
   private static final long MASK32_13 = mask32(13);
   private static final long MASK32_14 = mask32(14);
   private static final long MASK32_15 = mask32(15);
+  private static final long MASK32_16 = mask32(16);
   private static final long MASK32_17 = mask32(17);
   private static final long MASK32_18 = mask32(18);
   private static final long MASK32_19 = mask32(19);
@@ -385,7 +390,156 @@ final class ForUtil {
   private static final long MASK32_22 = mask32(22);
   private static final long MASK32_23 = mask32(23);
   private static final long MASK32_24 = mask32(24);
+  private static final long MASK32_25 = mask32(25);
+  private static final long MASK32_26 = mask32(26);
+  private static final long MASK32_27 = mask32(27);
+  private static final long MASK32_28 = mask32(28);
+  private static final long MASK32_29 = mask32(29);
+  private static final long MASK32_30 = mask32(30);
+  private static final long MASK32_31 = mask32(31);
 
+
+  /**
+   * Get computed masks
+   */
+   private static long masked8(int bitsPerValue) {
+    switch (bitsPerValue) {
+    case 0:
+      return MASK8_0;
+    case 1:
+      return MASK8_1;
+    case 2:
+      return MASK8_2;
+    case 3:
+      return MASK8_3;
+    case 4:
+      return MASK8_4;
+    case 5:
+      return MASK8_5;
+    case 6:
+      return MASK8_6;
+    case 7:
+      return MASK8_7;
+    default:
+      throw new IllegalArgumentException("illegal mask value " + bitsPerValue);
+    }
+  }
+
+  /**
+   * Get computed masks
+   */
+   private static long masked16(int bitsPerValue) {
+    switch (bitsPerValue) {
+    case 0:
+      return MASK16_0;
+    case 1:
+      return MASK16_1;
+    case 2:
+      return MASK16_2;
+    case 3:
+      return MASK16_3;
+    case 4:
+      return MASK16_4;
+    case 5:
+      return MASK16_5;
+    case 6:
+      return MASK16_6;
+    case 7:
+      return MASK16_7;
+    case 8:
+      return MASK16_8;
+    case 9:
+      return MASK16_9;
+    case 10:
+      return MASK16_10;
+    case 11:
+      return MASK16_11;
+    case 12:
+      return MASK16_12;
+    case 13:
+      return MASK16_13;
+    case 14:
+      return MASK16_14;
+    case 15:
+      return MASK16_15;
+    default:
+      throw new IllegalArgumentException("illegal mask value " + bitsPerValue);
+    }
+  }
+
+  /**
+   * Get computed masks
+   */
+   private static long masked32(int bitsPerValue) {
+    switch (bitsPerValue) {
+    case 0:
+      return MASK32_0;
+    case 1:
+      return MASK32_1;
+    case 2:
+      return MASK32_2;
+    case 3:
+      return MASK32_3;
+    case 4:
+      return MASK32_4;
+    case 5:
+      return MASK32_5;
+    case 6:
+      return MASK32_6;
+    case 7:
+      return MASK32_7;
+    case 8:
+      return MASK32_8;
+    case 9:
+      return MASK32_9;
+    case 10:
+      return MASK32_10;
+    case 11:
+      return MASK32_11;
+    case 12:
+      return MASK32_12;
+    case 13:
+      return MASK32_13;
+    case 14:
+      return MASK32_14;
+    case 15:
+      return MASK32_15;
+    case 16:
+      return MASK32_16;
+    case 17:
+      return MASK32_17;
+    case 18:
+      return MASK32_18;
+    case 19:
+      return MASK32_19;
+    case 20:
+      return MASK32_20;
+    case 21:
+      return MASK32_21;
+    case 22:
+      return MASK32_22;
+    case 23:
+      return MASK32_23;
+    case 24:
+      return MASK32_24;
+    case 25:
+      return MASK32_25;
+    case 26:
+      return MASK32_26;
+    case 27:
+      return MASK32_27;
+    case 28:
+      return MASK32_28;
+    case 29:
+      return MASK32_29;
+    case 30:
+      return MASK32_30;
+    case 31:
+      return MASK32_31;
+    default:
+      throw new IllegalArgumentException("illegal mask value " + bitsPerValue);
+    }
+  }
 
   /**
    * Decode 128 integers into {@code longs}.

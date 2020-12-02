@@ -21,6 +21,7 @@ from fractions import gcd
 
 MAX_SPECIALIZED_BITS_PER_VALUE = 24
 OUTPUT_FILE = "ForUtil.java"
+PRIMITIVE_SIZE = [8, 16, 32]
 HEADER = """// This file has been automatically generated, DO NOT EDIT
 
 /*
@@ -273,17 +274,17 @@ final class ForUtil {
     final int remainingBitsPerLong = shift + bitsPerValue;
     final long maskRemainingBitsPerLong;
     if (nextPrimitive == 8) {
-      maskRemainingBitsPerLong = mask8(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked8(remainingBitsPerLong);
     } else if (nextPrimitive == 16) {
-      maskRemainingBitsPerLong = mask16(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked16(remainingBitsPerLong);
     } else {
-      maskRemainingBitsPerLong = mask32(remainingBitsPerLong);
+      maskRemainingBitsPerLong = masked32(remainingBitsPerLong);
     }
 
     int tmpIdx = 0;
     int remainingBitsPerValue = bitsPerValue;
     while (idx < numLongs) {
-      if (remainingBitsPerValue > remainingBitsPerLong) {
+      if (remainingBitsPerValue >= remainingBitsPerLong) {
         remainingBitsPerValue -= remainingBitsPerLong;
         tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
         if (remainingBitsPerValue == 0) {
@@ -293,14 +294,14 @@ final class ForUtil {
       } else {
         final long mask1, mask2;
         if (nextPrimitive == 8) {
-          mask1 = mask8(remainingBitsPerValue);
-          mask2 = mask8(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked8(remainingBitsPerValue);
+          mask2 = masked8(remainingBitsPerLong - remainingBitsPerValue);
         } else if (nextPrimitive == 16) {
-          mask1 = mask16(remainingBitsPerValue);
-          mask2 = mask16(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked16(remainingBitsPerValue);
+          mask2 = masked16(remainingBitsPerLong - remainingBitsPerValue);
         } else {
-          mask1 = mask32(remainingBitsPerValue);
-          mask2 = mask32(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = masked32(remainingBitsPerValue);
+          mask2 = masked32(remainingBitsPerLong - remainingBitsPerValue);
         }
         tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
@@ -424,11 +425,30 @@ def writeDecode(bpv, f):
 if __name__ == '__main__':
   f = open(OUTPUT_FILE, 'w')
   f.write(HEADER)
-  for primitive_size in [8, 16, 32]:
-    for bpv in range(1, min(MAX_SPECIALIZED_BITS_PER_VALUE + 1, primitive_size)):
-      if bpv * 2 != primitive_size or primitive_size == 8:
-        f.write('  private static final long MASK%d_%d = mask%d(%d);\n' %(primitive_size, bpv, primitive_size, bpv))
+  masked_pairs = {}
+  for primitive_size in PRIMITIVE_SIZE:
+    masked_pairs[primitive_size] = []
+    for bpv in range(0, primitive_size):
+      f.write('  private static final long MASK%d_%d = mask%d(%d);\n' %(primitive_size, bpv, primitive_size, bpv))
+      masked_pairs[primitive_size].append(bpv)
   f.write('\n')
+
+  for primitive_size in PRIMITIVE_SIZE:
+    f.write("""
+  /**
+   * Get computed masks
+   */
+ """)
+    f.write('  private static long masked%d(int bitsPerValue) {\n' % primitive_size)
+    f.write('    switch (bitsPerValue) {\n')
+    for bpv in masked_pairs[primitive_size]:
+      f.write('    case %d:\n' %bpv)
+      f.write('      return MASK%d_%d;\n' %(primitive_size, bpv))
+    f.write('    default:\n')
+    f.write('      throw new IllegalArgumentException("illegal mask value " + bitsPerValue);\n')
+    f.write('    }\n')
+    f.write('  }\n')
+
   f.write("""
   /**
    * Decode 128 integers into {@code longs}.
