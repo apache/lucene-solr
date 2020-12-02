@@ -17,6 +17,7 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public class MultiDestinationAuditLoggerTest extends SolrTestCaseJ4 {
     plugins.add(conf2);
     config.put("plugins", plugins);
 
-    SolrResourceLoader loader = new SolrResourceLoader();
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get(""));
     al.inform(loader);
     al.init(config);
 

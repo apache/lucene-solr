@@ -184,10 +184,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           excludePatterns.add(Pattern.compile(element));
         }
       }
-      
-      String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
-      coresInit = createCoreContainer(solrHomePath, extraProperties);
+
+      coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       
@@ -290,6 +288,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST)) || (null != System.getProperty("zkRun"));
   }
 
+  /**
+   * Returns the effective Solr Home to use for this node
+   */
+  private static Path computeSolrHome(FilterConfig config) {
+    final String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
+    return (solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome));
+  }
+  
   /**
    * Override this to change CoreContainer initialization
    * @return a CoreContainer to hold this server's cores

@@ -136,6 +136,8 @@ public class NodeConfig {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
     }
+    if (null == this.solrHome) throw new NullPointerException("solrHome");
+    if (null == this.loader) throw new NullPointerException("loader");
   }
 
   public String getNodeName() {
