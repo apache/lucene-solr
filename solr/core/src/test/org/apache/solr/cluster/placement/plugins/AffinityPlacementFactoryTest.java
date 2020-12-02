@@ -27,7 +27,6 @@ import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
-import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;

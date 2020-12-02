@@ -138,7 +138,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
                   " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
             }
           } else {
-            log.warn("Ignoring ClusterEventProducer config with non-standard name: " + plugin.getInfo());
+            log.warn("Ignoring ClusterEventProducer config with non-standard name: {}", plugin.getInfo());
           }
         }
       }
@@ -163,7 +163,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
                   " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
             }
           } else {
-            log.warn("Ignoring ClusterEventProducer config with non-standard name: " + plugin.getInfo());
+            log.warn("Ignoring ClusterEventProducer config with non-standard name: {}", plugin.getInfo());
           }
         }
       }
