@@ -3,12 +3,17 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * Utility class to load the configured {@link PlacementPluginFactory} plugin and
  * then keep it up to date as the plugin configuration changes.
  */
 public class PlacementPluginFactoryLoader {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static PlacementPluginFactory load(ContainerPluginsRegistry plugins) {
     final DelegatingPlacementPluginFactory pluginFactory = new DelegatingPlacementPluginFactory();
@@ -24,7 +29,11 @@ public class PlacementPluginFactoryLoader {
         }
         Object instance = plugin.getInstance();
         if (instance instanceof PlacementPluginFactory) {
-          pluginFactory.setDelegate((PlacementPluginFactory) instance);
+          if (PlacementPluginFactory.PLUGIN_NAME.equals(plugin.getInfo().name)) {
+            pluginFactory.setDelegate((PlacementPluginFactory) instance);
+          } else {
+            log.warn("Ignoring PlacementPluginFactory plugin with non-standard name: " + plugin.getInfo());
+          }
         }
       }
 
@@ -35,7 +44,11 @@ public class PlacementPluginFactoryLoader {
         }
         Object instance = plugin.getInstance();
         if (instance instanceof PlacementPluginFactory) {
-          pluginFactory.setDelegate(null);
+          if (PlacementPluginFactory.PLUGIN_NAME.equals(plugin.getInfo().name)) {
+            pluginFactory.setDelegate(null);
+          } else {
+            log.warn("Ignoring PlacementPluginFactory plugin with non-standard name: " + plugin.getInfo());
+          }
         }
       }
 

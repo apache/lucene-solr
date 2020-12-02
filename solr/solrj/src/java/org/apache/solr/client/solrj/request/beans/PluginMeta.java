@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.Utils;
 
 /**
  * POJO for a plugin metadata used in container plugins
@@ -70,5 +71,10 @@ public class PluginMeta implements ReflectMapWriter {
   @Override
   public int hashCode() {
     return Objects.hash(name, version, klass);
+  }
+
+  @Override
+  public String toString() {
+    return Utils.toJSONString(this);
   }
 }

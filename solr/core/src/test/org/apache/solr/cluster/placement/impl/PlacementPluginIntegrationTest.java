@@ -84,7 +84,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       req = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
           .POST()
-          .withPayload("{remove: " + PlacementPluginFactory.PLUGIN_NAME + "}")
+          .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
           .build();
       req.process(cluster.getSolrClient());
     }
@@ -161,7 +161,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper);
+    version = waitForVersionChange(version, wrapper, 10);
 
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
@@ -178,27 +178,43 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper);
+    version = waitForVersionChange(version, wrapper, 10);
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
     assertEquals("minimalFreeDiskGB", 3, config.minimalFreeDiskGB);
     assertEquals("prioritizedFreeDiskGB", 4, config.prioritizedFreeDiskGB);
 
+    // add plugin of the right type but with the wrong name
+    plugin.name = "myPlugin";
+    req = new V2Request.Builder("/cluster/plugin")
+        .forceV2(true)
+        .POST()
+        .withPayload(singletonMap("add", plugin))
+        .build();
+    req.process(cluster.getSolrClient());
+    try {
+      int newVersion = waitForVersionChange(version, wrapper, 5);
+      if (newVersion != version) {
+        fail("factory configuration updated but plugin name was wrong: " + plugin);
+      }
+    } catch (TimeoutException te) {
+      // expected
+    }
     // remove plugin
     req = new V2Request.Builder("/cluster/plugin")
         .forceV2(true)
         .POST()
-        .withPayload("{remove: " + PlacementPluginFactory.PLUGIN_NAME + "}")
+        .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    version = waitForVersionChange(version, wrapper);
+    version = waitForVersionChange(version, wrapper, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
   }
 
-  private int waitForVersionChange(int currentVersion, PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory wrapper) throws Exception {
-    TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+  private int waitForVersionChange(int currentVersion, PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {
+    TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (!timeout.hasTimedOut()) {
       int newVersion = wrapper.getVersion();

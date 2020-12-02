@@ -28,7 +28,7 @@ public interface PlacementPluginFactory {
   /**
    * The key in the plugins registry under which this plugin and its configuration are defined.
    */
-  String PLUGIN_NAME = "placement-plugin";
+  String PLUGIN_NAME = ".placement-plugin";
 
   /**
    * Returns an instance of the plugin that will be repeatedly (and concurrently) be called to compute placement. Multiple
