@@ -110,10 +110,9 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
-    if( loader == null ) {
-      loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
-    }
+    if (null == loader) throw new NullPointerException("loader");
     this.loader = loader;
+    
     this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;

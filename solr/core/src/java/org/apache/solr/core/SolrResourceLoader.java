@@ -115,6 +115,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return schemaLoader;
   }
 
+  /**
+   * @deprecated Use <code>new SolrResourceLoader(Path)</code>
+   * @see CoreContainer#getSolrHome
+   */
+  @Deprecated
   public SolrResourceLoader() {
     this(SolrPaths.locateSolrHome(), null);
   }
@@ -122,6 +127,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Creates a loader.
    * Note: we do NOT call {@link #reloadLuceneSPI()}.
+   * (Behavior when <code>instanceDir</code> is <code>null</code> is un-specified, in future versions this will fail due to NPE)
    */
   public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
     this(instanceDir, parent);
@@ -138,6 +144,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
 
+  /**
+   * Creates a loader.
+   * (Behavior when <code>instanceDir</code> is <code>null</code> is un-specified, in future versions this will fail due to NPE)
+   */
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null);
   }
@@ -147,7 +157,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
   /**
-   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
+   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used. (in future versions this will fail due to NPE)
    * @see SolrPaths#locateSolrHome()
    */
   @Deprecated // the Properties arg in particular is what is deprecated
@@ -155,6 +165,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     this.coreProperties = properties;
     if (instanceDir == null) {
       this.instanceDir = SolrPaths.locateSolrHome().toAbsolutePath().normalize();
+      log.warn("SolrResourceLoader created with null instanceDir.  This will not be supported in Solr 9.0");
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
     } else{
       this.instanceDir = instanceDir.toAbsolutePath().normalize();
