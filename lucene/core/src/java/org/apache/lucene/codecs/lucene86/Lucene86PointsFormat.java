@@ -62,7 +62,8 @@ public final class Lucene86PointsFormat extends PointsFormat {
   public static final String META_EXTENSION = "kdm";
 
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_LITTLE_ENDIAN = 1;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   /** Sole constructor */
   public Lucene86PointsFormat() {

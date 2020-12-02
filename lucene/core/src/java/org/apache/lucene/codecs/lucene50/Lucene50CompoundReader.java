@@ -77,7 +77,7 @@ final class Lucene50CompoundReader extends CompoundDirectory {
 
     handle = directory.openInput(dataFileName, context);
     try {
-      CodecUtil.checkIndexHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, si.getId(), "");
+      CodecUtil.checkIndexHeader(handle, Lucene50CompoundFormat.DATA_CODEC, Lucene50CompoundFormat.VERSION_START, Lucene50CompoundFormat.VERSION_CURRENT, si.getId(), "");
       
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -108,7 +108,7 @@ final class Lucene50CompoundReader extends CompoundDirectory {
         version = CodecUtil.checkIndexHeader(entriesStream, Lucene50CompoundFormat.ENTRY_CODEC, 
                                                               Lucene50CompoundFormat.VERSION_START, 
                                                               Lucene50CompoundFormat.VERSION_CURRENT, segmentID, "");
-        mapping = getMapping(new EndiannessReverserIndexInput(entriesStream));
+        mapping = getMapping(version < Lucene50CompoundFormat.VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(entriesStream) : entriesStream);
       } catch (Throwable exception) {
         priorE = exception;
       } finally {

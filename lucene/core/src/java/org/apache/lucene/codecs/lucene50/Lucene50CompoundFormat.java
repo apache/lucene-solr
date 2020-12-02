@@ -27,7 +27,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
@@ -63,6 +62,16 @@ import org.apache.lucene.store.IndexOutput;
  */
 public final class Lucene50CompoundFormat extends CompoundFormat {
 
+  /** Extension of compound file */
+  static final String DATA_EXTENSION = "cfs";
+  /** Extension of compound file entries */
+  static final String ENTRIES_EXTENSION = "cfe";
+  static final String DATA_CODEC = "Lucene50CompoundData";
+  static final String ENTRY_CODEC = "Lucene50CompoundEntries";
+  static final int VERSION_START = 0;
+  static final int VERSION_LITTLE_ENDIAN= 1;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
+
   /** Sole constructor. */
   public Lucene50CompoundFormat() {
   }
@@ -82,7 +91,7 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       CodecUtil.writeIndexHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
       CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
       
-      writeFiles(data, new EndiannessReverserIndexOutput(entries), dir, si);
+      writeFiles(data, entries, dir, si);
       
       CodecUtil.writeFooter(data);
       CodecUtil.writeFooter(entries);
@@ -125,13 +134,4 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       entries.writeLong(length);
     }
   }
-
-  /** Extension of compound file */
-  static final String DATA_EXTENSION = "cfs";
-  /** Extension of compound file entries */
-  static final String ENTRIES_EXTENSION = "cfe";
-  static final String DATA_CODEC = "Lucene50CompoundData";
-  static final String ENTRY_CODEC = "Lucene50CompoundEntries";
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
 }

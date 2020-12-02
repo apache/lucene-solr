@@ -77,15 +77,15 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
       try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
         try {
-          CodecUtil.checkIndexHeader(metaIn,
+          final int version = CodecUtil.checkIndexHeader(metaIn,
                   Lucene86PointsFormat.META_CODEC_NAME,
                   Lucene86PointsFormat.VERSION_START,
                   Lucene86PointsFormat.VERSION_CURRENT,
                   readState.segmentInfo.getId(),
                   readState.segmentSuffix);
-          IndexInput metaInWrapped = new EndiannessReverserIndexInput(metaIn);
-          IndexInput indexInWrapped = new EndiannessReverserIndexInput(indexIn);
-          IndexInput dataInWrapped = new EndiannessReverserIndexInput(dataIn);
+          IndexInput metaInWrapped = version < Lucene86PointsFormat.VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(metaIn) : metaIn;
+          IndexInput indexInWrapped = version < Lucene86PointsFormat.VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(indexIn) : indexIn;
+          IndexInput dataInWrapped = version < Lucene86PointsFormat.VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(dataIn): dataIn;
           while (true) {
             int fieldNumber = metaInWrapped.readInt();
             if (fieldNumber == -1) {

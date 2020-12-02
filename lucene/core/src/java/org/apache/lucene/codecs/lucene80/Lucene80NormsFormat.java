@@ -95,5 +95,6 @@ public class Lucene80NormsFormat extends NormsFormat {
   private static final String METADATA_CODEC = "Lucene80NormsMetadata";
   private static final String METADATA_EXTENSION = "nvm";
   static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_LITTLE_ENDIAN = 1;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 }

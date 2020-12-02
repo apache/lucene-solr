@@ -36,6 +36,7 @@ import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.IOUtils;
 
 import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_LITTLE_ENDIAN;
 import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_START;
 
 /**
@@ -61,7 +62,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       Throwable priorE = null;
       try {
         version = CodecUtil.checkIndexHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-        readFields(new EndiannessReverserIndexInput(in), state.fieldInfos);
+        readFields(version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(in) : in, state.fieldInfos);
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -90,7 +91,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
         IOUtils.closeWhileHandlingException(data);
       }
     }
-    this.data = new EndiannessReverserIndexInput(data);
+    this.data = version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(data) : data;
   }
 
   @Override

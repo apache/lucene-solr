@@ -36,7 +36,6 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.EndiannessReverserIndexInput;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -106,6 +105,23 @@ import org.apache.lucene.store.IndexOutput;
  */
 public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
 
+  /** Extension of field infos */
+  static final String EXTENSION = "fnm";
+
+  // Codec header
+  static final String CODEC_NAME = "Lucene60FieldInfos";
+  static final int FORMAT_START = 0;
+  static final int FORMAT_SOFT_DELETES = 1;
+  static final int FORMAT_SELECTIVE_INDEXING = 2;
+  static final int FORMAT_LITTLE_ENDIAN = 3;
+  static final int FORMAT_CURRENT = FORMAT_LITTLE_ENDIAN;
+
+  // Field flags
+  static final byte STORE_TERMVECTOR = 0x1;
+  static final byte OMIT_NORMS = 0x2;
+  static final byte STORE_PAYLOADS = 0x4;
+  static final byte SOFT_DELETES_FIELD = 0x8;
+
   /** Sole constructor. */
   public Lucene60FieldInfosFormat() {
   }
@@ -122,7 +138,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
                                    Lucene60FieldInfosFormat.FORMAT_START, 
                                    Lucene60FieldInfosFormat.FORMAT_CURRENT,
                                    segmentInfo.getId(), segmentSuffix);
-        infos = parseFieldInfos(new EndiannessReverserIndexInput(input), version);
+        infos = parseFieldInfos(version < FORMAT_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(input) : input, version);
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -279,7 +295,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (IndexOutput output = directory.createOutput(fileName, context)) {
       CodecUtil.writeIndexHeader(output, Lucene60FieldInfosFormat.CODEC_NAME, Lucene60FieldInfosFormat.FORMAT_CURRENT, segmentInfo.getId(), segmentSuffix);
-      writeFieldInfos(new EndiannessReverserIndexOutput(output), infos);
+      writeFieldInfos(output, infos);
       CodecUtil.writeFooter(output);
     }
   }
@@ -312,20 +328,4 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
       }
     }
   }
-  
-  /** Extension of field infos */
-  static final String EXTENSION = "fnm";
-  
-  // Codec header
-  static final String CODEC_NAME = "Lucene60FieldInfos";
-  static final int FORMAT_START = 0;
-  static final int FORMAT_SOFT_DELETES = 1;
-  static final int FORMAT_SELECTIVE_INDEXING = 2;
-  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
-  
-  // Field flags
-  static final byte STORE_TERMVECTOR = 0x1;
-  static final byte OMIT_NORMS = 0x2;
-  static final byte STORE_PAYLOADS = 0x4;
-  static final byte SOFT_DELETES_FIELD = 0x8;
 }

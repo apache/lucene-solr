@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
@@ -36,20 +35,18 @@ import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURR
  * Writer for {@link Lucene80NormsFormat}
  */
 final class Lucene80NormsConsumer extends NormsConsumer {
-  IndexOutput dataCodec, metaCodec, data, meta;
+  IndexOutput data, meta;
   final int maxDoc;
 
   Lucene80NormsConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-      this.dataCodec = state.directory.createOutput(dataName, state.context);
-      this.data = new EndiannessReverserIndexOutput(this.dataCodec);
-      CodecUtil.writeIndexHeader(this.dataCodec, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      data = state.directory.createOutput(dataName, state.context);
+      CodecUtil.writeIndexHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
-      this.metaCodec = state.directory.createOutput(metaName, state.context);
-      this.meta = new EndiannessReverserIndexOutput(this.metaCodec);
-      CodecUtil.writeIndexHeader(this.metaCodec, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      meta = state.directory.createOutput(metaName, state.context);
+      CodecUtil.writeIndexHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
@@ -63,21 +60,21 @@ final class Lucene80NormsConsumer extends NormsConsumer {
   public void close() throws IOException {
     boolean success = false;
     try {
-      if (metaCodec != null) {
+      if (meta != null) {
         meta.writeInt(-1); // write EOF marker
-        CodecUtil.writeFooter(metaCodec); // write checksum
+        CodecUtil.writeFooter(meta); // write checksum
       }
-      if (dataCodec != null) {
-        CodecUtil.writeFooter(dataCodec); // write checksum
+      if (data != null) {
+        CodecUtil.writeFooter(data); // write checksum
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(dataCodec, metaCodec);
+        IOUtils.close(data, meta);
       } else {
-        IOUtils.closeWhileHandlingException(dataCodec, metaCodec);
+        IOUtils.closeWhileHandlingException(data, meta);
       }
-      metaCodec = dataCodec = meta = data = null;
+      meta = data = null;
     }
   }
 

@@ -29,7 +29,6 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.EndiannessReverserIndexInput;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -62,7 +61,8 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
   
   /** supported version range */
   private static final int VERSION_START = 0;
-  private static final int VERSION_CURRENT = VERSION_START;
+  private static final int VERSION_LITTLE_ENDIAN = 1;
+  private static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
@@ -72,9 +72,9 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
-        CodecUtil.checkIndexHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, 
+        int version = CodecUtil.checkIndexHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, 
                                      info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-        FixedBitSet fbs = readData(new EndiannessReverserIndexInput(input), length);
+        FixedBitSet fbs = readData(version < VERSION_LITTLE_ENDIAN  ? new EndiannessReverserIndexInput(input) : input, length);
         if (fbs.length() - fbs.cardinality() != info.getDelCount()) {
           throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
                                           " info.delcount=" + info.getDelCount(), input);
@@ -104,7 +104,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     int delCount;
     try (IndexOutput output = dir.createOutput(name, context)) {
       CodecUtil.writeIndexHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-      delCount = writeBits(new EndiannessReverserIndexOutput(output), bits);
+      delCount = writeBits(output, bits);
       CodecUtil.writeFooter(output);
     }
     if (delCount != info.getDelCount() + newDelCount) {
