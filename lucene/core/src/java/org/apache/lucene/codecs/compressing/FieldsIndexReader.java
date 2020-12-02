@@ -38,6 +38,7 @@ final class FieldsIndexReader extends FieldsIndex {
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldsIndexReader.class);
 
+  private final int version;
   private final int maxDoc;
   private final int blockShift;
   private final int numChunks;
@@ -49,7 +50,6 @@ final class FieldsIndexReader extends FieldsIndex {
   private final long maxPointer;
 
   FieldsIndexReader(Directory dir, String name, String suffix, String extension, String codecName, byte[] id, IndexInput metaIn) throws IOException {
-    int version;
     indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extension), IOContext.READ);
     boolean success = false;
     try {
@@ -61,35 +61,28 @@ final class FieldsIndexReader extends FieldsIndex {
         indexInput.close();
       }
     }
-    // wrapped IndexInput for PackedInts
-    final IndexInput metaInWrapped = new EndiannessReverserIndexInput(metaIn);
-    // Version is in a different file?
-    if (version < VERSION_LITTLE_ENDIAN) {
-      maxDoc = Integer.reverseBytes(metaIn.readInt());
-      blockShift = Integer.reverseBytes(metaIn.readInt());
-      numChunks = Integer.reverseBytes(metaIn.readInt());
-      docsStartPointer = Long.reverseBytes(metaIn.readLong());
-      docsMeta = DirectMonotonicReader.loadMeta(metaInWrapped, numChunks, blockShift);
-      docsEndPointer = startPointersStartPointer = Long.reverseBytes(metaIn.readLong());
-      startPointersMeta = DirectMonotonicReader.loadMeta(metaInWrapped, numChunks, blockShift);
-      startPointersEndPointer = Long.reverseBytes(metaIn.readLong());
-      maxPointer = Long.reverseBytes(metaIn.readLong());
-    } else {
-      maxDoc = metaIn.readInt();
-      blockShift = metaIn.readInt();
-      numChunks = metaIn.readInt();
-      docsStartPointer = metaIn.readLong();
-      docsMeta = DirectMonotonicReader.loadMeta(metaInWrapped, numChunks, blockShift);
-      docsEndPointer = startPointersStartPointer = metaIn.readLong();
-      startPointersMeta = DirectMonotonicReader.loadMeta(metaInWrapped, numChunks, blockShift);
-      startPointersEndPointer = metaIn.readLong();
-      maxPointer = metaIn.readLong();
-    }
-    // Wrap the RandomAccessInput for packedInts
+
+    metaIn = version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(metaIn) : metaIn;
+    maxDoc = metaIn.readInt();
+    blockShift = metaIn.readInt();
+    numChunks = metaIn.readInt();
+    docsStartPointer = metaIn.readLong();
+    docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    docsEndPointer = startPointersStartPointer = metaIn.readLong();
+    startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    startPointersEndPointer = metaIn.readLong();
+    maxPointer = metaIn.readLong();
+    
     final RandomAccessInput docsSlice = indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
     final RandomAccessInput startPointersSlice = indexInput.randomAccessSlice(startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
-    docs = DirectMonotonicReader.getInstance(docsMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(docsSlice));
-    startPointers = DirectMonotonicReader.getInstance(startPointersMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(startPointersSlice));
+    if (version < VERSION_LITTLE_ENDIAN) {
+      // Wrap the RandomAccessInput for DirectMonotonicReader
+      docs = DirectMonotonicReader.getLegacyInstance(docsMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(docsSlice));
+      startPointers = DirectMonotonicReader.getLegacyInstance(startPointersMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(startPointersSlice));
+    }  else {
+      docs = DirectMonotonicReader.getInstance(docsMeta, docsSlice);
+      startPointers = DirectMonotonicReader.getInstance(startPointersMeta, startPointersSlice);
+    }
   }
 
   private FieldsIndexReader(FieldsIndexReader other) throws IOException {
@@ -104,10 +97,17 @@ final class FieldsIndexReader extends FieldsIndex {
     startPointersStartPointer = other.startPointersStartPointer;
     startPointersEndPointer = other.startPointersEndPointer;
     maxPointer = other.maxPointer;
+    version = other.version;
     final RandomAccessInput docsSlice = indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
     final RandomAccessInput startPointersSlice = indexInput.randomAccessSlice(startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
-    docs = DirectMonotonicReader.getInstance(docsMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(docsSlice));
-    startPointers = DirectMonotonicReader.getInstance(startPointersMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(startPointersSlice));
+    if (other.version < VERSION_LITTLE_ENDIAN) {
+      // Wrap the RandomAccessInput for DirectMonotonicReader
+      docs = DirectMonotonicReader.getLegacyInstance(docsMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(docsSlice));
+      startPointers = DirectMonotonicReader.getLegacyInstance(startPointersMeta, new EndiannessReverserIndexInput.EndiannessReverserRandomAccessInput(startPointersSlice));
+    }  else {
+      docs = DirectMonotonicReader.getInstance(docsMeta, docsSlice);
+      startPointers = DirectMonotonicReader.getInstance(startPointersMeta, startPointersSlice);
+    }
   }
 
   @Override

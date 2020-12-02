@@ -44,7 +44,6 @@ import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -66,7 +65,7 @@ import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_
 final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
   final Lucene80DocValuesFormat.Mode mode;
-  IndexOutput dataCodec, metaCodec, data, meta;
+  IndexOutput data, meta;
   final int maxDoc;
   private final SegmentWriteState state;
 
@@ -77,13 +76,11 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     try {
       this.state = state;
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
-      this.dataCodec = state.directory.createOutput(dataName, state.context);
-      data = new EndiannessReverserIndexOutput(this.dataCodec);
-      CodecUtil.writeIndexHeader(this.dataCodec, dataCodec, Lucene80DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      data = state.directory.createOutput(dataName, state.context);
+      CodecUtil.writeIndexHeader(data, dataCodec, Lucene80DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
-      this.metaCodec = state.directory.createOutput(metaName, state.context);
-      this.meta = new EndiannessReverserIndexOutput(this.metaCodec);
-      CodecUtil.writeIndexHeader(this.metaCodec, metaCodec, Lucene80DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      meta = state.directory.createOutput(metaName, state.context);
+      CodecUtil.writeIndexHeader(meta, metaCodec, Lucene80DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
@@ -99,19 +96,19 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     try {
       if (meta != null) {
         meta.writeInt(-1); // write EOF marker
-        CodecUtil.writeFooter(metaCodec); // write checksum
+        CodecUtil.writeFooter(meta); // write checksum
       }
       if (data != null) {
-        CodecUtil.writeFooter(dataCodec); // write checksum
+        CodecUtil.writeFooter(data); // write checksum
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(dataCodec, metaCodec);
+        IOUtils.close(data, meta);
       } else {
-        IOUtils.closeWhileHandlingException(dataCodec, metaCodec);
+        IOUtils.closeWhileHandlingException(data, meta);
       }
-      metaCodec = dataCodec = meta = data = null;
+      meta = data = null;
     }
   }
 

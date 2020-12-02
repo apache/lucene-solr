@@ -108,6 +108,19 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
     return new DirectMonotonicReader(meta.blockShift, readers, meta.mins, meta.avgs, meta.bpvs);
   }
 
+  public static DirectMonotonicReader getLegacyInstance(Meta meta, RandomAccessInput data) throws IOException {
+    final LongValues[] readers = new LongValues[meta.numBlocks];
+    for (int i = 0; i < meta.mins.length; ++i) {
+      if (meta.bpvs[i] == 0) {
+        readers[i] = EMPTY;
+      } else {
+        readers[i] = DirectReader.getLegacyInstance(data, meta.bpvs[i], meta.offsets[i]);
+      }
+    }
+
+    return new DirectMonotonicReader(meta.blockShift, readers, meta.mins, meta.avgs, meta.bpvs);
+  }
+
   private final int blockShift;
   private final LongValues[] readers;
   private final long[] mins;

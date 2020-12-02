@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -91,7 +90,7 @@ public class TestDirectMonotonic extends LuceneTestCase {
     }
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
-        IndexInput dataIn = new EndiannessReverserIndexInput(dir.openInput("data", IOContext.DEFAULT))) {
+        IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
       DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
       LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
       for (int i = 0; i < numValues; ++i) {
@@ -127,7 +126,7 @@ public class TestDirectMonotonic extends LuceneTestCase {
     }
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
-        IndexInput dataIn = new EndiannessReverserIndexInput(dir.openInput("data", IOContext.DEFAULT))) {
+        IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
       DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
       LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
       for (int i = 0; i < numValues; ++i) {
@@ -177,7 +176,7 @@ public class TestDirectMonotonic extends LuceneTestCase {
       }
   
       try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
-          IndexInput dataIn = new EndiannessReverserIndexInput(dir.openInput("data", IOContext.DEFAULT))) {
+          IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
         DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
         LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
         for (int i = 0; i < numValues; ++i) {
@@ -223,7 +222,7 @@ public class TestDirectMonotonic extends LuceneTestCase {
     }
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
-        IndexInput dataIn = new EndiannessReverserIndexInput(dir.openInput("data", IOContext.READ))) {
+        IndexInput dataIn = dir.openInput("data", IOContext.READ)) {
       DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, array.length, blockShift);
       DirectMonotonicReader reader = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0L, dir.fileLength("data")));
 

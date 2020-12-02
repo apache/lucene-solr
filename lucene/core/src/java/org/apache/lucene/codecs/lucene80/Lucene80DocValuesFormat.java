@@ -170,7 +170,8 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   static final int VERSION_START = 0;
   static final int VERSION_BIN_COMPRESSED = 1;  
   static final int VERSION_CONFIGURABLE_COMPRESSION = 2;
-  static final int VERSION_CURRENT = VERSION_CONFIGURABLE_COMPRESSION;
+  static final int VERSION_LITTLE_ENDIAN = 3;
+  static final int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   // indicates docvalues type
   static final byte NUMERIC = 0;
