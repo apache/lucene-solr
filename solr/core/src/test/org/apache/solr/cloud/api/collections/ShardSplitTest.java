@@ -73,7 +73,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
@@ -193,7 +192,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           boolean restarted = false;
           for (JettySolrRunner jetty : jettys) {
             int port = jetty.getBaseUrl().getPort();
-            if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
+            if (replica.getBaseUrl().contains(":" + port))  {
               stoppedNodeName = jetty.getNodeName();
               jetty.stop();
               jetty.start();
@@ -212,7 +211,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
           // use control client because less chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
-          String control_collection = client.getZkStateReader().getClusterState().getCollection("control_collection").getReplicas().get(0).getStr(BASE_URL_PROP);
+          String control_collection = client.getZkStateReader().getClusterState().getCollection("control_collection").getReplicas().get(0).getBaseUrl();
           try (HttpSolrClient control = new HttpSolrClient.Builder(control_collection).withHttpClient(client.getLbClient().getHttpClient()).build())  {
             state = addReplica.processAndWait(control, 30);
           }

@@ -6,59 +6,53 @@
       "replicas":{
         "r1":{//east
           "core":"r1",
-          "base_url":"http://10.0.0.4:8983/solr",
-          "node_name":"node1",
+          "node_name":"node1_",
           "state":"active"},
         "r2":{//west
           "core":"r2",
-          "base_url":"http://10.0.0.4:7574/solr",
-          "node_name":"node2",
+          "node_name":"node2_",
           "state":"active"}}},
     "shard2":{
       "range":"0-7fffffff",
       "replicas":{
         "r3":{//east
           "core":"r3",
-          "base_url":"http://10.0.0.4:8983/solr",
-          "node_name":"node1",
+          "node_name":"node1_",
           "state":"active"},
         "r4":{//west
           "core":"r4",
-          "base_url":"http://10.0.0.4:8987/solr",
-          "node_name":"node4",
+          "node_name":"node4_",
           "state":"active"},
         "r6":{//east
           "core":"r6",
-          "base_url":"http://10.0.0.4:8989/solr",
-          "node_name":"node3",
+          "node_name":"node3_",
           "state":"active"},
         "r5":{//east
           "core":"r5",
-          "base_url":"http://10.0.0.4:8983/solr",
-          "node_name":"node1",
+          "node_name":"node1_",
           "state":"active"}}}}}},
   {"nodeValues":{
-    "node1":{
+    "node1_":{
       "cores":3,
       "freedisk":700,
       "totaldisk":1000,
       "sysprop.zone":"east"},
-    "node2":{
+    "node2_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"west"},
-    "node3":{
+    "node3_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"east"},
-    "node4":{
+    "node4_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"west"},
-    "node5":{
+    "node5_":{
       "cores":0,
       "freedisk":1000,
       "totaldisk":1000,

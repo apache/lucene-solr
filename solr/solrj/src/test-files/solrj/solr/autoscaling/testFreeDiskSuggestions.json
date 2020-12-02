@@ -1,9 +1,9 @@
 {
-  "liveNodes":["node1",
-    "node2"],
+  "liveNodes":["node1_",
+    "node2_"],
   "replicaInfo":{
-    "node1":{},
-    "node2":{"mycoll1":{
+    "node1_":{},
+    "node2_":{"mycoll1":{
       "shard1":[{"r1":{
         "type":"NRT",
         "INDEX.sizeInGB":900}}],
@@ -17,11 +17,11 @@
         "type":"NRT",
         "INDEX.sizeInGB":100}}]}}},
   "nodeValues":{
-    "node1":{
-      "node":"node1",
+    "node1_":{
+      "node":"node1_",
       "cores":0,
       "freedisk":2000},
-    "node2":{
-      "node":"node2",
+    "node2_":{
+      "node":"node2_",
       "cores":4,
       "freedisk":500}}}

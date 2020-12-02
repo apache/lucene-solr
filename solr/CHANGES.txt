@@ -56,6 +56,9 @@ Bug Fixes
 * SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
   (Thomas Mortagne)
 
+* SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
+  state back from ZK. (Timothy Potter)
+
 Other Changes
 ---------------------
 
