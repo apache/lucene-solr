@@ -37,6 +37,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
+@SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15026")
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   @ClassRule
