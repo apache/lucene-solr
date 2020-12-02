@@ -129,13 +129,15 @@ final class Line2D implements Component2D {
 
   @Override
   public WithinRelation withinPoint(double x, double y) {
-    return WithinRelation.DISJOINT;
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
   }
 
   @Override
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
-    // can be improved?
+    if (ab && intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
+      return  WithinRelation.NOTWITHIN;
+    }
     return WithinRelation.DISJOINT;
   }
 

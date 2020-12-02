@@ -19,28 +19,19 @@ package org.apache.solr.prometheus.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 
 public class Helpers {
 
-  public static MetricsConfiguration loadConfiguration(String path) throws Exception {
-    Path configPath = Paths.get(path);
-
-    try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
-      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString());
-      return MetricsConfiguration.from(config);
-    }
+  public static MetricsConfiguration loadConfiguration(String pathRsrc) throws Exception {
+    return MetricsConfiguration.from(SolrTestCaseJ4.getFile(pathRsrc).getPath());
   }
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {

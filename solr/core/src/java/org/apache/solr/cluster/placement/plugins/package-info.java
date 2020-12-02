@@ -16,6 +16,6 @@
  */
 
 /**
- * Sample plugin implementations.
+ * Sample plugin implementations. The realistic implementation to use is {@link org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory}.
  */
 package org.apache.solr.cluster.placement.plugins;

@@ -7,6 +7,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 ==================  9.0.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
+Docker and contrib modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -40,8 +41,6 @@ Improvements
 * SOLR-14878: Report solr.xml's coreRootDirectory property via System Settings API, when set (Alexandre Rafalovitch)
 
 * SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
-
-* SOLR-14972: Change default port of prometheus exporter to 8989 because it clashed with default embedded zookeeper port (janhoy)
 
 * SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering contrib. This issue upgrades
   the clustering contrib to the new Carrot2 4.x line, dropping several CVE-prone dependencies along the way.
@@ -144,19 +143,21 @@ Other Changes
 * SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
   removed in LUCENE-9576. (ab)
 
-* SOLR-14957: Add Prometheus Exporter to docker PATH. Fix classpath issues. (Houston Putman)
-
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 
-* SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
+* SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
+  (Alex Bulygin via Christine Poerschke)
 
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
+
+* SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
+  state back from ZK. (Timothy Potter)
 
 ==================  8.8.0 ==================
 
@@ -166,6 +167,8 @@ New Features
 ---------------------
 
 * SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
+
+* SOLR-14560: Add interleaving support in Learning To Rank. (Alessandro Benedetti, Christine Poerschke)
 
 Improvements
 ---------------------
@@ -177,6 +180,8 @@ Improvements
 * SOLR-14683: Metrics API should ensure consistent placeholders for missing values. (ab)
 
 * SOLR-14977 : ContainerPlugins should be configurable with custom objects (noble, ab)
+
+* SOLR-15015 : Add interleaving algorithm parameter support in Learning To Rank (Alessandro Benedetti)
 
 Optimizations
 ---------------------
@@ -199,12 +204,23 @@ Bug Fixes
 * SOLR-14983: Fix response returning original score instead of reranked score due to query and filter combining.
   (Krishan Goyal, Jason Baik, Christine Poerschke)
 
+* SOLR-14993: Unable to download zookeeper files of 1byte in size (Erick Erickson, Allen Sooredoo)
+
+* SOLR-14851: Http2SolrClient doesn't handle keystore type correctly (Andras Salamon via janhoy)
+
+* SOLR-15009: Correctly propogate exceptions from DirectoryFactory.exists (Mike Drob)
+
+* SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
+  (Thomas Mortagne)
+
 Other Changes
 ---------------------
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
+
+* SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
 
 ==================  8.7.0 ==================
 

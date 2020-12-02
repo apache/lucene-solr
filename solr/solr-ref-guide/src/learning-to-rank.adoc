@@ -38,6 +38,13 @@ A ranking model computes the scores used to rerank documents. Irrespective of an
 * features that represent the document being scored
 * features that represent the query for which the document is being scored
 
+==== Interleaving
+
+Interleaving is an approach to Online Search Quality evaluation that allows to compare two models interleaving their results in the final ranked list returned to the user.
+
+* currently only the Team Draft Interleaving algorithm is supported (and its implementation assumes all results are from the same shard)
+
+
 ==== Feature
 
 A feature is a value, a number, that represents some quantity or quality of the document being scored or of the query for which documents are being scored. For example documents often have a 'recency' quality and 'number of past purchases' might be a quantity that is passed to Solr as part of the search query.
@@ -247,6 +254,89 @@ The output XML will include feature values as a comma-separated list, resembling
   }}
 ----
 
+=== Running a Rerank Query Interleaving Two Models
+
+To rerank the results of a query, interleaving two models (myModelA, myModelB) add the `rq` parameter to your search, passing two models in input, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score
+
+To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score,[interleaving]
+
+The output XML will include the model picked for each search result, resembling the output shown here:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0,
+    "params":{
+      "q":"test",
+      "fl":"id,score,[interleaving]",
+      "rq":"{!ltr model=myModelA model=myModelB reRankDocs=100}"}},
+  "response":{"numFound":2,"start":0,"maxScore":1.0005897,"docs":[
+      {
+        "id":"GB18030TEST",
+        "score":1.0005897,
+        "[interleaving]":"myModelB"},
+      {
+        "id":"UTF8TEST",
+        "score":0.79656565,
+        "[interleaving]":"myModelA"}]
+  }}
+----
+
+=== Running a Rerank Query Interleaving a model with the original ranking
+When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking. 
+To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
+
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score
+
+The addition of the `rq` parameter will not change the output XML of the search.
+
+To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score,[interleaving]
+
+The output XML will include the model picked for each search result, resembling the output shown here:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0,
+    "params":{
+      "q":"test",
+      "fl":"id,score,[features]",
+      "rq":"{!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}"}},
+  "response":{"numFound":2,"start":0,"maxScore":1.0005897,"docs":[
+      {
+        "id":"GB18030TEST",
+        "score":1.0005897,
+        "[interleaving]":"_OriginalRanking_"},
+      {
+        "id":"UTF8TEST",
+        "score":0.79656565,
+        "[interleaving]":"myModel"}]
+  }}
+----
+
+=== Running a Rerank Query with Interleaving passing a specific algorithm
+To rerank the results of a query, interleaving two models using a specific algorithm, add the `interleavingAlgorithm` local parameter to the ltr query parser, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100 interleavingAlgorithm=TeamDraft}&fl=id,score
+
+Currently the only (and default) algorithm supported is 'TeamDraft'.
+
 === External Feature Information
 
 The {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
@@ -418,6 +508,13 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 </transformer>
 ----
 
+* Declaration of the `[interleaving]` transformer.
++
+[source,xml]
+----
+<transformer name="interleaving" class="org.apache.solr.ltr.response.transform.LTRInterleavingTransformerFactory"/>
+----
+
 === Advanced Options
 
 ==== LTRThreadModule
@@ -446,11 +543,12 @@ How does Solr Learning-To-Rank work under the hood?::
 Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
-Contributions for further models, features and normalizers are welcome. Related links:
+Contributions for further models, features, normalizers and interleaving algorithms are welcome. Related links:
 +
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
 * https://cwiki.apache.org/confluence/display/solr/HowToContribute
 * https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 
@@ -779,3 +877,7 @@ The feature store and the model store are both <<managed-resources.adoc#managed-
 * "Learning to Rank in Solr" presentation at Lucene/Solr Revolution 2015 in Austin:
 ** Slides: http://www.slideshare.net/lucidworks/learning-to-rank-in-solr-presented-by-michael-nilsson-diego-ceccarelli-bloomberg-lp
 ** Video: https://www.youtube.com/watch?v=M7BKwJoh96s
+
+* The importance of Online Testing in Learning To Rank:
+** Blog: https://sease.io/2020/04/the-importance-of-online-testing-in-learning-to-rank-part-1.html
+** Blog: https://sease.io/2020/05/online-testing-for-learning-to-rank-interleaving.html

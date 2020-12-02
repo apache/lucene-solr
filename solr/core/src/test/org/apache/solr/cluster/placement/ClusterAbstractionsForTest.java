@@ -57,33 +57,6 @@ class ClusterAbstractionsForTest {
     public Iterable<SolrCollection> collections() {
       return ClusterImpl.this::iterator;
     }
-
-    // for unit tests
-
-    ClusterImpl addNode(Node node) {
-      liveNodes.add(node);
-      return this;
-    }
-
-    ClusterImpl removeNode(Node node) {
-      liveNodes.remove(node);
-      return this;
-    }
-
-    ClusterImpl putCollection(SolrCollection collection) {
-      collections.put(collection.getName(), collection);
-      return this;
-    }
-
-    ClusterImpl removeCollection(String name) {
-      collections.remove(name);
-      return this;
-    }
-
-    ClusterImpl removeAllCollections() {
-      collections.clear();
-      return this;
-    }
   }
 
 
