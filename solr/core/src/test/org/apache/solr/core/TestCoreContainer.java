@@ -85,6 +85,28 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     return ret;
   }
 
+  public void testSolrHomeAndResourceLoader() throws Exception {
+    // regardless of what sys prop may be set, the CoreContainer's init arg should be the definitive
+    // solr home -- and nothing i nthe call stack should be "setting" the sys prop to make that work...
+    final Path fakeSolrHome = createTempDir().toAbsolutePath();
+    System.setProperty(SOLR_HOME_PROP, fakeSolrHome.toString());
+    final Path realSolrHome = createTempDir().toAbsolutePath();
+    final CoreContainer cc = init(realSolrHome, CONFIGSETS_SOLR_XML);
+    try {
+
+      // instance dir & resource loader for the CC
+      assertEquals(realSolrHome.toString(), cc.getSolrHome());
+      assertEquals(realSolrHome, cc.getResourceLoader().getInstancePath());
+
+    } finally {
+      cc.shutdown();
+    }
+    assertEquals("Nothing in solr should be overriding the solr home sys prop in order to work!",
+                 fakeSolrHome.toString(),
+                 System.getProperty(SOLR_HOME_PROP));
+  }
+
+  
   @Test
   public void testShareSchema() throws Exception {
     System.setProperty("shareSchema", "true");

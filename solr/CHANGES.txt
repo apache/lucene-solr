@@ -163,6 +163,13 @@ Bug Fixes
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
+Upgrade Notes
+---------------------
+
+* Internal logic for identifying 'Solr Home' has been refactored to make testing less error prone.  Plugin
+  developers using SolrPaths.locateSolrHome() or 'new SolrResourceLoader' should check deprecation warnings as existing
+  some existing functionality will be removed in 9.0.  See SOLR-14934 for more details.
+
 New Features
 ---------------------
 
@@ -212,6 +219,10 @@ Bug Fixes
 
 * SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
   (Thomas Mortagne)
+
+* SOLR-14934: Refactored duplicate "Solr Home" logic into a single place to eliminate risk of tests using divergent values
+  for a single solr node.  (hossman)
+
 
 Other Changes
 ---------------------

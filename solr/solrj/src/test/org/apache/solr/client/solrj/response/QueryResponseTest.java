@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -49,7 +50,7 @@ public class QueryResponseTest extends SolrTestCase {
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleRangeFacetResponse.xml")) {
       assertNotNull(is);
 
@@ -111,7 +112,7 @@ public class QueryResponseTest extends SolrTestCase {
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -218,7 +219,7 @@ public class QueryResponseTest extends SolrTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
 
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleSimpleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -262,7 +263,7 @@ public class QueryResponseTest extends SolrTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIntervalFacetsResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    try(SolrResourceLoader loader = new SolrResourceLoader()) {
+    try(SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath())) {
       InputStream is = loader.openResource("solrj/sampleIntervalFacetsResponse.xml");
       assertNotNull(is);
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
@@ -308,7 +309,7 @@ public class QueryResponseTest extends SolrTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response;
 
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
           assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {

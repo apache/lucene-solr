@@ -53,9 +53,12 @@ public final class SolrPaths {
    * <p>
    *
    * @return the Solr home, absolute and normalized.
+   * @deprecated all code should get solr home from CoreContainer
+   * @see CoreContainer#getSolrHome()
    */
+  @Deprecated
   public static Path locateSolrHome() {
-
+    
     String home = null;
     // Try JNDI
     try {
