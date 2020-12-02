@@ -1114,13 +1114,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.CORE_NAME_PROP, "core" + k,
             ZkStateReader.CORE_NODE_NAME_PROP, "node1",
             ZkStateReader.COLLECTION_PROP, "perf" + j,
-<<<<<<< HEAD
-            ZkStateReader.NUM_SHARDS_PROP, "1",
-            ZkStateReader.BASE_URL_PROP, "http://" +  "node1"
-            + "/solr/");
-=======
             ZkStateReader.NUM_SHARDS_PROP, "1");
->>>>>>> a0492840ee8... SOLR-12182: Don't persist base_url in ZK as the scheme is variable, compute from node_name instead (#2010)
         ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
         if (j >= MAX_COLLECTIONS - 1) j = 0;
@@ -1289,7 +1283,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
 
 
-<<<<<<< HEAD
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
           "name", "c1",
           ZkStateReader.REPLICATION_FACTOR, "1",
@@ -1298,10 +1291,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(Utils.toJSON(m));
 
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-=======
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
->>>>>>> a0492840ee8... SOLR-12182: Don't persist base_url in ZK as the scheme is variable, compute from node_name instead (#2010)
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.NODE_NAME_PROP, "127.0.0.1_solr",
           ZkStateReader.COLLECTION_PROP, "c1",
