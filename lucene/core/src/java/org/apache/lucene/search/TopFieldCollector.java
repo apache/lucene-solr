@@ -353,7 +353,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           && queueFull
           && hitsThresholdChecker.isThresholdReached()) {
       assert bottom != null;
-      float minScore = ((FieldComparator.RelevanceComparator) firstComparator).value(bottom.slot);
+      float minScore = (float) firstComparator.value(bottom.slot);
       if (minScore > minCompetitiveScore) {
         scorer.setMinCompetitiveScore(minScore);
         minCompetitiveScore = minScore;
