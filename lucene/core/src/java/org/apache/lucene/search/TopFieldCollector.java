@@ -59,7 +59,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         final Sort indexSort = context.reader().getMetaData().getSort();
         searchSortPartOfIndexSort = canEarlyTerminate(sort, indexSort);
         if (searchSortPartOfIndexSort) {
-          firstComparator.usesIndexSort();
+          firstComparator.disableSkipping();
         }
       }
       LeafFieldComparator[] comparators = queue.getComparators(context);

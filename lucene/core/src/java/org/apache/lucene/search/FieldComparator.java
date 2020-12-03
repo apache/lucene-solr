@@ -143,11 +143,14 @@ public abstract class FieldComparator<T> {
   }
 
   /**
-   * Informs the comparator that the search sort is congruent with the index sort.
-   * Some comparators provide skipping functionality, that can be disabled on index sort,
-   * as in this case early termination is already handled in TopFieldCollector.
+   * Informs the comparator that the skipping of documents should be disabled.
+   * This function is called by TopFieldCollector in cases when the skipping functionality
+   * should not be applied or not necessary. An example could be when
+   * search sort is a part of the index sort, and can be already efficiently
+   * handled by TopFieldCollector, and doing extra work for skipping in the comparator
+   * is redundant.
    */
-  public void usesIndexSort() {
+  public void disableSkipping() {
   }
 
   /** Sorts by descending relevance.  NOTE: if you are
