@@ -113,10 +113,17 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
 
+      // as all segments are sorted in the same way, enough to check only the 1st segment for indexSort
+      if (searchSortPartOfIndexSort == null) {
+        final Sort indexSort = context.reader().getMetaData().getSort();
+        searchSortPartOfIndexSort = canEarlyTerminate(sort, indexSort);
+        if (searchSortPartOfIndexSort) {
+          firstComparator.disableSkipping();
+        }
+      }
+
       final LeafFieldComparator[] comparators = queue.getComparators(context);
       final int[] reverseMul = queue.getReverseMul();
-      final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
 
       return new MultiComparatorLeafCollector(comparators, reverseMul) {
 
@@ -152,7 +159,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
-              if (canEarlyTerminate) {
+              if (searchSortPartOfIndexSort) {
                 if (hitsThresholdChecker.isThresholdReached()) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
@@ -226,8 +233,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
       final int afterDoc = after.doc - docBase;
-      final Sort indexSort = context.reader().getMetaData().getSort();
-      final boolean canEarlyTerminate = canEarlyTerminate(sort, indexSort);
+      // as all segments are sorted in the same way, enough to check only the 1st segment for indexSort
+      if (searchSortPartOfIndexSort == null) {
+        final Sort indexSort = context.reader().getMetaData().getSort();
+        searchSortPartOfIndexSort = canEarlyTerminate(sort, indexSort);
+        if (searchSortPartOfIndexSort) {
+          firstComparator.disableSkipping();
+        }
+      }
+
       return new MultiComparatorLeafCollector(queue.getComparators(context), queue.getReverseMul()) {
 
         boolean collectedAllCompetitiveHits = false;
@@ -266,7 +280,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
-              if (canEarlyTerminate) {
+              if (searchSortPartOfIndexSort) {
                 if (hitsThresholdChecker.isThresholdReached()) {
                   totalHitsRelation = Relation.GREATER_THAN_OR_EQUAL_TO;
                   throw new CollectionTerminatedException();
@@ -330,9 +344,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final int numHits;
   final HitsThresholdChecker hitsThresholdChecker;
-  final FieldComparator.RelevanceComparator relevanceComparator;
+  final FieldComparator<?> firstComparator;
   final boolean canSetMinScore;
 
+  // shows if Search Sort if a part of the Index Sort
+  Boolean searchSortPartOfIndexSort = null;
   // an accumulator that maintains the maximum of the segment's minimum competitive scores
   final MaxScoreAccumulator minScoreAcc;
   // the current local minimum competitive score already propagated to the underlying scorer
@@ -358,17 +374,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     this.numHits = numHits;
     this.hitsThresholdChecker = hitsThresholdChecker;
     this.numComparators = pq.getComparators().length;
-    FieldComparator<?> firstComparator = pq.getComparators()[0];
+    this.firstComparator = pq.getComparators()[0];
     int reverseMul = pq.reverseMul[0];
 
     if (firstComparator.getClass().equals(FieldComparator.RelevanceComparator.class)
             && reverseMul == 1 // if the natural sort is preserved (sort by descending relevance)
             && hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
-      relevanceComparator = (FieldComparator.RelevanceComparator) firstComparator;
       scoreMode = ScoreMode.TOP_SCORES;
       canSetMinScore = true;
     } else {
-      relevanceComparator = null;
       canSetMinScore = false;
       if (hitsThresholdChecker.getHitsThreshold() != Integer.MAX_VALUE) {
         scoreMode = needsScores ? ScoreMode.TOP_DOCS_WITH_SCORES : ScoreMode.TOP_DOCS;
@@ -404,8 +418,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     if (canSetMinScore
           && queueFull
           && hitsThresholdChecker.isThresholdReached()) {
-      assert bottom != null && relevanceComparator != null;
-      float minScore = relevanceComparator.value(bottom.slot);
+      assert bottom != null;
+      float minScore = (float) firstComparator.value(bottom.slot);
       if (minScore > minCompetitiveScore) {
         scorer.setMinCompetitiveScore(minScore);
         minCompetitiveScore = minScore;
