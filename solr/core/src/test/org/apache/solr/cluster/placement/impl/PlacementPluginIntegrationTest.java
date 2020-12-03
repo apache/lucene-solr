@@ -24,12 +24,12 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.TimeSource;
@@ -135,7 +135,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDynamicReconfiguration() throws Exception {
-    PlacementPluginFactory<? extends MapWriter> pluginFactory = cc.getPlacementPluginFactory();
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
 
@@ -155,7 +155,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     version = waitForVersionChange(version, wrapper, 10);
 
     assertTrue("wrong version " + version, version > 0);
-    PlacementPluginFactory<? extends MapWriter> factory = wrapper.getDelegate();
+    PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
 
     // reconfigure

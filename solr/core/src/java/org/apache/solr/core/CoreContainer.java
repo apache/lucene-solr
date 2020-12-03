@@ -74,11 +74,11 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
+import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.impl.DelegatingPlacementPluginFactory;
 import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryLoader;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -2188,7 +2188,7 @@ public class CoreContainer {
     return clusterEventProducer;
   }
 
-  public PlacementPluginFactory<? extends MapWriter> getPlacementPluginFactory() {
+  public PlacementPluginFactory<? extends PlacementPluginConfig> getPlacementPluginFactory() {
     return placementPluginFactory;
   }
 
