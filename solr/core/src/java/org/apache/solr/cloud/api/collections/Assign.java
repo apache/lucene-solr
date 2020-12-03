@@ -492,6 +492,8 @@ public class Assign {
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
+   * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
+   * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
   public static AssignStrategy createAssignStrategy(PlacementPlugin placementPlugin, ClusterState clusterState, DocCollection collection) {
     if (placementPlugin != null) {

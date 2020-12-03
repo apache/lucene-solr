@@ -58,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * This class manages the container-level plugins and their Api-s. It is
@@ -143,7 +142,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
-    Map<String, Object> pluginInfos = null;
+    Map<String, Object> pluginInfos;
     try {
       pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
     } catch (IOException e) {
@@ -236,9 +235,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return path;
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
-    return (Map) makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
+    return Map.of("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
   }
 
   private static class ApiHolder extends Api {
