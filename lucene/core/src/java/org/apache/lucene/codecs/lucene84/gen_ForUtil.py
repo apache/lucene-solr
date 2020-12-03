@@ -274,11 +274,11 @@ final class ForUtil {
     final int remainingBitsPerLong = shift + bitsPerValue;
     final long maskRemainingBitsPerLong;
     if (nextPrimitive == 8) {
-      maskRemainingBitsPerLong = masked8(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS8[remainingBitsPerLong];
     } else if (nextPrimitive == 16) {
-      maskRemainingBitsPerLong = masked16(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS16[remainingBitsPerLong];
     } else {
-      maskRemainingBitsPerLong = masked32(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS32[remainingBitsPerLong];
     }
 
     int tmpIdx = 0;
@@ -294,14 +294,14 @@ final class ForUtil {
       } else {
         final long mask1, mask2;
         if (nextPrimitive == 8) {
-          mask1 = masked8(remainingBitsPerValue);
-          mask2 = masked8(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS8[remainingBitsPerValue];
+          mask2 = MASKS8[remainingBitsPerLong - remainingBitsPerValue];
         } else if (nextPrimitive == 16) {
-          mask1 = masked16(remainingBitsPerValue);
-          mask2 = masked16(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS16[remainingBitsPerValue];
+          mask2 = MASKS16[remainingBitsPerLong - remainingBitsPerValue];
         } else {
-          mask1 = masked32(remainingBitsPerValue);
-          mask2 = masked32(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS32[remainingBitsPerValue];
+          mask2 = MASKS32[remainingBitsPerLong - remainingBitsPerValue];
         }
         tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
@@ -382,17 +382,17 @@ def writeRemainder(bpv, next_primitive, remaining_bits_per_long, o, num_values, 
     b = bpv
     if remaining_bits == 0:
       b -= remaining_bits_per_long
-      f.write('      long l%d = (tmp[tmpIdx+%d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
+      f.write('      long l%d = (tmp[tmpIdx+%d] & MASKS%d[%d]) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
     else:
       b -= remaining_bits
-      f.write('      long l%d = (tmp[tmpIdx+%d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits, b))
+      f.write('      long l%d = (tmp[tmpIdx+%d] & MASKS%d[%d]) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits, b))
     tmp_idx += 1
     while b >= remaining_bits_per_long:
       b -= remaining_bits_per_long
-      f.write('      l%d |= (tmp[tmpIdx+%d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
+      f.write('      l%d |= (tmp[tmpIdx+%d] & MASKS%d[%d]) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
       tmp_idx += 1
     if b > 0:
-      f.write('      l%d |= (tmp[tmpIdx+%d] >>> %d) & MASK%d_%d;\n' %(i, tmp_idx, remaining_bits_per_long-b, next_primitive, b))
+      f.write('      l%d |= (tmp[tmpIdx+%d] >>> %d) & MASKS%d[%d];\n' %(i, tmp_idx, remaining_bits_per_long-b, next_primitive, b))
       remaining_bits = remaining_bits_per_long-b
     f.write('      longs[longsIdx+%d] = l%d;\n' %(i, i))
   f.write('    }\n')
@@ -414,7 +414,7 @@ def writeDecode(bpv, f):
     shift = next_primitive - bpv
     o = 0
     while shift >= 0:
-      f.write('    shiftLongs(tmp, %d, longs, %d, %d, MASK%d_%d);\n' %(bpv*2, o, shift, next_primitive, bpv))
+      f.write('    shiftLongs(tmp, %d, longs, %d, %d, MASKS%d[%d]);\n' %(bpv*2, o, shift, next_primitive, bpv))
       o += bpv*2
       shift -= bpv
     if shift + bpv > 0:
@@ -425,29 +425,14 @@ def writeDecode(bpv, f):
 if __name__ == '__main__':
   f = open(OUTPUT_FILE, 'w')
   f.write(HEADER)
-  masked_pairs = {}
   for primitive_size in PRIMITIVE_SIZE:
-    masked_pairs[primitive_size] = []
-    for bpv in range(0, primitive_size):
-      f.write('  private static final long MASK%d_%d = mask%d(%d);\n' %(primitive_size, bpv, primitive_size, bpv))
-      masked_pairs[primitive_size].append(bpv)
-  f.write('\n')
-
+    f.write('  private static final long[] MASKS%d = new long[%d];\n' %(primitive_size, primitive_size))
+  f.write('  static {\n')
   for primitive_size in PRIMITIVE_SIZE:
-    f.write("""
-  /**
-   * Get computed masks
-   */
- """)
-    f.write('  private static long masked%d(int bitsPerValue) {\n' % primitive_size)
-    f.write('    switch (bitsPerValue) {\n')
-    for bpv in masked_pairs[primitive_size]:
-      f.write('    case %d:\n' %bpv)
-      f.write('      return MASK%d_%d;\n' %(primitive_size, bpv))
-    f.write('    default:\n')
-    f.write('      throw new IllegalArgumentException("illegal mask value " + bitsPerValue);\n')
+    f.write('    for (int i = 0; i < %d; ++i) {\n' %primitive_size)
+    f.write('      MASKS%d[i] = mask%d(i);\n' %(primitive_size, primitive_size))
     f.write('    }\n')
-    f.write('  }\n')
+  f.write('  }\n')
 
   f.write("""
   /**
