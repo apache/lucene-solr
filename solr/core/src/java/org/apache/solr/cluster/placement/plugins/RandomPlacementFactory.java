@@ -36,11 +36,21 @@ import org.apache.solr.cluster.placement.*;
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
  */
-public class RandomPlacementFactory implements PlacementPluginFactory {
+public class RandomPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
 
   @Override
   public PlacementPlugin createPluginInstance() {
     return new RandomPlacementPlugin();
+  }
+
+  @Override
+  public void configure(NoConfig cfg) {
+
+  }
+
+  @Override
+  public NoConfig getConfig() {
+    return NoConfig.INSTANCE;
   }
 
   public static class RandomPlacementPlugin implements PlacementPlugin {

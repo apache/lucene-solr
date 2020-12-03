@@ -75,8 +75,10 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.impl.DelegatingPlacementPluginFactory;
 import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryLoader;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -257,9 +259,8 @@ public class CoreContainer {
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
 
-  // initially these are the same to collect the plugin-based listeners during init
-  private ClusterEventProducer clusterEventProducer;
-  private PlacementPluginFactory placementPluginFactory;
+  private volatile ClusterEventProducer clusterEventProducer;
+  private final DelegatingPlacementPluginFactory placementPluginFactory = new DelegatingPlacementPluginFactory();
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -899,8 +900,9 @@ public class CoreContainer {
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
 
-      // get the placement plugin
-      placementPluginFactory = PlacementPluginFactoryLoader.load(containerPluginsRegistry);
+      // initialize the placement plugin factory wrapper
+      // with the plugin configuration from the registry
+      PlacementPluginFactoryLoader.load(placementPluginFactory, containerPluginsRegistry);
 
       // create target ClusterEventProducer (possibly from plugins)
       clusterEventProducer = clusterEventProducerFactory.create(containerPluginsRegistry);
@@ -2186,7 +2188,7 @@ public class CoreContainer {
     return clusterEventProducer;
   }
 
-  public PlacementPluginFactory getPlacementPluginFactory() {
+  public PlacementPluginFactory<? extends MapWriter> getPlacementPluginFactory() {
     return placementPluginFactory;
   }
 

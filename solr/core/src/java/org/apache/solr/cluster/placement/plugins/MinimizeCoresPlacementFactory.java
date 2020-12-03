@@ -40,11 +40,21 @@ import org.apache.solr.common.util.SuppressForbidden;
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.</p>
  */
-public class MinimizeCoresPlacementFactory implements PlacementPluginFactory {
+public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
 
   @Override
   public PlacementPlugin createPluginInstance() {
     return new MinimizeCoresPlacementPlugin();
+  }
+
+  @Override
+  public void configure(NoConfig cfg) {
+    // no-op
+  }
+
+  @Override
+  public NoConfig getConfig() {
+    return NoConfig.INSTANCE;
   }
 
   static private class MinimizeCoresPlacementPlugin implements PlacementPlugin {

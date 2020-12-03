@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.api.ConfigurablePlugin;
+
 /**
  * Factory implemented by client code and configured in container plugins allowing the creation of instances of
  * {@link PlacementPlugin} to be used for replica placement computation.
@@ -24,16 +26,28 @@ package org.apache.solr.cluster.placement;
  * {@link org.apache.solr.api.ConfigurablePlugin} with the appropriate configuration
  * bean type.</p>
  */
-public interface PlacementPluginFactory {
+public interface PlacementPluginFactory<T extends PlacementPluginConfig> extends ConfigurablePlugin<T> {
   /**
    * The key in the plugins registry under which this plugin and its configuration are defined.
    */
   String PLUGIN_NAME = ".placement-plugin";
 
   /**
-   * Returns an instance of the plugin that will be repeatedly (and concurrently) be called to compute placement. Multiple
+   * Returns an instance of the plugin that will be repeatedly (and concurrently) called to compute placement. Multiple
    * instances of a plugin can be used in parallel (for example if configuration has to change, but plugin instances with
    * the previous configuration are still being used).
    */
   PlacementPlugin createPluginInstance();
+
+  /**
+   * Return the configuration of the plugin.
+   */
+  T getConfig();
+
+  /**
+   * Useful for plugins that don't use any configuration.
+   */
+  class NoConfig implements PlacementPluginConfig {
+    public static NoConfig INSTANCE = new NoConfig();
+  }
 }

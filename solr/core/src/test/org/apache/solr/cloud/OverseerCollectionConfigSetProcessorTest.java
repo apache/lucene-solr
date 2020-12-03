@@ -42,6 +42,8 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.impl.DelegatingPlacementPluginFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -121,6 +123,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
   private static HttpClient httpClientMock;
+  private static PlacementPluginFactory placementPluginFactoryMock;
   
   private static ObjectCache objectCache;
   private Map<String, byte[]> zkClientData = new HashMap<>();
@@ -180,6 +183,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
+    placementPluginFactoryMock = mock(PlacementPluginFactory.class);
   }
   
   @AfterClass
@@ -204,6 +208,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
+    placementPluginFactoryMock = null;
   }
   
   @Before
@@ -233,6 +238,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
+    reset(placementPluginFactoryMock);
 
     zkClientData.clear();
     collectionsSet.clear();
@@ -361,6 +367,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(overseerMock.getCoreContainer()).thenReturn(coreContainerMock);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
+    when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
     
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);

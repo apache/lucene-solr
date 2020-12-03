@@ -29,17 +29,21 @@ import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
-import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,11 +56,12 @@ import static java.util.Collections.singletonMap;
 /**
  * Test for {@link MinimizeCoresPlacementFactory} using a {@link MiniSolrCloudCluster}.
  */
+@LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String COLLECTION = PlacementPluginIntegrationTest.class.getName() + "_collection";
 
-  private static ClusterProperties clusterProperties;
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
 
@@ -69,7 +74,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .configure();
     cc = cluster.getJettySolrRunner(0).getCoreContainer();
     cloudManager = cc.getZkController().getSolrCloudManager();
-    clusterProperties = new ClusterProperties(cluster.getZkClient());
   }
 
   @After
@@ -111,9 +115,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     DocCollection collection = clusterState.getCollectionOrNull(COLLECTION);
     assertNotNull(collection);
     Map<String, AtomicInteger> coresByNode = new HashMap<>();
-    collection.forEachReplica((shard, replica) -> {
-      coresByNode.computeIfAbsent(replica.getNodeName(), n -> new AtomicInteger()).incrementAndGet();
-    });
+    collection.forEachReplica((shard, replica) -> coresByNode.computeIfAbsent(replica.getNodeName(), n -> new AtomicInteger()).incrementAndGet());
     int maxCores = 0;
     int minCores = Integer.MAX_VALUE;
     for (Map.Entry<String, AtomicInteger> entry : coresByNode.entrySet()) {
@@ -131,7 +133,15 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testDynamicReconfiguration() throws Exception {
+    PlacementPluginFactory<? extends MapWriter> pluginFactory = cc.getPlacementPluginFactory();
+    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+
+    int version = wrapper.getVersion();
+    log.debug("--initial version={}", version);
+
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = MinimizeCoresPlacementFactory.class.getName();
@@ -142,13 +152,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    PlacementPluginFactory pluginFactory = cc.getPlacementPluginFactory();
-    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory);
-    PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory wrapper = (PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory) pluginFactory;
-    // should already have some updates
-    int version = wrapper.getVersion();
+    version = waitForVersionChange(version, wrapper, 10);
+
     assertTrue("wrong version " + version, version > 0);
-    PlacementPluginFactory factory = wrapper.getDelegate();
+    PlacementPluginFactory<? extends MapWriter> factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
 
     // reconfigure
@@ -208,12 +215,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    version = waitForVersionChange(version, wrapper, 10);
+    waitForVersionChange(version, wrapper, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
   }
 
-  private int waitForVersionChange(int currentVersion, PlacementPluginFactoryLoader.DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {
+  private int waitForVersionChange(int currentVersion, DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {
     TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 
     while (!timeout.hasTimedOut()) {
@@ -222,6 +229,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         throw new Exception("Invalid version - went back! currentVersion=" + currentVersion +
             " newVersion=" + newVersion);
       } else if (currentVersion < newVersion) {
+        log.debug("--current version was {}, new version is {}", currentVersion, newVersion);
         return newVersion;
       }
       timeout.sleep(200);

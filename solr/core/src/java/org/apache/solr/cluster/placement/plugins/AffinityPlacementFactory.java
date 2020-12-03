@@ -17,10 +17,8 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.Pair;
@@ -117,7 +115,7 @@ import java.util.stream.Collectors;
  * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
  * to allow configuration base option selection as well...</p>
  */
-public class AffinityPlacementFactory implements PlacementPluginFactory, ConfigurablePlugin<AffinityPlacementConfig> {
+public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -142,20 +140,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory, Configu
    */
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
-  /**
-   * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
-   * Set to 0 or less to disable.
-   */
-  public static final String MINIMAL_FREE_DISK_GB = "minimalFreeDiskGB";
-
-  /**
-   * Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless
-   * of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free
-   * disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this
-   * amount of free space).
-   */
-  public static final String PRIORITIZED_FREE_DISK_GB = "prioritizedFreeDiskGB";
-
   private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
 
   /**
@@ -178,7 +162,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory, Configu
     this.config = cfg;
   }
 
-  @VisibleForTesting
+  @Override
   public AffinityPlacementConfig getConfig() {
     return config;
   }

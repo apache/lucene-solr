@@ -42,6 +42,7 @@ import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -77,7 +78,7 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
   private int waitForSecond = DEFAULT_WAIT_FOR_SEC;
 
   private ScheduledThreadPoolExecutor waitForExecutor;
-  private PlacementPluginFactory placementPluginFactory;
+  private PlacementPluginFactory<? extends MapWriter> placementPluginFactory;
 
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
