@@ -186,6 +186,8 @@ Bug fixes
 
 Other
 
+* LUCENE-9631: Properly override slice() on subclasses of OffsetRange. (Dawid Weiss)
+
 * LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
 
 * LUCENE-9391: Upgrade HPPC to 0.8.2. (Haoyu Zhai)
