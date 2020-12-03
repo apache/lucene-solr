@@ -82,6 +82,12 @@ public abstract class IntervalIterator extends DocIdSetIterator {
   /**
    * Advance the iterator to the next interval
    *
+   * Should not be called after {@link DocIdSetIterator#NO_MORE_DOCS} is returned by {@link DocIdSetIterator#nextDoc()} or
+   * {@link DocIdSetIterator#advance(int)}.
+   * If that's the case in some existing code, please consider opening an issue.
+   * However, after {@link IntervalIterator#NO_MORE_INTERVALS} is returned by this method, it might be
+   * called again.
+   *
    * @return the start of the next interval, or {@link IntervalIterator#NO_MORE_INTERVALS} if
    *         there are no more intervals on the current document
    */
