@@ -20,7 +20,9 @@ package org.apache.solr.cluster.placement;
 import org.apache.solr.api.ConfigurablePlugin;
 
 /**
- * Factory implemented by client code and configured in container plugins allowing the creation of instances of
+ * Factory implemented by client code and configured in container plugins
+ * (see {@link org.apache.solr.handler.admin.ContainerPluginsApi#editAPI})
+ * allowing the creation of instances of
  * {@link PlacementPlugin} to be used for replica placement computation.
  * <p>Note: configurable factory implementations should also implement
  * {@link org.apache.solr.api.ConfigurablePlugin} with the appropriate configuration
@@ -42,14 +44,26 @@ public interface PlacementPluginFactory<T extends PlacementPluginConfig> extends
   PlacementPlugin createPluginInstance();
 
   /**
-   * Return the configuration of the plugin.
+   * Default implementation is a no-op. Override to provide meaningful
+   * behavior if needed.
+   * @param cfg value deserialized from JSON, not null.
    */
-  T getConfig();
+  @Override
+  default void configure(T cfg) {
+    // no-op
+  }
 
   /**
-   * Useful for plugins that don't use any configuration.
+   * Return the configuration of the plugin.
+   * Default implementation returns null.
+   */
+  default T getConfig() {
+    return null;
+  }
+
+  /**
+   * Useful type for plugins that don't use any configuration.
    */
   class NoConfig implements PlacementPluginConfig {
-    public static NoConfig INSTANCE = new NoConfig();
   }
 }

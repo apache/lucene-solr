@@ -25,8 +25,8 @@ import org.apache.solr.common.MapWriter;
  */
 public interface ConfigurablePlugin<T extends MapWriter> {
 
-  /**This is invoked soon after the Object is initialized
-   * 
+  /**
+   * This is invoked soon after the Object is initialized.
    * @param cfg value deserialized from JSON
    */
   void configure(T cfg);

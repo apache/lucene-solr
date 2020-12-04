@@ -43,7 +43,6 @@ import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.impl.DelegatingPlacementPluginFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -123,6 +122,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
   private static HttpClient httpClientMock;
+  @SuppressWarnings("rawtypes")
   private static PlacementPluginFactory placementPluginFactoryMock;
   
   private static ObjectCache objectCache;
@@ -250,7 +250,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     stopComponentUnderTest();
     super.tearDown();
   }
-  
+
+  @SuppressWarnings("unchecked")
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {

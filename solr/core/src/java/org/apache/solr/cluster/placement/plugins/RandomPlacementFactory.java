@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -43,22 +42,15 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
     return new RandomPlacementPlugin();
   }
 
-  @Override
-  public void configure(NoConfig cfg) {
-
-  }
-
-  @Override
-  public NoConfig getConfig() {
-    return NoConfig.INSTANCE;
-  }
-
   public static class RandomPlacementPlugin implements PlacementPlugin {
-    private Random random = new Random();
+    private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
 
-    @VisibleForTesting
-    public void setRandom(Random random) {
-      this.random = random;
+    private RandomPlacementPlugin() {
+      // We make things reproducible in tests by using test seed if any
+      String seed = System.getProperty("tests.seed");
+      if (seed != null) {
+        replicaPlacementRandom.setSeed(seed.hashCode());
+      }
     }
 
     public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
@@ -78,7 +70,7 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
       for (String shardName : request.getShardNames()) {
         // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
         ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
-        Collections.shuffle(nodesToAssign, random);
+        Collections.shuffle(nodesToAssign, replicaPlacementRandom);
 
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
           placeForReplicaType(request.getCollection(), nodesToAssign, placementPlanFactory, replicaPlacements, shardName, request, rt);

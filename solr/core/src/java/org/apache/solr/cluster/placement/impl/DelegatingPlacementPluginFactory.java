@@ -50,14 +50,4 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
   public int getVersion() {
     return version;
   }
-
-  @Override
-  public void configure(NoConfig cfg) {
-    // no-op
-  }
-
-  @Override
-  public NoConfig getConfig() {
-    return NoConfig.INSTANCE;
-  }
 }

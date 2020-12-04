@@ -47,16 +47,6 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
     return new MinimizeCoresPlacementPlugin();
   }
 
-  @Override
-  public void configure(NoConfig cfg) {
-    // no-op
-  }
-
-  @Override
-  public NoConfig getConfig() {
-    return NoConfig.INSTANCE;
-  }
-
   static private class MinimizeCoresPlacementPlugin implements PlacementPlugin {
 
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")

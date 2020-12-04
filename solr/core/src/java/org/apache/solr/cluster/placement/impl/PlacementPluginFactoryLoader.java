@@ -46,7 +46,7 @@ public class PlacementPluginFactoryLoader {
         }
         Object instance = plugin.getInstance();
         if (instance instanceof PlacementPluginFactory) {
-          setDelegate(plugin.getInfo(), instance);
+          setDelegate(plugin.getInfo(), (PlacementPluginFactory<? extends PlacementPluginConfig>) instance);
         }
       }
 
@@ -66,9 +66,9 @@ public class PlacementPluginFactoryLoader {
         added(replacement);
       }
 
-      private void setDelegate(PluginMeta pluginMeta, Object instance) {
+      private void setDelegate(PluginMeta pluginMeta, PlacementPluginFactory<? extends PlacementPluginConfig> factory) {
         if (PlacementPluginFactory.PLUGIN_NAME.equals(pluginMeta.name)) {
-          pluginFactory.setDelegate((PlacementPluginFactory<? extends PlacementPluginConfig>) instance);
+          pluginFactory.setDelegate(factory);
         } else {
           log.warn("Ignoring PlacementPluginFactory plugin with non-standard name: {}", pluginMeta);
         }
