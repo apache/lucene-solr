@@ -44,7 +44,7 @@ import org.apache.lucene.util.SuppressForbidden;
 //     IO when context is merge
 
 /**
- * A {@link Directory} implementation for all Unixes that uses
+ * A {@link Directory} implementation for all Unixes and Windows that uses
  * DIRECT I/O to bypass OS level IO caching during
  * merging.  For all other cases (searching, writing) we delegate
  * to the provided Directory instance.
@@ -54,15 +54,11 @@ import org.apache.lucene.util.SuppressForbidden;
  * for more details.
  *
  * <p><b>WARNING</b>: this code is very new and quite easily
- * could contain horrible bugs.  For example, here's one
- * known issue: if you use seek in <code>IndexOutput</code>, and then
- * write more than one buffer's worth of bytes, then the
- * file will be wrong.  Lucene does not do this today (only writes
- * small number of bytes after seek), but that may change.
+ * could contain horrible bugs.
  *
- * <p>This directory passes Solr and Lucene tests on Linux
- * and OS X; other Unixes should work but have not been
- * tested!  Use at your own risk.
+ * <p>This directory passes Solr and Lucene tests on Linux, OS X,
+ * and Windows; other systems should work but have not been
+ * tested! Use at your own risk.
  *
  * <p>@throws UnsupportedOperationException if the operating system or
  * file system does not support Direct I/O or a sufficient equivalent.
