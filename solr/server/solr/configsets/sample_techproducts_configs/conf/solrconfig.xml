@@ -73,7 +73,7 @@
        with their external dependencies.
     -->
   <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-cell-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-extraction-\d.*\.jar" />
 
   <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
@@ -757,7 +757,6 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-       <bool name="preferLocalShards">false</bool>
      </lst>
     <!-- "appends" example to ensure only products in stock are returned when using this Search Handler -->
     <!--
@@ -1002,7 +1001,7 @@
     </arr>
   </requestHandler>
 
-  <!-- Clustering Component
+  <!-- Search results clustering component
 
        You'll need to set the solr.clustering.enabled system property
        when running solr to run with clustering enabled:
@@ -1014,69 +1013,64 @@
                    enable="${solr.clustering.enabled:false}"
                    class="solr.clustering.ClusteringComponent" >
     <!--
-    Declaration of "engines" (clustering algorithms).
+    Declaration of "engines" (named sets of configuration parameters).
 
-    The open source algorithms from Carrot2.org project:
-      * org.carrot2.clustering.lingo.LingoClusteringAlgorithm
-      * org.carrot2.clustering.stc.STCClusteringAlgorithm
-      * org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm
+    Various algorithms are available (names are loaded via service provider
+    extension point). The open source algorithms from Carrot2.org project:
+      * Lingo
+      * STC
+      * Bisecting K-Means
 
-    Commercial algorithm Lingo3G (needs to be installed separately):
-      * com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm
+    Commercial algorithm Lingo3G from Carrot Search (needs to be installed separately):
+      * Lingo3G
     -->
 
     <lst name="engine">
       <str name="name">lingo3g</str>
       <bool name="optional">true</bool>
-      <str name="carrot.algorithm">com.carrotsearch.lingo3g.Lingo3GClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Lingo3G</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">lingo</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.LingoClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Lingo</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">stc</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.stc.STCClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">STC</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
 
     <lst name="engine">
       <str name="name">kmeans</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/carrot2</str>
+      <str name="clustering.algorithm">Bisecting K-Means</str>
+      <str name="clustering.fields">name, features</str>
+      <bool name="clustering.includeOtherTopics">true</bool>
+      <str name="clustering.language">English</str>
     </lst>
   </searchComponent>
 
   <!-- A request handler for demonstrating the clustering component.
-       This is meant as an example.
-       In reality you will likely want to add the component to your
-       already specified request handlers.
+       This is meant as an example - in reality you will likely want
+       to add the clustering component to your default request handler.
     -->
   <requestHandler name="/clustering"
                   startup="lazy"
                   enable="${solr.clustering.enabled:false}"
                   class="solr.SearchHandler">
     <lst name="defaults">
+      <!-- Enable clustering component by default. -->
       <bool name="clustering">true</bool>
-      <bool name="clustering.results">true</bool>
-      <!-- Field name with the logical "title" of a each document (optional) -->
-      <str name="carrot.title">name</str>
-      <!-- Field name with the logical "URL" of a each document (optional) -->
-      <str name="carrot.url">id</str>
-      <!-- Field name with the logical "content" of a each document (optional) -->
-      <str name="carrot.snippet">features</str>
-      <!-- Apply highlighter to the title/ content and use this for clustering. -->
-      <bool name="carrot.produceSummary">true</bool>
-      <!-- the maximum number of labels per cluster -->
-      <!--<int name="carrot.numDescriptions">5</int>-->
-      <!-- produce sub clusters -->
-      <bool name="carrot.outputSubClusters">false</bool>
 
-      <!-- Configure the remaining request handler parameters. -->
       <str name="defType">edismax</str>
       <str name="qf">
         text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
@@ -1085,6 +1079,8 @@
       <str name="rows">100</str>
       <str name="fl">*,score</str>
     </lst>
+
+    <!-- Append the clustering component at the end of the search handler's list of components. -->
     <arr name="last-components">
       <str>clustering</str>
     </arr>

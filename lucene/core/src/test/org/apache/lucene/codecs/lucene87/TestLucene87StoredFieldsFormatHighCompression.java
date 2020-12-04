@@ -18,8 +18,8 @@ package org.apache.lucene.codecs.lucene87;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat.Mode;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
+import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;

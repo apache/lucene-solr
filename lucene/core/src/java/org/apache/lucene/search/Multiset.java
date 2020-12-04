@@ -29,13 +29,13 @@ import java.util.Map;
  * Iteration order is not specified.
  * @lucene.internal
  */
-final class Multiset<T> extends AbstractCollection<T> {
+public final class Multiset<T> extends AbstractCollection<T> {
 
   private final Map<T, Integer> map = new HashMap<>();
   private int size;
 
   /** Create an empty {@link Multiset}. */
-  Multiset() {
+  public Multiset() {
     super();
   }
 

@@ -31,11 +31,11 @@ configure(rootProject) {
 configure(project(":lucene:analysis:common")) {
   ext {
     // git commit hash of source code https://github.com/snowballstem/snowball/
-    snowballStemmerCommit = "53739a805cfa6c77ff8496dc711dc1c106d987c1"
+    snowballStemmerCommit = "d8cf01ddf37a9c74a78ada44531c08f7952f2a39"
     // git commit hash of stopwords https://github.com/snowballstem/snowball-website
-    snowballWebsiteCommit = "5a8cf2451d108217585d8e32d744f8b8fd20c711"
+    snowballWebsiteCommit = "ee7cee9bc52f22802f21e94f42d887b0dfa7d2a8"
     // git commit hash of test data https://github.com/snowballstem/snowball-data
-    snowballDataCommit    = "9145f8732ec952c8a3d1066be251da198a8bc792"
+    snowballDataCommit    = "35461050d8f81e8aeac26e38f8a8dbf1afb82721"
 
     snowballWorkDir    = file("${buildDir}/snowball")
 

@@ -17,16 +17,11 @@
 
 package org.apache.solr.core;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.exec.OS;
 import org.apache.solr.common.SolrException;
@@ -39,67 +34,13 @@ import org.slf4j.LoggerFactory;
 public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Set<String> loggedOnce = new ConcurrentSkipListSet<>();
-
   private SolrPaths() {} // don't create this
-
-  /**
-   * Finds the solrhome based on looking up the value in one of three places:
-   * <ol>
-   * <li>JNDI: via java:comp/env/solr/home</li>
-   * <li>The system property solr.solr.home</li>
-   * <li>Look in the current working directory for a solr/ directory</li>
-   * </ol>
-   * <p>
-   *
-   * @return the Solr home, absolute and normalized.
-   */
-  public static Path locateSolrHome() {
-
-    String home = null;
-    // Try JNDI
-    try {
-      Context c = new InitialContext();
-      home = (String) c.lookup("java:comp/env/solr/home");
-      logOnceInfo("home_using_jndi", "Using JNDI solr.home: " + home);
-    } catch (NoInitialContextException e) {
-      log.debug("JNDI not configured for solr (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.debug("No /solr/home in JNDI");
-    } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: ", ex);
-    }
-
-    // Now try system property
-    if (home == null) {
-      String prop = "solr.solr.home";
-      home = System.getProperty(prop);
-      if (home != null) {
-        logOnceInfo("home_using_sysprop", "Using system property " + prop + ": " + home);
-      }
-    }
-
-    // if all else fails, try
-    if (home == null) {
-      home = "solr/";
-      logOnceInfo("home_default", "solr home defaulted to '" + home + "' (could not find system property or JNDI)");
-    }
-    return Paths.get(home).toAbsolutePath().normalize();
-  }
 
   /**
    * Ensures a directory name always ends with a '/'.
    */
   public static String normalizeDir(String path) {
     return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + File.separator : path;
-  }
-
-  // Logs a message only once per startup
-  private static void logOnceInfo(String key, String msg) {
-    if (!loggedOnce.contains(key)) {
-      loggedOnce.add(key);
-      log.info(msg);
-    }
   }
 
   /**

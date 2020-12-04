@@ -150,10 +150,6 @@ Each shard serves top-level query requests and then makes sub-requests to all of
 
 For example, a deadlock might occur in the case of two shards, each with just a single thread to service HTTP requests. Both threads could receive a top-level request concurrently, and make sub-requests to each other. Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests. By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
 
-== preferLocalShards Parameter
-
-Deprecated, use `shards.preference=replica.location:local` instead (see below).
-
 == shards.preference Parameter
 
 Solr allows you to pass an optional string parameter named `shards.preference` to indicate that a distributed query should sort the available replicas in the given order of precedence within each shard.

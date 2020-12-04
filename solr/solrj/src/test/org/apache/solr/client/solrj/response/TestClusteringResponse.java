@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     NamedList<Object> response = null;
 
     /*Load a simple XML with the clustering response encoded in an XML format*/
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleClusteringResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -57,7 +58,7 @@ public class TestClusteringResponse extends SolrJettyTestBase {
     checkCluster(clusters.get(2), Arrays.asList("label3"), Arrays.asList("id7", "id8"), 1.26d, false);
     checkCluster(clusters.get(3), Arrays.asList("label4"), Arrays.asList("id9"), 0d, true);
     
-    List<Cluster> sub = clusters.get(0).getSubclusters();
+    List<Cluster> sub = clusters.get(0).getClusters();
     checkCluster(sub.get(0), Arrays.asList("label1.sub1"), Arrays.asList("id1", "id2"), 0.0d, false);
     checkCluster(sub.get(1), Arrays.asList("label1.sub2"), Arrays.asList("id2"), 0.0d, false);
     assertEquals(sub.size(), 2);

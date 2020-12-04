@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -133,6 +133,19 @@ public class TestHarness extends BaseTestHarness {
       this(SolrTestCaseJ4.DEFAULT_TEST_CORENAME, dataDirectory, solrConfig, indexSchema);
   }
 
+  /** 
+   * Helper method to let us do some home sys prop check in delegated construtor.
+   * in "real" code SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
+   */
+  private static Path checkAndReturnSolrHomeSysProp() {
+    final String SOLR_HOME = "solr.solr.home";
+    final String home = System.getProperty(SOLR_HOME);
+    if (null == home) {
+      throw new IllegalStateException("This TestHarness constructor requires " + SOLR_HOME + " sys prop to be set by test first");
+    }
+    return Paths.get(home).toAbsolutePath().normalize();
+  }
+  
   /**
    * @param coreName to initialize
    * @param dataDir path for index data, will not be cleaned up
@@ -140,7 +153,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(SolrPaths.locateSolrHome()),
+    this(buildTestNodeConfig(checkAndReturnSolrHomeSysProp()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -174,13 +187,14 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
-                                                                 Integer.getInteger("hostPort", 8983),
-                                                                 System.getProperty("hostContext", ""))
-        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-        .build();
-    if (System.getProperty("zkHost") == null)
-      cloudConfig = null;
+    CloudConfig cloudConfig = (null == System.getProperty("zkHost"))
+      ? null
+      : new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
+                                           Integer.getInteger("hostPort", 8983),
+                                           System.getProperty("hostContext", ""))
+      .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+      .setZkHost(System.getProperty("zkHost"))
+      .build();
     UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
         HttpClientUtil.DEFAULT_MAXCONNECTIONS,
         HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
