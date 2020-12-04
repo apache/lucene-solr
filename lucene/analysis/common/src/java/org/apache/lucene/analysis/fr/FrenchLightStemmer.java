@@ -234,13 +234,17 @@ public class FrenchLightStemmer {
           case 'à': 
           case 'á':
           case 'â': s[i] = 'a'; break;
-          case 'ô': s[i] = 'o'; break;
+          case 'ô': 
+          case 'ö': s[i] = 'o'; break;
           case 'è':
           case 'é':
-          case 'ê': s[i] = 'e'; break;
+          case 'ê': 
+          case 'ë': s[i] = 'e'; break;
           case 'ù':
-          case 'û': s[i] = 'u'; break;
-          case 'î': s[i] = 'i'; break;
+          case 'û': 
+          case 'ü': s[i] = 'u'; break;
+          case 'î': 
+          case 'ï': s[i] = 'i'; break;
           case 'ç': s[i] = 'c'; break;
         }
       
