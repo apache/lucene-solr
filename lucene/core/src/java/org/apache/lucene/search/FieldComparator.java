@@ -143,13 +143,20 @@ public abstract class FieldComparator<T> {
   }
 
   /**
-   * For numeric comparators, setting this value, indicates that
-   * the same numeric data has been indexed with two fields: doc values and points and
-   * that these fields have the same name.
-   * This allows to use sort optimization and skip non-competitive documents.
-   * Not applicable for other comparators.
+   * Informs the comparator that the skipping of documents should be disabled.
+   * This function is called in cases when the skipping functionality
+   * should not be applied or not necessary.
+   *
+   * One example for numeric comparators is when we don't know if the same numeric data has
+   * been indexed with docValues and points if these two fields have the same name.
+   * As the skipping functionality relies on these fields to have the same data
+   * and as we don't know if it is true, we have to disable it.
+   *
+   * Another example could be when search sort is a part of the index sort,
+   * and can be already efficiently handled by TopFieldCollector,
+   * and doing extra work for skipping in the comparator is redundant.
    */
-  public void setCanUsePoints() {
+  public void disableSkipping() {
   }
 
   /** Sorts by descending relevance.  NOTE: if you are
