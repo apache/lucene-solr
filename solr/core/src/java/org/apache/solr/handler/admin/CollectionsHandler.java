@@ -1370,6 +1370,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         //TODO only increase terms of replicas less out-of-sync
         liveReplicas.stream()
             .filter(rep -> zkShardTerms.registered(rep.getName()))
+            // TODO should this all be done at once instead of increasing each replica individually?
             .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
       }
 

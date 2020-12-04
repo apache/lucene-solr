@@ -5172,11 +5172,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
   }
 
   /**
-   * This method should be called on a tragic event ie. if a downstream class of the writer
+   * <p>This method should be called on a tragic event ie. if a downstream class of the writer
    * hits an unrecoverable exception. This method does not rethrow the tragic event exception. 
-   * Note: This method will not close the writer but can be called from any location without respecting any lock order
+   * <p>Note: This method will not close the writer but can be called from any location without respecting any lock order
+   * <p>This method is visible for testing, and is not expected to be called by client code
    */
-  private void onTragicEvent(Throwable tragedy, String location) {
+  public void onTragicEvent(Throwable tragedy, String location) {
     // This is not supposed to be tragic: IW is supposed to catch this and
     // ignore, because it means we asked the merge to abort:
     assert tragedy instanceof MergePolicy.MergeAbortedException == false;
