@@ -64,11 +64,33 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.BeforeReconnect;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ConnectionManager;
+import org.apache.solr.common.cloud.DefaultConnectionStrategy;
+import org.apache.solr.common.cloud.DefaultZkACLProvider;
+import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
+import org.apache.solr.common.cloud.LiveNodesListener;
+import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
+import org.apache.solr.common.cloud.ZkACLProvider;
+import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -108,7 +130,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /**
@@ -172,6 +193,11 @@ public class ZkController implements Closeable {
         if (other.coreNodeName != null) return false;
       } else if (!coreNodeName.equals(other.coreNodeName)) return false;
       return true;
+    }
+
+    @Override
+    public String toString() {
+      return collection + ':' + coreNodeName;
     }
   }
 
@@ -714,33 +740,23 @@ public class ZkController implements Closeable {
 
     // at least the leader still be able to search, we should give up leadership if other replicas can take over
     if (numActiveReplicas >= 2) {
-      String key = cd.getCollectionName() + ":" + cd.getCloudDescriptor().getCoreNodeName();
-      //TODO better handling the case when delete replica was failed
-      if (replicasMetTragicEvent.putIfAbsent(key, tragicException) == null) {
-        log.warn("Leader {} met tragic exception, give up its leadership", key, tragicException);
-        try {
-          // by using Overseer to remove and add replica back, we can do the task in an async/robust manner
-          Map<String,Object> props = new HashMap<>();
-          props.put(Overseer.QUEUE_OPERATION, "deletereplica");
-          props.put(COLLECTION_PROP, cd.getCollectionName());
-          props.put(SHARD_ID_PROP, shard.getName());
-          props.put(REPLICA_PROP, cd.getCloudDescriptor().getCoreNodeName());
-          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
+      String collection = cd.getCollectionName();
+      String shardId = cd.getCloudDescriptor().getShardId();
+      String leader = cd.getCloudDescriptor().getCoreNodeName();
 
-          props.clear();
-          props.put(Overseer.QUEUE_OPERATION, "addreplica");
-          props.put(COLLECTION_PROP, cd.getCollectionName());
-          props.put(SHARD_ID_PROP, shard.getName());
-          props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().name().toUpperCase(Locale.ROOT));
-          props.put(CoreAdminParams.NODE, getNodeName());
-          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
-        } catch (Exception e) {
-          // Exceptions are not bubbled up. giveupLeadership is best effort, and is only called in case of some other
-          // unrecoverable error happened
-          log.error("Met exception on give up leadership for {}", key, e);
-          replicasMetTragicEvent.remove(key);
-          SolrZkClient.checkInterrupted(e);
-        }
+      ZkShardTerms terms = getShardTerms(collection, shardId);
+      terms.ensureTermsIsHigher(leader, Collections.singleton(leader));
+
+      ContextKey key = new ContextKey(collection, leader);
+      ElectionContext context = electionContexts.get(key);
+      LeaderElector elector = ((ShardLeaderElectionContextBase) context).getLeaderElector();
+      try {
+          // ??? we need this in a separate thread?
+        log.warn("Leader {} met tragic exception, give up its leadership", key, tragicException);
+        elector.retryElection(context, false);
+      } catch (KeeperException | InterruptedException | IOException e) {
+        SolrZkClient.checkInterrupted(e);
+        log.error("Met exception on give up leadership for {}", key, e);
       }
     }
   }

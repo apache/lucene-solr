@@ -42,6 +42,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MockDirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -150,7 +151,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       // 404(when the leader replica is already deleted by giveupLeadership)
       if (e instanceof RemoteSolrException) {
         SolrException se = (SolrException) e;
-        assertThat(se.code(), anyOf(is(500), is(404)));
+        MatcherAssert.assertThat(se.code(), anyOf(is(500), is(404)));
       } else if (!(e instanceof AlreadyClosedException)) {
         throw new RuntimeException("Unexpected exception", e);
       }

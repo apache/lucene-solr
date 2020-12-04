@@ -120,11 +120,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
       }
 
-      boolean allReplicasInLine = false;
       if (!weAreReplacement) {
-        allReplicasInLine = waitForReplicasToComeUp(leaderVoteWait);
+        waitForReplicasToComeUp(leaderVoteWait);
       } else {
-        allReplicasInLine = areAllReplicasParticipating();
+        areAllReplicasParticipating();
       }
 
       if (isClosed) {
@@ -237,7 +236,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       }
 
-      boolean isLeader = true;
       if (!isClosed) {
         try {
           if (replicaType == Replica.Type.TLOG) {
@@ -281,7 +279,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          isLeader = false;
           SolrException.log(log, "There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {

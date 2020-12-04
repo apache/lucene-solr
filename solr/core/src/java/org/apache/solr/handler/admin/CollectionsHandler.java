@@ -1306,7 +1306,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, slice.getName(), zkController.getZkClient())) {
       // if an active replica is the leader, then all is fine already
       Replica leader = slice.getLeader();
-      if (leader != null && leader.getState() == State.ACTIVE) {
+      if (leader != null && leader.getState() == State.ACTIVE && zkShardTerms.getHighestTerm() == zkShardTerms.getTerm(leader.getName())) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
       }
@@ -1321,6 +1321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         //TODO only increase terms of replicas less out-of-sync
         liveReplicas.stream()
             .filter(rep -> zkShardTerms.registered(rep.getName()))
+            // TODO should this all be done at once instead of increasing each replica individually?
             .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
       }
 

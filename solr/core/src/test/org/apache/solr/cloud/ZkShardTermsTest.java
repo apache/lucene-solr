@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -264,13 +263,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
-  public void testEnsureTermsIsHigher() {
-    Map<String, Long> map = new HashMap<>();
-    map.put("leader", 0L);
-    ShardTerms terms = new ShardTerms(map, 0);
-    terms = terms.increaseTerms("leader", Collections.singleton("replica"));
-    assertEquals(1L, terms.getTerm("leader").longValue());
-  }
 
   public void testSetTermToZero() {
     String collection = "setTermToZero";

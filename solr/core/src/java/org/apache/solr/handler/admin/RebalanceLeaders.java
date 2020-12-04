@@ -318,7 +318,7 @@ class RebalanceLeaders {
 
   // Put the replica in at the head of the queue and send all nodes with the same sequence number to the back of the list
   // There can be "ties", i.e. replicas in the queue with the same sequence number. Sorting doesn't necessarily sort
-  // the one we most care about first. So put the node we _don't care about at the end of the election queuel
+  // the one we most care about first. So put the node we _don't care about at the end of the election queue_
 
   void makeReplicaFirstWatcher(Slice slice, Replica replica)
       throws KeeperException, InterruptedException {
