@@ -63,6 +63,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
@@ -121,6 +122,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
   private static HttpClient httpClientMock;
+  private static SolrMetricsContext solrMetricsContextMock;
   
   private static ObjectCache objectCache;
   private Map<String, byte[]> zkClientData = new HashMap<>();
@@ -144,8 +146,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         OverseerTaskQueue workQueue, DistributedMap runningMap,
         Overseer overseer,
         DistributedMap completedMap,
-        DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap);
+        DistributedMap failureMap,
+        SolrMetricsContext solrMetricsContext) {
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap, solrMetricsContext);
     }
     
     @Override
@@ -180,6 +183,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
+    solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
   
   @AfterClass
@@ -204,6 +208,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
+    solrMetricsContextMock = null;
   }
   
   @Before
@@ -233,6 +238,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
+    reset(solrMetricsContextMock);
 
     zkClientData.clear();
     collectionsSet.clear();
@@ -493,7 +499,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           }}).when(distribStateManagerMock).makePath(anyString());
 
     zkClientData.put("/configs/myconfig", new byte[1]);
-    
+
+    when(solrMetricsContextMock.getChildContext(any(Object.class))).thenReturn(solrMetricsContextMock);
+
     return liveNodes;
   }
 
@@ -728,7 +736,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
-        overseerMock, completedMapMock, failureMapMock);
+        overseerMock, completedMapMock, failureMapMock, solrMetricsContextMock);
 
 
     if (log.isInfoEnabled()) {
