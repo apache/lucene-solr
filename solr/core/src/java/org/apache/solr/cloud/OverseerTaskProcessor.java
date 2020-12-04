@@ -46,6 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -94,6 +95,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private boolean isClosed;
 
   private volatile Stats stats;
+  private SolrMetricsContext overseerTaskProcessorMetricsContext;
 
   /**
    * Set of tasks that have been picked up for processing but not cleaned up from zk work-queue.
@@ -134,13 +136,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private String thisNode;
 
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
-                                        Stats stats,
-                                        OverseerMessageHandlerSelector selector,
-                                        OverseerNodePrioritizer prioritizer,
-                                        OverseerTaskQueue workQueue,
-                                        DistributedMap runningMap,
-                                        DistributedMap completedMap,
-                                        DistributedMap failureMap) {
+                               Stats stats,
+                               OverseerMessageHandlerSelector selector,
+                               OverseerNodePrioritizer prioritizer,
+                               OverseerTaskQueue workQueue,
+                               DistributedMap runningMap,
+                               DistributedMap completedMap,
+                               DistributedMap failureMap,
+                               SolrMetricsContext solrMetricsContext) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.stats = stats;
@@ -154,6 +157,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningTasks = ConcurrentHashMap.newKeySet();
     this.completedTasks = new ConcurrentHashMap<>();
     thisNode = Utils.getMDCNode();
+
+    overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
+    overseerTaskProcessorMetricsContext.gauge(() -> workQueue.getZkStats().getQueueLength(), true, "collectionWorkQueueSize", "queue");
   }
 
   @Override
@@ -386,6 +392,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public void close() {
     isClosed = true;
+    overseerTaskProcessorMetricsContext.unregister();
     if (tpe != null) {
       if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);

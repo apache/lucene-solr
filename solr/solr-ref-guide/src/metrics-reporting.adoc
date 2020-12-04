@@ -57,6 +57,12 @@ This registry is returned at `solr.jvm` and includes the following information. 
 * System properties such as Java information, various installation directory paths, ports, and similar information. You can control what appears here by modifying `solr.xml`.
 // TODO for 7.0 fix this
 
+=== Overseer Registry
+
+This registry is returned at `solr.overseer` when run in SolrCloud mode and includes the following information. When making requests with the <<Metrics API>>, you can specify `&group=overseer` to limit to only these metrics.
+
+* size of the Overseer queues (collection work queue and cluster state update queue)
+
 === Node / CoreContainer Registry
 
 This registry is returned at `solr.node` and includes the following information. When making requests with the <<Metrics API>>, you can specify `&group=node` to limit to only these metrics.
