@@ -17,19 +17,7 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSeparator;
+import javax.swing.*;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -65,6 +53,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
 
+import org.apache.lucene.luke.util.GoogleCloudReader;
+
 /** Factory of open index dialog */
 public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory {
 
@@ -81,6 +71,8 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
   private final JComboBox<String> idxPathCombo = new JComboBox<>();
 
   private final JButton browseBtn = new JButton();
+
+  private final JTextField gsURITxtField = new JTextField();
 
   private final JCheckBox readOnlyCB = new JCheckBox();
 
@@ -180,7 +172,7 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
   }
 
   private JPanel basicSettings() {
-    JPanel panel = new JPanel(new GridLayout(2, 1));
+    JPanel panel = new JPanel(new GridLayout(5, 1));
     panel.setOpaque(false);
 
     JPanel idxPath = new JPanel(new FlowLayout(FlowLayout.LEADING));
@@ -202,6 +194,8 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
     readOnly.add(readOnlyCB);
     JLabel roIconLB = new JLabel(FontUtils.elegantIconHtml("&#xe06c;"));
     readOnly.add(roIconLB);
+    panel.add(new JLabel("Enter URL here"));
+    panel.add(gsURITxtField);
     panel.add(readOnly);
 
     return panel;
@@ -330,8 +324,13 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
         if (indexHandler.indexOpened()) {
           indexHandler.close();
         }
-
+//
         String selectedPath = (String) idxPathCombo.getSelectedItem();
+//        We can reassign this to be url if URL is not empty
+        if(!gsURITxtField.getText().trim().isEmpty()){
+          selectedPath = GoogleCloudReader.readFromGoogleCloud(gsURITxtField.getText().trim());
+        }
+
         String dirImplClazz = (String) dirImplCombo.getSelectedItem();
         if (selectedPath == null || selectedPath.length() == 0) {
           String message = MessageUtils.getLocalizedMessage("openindex.message.index_path_not_selected");

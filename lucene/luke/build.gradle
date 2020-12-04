@@ -28,6 +28,7 @@ dependencies {
   api project(':lucene:core')
 
   implementation 'org.apache.logging.log4j:log4j-core'
+  implementation 'com.google.cloud:google-cloud-storage:1.113.4'
 
   implementation project(':lucene:codecs')
   implementation project(':lucene:backward-codecs')

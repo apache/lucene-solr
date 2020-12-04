@@ -280,3 +280,4 @@ org.w3c.dom.html
 org.w3c.dom.stylesheets
 org.w3c.dom.xpath
 module:jdk.zipfs
+com.google.cloud.storage
