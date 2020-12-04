@@ -78,6 +78,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.TimeOut;
@@ -1427,6 +1428,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    SolrMetricManager mockMetricManager = mock(SolrMetricManager.class);
+    when(mockAlwaysUpCoreContainer.getMetricManager()).thenReturn(mockMetricManager);
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(testDone);  // Allow retry on session expiry
     when(mockAlwaysUpCoreContainer.getResourceLoader()).thenReturn(new SolrResourceLoader(createTempDir()));
     FieldSetter.setField(zkController, ZkController.class.getDeclaredField("zkClient"), zkClient);
