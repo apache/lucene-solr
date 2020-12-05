@@ -217,9 +217,9 @@ The default of `-1` causes a hueristic to be applied based on other options spec
 This parameter indicates the facet algorithm to use:
 
 * "dv" DocValues, collect into ordinal array
-* "uif" UnInvertedField, collect into ordinal array
-* "dvhash" DocValues, collect into hash - improves efficiency over high cardinality fields
-* "enum" TermsEnum then intersect DocSet (stream-able)
+* "uif" UnInvertedField, collect into ordinal array. Used if the field doesn't have DocValues
+* "dvhash" DocValues, collect into hash - improves efficiency over high cardinality fields. Works on point fields and single-valued string fields
+* "enum" TermsEnum then intersect DocSet (stream-able). Works on indexed fields sorted by `index asc`
 * "stream" Presently equivalent to "enum"
 * "smart" Pick the best method for the field type (this is the default)
 
