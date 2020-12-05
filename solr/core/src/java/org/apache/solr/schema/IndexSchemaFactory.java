@@ -19,8 +19,12 @@ package org.apache.solr.schema;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.cloud.CloudConfigSetService;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -33,10 +37,12 @@ import org.xml.sax.InputSource;
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /** Instantiates the configured schema factory, then calls create on it. */
   public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config) {
-    return newIndexSchemaFactory(config).create(resourceName, config);
+    return buildIndexSchema(resourceName, config, null);
+  }
+  /** Instantiates the configured schema factory, then calls create on it. */
+  public static IndexSchema buildIndexSchema(String resourceName, SolrConfig config, ConfigSetService configSetService) {
+    return newIndexSchemaFactory(config).create(resourceName, config, configSetService);
   }
 
   /** Instantiates us from {@link SolrConfig}. */
@@ -54,7 +60,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   /**
    * Returns the resource (file) name that will be used for the schema itself.  The answer may be a guess.
-   * Do not pass the result of this to {@link #create(String, SolrConfig)}.
+   * Do not pass the result of this to {@link #create(String, SolrConfig, ConfigSetService)}.
    * The input is the name coming from the {@link org.apache.solr.core.CoreDescriptor}
    * which acts as a default or asked-for name.
    */
@@ -65,7 +71,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   /**
    * Returns an index schema created from a local resource.  The input is usually from the core descriptor.
    */
-  public IndexSchema create(String resourceName, SolrConfig config) {
+  public IndexSchema create(String resourceName, SolrConfig config, ConfigSetService configSetService) {
     SolrResourceLoader loader = config.getResourceLoader();
     InputStream schemaInputStream = null;
 
@@ -80,10 +86,41 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
-    InputSource inputSource = new InputSource(schemaInputStream);
-    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
-    return schema;
+    InputStream is = schemaInputStream;
+    String name = resourceName;
+    ConfigSetService.ConfigResource schemaResource  = new ConfigSetService.ConfigResource() {
+      @Override
+      public InputSource getSource() {
+        InputSource inputSource = new InputSource(is);
+        inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+        return inputSource;
+      }
+
+      @Override
+      public String resourceName() {
+        return name;
+      }
+
+      @Override
+      public ConfigNode getParsed() {
+        if (configSetService instanceof CloudConfigSetService && is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          CloudConfigSetService cloudConfigSetService = (CloudConfigSetService) configSetService;
+          ZkSolrResourceLoader.ZkByteArrayInputStream zkis = (ZkSolrResourceLoader.ZkByteArrayInputStream) is;
+          return cloudConfigSetService.getConfig(zkis.fileName, zkis.getStat().getVersion());
+        }
+        return null;
+      }
+
+      @Override
+      public void storeParsed(ConfigNode node) {
+        if (configSetService instanceof CloudConfigSetService && is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          CloudConfigSetService cloudConfigSetService = (CloudConfigSetService) configSetService;
+          ZkSolrResourceLoader.ZkByteArrayInputStream zkis = (ZkSolrResourceLoader.ZkByteArrayInputStream) is;
+          cloudConfigSetService.storeConfig(zkis.fileName, node, zkis.getStat().getVersion());
+        }
+      }
+    };
+    return new IndexSchema(resourceName, schemaResource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
   }
 
 }

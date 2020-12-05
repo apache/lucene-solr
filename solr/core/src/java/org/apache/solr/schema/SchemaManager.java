@@ -451,10 +451,11 @@ public class SchemaManager {
         return (ManagedIndexSchema) core.getLatestSchema();
       }
       InputStream in = resourceLoader.openResource(name);
+      InputSource is = new InputSource(in);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
+        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> is, true, name, version,
             core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
