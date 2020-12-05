@@ -84,6 +84,8 @@ API Changes
 
 Improvements
 
+* LUCENE-9618: Do not call IntervalIterator.nextInterval after NO_MORE_DOCS is returned. (Haoyu Zhai)
+
 * LUCENE-9576: Improve ConcurrentMergeScheduler settings by default, assuming modern I/O.
   Previously Lucene was too conservative, jumping through hoops to detect if disks were SSD-backed.
   In many common modern cases (VMs, RAID arrays, containers, encrypted mounts, non-Linux OS),
@@ -185,6 +187,8 @@ Bug fixes
   (Mark Harwood, Mike Drob)
 
 Other
+
+* LUCENE-9631: Properly override slice() on subclasses of OffsetRange. (Dawid Weiss)
 
 * LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
 
