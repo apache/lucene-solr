@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -122,8 +123,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
   private static HttpClient httpClientMock;
+  @SuppressWarnings("rawtypes")
+  private static PlacementPluginFactory placementPluginFactoryMock;
   private static SolrMetricsContext solrMetricsContextMock;
-  
+
   private static ObjectCache objectCache;
   private Map<String, byte[]> zkClientData = new HashMap<>();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
@@ -183,6 +186,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
+    placementPluginFactoryMock = mock(PlacementPluginFactory.class);
     solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
   
@@ -208,6 +212,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
+    placementPluginFactoryMock = null;
     solrMetricsContextMock = null;
   }
   
@@ -238,6 +243,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
+    reset(placementPluginFactoryMock);
     reset(solrMetricsContextMock);
 
     zkClientData.clear();
@@ -250,7 +256,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     stopComponentUnderTest();
     super.tearDown();
   }
-  
+
+  @SuppressWarnings("unchecked")
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
@@ -367,6 +374,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(overseerMock.getCoreContainer()).thenReturn(coreContainerMock);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
+    when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
     
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);

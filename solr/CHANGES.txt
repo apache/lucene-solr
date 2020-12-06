@@ -178,6 +178,8 @@ Other Changes
 * SOLR-14789: Docker: Migrate docker image creation from docker-solr repo to solr/docker.
   (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
 
+* SOLR-15016: Replica placement plugins should use container plugins API / configs. (ab, ilan)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
