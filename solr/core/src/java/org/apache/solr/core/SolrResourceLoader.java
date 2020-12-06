@@ -129,10 +129,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return schemaLoader;
   }
 
-  public SolrResourceLoader() {
-    this(SolrPaths.locateSolrHome(), null);
-  }
-
   /**
    * Creates a loader.
    * Note: we do NOT call {@link #reloadLuceneSPI()}.
@@ -152,6 +148,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
 
+  /**
+   * Creates a loader.
+   * @param instanceDir - base directory for this resource loader, must not be null
+   */
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null);
   }
@@ -160,18 +160,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
-   *
-   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
-   * @see SolrPaths#locateSolrHome()
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome();
-      log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
-    } else {
-      this.instanceDir = instanceDir;
-      log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
+      throw new NullPointerException("SolrResourceLoader instanceDir must be non-null");
     }
+    
+    this.instanceDir = instanceDir;
+    log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
 
     if (parent == null) {
       parent = getClass().getClassLoader();

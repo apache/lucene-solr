@@ -163,6 +163,11 @@ public class MatchHighlighter {
       super(from, to);
       this.query = query;
     }
+
+    @Override
+    public QueryOffsetRange slice(int from, int to) {
+      return new QueryOffsetRange(query, from, to);
+    }
   }
 
   private static class DocHit {
