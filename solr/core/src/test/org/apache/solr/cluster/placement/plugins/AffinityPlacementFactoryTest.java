@@ -26,7 +26,6 @@ import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
-import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
@@ -54,9 +53,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupPlugin() {
-    PlacementPluginConfig config = PlacementPluginConfigImpl.createConfigFromProperties(
-        Map.of("minimalFreeDiskGB", MINIMAL_FREE_DISK_GB, "prioritizedFreeDiskGB", PRIORITIZED_FREE_DISK_GB));
-    plugin = new AffinityPlacementFactory().createPluginInstance(config);
+    AffinityPlacementConfig config = new AffinityPlacementConfig(MINIMAL_FREE_DISK_GB, PRIORITIZED_FREE_DISK_GB);
+    AffinityPlacementFactory factory = new AffinityPlacementFactory();
+    factory.configure(config);
+    plugin = factory.createPluginInstance();
   }
 
   @Test

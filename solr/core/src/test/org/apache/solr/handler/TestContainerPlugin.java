@@ -193,12 +193,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
       assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC2()));
 
-      CConfig p = new CConfig();
-      p.boolVal = Boolean.TRUE;
-      p.strVal = "Something";
-      p.longVal = 1234L;
+      CConfig cfg = new CConfig();
+      cfg.boolVal = Boolean.TRUE;
+      cfg.strVal = "Something";
+      cfg.longVal = 1234L;
+      PluginMeta p = new PluginMeta();
       p.name = "hello";
       p.klass = CC.class.getName();
+      p.config = cfg;
 
       new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
@@ -213,7 +215,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/config/boolVal", "true", "/config/strVal", "Something","/config/longVal", "1234" ));
 
-        p.strVal = "Something else";
+        cfg.strVal = "Something else";
         new V2Request.Builder("/cluster/plugin")
                 .forceV2(true)
                 .POST()
@@ -226,7 +228,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
                         .forceV2(true)
                         .GET()
                         .build().process(cluster.getSolrClient()),
-                ImmutableMap.of("/config/boolVal", "true", "/config/strVal", p.strVal,"/config/longVal", "1234" ));
+                ImmutableMap.of("/config/boolVal", "true", "/config/strVal", cfg.strVal,"/config/longVal", "1234" ));
 
         // kill the Overseer leader
       for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -391,12 +393,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     @JsonProperty
     public Boolean boolVal;
-
-    @JsonProperty
-    public String name;
-
-    @JsonProperty(value = "class", required = true)
-    public String klass;
   }
 
   public static class C6 implements ClusterSingleton {

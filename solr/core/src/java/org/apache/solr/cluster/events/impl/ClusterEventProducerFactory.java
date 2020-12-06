@@ -128,13 +128,17 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
           ClusterEventListener listener = (ClusterEventListener) instance;
           clusterEventProducer.registerListener(listener);
         } else if (instance instanceof ClusterEventProducer) {
-          // replace the existing impl
-          if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
-            ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
-                .setDelegate((ClusterEventProducer) instance);
+          if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {
+            // replace the existing impl
+            if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
+              ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
+                  .setDelegate((ClusterEventProducer) instance);
+            } else {
+              log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
+                  " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+            }
           } else {
-            log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
-                " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+            log.warn("Ignoring ClusterEventProducer config with non-standard name: {}", plugin.getInfo());
           }
         }
       }
@@ -149,21 +153,25 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
           ClusterEventListener listener = (ClusterEventListener) instance;
           clusterEventProducer.unregisterListener(listener);
         } else if (instance instanceof ClusterEventProducer) {
-          // replace the existing impl with NoOp
-          if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
-            ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
-                .setDelegate(new NoOpProducer(cc));
+          if (ClusterEventProducer.PLUGIN_NAME.equals(plugin.getInfo().name)) {
+            // replace the existing impl with NoOp
+            if (cc.getClusterEventProducer() instanceof DelegatingClusterEventProducer) {
+              ((DelegatingClusterEventProducer) cc.getClusterEventProducer())
+                  .setDelegate(new NoOpProducer(cc));
+            } else {
+              log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
+                  " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+            }
           } else {
-            log.warn("Can't configure plugin-based ClusterEventProducer while CoreContainer is still loading - " +
-                " using existing implementation {}", cc.getClusterEventProducer().getClass().getName());
+            log.warn("Ignoring ClusterEventProducer config with non-standard name: {}", plugin.getInfo());
           }
         }
       }
 
       @Override
       public void modified(ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
-        added(replacement);
         deleted(old);
+        added(replacement);
       }
     };
     plugins.registerListener(pluginListener);

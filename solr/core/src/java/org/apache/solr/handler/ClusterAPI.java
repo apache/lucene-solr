@@ -27,8 +27,6 @@ import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
 import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
 import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -241,26 +239,6 @@ public class ClusterAPI {
       Map<String,Object> m =  obj.getDataMap();
       m.put("action", CLUSTERPROP.toString());
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
-    }
-
-    @Command(name = "set-placement-plugin")
-    public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
-      Map<String, Object> placementPluginConfig = obj.getDataMap();
-      if(placementPluginConfig.isEmpty()) placementPluginConfig = null;
-      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-      // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
-      // Very basic sanity check. Real validation will be done when the config is used...
-      if (!(placementPluginConfig == null) && !placementPluginConfig.containsKey(PlacementPluginConfig.FACTORY_CLASS)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must contain " + PlacementPluginConfig.FACTORY_CLASS + " attribute (or be null)");
-      }
-      try {
-        clusterProperties.update(placementPluginConfig == null?
-            null:
-            new MapWriterMap(placementPluginConfig),
-            PlacementPluginConfig.PLACEMENT_PLUGIN_CONFIG_KEY);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
     }
 
     @Command(name = "set-ratelimiter")
