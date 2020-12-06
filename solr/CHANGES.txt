@@ -183,6 +183,8 @@ Improvements
 
 * SOLR-15015 : Add interleaving algorithm parameter support in Learning To Rank (Alessandro Benedetti)
 
+* SOLR-8673: Make JSON Facets extendable (Tim Owen via Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
