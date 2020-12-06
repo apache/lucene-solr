@@ -41,32 +41,25 @@ import java.util.stream.Collectors;
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- * "set-placement-plugin": {
- * "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
- * "minimalFreeDiskGB": 10,
- * "prioritizedFreeDiskGB": 50
+ * "add": {
+ *   "name": ".placement-plugin",
+ *   "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+ *   "config": {
+ *     "minimalFreeDiskGB": 10,
+ *     "prioritizedFreeDiskGB": 50
+ *   }
  * }
- * }' http://localhost:8983/api/cluster
+ * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
- * <p>The consequence will be the creation of an element in the Zookeeper file {@code /clusterprops.json} as follows:</p>
- *
- * <pre>
- *
- * "placement-plugin":{
- *     "class":"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
- *     "minimalFreeDiskGB":10,
- *     "prioritizedFreeDiskGB":50}
- * </pre>
- *
- * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
+ * <p>In order to delete the placement-plugin section (and to fallback to either Legacy
  * or rule based placement if configured for a collection), execute:</p>
  *
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- * "set-placement-plugin" : null
- * }' http://localhost:8983/api/cluster
+ * "remove" : ".placement-plugin"
+ * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
  *
