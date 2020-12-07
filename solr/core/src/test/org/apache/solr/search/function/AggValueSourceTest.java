@@ -44,7 +44,6 @@ public class AggValueSourceTest extends SolrTestCase {
       super("customagg", vs);
     }
 
-    @Override
     public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) {
       // check we can get access to the request and searcher, via the context
       if (fcontext.getRequest().getCore() != fcontext.getSearcher().getCore()) {

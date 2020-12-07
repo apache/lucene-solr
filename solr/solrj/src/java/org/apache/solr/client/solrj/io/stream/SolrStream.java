@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -264,6 +265,19 @@ public class SolrStream extends TupleStream {
     }
 
     return fields;
+  }
+
+  /**
+   * Do not use as this method will be removed in Solr 9.x.
+   * @param server The SolrClient
+   * @param requestParams Request params
+   * @return A TupleStreamParser
+   * @throws IOException if an I/O related error occurs contacting the remote Solr instance
+   * @throws SolrServerException if an error occurs contacting the remote Solr instance
+   */
+  @Deprecated
+  public TupleStreamParser constructParser(SolrClient server, SolrParams requestParams) throws IOException, SolrServerException {
+    return constructParser(requestParams);
   }
 
   private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
