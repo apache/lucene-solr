@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -31,11 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,6 +113,8 @@ public class TestInjection {
   public volatile static String failReplicaRequests = null;
   
   public volatile static String failUpdateRequests = null;
+
+  public volatile static String leaderTragedy = null;
 
   public volatile static String nonExistentCoreExceptionAfterUnload = null;
 
@@ -335,6 +340,39 @@ public class TestInjection {
       }
     }
 
+    return true;
+  }
+
+  public static boolean injectLeaderTragedy(SolrCore core) {
+    if (leaderTragedy != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean, Integer> pair = parseValue(leaderTragedy);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+
+      if (! core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+        return true;
+      }
+
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        RefCounted<IndexWriter> writer = null;
+        try {
+          writer = core.getSolrCoreState().getIndexWriter(null);
+          writer.get().onTragicEvent(new Exception("injected tragedy"), "injection");
+        } catch (IOException e) {
+          // Problem getting the writer, but that will likely bubble up later
+          return true;
+        } finally {
+          if (writer != null) {
+            writer.decref();
+          }
+        }
+
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Random tragedy fail");
+      }
+    }
     return true;
   }
   
