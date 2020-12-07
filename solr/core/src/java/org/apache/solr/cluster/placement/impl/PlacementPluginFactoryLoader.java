@@ -76,5 +76,4 @@ public class PlacementPluginFactoryLoader {
     };
     plugins.registerListener(pluginListener);
   }
-
 }
