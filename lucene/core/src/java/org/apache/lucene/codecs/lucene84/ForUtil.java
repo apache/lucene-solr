@@ -302,7 +302,7 @@ final class ForUtil {
   private static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
     final int numLongs = bitsPerValue << 1;
     in.readLELongs(tmp, 0, numLongs);
-    final long mask = mask32(bitsPerValue);
+    final long mask = MASKS32[bitsPerValue];
     int longsIdx = 0;
     int shift = 32 - bitsPerValue;
     for (; shift >= 0; shift -= bitsPerValue) {
@@ -310,18 +310,18 @@ final class ForUtil {
       longsIdx += numLongs;
     }
     final int remainingBitsPerLong = shift + bitsPerValue;
-    final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
+    final long mask32RemainingBitsPerLong = MASKS32[remainingBitsPerLong];
     int tmpIdx = 0;
     int remainingBits = remainingBitsPerLong;
     for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
       int b = bitsPerValue - remainingBits;
-      long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
+      long l = (tmp[tmpIdx++] & MASKS32[remainingBits]) << b;
       while (b >= remainingBitsPerLong) {
         b -= remainingBitsPerLong;
         l |= (tmp[tmpIdx++] & mask32RemainingBitsPerLong) << b;
       }
       if (b > 0) {
-        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & mask32(b);
+        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & MASKS32[b];
         remainingBits = remainingBitsPerLong - b;
       } else {
         remainingBits = remainingBitsPerLong;
