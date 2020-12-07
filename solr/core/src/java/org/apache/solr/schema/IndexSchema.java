@@ -65,16 +65,13 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.ConcurrentLRUCache;
-import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.util.DataConfigNode;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -479,18 +476,7 @@ public class IndexSchema {
   protected void readSchema(ConfigSetService.ConfigResource is) {
     assert null != is : "schema InputSource should never be null";
     try {
-      rootNode = is.getParsed();
-      if(rootNode == null) {
-        // pass the config resource loader to avoid building an empty one for no reason:
-        // in the current case though, the stream is valid so we wont load the resource by name
-        XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is.getSource(), SLASH+SCHEMA+SLASH, null);
-//      Document document = schemaConf.getDocument();
-//      final XPath xpath = schemaConf.getXPath();
-//      String expression = stepsToPath(SCHEMA, AT + NAME);
-//      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-        rootNode = new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement())) ;
-        is.storeParsed(rootNode);
-      }
+      rootNode = is.get();
       name = rootNode.attributes().get("name");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -28,11 +26,15 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Base class for factories for IndexSchema implementations */
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
@@ -78,49 +80,48 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     if (null == resourceName) {
       resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
     }
-
     try {
       schemaInputStream = loader.openResource(resourceName);
+      return new IndexSchema(resourceName, getConfigResource(configSetService, schemaInputStream, loader, resourceName), config.luceneMatchVersion, loader, config.getSubstituteProperties());
     } catch (Exception e) {
       final String msg = "Error loading schema resource " + resourceName;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
     }
-    InputStream is = schemaInputStream;
-    String name = resourceName;
-    ConfigSetService.ConfigResource schemaResource  = new ConfigSetService.ConfigResource() {
-      @Override
-      public InputSource getSource() {
-        InputSource inputSource = new InputSource(is);
-        inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
-        return inputSource;
-      }
+  }
 
-      @Override
-      public String resourceName() {
-        return name;
-      }
-
-      @Override
-      public ConfigNode getParsed() {
-        if (configSetService instanceof CloudConfigSetService && is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-          CloudConfigSetService cloudConfigSetService = (CloudConfigSetService) configSetService;
-          ZkSolrResourceLoader.ZkByteArrayInputStream zkis = (ZkSolrResourceLoader.ZkByteArrayInputStream) is;
-          return cloudConfigSetService.getConfig(zkis.fileName, zkis.getStat().getVersion());
-        }
-        return null;
-      }
-
-      @Override
-      public void storeParsed(ConfigNode node) {
-        if (configSetService instanceof CloudConfigSetService && is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-          CloudConfigSetService cloudConfigSetService = (CloudConfigSetService) configSetService;
-          ZkSolrResourceLoader.ZkByteArrayInputStream zkis = (ZkSolrResourceLoader.ZkByteArrayInputStream) is;
-          cloudConfigSetService.storeConfig(zkis.fileName, node, zkis.getStat().getVersion());
+  @SuppressWarnings("unchecked")
+  public static ConfigSetService.ConfigResource getConfigResource(ConfigSetService configSetService, InputStream schemaInputStream, SolrResourceLoader loader, String name) throws IOException {
+    if (configSetService instanceof CloudConfigSetService && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+      ZkSolrResourceLoader.ZkByteArrayInputStream is = (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
+      Map<String, VersionedConfig> configCache = (Map<String, VersionedConfig>) ((CloudConfigSetService) configSetService).getSolrCloudManager().getObjectCache()
+              .computeIfAbsent(ConfigSetService.ConfigResource.class.getName(), s -> new ConcurrentHashMap<>());
+      VersionedConfig cached = configCache.get(is.fileName);
+      if (cached != null) {
+        if (cached.version != is.getStat().getVersion()) {
+          configCache.remove(is.fileName);// this is stale. remove from cache
+        } else {
+          return () -> cached.data;
         }
       }
-    };
-    return new IndexSchema(resourceName, schemaResource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
+      return () -> {
+        ConfigNode data = ConfigSetService.getParsedSchema(schemaInputStream, loader, name);// either missing or stale. create a new one
+        configCache.put(is.fileName, new VersionedConfig(is.getStat().getVersion(), data));
+        return data;
+      };
+    }
+    //this is not cacheable as it does not come from ZK
+    return () -> ConfigSetService.getParsedSchema(schemaInputStream,loader, name);
+  }
+
+  public static class VersionedConfig {
+    final int version;
+    final ConfigNode data;
+
+    public VersionedConfig(int version, ConfigNode data) {
+      this.version = version;
+      this.data = data;
+    }
   }
 
 }

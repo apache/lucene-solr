@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,9 +34,18 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.DOMConfigNode;
+import org.apache.solr.util.DataConfigNode;
+import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+
+import static org.apache.solr.schema.IndexSchema.SCHEMA;
+import static org.apache.solr.schema.IndexSchema.SLASH;
 
 /**
  * Service class used by the CoreContainer to load ConfigSets for use in SolrCore
@@ -190,13 +200,15 @@ public abstract class ConfigSetService {
 
   public interface ConfigResource {
 
-    default String resourceName() {return null;}
+    ConfigNode get() throws Exception;
 
-    InputSource getSource();
-
-    default ConfigNode getParsed() {return null;}
-
-    default void storeParsed(ConfigNode node){}
+  }
+  public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name) throws IOException, SAXException, ParserConfigurationException {
+    XmlConfigFile schemaConf = null;
+    InputSource inputSource = new InputSource(is);
+    inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+    schemaConf = new XmlConfigFile(loader, SCHEMA, inputSource, SLASH + SCHEMA + SLASH, null);
+    return new DataConfigNode(new DOMConfigNode(schemaConf.getDocument().getDocumentElement()));
 
   }
 

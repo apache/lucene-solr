@@ -21,6 +21,7 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
@@ -138,5 +139,8 @@ public class CloudConfigSetService extends ConfigSetService {
       this.configNode = new WeakReference<>(configNode);
       this.znodeVersion = znodeVersion;
     }
+  }
+  public SolrCloudManager getSolrCloudManager() {
+    return zkController.getSolrCloudManager();
   }
 }

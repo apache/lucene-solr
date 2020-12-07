@@ -132,7 +132,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         // Attempt to load the managed schema
         byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
         schemaZkVersion = stat.getVersion();
-        schemaInputStream = new ByteArrayInputStream(data);
+        schemaInputStream = new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);
         loadedResource = managedSchemaResourceName;
         warnIfNonManagedSchemaExists();
       } catch (InterruptedException e) {
@@ -175,8 +175,12 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-    schema = new ManagedIndexSchema(config, loadedResource, () -> inputSource, isMutable,
-        managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+    try {
+      schema = new ManagedIndexSchema(config, loadedResource,IndexSchemaFactory.getConfigResource(configSetService, schemaInputStream, loader, managedSchemaResourceName) , isMutable,
+              managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading parsing schema", e);
+    }
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
       synchronized (schema.getSchemaUpdateLock()) {
@@ -211,7 +215,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
       }
     }
-    return schemaInputStream; 
+    return schemaInputStream;
   }
 
   /**
@@ -252,7 +256,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
     }
   }
-  
+
   /**
    * Persist the managed schema and rename the non-managed schema 
    * by appending {@link #UPGRADED_SCHEMA_EXTENSION}.

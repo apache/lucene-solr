@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -451,12 +452,11 @@ public class SchemaManager {
         return (ManagedIndexSchema) core.getLatestSchema();
       }
       InputStream in = resourceLoader.openResource(name);
-      InputSource is = new InputSource(in);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> is, true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> ConfigSetService.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, name, version,
+                core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }
