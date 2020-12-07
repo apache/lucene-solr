@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -50,6 +52,9 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -127,6 +132,7 @@ public static void configureCluster() throws Exception {
   if (useAlias) {
     CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
   }
+  streamFactory.withCollectionZkHost(MULTI_REPLICA_COLLECTIONORALIAS, zkHost);
 }
 
 private static final String id = "id";
@@ -2604,4 +2610,49 @@ public void testParallelRankStream() throws Exception {
     }
   }
 
+  @Test
+  public void testCloudStreamClientCache() throws Exception {
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    solrClientCache.getCloudSolrClient(zkHost);
+    streamContext.setSolrClientCache(solrClientCache);
+
+    String expr = "search(" + MULTI_REPLICA_COLLECTIONORALIAS + ",q=*:*,fl=\"a_i\", qt=\"/export\", sort=\"a_i asc\")";
+    try (CloudSolrStream stream = new CloudSolrStream(StreamExpressionParser.parse(expr), streamFactory)) {
+      stream.setStreamContext(streamContext);
+      stream.open();
+      Tuple t = stream.read();
+      while (!t.EOF) {
+        // no-op ... just want to iterate over the tuples
+        t = stream.read();
+      }
+
+      List<String> baseUrls = new LinkedList<>();
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      List<String> resolved = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
+      Set<String> liveNodes = zkStateReader.getClusterState().getLiveNodes();
+      int expectedNumStreams = 0;
+      for (String coll : resolved) {
+        DocCollection dcoll = zkStateReader.getCollection(coll);
+        for (Slice slice : dcoll.getSlices()) {
+          ++expectedNumStreams; // one Stream per slice
+          for (Replica r : slice.getReplicas()) {
+            if (r.isActive(liveNodes)) {
+              baseUrls.add(r.getBaseUrl());
+            }
+          }
+        }
+      }
+      List<TupleStream> solrStreams = stream.children();
+      assertEquals(expectedNumStreams, solrStreams.size());
+      for (TupleStream next : solrStreams) {
+        SolrStream ss = (SolrStream)next;
+        assertTrue(baseUrls.contains(ss.getBaseUrl())); // SolrStream uses the baseUrl of the replica and not the coreUrl
+      }
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
 }
