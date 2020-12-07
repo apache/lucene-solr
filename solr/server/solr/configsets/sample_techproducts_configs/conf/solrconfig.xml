@@ -757,7 +757,6 @@
      <lst name="defaults">
        <str name="echoParams">explicit</str>
        <int name="rows">10</int>
-       <bool name="preferLocalShards">false</bool>
      </lst>
     <!-- "appends" example to ensure only products in stock are returned when using this Search Handler -->
     <!--

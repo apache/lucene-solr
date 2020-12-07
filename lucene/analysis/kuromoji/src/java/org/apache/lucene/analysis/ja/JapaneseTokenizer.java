@@ -507,7 +507,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       System.out.println("      + cost=" + leastCost + " wordID=" + wordID + " leftID=" + leftID + " leastIDX=" + leastIDX + " toPos=" + endPos + " toPos.idx=" + positions.get(endPos).count);
     }
 
-    if ((addPenalty || (!outputCompounds && searchMode)) && type != Type.USER) {
+    if (addPenalty && type != Type.USER) {
       final int penalty = computePenalty(fromPosData.pos, endPos - fromPosData.pos);
       if (VERBOSE) {
         if (penalty > 0) {
@@ -1670,7 +1670,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       int backID = posData.backID[bestIDX];
       int nextBestIDX = posData.backIndex[bestIDX];
 
-      if (outputCompounds && searchMode && altToken == null && backType != Type.USER) {
+      if (searchMode && altToken == null && backType != Type.USER) {
 
         // In searchMode, if best path had picked a too-long
         // token, we use the "penalty" to compute the allowed
@@ -1764,34 +1764,35 @@ public final class JapaneseTokenizer extends Tokenizer {
       assert offset >= 0;
 
       if (altToken != null && altToken.getPosition() >= backPos) {
+        if (outputCompounds) {
+          // We've backtraced to the position where the
+          // compound token starts; add it now:
 
-        // We've backtraced to the position where the
-        // compound token starts; add it now:
+          // The pruning we did when we created the altToken
+          // ensures that the back trace will align back with
+          // the start of the altToken:
+          assert altToken.getPosition() == backPos : altToken.getPosition() + " vs " + backPos;
 
-        // The pruning we did when we created the altToken
-        // ensures that the back trace will align back with
-        // the start of the altToken:
-        assert altToken.getPosition() == backPos: altToken.getPosition() + " vs " + backPos;
+          // NOTE: not quite right: the compound token may
+          // have had all punctuation back traced so far, but
+          // then the decompounded token at this position is
+          // not punctuation.  In this case backCount is 0,
+          // but we should maybe add the altToken anyway...?
 
-        // NOTE: not quite right: the compound token may
-        // have had all punctuation back traced so far, but
-        // then the decompounded token at this position is
-        // not punctuation.  In this case backCount is 0,
-        // but we should maybe add the altToken anyway...?
-
-        if (backCount > 0) {
-          backCount++;
-          altToken.setPositionLength(backCount);
-          if (VERBOSE) {
-            System.out.println("    add altToken=" + altToken);
+          if (backCount > 0) {
+            backCount++;
+            altToken.setPositionLength(backCount);
+            if (VERBOSE) {
+              System.out.println("    add altToken=" + altToken);
+            }
+            pending.add(altToken);
+          } else {
+            // This means alt token was all punct tokens:
+            if (VERBOSE) {
+              System.out.println("    discard all-punctuation altToken=" + altToken);
+            }
+            assert discardPunctuation;
           }
-          pending.add(altToken);
-        } else {
-          // This means alt token was all punct tokens:
-          if (VERBOSE) {
-            System.out.println("    discard all-punctuation altToken=" + altToken);
-          }
-          assert discardPunctuation;
         }
         altToken = null;
       }

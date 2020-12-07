@@ -17,6 +17,7 @@
 package org.apache.solr.ltr;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,7 +56,7 @@ import org.junit.Test;
 
 public class TestLTRScoringQuery extends SolrTestCase {
 
-  public final static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  public final static SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
 
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);

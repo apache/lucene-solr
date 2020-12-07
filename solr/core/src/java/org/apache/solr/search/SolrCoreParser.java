@@ -44,11 +44,13 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
 
   protected final SolrQueryRequest req;
 
-  public SolrCoreParser(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req) {
+  public SolrCoreParser(String defaultField, Analyzer analyzer, SolrQueryRequest req) {
     super(defaultField, analyzer);
     queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
     this.req = req;
+    if (null == req) {
+      throw new NullPointerException("req must not be null");
+    }
   }
 
   @Override
@@ -57,12 +59,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
     if (initArgs == null || initArgs.size() == 0) {
       return;
     }
-    final SolrResourceLoader loader;
-    if (req == null) {
-      loader = new SolrResourceLoader();
-    } else {
-      loader = req.getCore().getResourceLoader();
-    }
+    final SolrResourceLoader loader = req.getCore().getResourceLoader();
 
     final Iterable<Map.Entry<String,Object>> args = initArgs;
     for (final Map.Entry<String,Object> entry : args) {

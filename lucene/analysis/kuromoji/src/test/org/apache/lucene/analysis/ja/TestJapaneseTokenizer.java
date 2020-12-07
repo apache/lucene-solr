@@ -917,5 +917,11 @@ public class
 
     assertAnalyzesTo(extendedModeAnalyzerNoCompound, "株式会社とアカデミア",
         new String[]{"株式", "会社", "と", "ア", "カ", "デ", "ミ", "ア"});
+
+    assertAnalyzesTo(analyzer, "北海道日本ハムファイターズ",
+            new String[]{"北海道", "日本", "ハムファイターズ"});
+
+    assertAnalyzesTo(analyzerNoCompound, "北海道日本ハムファイターズ",
+            new String[]{"北海道", "日本", "ハムファイターズ"});
   }
 }
