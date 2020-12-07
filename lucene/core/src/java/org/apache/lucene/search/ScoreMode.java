@@ -39,14 +39,23 @@ public enum ScoreMode {
   TOP_SCORES(false, true),
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs
+   * ScoreMode for top field collectors that can provide their own iterators
+   * capable of skipping over non-competitive hits through
+   * {@link LeafCollector#competitiveIterator()} API.
+   * To make use of the skipping functionality a {@link BulkScorer} must intersect
+   * {@link Scorer#iterator()} with {@link LeafCollector#competitiveIterator()}
+   * to obtain a final documents' iterator for scoring and collection.
    */
   TOP_DOCS(false, false),
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs.
+   * ScoreMode for top field collectors that can provide their own iterators
+   * capable of skipping over non-competitive hits through
+   * {@link LeafCollector#competitiveIterator()} API.
+   * To make use of the skipping functionality a {@link BulkScorer} must intersect
+   * {@link Scorer#iterator()} with {@link LeafCollector#competitiveIterator()}
+   * to obtain a final documents' iterator for scoring and collection.
+   *
    * This mode is used when there is a secondary sort by _score.
    */
   TOP_DOCS_WITH_SCORES(false, true);
@@ -72,5 +81,17 @@ public enum ScoreMode {
    */
   public boolean isExhaustive() {
     return isExhaustive;
+  }
+
+  /**
+   * Converts the given scoreMode to a corresponding scoreMode that doesn't need scores.
+   */
+  public static ScoreMode convertToNoScores(ScoreMode scoreMode) {
+    if (scoreMode.needsScores == false) return scoreMode;
+    if (scoreMode == TOP_DOCS_WITH_SCORES) {
+      return TOP_DOCS;
+    } else {
+      return COMPLETE_NO_SCORES;
+    }
   }
 }
