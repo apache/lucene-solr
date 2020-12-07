@@ -280,6 +280,7 @@ public class SolrStream extends TupleStream {
     return constructParser(requestParams);
   }
 
+  // this method is staying in 9.x
   private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
     String p = requestParams.get("qt");
     if (p != null) {
