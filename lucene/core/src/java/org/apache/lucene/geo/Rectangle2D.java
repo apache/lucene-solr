@@ -242,6 +242,11 @@ final class Rectangle2D implements Component2D {
     // need to quantize!
     double qMinLat = decodeLatitude(encodeLatitudeCeil(rectangle.minLat));
     double qMaxLat = decodeLatitude(encodeLatitude(rectangle.maxLat));
+    if (qMinLat > qMaxLat) {
+      // encodeLatitudeCeil may cause minY to be > maxY iff
+      // the delta between the longitude < the encoding resolution
+      qMinLat = qMaxLat;
+    }
     double qMinLon = decodeLongitude(encodeLongitudeCeil(minLongitude));
     double qMaxLon = decodeLongitude(encodeLongitude(rectangle.maxLon));
     if (crossesDateline) {
