@@ -105,7 +105,8 @@ public class TestHnsw extends LuceneTestCase {
         // run some searches
         Neighbors nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw.getGraphValues(), random());
         int sum = 0;
-        for (int node : nn.nodes()) {
+        Neighbors.NeighborIterator it = nn.iterator();
+        for (int node = it.next(); node != NO_MORE_DOCS; node = it.next()) {
             sum += node;
         }
         // We expect to get approximately 100% recall; the lowest docIds are closest to zero; sum(0,9) = 45

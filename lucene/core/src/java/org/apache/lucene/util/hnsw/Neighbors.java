@@ -18,8 +18,8 @@
 package org.apache.lucene.util.hnsw;
 
 import org.apache.lucene.index.VectorValues;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.IntHeap;
+import org.apache.lucene.util.LongHeap;
+import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -29,20 +29,15 @@ public class Neighbors {
   private static final int INITIAL_SIZE = 128;
 
   public static Neighbors create(int maxSize, VectorValues.SearchStrategy searchStrategy) {
-    return new Neighbors(maxSize, searchStrategy, false);
+    return new Neighbors(maxSize, searchStrategy, searchStrategy.reversed);
   }
 
   public static Neighbors createReversed(int maxSize, VectorValues.SearchStrategy searchStrategy) {
-    return new Neighbors(maxSize, searchStrategy, true);
+    return new Neighbors(maxSize, searchStrategy, !searchStrategy.reversed);
   }
 
-  private final int maxSize;
-  private final IntHeap heap;
+  private final LongHeap heap;
   private final VectorValues.SearchStrategy searchStrategy;
-
-  private int size;
-  private int[] node;
-  private float[] score;
 
   // Used to track the number of neighbors visited during a single graph traversal
   private int visitedCount;
@@ -50,19 +45,10 @@ public class Neighbors {
   private Neighbors(int maxSize, VectorValues.SearchStrategy searchStrategy, boolean reversed) {
     this.searchStrategy = searchStrategy;
     if (reversed) {
-      heap = IntHeap.create(IntHeap.Order.MAX, maxSize);
+      heap = LongHeap.create(LongHeap.Order.MAX, maxSize);
     } else {
-      heap = IntHeap.create(IntHeap.Order.MIN, maxSize);
+      heap = LongHeap.create(LongHeap.Order.MIN, maxSize);
     }
-    this.maxSize = maxSize;
-    int heapSize;
-    if (maxSize == IntHeap.UNBOUNDED) {
-      heapSize = INITIAL_SIZE;
-    } else {
-      heapSize = maxSize;
-    }
-    node = new int[heapSize];
-    score = new float[heapSize];
   }
 
   public int size() {
@@ -74,57 +60,27 @@ public class Neighbors {
   }
 
   public void add(int newNode, float newScore) {
-    short normScore = normScore(newScore);
-    if (size == node.length) {
-      node = ArrayUtil.grow(node, size * 3 / 2);
-      score = ArrayUtil.growExact(score, node.length);
-    }
-    node[size] = newNode;
-    score[size] = newScore;
-    int ordAndScore = normScore << 16 | size;
-    heap.push(ordAndScore);
-    ++ size;
+    heap.push(encode(newNode, newScore));
   }
 
   public boolean insertWithOverflow(int newNode, float newScore) {
-    short normScore = normScore(newScore);
-    if (size < maxSize) {
-      node[size] = newNode;
-      score[size] = newScore;
-      int ordAndScore = normScore << 16 | size;
-      heap.push(ordAndScore);
-      ++ size;
-      return true;
-    } else {
-      int top = heap.top();
-      if (top >> 16 < normScore) { // extend the sign
-        int nbrOrd = (short) top;
-        node[nbrOrd] = newNode;
-        score[nbrOrd] = newScore;
-        int ordAndScore = normScore << 16 | nbrOrd;
-        heap.updateTop(ordAndScore);
-        return true;
-      }
-    }
-    return false;
+    return heap.insertWithOverflow(encode(newNode, newScore));
+  }
+
+  private long encode(int node, float score) {
+    return (((long) NumericUtils.floatToSortableInt(score)) << 32) | node;
   }
 
   public int pop() {
-    // This is destructive! Once you pop, you can never add() again, because the nbrOrds
-    // encoded in the heap elements become invalid.
-    return node[(short) heap.pop()];
+    return (int) heap.pop();
   }
 
   public int topNode() {
-    return node[(short) heap.top()];
+    return (int) heap.top();
   }
 
   public float topScore() {
-    return score[(short) heap.top()];
-  }
-
-  int[] nodes() {
-    return ArrayUtil.copyOfSubArray(node, 0, size);
+    return NumericUtils.sortableIntToFloat((int) (heap.top() >> 32));
   }
 
   // Convert scores into fp16 so we can pack them in with node ords
@@ -150,19 +106,21 @@ public class Neighbors {
   }
 
   class NeighborIterator {
-    private short nbrOrd = -1;
-    private IntHeap.IntIterator heapIterator = heap.iterator();
+    private long value;
+    private final LongHeap.LongIterator heapIterator = heap.iterator();
 
+    /** Return the next node */
     public int next() {
       if (heapIterator.hasNext()) {
-        nbrOrd = (short) heapIterator.next();
-        return node[nbrOrd];
+        value = heapIterator.next();
+        return (int) value;
       }
       return NO_MORE_DOCS;
     }
 
+    /** Return the score corresponding to the last node returned by next() */
     public float score() {
-      return score[nbrOrd];
+      return NumericUtils.sortableIntToFloat((int) (value >> 32));
     }
   }
 

@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.VectorValues;
-import org.apache.lucene.util.IntHeap;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -86,12 +85,12 @@ public final class HnswGraph {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
 
     Neighbors results = Neighbors.create(topK, searchStrategy);
-    Neighbors candidates = Neighbors.createReversed(IntHeap.UNBOUNDED, searchStrategy);
+    Neighbors candidates = Neighbors.createReversed(-numSeed, searchStrategy);
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     Set<Integer> visited = new HashSet<>();
 
     int size = vectors.size();
-    int boundedNumSeed = Math.min(numSeed, size);
+    int boundedNumSeed = Math.min(numSeed, 2 * size);
     for (int i = 0; i < boundedNumSeed; i++) {
       int entryPoint = random.nextInt(size);
       if (visited.add(entryPoint)) {
@@ -142,7 +141,13 @@ public final class HnswGraph {
   }
 
   public int[] getNeighborNodes(int node) {
-    return graph.get(node).nodes();
+    Neighbors neighbors = graph.get(node);
+    int[] nodes = new int[neighbors.size()];
+    Neighbors.NeighborIterator it = neighbors.iterator();
+    for (int neighbor = it.next(), i = 0; neighbor != NO_MORE_DOCS; neighbor = it.next()) {
+      nodes[i++] = neighbor;
+    }
+    return nodes;
   }
 
   /** Connects two nodes symmetrically, limiting the maximum number of connections from either node.

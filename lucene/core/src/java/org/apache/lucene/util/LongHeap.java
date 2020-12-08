@@ -17,7 +17,7 @@
 package org.apache.lucene.util;
 
 /**
- * A heap that stores ints; a primitive priority queue that like all priority queues maintains a
+ * A heap that stores longs; a primitive priority queue that like all priority queues maintains a
  * partial ordering of its elements such that the least element can always be found in constant
  * time. Put()'s and pop()'s require log(size). This heap may be bounded by constructing with a
  * finite maxSize, or enabled to grow dynamically by passing the constant UNBOUNDED for the maxSize.
@@ -28,7 +28,7 @@ package org.apache.lucene.util;
  *
  * @lucene.internal
  */
-public abstract class IntHeap {
+public abstract class LongHeap {
 
   /**
    * Used to specify the ordering of the heap. A min-heap provides access to the minimum element in
@@ -40,21 +40,22 @@ public abstract class IntHeap {
     MIN, MAX
   };
 
-  public final static int UNBOUNDED = -1;
-
+  private static final int UNBOUNDED = -1;
   private final int maxSize;
 
-  private int[] heap;
+  private long[] heap;
   private int size = 0;
 
   /**
    * Create an empty priority queue of the configured size.
+   * @param maxSize the maximum size of the heap, or if negative, the initial size of an unbounded heap
    */
-  IntHeap(int maxSize) {
+  LongHeap(int maxSize) {
     final int heapSize;
-    if (UNBOUNDED == maxSize) {
-      // arbitrary initial size; this may grow
-      heapSize = 32;
+    if (maxSize < 0) {
+      // initial size; this may grow
+      heapSize = -maxSize;
+      this.maxSize = UNBOUNDED;
     } else {
       if ((maxSize < 1) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
         // Throw exception to prevent confusing OOME:
@@ -62,23 +63,24 @@ public abstract class IntHeap {
       }
       // NOTE: we add +1 because all access to heap is 1-based not 0-based.  heap[0] is unused.
       heapSize = maxSize + 1;
+      this.maxSize = maxSize;
     }
-    this.maxSize = maxSize;
-    this.heap = new int[heapSize];
+    this.heap = new long[heapSize];
   }
 
-  public static IntHeap create(Order order, int maxSize) {
+  public static LongHeap create(Order order, int maxSize) {
+    // TODO: override push() for unbounded queue
     if (order == Order.MIN) {
-      return new IntHeap(maxSize) {
+      return new LongHeap(maxSize) {
         @Override
-        protected boolean lessThan(int a, int b) {
+        public boolean lessThan(long a, long b) {
           return a < b;
         }
       };
     } else {
-      return new IntHeap(maxSize) {
+      return new LongHeap(maxSize) {
         @Override
-        protected boolean lessThan(int a, int b) {
+        public boolean lessThan(long a, long b) {
           return a > b;
         }
       };
@@ -89,7 +91,7 @@ public abstract class IntHeap {
    *  method.
    *  @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
    */
-  protected abstract boolean lessThan(int a, int b);
+  public abstract boolean lessThan(long a, long b);
 
   /**
    * Adds a value in log(size) time. If one tries to add more values than maxSize from initialize an
@@ -97,10 +99,10 @@ public abstract class IntHeap {
    *
    * @return the new 'top' element in the queue.
    */
-  public final int push(int element) {
+  public final long push(long element) {
     size++;
-    if (maxSize == UNBOUNDED) {
-      heap = ArrayUtil.grow(heap, size * 3 / 2);
+    if (maxSize == UNBOUNDED && size == heap.length) {
+      heap = ArrayUtil.grow(heap, (size * 3 + 1) / 2);
     }
     heap[size] = element;
     upHeap(size);
@@ -108,31 +110,35 @@ public abstract class IntHeap {
   }
 
   /**
-   * Adds a value to an IntHeap in log(size) time, if the number of values would exceed the heap's
+   * Adds a value to an IntHeap in log(size) time. if the number of values would exceed the heap's
    * maxSize, the least value is discarded.
+   * @return whether the value was added (unless the heap is full, or the new value is less than the top value)
    */
-  public void insertWithOverflow(int value) {
+  public boolean insertWithOverflow(long value) {
     if (size < maxSize || maxSize == UNBOUNDED) {
       push(value);
+      return true;
     } else if (size > 0 && !lessThan(value, heap[1])) {
       updateTop(value);
+      return true;
     }
+    return false;
   }
 
   /** Returns the least element of the IntHeap in constant time. It is up to the caller to verify
    * that the heap is not empty; no checking is done, and if no elements have been added, 0 is
    * returned.
    */
-  public final int top() {
+  public final long top() {
     return heap[1];
   }
 
   /** Removes and returns the least element of the PriorityQueue in log(size) time.
    * @throws IllegalStateException if the IntHeap is empty.
   */
-  public final int pop() {
+  public final long pop() {
     if (size > 0) {
-      int result = heap[1];     // save first value
+      long result = heap[1];     // save first value
       heap[1] = heap[size];     // move last to first
       size--;
       downHeap(1);              // adjust heap
@@ -157,12 +163,12 @@ public abstract class IntHeap {
    * pq.push(value);
    * </pre>
    *
-   * Calling this method on an empty IntHeap has no visible effect.
+   * Calling this method on an empty LongHeap has no visible effect.
    *
    * @param value the new element that is less than the current top.
    * @return the new 'top' element after shuffling the heap.
    */
-  public final int updateTop(int value) {
+  public final long updateTop(long value) {
     heap[1] = value;
     downHeap(1);
     return heap[1];
@@ -180,24 +186,24 @@ public abstract class IntHeap {
 
   private final void upHeap(int origPos) {
     int i = origPos;
-    int node = heap[i];         // save bottom node
+    long value = heap[i];         // save bottom value
     int j = i >>> 1;
-    while (j > 0 && lessThan(node, heap[j])) {
+    while (j > 0 && lessThan(value, heap[j])) {
       heap[i] = heap[j];       // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;            // install saved node
+    heap[i] = value;            // install saved value
   }
 
   private final void downHeap(int i) {
-    int node = heap[i];          // save top node
+    long value = heap[i];          // save top value
     int j = i << 1;            // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
-    while (j <= size && lessThan(heap[j], node)) {
+    while (j <= size && lessThan(heap[j], value)) {
       heap[i] = heap[j];       // shift up child
       i = j;
       j = i << 1;
@@ -206,24 +212,24 @@ public abstract class IntHeap {
         j = k;
       }
     }
-    heap[i] = node;            // install saved node
+    heap[i] = value;            // install saved value
   }
 
-  public IntIterator iterator() {
-    return new IntIterator();
+  public LongIterator iterator() {
+    return new LongIterator();
   }
 
   /**
    * Iterator over the contents of the heap, returning successive ints.
    */
-  public class IntIterator {
+  public class LongIterator {
     int i = 1;
 
     public boolean hasNext() {
       return i <= size;
     }
 
-    public int next() {
+    public long next() {
       if (hasNext() == false) {
         throw new IllegalStateException("attempt to iterate beyond maximum element, size=" + size);
       }
@@ -234,7 +240,7 @@ public abstract class IntHeap {
   /** This method returns the internal heap array.
    * @lucene.internal
    */
-  protected final int[] getHeapArray() {
+  protected final long[] getHeapArray() {
     return heap;
   }
 
