@@ -34,6 +34,7 @@ import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
 
 // TODO
@@ -177,7 +178,7 @@ public class DirectIODirectory extends FSDirectory {
 
   @Override
   public void close() throws IOException {
-    delegate.close();
+    IOUtils.close(delegate);
     super.close();
   }
 
