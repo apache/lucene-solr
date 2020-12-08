@@ -19,10 +19,11 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 
 /** base shape encoding class for testing encoding of tessellated {@link org.apache.lucene.document.XYShape} and
  * {@link LatLonShape}
-  */
+ */
 public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
   protected abstract int encodeX(double x);
@@ -52,7 +53,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -79,7 +80,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -106,7 +107,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(blon);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -133,7 +134,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(blon);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -160,7 +161,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -187,7 +188,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -214,7 +215,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -241,7 +242,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -268,7 +269,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cxEnc = encodeX(cx);
     verifyEncodingPermutations(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -294,7 +295,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cyEnc = encodeY(cy);
     int cxEnc = encodeX(cx);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -311,31 +312,31 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertTrue(GeoUtils.orient(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc) != 0);
     byte[] b = new byte[7 * ShapeField.BYTES];
     //[a,b,c]
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, false);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, false);
     ShapeField.DecodedTriangle encodedABC = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedABC);
     //[c,a,b]
-    ShapeField.encodeTriangle(b, cyEnc, cxEnc, false, ayEnc, axEnc, true, byEnc, bxEnc, true);
+    encodeTriangle(b, cyEnc, cxEnc, false, ayEnc, axEnc, true, byEnc, bxEnc, true);
     ShapeField.DecodedTriangle encodedCAB = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedCAB);
     assertEquals(encodedABC, encodedCAB);
     //[b,c,a]
-    ShapeField.encodeTriangle(b, byEnc, bxEnc, true, cyEnc, cxEnc, false, ayEnc, axEnc, true);
+    encodeTriangle(b, byEnc, bxEnc, true, cyEnc, cxEnc, false, ayEnc, axEnc, true);
     ShapeField.DecodedTriangle encodedBCA = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedBCA);
     assertEquals(encodedABC, encodedBCA);
     //[c,b,a]
-    ShapeField.encodeTriangle(b, cyEnc, cxEnc, true, byEnc, bxEnc, true, ayEnc, axEnc, false);
+    encodeTriangle(b, cyEnc, cxEnc, true, byEnc, bxEnc, true, ayEnc, axEnc, false);
     ShapeField.DecodedTriangle encodedCBA= new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedCBA);
     assertEquals(encodedABC, encodedCBA);
     //[b,a,c]
-    ShapeField.encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, false, cyEnc, cxEnc, true);
+    encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, false, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encodedBAC= new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedBAC);
     assertEquals(encodedABC, encodedBAC);
     //[a,c,b]
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, false, cyEnc, cxEnc, true, byEnc, bxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, false, cyEnc, cxEnc, true, byEnc, bxEnc, true);
     ShapeField.DecodedTriangle encodedACB= new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedACB);
     assertEquals(encodedABC, encodedACB);
@@ -347,7 +348,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int latEnc = encodeY(lat);
     int lonEnc = encodeX(lon);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, latEnc, lonEnc, true, latEnc, lonEnc, true, latEnc, lonEnc, true);
+    encodeTriangle(b, latEnc, lonEnc, true, latEnc, lonEnc, true, latEnc, lonEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, latEnc);
@@ -366,7 +367,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int axEnc = encodeX(ax);
     int bxEnc = encodeX(bx);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, latEnc, axEnc, true, latEnc, bxEnc, true, latEnc, axEnc, true);
+    encodeTriangle(b, latEnc, axEnc, true, latEnc, bxEnc, true, latEnc, axEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, latEnc);
@@ -375,7 +376,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, bxEnc);
     assertEquals(encoded.cY, latEnc);
     assertEquals(encoded.cX, axEnc);
-    ShapeField.encodeTriangle(b, latEnc, axEnc, true, latEnc, axEnc, true, latEnc, bxEnc, true);
+    encodeTriangle(b, latEnc, axEnc, true, latEnc, axEnc, true, latEnc, bxEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, latEnc);
     assertEquals(encoded.aX, axEnc);
@@ -383,7 +384,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, bxEnc);
     assertEquals(encoded.cY, latEnc);
     assertEquals(encoded.cX, axEnc);
-    ShapeField.encodeTriangle(b, latEnc, bxEnc, true, latEnc, axEnc, true, latEnc, axEnc, true);
+    encodeTriangle(b, latEnc, bxEnc, true, latEnc, axEnc, true, latEnc, axEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, latEnc);
     assertEquals(encoded.aX, axEnc);
@@ -401,7 +402,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int byEnc = encodeY(by);
     int lonEnc = encodeX(lon);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, lonEnc, true, byEnc, lonEnc, true, ayEnc, lonEnc, true);
+    encodeTriangle(b, ayEnc, lonEnc, true, byEnc, lonEnc, true, ayEnc, lonEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -410,7 +411,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, lonEnc);
     assertEquals(encoded.cY, ayEnc);
     assertEquals(encoded.cX, lonEnc);
-    ShapeField.encodeTriangle(b, ayEnc, lonEnc, true, ayEnc, lonEnc, true, byEnc, lonEnc, true);
+    encodeTriangle(b, ayEnc, lonEnc, true, ayEnc, lonEnc, true, byEnc, lonEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, lonEnc);
@@ -418,7 +419,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, lonEnc);
     assertEquals(encoded.cY, ayEnc);
     assertEquals(encoded.cX, lonEnc);
-    ShapeField.encodeTriangle(b, byEnc, lonEnc, true, ayEnc, lonEnc, true, ayEnc, lonEnc, true);
+    encodeTriangle(b, byEnc, lonEnc, true, ayEnc, lonEnc, true, ayEnc, lonEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, lonEnc);
@@ -438,7 +439,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int axEnc = encodeX(ax);
     int bxEnc = encodeX(bx);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, ayEnc, axEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, ayEnc, axEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
@@ -447,7 +448,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, bxEnc);
     assertEquals(encoded.cY, ayEnc);
     assertEquals(encoded.cX, axEnc);
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, ayEnc, axEnc, true, byEnc, bxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, ayEnc, axEnc, true, byEnc, bxEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, axEnc);
@@ -455,7 +456,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.bX, bxEnc);
     assertEquals(encoded.cY, ayEnc);
     assertEquals(encoded.cX, axEnc);
-    ShapeField.encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, true, ayEnc, axEnc, true);
+    encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, true, ayEnc, axEnc, true);
     ShapeField.decodeTriangle(b, encoded);
     assertEquals(encoded.aY, ayEnc);
     assertEquals(encoded.aX, axEnc);
@@ -493,7 +494,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     // encode triangle
     int[] original = new int[]{encodeX(ax), encodeY(ay), encodeX(bx), encodeY(by), encodeX(cx), encodeY(cy)};
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, original[1], original[0], true, original[3], original[2], true, original[5], original[4], true);
+    encodeTriangle(b, original[1], original[0], true, original[3], original[2], true, original[5], original[4], true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     // quantize decoded triangle
@@ -538,7 +539,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
     if (orientation == -1) {
       // we need to change the orientation if CW for triangles
-     return  new double[]{decodeX(cX), decodeY(cY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
+      return  new double[]{decodeX(cX), decodeY(cY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
     } else if (aX == bX && aY == bY) {
       if (aX != cX || aY != cY) { // not a point
         if (aX < cX) {
@@ -571,7 +572,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     int cyEnc = encodeY(cy);
     int cxEnc = encodeX(cx);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
+    encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     assertTrue(encoded.aY == byEnc);
@@ -580,5 +581,16 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertTrue(encoded.bX == cxEnc);
     assertTrue(encoded.cY == ayEnc);
     assertTrue(encoded.cX == axEnc);
+  }
+
+  private void encodeTriangle(byte[] bytes, int ayEnc, int axEnc, boolean abFromShape, int byEnc, int bxEnc, boolean bcFromShape, int cyEnc, int cxEnc, boolean caFromShape) {
+    ShapeField.encodeTriangle(bytes, ayEnc, axEnc, abFromShape, byEnc, bxEnc, bcFromShape, cyEnc, cxEnc, caFromShape);
+    if (random().nextBoolean()) {
+      // disable triangle type to check backwards comp
+      int bits = NumericUtils.sortableBytesToInt(bytes, 6 * ShapeField.BYTES);
+      bits = bits & ~(1 << 6);
+      bits = bits & ~(1 << 7);
+      NumericUtils.intToSortableBytes(bits, bytes, 6 * ShapeField.BYTES);
+    }
   }
 }

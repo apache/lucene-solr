@@ -85,18 +85,14 @@ public class LatLonShape {
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
       fields[i] = new Triangle(fieldName,
           encodeLongitude(line.getLon(i)), encodeLatitude(line.getLat(i)),
-          encodeLongitude(line.getLon(j)), encodeLatitude(line.getLat(j)),
-          encodeLongitude(line.getLon(i)), encodeLatitude(line.getLat(i)));
+          encodeLongitude(line.getLon(j)), encodeLatitude(line.getLat(j)));
     }
     return fields;
   }
 
   /** create indexable fields for point geometry */
   public static Field[] createIndexableFields(String fieldName, double lat, double lon) {
-    return new Field[] {new Triangle(fieldName,
-        encodeLongitude(lon), encodeLatitude(lat),
-        encodeLongitude(lon), encodeLatitude(lat),
-        encodeLongitude(lon), encodeLatitude(lat))};
+    return new Field[] {new Triangle(fieldName, encodeLongitude(lon), encodeLatitude(lat))};
   }
 
   /** create a query to find all indexed geo shapes that intersect a defined bounding box **/

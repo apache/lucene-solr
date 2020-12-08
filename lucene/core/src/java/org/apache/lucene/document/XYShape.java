@@ -81,16 +81,14 @@ public class XYShape {
     for (int i = 0, j = 1; j < numPoints; ++i, ++j) {
       fields[i] = new Triangle(fieldName,
           encode(line.getX(i)), encode(line.getY(i)),
-          encode(line.getX(j)), encode(line.getY(j)),
-          encode(line.getX(i)), encode(line.getY(i)));
+          encode(line.getX(j)), encode(line.getY(j)));
     }
     return fields;
   }
 
   /** create indexable fields for cartesian point geometry */
   public static Field[] createIndexableFields(String fieldName, float x, float y) {
-    return new Field[] {new Triangle(fieldName,
-        encode(x), encode(y), encode(x), encode(y), encode(x), encode(y))};
+    return new Field[] {new Triangle(fieldName, encode(x), encode(y))};
   }
 
   /** create a query to find all cartesian shapes that intersect a defined bounding box **/
