@@ -59,7 +59,6 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         syncStrategy = new SyncStrategy(core.getCoreContainer());
 
         Map<String, Object> props = new HashMap<>();
-        props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
 

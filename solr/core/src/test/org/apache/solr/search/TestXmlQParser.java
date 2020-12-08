@@ -21,18 +21,32 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.queryparser.xml.CoreParser;
 
 import org.apache.lucene.queryparser.xml.TestCoreParser;
+
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.TestHarness;
+
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public class TestXmlQParser extends TestCoreParser {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreParser solrCoreParser;
-
+  private static TestHarness harness;
+    
+  @BeforeClass
+  public static void init() throws Exception {
+    // we just need to stub this out so we can construct a SolrCoreParser
+    harness = new TestHarness(TestHarness.buildTestNodeConfig(createTempDir()));
+  }
+  
   @AfterClass
   public static void shutdownLogger() throws Exception {
+    harness.close();
+    harness = null;
     StartupLoggingUtils.shutdown();
   }
 
@@ -42,7 +56,7 @@ public class TestXmlQParser extends TestCoreParser {
       solrCoreParser = new SolrCoreParser(
           super.defaultField(),
           super.analyzer(),
-          null);
+          harness.getRequestFactory("/select", 0, 0).makeRequest());
     }
     return solrCoreParser;
   }

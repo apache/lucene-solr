@@ -111,6 +111,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     collectionName = suggestedCollectionName();
     expectThrows(SolrException.class, () -> getCollectionState(collectionName));
     cluster.getSolrClient().setDefaultCollection(collectionName);
+    cluster.waitForAllNodes(30);
   }
 
   @Override
@@ -236,8 +237,9 @@ public void testCantConnectToPullReplica() throws Exception {
     JettySolrRunner jetty = getJettyForReplica(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0));
     SolrCore core = jetty.getCoreContainer().getCores().iterator().next();
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < (TEST_NIGHTLY ? 5 : 2); i++) {
       cluster.expireZkSession(jetty);
+      waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
       waitForState("Expecting node to reconnect", collectionName, activeReplicaCount(1, 0, 1));
       // We have two active ReplicationHandler with two close hooks each, one for triggering recovery and one for doing interval polling
       assertEquals(5, core.getCloseHooks().size());

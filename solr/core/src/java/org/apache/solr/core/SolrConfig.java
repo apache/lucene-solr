@@ -765,43 +765,47 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
 
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
-    if (nodes == null || nodes.getLength() == 0) return;
-    if (!isConfigsetTrusted) {
-      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
-          + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
-          + " after enabling authentication and authorization.");
-    }
+    if (nodes != null && nodes.getLength() > 0) {
+      if (!isConfigsetTrusted) {
+        throw new SolrException(ErrorCode.UNAUTHORIZED,
+          "The configset for this collection was uploaded without any authentication in place,"
+            + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
+            + " after enabling authentication and authorization.");
+      }
 
-    for (int i = 0; i < nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      String baseDir = DOMUtil.getAttr(node, "dir");
-      String path = DOMUtil.getAttr(node, PATH);
-      if (null != baseDir) {
-        // :TODO: add support for a simpler 'glob' mutually exclusive of regex
-        Path dir = instancePath.resolve(baseDir);
-        String regex = DOMUtil.getAttr(node, "regex");
-        try {
-          if (regex == null)
-            urls.addAll(SolrResourceLoader.getURLs(dir));
-          else
-            urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
-        } catch (IOException e) {
-          log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        String baseDir = DOMUtil.getAttr(node, "dir");
+        String path = DOMUtil.getAttr(node, PATH);
+        if (null != baseDir) {
+          // :TODO: add support for a simpler 'glob' mutually exclusive of regex
+          Path dir = instancePath.resolve(baseDir);
+          String regex = DOMUtil.getAttr(node, "regex");
+          try {
+            if (regex == null)
+              urls.addAll(SolrResourceLoader.getURLs(dir));
+            else
+              urls.addAll(SolrResourceLoader.getFilteredURLs(dir, regex));
+          } catch (IOException e) {
+            log.warn("Couldn't add files from {} filtered by {} to classpath: {}", dir, regex, e);
+          }
+        } else if (null != path) {
+          final Path dir = instancePath.resolve(path);
+          try {
+            urls.add(dir.toUri().toURL());
+          } catch (MalformedURLException e) {
+            log.warn("Couldn't add file {} to classpath: {}", dir, e);
+          }
+        } else {
+          throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
         }
-      } else if (null != path) {
-        final Path dir = instancePath.resolve(path);
-        try {
-          urls.add(dir.toUri().toURL());
-        } catch (MalformedURLException e) {
-          log.warn("Couldn't add file {} to classpath: {}", dir, e);
-        }
-      } else {
-        throw new RuntimeException("lib: missing mandatory attributes: 'dir' or 'path'");
       }
     }
 
-    loader.addToClassLoader(urls);
-    loader.reloadLuceneSPI();
+    if (!urls.isEmpty()) {
+      loader.addToClassLoader(urls);
+      loader.reloadLuceneSPI();
+    }
   }
 
   public int getMultipartUploadLimitKB() {

@@ -55,7 +55,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   private final Path solrHomeDirectory = createTempDir();
 
   private void setMeUp(String alternateCoreDir) throws Exception {
-    System.setProperty("solr.solr.home", solrHomeDirectory.toAbsolutePath().toString());
     String xmlStr = SOLR_XML;
     if (alternateCoreDir != null) {
       xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
@@ -114,7 +113,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer container = new CoreContainer(SolrPaths.locateSolrHome(), new Properties());
+    final CoreContainer container = new CoreContainer(solrHomeDirectory, new Properties());
     try {
       container.load();
     } catch (Exception e) {

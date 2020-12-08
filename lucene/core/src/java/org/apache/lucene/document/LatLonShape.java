@@ -32,6 +32,7 @@ import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -170,7 +171,7 @@ public class LatLonShape {
         builder.add(new LatLonShapeQuery(field, QueryRelation.CONTAINS, geometry), BooleanClause.Occur.MUST);
       }
     }
-    return builder.build();
+    return new ConstantScoreQuery(builder.build());
   }
 
 }

@@ -71,7 +71,7 @@ final class PForUtil {
     if (numExceptions > 0) {
       int exceptionCount = 0;
       for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
-        if (longs[i] > (1L << patchedBitsRequired) - 1) {
+        if (longs[i] > maxUnpatchedValue) {
           exceptions[exceptionCount*2] = (byte) i;
           exceptions[exceptionCount*2+1] = (byte) (longs[i] >>> patchedBitsRequired);
           longs[i] &= maxUnpatchedValue;
