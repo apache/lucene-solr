@@ -45,7 +45,7 @@ public class AggValueSourceTest extends SolrTestCase {
     }
 
     @Override
-    public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) {
+    public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
       // check we can get access to the request and searcher, via the context
       if (fcontext.getRequest().getCore() != fcontext.getSearcher().getCore()) {
         throw new IllegalStateException("Searcher and request out of sync");
