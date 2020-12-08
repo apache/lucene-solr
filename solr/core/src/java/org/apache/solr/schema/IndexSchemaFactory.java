@@ -83,6 +83,8 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     try {
       schemaInputStream = loader.openResource(resourceName);
       return new IndexSchema(resourceName, getConfigResource(configSetService, schemaInputStream, loader, resourceName), config.luceneMatchVersion, loader, config.getSubstituteProperties());
+    } catch (RuntimeException rte) {
+      throw rte;
     } catch (Exception e) {
       final String msg = "Error loading schema resource " + resourceName;
       log.error(msg, e);
