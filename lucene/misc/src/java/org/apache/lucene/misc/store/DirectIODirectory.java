@@ -23,17 +23,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Set;
 
-import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FSLockFactory;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.*;
 import org.apache.lucene.store.IOContext.Context;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
 
@@ -66,7 +58,7 @@ import org.apache.lucene.util.SuppressForbidden;
  *
  * @lucene.experimental
  */
-public class DirectIODirectory extends FSDirectory {
+public class DirectIODirectory extends FilterDirectory {
 
   // TODO: this is OS dependent, but likely 512 is the LCD
   private final static long ALIGN = 512;
@@ -85,11 +77,11 @@ public class DirectIODirectory extends FSDirectory {
   private final int mergeBufferSize;
   private final long minBytesDirect;
   private final Directory delegate;
+  private final Path path;
 
-  /** Create a new NIOFSDirectory for the named location.
+  /** Create a new DirectIODirectory for the named location.
    * 
    * @param path the path of the directory
-   * @param lockFactory to use
    * @param mergeBufferSize Size of buffer to use for
    *    merging.  See {@link #DEFAULT_MERGE_BUFFER_SIZE}.
    * @param minBytesDirect Merges, or files to be opened for
@@ -99,45 +91,34 @@ public class DirectIODirectory extends FSDirectory {
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public DirectIODirectory(Path path, int mergeBufferSize, long minBytesDirect, LockFactory lockFactory, Directory delegate) throws IOException {
-    super(path, lockFactory);
+  public DirectIODirectory(Path path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
+    super(delegate);
     if ((mergeBufferSize & ALIGN) != 0) {
       throw new IllegalArgumentException("mergeBufferSize must be 0 mod " + ALIGN + " (got: " + mergeBufferSize + ")");
     }
     this.mergeBufferSize = mergeBufferSize;
     this.minBytesDirect = minBytesDirect;
     this.delegate = delegate;
+    this.path = path.toRealPath();
   }
   
-  /** Create a new NIOFSDirectory for the named location.
-   * 
-   * @param path the path of the directory
-   * @param lockFactory the lock factory to use
-   * @param delegate fallback Directory for non-merges
-   * @throws IOException If there is a low-level I/O error
-   */
-  public DirectIODirectory(Path path, LockFactory lockFactory, Directory delegate) throws IOException {
-    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, lockFactory, delegate);
-  }  
-
-  /** Create a new NIOFSDirectory for the named location with {@link FSLockFactory#getDefault()}.
+  /** Create a new DirectIODirectory for the named location.
    * 
    * @param path the path of the directory
    * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
   public DirectIODirectory(Path path, Directory delegate) throws IOException {
-    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, FSLockFactory.getDefault(), delegate);
+    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
   }  
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    ensureCanRead(name);
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect || fileLength(name) < minBytesDirect) {
       return delegate.openInput(name, context);
     } else {
-      return new DirectIOIndexInput(getDirectory().resolve(name), mergeBufferSize);
+      return new DirectIOIndexInput(path.resolve(name), mergeBufferSize);
     }
   }
 
@@ -147,33 +128,8 @@ public class DirectIODirectory extends FSDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect) {
       return delegate.createOutput(name, context);
     } else {
-      return new DirectIOIndexOutput(getDirectory().resolve(name), name, mergeBufferSize);
+      return new DirectIOIndexOutput(path.resolve(name), name, mergeBufferSize);
     }
-  }
-
-  @Override
-  public void deleteFile(String name) throws IOException {
-    delegate.deleteFile(name);
-  }
-
-  @Override
-  public Set<String> getPendingDeletions() throws IOException {
-    return delegate.getPendingDeletions();
-  }
-
-  @Override
-  public String[] listAll() throws IOException {
-    return delegate.listAll();
-  }
-
-  @Override
-  public long fileLength(String name) throws IOException {
-    return delegate.fileLength(name);
-  }
-
-  @Override
-  public void rename(String source, String dest) throws IOException {
-    delegate.rename(source, dest);
   }
 
   @Override
