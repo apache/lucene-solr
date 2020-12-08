@@ -329,9 +329,6 @@ public class SimpleFacets {
    * @see FacetParams#FACET_QUERY
    */
   public int getGroupedFacetQueryCount(Query facetQuery, DocSet docSet) throws IOException {
-    if (docSet.size() == 0) {
-      return 0;
-    }
     // It is okay to retrieve group.field from global because it is never a local param
     String groupField = global.get(GroupParams.GROUP_FIELD);
     if (groupField == null) {
@@ -339,6 +336,10 @@ public class SimpleFacets {
           SolrException.ErrorCode.BAD_REQUEST,
           "Specify the group.field as parameter or local parameter"
       );
+    }
+
+    if (docSet.size() == 0) {
+      return 0;
     }
 
     @SuppressWarnings({"rawtypes"})
@@ -894,17 +895,22 @@ public class SimpleFacets {
     final SchemaField sf = searcher.getSchema().getField(field);
     final FieldType ft = sf.getType();
     final DocSet baseDocset = parsed.docs;
-    final NamedList<Integer> res = new NamedList<>();
+    final NamedList<Integer> res = new NamedList<>(terms.size());
     Stream<String> inputStream = terms.stream();
     if (sort.equals(FacetParams.FACET_SORT_INDEX)) { // it might always make sense
       inputStream = inputStream.sorted();
     }
-    Stream<SimpleImmutableEntry<String,Integer>> termCountEntries = inputStream
-        .map((term) -> new SimpleImmutableEntry<>(term, baseDocset.size() == 0 ? 0 : numDocs(term, sf, ft, baseDocset)));
-    if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
-      termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+
+    if (baseDocset.size() == 0) {
+      inputStream.forEach(term -> res.add(term, 0));
+    } else {
+      Stream<SimpleImmutableEntry<String, Integer>> termCountEntries = inputStream
+          .map(term -> new SimpleImmutableEntry<>(term, numDocs(term, sf, ft, baseDocset)));
+      if (sort.equals(FacetParams.FACET_SORT_COUNT)) {
+        termCountEntries = termCountEntries.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+      }
+      termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
     }
-    termCountEntries.forEach(e -> res.add(e.getKey(), e.getValue()));
     return res;
   }
 
