@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.util.DOMUtil;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
