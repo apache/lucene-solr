@@ -89,7 +89,6 @@ public final class NumericUtils {
     return bits ^ (bits >> 31) & 0x7fffffff;
   }
 
-
   /** Result = a - b, where a &gt;= b, else {@code IllegalArgumentException} is thrown.  */
   public static void subtract(int bytesPerDim, int dim, byte[] a, byte[] b, byte[] result) {
     int start = dim * bytesPerDim;

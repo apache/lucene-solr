@@ -18,6 +18,8 @@ package org.apache.lucene.util;
 
 public class TestVectorUtil extends LuceneTestCase {
 
+  public static final double DELTA = 1e-4;
+
   public void testBasicDotProduct() {
     assertEquals(5, VectorUtil.dotProduct(new float[]{1, 2, 3}, new float[]{-10, 0, 5}), 0);
   }
@@ -25,7 +27,7 @@ public class TestVectorUtil extends LuceneTestCase {
   public void testSelfDotProduct() {
     // the dot product of a vector with itself is equal to the sum of the squares of its components
     float[] v = randomVector();
-    assertEquals(l2(v), VectorUtil.dotProduct(v, v), 1e-4);
+    assertEquals(l2(v), VectorUtil.dotProduct(v, v), DELTA);
   }
 
   public void testOrthogonalDotProduct() {
@@ -36,24 +38,46 @@ public class TestVectorUtil extends LuceneTestCase {
     float[] u = new float[2];
     u[0] = v[1];
     u[1] = -v[0];
-    assertEquals(0, VectorUtil.dotProduct(u, v), 1e-4);
+    assertEquals(0, VectorUtil.dotProduct(u, v), DELTA);
+  }
+
+  public void testDotProductThrowsForDimensionMismatch() {
+    float[] v = {1, 0, 0}, u = {0, 1};
+    expectThrows(IllegalArgumentException.class, () -> VectorUtil.dotProduct(u, v));
   }
 
   public void testSelfSquareDistance() {
     // the l2 distance of a vector with itself is zero
     float[] v = randomVector();
-    assertEquals(0, VectorUtil.squareDistance(v, v), 1e-4);
+    assertEquals(0, VectorUtil.squareDistance(v, v), DELTA);
   }
 
   public void testBasicSquareDistance() {
     assertEquals(12, VectorUtil.squareDistance(new float[]{1, 2, 3}, new float[]{-1, 0, 5}), 0);
   }
 
+  public void testSquareDistanceThrowsForDimensionMismatch() {
+    float[] v = {1, 0, 0}, u = {0, 1};
+    expectThrows(IllegalArgumentException.class, () -> VectorUtil.squareDistance(u, v));
+  }
+
   public void testRandomSquareDistance() {
     // the square distance of a vector with its inverse is equal to four times the sum of squares of its components
     float[] v = randomVector();
     float[] u = negative(v);
-    assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), 1e-4);
+    assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), DELTA);
+  }
+
+  public void testNormalize() {
+    float[] v = randomVector();
+    v[random().nextInt(v.length)] = 1; // ensure vector is not all zeroes
+    VectorUtil.l2normalize(v);
+    assertEquals(1f, l2(v), DELTA);
+  }
+
+  public void testNormalizeZeroThrows() {
+    float[] v = {0, 0, 0};
+    expectThrows(IllegalArgumentException.class, () -> VectorUtil.l2normalize(v));
   }
 
   private float l2(float[] v) {
