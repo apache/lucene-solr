@@ -22,6 +22,9 @@ Improvements
 
 * SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
 
+* SOLR-15038: Add elevateDocsWithoutMatchingQ and onlyElevatedRepresentative parameters to elevation functionality.
+  (Dennis Berger, Tobias Kässmann)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.

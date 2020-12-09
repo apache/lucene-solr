@@ -931,6 +931,106 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testOnlyDocsInSearchResultsWillBeElevated() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
+
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+
+      assertU(commit());
+
+      // default behaviour
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_DOCS_WITHOUT_MATCHING_Q, "true",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only docs that matches q
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_DOCS_WITHOUT_MATCHING_Q, "false",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='2']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='false']"
+      );
+
+
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testOnlyRepresentativeIsVisibleWhenCollapsing() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "ZZZZ", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "4", "title", "ZZZZ ZZZZ", "str_s1", "c"));
+
+      assertU(commit());
+
+      // default behaviour - all elevated docs are visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ONLY_ELEVATED_REPRESENTATIVE, "false",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='4']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='3']",
+              "//result/doc[4]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[4]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only representative elevated doc visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ONLY_ELEVATED_REPRESENTATIVE, "true",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='3']",
+              "//result/doc[3]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+    } finally {
+      delete();
+    }
+  }
+
   private static Set<BytesRef> toIdSet(String... ids) {
     return Arrays.stream(ids).map(BytesRef::new).collect(Collectors.toSet());
   }
