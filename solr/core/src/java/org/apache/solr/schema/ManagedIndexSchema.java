@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -92,7 +93,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   
   int schemaZkVersion;
   
-  final Object schemaUpdateLock;
+  final Lock schemaUpdateLock;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -103,7 +104,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
   ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
-                     String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
+                     String managedSchemaResourceName, int schemaZkVersion, Lock schemaUpdateLock) {
     super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
@@ -1350,7 +1351,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
   
   private ManagedIndexSchema(Version luceneVersion, SolrResourceLoader loader, boolean isMutable,
-                             String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock, Properties substitutableProps) {
+                             String managedSchemaResourceName, int schemaZkVersion, Lock schemaUpdateLock, Properties substitutableProps) {
     super(luceneVersion, loader, substitutableProps);
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
@@ -1402,7 +1403,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public Object getSchemaUpdateLock() {
+  public Lock getSchemaUpdateLock() {
     return schemaUpdateLock;
   }
 }

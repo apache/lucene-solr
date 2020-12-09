@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
@@ -178,8 +180,13 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
                                     managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
     if (shouldUpgrade) {
       // Persist the managed schema if it doesn't already exist
-      synchronized (schema.getSchemaUpdateLock()) {
+      Lock schemaUpdateLock =schema.getSchemaUpdateLock();
+      try {
+        schemaUpdateLock.lock();
         upgradeToManagedSchema();
+      }
+      finally {
+        schemaUpdateLock.unlock();
       }
     }
 
@@ -394,8 +401,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
   }
 
-  private Object schemaUpdateLock = new Object();
-  public Object getSchemaUpdateLock() { return schemaUpdateLock; }
+  private Lock schemaUpdateLock = new ReentrantLock();
+  public Lock getSchemaUpdateLock() { return schemaUpdateLock; }
 
   @Override
   public void inform(SolrCore core) {
