@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.placement.CollectionMetrics;
 
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +108,13 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  public Optional<Double> getMetric(String scope, String metricName) {
+  public Optional<Object> getNodeMetric(Node node, String metricKey) {
+    // TODO implement
+    return Optional.empty();
+  }
+
+  @Override
+  public Optional<CollectionMetrics> getCollectionMetrics(String collectionName) {
     // TODO implement
     return Optional.empty();
   }

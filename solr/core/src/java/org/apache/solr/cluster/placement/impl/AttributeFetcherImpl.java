@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.impl;
 import com.google.common.collect.Maps;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.Node;
@@ -108,14 +109,20 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher fetchFrom(Set<Node> nodes) {
-    this.nodes = nodes;
+  public AttributeFetcher requestNodeMetric(String metricKey) {
+    requestedNodeMetricSnitchTags.add(SolrClientNodeStateProvider.METRICS_PREFIX + metricKey);
     return this;
   }
 
   @Override
-  public AttributeFetcher requestMetric(String scope, String metricName) {
-    throw new UnsupportedOperationException("Not yet implemented...");
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames) {
+    return null;
+  }
+
+  @Override
+  public AttributeFetcher fetchFrom(Set<Node> nodes) {
+    this.nodes = nodes;
+    return this;
   }
 
   @Override

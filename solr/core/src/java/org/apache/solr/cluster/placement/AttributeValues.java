@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.SolrCollection;
 
 import java.util.Optional;
 
@@ -69,7 +70,12 @@ public interface AttributeValues {
 
 
   /**
-   * Get a non node related metric of specific scope and name
+   * Get any metric using a fully-qualified metric key.
    */
-  Optional<Double> getMetric(String scope, String metricName);
+  Optional<Object> getNodeMetric(Node node, String metricKey);
+
+  /**
+   *
+   */
+  Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
 }

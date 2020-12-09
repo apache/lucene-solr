@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.SolrCollection;
 
 import java.util.Set;
 
@@ -70,6 +71,12 @@ public interface AttributeFetcher {
    */
   AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry);
 
+  /**
+   * Request collection-level metrics. To get the values use {@link AttributeValues#getCollectionMetrics(String)}.
+   * Note that this request will fetch information from nodes relevant to the collection
+   * replicas and not the ones specified in {@link #fetchFrom(Set)} (though they may overlap).
+   */
+  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames);
 
   /**
    * The set of nodes from which to fetch all node related attributes. Calling this method is mandatory if any of the {@code requestNode*}
@@ -78,13 +85,15 @@ public interface AttributeFetcher {
   AttributeFetcher fetchFrom(Set<Node> nodes);
 
   /**
-   * Requests a (non node) metric of a given scope and name. To get the value use {@link AttributeValues#getMetric(String, String)}
+   * Requests any metric from any metric registry on each node, using a fully-qualified metric key,
+   * for example <code>solr.jvm:system.properties:user.name</code>.
+   * To get the value use {@link AttributeValues#getNodeMetric(Node, String)}
    */
-  AttributeFetcher requestMetric(String scope, String metricName);
+  AttributeFetcher requestNodeMetric(String metricKey);
 
   /**
    * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non node attributes
-   * (those requested for example using {@link #requestMetric(String, String)}.
+   * (those requested for example using {@link #requestNodeMetric(String)}.
    *
    * @return An instance allowing retrieval of all attributed that could be fetched.
    */

@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 
@@ -73,7 +74,12 @@ public class AttributeFetcherForTest implements AttributeFetcher {
 
   @Override
   public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
-    return this;
+    throw new UnsupportedOperationException("Not yet implemented...");
+  }
+
+  @Override
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames) {
+    throw new UnsupportedOperationException("Not yet implemented...");
   }
 
   @Override
@@ -82,7 +88,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestMetric(String scope, String metricName) {
+  public AttributeFetcher requestNodeMetric(String metricKey) {
     throw new UnsupportedOperationException("Not yet implemented...");
   }
 
