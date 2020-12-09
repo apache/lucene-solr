@@ -27,7 +27,6 @@ import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
