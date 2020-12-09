@@ -144,6 +144,7 @@ import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_FUZZ;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
+import static org.apache.solr.common.params.CommonAdminParams.SKIP_FREE_SPACE_CHECK;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
@@ -744,7 +745,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           NUM_SUB_SHARDS,
           SPLIT_FUZZ,
           SPLIT_BY_PREFIX,
-          FOLLOW_ALIASES);
+          FOLLOW_ALIASES,
+          SKIP_FREE_SPACE_CHECK);
       return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
     }),
     DELETESHARD_OP(DELETESHARD, (req, rsp, h) -> {
