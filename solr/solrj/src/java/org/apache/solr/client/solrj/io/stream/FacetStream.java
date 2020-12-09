@@ -88,7 +88,7 @@ public class FacetStream extends TupleStream implements Expressible  {
 
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
-  protected transient SelectStream rollupSelect;
+  protected transient TupleStream parallelizedStream;
   protected transient StreamContext context;
 
   public FacetStream(String zkHost,
@@ -556,12 +556,12 @@ public class FacetStream extends TupleStream implements Expressible  {
       cloudSolrClient = new Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
     }
 
-    if (params.getBool("plist", false)) {
+    if (params.getBool("plist", true)) {
       params.remove("plist");
       final List<String> resolved = cloudSolrClient.getClusterStateProvider().resolveAlias(collection);
       if (resolved.size() > 1) {
-        rollupSelect = parallelizeFacetStream(resolved);
-        if (rollupSelect != null) {
+        parallelizedStream = parallelizeFacetStream(resolved);
+        if (parallelizedStream != null) {
           return; // we're using a plist to parallelize the facet operation
         } // else, there's a metric that we can't rollup over the plist results safely ... no plist for you!
       }
@@ -646,8 +646,8 @@ public class FacetStream extends TupleStream implements Expressible  {
   public Tuple read() throws IOException {
     // if we're parallelizing the facet expression over multiple collections with plist,
     // then delegate the read operation to that stream instead
-    if (rollupSelect != null) {
-      return rollupSelect.read();
+    if (parallelizedStream != null) {
+      return parallelizedStream.read();
     }
 
     if(index < tuples.size() && index < (offset+rows)) {
@@ -914,24 +914,23 @@ public class FacetStream extends TupleStream implements Expressible  {
   protected Metric[] buildRollupMetrics() {
     Metric[] rollup = new Metric[metrics.length];
     for (int m=0; m < rollup.length; m++) {
-      Metric nextRollup = null;
+      Metric nextRollup;
       Metric next = metrics[m];
       if (next instanceof SumMetric) {
         // sum of sums
-        nextRollup = new SumMetric("sum("+next.getColumns()[0]+")");
+        nextRollup = new SumMetric(next.getIdentifier());
       } else if (next instanceof MinMetric) {
         // min of mins
-        nextRollup = new MinMetric("min("+next.getColumns()[0]+")");
+        nextRollup = new MinMetric(next.getIdentifier());
       } else if (next instanceof MaxMetric) {
         // max of max
-        nextRollup = new MaxMetric("max("+next.getColumns()[0]+")");
+        nextRollup = new MaxMetric(next.getIdentifier());
       } else if (next instanceof CountMetric) {
         // sum of counts
-        String[] cols = next.getColumns();
-        String col = cols != null && cols.length > 0 ? cols[0] : "*";
-        nextRollup = new SumMetric("count("+col+")");
+        nextRollup = new SumMetric(next.getIdentifier());
       } else if (next instanceof MeanMetric) {
-        nextRollup = new WeightedSumMetric("avg("+next.getColumns()[0]+")", "count(*)");
+        // TODO: make sure the facet is requesting the count(*)
+        nextRollup = new WeightedSumMetric(next.getIdentifier(), "count(*)");
       } else {
         return null; // can't parallelize this expr!
       }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -73,7 +74,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   private static final int CARD = 10;
 
   private static List<String> listOfCollections;
-  private static String aliasedCollectionString;
   private static final RandomGenerator rand = new JDKRandomGenerator(5150);
 
   @BeforeClass
@@ -84,7 +84,9 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         .configure();
     cleanup();
     setupCollectionsAndAlias();
-    log.info("Took {}ms to setup cluster with {} collections", timer.getTime(), NUM_COLLECTIONS);
+
+    if (log.isInfoEnabled())
+      log.info("Took {}ms to setup cluster with {} collections", timer.getTime(), NUM_COLLECTIONS);
   }
 
   /**
@@ -103,7 +105,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
           final String collectionName = "coll"+colIdx;
           collections.add(collectionName);
           try {
-            log.info("Creating collection: "+collectionName);
             CollectionAdminRequest.createCollection(collectionName, "conf", NUM_SHARDS_PER_COLLECTION, 1).process(cluster.getSolrClient());
             cluster.waitForActiveCollection(collectionName, NUM_SHARDS_PER_COLLECTION, NUM_SHARDS_PER_COLLECTION);
 
@@ -116,13 +117,11 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
                     "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARD), "a_d", String.valueOf(dists[docId % dists.length].sample())));
             ur.commit(cluster.getSolrClient(), collectionName);
           } catch (SolrServerException | IOException e) {
-            if (log.isErrorEnabled())
-              log.error("problem creating and loading data into collection {}", e.getLocalizedMessage());
-            e.printStackTrace();
+            log.error("problem creating and loading data into collection", e);
           }
         });
     listOfCollections = collections;
-    aliasedCollectionString = String.join(",", collections);
+    String aliasedCollectionString = String.join(",", collections);
     CollectionAdminRequest.createAlias(ALIAS_NAME, aliasedCollectionString).process(cluster.getSolrClient());
   }
 
@@ -137,8 +136,9 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     String dim = "a_i";
     String col = "a_d";
-    String metrics = "sum("+col+"), avg("+col+"), min("+col+"), max("+col+"), count(*)";
-    String facetExpr = "facet(" + ALIAS_NAME + ", plist=true, q=\"*:*\", fl=\""+dim+"\", sort=\""+dim+" asc\", buckets=\""+dim+"\", bucketSorts=\"count(*) asc\", bucketSizeLimit=10000, "+metrics+")";
+    String facetExprTmpl = "facet(%s, plist=%s, q=\"*:*\", fl=\"%s\", sort=\"%s asc\", buckets=\"%s\", bucketSorts=\"count(*) asc\", bucketSizeLimit=10000, %s)";
+    String metrics = String.format(Locale.US, "sum(%s), avg(%s), min(%s), max(%s), count(*)", col, col, col, col);
+    String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true", dim, dim, dim, metrics);
 
     String zkhost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
@@ -157,32 +157,15 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> plistTuples = getTuples(stream);
-    final double tookMs = timer.getTime();
-    log.info("stream {} tuples, took: {}ms, fields: {}", plistTuples.size(), tookMs, plistTuples.get(0).getFields().keySet());
 
-    /*
-    // for debugging / inspecting results
-    plistTuples.forEach(t -> log.info("{} || {} || {} || {} || {} || {}",
-        t.getString(dim), t.getLong("sum("+col+")"), t.getDouble("avg("+col+")"),
-        t.getDouble("min("+col+")"), t.getDouble("max("+col+")"), t.getLong("count(*)")));
-
-     results look like:
-          0 || 5 || 0.9824101650503341 || -0.5859583807765252 || 2.2515625018914305 || 6
-          1 || 12 || 2.086248736285889 || 0.03050220236482515 || 3.338305310115201 || 6
-          2 || 24 || 4.01268990483336 || 3.16905458918893 || 4.832815828279073 || 6
-          3 || 22 || 3.7638399672959846 || 2.902262184046103 || 5.66831997419713 || 6
-          4 || 28 || 4.707291428415104 || 2.6395698661907963 || 6.531585917691583 || 6
-          5 || 37 || 6.313661505678458 || 4.808772939476107 || 7.555382540979672 || 6
-          6 || 39 || 6.542799953451302 || 5.422492404700898 || 8.416136012729918 || 6
-          7 || 46 || 7.793703099213451 || 6.934577412906803 || 8.667999236934058 || 6
-          8 || 53 || 8.88269549298972 || 7.4397380388592556 || 9.566181963643201 || 6
-          9 || 63 || 10.577074250340223 || 9.232427215193514 || 12.251349466753346 || 6
-     */
+    if (log.isInfoEnabled()) {
+      log.info("stream {} tuples, took: {}ms, fields: {}", plistTuples.size(), timer.getTime(), plistTuples.get(0).getFields().keySet());
+    }
 
     assertEquals(CARD, plistTuples.size());
 
     // now re-execute the same expression w/o plist
-    facetExpr = "facet(" + ALIAS_NAME + ", q=\"*:*\", fl=\""+dim+"\", sort=\""+dim+" asc\", buckets=\""+dim+"\", bucketSorts=\"count(*) asc\", bucketSizeLimit=10000, "+metrics+")";
+    facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "false", dim, dim, dim, metrics);
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
