@@ -25,7 +25,14 @@ public final class VectorUtil {
   private VectorUtil() {
   }
 
+  /**
+   * Returns the vector dot product of the two vectors. IllegalArgumentException is thrown if the vectors'
+   * dimensions differ.
+   */
   public static float dotProduct(float[] a, float[] b) {
+    if (a.length != b.length) {
+      throw new IllegalArgumentException("vector dimensions differ: " + a.length + "!=" + b.length);
+    }
     float res = 0f;
     /*
      * If length of vector is larger than 8, we use unrolled dot product to accelerate the
@@ -60,8 +67,15 @@ public final class VectorUtil {
     return res;
   }
 
+  /**
+   * Returns the sum of squared differences of the two vectors. IllegalArgumentException is thrown if the vectors'
+   * dimensions differ.
+   */
+
   public static float squareDistance(float[] v1, float[] v2) {
-    assert v1.length == v2.length;
+    if (v1.length != v2.length) {
+      throw new IllegalArgumentException("vector dimensions differ: " + v1.length + "!=" + v2.length);
+    }
     float squareSum = 0.0f;
     int dim = v1.length;
     for (int i = 0; i < dim; i++) {
@@ -70,5 +84,25 @@ public final class VectorUtil {
     }
     return squareSum;
   }
+
+  /**
+   * Modifies the argument to be unit length, dividing by its l2-norm.
+   * IllegalArgumentException is thrown for zero vectors.
+   */
+  public static void l2normalize(float[] v) {
+    double squareSum = 0.0f;
+    int dim = v.length;
+    for (float x : v) {
+      squareSum += x * x;
+    }
+    if (squareSum == 0) {
+      throw new IllegalArgumentException("Cannot normalize a zero-length vector");
+    }
+    double length = Math.sqrt(squareSum);
+    for (int i = 0; i < dim; i++) {
+      v[i] /= length;
+    }
+  }
+
 
 }

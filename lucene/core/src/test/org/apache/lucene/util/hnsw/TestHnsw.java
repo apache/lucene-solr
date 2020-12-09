@@ -41,6 +41,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.VectorUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -104,42 +105,43 @@ public class TestHnsw extends LuceneTestCase {
         // run some searches
         Neighbors nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw.getGraphValues(), random());
         int sum = 0;
-        for (Neighbor n : nn) {
-            sum += n.node();
+        Neighbors.NeighborIterator it = nn.iterator();
+        for (int node = it.next(); node != NO_MORE_DOCS; node = it.next()) {
+            sum += node;
         }
         // We expect to get approximately 100% recall; the lowest docIds are closest to zero; sum(0,9) = 45
         assertTrue("sum(result docs)=" + sum, sum < 75);
     }
 
-    public void testMaxConnections() throws Exception {
+    public void testMaxConnections() {
         // verify that maxConnections is observed, and that the retained arcs point to the best-scoring neighbors
         HnswGraph graph = new HnswGraph(1, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW);
-        graph.connectNodes(0, 1, 1);
-        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
-        graph.connectNodes(0, 2, 2);
-        assertArrayEquals(new int[]{2}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
-        graph.connectNodes(2, 3, 1);
-        assertArrayEquals(new int[]{2}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
-        assertArrayEquals(new int[]{2}, graph.getNeighbors(3));
+        graph.connectNodes(0, 1, 0);
+        assertArrayEquals(new int[]{1}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
+        graph.connectNodes(0, 2, 0.4f);
+        assertArrayEquals(new int[]{2}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(2));
+        graph.connectNodes(2, 3, 0);
+        assertArrayEquals(new int[]{2}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(2));
+        assertArrayEquals(new int[]{2}, graph.getNeighborNodes(3));
 
         graph = new HnswGraph(1, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
         graph.connectNodes(0, 1, 1);
-        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
+        assertArrayEquals(new int[]{1}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
         graph.connectNodes(0, 2, 2);
-        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(2));
+        assertArrayEquals(new int[]{1}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(2));
         graph.connectNodes(2, 3, 1);
-        assertArrayEquals(new int[]{1}, graph.getNeighbors(0));
-        assertArrayEquals(new int[]{0}, graph.getNeighbors(1));
-        assertArrayEquals(new int[]{3}, graph.getNeighbors(2));
-        assertArrayEquals(new int[]{2}, graph.getNeighbors(3));
+        assertArrayEquals(new int[]{1}, graph.getNeighborNodes(0));
+        assertArrayEquals(new int[]{0}, graph.getNeighborNodes(1));
+        assertArrayEquals(new int[]{3}, graph.getNeighborNodes(2));
+        assertArrayEquals(new int[]{2}, graph.getNeighborNodes(3));
     }
 
     /** Returns vectors evenly distributed around the unit circle.
@@ -232,11 +234,11 @@ public class TestHnsw extends LuceneTestCase {
         for (int node = 0; node < size; node ++) {
             g.seek(node);
             h.seek(node);
-            assertEquals("arcs differ for node " + node, getNeighbors(g), getNeighbors(h));
+            assertEquals("arcs differ for node " + node, getNeighborNodes(g), getNeighborNodes(h));
         }
     }
 
-    private Set<Integer> getNeighbors(KnnGraphValues g) throws IOException {
+    private Set<Integer> getNeighborNodes(KnnGraphValues g) throws IOException {
         Set<Integer> neighbors = new HashSet<>();
         for (int n = g.nextNeighbor(); n != NO_MORE_DOCS; n = g.nextNeighbor()) {
             neighbors.add(n);
@@ -259,38 +261,22 @@ public class TestHnsw extends LuceneTestCase {
 
     public void testNeighbors() {
         // make sure we have the sign correct
-        Neighbors nn = Neighbors.create(2, false);
-        Neighbor a = new Neighbor(1, 10);
-        Neighbor b = new Neighbor(2, 20);
-        Neighbor c = new Neighbor(3, 30);
-        assertNull(nn.insertWithOverflow(b));
-        assertNull(nn.insertWithOverflow(a));
-        assertSame(a, nn.insertWithOverflow(c));
-        assertEquals(20, (int) nn.top().score());
-        assertEquals(20, (int) nn.pop().score());
-        assertEquals(30, (int) nn.top().score());
-        assertEquals(30, (int) nn.pop().score());
+        Neighbors nn = Neighbors.create(2, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW);
+        assertTrue(nn.insertWithOverflow(2, 0.5f));
+        assertTrue(nn.insertWithOverflow(1, 0.2f));
+        assertTrue(nn.insertWithOverflow(3, 1f));
+        assertEquals(0.5f, nn.topScore(), 0);
+        nn.pop();
+        assertEquals(1f, nn.topScore(), 0);
+        nn.pop();
 
-        Neighbors fn = Neighbors.create(2, true);
-        assertNull(fn.insertWithOverflow(b));
-        assertNull(fn.insertWithOverflow(a));
-        assertSame(c, fn.insertWithOverflow(c));
-        assertEquals(20, (int) fn.top().score());
-        assertEquals(20, (int) fn.pop().score());
-        assertEquals(10, (int) fn.top().score());
-        assertEquals(10, (int) fn.pop().score());
-    }
-
-    @SuppressWarnings("SelfComparison")
-    public void testNeighbor() {
-        Neighbor a = new Neighbor(1, 10);
-        Neighbor b = new Neighbor(2, 20);
-        Neighbor c = new Neighbor(3, 20);
-        assertEquals(0, a.compareTo(a));
-        assertEquals(-1, a.compareTo(b));
-        assertEquals(1, b.compareTo(a));
-        assertEquals(1, b.compareTo(c));
-        assertEquals(-1, c.compareTo(b));
+        Neighbors fn = Neighbors.create(2, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
+        assertTrue(fn.insertWithOverflow(2, 2));
+        assertTrue(fn.insertWithOverflow(1, 1));
+        assertFalse(fn.insertWithOverflow(3, 3));
+        assertEquals(2f, fn.topScore(), 0);
+        fn.pop();
+        assertEquals(1f, fn.topScore(), 0);
     }
 
     private static float[] randomVector(Random random, int dim) {
@@ -298,6 +284,7 @@ public class TestHnsw extends LuceneTestCase {
         for (int i = 0; i < dim; i++) {
             vec[i] = random.nextFloat();
         }
+        VectorUtil.l2normalize(vec);
         return vec;
     }
 
@@ -457,9 +444,9 @@ public class TestHnsw extends LuceneTestCase {
     }
 
     public void testHnswGraphBuilderInvalid() {
-        expectThrows(NullPointerException.class, () -> new HnswGraphBuilder(null, 0, 0, 0));
-        expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 0, 10, 0));
-        expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 10, 0, 0));
+      expectThrows(NullPointerException.class, () -> new HnswGraphBuilder(null, 0, 0, 0));
+      expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 0, 10, 0));
+      expectThrows(IllegalArgumentException.class, () -> new HnswGraphBuilder(new RandomVectorValues(1, 1, random()), 10, 0, 0));
     }
 
 }

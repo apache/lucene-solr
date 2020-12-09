@@ -35,6 +35,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.VectorUtil;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -574,29 +575,29 @@ public class TestVectorValues extends LuceneTestCase {
     String fieldName = "field";
     try (Directory dir = newDirectory();
          IndexWriter iw = new IndexWriter(dir, iwc)) {
-      add(iw, fieldName, 1, 1, new float[]{1});
-      add(iw, fieldName, 4, 4, new float[]{4});
+      add(iw, fieldName, 1, 1, new float[]{-1, 0});
+      add(iw, fieldName, 4, 4, new float[]{0, 1});
       add(iw, fieldName, 3, 3, null);
-      add(iw, fieldName, 2, 2, new float[]{2});
+      add(iw, fieldName, 2, 2, new float[]{1, 0});
       iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
         LeafReader leaf = getOnlyLeafReader(reader);
 
         VectorValues vectorValues = leaf.getVectorValues(fieldName);
-        assertEquals(1, vectorValues.dimension());
+        assertEquals(2, vectorValues.dimension());
         assertEquals(3, vectorValues.size());
         assertEquals("1", leaf.document(vectorValues.nextDoc()).get("id"));
-        assertEquals(1f, vectorValues.vectorValue()[0], 0);
+        assertEquals(-1f, vectorValues.vectorValue()[0], 0);
         assertEquals("2", leaf.document(vectorValues.nextDoc()).get("id"));
-        assertEquals(2f, vectorValues.vectorValue()[0], 0);
+        assertEquals(1, vectorValues.vectorValue()[0], 0);
         assertEquals("4", leaf.document(vectorValues.nextDoc()).get("id"));
-        assertEquals(4f, vectorValues.vectorValue()[0], 0);
+        assertEquals(0, vectorValues.vectorValue()[0], 0);
         assertEquals(NO_MORE_DOCS, vectorValues.nextDoc());
 
         RandomAccessVectorValues ra = ((RandomAccessVectorValuesProducer) vectorValues).randomAccess();
-        assertEquals(1f, ra.vectorValue(0)[0], 0);
-        assertEquals(2f, ra.vectorValue(1)[0], 0);
-        assertEquals(4f, ra.vectorValue(2)[0], 0);
+        assertEquals(-1f, ra.vectorValue(0)[0], 0);
+        assertEquals(1f, ra.vectorValue(1)[0], 0);
+        assertEquals(0f, ra.vectorValue(2)[0], 0);
       }
     }
   }
@@ -735,6 +736,7 @@ public class TestVectorValues extends LuceneTestCase {
     for (int i = 0; i < dim; i++) {
       v[i] = random().nextFloat();
     }
+    VectorUtil.l2normalize(v);
     return v;
   }
 

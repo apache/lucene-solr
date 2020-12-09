@@ -45,7 +45,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.hnsw.HnswGraph;
-import org.apache.lucene.util.hnsw.Neighbor;
 import org.apache.lucene.util.hnsw.Neighbors;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
@@ -366,14 +365,13 @@ public final class Lucene90VectorReader extends VectorReader {
       ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
       boolean reversed = searchStrategy().reversed;
       while (results.size() > 0) {
-        Neighbor n = results.pop();
-        float score;
+        int node = results.topNode();
+        float score = results.topScore();
+        results.pop();
         if (reversed) {
-          score = (float) Math.exp(- n.score() / vector.length);
-        } else {
-          score = n.score();
+          score = (float) Math.exp(-score / vector.length);
         }
-        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node()], score);
+        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[node], score);
       }
       // always return >= the case where we can assert == is only when there are fewer than topK vectors in the index
       return new TopDocs(new TotalHits(results.visitedCount(), TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);

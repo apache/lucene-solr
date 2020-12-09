@@ -28,6 +28,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.util.VectorUtil;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -112,6 +113,7 @@ public class TestKnnGraph extends LuceneTestCase {
           for (int j = 0; j < dimension; j++) {
             values[i][j] = random().nextFloat();
           }
+          VectorUtil.l2normalize(values[i]);
         }
         add(iw, i, values[i]);
         if (random().nextInt(10) == 3) {
@@ -185,8 +187,8 @@ public class TestKnnGraph extends LuceneTestCase {
         // For this small graph the "search" is exhaustive, so this mostly tests the APIs, the orientation of the
         // various priority queues, the scoring function, but not so much the approximate KNN search algo
         assertGraphSearch(new int[]{0, 15, 3, 18, 5}, new float[]{0f, 0.1f}, dr);
-        // test tiebreaking by docid
-        assertGraphSearch(new int[]{11, 1, 8, 14, 21}, new float[]{2, 2}, dr);
+        // Tiebreaking by docid must be done after VectorValues.search.
+        // assertGraphSearch(new int[]{11, 1, 8, 14, 21}, new float[]{2, 2}, dr);
         assertGraphSearch(new int[]{15, 18, 0, 3, 5},new float[]{0.3f, 0.8f}, dr);
       }
     }
