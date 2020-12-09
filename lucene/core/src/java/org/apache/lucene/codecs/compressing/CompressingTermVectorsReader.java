@@ -78,7 +78,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   private final FieldInfos fieldInfos;
   final FieldsIndex indexReader;
-  final IndexInput vectorsStream, vectorsStreamWrapped;
+  final IndexInput vectorsStream;
   private final int version;
   private final int packedIntsVersion;
   private final CompressionMode compressionMode;
@@ -95,7 +95,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private CompressingTermVectorsReader(CompressingTermVectorsReader reader) {
     this.fieldInfos = reader.fieldInfos;
     this.vectorsStream = reader.vectorsStream.clone();
-    this.vectorsStreamWrapped = reader.version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(vectorsStream) : vectorsStream;
     this.indexReader = reader.indexReader.clone();
     this.packedIntsVersion = reader.packedIntsVersion;
     this.compressionMode = reader.compressionMode;
@@ -120,13 +119,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     numDocs = si.maxDoc();
 
     ChecksumIndexInput metaIn = null;
+    IndexInput vectorsStream = null;
     try {
       // Open the data file
       final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
       vectorsStream = d.openInput(vectorsStreamFN, context);
       version = CodecUtil.checkIndexHeader(vectorsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
-      vectorsStreamWrapped = version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(vectorsStream) : vectorsStream;  
       if (version >= VERSION_OFFHEAP_INDEX) {
         final String metaStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
         metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
@@ -146,6 +145,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
       // such as file truncation.
       CodecUtil.retrieveChecksum(vectorsStream);
+      
+      this.vectorsStream = version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(vectorsStream) : vectorsStream;
 
       FieldsIndex indexReader = null;
       long maxPointer = -1;
@@ -191,7 +192,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
 
       decompressor = compressionMode.newDecompressor();
-      this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
+      this.reader = new BlockPackedReaderIterator(this.vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
 
       if (metaIn != null) {
         CodecUtil.checkFooter(metaIn, null);
@@ -208,7 +209,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(this, metaIn);
+        IOUtils.closeWhileHandlingException(this, metaIn, vectorsStream);
       }
     }
   }
@@ -340,7 +341,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
       ++totalDistinctFields;
       // PackedInts needs always the wrapped Index Input
-      final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, packedIntsVersion, totalDistinctFields, bitsPerFieldNum, 1);
+      final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalDistinctFields, bitsPerFieldNum, 1);
       fieldNums = new int[totalDistinctFields];
       for (int i = 0; i < totalDistinctFields; ++i) {
         fieldNums[i] = (int) it.next();
@@ -353,11 +354,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     {
       final int bitsPerOff = PackedInts.bitsRequired(fieldNums.length - 1);
       // PackedInts needs always the wrapped Index Input
-      final PackedInts.Reader allFieldNumOffs = PackedInts.getReaderNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsPerOff);
+      final PackedInts.Reader allFieldNumOffs = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsPerOff);
       switch (vectorsStream.readVInt()) {
         case 0:
           // PackedInts needs always the wrapped Index Input
-          final PackedInts.Reader fieldFlags = PackedInts.getReaderNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, packedIntsVersion, fieldNums.length, FLAGS_BITS);
+          final PackedInts.Reader fieldFlags = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, fieldNums.length, FLAGS_BITS);
           PackedInts.Mutable f = PackedInts.getMutable(totalFields, FLAGS_BITS, PackedInts.COMPACT);
           for (int i = 0; i < totalFields; ++i) {
             final int fieldNumOff = (int) allFieldNumOffs.get(i);
@@ -369,7 +370,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
           break;
         case 1:
           // PackedInts needs always the wrapped Index Input
-          flags = PackedInts.getReaderNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, packedIntsVersion, totalFields, FLAGS_BITS);
+          flags = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, FLAGS_BITS);
           break;
         default:
           throw new AssertionError();
@@ -385,7 +386,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     {
       final int bitsRequired = vectorsStream.readVInt();
       // PackedInts needs always the wrapped Index Input
-      numTerms = PackedInts.getReaderNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsRequired);
+      numTerms = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsRequired);
       int sum = 0;
       for (int i = 0; i < totalFields; ++i) {
         sum += numTerms.get(i);
@@ -494,7 +495,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final float[] charsPerTerm = new float[fieldNums.length];
       for (int i = 0; i < charsPerTerm.length; ++i) {
         if (version < VERSION_LITTLE_ENDIAN) {
-          charsPerTerm[i] = Float.intBitsToFloat(vectorsStreamWrapped.readInt());
+          charsPerTerm[i] = Float.intBitsToFloat(vectorsStream.readInt());
         } else {
           charsPerTerm[i] = Float.intBitsToFloat(vectorsStream.readInt());
         }
