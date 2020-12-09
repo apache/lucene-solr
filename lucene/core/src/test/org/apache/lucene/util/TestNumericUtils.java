@@ -489,39 +489,4 @@ public class TestNumericUtils extends LuceneTestCase {
     }
   }
 
-  /** check sort order of random floats, using 16-bit precision, consistent with Float.compareTo */
-  public void testF16Compare() {
-    float minFloat16Normal = 1f / (1 << 14);
-    int float16PrecisionDenom = 1 << 10;
-    //long totalTime = 0;
-    NumericUtils.Float16Converter converter = new NumericUtils.Float16Converter();
-    for (int i = 0; i < 10000; i++) {
-      float leftValue = Float.intBitsToFloat(random().nextInt());
-
-      //long start = System.nanoTime();
-      short leftSortValue = converter.floatToSortableShort(leftValue);
-      //totalTime += System.nanoTime() - start;
-
-      float rightValue = Float.intBitsToFloat(random().nextInt());
-      short rightSortValue = converter.floatToSortableShort(rightValue);
-
-      if (Math.abs(leftValue - rightValue) < Math.abs(leftValue) / float16PrecisionDenom
-          || (Math.abs(leftValue) > 65530 && Math.abs(rightValue) > 65530)
-          || (Math.abs(leftValue) < minFloat16Normal && Math.abs(rightValue) < minFloat16Normal)) {
-        // In case the difference is not representable as a "normal" float in FP16, or both values
-        // overflow, or both values underflow, assert that the comparison is not in the opposite
-        // direction (it may be zero due to loss of precision). We might be able to be more precise
-        // about subnormals, but this isn't wrong, at least.
-        assertTrue("bad comparision " + i + " of " + leftValue + " and " + rightValue,
-            Float.compare(leftValue, rightValue) * Short.compare(leftSortValue, rightSortValue) >= 0);
-      } else {
-        // Make a precise assertion
-        assertEquals("bad comparision " + i + " of " + leftValue + " and " + rightValue + ", converted to "
-            + leftSortValue + " and " + rightSortValue,
-            Integer.signum(Float.compare(leftValue, rightValue)),
-            Integer.signum(Short.compare(leftSortValue, rightSortValue)));
-      }
-    }
-    //System.out.println(totalTime / 100000f + " ns/iter");
-  }
 }

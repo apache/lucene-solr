@@ -83,16 +83,6 @@ public class Neighbors {
     return NumericUtils.sortableIntToFloat((int) (heap.top() >> 32));
   }
 
-  // Convert scores into fp16 so we can pack them in with node ords
-  private short normScore(float score) {
-    short sortable = HnswGraphBuilder.f16converter.floatToSortableShort(score);
-    if (searchStrategy.reversed) {
-      return (short) -sortable;
-    } else {
-      return sortable;
-    }
-  }
-
   void setVisitedCount(int visitedCount) {
     this.visitedCount = visitedCount;
   }

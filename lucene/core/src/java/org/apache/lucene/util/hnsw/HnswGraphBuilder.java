@@ -38,7 +38,6 @@ public final class HnswGraphBuilder {
 
   // default random seed for level generation
   private static final long DEFAULT_RAND_SEED = System.currentTimeMillis();
-  static final NumericUtils.Float16Converter f16converter = new NumericUtils.Float16Converter();
   public static final String HNSW_COMPONENT = "HNSW";
 
   // expose for testing.
