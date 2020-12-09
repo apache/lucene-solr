@@ -91,15 +91,13 @@ class Packed64 extends PackedInts.MutableImpl {
     final int longCount = format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue); // to size the array
     blocks = new long[longCount];
     // read as many longs as we can
-    for (int i = 0; i < byteCount / 8; ++i) {
-      blocks[i] = in.readLong();
-    }
+    in.readLongs(blocks, 0, Math.toIntExact(byteCount / 8));
     final int remaining = (int) (byteCount % 8);
     if (remaining != 0) {
       // read the last bytes
       long lastLong = 0;
       for (int i = 0; i < remaining; ++i) {
-        lastLong |= (in.readByte() & 0xFFL) << (56 - i * 8);
+        lastLong |= (in.readByte() & 0xFFL) << (i * 8);
       }
       blocks[blocks.length - 1] = lastLong;
     }
@@ -119,14 +117,13 @@ class Packed64 extends PackedInts.MutableImpl {
     final int elementPos = (int)(majorBitPos >>> BLOCK_BITS);
     // The number of value-bits in the second long
     final long endBits = (majorBitPos & MOD_MASK) + bpvMinusBlockSize;
-
     if (endBits <= 0) { // Single block
-      return (blocks[elementPos] >>> -endBits) & maskRight;
+      return (blocks[elementPos] >>> (majorBitPos & MOD_MASK)) & maskRight;
     }
     // Two blocks
-    return ((blocks[elementPos] << endBits)
-        | (blocks[elementPos+1] >>> (BLOCK_SIZE - endBits)))
-        & maskRight;
+    return ((blocks[elementPos] >>> majorBitPos)
+            | (blocks[elementPos+1] << (64 - majorBitPos))) // is this needed? just taking the the bits that are masked?
+            & maskRight;
   }
 
   @Override
@@ -180,17 +177,34 @@ class Packed64 extends PackedInts.MutableImpl {
     final int elementPos = (int)(majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
     // The number of value-bits in the second long
     final long endBits = (majorBitPos & MOD_MASK) + bpvMinusBlockSize;
-
+    long preVal = (index> 0) ? get(index - 1) : 0; 
+    long nextVal = (index < valueCount - 1) ? get(index + 1) : 0;
     if (endBits <= 0) { // Single block
-      blocks[elementPos] = blocks[elementPos] &  ~(maskRight << -endBits)
-         | (value << -endBits);
+      blocks[elementPos] = blocks[elementPos] &  ~(maskRight << majorBitPos)
+         | ((value & maskRight) << majorBitPos);
+      assert value == get(index);
+      if (index > 0) {
+        assert preVal == get(index - 1);
+      }
+      if (index < valueCount - 1) {
+        assert nextVal == get(index + 1);
+      }
       return;
     }
     // Two blocks
-    blocks[elementPos] = blocks[elementPos] &  ~(maskRight >>> endBits)
-        | (value >>> endBits);
-    blocks[elementPos+1] = blocks[elementPos+1] &  (~0L >>> endBits)
-        | (value << (BLOCK_SIZE - endBits));
+    long mask = ((1L << (bitsPerValue - endBits)) - 1);
+    blocks[elementPos] = blocks[elementPos] &  ~(mask << majorBitPos)
+        | ((value & mask)  << majorBitPos); //(value << majorBitPos)  & maskRight;
+    mask = ((1L << endBits) - 1) << (bitsPerValue - endBits) ;
+    blocks[elementPos+1] = blocks[elementPos+1] &  ~(mask >>> (bitsPerValue - endBits))
+        | ((value & mask) >> (bitsPerValue - endBits));
+    assert value == get(index);
+    if (index > 0) {
+      assert preVal == get(index - 1);
+    }
+    if (index < valueCount - 1) {
+      assert nextVal == get(index + 1);
+    }
   }
 
   @Override

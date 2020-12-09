@@ -91,9 +91,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
   
   private FixedBitSet readData(IndexInput input, int length) throws IOException {
     long data[] = new long[FixedBitSet.bits2words(length)];
-    for (int i = 0; i < data.length; i++) {
-      data[i] = input.readLong();
-    }
+    input.readLongs(data, 0, data.length);
     return new FixedBitSet(data, length);
   }
 

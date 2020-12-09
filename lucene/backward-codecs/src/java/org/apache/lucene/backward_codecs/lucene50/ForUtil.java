@@ -58,7 +58,7 @@ final class ForUtil {
     for(int version=PackedInts.VERSION_START;version<=PackedInts.VERSION_CURRENT;version++) {
       for (PackedInts.Format format : PackedInts.Format.values()) {
         for (int bpv = 1; bpv <= 32; ++bpv) {
-          if (!format.isSupported(bpv)) {
+          if (!format.isSupported(bpv, version)) {
             continue;
           }
           final PackedInts.Decoder decoder = PackedInts.getDecoder(format, version, bpv);
@@ -97,7 +97,7 @@ final class ForUtil {
    * Create a new {@link ForUtil} instance and save state into <code>out</code>.
    */
   ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
-    out.writeVInt(PackedInts.VERSION_CURRENT);
+    out.writeVInt(PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG);
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
@@ -106,13 +106,13 @@ final class ForUtil {
     for (int bpv = 1; bpv <= 32; ++bpv) {
       final FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(
           BLOCK_SIZE, bpv, acceptableOverheadRatio);
-      assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue);
+      assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue, PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG);
       assert formatAndBits.bitsPerValue <= 32;
-      encodedSizes[bpv] = encodedSize(formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+      encodedSizes[bpv] = encodedSize(formatAndBits.format, PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG, formatAndBits.bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
-          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+          formatAndBits.format, PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG, formatAndBits.bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
-          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+          formatAndBits.format, PackedInts.VERSION_MONOTONIC_WITHOUT_ZIGZAG, formatAndBits.bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
 
       out.writeVInt(formatAndBits.format.getId() << 5 | (formatAndBits.bitsPerValue - 1));
@@ -136,7 +136,7 @@ final class ForUtil {
       final int bitsPerValue = (code & 31) + 1;
 
       final PackedInts.Format format = PackedInts.Format.byId(formatId);
-      assert format.isSupported(bitsPerValue);
+      assert format.isSupported(bitsPerValue, packedIntsVersion);
       encodedSizes[bpv] = encodedSize(format, packedIntsVersion, bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
           format, packedIntsVersion, bitsPerValue);

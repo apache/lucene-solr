@@ -90,6 +90,73 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
     new BulkOperationPacked(64),
   };
 
+  private static final BulkOperation[] legacyPackedBulkOps = new BulkOperation[] {
+          new LegacyBulkOperationPacked1(),
+          new LegacyBulkOperationPacked2(),
+          new LegacyBulkOperationPacked3(),
+          new LegacyBulkOperationPacked4(),
+          new LegacyBulkOperationPacked5(),
+          new LegacyBulkOperationPacked6(),
+          new LegacyBulkOperationPacked7(),
+          new LegacyBulkOperationPacked8(),
+          new LegacyBulkOperationPacked9(),
+          new LegacyBulkOperationPacked10(),
+          new LegacyBulkOperationPacked11(),
+          new LegacyBulkOperationPacked12(),
+          new LegacyBulkOperationPacked13(),
+          new LegacyBulkOperationPacked14(),
+          new LegacyBulkOperationPacked15(),
+          new LegacyBulkOperationPacked16(),
+          new LegacyBulkOperationPacked17(),
+          new LegacyBulkOperationPacked18(),
+          new LegacyBulkOperationPacked19(),
+          new LegacyBulkOperationPacked20(),
+          new LegacyBulkOperationPacked21(),
+          new LegacyBulkOperationPacked22(),
+          new LegacyBulkOperationPacked23(),
+          new LegacyBulkOperationPacked24(),
+          new LegacyBulkOperationPacked(25),
+          new LegacyBulkOperationPacked(26),
+          new LegacyBulkOperationPacked(27),
+          new LegacyBulkOperationPacked(28),
+          new LegacyBulkOperationPacked(29),
+          new LegacyBulkOperationPacked(30),
+          new LegacyBulkOperationPacked(31),
+          new LegacyBulkOperationPacked(32),
+          new LegacyBulkOperationPacked(33),
+          new LegacyBulkOperationPacked(34),
+          new LegacyBulkOperationPacked(35),
+          new LegacyBulkOperationPacked(36),
+          new LegacyBulkOperationPacked(37),
+          new LegacyBulkOperationPacked(38),
+          new LegacyBulkOperationPacked(39),
+          new LegacyBulkOperationPacked(40),
+          new LegacyBulkOperationPacked(41),
+          new LegacyBulkOperationPacked(42),
+          new LegacyBulkOperationPacked(43),
+          new LegacyBulkOperationPacked(44),
+          new LegacyBulkOperationPacked(45),
+          new LegacyBulkOperationPacked(46),
+          new LegacyBulkOperationPacked(47),
+          new LegacyBulkOperationPacked(48),
+          new LegacyBulkOperationPacked(49),
+          new LegacyBulkOperationPacked(50),
+          new LegacyBulkOperationPacked(51),
+          new LegacyBulkOperationPacked(52),
+          new LegacyBulkOperationPacked(53),
+          new LegacyBulkOperationPacked(54),
+          new LegacyBulkOperationPacked(55),
+          new LegacyBulkOperationPacked(56),
+          new LegacyBulkOperationPacked(57),
+          new LegacyBulkOperationPacked(58),
+          new LegacyBulkOperationPacked(59),
+          new LegacyBulkOperationPacked(60),
+          new LegacyBulkOperationPacked(61),
+          new LegacyBulkOperationPacked(62),
+          new LegacyBulkOperationPacked(63),
+          new LegacyBulkOperationPacked(64),
+  };
+
   // NOTE: this is sparse (some entries are null):
   private static final BulkOperation[] packedSingleBlockBulkOps = new BulkOperation[] {
     new BulkOperationPackedSingleBlock(1),
@@ -128,15 +195,22 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
 
 
   public static BulkOperation of(PackedInts.Format format, int bitsPerValue) {
+    // PACKED_SINGLE_BLOCK format is deprecated
+    assert format == PackedInts.Format.PACKED;
+    assert packedBulkOps[bitsPerValue - 1] != null;
+    return packedBulkOps[bitsPerValue - 1];
+  }
+
+  public static BulkOperation ofLegacy(PackedInts.Format format, int bitsPerValue) {
     switch (format) {
-    case PACKED:
-      assert packedBulkOps[bitsPerValue - 1] != null;
-      return packedBulkOps[bitsPerValue - 1];
-    case PACKED_SINGLE_BLOCK:
-      assert packedSingleBlockBulkOps[bitsPerValue - 1] != null;
-      return packedSingleBlockBulkOps[bitsPerValue - 1];
-    default:
-      throw new AssertionError();
+      case PACKED:
+        assert packedBulkOps[bitsPerValue - 1] != null;
+        return legacyPackedBulkOps[bitsPerValue - 1];
+      case PACKED_SINGLE_BLOCK:
+        assert packedSingleBlockBulkOps[bitsPerValue - 1] != null;
+        return packedSingleBlockBulkOps[bitsPerValue - 1];
+      default:
+        throw new AssertionError();
     }
   }
 

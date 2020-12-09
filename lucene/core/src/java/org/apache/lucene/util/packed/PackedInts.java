@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.EndiannessReverserIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongsRef;
@@ -66,8 +65,9 @@ public class PackedInts {
 
   public final static String CODEC_NAME = "PackedInts";
   public static final int VERSION_MONOTONIC_WITHOUT_ZIGZAG = 2;
+  public static final int VERSION_LITTLE_ENDIAN = 3;
   public final static int VERSION_START = VERSION_MONOTONIC_WITHOUT_ZIGZAG;
-  public final static int VERSION_CURRENT = VERSION_MONOTONIC_WITHOUT_ZIGZAG;
+  public final static int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   /**
    * Check the validity of a version number.
@@ -116,13 +116,13 @@ public class PackedInts {
       }
 
       @Override
-      public boolean isSupported(int bitsPerValue) {
-        return Packed64SingleBlock.isSupported(bitsPerValue);
+      public boolean isSupported(int bitsPerValue, int version) {
+        return version < VERSION_LITTLE_ENDIAN && Packed64SingleBlock.isSupported(bitsPerValue);
       }
 
       @Override
       public float overheadPerValue(int bitsPerValue) {
-        assert isSupported(bitsPerValue);
+        assert isSupported(bitsPerValue, VERSION_MONOTONIC_WITHOUT_ZIGZAG);
         final int valuesPerBlock = 64 / bitsPerValue;
         final int overhead = 64 % bitsPerValue;
         return (float) overhead / valuesPerBlock;
@@ -184,7 +184,7 @@ public class PackedInts {
      * Tests whether the provided number of bits per value is supported by the
      * format.
      */
-    public boolean isSupported(int bitsPerValue) {
+    public boolean isSupported(int bitsPerValue, int version) {
       return bitsPerValue >= 1 && bitsPerValue <= 64;
     }
 
@@ -192,7 +192,7 @@ public class PackedInts {
      * Returns the overhead per value, in bits.
      */
     public float overheadPerValue(int bitsPerValue) {
-      assert isSupported(bitsPerValue);
+      assert isSupported(bitsPerValue, VERSION_CURRENT);
       return 0f;
     }
 
@@ -200,7 +200,7 @@ public class PackedInts {
      * Returns the overhead ratio (<code>overhead per value / bits per value</code>).
      */
     public final float overheadRatio(int bitsPerValue) {
-      assert isSupported(bitsPerValue);
+      assert isSupported(bitsPerValue, VERSION_CURRENT);
       return overheadPerValue(bitsPerValue) / bitsPerValue;
     }
   }
@@ -728,7 +728,11 @@ public class PackedInts {
    */
   public static Decoder getDecoder(Format format, int version, int bitsPerValue) {
     checkVersion(version);
-    return BulkOperation.of(format, bitsPerValue);
+    if (version < VERSION_LITTLE_ENDIAN) {
+      return BulkOperation.ofLegacy(format, bitsPerValue);
+    } else {
+      return BulkOperation.of(format, bitsPerValue);
+    }
   }
 
   /**
@@ -741,7 +745,11 @@ public class PackedInts {
    */
   public static Encoder getEncoder(Format format, int version, int bitsPerValue) {
     checkVersion(version);
-    return BulkOperation.of(format, bitsPerValue);
+    if (version < VERSION_LITTLE_ENDIAN) {
+      return BulkOperation.ofLegacy(format, bitsPerValue);
+    } else {
+      return BulkOperation.of(format, bitsPerValue);
+    }
   }
 
   /**
@@ -767,7 +775,11 @@ public class PackedInts {
       case PACKED_SINGLE_BLOCK:
         return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
       case PACKED:
-        return new Packed64(version, in, valueCount, bitsPerValue);
+        if (version < VERSION_LITTLE_ENDIAN) {
+          return new LegacyPacked64(version, in, valueCount, bitsPerValue);
+        } else {
+          return new Packed64(version, in, valueCount, bitsPerValue);
+        }
       default:
         throw new AssertionError("Unknown Writer format: " + format);
     }
@@ -783,7 +795,7 @@ public class PackedInts {
    */
   public static Reader getReader(IndexInput in) throws IOException {
     // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -823,8 +835,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIterator(IndexInput in, int mem) throws IOException {
-    // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -854,7 +865,11 @@ public class PackedInts {
     checkVersion(version);
     switch (format) {
       case PACKED:
-        return new DirectPackedReader(bitsPerValue, valueCount, in);
+        if (version < VERSION_LITTLE_ENDIAN) {
+          return new LegacyDirectPackedReader(bitsPerValue, valueCount, in);
+        } else {
+          return new DirectPackedReader(bitsPerValue, valueCount, in);
+        }
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
       default:
@@ -877,7 +892,7 @@ public class PackedInts {
    */
   public static Reader getDirectReader(IndexInput in) throws IOException {
     // Hack to make test happy as the input is already wrapped. Note this method is only used there
-    final int version = CodecUtil.checkHeader(new EndiannessReverserIndexInput(in), CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -1119,5 +1134,4 @@ public class PackedInts {
     }
     return numBlocks;
   }
-
 }

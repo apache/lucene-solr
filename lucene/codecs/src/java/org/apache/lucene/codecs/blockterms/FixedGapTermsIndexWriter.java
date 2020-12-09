@@ -27,8 +27,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.ByteBuffersDataOutput;
-import org.apache.lucene.store.ByteBuffersIndexOutput;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -53,7 +51,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   final static String CODEC_NAME = "FixedGapTermsIndex";
   final static int VERSION_START = 4;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_LITTLE_ENDIAN = 5;
+  final static int VERSION_CURRENT = VERSION_LITTLE_ENDIAN;
 
   final static int BLOCKSIZE = 4096;
   final private int termIndexInterval;
@@ -114,13 +113,11 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     private long numTerms;
 
     private ByteBuffersDataOutput offsetsBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private IndexOutput offsets = new EndiannessReverserIndexOutput(new ByteBuffersIndexOutput(offsetsBuffer, "", "wrapper"));
-    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsets, BLOCKSIZE);
+    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
     private long currentOffset;
 
     private ByteBuffersDataOutput addressBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private IndexOutput address = new EndiannessReverserIndexOutput(new ByteBuffersIndexOutput(addressBuffer, "", "wrapper"));
-    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(address, BLOCKSIZE);
+    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
 
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
 

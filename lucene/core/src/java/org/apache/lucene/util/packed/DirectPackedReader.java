@@ -53,7 +53,7 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
       // round up bits to a multiple of 8 to find total bytes needed to read
       final int roundedBits = ((bitPos + bitsPerValue + 7) & ~7);
       // the number of extra bits read at the end to shift out
-      int shiftRightBits = roundedBits - bitPos - bitsPerValue;
+      int shiftRightBits = bitPos;//roundedBits - bitPos - bitsPerValue;
 
       long rawValue;
       switch (roundedBits >>> 3) {
@@ -64,19 +64,19 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
           rawValue = in.readShort();
           break;
         case 3:
-          rawValue = ((long)in.readShort() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long)in.readShort() & 0xFFFFL) | ((in.readByte() & 0xFFL) << 16);
           break;
         case 4:
           rawValue = in.readInt();
           break;
         case 5:
-          rawValue = ((long)in.readInt() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long)in.readInt() & 0xFFFFFFFFL) | ((in.readByte() & 0xFFL) << 32);
           break;
         case 6:
-          rawValue = ((long)in.readInt() << 16) | (in.readShort() & 0xFFFFL);
+          rawValue = ((long)in.readInt() & 0xFFFFFFFFL) | ((in.readShort() & 0xFFFFL) << 32);
           break;
         case 7:
-          rawValue = ((long)in.readInt() << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long)in.readInt() & 0xFFFFFFFFL) | ((in.readShort() & 0xFFFFL) << 32) | ((in.readByte() & 0xFFL) << 48);
           break;
         case 8:
           rawValue = in.readLong();
@@ -84,7 +84,7 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
         case 9:
           // We must be very careful not to shift out relevant bits. So we account for right shift
           // we would normally do on return here, and reset it.
-          rawValue = (in.readLong() << (8 - shiftRightBits)) | ((in.readByte() & 0xFFL) >>> shiftRightBits);
+          rawValue =  (in.readLong() >>> shiftRightBits ) | ((in.readByte() & 0xFFL) << (64 - shiftRightBits));
           shiftRightBits = 0;
           break;
         default:

@@ -40,7 +40,6 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.EndiannessReverserIndexOutput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -85,7 +84,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
-  private IndexOutput metaStream, vectorsStream, vectorsStreamWrapped;
+  private IndexOutput metaStream, vectorsStream;
 
   private final CompressionMode compressionMode;
   private final Compressor compressor;
@@ -236,8 +235,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
                                                      context);
       CodecUtil.writeIndexHeader(vectorsStream, formatName, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
-      
-      vectorsStreamWrapped = new EndiannessReverserIndexOutput(vectorsStream);
 
       indexWriter = new FieldsIndexWriter(directory, segment, segmentSuffix, VECTORS_INDEX_EXTENSION, VECTORS_INDEX_CODEC_NAME, si.getId(), blockShift, context);
 
@@ -265,7 +262,6 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     } finally {
       metaStream = null;
       vectorsStream = null;
-      vectorsStreamWrapped = null;
       indexWriter = null;
     }
   }
@@ -418,8 +414,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     if (numDistinctFields - 1 >= 0x07) {
       vectorsStream.writeVInt(numDistinctFields - 1 - 0x07);
     }
-    // PackedInts needs always the wrapped Index Output
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, fieldNums.size(), bitsRequired, 1);
+    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStream, PackedInts.Format.PACKED, fieldNums.size(), bitsRequired, 1);
     for (Integer fieldNum : fieldNums) {
       writer.add(fieldNum);
     }
@@ -435,7 +430,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
 
   private void flushFields(int totalFields, int[] fieldNums) throws IOException {
     // PackedInts needs always the wrapped Index Output
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, totalFields, PackedInts.bitsRequired(fieldNums.length - 1), 1);
+    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStream, PackedInts.Format.PACKED, totalFields, PackedInts.bitsRequired(fieldNums.length - 1), 1);
     for (DocData dd : pendingDocs) {
       for (FieldData fd : dd.fields) {
         final int fieldNumIndex = Arrays.binarySearch(fieldNums, fd.fieldNum);
@@ -468,8 +463,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     if (nonChangingFlags) {
       // write one flag per field num
       vectorsStream.writeVInt(0);
-      // PackedInts needs always the wrapped Index Output
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, fieldFlags.length, FLAGS_BITS, 1);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStream, PackedInts.Format.PACKED, fieldFlags.length, FLAGS_BITS, 1);
       for (int flags : fieldFlags) {
         assert flags >= 0;
         writer.add(flags);
@@ -479,8 +473,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     } else {
       // write one flag for every field instance
       vectorsStream.writeVInt(1);
-      // PackedInts needs always the wrapped Index Output
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, totalFields, FLAGS_BITS, 1);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStream, PackedInts.Format.PACKED, totalFields, FLAGS_BITS, 1);
       for (DocData dd : pendingDocs) {
         for (FieldData fd : dd.fields) {
           writer.add(fd.flags);
@@ -500,8 +493,8 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     }
     final int bitsRequired = PackedInts.bitsRequired(maxNumTerms);
     vectorsStream.writeVInt(bitsRequired);
-    // PackedInts needs always the wrapped Index Output
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(vectorsStreamWrapped, PackedInts.Format.PACKED, totalFields, bitsRequired, 1);
+    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(
+        vectorsStream, PackedInts.Format.PACKED, totalFields, bitsRequired, 1);
     for (DocData dd : pendingDocs) {
       for (FieldData fd : dd.fields) {
         writer.add(fd.numTerms);

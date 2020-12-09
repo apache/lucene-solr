@@ -69,18 +69,22 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, 
                                                      state.segmentSuffix, 
                                                      FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
-    final IndexInput in = state.directory.openInput(fileName, state.context);
+    IndexInput in = state.directory.openInput(fileName, state.context);
     
     boolean success = false;
 
     try {
       
-      CodecUtil.checkIndexHeader(in, FixedGapTermsIndexWriter.CODEC_NAME,
+      int version = CodecUtil.checkIndexHeader(in, FixedGapTermsIndexWriter.CODEC_NAME,
                                        FixedGapTermsIndexWriter.VERSION_CURRENT, 
                                        FixedGapTermsIndexWriter.VERSION_CURRENT,
                                        state.segmentInfo.getId(), state.segmentSuffix);
       
       CodecUtil.checksumEntireFile(in);
+      
+      if (version < FixedGapTermsIndexWriter.VERSION_LITTLE_ENDIAN) {
+        in = new EndiannessReverserIndexInput(in);
+      }
       
       indexInterval = in.readVInt();
       if (indexInterval < 1) {
@@ -234,7 +238,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
       this.termsStart = termsStart;
       termBytesStart = termBytes.getPointer();
       
-      IndexInput clone = new EndiannessReverserIndexInput(in.clone());
+      IndexInput clone = in.clone();
       clone.seek(indexStart);
       
       this.numIndexTerms = numIndexTerms;

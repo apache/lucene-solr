@@ -31,16 +31,16 @@ final class BulkOperationPacked24 extends BulkOperationPacked {
   public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
-      values[valuesOffset++] = (int) (block0 >>> 40);
-      values[valuesOffset++] = (int) ((block0 >>> 16) & 16777215L);
+      values[valuesOffset++] = (int) (block0 & 16777215L);
+      values[valuesOffset++] = (int) ((block0 >>> 24) & 16777215L);
       final long block1 = blocks[blocksOffset++];
-      values[valuesOffset++] = (int) (((block0 & 65535L) << 8) | (block1 >>> 56));
-      values[valuesOffset++] = (int) ((block1 >>> 32) & 16777215L);
+      values[valuesOffset++] = (int) (((block1 & 255L) << 16) | (block0 >>> 48));
       values[valuesOffset++] = (int) ((block1 >>> 8) & 16777215L);
+      values[valuesOffset++] = (int) ((block1 >>> 32) & 16777215L);
       final long block2 = blocks[blocksOffset++];
-      values[valuesOffset++] = (int) (((block1 & 255L) << 16) | (block2 >>> 48));
-      values[valuesOffset++] = (int) ((block2 >>> 24) & 16777215L);
-      values[valuesOffset++] = (int) (block2 & 16777215L);
+      values[valuesOffset++] = (int) (((block2 & 65535L) << 8) | (block1 >>> 56));
+      values[valuesOffset++] = (int) ((block2 >>> 16) & 16777215L);
+      values[valuesOffset++] = (int) ((block2 >>> 40) & 16777215L);
     }
   }
 
@@ -50,7 +50,7 @@ final class BulkOperationPacked24 extends BulkOperationPacked {
       final int byte0 = blocks[blocksOffset++] & 0xFF;
       final int byte1 = blocks[blocksOffset++] & 0xFF;
       final int byte2 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = (byte0 << 16) | (byte1 << 8) | byte2;
+      values[valuesOffset++] = (byte2 << 16) | (byte1 << 8) | byte0;
     }
   }
 
@@ -58,16 +58,16 @@ final class BulkOperationPacked24 extends BulkOperationPacked {
   public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
-      values[valuesOffset++] = block0 >>> 40;
-      values[valuesOffset++] = (block0 >>> 16) & 16777215L;
+      values[valuesOffset++] = (block0 & 16777215L);
+      values[valuesOffset++] = ((block0 >>> 24) & 16777215L);
       final long block1 = blocks[blocksOffset++];
-      values[valuesOffset++] = ((block0 & 65535L) << 8) | (block1 >>> 56);
-      values[valuesOffset++] = (block1 >>> 32) & 16777215L;
-      values[valuesOffset++] = (block1 >>> 8) & 16777215L;
+      values[valuesOffset++] = (((block1 & 255L) << 16) | (block0 >>> 48));
+      values[valuesOffset++] = ((block1 >>> 8) & 16777215L);
+      values[valuesOffset++] = ((block1 >>> 32) & 16777215L);
       final long block2 = blocks[blocksOffset++];
-      values[valuesOffset++] = ((block1 & 255L) << 16) | (block2 >>> 48);
-      values[valuesOffset++] = (block2 >>> 24) & 16777215L;
-      values[valuesOffset++] = block2 & 16777215L;
+      values[valuesOffset++] = (((block2 & 65535L) << 8) | (block1 >>> 56));
+      values[valuesOffset++] = ((block2 >>> 16) & 16777215L);
+      values[valuesOffset++] = ((block2 >>> 40) & 16777215L);
     }
   }
 
@@ -77,7 +77,7 @@ final class BulkOperationPacked24 extends BulkOperationPacked {
       final long byte0 = blocks[blocksOffset++] & 0xFF;
       final long byte1 = blocks[blocksOffset++] & 0xFF;
       final long byte2 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = (byte0 << 16) | (byte1 << 8) | byte2;
+      values[valuesOffset++] =  (byte2 << 16) | (byte1 << 8) | byte0;
     }
   }
 

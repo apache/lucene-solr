@@ -43,7 +43,6 @@ import org.apache.lucene.store.DataOutput;
  */
 public final class DirectWriter {
   final int bitsPerValue;
-  final int byteValueCount;
   final long numValues;
   final DataOutput output;
   
@@ -54,15 +53,14 @@ public final class DirectWriter {
   int off;
   final byte[] nextBlocks;
   final long[] nextValues;
-  //final BulkOperation encoder;
+  final BulkOperation encoder;
   final int iterations;
   
   DirectWriter(DataOutput output, long numValues, int bitsPerValue) {
     this.output = output;
     this.numValues = numValues;
     this.bitsPerValue = bitsPerValue;
-    BulkOperation encoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
-    byteValueCount = encoder.byteValueCount();  
+    encoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
     iterations = encoder.computeIterations((int) Math.min(numValues, Integer.MAX_VALUE), PackedInts.DEFAULT_BUFFER_SIZE);
     nextBlocks = new byte[iterations * encoder.byteBlockCount()];
     nextValues = new long[iterations * encoder.byteValueCount()];
@@ -83,42 +81,11 @@ public final class DirectWriter {
   }
   
   private void flush() throws IOException {
-    encode(nextValues, 0, nextBlocks, 0, iterations);
+    encoder.encode(nextValues, 0, nextBlocks, 0, iterations);
     final int blockCount = (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsPerValue);
     output.writeBytes(nextBlocks, blockCount);
     Arrays.fill(nextValues, 0L);
     off = 0;
-  }
-
-  private void encode(long[] values, int valuesOffset, byte[] blocks,
-                     int blocksOffset, int iterations) {
-    int nextBlock = 0;
-    int bitsLeft = 8;
-    for (int i = 0; i < byteValueCount * iterations; ++i) {
-      final long v = values[valuesOffset++];
-      assert PackedInts.unsignedBitsRequired(v) <= bitsPerValue;
-      if (bitsPerValue < bitsLeft) {
-        // just buffer
-        nextBlock |= v << (8 - bitsLeft);
-        bitsLeft -= bitsPerValue;
-      } else {
-        // flush as many blocks as possible
-        long mask = ((1L << bitsLeft) - 1);
-        blocks[blocksOffset++] = (byte) (nextBlock | ((v & mask) << (8 - bitsLeft)));
-        int pos = bitsLeft;
-        while (pos <= bitsPerValue - 8) {
-          mask = ((1L << 8) - 1) << pos;
-          blocks[blocksOffset++] = (byte) ((v & mask) >> pos);
-          pos += 8;
-        }
-        // then buffer
-        int bits = bitsPerValue - pos;
-        mask = ((1L << bits) - 1) << pos;
-        nextBlock = (int) (((v & mask) >> pos));
-        bitsLeft = 8 - bits;
-      }
-    }
-    assert bitsLeft == 8;
   }
 
   /** finishes writing */

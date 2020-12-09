@@ -95,7 +95,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private CompressingTermVectorsReader(CompressingTermVectorsReader reader) {
     this.fieldInfos = reader.fieldInfos;
     this.vectorsStream = reader.vectorsStream.clone();
-    this.vectorsStreamWrapped = new EndiannessReverserIndexInput(vectorsStream);
+    this.vectorsStreamWrapped = reader.version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(vectorsStream) : vectorsStream;
     this.indexReader = reader.indexReader.clone();
     this.packedIntsVersion = reader.packedIntsVersion;
     this.compressionMode = reader.compressionMode;
@@ -126,7 +126,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       vectorsStream = d.openInput(vectorsStreamFN, context);
       version = CodecUtil.checkIndexHeader(vectorsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
-      vectorsStreamWrapped = new EndiannessReverserIndexInput(vectorsStream);  
+      vectorsStreamWrapped = version < VERSION_LITTLE_ENDIAN ? new EndiannessReverserIndexInput(vectorsStream) : vectorsStream;  
       if (version >= VERSION_OFFHEAP_INDEX) {
         final String metaStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
         metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
