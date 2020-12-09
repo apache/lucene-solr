@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -28,6 +30,7 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -190,6 +193,9 @@ public class RequestUtil {
       }
     }
 
+    List<SearchComponent> components = ((SearchHandler) handler).getComponents();
+    Set<String> pluginJsonKeys = components.stream().map(c -> c.getJsonKey()).filter(c -> c != null).collect(Collectors.toSet());
+
     // implement compat for existing components...
     JsonQueryConverter jsonQueryConverter = new JsonQueryConverter();
 
@@ -231,7 +237,7 @@ public class RequestUtil {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Expected Map for 'queries', received " + queriesJsonObj);
           }
-        } else if ("params".equals(key) || "facet".equals(key) ) {
+        } else if ("params".equals(key) || "facet".equals(key) || pluginJsonKeys.contains(key)) {
           // handled elsewhere
           continue;
         } else {
