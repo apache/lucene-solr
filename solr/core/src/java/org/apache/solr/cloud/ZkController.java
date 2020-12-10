@@ -745,14 +745,14 @@ public class ZkController implements Closeable {
       String leader = cd.getCloudDescriptor().getCoreNodeName();
 
       ZkShardTerms terms = getShardTerms(collection, shardId);
+      terms.startRecovering(leader);
       terms.ensureTermsIsHigher(leader, Collections.singleton(leader));
 
       ContextKey key = new ContextKey(collection, leader);
       ElectionContext context = electionContexts.get(key);
       LeaderElector elector = ((ShardLeaderElectionContextBase) context).getLeaderElector();
       try {
-          // ??? we need this in a separate thread?
-        log.warn("Leader {} met tragic exception, give up its leadership", key, tragicException);
+        log.warn("Leader {} met tragic exception, give up its leadership", key);
         elector.retryElection(context, false);
       } catch (KeeperException | InterruptedException | IOException e) {
         SolrZkClient.checkInterrupted(e);

@@ -103,7 +103,7 @@ public class ShardTerms implements MapWriter {
         if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
           saveChanges = true; // if we don't skip anybody, then there's no reason to increment
         } else {
-          entry.setValue(leaderTerm+1);
+          entry.setValue(leaderTerm + 1);
         }
       }
     }

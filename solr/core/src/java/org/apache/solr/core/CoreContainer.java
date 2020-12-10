@@ -2156,6 +2156,9 @@ public class CoreContainer {
     Throwable tragicException;
     try {
       tragicException = solrCore.getSolrCoreState().getTragicException();
+
+      // we open a new IndexWriter to pick up the latest config
+      solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // rollback = true?
     } catch (IOException e) {
       // failed to open an indexWriter
       tragicException = e;

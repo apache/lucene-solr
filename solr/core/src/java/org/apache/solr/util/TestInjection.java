@@ -176,6 +176,7 @@ public class TestInjection {
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
+    leaderTragedy = null;
     nonExistentCoreExceptionAfterUnload = null;
     updateLogReplayRandomPause = null;
     updateRandomPause = null;

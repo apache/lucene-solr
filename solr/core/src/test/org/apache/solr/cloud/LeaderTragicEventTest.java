@@ -18,18 +18,25 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.util.TestInjection;
 import org.hamcrest.MatcherAssert;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -43,8 +50,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 
 public class LeaderTragicEventTest extends SolrCloudTestCase {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private String collection;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -53,36 +61,55 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @Test
-  public void test() throws Exception {
-    final String collection = "collection1";
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    collection = getSaferTestName();
     cluster.getSolrClient().setDefaultCollection(collection);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+  }
+
+  @Test
+  public void testLeaderFailsOver() throws Exception {
     CollectionAdminRequest
         .createCollection(collection, "config", 1, 2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 1, 2);
-    try {
-      Replica oldLeader = corruptLeader(collection);
 
-      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
-        Slice slice = collectionState.getSlice("shard1");
+    UpdateResponse updateResponse = new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), null);
+    assertEquals(0, updateResponse.getStatus());
 
-        if (slice.getReplicas().size() != 2) return false;
-        if (slice.getLeader() == null) return false;
-        if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
+    Replica oldLeader = corruptLeader(collection);
 
-        return true;
-      });
-      ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
-      Slice shard = getCollectionState(collection).getSlice("shard1");
-      assertNotEquals("Old leader should not be leader again", oldLeader.getNodeName(), shard.getLeader().getNodeName());
-      assertEquals("Old leader should be a follower", oldLeader.getNodeName(), getNonLeader(shard).getNodeName());
-    } finally {
-      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+    waitForState("Now waiting for new replica to become leader", collection, (liveNodes, collectionState) -> {
+      Slice slice = collectionState.getSlice("shard1");
+
+      if (slice.getReplicas().size() != 2) return false;
+      if (slice.getLeader() == null) return false;
+      if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
+
+      return true;
+    });
+    ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+    Slice shard = getCollectionState(collection).getSlice("shard1");
+    assertNotEquals("Old leader should not be leader again", oldLeader.getNodeName(), shard.getLeader().getNodeName());
+    assertEquals("Old leader should be a follower", oldLeader.getNodeName(), getNonLeader(shard).getNodeName());
+
+    // Check that we can continue indexing after this
+    updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), null);
+    assertEquals(0, updateResponse.getStatus());
+    try (SolrClient followerClient = new HttpSolrClient.Builder(oldLeader.getCoreUrl()).build()) {
+      QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);
+      assertEquals(queryResponse.getResults().toString(), 2, queryResponse.getResults().getNumFound());
     }
   }
 
-  private Replica corruptLeader(String collection) throws IOException {
+  private Replica corruptLeader(String collection) throws IOException, SolrServerException {
     try {
       TestInjection.leaderTragedy = "true:100";
 
@@ -91,15 +118,14 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       log.info("Will crash leader : {}", oldLeader);
 
       try (HttpSolrClient solrClient = new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
-        new UpdateRequest().add("id", "1").commit(solrClient, null);
+        new UpdateRequest().add("id", "99").commit(solrClient, null);
         fail("Should have injected tragedy");
       } catch (RemoteSolrException e) {
         // solrClient.add would throw RemoteSolrException with code 500
         // or 404 if the bad replica has already been deleted
         MatcherAssert.assertThat(e.code(), anyOf(is(500), is(404)));
-      } catch (SolrServerException e) {
+      } catch (AlreadyClosedException e) {
         // If giving up leadership, might be already closed/closing
-        MatcherAssert.assertThat("Unexpected Exception", e, instanceOf(AlreadyClosedException.class));
       }
 
       return oldLeader;
@@ -115,8 +141,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
   @Test
   public void testOtherReplicasAreNotActive() throws Exception {
-    final String collection = "collection2";
-    cluster.getSolrClient().setDefaultCollection(collection);
     int numReplicas = random().nextInt(2) + 1;
     // won't do anything if leader is the only one active replica in the shard
     CollectionAdminRequest
@@ -124,7 +148,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 1, numReplicas);
 
-    try {
       JettySolrRunner otherReplicaJetty = null;
       if (numReplicas == 2) {
         Slice shard = getCollectionState(collection).getSlice("shard1");
@@ -146,9 +169,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
       Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
       assertEquals(leader.getName(), oldLeader.getName());
-    } finally {
-      CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
-    }
   }
 
 

@@ -191,7 +191,7 @@ public class ZkShardTerms implements AutoCloseable{
     ShardTerms newTerms;
     while ( (newTerms = terms.get().removeTerm(coreNodeName)) != null) {
       try {
-        if (saveTerms(newTerms)) return false;
+        if (saveTerms(newTerms, "removeTerm")) return false;
       } catch (KeeperException.NoNodeException e) {
         return true;
       }
@@ -258,8 +258,10 @@ public class ZkShardTerms implements AutoCloseable{
    */
   private void mutate(Function<ShardTerms, ShardTerms> action) {
     ShardTerms newTerms;
+    String caller = StackWalker.getInstance().walk(s ->
+            s.skip(1).findFirst().map(StackWalker.StackFrame::getMethodName).orElse("(unknown)"));
     while ((newTerms = action.apply(terms.get())) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms, caller)) break;
     }
   }
 
@@ -285,9 +287,9 @@ public class ZkShardTerms implements AutoCloseable{
    * @param newTerms to be set
    * @return true if terms is saved successfully to ZK, false if otherwise
    */
-  private boolean forceSaveTerms(ShardTerms newTerms) {
+  private boolean forceSaveTerms(ShardTerms newTerms, String action) {
     try {
-      return saveTerms(newTerms);
+      return saveTerms(newTerms, action);
     } catch (KeeperException.NoNodeException e) {
       ensureTermNodeExist();
       return false;
@@ -300,12 +302,12 @@ public class ZkShardTerms implements AutoCloseable{
    * @return true if terms is saved successfully to ZK, false if otherwise
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
-  private boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
+  private boolean saveTerms(ShardTerms newTerms, String action) throws KeeperException.NoNodeException {
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
       setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
-      log.info("Successful update of terms at {} to {}", znodePath, newTerms);
+      log.info("Successful update of terms at {} to {} for {}", znodePath, newTerms, action);
       return true;
     } catch (KeeperException.BadVersionException e) {
       log.info("Failed to save terms, version is not a match, retrying");
