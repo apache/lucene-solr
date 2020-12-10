@@ -184,8 +184,11 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
       this.minX = encodeLongitudeCeil(minLon);
       this.maxX = encodeLongitude(maxLon);
-      this.minY  = encodeLatitudeCeil(minLat);
+      int minY  = encodeLatitudeCeil(minLat);
       this.maxY = encodeLatitude(maxLat);
+      // encodeLatitudeCeil may cause minY to be > maxY iff
+      // the delta between the longitude < the encoding resolution
+      this.minY = minY > maxY ? maxY : minY;
       this.crossesDateline = minLon > maxLon;
       if (this.crossesDateline) {
         // crossing dateline is split into east/west boxes
