@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
+import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
 import org.apache.solr.common.util.Pair;
 import org.junit.Assert;
 
@@ -91,6 +92,7 @@ public class Builders {
       Map<Node, Long> nodeToFreeDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
       Map<String, Map<Node, Double>> metrics = new HashMap<>();
+      Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
 
       // TODO And a few more missing and will be added...
 
@@ -119,7 +121,12 @@ public class Builders {
         }
       }
 
-      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk, Map.of(), Map.of(), Map.of(), sysprops, metrics);
+      collectionBuilders.forEach(builder -> {
+        collectionMetrics.put(builder.collectionName, builder.collectionMetricsBuilder.build());
+      });
+
+      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk,
+          Map.of(), Map.of(), Map.of(), sysprops, metrics, collectionMetrics);
       return new AttributeFetcherForTest(attributeValues);
     }
   }
@@ -129,6 +136,7 @@ public class Builders {
     private LinkedList<ShardBuilder> shardBuilders = new LinkedList<>();
     private Map<String, String> customProperties = new HashMap<>();
     int replicaNumber = 0; // global replica numbering for the collection
+    private CollectionMetricsBuilder collectionMetricsBuilder = new CollectionMetricsBuilder();
 
     public CollectionBuilder(String collectionName) {
       this.collectionName = collectionName;
@@ -137,6 +145,10 @@ public class Builders {
     public CollectionBuilder addCustomProperty(String name, String value) {
       customProperties.put(name, value);
       return this;
+    }
+
+    public CollectionMetricsBuilder getCollectionMetricsBuilder() {
+      return collectionMetricsBuilder;
     }
 
     /**

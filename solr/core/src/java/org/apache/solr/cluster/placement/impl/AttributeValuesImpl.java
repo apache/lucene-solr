@@ -32,8 +32,12 @@ public class AttributeValuesImpl implements AttributeValues {
   final Map<Node, Long> nodeToTotalDisk;
   final Map<Node, Double> nodeToHeapUsage;
   final Map<Node, Double> nodeToSystemLoadAverage;
+  // sysprop name / node -> value
   final Map<String, Map<Node, String>> syspropSnitchToNodeToValue;
+  // metricName / node -> value
   final Map<String, Map<Node, Double>> metricSnitchToNodeToValue;
+  // collection / shard / replica / metricName -> value
+  final Map<String, CollectionMetrics> collectionMetrics;
 
   public AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
                              Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType,
@@ -42,7 +46,8 @@ public class AttributeValuesImpl implements AttributeValues {
                              Map<Node, Double> nodeToHeapUsage,
                              Map<Node, Double> nodeToSystemLoadAverage,
                              Map<String, Map<Node, String>> syspropSnitchToNodeToValue,
-                             Map<String, Map<Node, Double>> metricSnitchToNodeToValue) {
+                             Map<String, Map<Node, Double>> metricSnitchToNodeToValue,
+                             Map<String, CollectionMetrics> collectionMetrics) {
     this.nodeToCoreCount = nodeToCoreCount;
     this.nodeToDiskType = nodeToDiskType;
     this.nodeToFreeDisk = nodeToFreeDisk;
@@ -51,6 +56,7 @@ public class AttributeValuesImpl implements AttributeValues {
     this.nodeToSystemLoadAverage = nodeToSystemLoadAverage;
     this.syspropSnitchToNodeToValue = syspropSnitchToNodeToValue;
     this.metricSnitchToNodeToValue = metricSnitchToNodeToValue;
+    this.collectionMetrics = collectionMetrics;
   }
 
   @Override
@@ -115,7 +121,11 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<CollectionMetrics> getCollectionMetrics(String collectionName) {
-    // TODO implement
-    return Optional.empty();
+    CollectionMetrics metrics = collectionMetrics.get(collectionName);
+    if (metrics == null) {
+      return Optional.empty();
+    } else {
+      return Optional.of(metrics);
+    }
   }
 }
