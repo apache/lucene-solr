@@ -702,7 +702,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             }
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
           } catch (Exception e) {
-            log.error("Could not publish as ACTIVE after succesful recovery", e);
+            log.error("Could not publish as ACTIVE after successful recovery", e);
             successfulRecovery = false;
           }
 

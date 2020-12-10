@@ -741,12 +741,7 @@ public class ZkController implements Closeable {
     // at least the leader still be able to search, we should give up leadership if other replicas can take over
     if (numActiveReplicas >= 2) {
       String collection = cd.getCollectionName();
-      String shardId = cd.getCloudDescriptor().getShardId();
       String leader = cd.getCloudDescriptor().getCoreNodeName();
-
-      ZkShardTerms terms = getShardTerms(collection, shardId);
-      terms.startRecovering(leader);
-      terms.ensureTermsIsHigher(leader, Collections.singleton(leader));
 
       ContextKey key = new ContextKey(collection, leader);
       ElectionContext context = electionContexts.get(key);

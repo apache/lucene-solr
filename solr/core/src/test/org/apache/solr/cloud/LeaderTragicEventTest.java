@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 
 public class LeaderTragicEventTest extends SolrCloudTestCase {
