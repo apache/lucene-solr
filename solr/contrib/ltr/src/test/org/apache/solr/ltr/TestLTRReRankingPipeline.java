@@ -57,8 +57,6 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
-
   private IndexSearcher getSearcher(IndexReader r) {
     // 'yes' to maybe wrapping in general
     final boolean maybeWrap = true;
@@ -71,18 +69,18 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
   }
 
   private static List<Feature> makeFieldValueFeatures(int[] featureIds,
-      String field) {
+      String field) throws IOException {
     final List<Feature> features = new ArrayList<>();
-    for (final int i : featureIds) {
-      final Map<String,Object> params = new HashMap<String,Object>();
-      params.put("field", field);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getName(),
-          "f" + i, params);
-      f.setIndex(i);
-      features.add(f);
+    try ( SolrResourceLoader solrResourceLoader = new SolrResourceLoader()) {
+      for (final int i : featureIds) {
+        final Map<String,Object> params = new HashMap<String,Object>();
+        params.put("field", field);
+        final Feature f = Feature.getInstance(solrResourceLoader, FieldValueFeature.class.getName(), "f" + i, params);
+        f.setIndex(i);
+        features.add(f);
+      }
+      return features;
     }
-    return features;
   }
 
   private static class MockModel extends LTRScoringModel {

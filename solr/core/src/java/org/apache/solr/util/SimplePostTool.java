@@ -62,8 +62,9 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import net.sf.saxon.Configuration;
+import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -185,6 +186,11 @@ public class SimplePostTool {
       t.execute();
     }
   }
+
+  Configuration conf = Configuration.newConfiguration();
+
+  public final XPathFactoryImpl xpathFactory;
+
 
   /**
    * After initialization, call execute to start the post job.
@@ -321,9 +327,18 @@ public class SimplePostTool {
     this.optimize = optimize;
     this.args = args;
     pageFetcher = new PageFetcher();
+    conf.setValidation(false);
+    conf.setXIncludeAware(true);
+    conf.setExpandAttributeDefaults(true);
+    xpathFactory = new XPathFactoryImpl(conf);
   }
 
-  public SimplePostTool() {}
+  public SimplePostTool() {
+    conf.setValidation(false);
+    conf.setXIncludeAware(true);
+    conf.setExpandAttributeDefaults(true);
+    xpathFactory = new XPathFactoryImpl(conf);
+  }
 
   //
   // Do some action depending on which mode we have
@@ -1055,8 +1070,7 @@ public class SimplePostTool {
   /**
    * Gets all nodes matching an XPath
    */
-  public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
-    XPath xp = XmlConfigFile.getXpath();
+  public static NodeList getNodesFromXP(XPath xp, Node n, String xpath) throws XPathExpressionException {
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }
@@ -1067,9 +1081,9 @@ public class SimplePostTool {
    * @param xpath the xpath string
    * @param concatAll if true, text from all matching nodes will be concatenated, else only the first returned
    */
-  public static String getXP(Node n, String xpath, boolean concatAll)
+  public static String getXP(XPath xp, Node n, String xpath, boolean concatAll)
       throws XPathExpressionException {
-    NodeList nodes = getNodesFromXP(n, xpath);
+    NodeList nodes = getNodesFromXP(xp, n, xpath);
     StringBuilder sb = new StringBuilder();
     if (nodes.getLength() > 0) {
       for(int i = 0; i < nodes.getLength() ; i++) {
@@ -1259,9 +1273,10 @@ public class SimplePostTool {
         boolean success = postData(is, null, os, type, extractUrl);
         if(success) {
           Document d = makeDom(os.toByteArray());
-          String innerXml = getXP(d, "/response/str/text()[1]", false);
+          XPath xpath = xpathFactory.newXPath();
+          String innerXml = getXP(xpath, d, "/response/str/text()[1]", false);
           d = makeDom(innerXml.getBytes(StandardCharsets.UTF_8));
-          NodeList links = getNodesFromXP(d, "/html/body//a/@href");
+          NodeList links = getNodesFromXP(xpath, d, "/html/body//a/@href");
           for(int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();
             link = computeFullUrl(u, link);

@@ -85,7 +85,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 //    if (closeLock) {
 //      throw new IllegalCallerException();
 //    }
-    assert closeTracker.close();
+   // assert closeTracker.close();
     assert ObjectReleaseTracker.release(this);
     this.shutdown = true;
   }
@@ -133,7 +133,7 @@ public class PerThreadExecService extends AbstractExecutorService {
   public void execute(Runnable runnable) {
 
     if (shutdown) {
-      throw new RejectedExecutionException(closeTracker.getCloseStack());
+      throw new RejectedExecutionException();
     }
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask && !((ParWork.SolrFutureTask) runnable).isCallerThreadAllowed()) {
@@ -145,7 +145,7 @@ public class PerThreadExecService extends AbstractExecutorService {
         }
       }
       try {
-        service.execute(() -> {
+        service.submit(() -> {
           runIt(runnable, noCallerRunsAvailableLimit, false);
           if (noCallerRunsAvailableLimit) {
             available.release();

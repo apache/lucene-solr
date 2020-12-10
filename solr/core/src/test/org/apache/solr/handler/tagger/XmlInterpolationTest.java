@@ -40,31 +40,30 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 
 public class XmlInterpolationTest extends TaggerTestCase {
 
-  private static DocumentBuilder xmlDocBuilder;
+  private DocumentBuilder xmlDocBuilder;
 
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    xmlDocBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
-
-    initCore("solrconfig-tagger.xml", "schema-tagger.xml");
-  }
-
-  @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
-    xmlDocBuilder = null;
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    xmlDocBuilder = FieldTypeXmlAdapter.getDocumentBuilder();
+
+    initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+
     baseParams.set("field", "name_tagXml");
     baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
     baseParams.set("xmlOffsetAdjust", "true");

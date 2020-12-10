@@ -17,22 +17,6 @@
 
 package org.apache.solr;
 
-import java.io.File;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -45,16 +29,18 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.io.Lang;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.PerThreadExecService;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
@@ -67,6 +53,7 @@ import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestInjection;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -79,6 +66,28 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
@@ -114,19 +123,22 @@ public class SolrTestCase extends LuceneTestCase {
    * @see #afterSolrTestCase()
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
   @ClassRule
-  public static TestRule solrClassRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule())
-             .around(new RevertDefaultThreadHandlerRule());
+  public static TestRule solrClassRules =
+      RuleChain.outerRule(new SystemPropertiesRestoreRule())
+          .around(new RevertDefaultThreadHandlerRule());
+
+  @Rule
+  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule())
+      .around(new RevertDefaultThreadHandlerRule());
 
   private static volatile Random random;
 
-  private static volatile boolean failed = false;
+  protected volatile static ParWorkExecutor testExecutor;
 
-  protected volatile static PerThreadExecService testExecutor;
-
-  private static final CryptoKeys.RSAKeyPair reusedKeys = getRsaKeyPair();
+  private static volatile CryptoKeys.RSAKeyPair reusedKeys;
 
   private static CryptoKeys.RSAKeyPair getRsaKeyPair() {
     String publicKey = System.getProperty("pkiHandlerPublicKeyPath");
@@ -144,7 +156,10 @@ public class SolrTestCase extends LuceneTestCase {
     return new CryptoKeys.RSAKeyPair();
   }
 
-  public static void enableReuseOfCryptoKeys() {
+  public static synchronized void enableReuseOfCryptoKeys() {
+    if (reusedKeys == null) {
+      reusedKeys = getRsaKeyPair();
+    }
     PublicKeyHandler.REUSABLE_KEYPAIR = reusedKeys;
   }
 
@@ -152,10 +167,6 @@ public class SolrTestCase extends LuceneTestCase {
     PublicKeyHandler.REUSABLE_KEYPAIR = null;
   }
 
-
-  @Rule
-  public TestRule solrTestRules =
-          RuleChain.outerRule(new SystemPropertiesRestoreRule()).around(new SolrTestWatcher());
 
   /**
    * Annotation for test classes that want to disable SSL
@@ -194,7 +205,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   public static final int DEFAULT_ZK_SESSION_TIMEOUT = 30000;  // default socket connection timeout in ms
   public static final int DEFAULT_CONNECTION_TIMEOUT = 10000;  // default socket connection timeout in ms
-  public static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 15000;
+  public static final int DEFAULT_SOCKET_TIMEOUT_MILLIS = 30000;
 
   private static final int SOLR_TEST_TIMEOUT = Integer.getInteger("solr.test.timeout", 25);
 
@@ -204,7 +215,7 @@ public class SolrTestCase extends LuceneTestCase {
   // thread will read the latest value
   protected static volatile SSLTestConfig sslConfig;
 
-  private volatile static String interuptThreadWithNameContains;
+  private final static Set<String> interuptThreadWithNameContains = ConcurrentHashMap.newKeySet();
 
   public static Random random() {
     return random;
@@ -226,6 +237,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     System.setProperty("org.eclipse.jetty.util.log.class", "org.apache.logging.log4j.appserver.jetty.Log4j2Logger");
 
+    interruptThreadsOnTearDown(false, "SessionTracker");
 
     if (!SysStats.getSysStats().isAlive()) {
       SysStats.reStartSysStats();
@@ -237,10 +249,11 @@ public class SolrTestCase extends LuceneTestCase {
     testStartTime = System.nanoTime();
 
 
-    testExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), 60, true, false);
-    ((PerThreadExecService) testExecutor).closeLock(true);
 
-    interruptThreadsOnTearDown("RootExec", false);
+    testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecytir", 10, 100, 500, new BlockingArrayQueue(30));
+    ((ParWorkExecutor) testExecutor).enableCloseLock();
+
+    interruptThreadsOnTearDown(false,"-SendThread"); // zookeeper send thread that can pause in ClientCnxnSocketNIO#cleanup
 
     sslConfig = buildSSLConfig();
     if (sslConfig != null && sslConfig.isSSLMode()) {
@@ -255,7 +268,7 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("urlScheme", "http");
     }
 
-
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
     System.setProperty("zookeeper.forceSync", "no");
@@ -264,14 +277,14 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
-    enableReuseOfCryptoKeys();
+    //enableReuseOfCryptoKeys();
 
     if (!TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
-
-
+      disableReuseOfCryptoKeys();
+      System.setProperty("solr.enablePublicKeyHandler", "false");
       System.setProperty("solr.zkregister.leaderwait", "3000");
       System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "10000");
@@ -309,10 +322,10 @@ public class SolrTestCase extends LuceneTestCase {
       // nocommit - not used again yet
       // System.setProperty("solr.OverseerStateUpdateDelay", "0");
 
-      System.setProperty("solr.disableMetricsHistoryHandler", "true");
+      System.setProperty("solr.enableMetrics", "false");
 
-      System.setProperty("solr.leaderThrottle", "1000");
-      System.setProperty("solr.recoveryThrottle", "1000");
+//      System.setProperty("solr.leaderThrottle", "1000");
+//      System.setProperty("solr.recoveryThrottle", "1000");
 
       System.setProperty("solr.suppressDefaultConfigBootstrap", "true");
 
@@ -329,9 +342,13 @@ public class SolrTestCase extends LuceneTestCase {
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "8");
-      System.setProperty("solr.rootSharedThreadPoolCoreSize", "10");
+      System.setProperty("solr.rootSharedThreadPoolCoreSize", "100");
       System.setProperty("solr.minHttp2ClientThreads", "6");
+
       System.setProperty("solr.containerThreadsIdleTimeout", "1000");
+      System.setProperty("solr.containerThreadsIdle", "1000");
+
+
       System.setProperty("solr.tests.maxBufferedDocs", "1000000");
       System.setProperty("solr.tests.ramPerThreadHardLimitMB", "90");
 
@@ -339,25 +356,25 @@ public class SolrTestCase extends LuceneTestCase {
 
       System.setProperty("solr.http2solrclient.default.idletimeout", "15000");
       System.setProperty("distribUpdateSoTimeout", "15000");
-      System.setProperty("socketTimeout", "10000");
-      System.setProperty("connTimeout", "10000");
-      System.setProperty("solr.test.socketTimeout.default", "10000");
+      System.setProperty("socketTimeout", "30000");
+      System.setProperty("connTimeout", "30000");
+      System.setProperty("solr.test.socketTimeout.default", "30000");
       System.setProperty("solr.connect_timeout.default", "10000");
       System.setProperty("solr.so_commit_timeout.default", "15000");
       System.setProperty("solr.httpclient.defaultConnectTimeout", "10000");
-      System.setProperty("solr.httpclient.defaultSoTimeout", "10000");
-      System.setProperty("solr.containerThreadsIdle", "60000");
+      System.setProperty("solr.httpclient.defaultSoTimeout", "30000");
 
-      System.setProperty("solr.indexfetcher.sotimeout", "5000");
-      System.setProperty("solr.indexfetch.so_timeout.default", "5000");
+
+      System.setProperty("solr.indexfetcher.sotimeout", "30000");
+      System.setProperty("solr.indexfetch.so_timeout.default", "30000");
 
       System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
       System.setProperty("leaderVoteWait", "2500"); // this is also apparently controlling how long we wait for a leader on register nocommit
       System.setProperty("leaderConflictResolveWait", "10000");
 
-      System.setProperty("solr.recovery.recoveryThrottle", "500");
-      System.setProperty("solr.recovery.leaderThrottle", "100");
+      System.setProperty("solr.recovery.recoveryThrottle", "0");
+      System.setProperty("solr.recovery.leaderThrottle", "0");
 
       System.setProperty("bucketVersionLockTimeoutMs", "8000");
       System.setProperty("socketTimeout", "15000");
@@ -407,6 +424,14 @@ public class SolrTestCase extends LuceneTestCase {
                "for tests to run properly",
                SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
     }
+
+    // preinit static
+    Lang.register(new DefaultStreamFactory(){
+      public void setFunctionNames(Map<String,Supplier<Class<? extends Expressible>>> functionNames) {
+
+      }
+    });
+
     log.info("@BeforeClass end ------------------------------------------------------");
     log.info("*******************************************************************");
   }
@@ -496,11 +521,6 @@ public class SolrTestCase extends LuceneTestCase {
         throw lastIllegalCallerEx;
       }
 
-      if (testExecutor != null) {
-        testExecutor.closeLock(false);
-        ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
-      }
-
       String object = null;
       // if the tests passed, make sure everything was closed / released
       if (RandomizedTest.getContext().getTargetClass().isAnnotationPresent(SuppressObjectReleaseTracker.class)) {
@@ -512,7 +532,11 @@ public class SolrTestCase extends LuceneTestCase {
       ObjectReleaseTracker.clear();
       assertNull(orr, orr);
 
-      ParWork.shutdownRootSharedExec();
+      if (testExecutor != null) {
+        ParWork.shutdownParWorkExecutor(testExecutor, true);
+        testExecutor = null;
+      }
+      ParWork.shutdownParWorkExecutor();
 
     } finally {
       ObjectReleaseTracker.clear();
@@ -523,8 +547,12 @@ public class SolrTestCase extends LuceneTestCase {
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
 
+      random = null;
+      reusedKeys = null;
+      sslConfig = null;
+
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
-      if (!failed && !TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
+      if (!TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
         log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: {}"
                , testTime);
 //          fail(
@@ -532,7 +560,7 @@ public class SolrTestCase extends LuceneTestCase {
 //                  + testTime);
       }
     } finally {
-      System.clearProperty("enable.update.log");
+
       Class<? extends Object> clazz = null;
       Long tooLongTime = 0L;
       String times = null;
@@ -566,6 +594,7 @@ public class SolrTestCase extends LuceneTestCase {
     StartupLoggingUtils.shutdown();
 
     checkForInterruptRequest();
+    interuptThreadWithNameContains.clear();
   }
 
   private static SSLTestConfig buildSSLConfig() {
@@ -596,11 +625,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static void checkForInterruptRequest() {
     try {
-      String interruptThread = interuptThreadWithNameContains;
-
-        interruptThreadsOnTearDown(interruptThread, true);
-        interuptThreadWithNameContains = null;
-
+      interruptThreadsOnTearDown(true, interuptThreadWithNameContains.toArray(EMPTY_STRING_ARRAY));
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       log.error("", e);
@@ -609,12 +634,12 @@ public class SolrTestCase extends LuceneTestCase {
 
 
   // expert - for special cases
-  public static void interruptThreadsOnTearDown(String nameContains, boolean now) {
+  public static void interruptThreadsOnTearDown(boolean now, String... nameContains) {
     if (!now) {
-      interuptThreadWithNameContains = nameContains;
+      interuptThreadWithNameContains.addAll(Arrays.asList(nameContains));
       return;
     }
-
+    log.info("Checking leaked threads after test");
    // System.out.println("DO FORCED INTTERUPTS");
     //  we need to filter and only do this for known threads? dont want users to count on this behavior unless necessary
     String testThread = Thread.currentThread().getName();
@@ -622,27 +647,36 @@ public class SolrTestCase extends LuceneTestCase {
     ThreadGroup tg = Thread.currentThread().getThreadGroup();
   //  System.out.println("test group:" + tg.getName());
     Set<Map.Entry<Thread,StackTraceElement[]>> threadSet = Thread.getAllStackTraces().entrySet();
-  //  System.out.println("thread count: " + threadSet.size());
+    log.info("thread count: " + threadSet.size());
+    List<Thread> waitThreads = new ArrayList<>();
     for (Map.Entry<Thread,StackTraceElement[]> threadEntry : threadSet) {
       Thread thread = threadEntry.getKey();
       ThreadGroup threadGroup = thread.getThreadGroup();
       if (threadGroup != null) {
-    //    System.out.println("thread is " + thread.getName());
-        if (threadGroup.getName().equals(tg.getName()) && !thread.getName().startsWith("SUITE")) {
-          interrupt(thread, nameContains);
-          continue;
+        System.out.println("thread is " + thread.getName());
+        if (threadGroup.getName().equals(tg.getName()) && !(thread.getName().startsWith("SUITE") && thread.getName().endsWith("]"))) {
+          if (interrupt(thread, nameContains)) {
+            waitThreads.add(thread);
+          }
         }
       }
 
-      while (threadGroup != null && threadGroup.getParent() != null && !thread.getName().startsWith("SUITE")) {
+      while (threadGroup != null && threadGroup.getParent() != null && !(thread.getName().startsWith("SUITE") && thread.getName().endsWith("]"))) {
         threadGroup = threadGroup.getParent();
-        if (thread.getState().equals(Thread.State.TERMINATED) || nameContains != null && threadGroup.getName().equals(tg.getName())) {
-        //  System.out.println("thread is " + thread.getName());
-          interrupt(thread, nameContains);
-          continue;
+        //if (thread.getState().equals(Thread.State.TERMINATED) || nameContains != null && threadGroup.getName().equals(tg.getName())) {
+        if (threadGroup.getName().equals(tg.getName())) {
+          System.out.println("thread is " + thread.getName());
+          if (interrupt(thread, nameContains)) {
+            waitThreads.add(thread);
+          }
         }
       }
     }
+    for (Thread thread : waitThreads) {
+      wait(thread);
+    }
+
+    waitThreads.clear();
   }
 
 
@@ -650,21 +684,49 @@ public class SolrTestCase extends LuceneTestCase {
     return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
   }
 
-  private static void interrupt(Thread thread, String nameContains) {
-    if ((nameContains != null && thread.getName().contains(nameContains)) || (interuptThreadWithNameContains != null && thread.getName().contains(interuptThreadWithNameContains)) ) {
-      if (thread.getState() == Thread.State.TERMINATED || thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.BLOCKED || thread.getState() == Thread.State.RUNNABLE) { // adding RUNNABLE, BLOCKED, WAITING is not ideal, but we can be in
-        // processWorkerExit in this state - ideally we would check also we are in an exit or terminate method if !TERMINATED
-        log.warn("interrupt on " + thread.getName());
-        thread.interrupt();
-        try {
-          thread.join(250);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-        }
-      } else {
-        log.info("skipping interrupt due to state:" + thread.getState());
+  private static boolean interrupt(Thread thread, String... nameContains) {
+    if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
+      return false;
+    }
+    if (thread.getName().contains("RootExec")) {
+      log.warn("interrupt on " + thread.getName());
+      thread.interrupt();
+      return true;
+    }
+    if (interruptThreadListContains(nameContains, thread.getName())) {
+      log.warn("interrupt on " + thread.getName());
+      thread.interrupt();
+      return true;
+    }
+    return false;
+  }
+
+  private static void wait(Thread thread) {
+    if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
+      log.info("Dont wait on ForkJoinPool. or Log4j2-");
+      return;
+    }
+
+    do {
+      log.warn("waiting on {} {}", thread.getName(), thread.getState());
+      try {
+        thread.join(50);
+      } catch (InterruptedException e) {
+
+      }
+      thread.interrupt();
+    } while (thread.isAlive());
+
+  }
+
+
+  private static boolean interruptThreadListContains(String[] nameContains, String name) {
+    for (String interruptThread : nameContains) {
+      if (name.contains(interruptThread)) {
+        return true;
       }
     }
+    return false;
   }
 
   public static SolrQueuedThreadPool getQtp() throws Exception {
@@ -819,7 +881,7 @@ public class SolrTestCase extends LuceneTestCase {
   private static class SolrTestWatcher extends TestWatcher {
     @Override
     protected void failed(Throwable e, Description description) {
-      failed = true;
+
     }
 
     @Override

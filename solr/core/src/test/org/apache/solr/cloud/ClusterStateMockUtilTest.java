@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * Tests for {@link ClusterStateMockUtil}
  */
-@Ignore
+@Ignore // nocommit
 public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test

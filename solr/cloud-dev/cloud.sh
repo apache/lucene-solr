@@ -330,7 +330,7 @@ start(){
   echo "Final NUM_NODES is $NUM_NODES"
   for i in `seq 1 $NUM_NODES`; do
     mkdir -p "${CLUSTER_WD}/n${i}"
-    argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
+    argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -f -p 898${i} -m $MEMORY \
     -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
     -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"

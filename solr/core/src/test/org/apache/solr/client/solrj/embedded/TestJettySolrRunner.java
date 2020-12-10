@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -31,7 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-
+@LuceneTestCase.Nightly
 public class TestJettySolrRunner extends SolrTestCaseJ4 {
 
   @Test
@@ -72,7 +73,6 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     }
 
   }
-
 
   @SuppressWarnings("ThrowableNotThrown")
   @Test

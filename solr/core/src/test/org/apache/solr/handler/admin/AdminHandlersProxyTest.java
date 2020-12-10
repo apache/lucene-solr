@@ -48,6 +48,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

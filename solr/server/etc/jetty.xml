@@ -193,9 +193,9 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="stopTimeout">180000</Set>
+    <Set name="stopTimeout">500</Set>
     <Set name="dumpAfterStart">false</Set>
-    <Set name="dumpBeforeStop">false</Set>
+    <Set name="dumpBeforeStop">true</Set>
 
     <Call name="addBean">
       <Arg>

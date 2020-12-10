@@ -186,7 +186,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime",null));
   }
 
-  @Ignore // nocommit - this is probably a race
+  @Ignore // nocommit - debug
   public void testUserProp() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload = "{\n" +
@@ -206,7 +206,6 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   }
 
-  @Ignore //nocommit debug
   public void testReqHandlerAPIs() throws Exception {
     reqhandlertests(restTestHarness, null, null);
   }
@@ -542,7 +541,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         asList("overlay", "cache", "lfuCacheDecayFalse", "class"),
         "solr.CaffeineCache",
         TIMEOUT_S);
-    assertEquals("solr.CaffeineCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
+    assertEquals("solr.search.CaffeineCache",getObjectByPath(map, true, ImmutableList.of("overlay", "cache", "perSegFilter", "class")));
 
     map = getRespMap("/dump101?cacheNames=lfuCacheDecayFalse&cacheNames=perSegFilter", writeHarness);
     assertEquals("Actual output "+ Utils.toJSONString(map), "org.apache.solr.search.CaffeineCache",getObjectByPath(map, true, ImmutableList.of( "caches", "perSegFilter")));

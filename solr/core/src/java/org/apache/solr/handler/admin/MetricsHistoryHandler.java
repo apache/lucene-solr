@@ -257,7 +257,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         } else {
           boolean ready = false;
           for (Replica r : systemColl.getReplicas()) {
-            if (r.isActive(clusterState.getLiveNodes())) {
+            if (r.isActive(cloudManager.getClusterStateProvider().getLiveNodes())) {
               ready = true;
               break;
             }
@@ -509,7 +509,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         DoubleAdder numActiveReplicas = new DoubleAdder();
         for (Slice s : slices) {
           s.forEach(r -> {
-            if (r.isActive(state.getLiveNodes())) {
+            if (r.isActive( cloudManager.getClusterStateProvider().getLiveNodes())) {
               numActiveReplicas.add(1.0);
             }
           });
@@ -631,7 +631,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           collectService.shutdownNow();
         }
       } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
+
       }
     }
 

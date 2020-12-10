@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit debug
 public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   //
   // NOTE: This class can only have one test because our test for caching is to nuke the SolrZkClient to

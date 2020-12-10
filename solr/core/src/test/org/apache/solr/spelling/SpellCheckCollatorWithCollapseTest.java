@@ -21,22 +21,25 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.handler.component.SpellCheckComponent;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-collapseqparser.xml", "schema11.xml");
-  }
+
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
+    initCore("solrconfig-collapseqparser.xml", "schema11.xml");
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
   
   @Test

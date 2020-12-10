@@ -25,16 +25,22 @@ import org.apache.solr.common.cloud.ZkStateReader;
 // does not yet mock zkclient at all
 public class MockZkStateReader extends ZkStateReader {
 
+  private final Set<String> liveNodes;
   private Set<String> collections;
 
-  public MockZkStateReader(ClusterState clusterState, Set<String> collections) {
+  public MockZkStateReader(ClusterState clusterState, Set<String> liveNodes, Set<String> collections) {
     super(new MockSolrZkClient());
     this.clusterState = clusterState;
     this.collections = collections;
+    this.liveNodes = liveNodes;
   }
   
   public Set<String> getAllCollections(){
     return collections;
+  }
+
+  public Set<String> getLiveNodes() {
+    return liveNodes;
   }
 
   @Override

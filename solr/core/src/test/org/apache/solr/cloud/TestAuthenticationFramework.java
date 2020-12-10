@@ -59,6 +59,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   @Override
   public void setUp() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     setupAuthenticationPlugin();
     configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
     super.setUp();

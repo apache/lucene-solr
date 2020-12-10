@@ -392,7 +392,6 @@ public class UpdateRequest extends AbstractUpdateRequest {
   public String getXML() throws IOException {
     StringWriter writer = new StringWriter();
     writeXML(writer);
-    writer.flush();
     
     // If action is COMMIT or OPTIMIZE, it is sent with params
     String xml = writer.toString();

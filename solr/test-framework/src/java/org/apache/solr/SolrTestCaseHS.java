@@ -53,6 +53,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -150,11 +151,11 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
    * Pass "null" for the client to query to the local server.
    * Fetches response in xml format and matches with the given set of xpaths
    */
-  public static void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
+  public static void assertQ(SolrResourceLoader loader, SolrClient client, SolrParams args, String... tests) throws Exception {
     String resp;
     resp = getQueryResponse(client, "xml", args);
     try {
-      String results = TestHarness.validateXPath(resp, tests);
+      String results = TestHarness.validateXPath(loader, resp, tests);
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
             + "\n\txml response was: " + resp
@@ -283,7 +284,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       public  void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
-        SolrTestCaseHS.assertQ(client, args, tests);
+        SolrTestCaseHS.assertQ(h.getCore().getResourceLoader(), client, args, tests);
       }
     }
 

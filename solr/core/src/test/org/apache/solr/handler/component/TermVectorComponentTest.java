@@ -20,23 +20,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.TermVectorParams;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /**
  *
  *
  **/
 public class TermVectorComponentTest extends SolrTestCaseJ4 {
-
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   // ensure that we operate correctly with all valid combinations of the uniqueKey being
   // stored and/or in docValues.

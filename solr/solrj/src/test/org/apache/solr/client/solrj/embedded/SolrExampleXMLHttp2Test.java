@@ -22,14 +22,10 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 public class SolrExampleXMLHttp2Test extends SolrExampleTests {
-
-  @BeforeClass
-  public static void beforeSolrExampleXMLHttp2Test() throws Exception {
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {

@@ -57,25 +57,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
 
   @Override
-  public void close() {
-    this.closed = true;
-    try {
-      super.close();
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
-      log.error("Exception canceling election", e);
-    } finally {
-      leaderZkNodeParentVersion = null;
-    }
-  }
-
-  @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
-    if (log.isDebugEnabled()) log.debug("cancelElection");
-    if (!zkClient.isConnected()) {
-      log.info("Can't cancel, zkClient is not connected");
-      return;
-    }
+
+
+    if (log.isTraceEnabled()) log.trace("cancelElection");
+//    if (!zkClient.isConnected()) {
+//      log.info("Can't cancel, zkClient is not connected");
+//      return;
+//    }
     super.cancelElection();
       try {
         if (leaderZkNodeParentVersion != null) {
@@ -105,36 +94,40 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
             int i = 0;
             List<OpResult> results = e.getResults();
-            for (OpResult result : results) {
-              if (((OpResult.ErrorResult) result).getErr() == -101) {
-                // no node, fine
-              } else {
-                if (result instanceof OpResult.ErrorResult) {
-                  OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
-                  if (dresult.getErr() != 0) {
-                    log.error("op=" + i++ + " err=" + dresult.getErr());
+            if (results != null) {
+              for (OpResult result : results) {
+                if (((OpResult.ErrorResult) result).getErr() == -101) {
+                  // no node, fine
+                } else {
+                  if (result instanceof OpResult.ErrorResult) {
+                    OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
+                    if (dresult.getErr() != 0) {
+                      log.error("op=" + i++ + " err=" + dresult.getErr());
+                    }
                   }
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election " + e.getPath(), e);
                 }
-                throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election " + e.getPath(), e);
               }
             }
 
           } catch (InterruptedException | AlreadyClosedException e) {
             ParWork.propagateInterrupt(e, true);
-            return;
           } catch (Exception e) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
           }
         } else {
           try {
             if (leaderSeqPath != null) {
+              if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
               zkClient.delete(leaderSeqPath, -1);
             }
           } catch (NoNodeException e) {
             // fine
           }
-          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration.");
+          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration. {}", leaderSeqPath);
         }
+        leaderSeqPath = null;
+
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
           ParWork.propagateInterrupt(e);
@@ -176,7 +169,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ops.add(Op.setData(parent, null, -1));
       List<OpResult> results;
 
-      results = zkClient.multi(ops, false);
+      results = zkClient.multi(ops, true);
       log.info("Results from call {}", results);
       Iterator<Op> it = ops.iterator();
       for (OpResult result : results) {
@@ -191,6 +184,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
     } catch (NoNodeException e) {
       throw new AlreadyClosedException("No node exists for election");
+    } catch (KeeperException.NodeExistsException e) {
+      throw new AlreadyClosedException("Node already exists for election");
     } catch (Throwable t) {
       ParWork.propagateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);

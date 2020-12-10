@@ -63,7 +63,7 @@ public class TestConfigReload extends SolrCloudBridgeTestCase {
   private void reloadTest() throws Exception {
     SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getLiveNodes());
     }
     String confPath = ZkConfigManager.CONFIGS_ZKNODE+"/_default/";
 //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");

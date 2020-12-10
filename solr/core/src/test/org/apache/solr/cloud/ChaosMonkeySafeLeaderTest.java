@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-@Ignore // nocommit debug
+@LuceneTestCase.Nightly // TODO convert to bridge test class
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

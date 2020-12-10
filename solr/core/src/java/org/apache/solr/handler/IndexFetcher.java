@@ -380,9 +380,14 @@ public class IndexFetcher {
         try {
           replica = getLeaderReplica();
         } catch (TimeoutException e) {
-          log.warn("Leader is not available. Index fetch failed due to not finding leader: {}", masterUrl, e);
-          return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
+
         }
+
+        if (replica == null) {
+          log.warn("Leader is not available. Index fetch failed due to not finding leader: {}", masterUrl);
+          return IndexFetchResult.EXPECTING_NON_LEADER;
+        }
+
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
         if (solrCore.getCoreDescriptor().getName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
@@ -393,7 +398,7 @@ public class IndexFetcher {
           }
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
-        if (!solrCore.getCoreContainer().getZkController().getClusterState().liveNodesContain(replica.getNodeName())) {
+        if (!solrCore.getCoreContainer().getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
           if (log.isInfoEnabled()) {
             log.info("Replica {} is leader but it's not hosted on a live node, skipping replication", replica.getName());
           }
@@ -701,6 +706,8 @@ public class IndexFetcher {
       if (!successfulInstall) {
         try {
           logReplicationTimeAndConfFiles(null, successfulInstall);
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
           log.warn("Could not log failed replication details", e);
@@ -742,7 +749,7 @@ public class IndexFetcher {
             try {
               core.getDirectoryFactory().release(indexDir);
             } catch (IllegalArgumentException e) {
-              if (log.isDebugEnabled()) log.debug("Error realing directory in IndexFetcher", e);
+              if (log.isDebugEnabled()) log.debug("Error releasing directory in IndexFetcher", e);
               // could already be removed
             }
           }
@@ -1640,8 +1647,8 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
+        final FastInputStream is = getStream();
         while (true) {
-          final FastInputStream is = getStream();
           int result;
           try {
             //fetch packets one by one in a single request
@@ -1653,7 +1660,10 @@ public class IndexFetcher {
             //if there is an error continue. But continue from the point where it got broken
           } finally {
             if (is != null) {
-              while (is.read() != -1) {}
+              if (is != null) {
+                while (is.read() != -1) {}
+                // is.close();
+              }
               // dont close
               //IOUtils.closeQuietly(is);
             }
@@ -1855,9 +1865,12 @@ public class IndexFetcher {
         return new FastInputStream(is);
       } catch (Exception e) {
         //close stream on error
-        if (is != null) {
-          while (is.read() != -1) {}
+        try {
+          while (is.read() != -1) {
+          }
           // is.close();
+        } catch (Exception e1) {
+          // quietly
         }
         throw new IOException("Could not download file '" + fileName + "'", e);
       }

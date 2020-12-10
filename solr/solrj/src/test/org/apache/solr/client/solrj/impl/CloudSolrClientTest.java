@@ -754,7 +754,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       }
     }
     String theNode = null;
-    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
     for (String s : liveNodes) {
       String n = cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(s);
       if(!allNodesOfColl.contains(n)){

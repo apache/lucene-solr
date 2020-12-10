@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -26,7 +27,6 @@ import org.junit.Test;
  * provided a tokenizerFactory that requires a match version
  *
  */
-
 public class SynonymTokenizerTest extends SolrTestCaseJ4 {
 
   @BeforeClass

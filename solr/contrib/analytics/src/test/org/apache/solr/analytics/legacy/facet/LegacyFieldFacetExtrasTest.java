@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -102,6 +103,14 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
 
     assertU(commit());
     setResponse(h.query(request(fileToStringArr(LegacyFieldFacetExtrasTest.class, fileName))));
+  }
+
+  @AfterClass
+  public static void afterLegacyFieldFacetExtrasTest() {
+    intLongTestStart = null;
+    intFloatTestStart = null;
+    intDoubleTestStart = null;
+    intStringTestStart = null;
   }
 
   @Test

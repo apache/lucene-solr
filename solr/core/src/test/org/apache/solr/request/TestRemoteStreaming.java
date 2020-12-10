@@ -29,8 +29,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -49,25 +49,29 @@ import java.nio.charset.StandardCharsets;
 @SolrTestCase.SuppressSSL
 // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
-  private static File solrHomeDirectory;
-  private static JettySolrRunner jetty;
+  
+  @Before
+  public void setup() throws Exception {
+    System.setProperty("solr.test.sys.prop1", "1");
+    System.setProperty("solr.test.sys.prop2", "1");
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
     //this one has handleSelect=true which a test here needs
-    solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
-  }
+    super.setUp();
 
-  @Before
-  public void doBefore() throws IOException, SolrServerException {
     //add document and commit, and ensure it's there
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
     client.commit();
     assertTrue(searchFindsIt());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   @Test

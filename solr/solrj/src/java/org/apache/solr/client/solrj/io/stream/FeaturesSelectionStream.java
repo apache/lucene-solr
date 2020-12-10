@@ -259,8 +259,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
 
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for(Slice slice : slices) {

@@ -64,7 +64,12 @@ public class CloudConfigSetService extends ConfigSetService {
 
   @Override
   protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+    try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
+    } catch (Exception ex) {
+      log.debug("No configSet flags", ex);
+      return null;
+    }
   }
 
   @Override
@@ -72,7 +77,7 @@ public class CloudConfigSetService extends ConfigSetService {
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
     try {
-      stat = zkController.getZkClient().exists(zkPath, null);
+      stat = zkController.getZkClient().exists(zkPath, null, true);
     } catch (KeeperException e) {
       log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
       return null; // debatable; we'll see an error soon if there's a real problem

@@ -31,6 +31,7 @@ import org.apache.solr.rest.ManagedResourceStorage.FileStorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.JsonStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.ManagedResourceStorage.ZooKeeperStorageIO;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -39,6 +40,11 @@ import org.junit.Test;
 @Slow
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6443")
 public class TestManagedResourceStorage extends AbstractZkTestCase {
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+
+  }
 
   /**
    * Runs persisted managed resource creation and update tests on Zookeeper storage.

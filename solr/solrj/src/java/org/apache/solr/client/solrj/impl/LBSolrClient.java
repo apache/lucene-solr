@@ -363,6 +363,7 @@ public abstract class LBSolrClient extends SolrClient {
       try {
         MDC.put("LBSolrClient.url", serverStr);
         ex = doRequest(serverStr, req, rsp, isNonRetryable, serverIterator.isServingZombieServer());
+        log.warn("", ex);
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -468,9 +469,13 @@ public abstract class LBSolrClient extends SolrClient {
     // if it's not null.
     if (aliveCheckExecutor == null) {
       synchronized (this) {
+        if (this.closed) {
+          return;
+        }
         if (aliveCheckExecutor == null) {
           aliveCheckExecutor = new ScheduledThreadPoolExecutor(1,
               new SolrNamedThreadFactory("aliveCheckExecutor", true));
+          aliveCheckExecutor.setRemoveOnCancelPolicy(true);
           aliveCheckExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
           aliveCheckExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
           aliveCheckExecutor.scheduleAtFixedRate(
@@ -746,8 +751,18 @@ public abstract class LBSolrClient extends SolrClient {
   @Override
   public void close() {
     this.closed = true;
-    if (aliveCheckExecutor != null) {
+
+    ScheduledThreadPoolExecutor aexec = aliveCheckExecutor;
+    if (aexec != null) {
       aliveCheckExecutor.shutdown();
+      try {
+        boolean success = aliveCheckExecutor.awaitTermination(1, TimeUnit.SECONDS);
+        if (!success) {
+          aliveCheckExecutor.shutdownNow();
+        }
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
     }
     assert ObjectReleaseTracker.release(this);
   }

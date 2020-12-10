@@ -20,6 +20,8 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.BeforeClass;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,11 +32,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
-@ThreadLeakAction({ThreadLeakAction.Action.WARN})
-@ThreadLeakLingering(linger = 0)
-@ThreadLeakZombies(ThreadLeakZombies.Consequence.CONTINUE)
-@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
+@LuceneTestCase.AwaitsFix(bugUrl = "TODO: need to figure out how the derby BasicDaemon should be stopped, it has the ability")
 public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTestCase {
+
+
+  @BeforeClass
+  public static void beforeTestJdbcDataSourceConvertType() {
+    interruptThreadsOnTearDown(false,"derby.rawStoreDaemon");
+  }
+
   public void testConvertType() throws Throwable {
     final Locale loc = Locale.getDefault();
     assumeFalse("Derby is not happy with locale sr-Latn-*",

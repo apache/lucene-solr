@@ -26,6 +26,7 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -53,7 +54,7 @@ public class XCJFQParser extends QParser {
     super(qstr, localParams, params, req);
     this.routerField = routerField;
     // If specified in the config, this will limit which solr url's the parser can connect to.
-    this.solrUrlWhitelist = solrUrlWhiteList;
+    this.solrUrlWhitelist = Collections.unmodifiableSet(solrUrlWhiteList);
   }
 
   @Override

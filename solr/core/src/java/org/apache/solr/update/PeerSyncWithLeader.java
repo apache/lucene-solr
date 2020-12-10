@@ -129,9 +129,14 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     }
 
     if (startingVersions.isEmpty()) {
-      log.warn("no frame of reference to tell if we've missed updates");
-      syncErrors.inc();
-      return PeerSync.PeerSyncResult.failure();
+      NamedList<Object> rsp = getVersions();
+      IndexFingerprint fingerPrint = getFingerprint(rsp);
+      List<Long> otherVersions = (List<Long>)rsp.get("versions");
+      if ((fingerPrint != null && fingerPrint.getMaxDoc() == 0) || (otherVersions != null && otherVersions.size() > 0)) {
+        log.warn("no frame of reference to tell if we've missed updates {} {}", fingerPrint, otherVersions);
+        syncErrors.inc();
+        return PeerSync.PeerSyncResult.failure();
+      }
     }
 
     Timer.Context timerContext = null;

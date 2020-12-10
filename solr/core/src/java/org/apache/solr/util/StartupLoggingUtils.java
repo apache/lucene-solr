@@ -117,7 +117,7 @@ public final class StartupLoggingUtils {
   private static boolean isLog4jActive() {
     try {
       // Make sure we have log4j LogManager in classpath
-      Class.forName("org.apache.log4j.LogManager");
+      Class.forName("org.apache.logging.log4j.LogManager");
       // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in the bridge class :)
       return binder.getLoggerFactoryClassStr().contains("Log4jLoggerFactory");
     } catch (Exception e) {

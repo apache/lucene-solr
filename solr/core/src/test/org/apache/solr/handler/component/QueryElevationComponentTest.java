@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,18 +40,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.FileUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
-
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

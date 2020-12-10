@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -86,7 +88,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   /**
    * Request forwarded to a leader of a different shard will be retried up to this amount of times by default
    */
-  static final int MAX_RETRIES_ON_FORWARD_DEAULT = Integer.getInteger("solr.retries.on.forward",  25);
+  static final int MAX_RETRIES_ON_FORWARD_DEAULT = Integer.getInteger("solr.retries.on.forward", 25);
   /**
    * Requests from leader to it's followers will be retried this amount of times by default
    */
@@ -100,7 +102,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   /**
    * Values this processor supports for the <code>DISTRIB_UPDATE_PARAM</code>.
    * This is an implementation detail exposed solely for tests.
-   * 
+   *
    * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM
    */
   public static enum DistribPhase {
@@ -113,9 +115,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       try {
         return valueOf(param);
       } catch (IllegalArgumentException e) {
-        throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " + 
-           DISTRIB_UPDATE_PARAM + ": " + param, e);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal value for " + DISTRIB_UPDATE_PARAM + ": " + param, e);
       }
     }
   }
@@ -163,17 +163,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   protected final Replica.Type replicaType;
 
-  public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,
-    UpdateRequestProcessor next) {
+  public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req, rsp, new AtomicUpdateDocumentMerger(req), next);
   }
 
-  /** Specification of AtomicUpdateDocumentMerger is currently experimental.
+  /**
+   * Specification of AtomicUpdateDocumentMerger is currently experimental.
+   *
    * @lucene.experimental
    */
-  public DistributedUpdateProcessor(SolrQueryRequest req,
-      SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger,
-      UpdateRequestProcessor next) {
+  public DistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp, AtomicUpdateDocumentMerger docMerger, UpdateRequestProcessor next) {
     super(next);
     this.rsp = rsp;
     this.docMerger = docMerger;
@@ -185,21 +184,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     this.ulog = req.getCore().getUpdateHandler().getUpdateLog();
     this.vinfo = ulog == null ? null : ulog.getVersionInfo();
     versionsStored = this.vinfo != null && this.vinfo.getVersionField() != null;
-    returnVersions = req.getParams().getBool(UpdateParams.VERSIONS ,false);
+    returnVersions = req.getParams().getBool(UpdateParams.VERSIONS, false);
 
     // TODO: better way to get the response, or pass back info to it?
     // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     // this should always be used - see filterParams
-    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
-          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS, ShardParams._ROUTE_);
+    DistributedUpdateProcessorFactory
+        .addParamToDistributedRequestWhitelist(this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD, UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE,
+            UpdateParams.MAX_OPTIMIZE_SEGMENTS, ShardParams._ROUTE_);
 
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
 
   /**
-   *
    * @return the replica type of the collection.
    */
   protected Replica.Type computeReplicaType() {
@@ -226,13 +224,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // to the client that the minRf wasn't reached and let them handle it    
 
     boolean dropCmd = false;
-    boolean didLocalAdd = false;
+
     if (!forwardToLeader) {
       BytesRef idBytes = cmd.getIndexedId();
 
       if (idBytes == null) {
         super.processAdd(cmd);
-        didLocalAdd = true;
+        return;
       } else {
         dropCmd = versionAdd(cmd);
       }
@@ -248,17 +246,50 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
+    String id = cmd.getHashableId();
+    List<Node> nodes = getNodes();
+    boolean doDist = forwardToLeader;
+    Future<?> localFuture = null;
+    Future<?> distFuture = null;
+    AddUpdateCommand cloneCmd = null;
+    if (!forwardToLeader) {
+      try {
+        doDist = isLeader || isSubShardLeader && id != null && nodes != null && nodes.size() > 0;
 
-    try (ParWork worker = new ParWork(this, false, true)) {
-      if (!forwardToLeader && !didLocalAdd) {
-        worker.collect("localAddUpdate", () -> {
+        if (!doDist) {
+          // TODO: possibly set checkDeleteByQueries as a flag on the command?
+          if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
+          doLocalAdd(cmd);
 
-          try {
+          // if the update updates a doc that is part of a nested structure,
+          // force open a realTimeSearcher to trigger a ulog cache refresh.
+          // This refresh makes RTG handler aware of this update.q
+          if (ulog != null) {
+            if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+              ulog.openRealtimeSearcher();
+            }
+          }
+        } else {
+          // TODO: possibly set checkDeleteByQueries as a flag on the command?
+          // if the update updates a doc that is part of a nested structure,
+          // force open a realTimeSearcher to trigger a ulog cache refresh.
+          // This refresh makes RTG handler aware of this update.q
 
+          SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+          cloneCmd = (AddUpdateCommand) cmd.clone();
+          cloneCmd.solrDoc = clonedDoc;
+          localFuture = ParWork.getRootSharedExecutor().submit(() -> {
             // TODO: possibly set checkDeleteByQueries as a flag on the command?
             if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
-            doLocalAdd(cmd);
-
+            try {
+              doLocalAdd(cmd);
+            } catch (Exception e) {
+              ParWork.propagateInterrupt(e);
+              if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+              }
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
             // if the update updates a doc that is part of a nested structure,
             // force open a realTimeSearcher to trigger a ulog cache refresh.
             // This refresh makes RTG handler aware of this update.q
@@ -267,45 +298,80 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 ulog.openRealtimeSearcher();
               }
             }
+          });
+        }
 
-          } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            if (e instanceof RuntimeException) {
-              throw (RuntimeException) e;
-            }
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        });
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        if (e instanceof RuntimeException) {
+          throw (RuntimeException) e;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
+    }
+
+    if (doDist) {
+
       boolean zkAware = req.getCore().getCoreContainer().isZooKeeperAware();
-      if (log.isDebugEnabled()) log.debug("Is zk aware {}", zkAware);
+      if (log.isTraceEnabled()) log.trace("Is zk aware {}", zkAware);
       if (zkAware) {
 
-        if (log.isDebugEnabled()) log.debug("Collect distrib add");
-        SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-        AddUpdateCommand cloneCmd = (AddUpdateCommand) cmd.clone();
-        cloneCmd.solrDoc = clonedDoc;
+        AddUpdateCommand finalCloneCmd ;
+        if (cloneCmd != null) {
+          finalCloneCmd = cloneCmd;
+        } else {
+          finalCloneCmd = cmd;
+        }
+        distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+          if (log.isTraceEnabled()) log.trace("Run distrib add collection");
 
-        worker.collect("distAddUpdate", () -> {
-          if (log.isDebugEnabled()) log.debug("Run distrib add collection");
           try {
-            doDistribAdd(cloneCmd);
-            if (log.isDebugEnabled()) log.debug("after distrib add collection");
+            doDistribAdd(finalCloneCmd);
+            if (log.isTraceEnabled()) log.trace("after distrib add collection");
           } catch (Throwable e) {
             ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         });
+
       }
 
     }
 
+    if (localFuture != null) {
+      try {
+        localFuture.get();
+      } catch (Exception e) {
+        log.error("Exception on local add", e);
+        Throwable t;
+        if (e instanceof ExecutionException) {
+          t = e.getCause();
+        } else {
+          t = e;
+        }
+        if (distFuture != null) {
+          distFuture.cancel(true);
+        }
+        if (t instanceof SolrException) {
+          throw (SolrException) t;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+      }
+    }
+
+    if (distFuture != null) {
+      try {
+        distFuture.get();
+      } catch (Exception e) {
+        log.error("dist of add failed", e);
+      }
+    }
 
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && idField != null) {
       if (addsResponse == null) {
         addsResponse = new NamedList<>(1);
-        rsp.add("adds",addsResponse);
+        rsp.add("adds", addsResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
@@ -435,8 +501,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         getUpdatedDocument(cmd, versionOnUpdate);
 
+        if (isSubShardLeader) {
+          log.info("subshardleader");
+        }
+
         // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
-        if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+        if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           if (log.isInfoEnabled()) {
             log.info("Leader logic applied but update log is buffering: {}", cmd.getPrintableId());
@@ -785,7 +855,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
     // TODO: parallel
     setupRequest(cmd);
-
+    log.info("deletebyid {}", cmd.id);
     boolean dropCmd = false;
     if (!forwardToLeader) {
       dropCmd  = versionDelete(cmd);
@@ -871,22 +941,51 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     versionDeleteByQuery(cmd);
 
-    try (ParWork work = new ParWork(this, false, true)) {
-      work.collect("localDeleteByQuery", () -> {
-        try {
-          doLocalDelete(cmd);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      });
+    Future<?> localFuture = null;
+    Future<?> distFuture = null;
+    localFuture = ParWork.getRootSharedExecutor().submit(() -> {
+      try {
+        doLocalDelete(cmd);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    });
 
-      work.collect("distDeleteByQuery", () -> {
-        try {
-          doDistribDeleteByQuery(cmd, replicas, coll);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+      try {
+        doDistribDeleteByQuery(cmd, replicas, coll);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    });
+
+    if (localFuture != null) {
+      try {
+        localFuture.get();
+      } catch (Exception e) {
+        log.error("Exception on local add", e);
+        Throwable t;
+        if (e instanceof ExecutionException) {
+          t = e.getCause();
+        } else {
+          t = e;
         }
-      });
+        if (distFuture != null) {
+          distFuture.cancel(true);
+        }
+        if (t instanceof SolrException) {
+          throw (SolrException) t;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+      }
+    }
+
+    if (distFuture != null) {
+      try {
+        distFuture.get();
+      } catch (Exception e) {
+        log.error("dist of add failed", e);
+      }
     }
 
     if (returnVersions && rsp != null) {
@@ -974,6 +1073,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   void setupRequest(UpdateCommand cmd) {
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
+  }
+
+  protected List<SolrCmdDistributor.Node> getNodes() {
+    return null;
   }
 
   /**
@@ -1133,7 +1236,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       vinfo.lockForUpdate();
     }
     try {
-
       if (ulog == null || ulog.getState() == UpdateLog.State.ACTIVE || (cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
         super.processCommit(cmd);
       } else {
@@ -1154,10 +1256,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public final void finish() throws IOException {
     assert ! finished : "lifecycle sanity check";
     finished = true;
-
-    doDistribFinish();
-
     super.finish();
+    doDistribFinish();
   }
 
   protected void doDistribFinish() throws IOException {

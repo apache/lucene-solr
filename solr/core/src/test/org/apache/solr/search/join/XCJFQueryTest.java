@@ -33,12 +33,9 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit uplaods same config set multiple times
 public class XCJFQueryTest extends SolrCloudTestCase {
 
   private static final int NUM_NODES = 3;
@@ -64,11 +61,12 @@ public class XCJFQueryTest extends SolrCloudTestCase {
 
   }
 
-  @After
-  public void tearDown() throws IOException, SolrServerException {
+//  @After
+//  public void tearDown() throws Exception {
 //    cluster.deleteAllCollections();
 //    cluster.deleteAllConfigSets();
-  }
+//    super.tearDown();
+//  }
 
   public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {
     clearCollection("products");
@@ -152,7 +150,6 @@ public class XCJFQueryTest extends SolrCloudTestCase {
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
-      Thread.sleep(10000);
 
       testXcjfQuery("{!xcjf collection=products from=product_id_i to=product_id_i}size_s:M",true);
 

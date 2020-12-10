@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,10 +30,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +38,6 @@ import org.slf4j.LoggerFactory;
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected ZkTestServer zkServer;
 

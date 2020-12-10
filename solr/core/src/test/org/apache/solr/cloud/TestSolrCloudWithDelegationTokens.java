@@ -68,6 +68,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");

@@ -16,19 +16,23 @@
  */
 package org.apache.solr.ltr.norm;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestMinMaxNormalizer {
+public class TestMinMaxNormalizer extends SolrTestCase {
 
-  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  private static SolrResourceLoader solrResourceLoader;
 
   private Normalizer implTestMinMax(Map<String,Object> params,
       float expectedMin, float expectedMax) {
@@ -42,6 +46,17 @@ public class TestMinMaxNormalizer {
     assertEquals(mmn.getMax(), expectedMax, 0.0);
     assertEquals("{min="+expectedMin+", max="+expectedMax+"}", mmn.paramsToMap().toString());
     return n;
+  }
+
+  @BeforeClass
+  public static void beforeClass() {
+    solrResourceLoader = new SolrResourceLoader();
+  }
+
+  @AfterClass
+  public static void afterClass() throws IOException {
+    solrResourceLoader.close();
+    solrResourceLoader = null;
   }
 
   @Test
@@ -122,8 +137,7 @@ public class TestMinMaxNormalizer {
     n1.setMax(10.0f);
 
     final Map<String,Object> params = n1.paramsToMap();
-    final MinMaxNormalizer n2 = (MinMaxNormalizer) Normalizer.getInstance(
-        new SolrResourceLoader(),
+    final MinMaxNormalizer n2 = (MinMaxNormalizer) Normalizer.getInstance(solrResourceLoader,
         MinMaxNormalizer.class.getName(),
         params);
     assertEquals(n1.getMin(), n2.getMin(), 1e-6);

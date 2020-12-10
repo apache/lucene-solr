@@ -61,7 +61,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.disableMetricsHistoryHandler", "false");
+    System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");

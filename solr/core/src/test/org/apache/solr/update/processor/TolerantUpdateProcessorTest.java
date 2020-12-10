@@ -243,14 +243,14 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testInvalidDelete() throws XPathExpressionException, SAXException {
     ignoreException("undefined field invalidfield");
     String response = update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
-    assertNull(BaseTestHarness.validateXPath(response,
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response,
                                              "//int[@name='status']=0",
                                              "//arr[@name='errors']",
                                              "count(//arr[@name='errors']/lst)=0"));
     
     response = update("tolerant-chain-max-errors-10", delQ("invalidfield:1"));
     assertNull(BaseTestHarness.validateXPath
-               (response,
+               (solrConfig.getResourceLoader(), response,
                 "//int[@name='status']=0",
                 "count(//arr[@name='errors']/lst)=1",
                 "//arr[@name='errors']/lst/str[@name='type']/text()='DELQ'",
@@ -262,7 +262,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testValidDelete() throws XPathExpressionException, SAXException {
     ignoreException("undefined field invalidfield");
     String response = update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
-    assertNull(BaseTestHarness.validateXPath(response,
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response,
                                              "//int[@name='status']=0",
                                              "//arr[@name='errors']",
                                              "count(//arr[@name='errors']/lst)=0"));
@@ -272,7 +272,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
         ,"//result[@numFound='1']");
     
     response = update("tolerant-chain-max-errors-10", delQ("id:1"));
-    assertNull(BaseTestHarness.validateXPath(response,
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response,
                                              "//int[@name='status']=0",
                                              "//arr[@name='errors']",
                                              "count(//arr[@name='errors']/lst)=0"));
@@ -284,12 +284,12 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @Test
   public void testResponse() throws SAXException, XPathExpressionException, IOException {
     String response = update("tolerant-chain-max-errors-10", adoc("id", "1", "text", "the quick brown fox"));
-    assertNull(BaseTestHarness.validateXPath(response,
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response,
                                              "//int[@name='status']=0",
                                              "//arr[@name='errors']",
                                              "count(//arr[@name='errors']/lst)=0"));
     response = update("tolerant-chain-max-errors-10", adoc("text", "the quick brown fox"));
-    assertNull(BaseTestHarness.validateXPath(response, "//int[@name='status']=0",
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response, "//int[@name='status']=0",
         "//int[@name='maxErrors']/text()='10'",
         "count(//arr[@name='errors']/lst)=1",
         "//arr[@name='errors']/lst/str[@name='id']/text()='(unknown)'",
@@ -303,7 +303,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     }
     builder.append("</add>");
     response = update("tolerant-chain-max-errors-10", builder.toString());
-    assertNull(BaseTestHarness.validateXPath(response, "//int[@name='status']=0",
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response, "//int[@name='status']=0",
         "//int[@name='maxErrors']/text()='10'",
         "count(//arr[@name='errors']/lst)=10",
         "not(//arr[@name='errors']/lst/str[@name='id']/text()='0')",
@@ -329,7 +329,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
     // spot check response when effective maxErrors is unlimited
     response = update("tolerant-chain-max-errors-not-set", builder.toString());
-    assertNull(BaseTestHarness.validateXPath(response, "//int[@name='maxErrors']/text()='-1'"));
+    assertNull(BaseTestHarness.validateXPath(solrConfig.getResourceLoader(), response, "//int[@name='maxErrors']/text()='-1'"));
                                              
   }
 

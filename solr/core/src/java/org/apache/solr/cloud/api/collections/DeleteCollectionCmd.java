@@ -147,17 +147,20 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       shardRequestTracker = new OverseerCollectionMessageHandler.ShardRequestTracker(asyncId, message.getStr("operation"), ocmh.adminPath, zkStateReader, ocmh.shardHandlerFactory, ocmh.overseer);
 
-      @SuppressWarnings({"unchecked"}) List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, shardHandler, shardRequestTracker);
+      @SuppressWarnings({"unchecked"}) List<Replica> notLifeReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, shardHandler, shardRequestTracker);
 
-      if (failedReplicas == null) {
+      if (notLifeReplicas == null) {
         // TODO: handle this in any special way? more logging?
+        log.warn("The following replicas where not live to receive an unload command {}", notLifeReplicas);
       }
 
     } finally {
 
       // make sure it's gone again after cores have been removed
       try {
+        ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
         zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+        ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
       } catch (Exception e) {
         log.error("Exception while trying to remove collection zknode", e);
       }

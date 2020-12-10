@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
@@ -43,13 +44,13 @@ public abstract class SolrCoreState {
   
   protected volatile boolean closed = false;
   private final Object updateLock = new Object();
-  private final Object reloadLock = new Object();
+  private final ReentrantLock reloadLock = new ReentrantLock(true);
   
   public Object getUpdateLock() {
     return updateLock;
   }
   
-  public Object getReloadLock() {
+  public ReentrantLock getReloadLock() {
     return reloadLock;
   }
   
@@ -69,8 +70,9 @@ public abstract class SolrCoreState {
     boolean close = false;
     synchronized (this) {
       solrCoreStateRefCnt--;
-      assert solrCoreStateRefCnt >= 0;
-      if (solrCoreStateRefCnt == 0) {
+      log.info("SolrCoreState ref count {}", solrCoreStateRefCnt);
+
+      if (solrCoreStateRefCnt <= 0) {
         closed = true;
         close = true;
       }
@@ -161,6 +163,8 @@ public abstract class SolrCoreState {
   public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
   
   public abstract void cancelRecovery();
+
+  public abstract boolean isRecoverying();
 
   public abstract void cancelRecovery(boolean wait, boolean prepForClose);
 

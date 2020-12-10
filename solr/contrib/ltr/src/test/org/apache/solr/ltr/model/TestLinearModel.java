@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.model;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
@@ -40,12 +42,11 @@ public class TestLinearModel extends TestRerankBase {
   public static LTRScoringModel createLinearModel(String name, List<Feature> features,
       List<Normalizer> norms,
       String featureStoreName, List<Feature> allFeatures,
-      Map<String,Object> params) throws ModelException {
-    final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader,
-        LinearModel.class.getName(),
-        name,
-        features, norms, featureStoreName, allFeatures, params);
-    return model;
+      Map<String,Object> params) throws ModelException, IOException {
+    try (SolrResourceLoader solrResourceLoader = new SolrResourceLoader()) {
+      final LTRScoringModel model = LTRScoringModel.getInstance(solrResourceLoader, LinearModel.class.getName(), name, features, norms, featureStoreName, allFeatures, params);
+      return model;
+    }
   }
 
   public static Map<String,Object> makeFeatureWeights(List<Feature> features) {
@@ -77,7 +78,7 @@ public class TestLinearModel extends TestRerankBase {
   }
   
   @Test
-  public void getInstanceTest() {
+  public void getInstanceTest() throws IOException {
     final Map<String,Object> weights = new HashMap<>();
     weights.put("constant1", 1d);
     weights.put("constant5", 1d);

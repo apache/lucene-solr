@@ -193,7 +193,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         future.get();
       }
     } finally {
-      ParWork.close(orderedExecutor);
+      orderedExecutor.shutdownAndAwaitTermination();
     }
   }
 
@@ -222,7 +222,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         orderedExecutor.submit(key, () -> run.put(key, run.get(key) + 1));
       }
     } finally {
-      ParWork.close(orderedExecutor);
+      orderedExecutor.shutdownAndAwaitTermination();
     }
 
     assertTrue(base.equals(run));

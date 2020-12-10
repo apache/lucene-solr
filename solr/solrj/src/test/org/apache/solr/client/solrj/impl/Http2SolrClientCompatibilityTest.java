@@ -61,8 +61,6 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
-    } finally {
-      afterSolrJettyTestBase();
     }
   }
 
@@ -81,8 +79,6 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {}
-    } finally {
-      afterSolrJettyTestBase();
     }
   }
 
@@ -108,8 +104,6 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       } catch (SolrServerException e) {
         // expected
       }
-    } finally {
-      afterSolrJettyTestBase();
     }
   }
 }

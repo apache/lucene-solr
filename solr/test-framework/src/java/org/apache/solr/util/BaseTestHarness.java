@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import net.sf.saxon.Configuration;
+import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.event.Sender;
 import net.sf.saxon.lib.ParseOptions;
 import net.sf.saxon.lib.Validation;
@@ -26,12 +26,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrTinyBuilder;
-import org.apache.solr.core.XmlConfigFile;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -44,22 +42,19 @@ import java.util.Properties;
 
 abstract public class BaseTestHarness {
 
-  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB = new ThreadLocal<>();
-  protected final SolrResourceLoader loader;
+  protected SolrResourceLoader loader;
 
-  public static XPath getXpath() {
-    return XmlConfigFile.getXpath();
+  public XPath getXpath() {
+    return loader.getXPath();
   }
-
 
   public BaseTestHarness(SolrResourceLoader loader) {
     this.loader = loader;
   }
 
-  public static String validateXPath(String xml, String... tests) throws XPathExpressionException, SAXException {
-    return validateXPathWithEntities(xml, null, tests);
+  public static String validateXPath(SolrResourceLoader loader, String xml, String... tests) throws XPathExpressionException, SAXException {
+    return validateXPathWithEntities(loader, xml, tests);
   }
-
 
   /**
    * A helper method which validates a String against an array of XPath test
@@ -69,7 +64,7 @@ abstract public class BaseTestHarness {
    * @param tests Array of XPath strings to test (in boolean mode) on the xml
    * @return null if all good, otherwise the first test that fails.
    */
-  public static String validateXPathWithEntities(String xml, SolrResourceLoader loader, String... tests)
+  public static String validateXPathWithEntities(SolrResourceLoader loader, String xml, String... tests)
       throws XPathExpressionException {
 
     if (tests==null || tests.length == 0) return null;
@@ -78,7 +73,7 @@ abstract public class BaseTestHarness {
 
     for (String xp : tests) {
       xp=xp.trim();
-      Boolean bool = (Boolean) getXpath().evaluate(xp, docTree, XPathConstants.BOOLEAN);
+      Boolean bool = (Boolean) loader.getXPath().evaluate(xp, docTree, XPathConstants.BOOLEAN);
 
       if (!bool) {
         return xp;
@@ -87,52 +82,48 @@ abstract public class BaseTestHarness {
     return null;
   }
 
-  public static TinyDocumentImpl getTinyDocument(String xml, SolrResourceLoader loader) {
+  public static TinyDocumentImpl getTinyDocument(String xml, SolrResourceLoader resourceLoader) {
     TinyDocumentImpl docTree = null;
-    Configuration conf1 = Configuration.newConfiguration();
-    conf1.setValidation(false);
-//    conf1.setXIncludeAware(true);
-//    conf1.setExpandAttributeDefaults(true);
-    conf1.setNamePool(XmlConfigFile.conf1.getNamePool());
-    conf1.setDocumentNumberAllocator(XmlConfigFile.conf1.getDocumentNumberAllocator());
-    ParseOptions parseOptions = conf1.getParseOptions();
-    parseOptions.setPleaseCloseAfterUse(true);
-    //      parseOptions.setExpandAttributeDefaults(true);
-    //      parseOptions.setXIncludeAware(true);
+    PipelineConfiguration plc = resourceLoader.getConf().makePipelineConfiguration();
 
-    // parseOptions.setSchemaValidationMode(Validation.STRIP);
-    parseOptions.setSchemaValidationMode(Validation.LAX);
-
-    SolrTinyBuilder builder = new SolrTinyBuilder(conf1.makePipelineConfiguration(), new Properties());
+    SolrTinyBuilder builder = new SolrTinyBuilder(plc, new Properties());
     try {
-
+      builder.open();
       SAXSource source = new SAXSource(new InputSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+      //  source.getInputSource().setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+      ParseOptions po = plc.getParseOptions();
+      if (resourceLoader != null) {
+        po.setEntityResolver(resourceLoader.getSysIdResolver());
+      }
 
-      Sender.send(source, builder, parseOptions);
+      po.setXIncludeAware(true);
+      po.setCheckEntityReferences(false);
+      po.setExpandAttributeDefaults(false);
+      po.setDTDValidationMode(Validation.STRIP);
+      po.setPleaseCloseAfterUse(true);
+      Sender.send(source, builder, po);
       docTree = (TinyDocumentImpl) builder.getCurrentRoot();
     } catch (XPathException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       try {
         builder.close();
+        builder.reset();
       } catch (XPathException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        builder.reset();
-        conf1.close();
       }
     }
     return docTree;
   }
 
-  public static Object evaluateXPath(String xml, String xpath, QName returnType)
+  public Object evaluateXPath(SolrResourceLoader loader, String xml, String xpath, QName returnType)
     throws XPathExpressionException, SAXException {
     if (null == xpath) return null;
 
-    TinyDocumentImpl docTree = getTinyDocument(xml, null);
+    TinyDocumentImpl docTree = getTinyDocument(xml, loader);
 
     xpath = xpath.trim();
-    return getXpath().evaluate(xpath, docTree, returnType);
+    return loader.getXPath().evaluate(xpath, docTree, returnType);
   }
 
   /**
@@ -291,7 +282,7 @@ abstract public class BaseTestHarness {
   public String checkUpdateStatus(String xml, String code) throws SAXException {
     try {
       String res = update(xml);
-      String valid = validateXPathWithEntities(res, loader,"//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, res,"//int[@name='status']="+code );
       return (null == valid) ? null : res;
     } catch (XPathExpressionException e) {
       throw new RuntimeException

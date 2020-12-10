@@ -16,9 +16,11 @@
  */
 package org.apache.solr.analytics.legacy;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -133,6 +135,22 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
 
     //Sort ascending tests
     setResponse(h.query(request(fileToStringArr(LegacyNoFacetTest.class, fileName))));
+  }
+
+  @AfterClass
+  public static void afterLegacyNoFacetTest() throws IOException {
+    intTestStart = null;
+    intMissing = 0;
+    longTestStart = null;
+    longMissing = 0;
+    floatTestStart = null;
+    floatMissing = 0;
+    doubleTestStart = null;
+    doubleMissing = 0;
+    dateTestStart = null;
+    dateMissing = 0;
+    stringTestStart = null;
+    stringMissing = 0;
   }
 
   @Test

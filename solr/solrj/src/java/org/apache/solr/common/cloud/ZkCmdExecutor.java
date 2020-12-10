@@ -74,7 +74,7 @@ public class ZkCmdExecutor {
         if (exception == null) {
           exception = e;
         }
-        if (solrZkClient.isClosed()) {
+        if (!solrZkClient.getSolrZooKeeper().getState().isAlive()) {
           break;
         }
         retryDelay(tryCnt);

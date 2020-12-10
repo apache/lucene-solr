@@ -73,6 +73,6 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
-    return null;
+    return new AddReplicaCmd.Response();
   }
 }

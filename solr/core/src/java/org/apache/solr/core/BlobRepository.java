@@ -241,7 +241,7 @@ public class BlobRepository {
       Collections.shuffle(replicas, RANDOM);
       for (Replica r : replicas) {
         if (r.getState() == Replica.State.ACTIVE) {
-          if (zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
+          if (zkStateReader.getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
             replica = r;
             break;
           }

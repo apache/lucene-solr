@@ -234,7 +234,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   public void close() {
-    assert closeTracker.close();
+    if (closeTracker != null) closeTracker.close();
     if (updateOnlyClient != null) updateOnlyClient.disableCloseLock();
     if (recoveryOnlyClient != null) recoveryOnlyClient.disableCloseLock();
     if (searchOnlyClient != null) searchOnlyClient.disableCloseLock();

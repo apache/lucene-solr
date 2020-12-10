@@ -16,25 +16,17 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import junit.framework.Assert;
+import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import junit.framework.Assert;
-import org.apache.solr.core.SolrCore;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
-
-  @Rule
-  public TestRule solrTestRules = 
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

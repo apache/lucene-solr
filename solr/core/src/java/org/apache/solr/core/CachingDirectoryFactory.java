@@ -524,6 +524,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
+        org.apache.solr.common.util.IOUtils.closeQuietly(directory);
+        assert ObjectReleaseTracker.release(directory);
         throw new IllegalArgumentException("Unknown directory: " + directory
                 + " " + byDirectoryCache);
       }
@@ -538,7 +540,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       //    }
       cacheValue.refCnt--;
 
-      if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
+      if (cacheValue.refCnt == 0 && cacheValue.doneWithDir ||  closed) {
         boolean cl = closeCacheValue(cacheValue);
         if (cl) {
           removeFromCache(cacheValue);

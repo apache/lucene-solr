@@ -26,8 +26,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.xml.stream.XMLInputFactory;
@@ -40,20 +40,19 @@ import java.util.Objects;
 import java.util.Queue;
 
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
-  private static XMLInputFactory inputFactory;
-  protected static UpdateRequestHandler handler;
+  private XMLInputFactory inputFactory;
+  protected UpdateRequestHandler handler;
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     handler = new UpdateRequestHandler();
     inputFactory = XMLInputFactory.newInstance();
   }
 
-  @AfterClass
-  public static void afterTests() {
-    inputFactory = null;
-    handler = null;
+  @After
+  public  void afterTests() {
+    deleteCore();
   }
 
   @Test

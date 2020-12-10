@@ -124,7 +124,7 @@ public class ColStatus {
         int recoveryFailedReplicas = 0;
         for (Replica r : s.getReplicas()) {
           // replica may still be marked as ACTIVE even though its node is no longer live
-          if (! r.isActive(clusterState.getLiveNodes())) {
+          if (! r.isActive(zkStateReader.getLiveNodes())) {
             downReplicas++;
             continue;
           }
@@ -166,7 +166,7 @@ public class ColStatus {
         sliceMap.add("leader", leaderMap);
         leaderMap.add("coreNode", leader.getName());
         leaderMap.addAll(leader.getProperties());
-        if (!leader.isActive(clusterState.getLiveNodes())) {
+        if (!leader.isActive(zkStateReader.getLiveNodes())) {
           continue;
         }
         String url = leader.getCoreUrl();

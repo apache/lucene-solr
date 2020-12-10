@@ -43,6 +43,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -604,12 +605,16 @@ public class SolrRequestParsers {
       log.warn("Errors deleting multipart tmp files", e);
       return;
     }
+    try (ParWork work = new ParWork("", true, false)) {
+      for (Part part : parts) {
+        work.collect("", () -> {
+          try {
+            part.delete();
+          } catch (IOException e) {
+            log.warn("Errors deleting multipart tmp files", e);
+          }
+        });
 
-    for (Part part : parts) {
-      try {
-        part.delete();
-      } catch (IOException e) {
-        log.warn("Errors deleting multipart tmp files", e);
       }
     }
   }

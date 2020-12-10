@@ -33,7 +33,9 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -62,30 +64,17 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
   SolrInstance[] solr = new SolrInstance[3];
 
-  // TODO: fix this test to not require FSDirectory
+  // TODO: fix this test to not require FSDirectory-UUIDUpdateProcessorFallbackTest
   static String savedFactory;
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     useFactory(null);
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-  }
 
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-    System.clearProperty("tests.shardhandler.randomSeed");
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+    initCore();
 
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
@@ -93,6 +82,17 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       solr[i].startJetty();
       addDocs(solr[i]);
     }
+  }
+
+  @After
+  public void afterClass() {
+    if (savedFactory == null) {
+      System.clearProperty("solr.directoryFactory");
+    } else {
+      System.setProperty("solr.directoryFactory", savedFactory);
+    }
+    System.clearProperty("tests.shardhandler.randomSeed");
+    deleteCore();
   }
 
   private void addDocs(SolrInstance solrInstance) throws IOException, SolrServerException {
@@ -122,6 +122,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
+  @Nightly
   public void testSimple() throws Exception {
     String[] s = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
@@ -199,6 +200,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
   }
 
+  @Nightly
   public void testReliability() throws Exception {
     String[] s = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {

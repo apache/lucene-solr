@@ -46,10 +46,12 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
+import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class TestLazyCores extends SolrTestCaseJ4 {
 
   private File solrHomeDirectory;
@@ -620,7 +622,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       writeCustomConfig(coreName, min_config, bad_schema, rand_snip);
     }
 
-    NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
+    NodeConfig config = new SolrXmlConfig().fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
     return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));

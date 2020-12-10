@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -389,7 +388,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
-      if ( ! cmd.getReq().getSchema().isMutable()) {
+      if (!cmd.getReq().getSchema().isMutable()) {
         final String message = "This IndexSchema is not mutable.";
         throw new SolrException(BAD_REQUEST, message);
       }
@@ -399,8 +398,8 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       // can be updated during processing.  Using the cmd's schema guarantees
       // this will be detected and the cmd's schema updated.
       IndexSchema oldSchema;
-      for (;;) {
-        if (cmd.getReq().getCore().isClosing()) {
+      for (; ; ) {
+        if (cmd.getReq().getCore().getCoreContainer().isShutDown() || cmd.getReq().getCore().isClosing()) {
           throw new AlreadyClosedException();
         }
         List<SchemaField> newFields = new ArrayList<>();
@@ -419,17 +418,16 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           if (typeMapping != null) {
             fieldTypeName = typeMapping.fieldTypeName;
             if (!typeMapping.copyFieldDefs.isEmpty()) {
-              newCopyFields.put(fieldName,
-                  typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
+              newCopyFields.put(fieldName, typeMapping.copyFieldDefs.stream().collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
             }
-          } 
+          }
           newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.<String,Object>emptyMap()));
         }
         if (newFields.isEmpty() && newCopyFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
           log.debug("No fields or copyFields to add to the schema.");
           break;
-        } else if ( isImmutableConfigSet(core) ) {
+        } else if (isImmutableConfigSet(core)) {
           final String message = "This ConfigSet is immutable.";
           throw new SolrException(BAD_REQUEST, message);
         }
@@ -446,7 +444,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           builder.append("\nCopyFields to be added to the schema: [");
           isFirst = true;
-          for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+          for (Map.Entry<String,Map<Integer,List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
             String fieldName = entry.getKey();
             builder.append(isFirst ? "" : ",");
             isFirst = false;
@@ -462,49 +460,35 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           if (log.isTraceEnabled()) log.trace("{}", builder);
         }
-        // Need to hold the lock during the entire attempt to ensure that
-        // the schema on the request is the latest
+
         try {
-          oldSchema.getSchemaUpdateLock().lockInterruptibly();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new AlreadyClosedException();
-        }
-        try {
-          try {
-            IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
-            // Add copyFields
-            for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
-              String srcField = entry.getKey();
-              for (Integer maxChars : entry.getValue().keySet()) {
-                newSchema = newSchema.addCopyFields(srcField,
-                    entry.getValue().get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()),
-                  maxChars);
-              }
+          IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
+          // Add copyFields
+          for (Map.Entry<String,Map<Integer,List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+            String srcField = entry.getKey();
+            for (Integer maxChars : entry.getValue().keySet()) {
+              newSchema = newSchema.addCopyFields(srcField, entry.getValue().get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()), maxChars);
             }
-            if (null != newSchema) {
-              ((ManagedIndexSchema)newSchema).persistManagedSchema(false);
-              core.setLatestSchema(newSchema);
-              cmd.getReq().updateSchemaToLatest();
-              if (log.isDebugEnabled()) log.debug("Successfully added field(s) and copyField(s) to the schema.");
-              break; // success - exit from the retry loop
-            } else {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields and/or copyFields.");
-            }
-          } catch (ManagedIndexSchema.FieldExistsException e) {
-            log.error("At least one field to be added already exists in the schema - retrying.");
-            oldSchema = core.getLatestSchema();
-            cmd.getReq().updateSchemaToLatest();
-          } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-            log.info("Schema changed while processing request - retrying.");
-            oldSchema = core.getLatestSchema();
-            cmd.getReq().updateSchemaToLatest();
           }
-        } finally {
-          if ( oldSchema.getSchemaUpdateLock().isHeldByCurrentThread()) {
-            oldSchema.getSchemaUpdateLock().unlock();
+          if (null != newSchema) {
+            ((ManagedIndexSchema) newSchema).persistManagedSchema(false);
+            core.setLatestSchema(newSchema);
+            cmd.getReq().updateSchemaToLatest();
+            if (log.isDebugEnabled()) log.debug("Successfully added field(s) and copyField(s) to the schema.");
+            break; // success - exit from the retry loop
+          } else {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields and/or copyFields.");
           }
+        } catch (ManagedIndexSchema.FieldExistsException e) {
+          log.error("At least one field to be added already exists in the schema - retrying.");
+          oldSchema = core.getLatestSchema();
+          cmd.getReq().updateSchemaToLatest();
+        } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
+          log.info("Schema changed while processing request - retrying.");
+          oldSchema = core.getLatestSchema();
+          cmd.getReq().updateSchemaToLatest();
         }
+
       }
       super.processAdd(cmd);
     }

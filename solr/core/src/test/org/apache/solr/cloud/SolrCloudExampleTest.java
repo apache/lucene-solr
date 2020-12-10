@@ -81,7 +81,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     File defaultConfigs = new File(ExternalPaths.DEFAULT_CONFIGSET);
     assertTrue(defaultConfigs.getAbsolutePath()+" not found!", defaultConfigs.isDirectory());
 
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
     if (liveNodes.isEmpty())
       fail("No live nodes found! Cannot create a collection until there is at least 1 live node in the cluster.");
     String firstLiveNode = liveNodes.iterator().next();
@@ -240,7 +240,7 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
         "explicit", SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
 
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getLiveNodes());
     }
 
     // Since it takes some time for this command to complete we need to make sure all the reloads for

@@ -88,7 +88,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -229,14 +228,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection);
           LeaderElector elector = new LeaderElector(overseer.getZkController(), new ZkController.ContextKey("overseer",
-                  "overseer"), new ConcurrentHashMap<>());
+                  "overseer"));
           Replica replica = new Replica(coreName, props.getProperties(), collection, shardId, zkStateReader);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               nodeName + "_" + coreName, shardId, collection, replica,
               zkStateReader.getZkClient());
           elector.setup(ctx);
           electionContext.put(coreName, ctx);
-          elector.joinElection(ctx, false);
+          elector.joinElection(false);
           return shardId;
         }
       }
@@ -670,8 +669,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       verifyReplicaStatus(reader, COLLECTION, "shard1", "core1", Replica.State.RECOVERING);
 
-      assertEquals("Live nodes count does not match", 1, reader
-          .getClusterState().getLiveNodes().size());
+      assertEquals("Live nodes count does not match", 1, reader.getLiveNodes().size());
       assertEquals(shard+" replica count does not match", 1, reader.getClusterState()
           .getCollection(COLLECTION).getSlice(shard).getReplicasMap().size());
       mockController.publishState(COLLECTION, core,"shard1", null, numShards, true, overseers.get(1));
@@ -706,7 +704,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
       ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
       LeaderElector overseerElector = new LeaderElector(zkController, new ZkController.ContextKey("overseer",
-              "overseer"), new ConcurrentHashMap<>());
+              "overseer"));
       if (overseers.size() > 0) {
         overseers.get(overseers.size() -1).close();
         overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
@@ -723,7 +721,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseers.add(overseer);
       ElectionContext ec = new OverseerElectionContext(server.getZkAddress().replaceAll("/", "_"), zkClient, overseer);
       overseerElector.setup(ec);
-      overseerElector.joinElection(ec, false);
+      overseerElector.joinElection(false);
 
       mockController.createCollection(COLLECTION, 1);
 
@@ -738,7 +736,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // start it again
       overseerElector.setup(ec);
-      overseerElector.joinElection(ec, false);
+      overseerElector.joinElection(false);
       assertNotNull(overseer.getStats());
       assertEquals(0, (overseer.getStats().getSuccessCount(OverseerAction.STATE.toLower())));
 
@@ -793,20 +791,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       }
     }
   }
-
-  private String showQpeek(ZkDistributedQueue q) throws KeeperException, InterruptedException {
-    if (q == null) {
-      return "";
-    }
-    byte[] bytes = q.peek();
-    if (bytes == null) {
-      return "";
-    }
-
-    ZkNodeProps json = ZkNodeProps.load(bytes);
-    return json.toString();
-  }
-
 
   @Test
   public void testShardLeaderChange() throws Exception {
@@ -1244,7 +1228,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     zkControllers.add(zkController);
 
     LeaderElector overseerElector = new LeaderElector(zkController, new ZkController.ContextKey("overseer",
-            "overseer"), new ConcurrentHashMap<>());
+            "overseer"));
     if (overseers.size() > 0) {
       overseers.get(0).close();
       overseers.get(0).getZkStateReader().getZkClient().close();
@@ -1261,7 +1245,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(server.getZkAddress().replaceAll("/", "_"), zkClient, overseer);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec, false);
+    overseerElector.joinElection(false);
     return zkClient;
   }
 

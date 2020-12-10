@@ -268,7 +268,7 @@ public class DistributedLock extends ProtocolSupport {
    */
   public synchronized boolean lock()
       throws KeeperException, InterruptedException {
-    if (isClosed() || !zookeeper.isConnected()) {
+    if (isClosed() || !zookeeper.isAlive()) {
       return false;
     }
 

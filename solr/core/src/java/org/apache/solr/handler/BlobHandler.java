@@ -46,6 +46,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -110,52 +111,43 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
-        try (InputStream is = stream.getStream()) {
+        InputStream is = stream.getStream();
+        try {
           payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
-        }
-        MessageDigest m = MessageDigest.getInstance("MD5");
-        m.update(payload.array(), payload.position(), payload.limit());
-        String md5 = new String(Hex.encodeHex(m.digest()));
 
-        int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
-        if (duplicateCount > 0) {
-          rsp.add("error", "duplicate entry");
-          forward(req, null,
-              new MapSolrParams((Map) makeMap(
-                  "q", "md5:" + md5,
-                  "fl", "id,size,version,timestamp,blobName")),
-              rsp);
-          log.warn("duplicate entry for blob : {}", blobName);
-          return;
-        }
+          MessageDigest m = MessageDigest.getInstance("MD5");
+          m.update(payload.array(), payload.position(), payload.limit());
+          String md5 = new String(Hex.encodeHex(m.digest()));
 
-        TopFieldDocs docs = req.getSearcher().search(new TermQuery(new Term("blobName", blobName)),
-            1, new Sort(new SortField("version", SortField.Type.LONG, true)));
+          int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
+          if (duplicateCount > 0) {
+            rsp.add("error", "duplicate entry");
+            forward(req, null, new MapSolrParams((Map) makeMap("q", "md5:" + md5, "fl", "id,size,version,timestamp,blobName")), rsp);
+            log.warn("duplicate entry for blob : {}", blobName);
+            return;
+          }
 
-        long version = 0;
-        if (docs.totalHits.value > 0) {
-          Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
-          Number n = doc.getField("version").numericValue();
-          version = n.longValue();
-        }
-        version++;
-        String id = blobName + "/" + version;
-        Map<String, Object> doc = makeMap(
-            ID, id,
-            CommonParams.TYPE, "blob",
-            "md5", md5,
-            "blobName", blobName,
-            VERSION, version,
-            "timestamp", new Date(),
-            "size", payload.limit(),
-            "blob", payload);
-        verifyWithRealtimeGet(blobName, version, req, doc);
-        if (log.isInfoEnabled()) {
-          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
-        }
-        indexMap(req, rsp, doc);
-        if (log.isInfoEnabled()) {
-          log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+          TopFieldDocs docs = req.getSearcher().search(new TermQuery(new Term("blobName", blobName)), 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
+
+          long version = 0;
+          if (docs.totalHits.value > 0) {
+            Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+            Number n = doc.getField("version").numericValue();
+            version = n.longValue();
+          }
+          version++;
+          String id = blobName + "/" + version;
+          Map<String,Object> doc = makeMap(ID, id, CommonParams.TYPE, "blob", "md5", md5, "blobName", blobName, VERSION, version, "timestamp", new Date(), "size", payload.limit(), "blob", payload);
+          verifyWithRealtimeGet(blobName, version, req, doc);
+          if (log.isInfoEnabled()) {
+            log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+          }
+          indexMap(req, rsp, doc);
+          if (log.isInfoEnabled()) {
+            log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+          }
+        } finally {
+          Utils.readFully(is);
         }
 
         break;

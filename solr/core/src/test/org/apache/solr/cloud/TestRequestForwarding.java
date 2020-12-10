@@ -24,11 +24,17 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestRequestForwarding extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster solrCluster;
+
+  @BeforeClass
+  public static void beforeClass() {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
+  }
 
   @Override
   public void setUp() throws Exception {

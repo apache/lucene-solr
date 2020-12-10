@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -418,6 +419,53 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
     reqParamas[reqFacetParamas.length] = "solr";
     reqParamas[reqFacetParamas.length+1] = "asc";
     setResponse(h.query(request(reqFacetParamas)));
+  }
+
+  @AfterClass
+  public static void afterLegacyFieldFacetTest() {
+    //INT
+    intDateTestStart = null;
+    intDateTestMissing = null;
+    intStringTestStart = null;
+    intStringTestMissing = null;
+
+    //LONG
+    longDateTestStart = null;
+    longDateTestMissing = null;
+    longStringTestStart = null;
+    longStringTestMissing = null;
+
+    //FLOAT
+    floatDateTestStart = null;
+    floatDateTestMissing = null;
+    floatStringTestStart = null;
+    floatStringTestMissing = null;
+
+    //DOUBLE
+    doubleDateTestStart = null;
+    doubleDateTestMissing = null;
+    doubleStringTestStart = null;
+    doubleStringTestMissing = null;
+
+    //DATE
+    dateIntTestStart = null;
+    dateIntTestMissing = null;
+    dateLongTestStart = null;
+    dateLongTestMissing = null;
+
+    //String
+    stringIntTestStart = null;
+    stringIntTestMissing = null;
+    stringLongTestStart = null;
+    stringLongTestMissing = null;
+
+    //Multi-Valued
+    multiLongTestStart = null;
+    multiLongTestMissing = null;
+    multiStringTestStart = null;
+    multiStringTestMissing = null;
+    multiDateTestStart = null;
+    multiDateTestMissing = null;
   }
 
   @Test

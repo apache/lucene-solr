@@ -83,7 +83,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @BeforeClass
   public static void beforeCollectionsAPISolrJTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
-
     configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
             .addConfig("conf", configset("cloud-minimal"))
             .addConfig("conf2", configset("cloud-dynamic"))
@@ -127,7 +126,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Nightly
   public void testCreateCollWithDefaultClusterPropertiesNewFormat() throws Exception {
     String COLL_NAME = "CollWithDefaultClusterProperties";
       V2Response rsp = new V2Request.Builder("/cluster")
@@ -140,7 +139,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       for (int i = 0; i < 15; i++) {
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
-        Thread.sleep(500);
+        Thread.sleep(50);
       }
       Object clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
       assertEquals("2", String.valueOf(clusterProperty));
@@ -175,7 +174,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
       // we use a timeout so that the change made in ZK is reflected in the watched copy inside ZkStateReader
-      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, 600, new TimeSource.NanoTimeSource());
+      TimeOut timeOut = new TimeOut(5, TimeUnit.SECONDS, 100, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut())  {
         clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
         if (clusterProperty == null)  break;
@@ -188,7 +187,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
       // assert that it is really gone in both old and new paths
-      timeOut = new TimeOut(5, TimeUnit.SECONDS, 600, new TimeSource.NanoTimeSource());
+      timeOut = new TimeOut(5, TimeUnit.SECONDS, 100, new TimeSource.NanoTimeSource());
       while (!timeOut.hasTimedOut()) {
         clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
         if (clusterProperty == null)  break;
@@ -269,7 +268,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testCreateAndDeleteShard() throws Exception {
     // Create an implicit collection
     String collectionName = "solrj_implicit";
@@ -332,7 +330,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testSplitShard() throws Exception {
 
     final String collectionName = "solrj_test_splitshard";
@@ -376,7 +373,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testCreateCollectionWithPropertyParam() throws Exception {
 
     String collectionName = "solrj_test_core_props";
@@ -414,7 +410,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList
-        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
+        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getLiveNodes());
     Collections.shuffle(nodeList, random());
     final String node = nodeList.get(0);
 
@@ -457,7 +453,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit use different prop, remove lagacy cloud
   public void testClusterProp() throws InterruptedException, IOException, SolrServerException {
 
     // sanity check our expected default
@@ -576,7 +571,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit alias work:  Collection: catAlias operation: createalias failed org.apache.solr.common.SolrException: shards is a required param
+  @AwaitsFix(bugUrl = "Alias issue")
   public void testRenameCollection() throws Exception {
     doTestRenameCollection(true);
     CollectionAdminRequest.deleteAlias("col1").process(cluster.getSolrClient());
@@ -764,7 +759,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // debug
+  @Ignore // nocommit whats status of preferred leader?
   public void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "replicaProperties";
@@ -773,14 +768,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     final Replica replica = getCollectionState(collection).getLeader("shard1");
     CollectionAdminResponse response
-        = CollectionAdminRequest.addReplicaProperty(collection, "shard1", replica.getName(), "preferredleader", "true")
+        = CollectionAdminRequest.addReplicaProperty(collection, "s1", replica.getName(), "preferredleader", "true")
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
     waitForState("Expecting property 'preferredleader' to appear on replica " + replica.getName(), collection,
         (n, c) -> "true".equals(c.getReplica(replica.getName()).getProperty("preferredleader")));
 
-    response = CollectionAdminRequest.deleteReplicaProperty(collection, "shard1", replica.getName(), "property.preferredleader")
+    response = CollectionAdminRequest.deleteReplicaProperty(collection, "s1", replica.getName(), "property.preferredleader")
         .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
@@ -790,7 +785,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - something is off with this - often seems a bit slow and can exceed 10 second socket timeout
+  @Ignore // nocommit whats status of preferred leader?: Error from server at null: CMD did not return a response:balanceshardunique
   public void testBalanceShardUnique() throws IOException,
       SolrServerException, KeeperException, InterruptedException {
 
@@ -818,7 +813,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testModifyCollectionAttribute() throws IOException, SolrServerException {
     final String collection = "testAddAndDeleteCollectionAttribute";
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)

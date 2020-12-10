@@ -29,7 +29,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
@@ -54,54 +53,17 @@ public final class FieldTypePluginLoader
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static XPathExpression analyzerQueryExp;
-  private static XPathExpression analyzerMultiTermExp;
+  private XPathExpression analyzerQueryExp;
+  private XPathExpression analyzerMultiTermExp;
 
-  private static XPathExpression analyzerIndexExp;
-  private static XPathExpression similarityExp;
-  private static XPathExpression charFilterExp;
-  private static XPathExpression tokenizerExp;
-  private static XPathExpression filterExp;
+  private XPathExpression analyzerIndexExp;
+  private XPathExpression similarityExp;
+  private XPathExpression charFilterExp;
+  private XPathExpression tokenizerExp;
+  private XPathExpression filterExp;
 
   static {
-    try {
-      analyzerQueryExp = XmlConfigFile.getXpath().compile("./analyzer[@type='query']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      analyzerMultiTermExp = XmlConfigFile.getXpath().compile("./analyzer[@type='multiterm']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
 
-    try {
-      analyzerIndexExp = XmlConfigFile.getXpath().compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      similarityExp = XmlConfigFile.getXpath().compile("./similarity");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-
-    try {
-      charFilterExp = XmlConfigFile.getXpath().compile("./charFilter");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      tokenizerExp = XmlConfigFile.getXpath().compile("./tokenizer");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      filterExp = XmlConfigFile.getXpath().compile("./filter");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
   }
 
   /**
@@ -118,6 +80,45 @@ public final class FieldTypePluginLoader
     this.schema = schema;
     this.fieldTypes = fieldTypes;
     this.schemaAware = schemaAware;
+    XPath xpath = schema.getResourceLoader().getXPath();
+    try {
+      analyzerQueryExp = xpath.compile("./analyzer[@type='query']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      analyzerMultiTermExp = xpath.compile("./analyzer[@type='multiterm']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      analyzerIndexExp = xpath.compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      similarityExp = xpath.compile("./similarity");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+
+    try {
+      charFilterExp = xpath.compile("./charFilter");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      tokenizerExp = xpath.compile("./tokenizer");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      filterExp = xpath.compile("./filter");
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
   }
 
   private final IndexSchema schema;

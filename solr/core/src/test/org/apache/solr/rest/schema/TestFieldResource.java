@@ -16,9 +16,22 @@
  */
 package org.apache.solr.rest.schema;
 import org.apache.solr.rest.SolrRestletTestBase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestFieldResource extends SolrRestletTestBase {
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
   @Test
   public void testGetField() throws Exception {
     assertQ("/schema/fields/test_postv?indent=on&wt=xml&showDefaults=true",

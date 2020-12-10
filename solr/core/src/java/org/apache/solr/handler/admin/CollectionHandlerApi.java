@@ -66,7 +66,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
       }
     }
     //The following APIs have only V2 implementations
-    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
+    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkStateReader().getLiveNodes()));
     addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
       List<CommandOperation> commands = params.req.getCommands(true);
       if (commands == null || commands.isEmpty()) throw new RuntimeException("Empty commands");

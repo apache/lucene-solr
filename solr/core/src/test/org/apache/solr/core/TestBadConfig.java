@@ -21,6 +21,7 @@ import javax.script.ScriptEngineManager;
 import org.junit.Assume;
 import org.junit.Ignore;
 
+
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUnsetSysProperty() throws Exception {
@@ -28,13 +29,14 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
   }
 
   public void testNRTModeProperty() throws Exception {
-    assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "contains more than one value for config path");
+    assertConfigs("bad-solrconfig-nrtmode.xml","schema.xml", "contains more than one value");
   }
 
   public void testMultipleDirectoryFactories() throws Exception {
       assertConfigs("bad-solrconfig-multiple-dirfactory.xml", "schema12.xml",
                     "directoryFactory");
   }
+
   public void testMultipleIndexConfigs() throws Exception {
       assertConfigs("bad-solrconfig-multiple-indexconfigs.xml", "schema12.xml",
                     "indexConfig");
@@ -44,7 +46,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
                     "useCompoundFile");
   }
 
-  @Ignore // this fails because a small change is that currently, a SolrCore failing in CoreContainer#load will
+  @Ignore // this fails because a small change - currently, a SolrCore failing in CoreContainer#load will
   // not fail with an exception, though the exception will be logged - we should check the core init exceptions here
   public void testUpdateLogButNoVersionField() throws Exception {
     
@@ -71,12 +73,14 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
                   "schema.xml","a-file-name-that-does-not-exist.js");
   }
 
+  @Nightly
   public void testInvalidScriptFile() throws Exception {
     // sanity check
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
     assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
                   "schema.xml","currency.xml");
   }
+
 
   public void testBogusMergePolicy() throws Exception {
     assertConfigs("bad-mpf-solrconfig.xml", "schema-minimal.xml",
@@ -92,7 +96,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad-solrconfig-managed-schema-named-schema.xml.xml",
                   "schema-minimal.xml", "managedSchemaResourceName can't be 'schema.xml'");
   }
-  
+
   public void testUnknownSchemaAttribute() throws Exception {
     assertConfigs("bad-solrconfig-unexpected-schema-attribute.xml", "schema-minimal.xml",
                   "Unexpected arg(s): {bogusParam=bogusValue}");

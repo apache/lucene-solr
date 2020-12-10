@@ -27,7 +27,6 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +146,7 @@ public abstract class AbstractPluginLoader<T>
   {
     List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
-    XPath xpath = XmlConfigFile.getXpath();
+    XPath xpath = loader.getXPath();
     if (nodes !=null ) {
       for (int i=0; i<nodes.size(); i++) {
         NodeInfo node = nodes.get(i);
@@ -241,7 +240,7 @@ public abstract class AbstractPluginLoader<T>
     try {
       String name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
       String className = DOMUtil.getAttr(node, "class", type);
-      plugin = create(loader, name, className, node, XmlConfigFile.getXpath());
+      plugin = create(loader, name, className, node, loader.getXPath());
       if (log.isDebugEnabled()) {
         log.debug("created {}: {}", name, plugin.getClass().getName());
       }

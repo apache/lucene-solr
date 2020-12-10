@@ -54,7 +54,7 @@ public class ObjectReleaseTracker {
     StringBuilderWriter sw = new StringBuilderWriter(sb);
     PrintWriter pw = new PrintWriter(sw);
     new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
-    String stack = sw.toString();
+    String stack = object + "\n" + sw.toString();
     OBJECTS.put(object, stack);
 //    if (stack.length() > 8600) {
 //      throw new IllegalStateException("found size:" + stack.length());
@@ -85,13 +85,32 @@ public class ObjectReleaseTracker {
   public static String checkEmpty(String object) {
    // if (true) return null; // nocommit
     StringBuilder error = new StringBuilder();
-    Set<Entry<Object,String>> entries = OBJECTS.entrySet();
-    Set<Entry<Object,String>> entriesCopy = new HashSet<>(entries);
-    if (entriesCopy.size() > 0) {
-      List<String> objects = new ArrayList<>(entriesCopy.size());
-      for (Entry<Object,String> entry : entriesCopy) {
+    Set<Entry<Object,String>> entries = new HashSet<>(OBJECTS.size());
+    OBJECTS.forEach((o, s) -> {
+      entries.add(new Entry<Object,String>() {
+        @Override
+        public Object getKey() {
+          return o;
+        }
+
+        @Override
+        public String getValue() {
+          return s;
+        }
+
+        @Override
+        public String setValue(String value) {
+          return null;
+        }
+      });
+    });
+
+
+    if (entries.size() > 0) {
+      List<String> objects = new ArrayList<>(entries.size());
+      for (Entry<Object,String> entry : entries) {
         if (object != null && entry.getKey().getClass().getSimpleName().equals(object)) {
-          entriesCopy.remove(entry.getKey());
+          entries.remove(entry.getKey());
           if (entry.getKey() instanceof Closeable) {
             try {
               ((Closeable) entry.getKey()).close();
@@ -107,7 +126,7 @@ public class ObjectReleaseTracker {
         return null;
       }
       error.append("ObjectTracker found " + objects.size() + " object(s) that were not released!!! " + objects + "\n");
-      for (Entry<Object,String> entry : entriesCopy) {
+      for (Entry<Object,String> entry : entries) {
         error.append(entry.getKey() + "\n" + "StackTrace:\n" + entry.getValue() + "\n");
       }
     }

@@ -68,7 +68,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
 
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
           log.info("collection not found {}", collection);
           return false;
@@ -77,14 +77,14 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         // wait until we are sure the recovering node is ready
         // to accept updates
         final Replica replica = c.getReplica(cname);
+
         if (replica != null) {
-          if (replica != null) {
-            if (replica.getState() == waitForState) {
-              log.info("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
-              return true;
-            }
+          if (replica.getState() == waitForState || replica.getState() == Replica.State.ACTIVE && coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
+            log.info("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
+            return true;
           }
         }
+
         return false;
       });
 
@@ -97,9 +97,9 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     }
 
     try {
-      ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collection, shard);
+      ZkShardTerms shardTerms = coreContainer.getZkController().getShardTermsOrNull(collection, shard);
       // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-      if (waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
+      if (shardTerms != null && waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
         // The replica changed its term, then published itself as RECOVERING.
         // This core already see replica as RECOVERING
         // so it is guarantees that a live-fetch will be enough for this core to see max term published

@@ -33,7 +33,7 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
   public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {
-      // setup the server...
+      // setup the server...SolrExampleXMLHttp2Test
       String url = jetty.getBaseUrl().toString() + "/collection1";
       Http2SolrClient client = new Http2SolrClient.Builder(url)
           .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)

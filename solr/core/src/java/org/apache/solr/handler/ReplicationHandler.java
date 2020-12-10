@@ -1203,7 +1203,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     };
     //executorService = new ScheduledThreadPoolExecutor("IndexFetcher");
-    executorService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("indexFetcher"));
+    executorService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("indexFetcher", true));
     executorService.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executorService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     // Randomize initial delay, with a minimum of 1ms
@@ -1392,13 +1392,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       @Override
       public void preClose(SolrCore core) {
         try {
-          restoreFuture.cancel(false);
-          try {
-            restoreFuture.get();
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-          } catch (ExecutionException e) {
-            log.error("", e);
+          if (restoreFuture != null) {
+            restoreFuture.cancel(false);
+            try {
+              restoreFuture.get();
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+            } catch (ExecutionException e) {
+              log.error("", e);
+            }
           }
         } catch (NullPointerException e) {
           // okay
@@ -1600,8 +1602,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             fos.writeLong(checksum.getValue());
           }
           fos.write(buf, 0, read);
-          fos.flush();
-          log.debug("Wrote {} bytes for file {}", offset + read, fileName); // logOK
+          fos.flushBuffer();
+          if (log.isDebugEnabled()) log.debug("Wrote {} bytes for file {}", offset + read, fileName); // logOK
 
           //Pause if necessary
           maxBytesBeforePause += read;
@@ -1633,7 +1635,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
      */
     protected void writeNothingAndFlush() throws IOException {
       fos.writeInt(0);
-      fos.flush();
+      fos.flushBuffer();
     }
   }
 
@@ -1680,7 +1682,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
               fos.writeLong(checksum.getValue());
             }
             fos.write(buf, 0, (int) bytesRead);
-            fos.flush();
+            fos.flushBuffer();
           }
         } else {
           writeNothingAndFlush();

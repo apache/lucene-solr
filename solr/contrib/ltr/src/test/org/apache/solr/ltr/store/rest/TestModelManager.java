@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.store.rest;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
@@ -27,46 +28,52 @@ import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.RestManager;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-@Ignore // nocommit flakey
+@LuceneTestCase.Nightly
 public class TestModelManager extends TestRerankBase {
 
-  @BeforeClass
-  public static void init() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     setuptest(true);
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   @Test
   public void test() throws Exception {
-    final SolrResourceLoader loader = new SolrResourceLoader(
-        tmpSolrHome.toPath());
+    try (SolrResourceLoader loader = new SolrResourceLoader(
+        tmpSolrHome.toPath())) {
 
-    final RestManager.Registry registry = loader.getManagedResourceRegistry();
-    assertNotNull(
-        "Expected a non-null RestManager.Registry from the SolrResourceLoader!",
-        registry);
+      final RestManager.Registry registry = loader.getManagedResourceRegistry();
+      assertNotNull(
+              "Expected a non-null RestManager.Registry from the SolrResourceLoader!",
+              registry);
 
-    final String resourceId = "/schema/fstore1";
-    registry.registerManagedResource(resourceId, ManagedFeatureStore.class,
-        new LTRQParserPlugin());
+      final String resourceId = "/schema/fstore1";
+      registry.registerManagedResource(resourceId, ManagedFeatureStore.class,
+              new LTRQParserPlugin());
 
-    final String resourceId2 = "/schema/mstore1";
-    registry.registerManagedResource(resourceId2, ManagedModelStore.class,
-        new LTRQParserPlugin());
+      final String resourceId2 = "/schema/mstore1";
+      registry.registerManagedResource(resourceId2, ManagedModelStore.class,
+              new LTRQParserPlugin());
 
-    final NamedList<String> initArgs = new NamedList<>();
+      final NamedList<String> initArgs = new NamedList<>();
 
-    final RestManager restManager = new RestManager();
-    restManager.init(loader, initArgs,
-        new ManagedResourceStorage.InMemoryStorageIO());
+      final RestManager restManager = new RestManager();
+      restManager.init(loader, initArgs,
+              new ManagedResourceStorage.InMemoryStorageIO());
 
-    final ManagedResource res = restManager.getManagedResource(resourceId);
-    assertTrue(res instanceof ManagedFeatureStore);
-    assertEquals(res.getResourceId(), resourceId);
-
+      final ManagedResource res = restManager.getManagedResource(resourceId);
+      assertTrue(res instanceof ManagedFeatureStore);
+      assertEquals(res.getResourceId(), resourceId);
+    }
   }
 
   @Test

@@ -16,6 +16,23 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,37 +52,24 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrJErrorHandling extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static JettySolrRunner jetty;
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
 
-
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeSolrExampleTestsBase() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @After
+  public void tearDown() throws Exception {
+    SolrClient client = getSolrClient(jetty);
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    super.tearDown();
     unexpected.clear();
   }
 
@@ -108,7 +112,6 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testWithXml() throws Exception {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new RequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
@@ -116,7 +119,6 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testWithBinary() throws Exception {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
     client.setRequestWriter(new BinaryRequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
     doIt(client);
   }
 
@@ -196,7 +198,6 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   // this always failed with the Jetty 9.3 snapshot
   void doIt(Http2SolrClient client) throws Exception {
-    client.deleteByQuery("*:*");
     doThreads(client, TEST_NIGHTLY ? 10 : 3,TEST_NIGHTLY ? 100 : 25);
     // doSingle(client, 1);
   }
@@ -262,6 +263,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
+  @Nightly
   public void testHttpURLConnection() throws Exception {
 
    String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
@@ -317,6 +319,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
+  @Nightly
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";

@@ -69,11 +69,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
       @Override
       public void write(OutputStream os) throws IOException {
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(os, UTF_8);
-        try {
-          getXML(outputStreamWriter);
-        } finally {
-          outputStreamWriter.flush();
-        }
+        getXML(outputStreamWriter);
       }
 
       @Override
@@ -115,7 +111,6 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
       ClientUtils.writeXML(document, writer);
     }
     writer.write("</docs>");
-    writer.flush();
 
     String xml = writer.toString();
     return (xml.length() > 0) ? xml : null;

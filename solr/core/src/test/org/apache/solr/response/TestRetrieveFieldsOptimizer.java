@@ -17,26 +17,6 @@
 
 package org.apache.solr.response;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -57,29 +37,43 @@ import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 import static junit.framework.Assert.fail;
+import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
-import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  @BeforeClass
-  public static void initManagedSchemaCore() throws Exception {
+  @Before
+  public void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
     System.setProperty("enable.update.log", "false");
-
+    typesHolder = new FieldTypeHolder();
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
 
     IndexSchema schema = h.getCore().getLatestSchema();
@@ -88,26 +82,33 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     h.getCore().setLatestSchema(schema);
   }
 
-  static String storedNotDvSv = "_s_ndv_sv";
-  static String storedAndDvSv = "_s_dv_sv";
-  static String notStoredDvSv = "_ns_dv_sv";
+  @After
+  public void afterTest() {
+    deleteCore();
+    allFieldValuesInput.clear();
+    typesHolder = null;
+  }
 
-  static String storedNotDvMv = "_s_ndv_mv";
-  static String storedAndDvMv = "_s_dv_mv";
-  static String notStoredDvMv = "_ns_dv_mv";
+  String storedNotDvSv = "_s_ndv_sv";
+  String storedAndDvSv = "_s_dv_sv";
+  String notStoredDvSv = "_ns_dv_sv";
+
+  String storedNotDvMv = "_s_ndv_mv";
+  String storedAndDvMv = "_s_dv_mv";
+  String notStoredDvMv = "_ns_dv_mv";
 
   // Each doc needs a field I can use to identify it for value comparison
-  static String idStoredNotDv = "id_s_ndv_sv";
-  static String idNotStoredDv = "id_ns_dv_sv";
+  String idStoredNotDv = "id_s_ndv_sv";
+  String idNotStoredDv = "id_ns_dv_sv";
 
-  static FieldTypeHolder typesHolder = new FieldTypeHolder();
+  FieldTypeHolder typesHolder;
 
-  static FieldHolder fieldsHolder = new FieldHolder();
-  static Map<String, Map<String, List<String>>> allFieldValuesInput = new HashMap<>();
+  FieldHolder fieldsHolder = new FieldHolder();
+  Map<String, Map<String, List<String>>> allFieldValuesInput = new HashMap<>();
 
   //TODO, how to generalize?
 
-  private static void setupAllFields() throws IOException {
+  private void setupAllFields() throws IOException {
 
     IndexSchema schema = h.getCore().getLatestSchema();
 
@@ -151,7 +152,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     schema = typesHolder.addFieldTypes(schema);
 
     for (Map.Entry<String, Map<String, String>> ent : fieldsToAdd.entrySet()) {
-      fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue());
+      fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue(), typesHolder);
     }
     schema = fieldsHolder.addFields(schema);
 
@@ -178,7 +179,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     }
    }
 
-  static void addDocWithAllFields(int idx) {
+   void addDocWithAllFields(int idx) {
 
     // for each doc, add a doc with all the fields with values and store the expected return.
     Map<String, List<String>> fieldsExpectedVals = new HashMap<>();
@@ -422,8 +423,8 @@ class FieldHolder {
 
   Map<String, RetrieveField> fields = new HashMap<>();
 
-  void addField(IndexSchema schema, String name, String type, Map<String, String> opts) {
-    fields.put(name, new RetrieveField(schema, name, type, opts));
+  void addField(IndexSchema schema, String name, String type, Map<String, String> opts, FieldTypeHolder typesHolder) {
+    fields.put(name, new RetrieveField(schema, name, type, opts, typesHolder));
   }
 
   List<RetrieveField> dvNotStoredFields = new ArrayList<>();
@@ -471,7 +472,7 @@ class RetrieveField {
   final SchemaField schemaField;
   final RetrieveFieldType testFieldType;
 
-  RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts) {
+  RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts, FieldTypeHolder typesHolder) {
 
     Map<String, String> fullOpts = new HashMap<>(opts);
     fullOpts.put("name", name);
@@ -480,7 +481,7 @@ class RetrieveField {
     this.name = name;
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);
-    this.testFieldType = TestRetrieveFieldsOptimizer.typesHolder.getTestType(type);
+    this.testFieldType = typesHolder.getTestType(type);
 
   }
 

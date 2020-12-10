@@ -21,8 +21,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
@@ -104,8 +107,14 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   
   @Override
   protected void removeDirectory(CacheValue cacheValue) throws IOException {
-    File dirFile = new File(cacheValue.path);
-    FileUtils.deleteDirectory(dirFile);
+    Path dirFile = Paths.get(cacheValue.path);
+    while (Files.exists(dirFile)) {
+      try {
+        Files.walk(dirFile).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+      } catch (NoSuchFileException e) {
+
+      }
+    }
   }
   
   /**

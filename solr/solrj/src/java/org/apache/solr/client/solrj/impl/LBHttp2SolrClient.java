@@ -75,6 +75,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
+    // nocommit - should only be internal for us
     this.httpClient = new Http2SolrClient.Builder().withHttpClient(httpClient).markInternalRequest().build();
   }
 

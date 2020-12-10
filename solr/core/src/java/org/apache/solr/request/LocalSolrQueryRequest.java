@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
@@ -69,6 +70,11 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
     super(core, args);
+  }
+
+  @Override
+  public void close() {
+    super.close();
   }
 
   @Override public Principal getUserPrincipal() {

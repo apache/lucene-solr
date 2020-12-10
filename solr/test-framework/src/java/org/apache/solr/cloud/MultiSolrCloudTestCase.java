@@ -16,14 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.junit.After;
+import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.junit.AfterClass;
 
 /**
  * Base class for tests that require more than one SolrCloud
@@ -34,7 +38,9 @@ import org.junit.AfterClass;
  */
 public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
-  protected static Map<String,MiniSolrCloudCluster> clusterId2cluster = new ConcurrentHashMap<>();
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected Map<String,MiniSolrCloudCluster> clusterId2cluster;
 
   protected static abstract class DefaultClusterCreateFunction implements Function<String,MiniSolrCloudCluster> {
 
@@ -75,7 +81,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
-        .process(cluster.getSolrClient());
+        .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
         // nocommit - still need to harden processAndWait
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -84,7 +90,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
   }
 
-  protected static void doSetupClusters(final String[] clusterIds,
+  protected void doSetupClusters(final String[] clusterIds,
       final Function<String,MiniSolrCloudCluster> createFunc,
       final BiConsumer<String,MiniSolrCloudCluster> initFunc) throws Exception {
 
@@ -92,16 +98,29 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
       assertFalse("duplicate clusterId "+clusterId, clusterId2cluster.containsKey(clusterId));
       MiniSolrCloudCluster cluster = createFunc.apply(clusterId);
       initFunc.accept(clusterId, cluster);
-      clusterId2cluster.put(clusterId, cluster);
+      MiniSolrCloudCluster old = clusterId2cluster.put(clusterId, cluster);
+      if (old != null) {
+        old.shutdown();
+      }
     }
   }
 
-  @AfterClass
-  public static void shutdownCluster() throws Exception {
-    for (MiniSolrCloudCluster cluster : clusterId2cluster.values()) {
-      cluster.shutdown();
-    }
+  @Before
+  public void beforeMultiSolrCloudTestCase() throws Exception {
+    clusterId2cluster = new ConcurrentHashMap<>();
+  }
+
+  @After
+  public void shutdownCluster() throws Exception {
+    clusterId2cluster.forEach((s, miniSolrCloudCluster) -> {
+      try {
+        miniSolrCloudCluster.shutdown();
+      } catch (Exception e) {
+        log.error("", e);
+      }
+    });
     clusterId2cluster.clear();
+    clusterId2cluster = null;
   }
 
 }

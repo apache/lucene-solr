@@ -36,8 +36,8 @@ public class XCJFQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xcjf";
 
-  private String routerField;
-  private HashSet<String> solrUrlWhitelist;
+  private volatile String routerField;
+  private final HashSet<String> solrUrlWhitelist = new HashSet<>();
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -48,14 +48,13 @@ public class XCJFQParserPlugin extends QParserPlugin {
   @SuppressWarnings({"unchecked"})
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     routerField = (String) args.get("routerField");
-    solrUrlWhitelist = new HashSet<>();
     if (args.get("solrUrl") != null) {
       for (String s : (List<String>) args.get("solrUrl")) {
         if (!StringUtils.isEmpty(s))
           solrUrlWhitelist.add(s);
       }
     } else {
-      solrUrlWhitelist = null;
+      solrUrlWhitelist.clear();
     }
   }
 

@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -37,10 +39,17 @@ public class TestGeoJSONResponseWriter extends SolrTestCaseJ4 {
 
   final ObjectMapper jsonmapper = new ObjectMapper();
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-basic.xml","schema-spatial.xml");
     createIndex();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   public static void createIndex() {

@@ -174,6 +174,11 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
   }
 
+  @Override
+  public String toString() {
+    return "UpdateRequestProcessorChain{" + "chain=" + chain + '}';
+  }
+
   @SuppressWarnings({"rawtypes"})
   private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
     List<PluginInfo> processors = info.getChildren("processor");

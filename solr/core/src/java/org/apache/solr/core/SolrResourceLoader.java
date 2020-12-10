@@ -48,6 +48,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import net.sf.saxon.Configuration;
+import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -60,6 +62,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -67,6 +70,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
@@ -76,11 +80,16 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpression;
+
 /**
  * @since solr 1.3
  */
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
@@ -91,6 +100,155 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final URL[] EMPTY_URL_ARRAY = new URL[0];
   private final SystemIdResolver sysIdResolver;
+
+  public volatile Configuration conf;
+
+  public volatile XPathFactoryImpl xpathFactory;
+
+
+  public XPathExpression shardHandlerFactoryExp;
+  public XPathExpression counterExp;
+  public XPathExpression meterExp;
+  public XPathExpression timerExp;
+  public XPathExpression histoExp;
+  public XPathExpression historyExp;
+  public XPathExpression transientCoreCacheFactoryExp;
+  public XPathExpression tracerConfigExp;
+
+  public XPathExpression coreLoadThreadsExp;
+  public XPathExpression persistentExp;
+  public XPathExpression sharedLibExp;
+  public XPathExpression zkHostExp;
+  public XPathExpression coresExp;
+
+  static String shardHandlerFactoryPath = "solr/shardHandlerFactory";
+  static String counterExpPath = "solr/metrics/suppliers/counter";
+  static String meterPath = "solr/metrics/suppliers/meter";
+  static String timerPath = "solr/metrics/suppliers/timer";
+  static String histoPath = "solr/metrics/suppliers/histogram";
+  static String historyPath = "solr/metrics/history";
+  static String  transientCoreCacheFactoryPath =  "solr/transientCoreCacheFactory";
+  static String  tracerConfigPath = "solr/tracerConfig";
+
+  static String  coreLoadThreadsPath = "solr/@coreLoadThreads";
+  static String  persistentPath = "solr/@persistent";
+  static String  sharedLibPath = "solr/@sharedLib";
+  static String  zkHostPath = "solr/@zkHost";
+  static String  coresPath = "solr/cores";
+
+  public XPathExpression xpathOrExp;
+  public XPathExpression schemaNameExp;
+  public XPathExpression schemaVersionExp;
+  public XPathExpression schemaSimExp;
+  public XPathExpression defaultSearchFieldExp;
+  public XPathExpression solrQueryParserDefaultOpExp;
+  public XPathExpression schemaUniqueKeyExp;
+  public XPathExpression fieldTypeXPathExpressionsExp;
+  public XPathExpression copyFieldsExp;
+
+  public static String schemaNamePath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.AT + IndexSchema.NAME);
+  public static String schemaVersionPath = "/schema/@version";
+
+  public static String copyFieldPath = "//" + IndexSchema.COPY_FIELD;
+
+  public static String fieldTypeXPathExpressions = IndexSchema.getFieldTypeXPathExpressions();
+
+  public static String schemaSimPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.SIMILARITY); //   /schema/similarity
+
+  public static String defaultSearchFieldPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, "defaultSearchField", IndexSchema.TEXT_FUNCTION);
+
+  public static String solrQueryParserDefaultOpPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, "solrQueryParser", IndexSchema.AT + "defaultOperator");
+
+  public static String schemaUniqueKeyPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.UNIQUE_KEY, IndexSchema.TEXT_FUNCTION);
+
+  public XPathExpression luceneMatchVersionExp;
+  public XPathExpression indexDefaultsExp;
+  public XPathExpression mainIndexExp;
+  public XPathExpression nrtModeExp;
+  public XPathExpression unlockOnStartupExp;
+
+  static String luceneMatchVersionPath = "/config/" + IndexSchema.LUCENE_MATCH_VERSION_PARAM;
+  static String indexDefaultsPath = "/config/indexDefaults";
+  static String mainIndexPath = "/config/mainIndex";
+  static String nrtModePath = "/config/indexConfig/nrtmode";
+  static String unlockOnStartupPath = "/config/indexConfig/unlockOnStartup";
+
+
+   {
+    conf = Configuration.newConfiguration();
+
+    conf.setValidation(false);
+    conf.setXIncludeAware(true);
+    conf.setExpandAttributeDefaults(true);
+
+    xpathFactory = new XPathFactoryImpl(conf.makePipelineConfiguration().getConfiguration());
+
+    try {
+      XPath xpath = xpathFactory.newXPath();
+
+      luceneMatchVersionExp = xpath.compile(luceneMatchVersionPath);
+
+      indexDefaultsExp = xpath.compile(indexDefaultsPath);
+
+      mainIndexExp = xpath.compile(mainIndexPath);
+
+      nrtModeExp = xpath.compile(nrtModePath);
+
+      unlockOnStartupExp = xpath.compile(unlockOnStartupPath);
+
+      shardHandlerFactoryExp = xpath.compile(shardHandlerFactoryPath);
+
+      counterExp = xpath.compile(counterExpPath);
+
+      meterExp = xpath.compile(meterPath);
+
+      timerExp = xpath.compile(timerPath);
+
+      histoExp = xpath.compile(histoPath);
+
+      historyExp = xpath.compile(historyPath);
+
+      transientCoreCacheFactoryExp = xpath.compile(transientCoreCacheFactoryPath);
+
+      tracerConfigExp = xpath.compile(tracerConfigPath);
+
+      coreLoadThreadsExp = xpath.compile(coreLoadThreadsPath);
+
+      persistentExp = xpath.compile(persistentPath);
+
+      sharedLibExp = xpath.compile(sharedLibPath);
+
+      zkHostExp = xpath.compile(zkHostPath);
+
+      coresExp = xpath.compile(coresPath);
+
+      String expression =
+          IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.FIELD) + IndexSchema.XPATH_OR + IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.DYNAMIC_FIELD) + IndexSchema.XPATH_OR
+              + IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.FIELDS, IndexSchema.FIELD) + IndexSchema.XPATH_OR + IndexSchema
+              .stepsToPath(IndexSchema.SCHEMA, IndexSchema.FIELDS, IndexSchema.DYNAMIC_FIELD);
+      xpathOrExp = xpath.compile(expression);
+
+      schemaNameExp = xpath.compile(schemaNamePath);
+
+      schemaVersionExp = xpath.compile(schemaVersionPath);
+
+      schemaSimExp = xpath.compile(schemaSimPath);
+
+      defaultSearchFieldExp = xpath.compile(defaultSearchFieldPath);
+
+      solrQueryParserDefaultOpExp = xpath.compile(solrQueryParserDefaultOpPath);
+
+      schemaUniqueKeyExp = xpath.compile(schemaUniqueKeyPath);
+
+      fieldTypeXPathExpressionsExp = xpath.compile(fieldTypeXPathExpressions);
+
+      copyFieldsExp = xpath.compile(copyFieldPath);
+
+    } catch (Exception e) {
+      log.error("", e);
+    }
+  }
+
 
   private String name = "";
   protected volatile URLClassLoader classLoader;
@@ -109,6 +267,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   /** @see #reloadLuceneSPI() */
   private volatile boolean needToReloadLuceneSPI = false; // requires synchronization
+
 
   public RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
@@ -132,6 +291,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
     this(instanceDir, parent);
     this.name = name;
+
+
+
     final List<URL> libUrls = new ArrayList<>(classpath.size());
     try {
       for (Path path : classpath) {
@@ -171,6 +333,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this.classLoader = URLClassLoader.newInstance(EMPTY_URL_ARRAY, parent);
     this.resourceClassLoader = URLClassLoader.newInstance(EMPTY_URL_ARRAY, parent);
     this.sysIdResolver = new SystemIdResolver(this);
+    // TODO: workout the leak in CollectionsAPIAsyncDistrbutedZkTest
+    // assert ObjectReleaseTracker.track(this);
   }
 
   public SystemIdResolver getSysIdResolver() {
@@ -204,6 +368,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
               .distinct()
               .collect(Collectors.toList()));
     }
+  }
+
+  public Configuration getConf() {
+    return conf;
   }
 
   /**
@@ -789,6 +957,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public void close() throws IOException {
     IOUtils.close(classLoader);
     IOUtils.close(resourceClassLoader);
+    assert ObjectReleaseTracker.release(this);
   }
 
   public Set<SolrInfoBean> getInfoMBeans() {
@@ -826,4 +995,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
   }
 
+  public XPath getXPath() {
+    return xpathFactory.newXPath();
+  }
 }

@@ -553,6 +553,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** randomized testing of a non-trivial number of docs using assertFullWalkNoDups 
    */
+  @Nightly
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 

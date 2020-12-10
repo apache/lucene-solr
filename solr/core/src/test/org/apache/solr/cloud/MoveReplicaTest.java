@@ -118,7 +118,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     addDocs(coll, 100);
 
     Replica replica = getRandomReplica(coll, cloudClient);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;
@@ -205,7 +205,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       replica = getRandomReplica(coll, cloudClient);
     } while (!replica.getNodeName().equals(overseerLeader) && count-- > 0);
     assertNotNull("could not find non-overseer replica???", replica);
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String targetNode = null;

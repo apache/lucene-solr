@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -28,6 +29,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CorePropertiesLocator;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -46,12 +48,14 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
-
-    solrHomeDirectory = createTempDir().toFile();
-
-    setupNoCoreTest(solrHomeDirectory.toPath(), null);
+    Path solrHomePath = createTempDir();
+    solrHomeDirectory = solrHomePath.toFile();
+    try (SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHomePath)) {
+      setupNoCoreTest(resourceLoader, solrHomePath, null);
+    }
 
     admin = new CoreAdminHandler(h.getCoreContainer());
+
   }
 
   @AfterClass
@@ -61,6 +65,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   private static void setupCore(String coreName, boolean blivet) throws IOException {
+    h.coreName = coreName;
     File instDir = new File(solrHomeDirectory, coreName);
     File subHome = new File(instDir, "conf");
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());

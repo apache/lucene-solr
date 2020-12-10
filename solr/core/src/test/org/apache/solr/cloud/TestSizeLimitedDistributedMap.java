@@ -23,8 +23,14 @@ import java.util.List;
 import java.util.Set;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+
+  }
 
   public void testCleanup() throws Exception {
     final List<String> deletedItems = new LinkedList<>();

@@ -33,19 +33,16 @@ class DeleteSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.required().get(CoreAdminParams.CORE);
 
     CoreContainer cc = it.handler.getCoreContainer();
-    SolrCore core = cc.getCore(cname);
-    if (core == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
-    }
+    try (SolrCore core = cc.getCore(cname)) {
+      if (core == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
+      }
 
-    try {
       core.deleteNamedSnapshot(commitName);
       // Ideally we shouldn't need this. This is added since the RPC logic in
       // OverseerCollectionMessageHandler can not provide the coreName as part of the result.
       it.rsp.add(CoreAdminParams.CORE, core.getName());
       it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
-    } finally {
-      core.close();
     }
   }
 }

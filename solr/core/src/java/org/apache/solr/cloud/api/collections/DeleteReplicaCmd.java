@@ -180,7 +180,7 @@ public class DeleteReplicaCmd implements Cmd {
           }
 
           try {
-            waitForCoreNodeGone(collectionName, shard, replicaName, 10000); // nocommit timeout
+            waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // nocommit timeout
           } catch (Exception e) {
             log.error("", e);
           }
@@ -360,7 +360,7 @@ public class DeleteReplicaCmd implements Cmd {
       params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true));
 
-      isLive = ocmh.zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
+      isLive = ocmh.zkStateReader.getLiveNodes().contains(replica.getNodeName());
 
 
       if (isLive) {
@@ -390,7 +390,11 @@ public class DeleteReplicaCmd implements Cmd {
         if (c == null)
           return true;
         Slice slice = c.getSlice(shard);
-        if(slice == null || slice.getReplica(replicaName) == null) {
+        if(slice == null) {
+          return true;
+        }
+        Replica r = slice.getReplica(replicaName);
+        if(r == null || !ocmh.zkStateReader.isNodeLive(r.getNodeName())) {
           return true;
         }
         return false;

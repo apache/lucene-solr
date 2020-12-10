@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,8 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
@@ -66,6 +69,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
  * @since 6.0.0
  */
 public class TopicStream extends CloudSolrStream implements Expressible  {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1;
 
@@ -367,8 +371,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
     Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = zkStateReader.getLiveNodes();
 
     for(Slice slice : slices) {
       String sliceName = slice.getName();
@@ -448,8 +451,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = zkStateReader.getLiveNodes();
 
     OUTER:
     for(Slice slice : slices) {
@@ -459,16 +461,15 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
           Http2SolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
             SolrDocument doc = httpClient.getById(id);
-            if(doc != null) {
-              // TODO something is wrong here, you can get a String instead of List
-              // but the following does not work
-//              if (cp instanceof List) {
-//                checkpoints = (List<String>) cp;
-//              } else {
-//                checkpoints = Collections.singletonList((String)cp);
-//              }
-
-              List<String> checkpoints = (List<String>)doc.getFieldValue("checkpoint_ss");
+            if (doc != null) {
+              List<String> checkpoints;
+              Object cp = doc.getFieldValue("checkpoint_ss");
+              if (cp instanceof List) {
+                checkpoints = (List<String>) cp;
+              } else {
+                checkpoints = Collections.singletonList((String)cp);
+              }
+              log.info("checkpoint_ss {}", doc.getFieldValue("checkpoint_ss"));
               for (String checkpoint : checkpoints) {
                 String[] pair = checkpoint.split("~");
                 this.checkpoints.put(pair[0], Long.parseLong(pair[1]));
@@ -500,8 +501,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
       Random random = new Random();
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
       for(Slice slice : slices) {
         ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);

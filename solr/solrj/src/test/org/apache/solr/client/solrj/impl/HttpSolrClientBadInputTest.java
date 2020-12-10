@@ -25,6 +25,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
@@ -33,18 +34,18 @@ import static org.hamcrest.core.StringContains.containsString;
  * Tests {@link HttpSolrClient}'s response to a variety of bad inputs.
  */
 public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
-  private static final List<String> NULL_STR_LIST = null;
-  private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
-  private static final String ANY_COLLECTION = "ANY_COLLECTION";
-  private static final int ANY_COMMIT_WITHIN_TIME = -1;
-  private static JettySolrRunner jetty;
+  private final List<String> NULL_STR_LIST = null;
+  private final List<String> EMPTY_STR_LIST = new ArrayList<>();
+  private final String ANY_COLLECTION = "ANY_COLLECTION";
+  private final int ANY_COMMIT_WITHIN_TIME = -1;
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
+  @Before
+  public void setup() throws Exception {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    super.setUp();
   }
 
   private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, ThrowingRunnable runnable) {

@@ -31,6 +31,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,15 +40,14 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   private final static String VERSION = "_version_";
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     initCore("solrconfig-tlog.xml", "schema-nest.xml"); // use "nest" schema
   }
 
-  @Before
-  public void before() {
-    clearIndex();
-    assertU(commit());
+  @After
+  public void afterTests() {
+    deleteCore();
   }
 
   @Test

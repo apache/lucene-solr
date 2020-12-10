@@ -61,7 +61,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
-    System.setProperty("solr.disableMetricsHistoryHandler", "false");
+    System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
 
     configureCluster(1)
@@ -73,8 +73,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(solrClient);
-    CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
-        30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
+
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
     // sleep until next generation of kids grow up to allow the handler to collect some metrics
     timeSource.sleep(100000);

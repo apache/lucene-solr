@@ -347,6 +347,11 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         cachedCollections = null;
       }
     }
+
+    @Override
+    public String getName() {
+      return "PagedCollectionSupport";
+    }
   }
 
   private PagedCollectionSupport pagingSupport;
@@ -519,7 +524,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         boolean applyStatusFilter = (page.filterType == FilterType.status && page.filter != null);
         List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<String>() : null;
         Set<String> liveNodes = applyStatusFilter ?
-            zkController.getZkStateReader().getClusterState().getLiveNodes() : null;
+            zkController.getZkStateReader().getLiveNodes() : null;
 
         collectionStates = new TreeMap<>(pagingSupport);
         for (String collection : page.selected) {

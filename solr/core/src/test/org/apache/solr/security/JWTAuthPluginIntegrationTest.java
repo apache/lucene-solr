@@ -82,6 +82,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
   }
 
@@ -316,15 +317,17 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
+    InputStream is = null;
     if (jws != null)
       setAuthorizationHeader(httpPost, "Bearer " + jws.getCompactSerialization());
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
-    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
+    is = r.getEntity().getContent();
+    String response = IOUtils.toString(is, StandardCharsets.UTF_8);
     assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+    Utils.readFully(is);
 
     // HACK (continued)...
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

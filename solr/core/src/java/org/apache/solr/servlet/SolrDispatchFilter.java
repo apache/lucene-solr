@@ -78,10 +78,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -108,9 +106,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {} {} {}", XmlConfigFile.xpathFactory,
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory, XmlConfigFile.getXpath());
+    log.warn("expected pre init of xml factories {} {} {} {} {}",
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
   }
+
+  private volatile StopRunnable stopRunnable;
 
   private static class LiveThread extends Thread {
     @Override
@@ -127,16 +127,16 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
 
-  protected String abortErrorMessage = null;
+  protected volatile String abortErrorMessage = null;
 
-  protected HttpClient httpClient;
-  private ArrayList<Pattern> excludePatterns;
+  protected volatile HttpClient httpClient;
+  private volatile ArrayList<Pattern> excludePatterns;
   
-  private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private volatile SolrMetricManager metricManager;
+  private volatile String registryName;
   private volatile boolean closeOnDestroy = true;
   private volatile SolrZkClient zkClient;
 
@@ -189,6 +189,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       initCall.run();
     }
 
+    log.info("Using extra properties {}", extraProperties);
+
     CoreContainer coresInit = null;
     try {
 
@@ -220,6 +222,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
         final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
         coresInit = createCoreContainer(solrHomePath, extraProperties);
+
+        CoreContainer finalCoresInit = coresInit;
+//        stopRunnable = new StopRunnable(coresInit);
+//        SolrLifcycleListener.registerStopped(stopRunnable);
+
         SolrPaths.ensureUserFilesDataDir(solrHomePath);
         setupJvmMetrics(coresInit);
         if (log.isDebugEnabled()) {
@@ -242,6 +249,25 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
   }
 
+  private void stopCoreContainer(CoreContainer finalCoresInit) {
+
+    IOUtils.closeQuietly(finalCoresInit);
+    cores = null;
+    httpClient = null;
+    if (zkClient != null) {
+      zkClient.disableCloseLock();
+    }
+
+    try (ParWork parWork = new ParWork(this, true, true)) {
+      parWork.collect("", ()->{
+        ParWork.close(zkClient);
+      });
+      parWork.collect("", ()->{
+        liveThread.interrupt();
+      });
+    }
+  }
+
   private void setupJvmMetrics(CoreContainer coresInit)  {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
@@ -249,7 +275,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     try {
       metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
       metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
-      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
+      // nocommit - this still appears fairly costly
+      // metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
       metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
       metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
       metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
@@ -288,6 +315,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String specVer = Version.LATEST.toString();
     try {
       String implVer = SolrCore.class.getPackage().getImplementationVersion();
+      if (implVer == null) {
+        return specVer;
+      }
       return (specVer.equals(implVer.split(" ")[0])) ? specVer : implVer;
     } catch (Exception e) {
       return specVer;
@@ -308,10 +338,10 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * Override this to change CoreContainer initialization
    * @return a CoreContainer to hold this server's cores
    */
-  protected synchronized CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) {
+  protected synchronized CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) throws IOException {
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      int zkClientTimeout = Integer.getInteger("zkConnectTimeout", 30000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
+      int zkClientTimeout = Integer.getInteger("zkClientTimeout", 30000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
       if (zkClient != null) {
         throw new IllegalStateException();
       }
@@ -337,10 +367,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * This may also be used by custom filters to load relevant configuration.
    * @return the NodeConfig
    */
-  public static NodeConfig loadNodeConfig(SolrZkClient zkClient, Path solrHome, Properties nodeProperties) {
+  public static NodeConfig loadNodeConfig(SolrZkClient zkClient, Path solrHome, Properties nodeProperties) throws IOException {
     if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn("Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
+
     if (zkClient != null) {
       try {
 
@@ -351,8 +382,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           log.error("Found solr.xml in ZooKeeper with no data in it");
           throw new SolrException(ErrorCode.SERVER_ERROR, "Found solr.xml in ZooKeeper with no data in it");
         }
-        return SolrXmlConfig.fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties, true,
-            data.length);
+        return new SolrXmlConfig().fromInputStream(solrHome, new ByteArrayInputStream(data), nodeProperties);
       } catch (KeeperException.NoNodeException e) {
         // okay
       } catch (Exception e) {
@@ -362,8 +392,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     }
     log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
 
-
-    return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
+    return new SolrXmlConfig().fromSolrHome(solrHome, nodeProperties);
   }
   
   public CoreContainer getCores() {
@@ -377,7 +406,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void close() {
     CoreContainer cc = cores;
-    cores = null;
+
     try {
 //      if (metricManager != null) {
 //        try {
@@ -391,25 +420,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 //        }
 //      }
     } finally {
-      if (cc != null) {
-
-        httpClient = null;
-        IOUtils.closeQuietly(cc);
-        if (zkClient != null) {
-          zkClient.disableCloseLock();
-        }
+     // if (!cc.isShutDown()) {
+        log.info("CoreContainer is not yet shutdown during filter destroy, shutting down now {}", cc);
+        GlobalTracer.get().close();
+        stopCoreContainer(cc);
+    //  }
 
 
-        try (ParWork parWork = new ParWork(this, true, true)) {
-          parWork.collect("", ()->{
-            ParWork.close(zkClient);
-          });
-          parWork.collect("", ()->{
-            liveThread.interrupt();
-          });
-        }
-      }
-      GlobalTracer.get().close();
+
+//      if (SolrLifcycleListener.isRegisteredStopped(stopRunnable)) {
+//        SolrLifcycleListener.removeStopped(stopRunnable);
+//      }
     }
   }
 
@@ -484,7 +505,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
 
       HttpSolrCall call = getHttpSolrCall(request, response, retry);
-
       ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
       try {
         Action result = call.call();
@@ -516,8 +536,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       if (span != null) span.finish();
       if (scope != null) scope.close();
 
-      GlobalTracer.get().clearContext();
       consumeInputFully(request, response);
+      GlobalTracer.get().clearContext();
       SolrRequestParsers.cleanupMultipartFiles(request);
     }
   }
@@ -529,7 +549,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     try {
       ServletInputStream is = req.getInputStream();
       while (!is.isFinished() && is.read() != -1) {}
-      IOUtils.closeQuietly(is);
     } catch (IOException e) {
       if (req.getHeader(HttpHeaders.EXPECT) != null && response.isCommitted()) {
         log.debug("No input stream to consume from client");
@@ -716,6 +735,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
 
         @Override
+        public void flushBuffer() throws IOException {
+          // no flush, commits response and messes up chunked encoding stuff
+        }
+
+        @Override
         public void sendError(int sc, String msg) throws IOException {
           log.error(msg);
           response.setStatus(sc);
@@ -725,7 +749,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
         @Override
         public void sendError(int sc) throws IOException {
-          sendError(sc, "Solr ran into an unexpected problem and doesn't seem to know more about it. There may be more information in the Solr logs.");
+          sendError(sc, "Solr ran into an unexpected problem and doesn't seem to know more about it. There may be more information in the Solr logs. code=" + sc);
         }
       };
     } else {
@@ -742,6 +766,20 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     public void close() {
       // don't allow close
     }
+  }
+
+  private class StopRunnable implements Runnable{
+
+    private final CoreContainer coreContainer;
+
+    public StopRunnable(CoreContainer coreContainer) {
+      this.coreContainer = coreContainer;
+    }
+
+    public void run() {
+      stopCoreContainer(coreContainer);
+    }
+
   }
 
   private static class CloseShieldServletOutputStreamWrapper extends ServletOutputStreamWrapper {

@@ -42,6 +42,7 @@ import com.github.tomakehurst.wiremock.http.HttpServer;
 import com.github.tomakehurst.wiremock.http.HttpServerFactory;
 import com.github.tomakehurst.wiremock.http.StubRequestHandler;
 import com.github.tomakehurst.wiremock.jetty94.Jetty94HttpServer;
+import com.google.common.base.Optional;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -118,6 +120,12 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       connector.setReuseAddress(true);
       return connector;
     }
+
+    protected Server createServer(Options options) {
+      final Server server = new Server(new SolrQueuedThreadPool("JettyMockWireServer"));
+
+      return server;
+    }
   }
 
   // WireMock is not shutting down the Jetty threads properly, causing problems during test shutdown
@@ -162,6 +170,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       mockSolr.stop();
       mockSolr = null;
     }
+    mockDocCollection = null;
   }
 
   protected static final String BUILT_IN_MOCK_COLLECTION = "wireMock";
@@ -220,8 +229,8 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     final String baseUrl = mockSolr.baseUrl();
     Map<String, ClusterState.CollectionRef> collectionStates =
         Collections.singletonMap(BUILT_IN_MOCK_COLLECTION, new ClusterState.CollectionRef(mockDocCollection));
-    ClusterState clusterState = new ClusterState(Collections.singleton(baseUrl), collectionStates, 1);
-    MockZkStateReader zkStateReader = new MockZkStateReader(clusterState, Collections.singleton(BUILT_IN_MOCK_COLLECTION));
+    ClusterState clusterState = new ClusterState(collectionStates, 1);
+    MockZkStateReader zkStateReader = new MockZkStateReader(clusterState, Collections.singleton(baseUrl), Collections.singleton(BUILT_IN_MOCK_COLLECTION));
     stateProvider = new ZkClientClusterStateProvider(zkStateReader, true);
 
     /*

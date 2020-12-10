@@ -59,22 +59,22 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     List<Future> indexFutures = new ArrayList<>();
     for (int i = 0; i < 10; i ++) {
       final String collectionName = "testCollection" + i;
-      ParWork.getRootSharedExecutor().submit(() -> {
+      Future<?> future = ParWork.getRootSharedExecutor().submit(() -> {
         try {
-          CollectionAdminRequest.createCollection(collectionName, "conf", 1, 6)
-              .setMaxShardsPerNode(100)
-              .process(cluster.getSolrClient());
+          log.info("Create {}", collectionName);
+          CollectionAdminRequest.createCollection(collectionName, "conf", 1, 6).setMaxShardsPerNode(100).process(cluster.getSolrClient());
           StoppableIndexingThread indexThread;
           for (int j = 0; j < 2; j++) {
             indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), Integer.toString(j), false, 100, 10, false);
             indexThread.setCollection(collectionName);
             indexFutures.add(ParWork.getRootSharedExecutor().submit(indexThread));
           }
+
         } catch (Exception e) {
           log.error("", e);
         }
       });
-
+      futures.add(future);
 
     }
 
@@ -83,7 +83,9 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     }
 
     for (Future future : indexFutures) {
-      future.get(20, TimeUnit.SECONDS);
+      if (future != null) {
+        future.get(20, TimeUnit.SECONDS);
+      }
     }
 
 

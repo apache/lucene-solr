@@ -99,13 +99,15 @@ allprojects {
         maxParallelForks = 1
       }
 
+
+
       workingDir testsCwd
       useJUnit()
 
       minHeapSize = propertyOrDefault("tests.minheapsize", "512m")
       maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:-UseBiasedLocking -DconfigurationFile=log4j2.xml -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault"));
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:-UseBiasedLocking -Djava.net.preferIPv4Stack=true -DconfigurationFile=log4j2.xml -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault"));
 
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 

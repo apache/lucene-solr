@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +94,6 @@ public class ZkTestServer implements Closeable {
   public static final int TIMEOUT = 45000;
   public static final int TICK_TIME = 1000;
 
-  private Timer timer = new Timer();
 
   protected final ZKServerMain zkServer = new ZKServerMain();
 
@@ -352,8 +350,8 @@ public class ZkTestServer implements Closeable {
         FileTxnSnapLog ftxn = new FileTxnSnapLog(config.getDataLogDir(), config.getDataDir());
 
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
-                config.getMinSessionTimeout(), config.getMaxSessionTimeout(),
-                new TestZKDatabase(ftxn, limiter));
+                config.getMinSessionTimeout(), config.getMaxSessionTimeout(), -1,
+                new TestZKDatabase(ftxn, limiter), "");
         cnxnFactory = new TestServerCnxnFactory(limiter);
         cnxnFactory.configure(config.getClientPortAddress(),
                 config.getMaxClientCnxns());
@@ -374,8 +372,8 @@ public class ZkTestServer implements Closeable {
           }
         }
       } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e, true);
-        return;
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
 
@@ -387,27 +385,17 @@ public class ZkTestServer implements Closeable {
      */
     protected void shutdown() throws IOException {
       try {
-//        zooKeeperServer.shutdown(true);
-  //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
-    //    if (zkDb != null) zkDb.clear();
-        try (ParWork worker = new ParWork(this, true, true)) {
-          worker.collect("ZkTestInternals", () -> {
-            zooKeeperServer.shutdown(false);
+        //        zooKeeperServer.shutdown(true);
+        //      ZKDatabase zkDb = zooKeeperServer.getZKDatabase();
+        //    if (zkDb != null) zkDb.clear();
 
-            return zooKeeperServer;
-          });
-
-          worker.collect("cnxnFactory", () -> {
-
-            cnxnFactory.shutdown();
-
-            cnxnFactory.join();
-            // NOT IDEAL, BUT THIS CAN SLEEP A BIT BEFORE EXIT
-            ((Thread)zkServer.zooKeeperServer.getSessionTracker()).interrupt();
-            ((Thread)zkServer.zooKeeperServer.getSessionTracker()).join();
-            return cnxnFactory;
-          });
+        if (zooKeeperServer != null) zooKeeperServer.shutdown(true);
+        if (cnxnFactory != null) {
+          cnxnFactory.closeAll(ServerCnxn.DisconnectReason.CONNECTION_CLOSE_FORCED);
+          cnxnFactory.shutdown();
         }
+
+
       } finally {
         assert ObjectReleaseTracker.release(this);
       }
@@ -625,9 +613,9 @@ public class ZkTestServer implements Closeable {
 
   public synchronized void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-    assert closeTracker.close();
+    if (closeTracker != null) closeTracker.close();
     try {
-      if (chRootClient != null) {
+      if (chRootClient != null && chRootClient.isConnected()) {
         chRootClient.printLayout();
       }
     } catch (Exception e) {
@@ -635,30 +623,32 @@ public class ZkTestServer implements Closeable {
     }
     if (zkMonitoringFile != null && chRootClient != null && zkServer != null) {
       try {
-        writeZkMonitorFile();
+        writeZkMonitorFile(zkMonitoringFile, chRootClient);
       } catch (Exception e2) {
         ParWork.propagateInterrupt("Exception trying to write zk layout to file on shutdown", e2);
       }
     }
 
-    timer.cancel();
     ParWork.close(chRootClient);
+    chRootClient = null;
 
-    if (zkServer != null) zkServer.shutdown();
+    if (zkServer != null)  {
+      zkServer.shutdown();
+      if (zooThread != null) {
+
+        zooThread.join(10000);
+
+        if (zooThread.isAlive()) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper thread still running");
+        }
+        assert ObjectReleaseTracker.release(zooThread);
+      }
+    }
 
     startupWait = new CountDownLatch(1);
-    if (zooThread != null) {
-      // zooThread.interrupt();
-      zooThread.join(10000);
-      if (zooThread.isAlive()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Zookeeper thread still running");
-      }
-      assert ObjectReleaseTracker.release(zooThread);
-    }
 
     zooThread = null;
     assert ObjectReleaseTracker.release(this);
-
 
 //    if (cleaupDir) {
 //      Files.walk(getZkDir())
@@ -668,10 +658,21 @@ public class ZkTestServer implements Closeable {
 //    }
   }
 
-  private void writeZkMonitorFile() {
-    synchronized (zkMonitoringFile) {
-      chRootClient.printLayoutToFile(zkMonitoringFile);
+  private static void writeZkMonitorFile(Path outputFile, SolrZkClient zkClient) {
+    synchronized (zkClient) {
+      zkClient.printLayoutToFile(outputFile);
     }
+  }
+
+  public static void main(String[] args) throws InterruptedException {
+    SolrZkClient zkClient = new SolrZkClient("127.0.0.1:2181", 30000);
+    zkClient.start();
+    Path outfile = Paths.get(System.getProperty("user.home"), "zkout.zk");
+    while (true) {
+      writeZkMonitorFile(outfile, zkClient);
+      Thread.sleep(1000);
+    }
+
   }
 
 //  public static boolean waitForServerDown(String hp, long timeoutMs) {

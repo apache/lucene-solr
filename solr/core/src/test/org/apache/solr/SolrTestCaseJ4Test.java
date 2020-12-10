@@ -20,7 +20,9 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,8 +31,8 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   private static String tmpSolrHome;
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest configuration sets
     // we can so we don't copy that much junk around.
     tmpSolrHome = createTempDir().toFile().getAbsolutePath();
@@ -53,9 +55,9 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }
 
-  @AfterClass
-  public static void AfterClass() throws Exception {
-
+  @After
+  public void AfterTest() throws Exception {
+    deleteCore();
   }
 
   @Test

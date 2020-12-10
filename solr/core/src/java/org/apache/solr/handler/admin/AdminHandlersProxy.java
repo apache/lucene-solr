@@ -73,7 +73,7 @@ public class AdminHandlersProxy {
     Map<String,String> paramsMap = req.getParams().toMap(new HashMap<>());
     paramsMap.remove(PARAM_NODES);
     SolrParams params = new MapSolrParams(paramsMap);
-    Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
+    Set<String> liveNodes = container.getZkController().zkStateReader.getLiveNodes();
     
     if (nodeNames.equals("all")) {
       nodes = liveNodes;

@@ -28,6 +28,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,11 +41,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
 
-  protected static JettySolrRunner jetty;
-
   @BeforeClass
   public static void beforeSolrExampleTestsBase() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    SolrClient client = getSolrClient(jetty);
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    super.tearDown();
   }
 
   /**
@@ -52,9 +65,6 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   @Test
   public void testCommitWithinOnAdd() throws Exception {
     // make sure it is empty...
-    SolrClient client = getSolrClient(jetty);
-    client.deleteByQuery("*:*");// delete everything!
-    client.commit();
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
@@ -80,7 +90,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
       // wait and try again for slower/busier machines
       // and/or parallel test effects.
 
-      if (cnt++ == 20) {
+      if (cnt++ == 60) {
         break;
       }
 
@@ -167,60 +177,54 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   
   @Test
   public void testAddDelete() throws Exception {
-    try (SolrClient client = getSolrClient(jetty)) {
+    SolrClient client = getSolrClient(jetty);
 
-      // Empty the database...
-      client.deleteByQuery("*:*");// delete everything!
 
-      SolrInputDocument[] doc = new SolrInputDocument[3];
-      for (int i = 0; i < 3; i++) {
-        doc[i] = new SolrInputDocument();
-        doc[i].setField("id", i + " & 222");
-      }
-      String id = (String) doc[0].getField("id").getFirstValue();
-
-      client.add(doc[0]);
-      client.commit();
-      assertNumFound("*:*", 1); // make sure it got in
-
-      // make sure it got in there
-      client.deleteById(id);
-      client.commit();
-      assertNumFound("*:*", 0); // make sure it got out
-
-      // add it back
-      client.add(doc[0]);
-      client.commit();
-      assertNumFound("*:*", 1); // make sure it got in
-      client.deleteByQuery("id:\"" + ClientUtils.escapeQueryChars(id) + "\"");
-      client.commit();
-      assertNumFound("*:*", 0); // make sure it got out
-
-      // Add two documents
-      for (SolrInputDocument d : doc) {
-        client.add(d);
-      }
-      client.commit();
-      assertNumFound("*:*", 3); // make sure it got in
-
-      // should be able to handle multiple delete commands in a single go
-      List<String> ids = new ArrayList<>();
-      for (SolrInputDocument d : doc) {
-        ids.add(d.getFieldValue("id").toString());
-      }
-      client.deleteById(ids);
-      client.commit();
-      assertNumFound("*:*", 0); // make sure it got out
+    SolrInputDocument[] doc = new SolrInputDocument[3];
+    for (int i = 0; i < 3; i++) {
+      doc[i] = new SolrInputDocument();
+      doc[i].setField("id", i + " & 222");
     }
+    String id = (String) doc[0].getField("id").getFirstValue();
+
+    client.add(doc[0]);
+    client.commit();
+    assertNumFound("*:*", 1); // make sure it got in
+
+    // make sure it got in there
+    client.deleteById(id);
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got out
+
+    // add it back
+    client.add(doc[0]);
+    client.commit();
+    assertNumFound("*:*", 1); // make sure it got in
+    client.deleteByQuery("id:\"" + ClientUtils.escapeQueryChars(id) + "\"");
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got out
+
+    // Add two documents
+    for (SolrInputDocument d : doc) {
+      client.add(d);
+    }
+    client.commit();
+    assertNumFound("*:*", 3); // make sure it got in
+
+    // should be able to handle multiple delete commands in a single go
+    List<String> ids = new ArrayList<>();
+    for (SolrInputDocument d : doc) {
+      ids.add(d.getFieldValue("id").toString());
+    }
+    client.deleteById(ids);
+    client.commit();
+    assertNumFound("*:*", 0); // make sure it got out
+
   }
   
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient(jetty);
-    // Empty the database...
-    client.deleteByQuery("*:*");// delete everything!
-    client.commit();
-    assertNumFound("*:*", 0); // make sure it got in
 
     // Add some docs to the index
     UpdateRequest req = new UpdateRequest();

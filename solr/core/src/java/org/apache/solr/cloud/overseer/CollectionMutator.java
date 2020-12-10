@@ -84,19 +84,15 @@ public class CollectionMutator {
 
       // TODO - fix, no makePath (ensure every path part exists), async, single node
       try {
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName
-            + "/leader_elect/" + shardId, null, CreateMode.PERSISTENT, false);
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName
-            + "/leader_elect/" + shardId + LeaderElector.ELECTION_NODE, null, CreateMode.PERSISTENT, false);
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE+ "/" + collectionName + "/" + shardId
-            + ZkStateReader.SHARD_LEADERS_ZKNODE, null, CreateMode.PERSISTENT, false);
 
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId + "/election", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" +  shardId, null, CreateMode.PERSISTENT, false);
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/terms/" +  shardId, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/schema_lock", null, CreateMode.PERSISTENT, false);
+
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + collectionName + "/terms", null, CreateMode.PERSISTENT, false);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + collectionName + "/terms/" + shardId, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
+
       } catch (AlreadyExistsException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (IOException e) {
@@ -164,7 +160,7 @@ public class CollectionMutator {
     }
 
     return clusterState.copyWith(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
+        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), false));
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

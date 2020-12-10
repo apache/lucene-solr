@@ -45,7 +45,6 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
         .setMaxShardsPerNode(100)
         .setBasicAuthCredentials("solr", "solr")
         .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION, 4, 4);
   }
 
   @Override

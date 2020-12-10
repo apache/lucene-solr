@@ -26,7 +26,9 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,14 +41,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
+    super.setUp();
   }
 
   @After
-  public void after() throws Exception {
-
+  public void tearDown() throws Exception {
+      super.tearDown();
   }
 
   public void test404ViaHttp() throws Exception {

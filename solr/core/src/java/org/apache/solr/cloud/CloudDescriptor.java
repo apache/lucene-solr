@@ -38,8 +38,6 @@ public class CloudDescriptor {
   private String roles = null;
   private Integer numShards;
   private Map<String,String> collectionParams = new HashMap<>();
-
-  private volatile boolean isLeader = false;
   
   // set to true once a core has registered in zk
   // set to false on detecting a session expiration
@@ -87,14 +85,6 @@ public class CloudDescriptor {
 
   public void setLastPublished(Replica.State state) {
     lastPublished = state;
-  }
-
-  public boolean isLeader() {
-    return isLeader;
-  }
-  
-  public void setLeader(boolean isLeader) {
-    this.isLeader = isLeader;
   }
   
   public boolean hasRegistered() {
@@ -152,7 +142,6 @@ public class CloudDescriptor {
     if (reloadFrom.getNumShards() != null) {
       setNumShards(reloadFrom.getNumShards());
     }
-    setLeader(reloadFrom.isLeader);
     setHasRegistered(reloadFrom.hasRegistered);
     setLastPublished(reloadFrom.getLastPublished());
 

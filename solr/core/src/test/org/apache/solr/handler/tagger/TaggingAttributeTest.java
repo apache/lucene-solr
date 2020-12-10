@@ -22,6 +22,8 @@
 
 package org.apache.solr.handler.tagger;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,9 +34,15 @@ import org.junit.Test;
  */
 public class TaggingAttributeTest extends TaggerTestCase {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void before () throws Exception {
+
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+  }
+
+  @After
+  public void after() throws Exception {
+    deleteCore();
   }
 
   /**

@@ -85,7 +85,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   volatile CountDownLatch lock = null; // used to block everything
   final int threadCount;
   boolean shutdownExecutor = false;
-  int pollQueueTime = 1000;
+  int pollQueueTime = 250;
   int stallTime = 10000;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
@@ -136,7 +136,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.streamDeletes = builder.streamDeletes;
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 10000);
+    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 60000);
     if (stallTime < pollQueueTime * 2) {
       throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
     }
@@ -291,7 +291,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                     }
                   }
                 }
-                out.flush();
+                out.flushBuffer();
 
                 notifyQueueAndRunnersIfEmptyQueue();
                 inPoll = true;
@@ -404,7 +404,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         } finally {
           try {
             if (response != null) {
-              Utils.consumeFully(response.getEntity());
+              Utils.readFully(rspBody);
             }
           } catch (Exception e) {
             log.error("Error consuming and closing http response stream.", e);
@@ -659,7 +659,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           try {
             runners.wait(timeout);
           } catch (InterruptedException e) {
-            //Thread.currentThread().interrupt();
+            Thread.currentThread().interrupt();
           }
         }
       }

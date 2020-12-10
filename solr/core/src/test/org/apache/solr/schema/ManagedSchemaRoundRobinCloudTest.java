@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Ignore
 public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "managed_coll";
   private static final String CONFIG = "cloud-managed";

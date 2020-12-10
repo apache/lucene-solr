@@ -37,7 +37,6 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.BaseTestHarness;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -224,8 +223,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   
   private String getLeastScore(String query) throws Exception {
     final String resp = h.query(req("q",query, "sort","score asc", "fl","score"));
-    return (String) BaseTestHarness.
-        evaluateXPath(resp,"(//float[@name='score'])[1]/text()", 
+    return (String) h.
+        evaluateXPath(h.getCore().getResourceLoader(), resp,"(//float[@name='score'])[1]/text()",
             XPathConstants.STRING);
   }
 

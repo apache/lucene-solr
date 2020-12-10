@@ -189,7 +189,7 @@ class RebalanceLeaders {
   private void checkLeaderStatus() throws InterruptedException, KeeperException {
     for (int idx = 0; pendingOps.size() > 0 && idx < 600; ++idx) {
       ClusterState clusterState = coreContainer.getZkController().getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getLiveNodes();
       DocCollection dc = clusterState.getCollection(collectionName);
       for (Slice slice : dc.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
@@ -231,7 +231,7 @@ class RebalanceLeaders {
       }
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
       // We're the preferred leader, but someone else is leader. Only become leader if we're active.
-      if (replica.isActive(zkStateReader.getClusterState().getLiveNodes()) == false) {
+      if (replica.isActive(zkStateReader.getLiveNodes()) == false) {
         addInactiveToResults(slice, replica);
         return; // Don't try to become the leader if we're not active!
       }

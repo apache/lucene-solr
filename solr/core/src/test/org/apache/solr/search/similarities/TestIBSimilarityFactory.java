@@ -24,15 +24,25 @@ import org.apache.lucene.search.similarities.LambdaTTF;
 import org.apache.lucene.search.similarities.NormalizationH2;
 import org.apache.lucene.search.similarities.NormalizationH3;
 import org.apache.lucene.search.similarities.Similarity;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
  * Tests {@link IBSimilarityFactory}
  */
 public class TestIBSimilarityFactory extends BaseSimilarityTestCase {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-basic.xml","schema-ib.xml");
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
   
   /** spl/df/h2 with default parameters */

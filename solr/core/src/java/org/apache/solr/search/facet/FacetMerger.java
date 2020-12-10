@@ -57,7 +57,7 @@ public abstract class FacetMerger {
 
     public void newShard(String shard) {
       Integer prev = shardmap.put(shard, ++shardNum);
-      assert prev == null;
+     // assert prev == null;
       this.bucketWasMissing = false;
     }
 

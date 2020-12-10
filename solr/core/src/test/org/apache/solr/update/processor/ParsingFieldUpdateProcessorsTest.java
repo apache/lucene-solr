@@ -35,15 +35,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.hamcrest.core.IsInstanceOf;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 /**
  * Tests for the field mutating update processors
  * that parse Dates, Longs, Doubles, and Booleans.
  */
+@LuceneTestCase.Nightly
 public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   private static final double EPSILON = 1E-15;
   private static final DateTimeFormatter isoDateOptionalTimeFormatter =
@@ -57,10 +61,16 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   private static final IsInstanceOf IS_INTEGER = new IsInstanceOf(Integer.class);
   private static final IsInstanceOf IS_LONG = new IsInstanceOf(Long.class);
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     initCore("solrconfig-parsing-update-processor-chains.xml", "schema12.xml");
   }
+
+  @After
+  public void afterTest() throws Exception {
+    deleteCore();
+  }
+
 
   public void testParseDateRoundTrip() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();

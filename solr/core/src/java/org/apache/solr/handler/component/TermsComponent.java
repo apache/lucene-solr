@@ -42,7 +42,7 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -131,11 +131,11 @@ public class TermsComponent extends SearchComponent {
           +" not configured but required when using the '"+ShardParams.SHARDS+"' parameter with the TermsComponent."
           +HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
     } else {
-      ClusterState cs = null;
+      ZkStateReader zkStateReader = null;
       if (rb.req.getCore().getCoreContainer().getZkController() != null) {
-        cs = rb.req.getCore().getCoreContainer().getZkController().getClusterState();
+        zkStateReader = rb.req.getCore().getCoreContainer().getZkController().getZkStateReader();
       }
-      whitelistHostChecker.checkWhitelist(cs, urls.toString(), urls);
+      whitelistHostChecker.checkWhitelist(zkStateReader, urls.toString(), urls);
     }
   }
 

@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore // nocommit leaking
 public class AddReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -68,7 +67,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - adding too many replicas?
   public void testAddMultipleReplicas() throws Exception  {
 
     String collection = "testAddMultipleReplicas";
@@ -78,18 +76,13 @@ public class AddReplicaTest extends SolrCloudTestCase {
     create.setMaxShardsPerNode(20);
     cloudClient.request(create);
 
-    cluster.waitForActiveCollection(collection, 1, 1);
-
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, "s1")
         .setNrtReplicas(1)
         .setTlogReplicas(1)
         .setPullReplicas(1);
     CollectionAdminResponse status = addReplica.process(cloudClient, collection + "_xyz1");
 
-
      assertTrue(status.isSuccess());
-
-    cluster.waitForActiveCollection(collection, 1, 4);
     
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
@@ -97,27 +90,6 @@ public class AddReplicaTest extends SolrCloudTestCase {
     assertEquals(docCollection.toString(), 2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
     assertEquals(docCollection.toString(), 1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
     assertEquals(docCollection.toString(), 1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-
-    // try to add 5 more replicas which should fail because numNodes(4)*maxShardsPerNode(2)=8 and 4 replicas already exist
-// nocommit - maybe this only worked with the right assign policy?
-//    addReplica = CollectionAdminRequest.addReplicaToShard(collection, "shard1")
-//        .setNrtReplicas(3)
-//        .setTlogReplicas(1)
-//        .setPullReplicas(1);
-//    try {
-//      addReplica.process(cloudClient, collection + "_xyz1");
-//      fail("expected fail");
-//    } catch (SolrException e) {
-//
-//    }
-
-//    docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
-//    assertNotNull(docCollection);
-//    // sanity check that everything is as before
-//    assertEquals(4, docCollection.getReplicas().size());
-//    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-//    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-//    assertEquals(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
 
     // but adding any number of replicas is supported if an explicit create node set is specified
     // so test that as well
@@ -143,14 +115,13 @@ public class AddReplicaTest extends SolrCloudTestCase {
     docCollection = cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collection);
     assertNotNull(docCollection);
     // sanity check that everything is as before
-//    assertEquals(9, docCollection.getReplicas().size());
-//    assertEquals(5, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-//    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-//    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+    assertEquals(9, docCollection.getReplicas().size());
+    assertEquals(5, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+    assertEquals(2, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
   }
 
   @Test
-  //@Ignore // nocommit we were not failing on all errors in the http2 solr client - this weirdly keeps failing, saying an asyncid that should be free is already claimed.
   public void test() throws Exception {
     
     String collection = "addreplicatest_coll";

@@ -60,7 +60,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       // define the port where MockGraphite is running
       System.setProperty("mock-graphite-port", String.valueOf(mock.port));
       String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-graphitereporter.xml").toFile(), "UTF-8");
-      NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
+      NodeConfig cfg = new SolrXmlConfig().fromString(home, solrXml);
       CoreContainer cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                                               "solrconfig.xml", "schema.xml"));

@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -29,6 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.NodeConfig;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     @Test

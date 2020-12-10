@@ -44,11 +44,13 @@ public class ParseContextConfigTest extends SolrTestCaseJ4 {
     entry.appendChild(property);
     entries.appendChild(entry);
 
-    ParseContext parseContext = new ParseContextConfig(new SolrResourceLoader(Paths.get(".")), entries).create();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("."))) {
+      ParseContext parseContext = new ParseContextConfig(loader, entries).create();
 
-    PDFParserConfig pdfParserConfig = parseContext.get(PDFParserConfig.class);
+      PDFParserConfig pdfParserConfig = parseContext.get(PDFParserConfig.class);
 
-    assertEquals(true, pdfParserConfig.getExtractInlineImages());
+      assertEquals(true, pdfParserConfig.getExtractInlineImages());
+    }
   }
 
 }

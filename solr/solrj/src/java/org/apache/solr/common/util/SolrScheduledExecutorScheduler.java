@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements Scheduler, Dumpable {
   private final String name;
-  private final boolean daemon;
+  private final boolean daemon = true;
   private final ClassLoader classloader;
   private final ThreadGroup threadGroup;
   private final int threads;
@@ -76,7 +76,6 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
    */
   public SolrScheduledExecutorScheduler(@Name("name") String name, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads) {
     this.name = StringUtil.isBlank(name) ? "Scheduler-" + hashCode() : name;
-    this.daemon = true;
     this.classloader = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
     this.threadGroup = threadGroup;
     this.threads = threads;
@@ -103,10 +102,9 @@ public class SolrScheduledExecutorScheduler extends AbstractLifeCycle implements
     ScheduledThreadPoolExecutor fscheduler = scheduler;
     if (fscheduler != null) {
       fscheduler.shutdown();
-      fscheduler.awaitTermination(3, TimeUnit.SECONDS); // nocommit - trying something
-      fscheduler.shutdownNow();
-      ExecutorUtil.awaitTermination(fscheduler);
       super.doStop();
+      fscheduler.awaitTermination(1, TimeUnit.SECONDS); // nocommit - trying something
+      if (!scheduler.isTerminated()) fscheduler.shutdownNow();
     }
     scheduler = null;
   }

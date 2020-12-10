@@ -216,7 +216,7 @@ public class SolrExporter {
 
   private static MetricsConfiguration loadMetricsConfiguration(Path configPath) {
     try (SolrResourceLoader loader = new SolrResourceLoader(configPath.getParent())) {
-      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString(), null, null, null, true);
+      XmlConfigFile config = new XmlConfigFile(loader, configPath.getFileName().toString(), null, null, null);
       return MetricsConfiguration.from(config);
     } catch (Exception e) {
       log.error("Could not load scrape configuration from {}", configPath.toAbsolutePath());

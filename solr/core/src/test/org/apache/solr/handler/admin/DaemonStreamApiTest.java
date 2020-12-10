@@ -36,9 +36,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.TestSQLHandler;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class DaemonStreamApiTest extends SolrTestCaseJ4 {
 
@@ -57,14 +55,37 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   final int numDaemons = random().nextInt(3) + 2;
   String daemonOfInterest;
 
-  List<String> daemonNames = new ArrayList<>();
+  List<String> daemonNames = Collections.synchronizedList(new ArrayList<>());
 
   private String url;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    interruptThreadsOnTearDown(false, "DaemonStream-");
+    DAEMON_DEF =
+            "  daemon(id=\"DAEMON_NAME\"," +
+                    "    runInterval=\"1000\"," +
+                    "    terminate=\"false\"," +
+                    "    update(targetColl," +
+                    "      batchSize=100," +
+                    "      topic(checkpointColl," +
+                    "        sourceColl," +
+                    "        q=\"*:*\"," +
+                    "        fl=\"id\"," +
+                    "        id=\"topic1\"," +
+                    "        initialCheckpoint=0)" +
+                    "))";
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    DAEMON_DEF = null;
+  }
 
   @Override
   @Before
   public void setUp() throws Exception {
+
     super.setUp();
     cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
 
@@ -120,8 +141,10 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     }
 
     // Are all the daemons in a good state?
-    for (String daemon : daemonNames) {
-      checkAlive(daemon);
+    synchronized (daemonNames) {
+      for (String daemon : daemonNames) {
+        checkAlive(daemon);
+      }
     }
 
     // We shouldn't be able to open a daemon twice without closing., leads to thread leeks.
@@ -138,9 +161,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkStopped();
 
     // Are all the daemons alive? NOTE: a stopped daemon is still there, but in a TERMINATED state
-    for (String daemon : daemonNames) {
-      if (daemon.equals(daemonOfInterest) == false) {
-        checkAlive(daemon);
+    synchronized (daemonNames) {
+      for (String daemon : daemonNames) {
+        if (daemon.equals(daemonOfInterest) == false) {
+          checkAlive(daemon);
+        }
       }
     }
 
@@ -151,8 +176,10 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " started"));
 
     // Are all the daemons alive?
-    for (String daemon : daemonNames) {
-      checkAlive(daemon);
+    synchronized (daemonNames) {
+      for (String daemon : daemonNames) {
+        checkAlive(daemon);
+      }
     }
 
     // Try killing a daemon, it should be removed from lists.
@@ -189,9 +216,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkAlive(daemonOfInterest);
 
     // Now kill them all so the threads disappear.
-    for (String daemon : daemonNames) {
+    synchronized (daemonNames) {
+      for (String daemon : daemonNames) {
         getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
         checkDaemonKilled(daemon);
+      }
     }
   }
 
@@ -306,17 +335,5 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     return tuples.get(0);
   }
 
-  private static String DAEMON_DEF =
-      "  daemon(id=\"DAEMON_NAME\"," +
-          "    runInterval=\"1000\"," +
-          "    terminate=\"false\"," +
-          "    update(targetColl," +
-          "      batchSize=100," +
-          "      topic(checkpointColl," +
-          "        sourceColl," +
-          "        q=\"*:*\"," +
-          "        fl=\"id\"," +
-          "        id=\"topic1\"," +
-          "        initialCheckpoint=0)" +
-          "))";
+  private static String DAEMON_DEF;
 }

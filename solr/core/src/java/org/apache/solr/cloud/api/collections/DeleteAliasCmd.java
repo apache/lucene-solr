@@ -38,7 +38,7 @@ public class DeleteAliasCmd implements OverseerCollectionMessageHandler.Cmd {
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(aliasName, null));
-    return null;
+    return new AddReplicaCmd.Response();
   }
 
 }

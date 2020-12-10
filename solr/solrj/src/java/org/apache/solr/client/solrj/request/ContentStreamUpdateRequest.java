@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +27,7 @@ import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
-
+import org.apache.solr.common.util.Utils;
 
 /**
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
@@ -61,9 +62,13 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        try(var inStream = stream.getStream()) {
+        InputStream inStream = stream.getStream();
+        try {
           IOUtils.copy(inStream, os);
+        } finally {
+          Utils.readFully(inStream);
         }
+
       }
 
       @Override

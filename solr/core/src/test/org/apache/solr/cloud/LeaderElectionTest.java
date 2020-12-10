@@ -121,7 +121,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public ElectorSetup(OnReconnect onReconnect) {
       zkClient = server.getZkClient();
       zkStateReader = new ZkStateReader(zkClient);
-      elector = new LeaderElector(zkController, new ZkController.ContextKey("overseer", "overseer"), new ConcurrentHashMap<>());
+      elector = new LeaderElector(zkController, new ZkController.ContextKey("overseer", "overseer"));
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
     }
 
@@ -161,10 +161,18 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
       this.es = es;
       if (this.es == null) {
-        this.es = new ElectorSetup(() -> {
-          try {
-            setupOnConnect();
-          } catch (Throwable t) {
+        this.es = new ElectorSetup(new OnReconnect() {
+          @Override
+          public void command() throws SessionExpiredException {
+            try {
+              setupOnConnect();
+            } catch (Throwable t) {
+            }
+          }
+
+          @Override
+          public String getName() {
+            return "test";
           }
         });
       }

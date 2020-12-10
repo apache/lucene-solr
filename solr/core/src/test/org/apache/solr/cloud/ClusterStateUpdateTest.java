@@ -107,7 +107,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
       || zkProps.getBaseUrl().contains("https://" + host + ":"+cluster.getJettySolrRunner(0).getLocalPort()+"/solr") );
 
     // assert there are 3 live nodes
-    Set<String> liveNodes = clusterState2.getLiveNodes();
+    Set<String> liveNodes = zkController2.getZkStateReader().getLiveNodes();
     assertNotNull(liveNodes);
     assertEquals(3, liveNodes.size());
 
@@ -116,7 +116,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
     // slight pause (15s timeout) for watch to trigger
     for(int i = 0; i < (5 * 15); i++) {
-      if(zkController2.getClusterState().getLiveNodes().size() == 2) {
+      if(zkController2.getZkStateReader().getLiveNodes().size() == 2) {
         break;
       }
       Thread.sleep(200);
@@ -124,21 +124,21 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     
     cluster.waitForJettyToStop(j);
 
-    assertEquals(2, zkController2.getClusterState().getLiveNodes().size());
+    assertEquals(2, zkController2.getZkStateReader().getLiveNodes().size());
 
     cluster.getJettySolrRunner(1).stop();
     cluster.getJettySolrRunner(1).start();
     
     // pause for watch to trigger
     for(int i = 0; i < 200; i++) {
-      if (cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+      if (cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getZkStateReader().isNodeLive(
           cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName())) {
         break;
       }
       Thread.sleep(100);
     }
 
-    assertTrue(cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getClusterState().liveNodesContain(
+    assertTrue(cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getZkStateReader().isNodeLive(
         cluster.getJettySolrRunner(1).getCoreContainer().getZkController().getNodeName()));
 
     // core.close();  // don't close - this core is managed by container1 now

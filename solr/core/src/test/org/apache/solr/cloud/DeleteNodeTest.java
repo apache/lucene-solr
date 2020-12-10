@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.Set;
 
 // nocommit flakey
-@Ignore
 public class DeleteNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,7 +55,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     String coll = "deletenodetest_coll";
     cloudClient.getZkStateReader().forciblyRefreshAllClusterStateSlow();
     ClusterState state = cloudClient.getZkStateReader().getClusterState();
-    Set<String> liveNodes = state.getLiveNodes();
+    Set<String> liveNodes =  cloudClient.getZkStateReader().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     // NOTE: must be more than a single nrt replica or it will not let you delete a node

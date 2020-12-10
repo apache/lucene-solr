@@ -33,8 +33,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -60,7 +58,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   protected final String collection;
   protected final LeaderElector leaderElector;
 
-  private volatile boolean isClosed = false;
 
   private final ZkController zkController;
 
@@ -71,7 +68,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
             collection, shardId), props,
             zkController.getZkClient());
-    assert ObjectReleaseTracker.track(this);
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.shardId = shardId;
@@ -81,26 +77,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  public void close() {
-    super.close();
-    IOUtils.closeQuietly(syncStrategy);
-    this.isClosed = true;
-    assert ObjectReleaseTracker.release(this);
-  }
-
-  @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
     super.cancelElection();
-    String coreName = leaderProps.getName();
-    try {
-      try (SolrCore core = cc.getCore(coreName)) {
-        if (core != null) {
-          core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
-        }
-      }
-    } catch (AlreadyClosedException e) {
-      // okay
-    }
   }
 
   @Override
@@ -172,27 +150,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         log.info("I may be the new leader - try and sync");
 
-        // nocommit
-        // we are going to attempt to be the leader
-        // first cancel any current recovery
-        core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
 
         result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+        log.warn("Sync strategy result {}", result);
         success = result.isSuccess();
-
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
         if (!success) {
 
-          log.warn("Our sync attempt failed ulog={}", ulog);
+          log.warn("Our sync attempt failed");
           boolean hasRecentUpdates = false;
+
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
           if (ulog != null) {
             // TODO: we could optimize this if necessary
             try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+              hasRecentUpdates = recentUpdates != null && !recentUpdates.getVersions(1).isEmpty();
             }
           }
 
@@ -206,7 +180,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               rejoinLeaderElection(core);
               return;
             } else {
-              log.info("We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+              log.info("We failed sync, but we have no versions - we can't sync in that case - we did not find versions on other replicas, so become leader anyway");
               success = true;
             }
           }
@@ -214,20 +188,20 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         log.info("Our sync attempt succeeded");
 
         // solrcloud_debug
-        if (log.isDebugEnabled()) {
-          try {
-            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
-            try {
-              log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched " + searcher.count(new MatchAllDocsQuery()));
-            } finally {
-              searchHolder.decref();
-            }
-          } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        }
+//        if (log.isDebugEnabled()) {
+//          try {
+//            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+//            SolrIndexSearcher searcher = searchHolder.get();
+//            try {
+//              log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched " + searcher.count(new MatchAllDocsQuery()));
+//            } finally {
+//              searchHolder.decref();
+//            }
+//          } catch (Exception e) {
+//            ParWork.propagateInterrupt(e);
+//            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//          }
+//        }
         if (!success) {
           log.info("Sync with potential leader failed, rejoining election ...");
           rejoinLeaderElection(core);
@@ -257,15 +231,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         super.runLeaderProcess(context, weAreReplacement, 0);
 
-        assert shardId != null;
-
-        core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
-
         ZkNodeProps zkNodes = ZkNodeProps
             .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
                 ZkStateReader.STATE_PROP, "leader");
-        assert zkController != null;
-        assert zkController.getOverseer() != null;
 
         log.info("I am the new leader, publishing as active: " + leaderProps.getCoreUrl() + " " + shardId);
 
@@ -278,9 +246,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         throw e;
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);
-
-        core.getCoreDescriptor().getCloudDescriptor().setLeader(false);
-
         // we could not publish ourselves as leader - try and rejoin election
 
         rejoinLeaderElection(core);
@@ -313,7 +278,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       // TODO: if we know eveyrone has already particpated, we should bail early...
       
-      Thread.sleep(500L);
+      Thread.sleep(50L);
     }
   }
 
@@ -343,22 +308,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  public void publishActive(SolrCore core) throws Exception {
-    if (log.isDebugEnabled()) log.debug("publishing ACTIVE on becoming leader");
-    zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE, true, false);
-  }
-
   private void rejoinLeaderElection(SolrCore core)
           throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
 
     log.info("There may be a better leader candidate than us - will cancel election, rejoin election, and kick off recovery");
 
-    cancelElection();
+    leaderElector.retryElection(false);
 
-    leaderElector.retryElection(this, false);
-
-    core.getUpdateHandler().getSolrCoreState().doRecovery(zkController.getCoreContainer(), core.getCoreDescriptor());
+    core.getUpdateHandler().getSolrCoreState().doRecovery(core);
   }
 
   public String getShardId() {

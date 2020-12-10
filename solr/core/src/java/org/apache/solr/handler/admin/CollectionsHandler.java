@@ -63,6 +63,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
@@ -75,6 +76,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.rewrite.handler.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,6 +190,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -320,7 +323,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     if (operation.sendToOCPQueue) {
       if (log.isDebugEnabled()) log.debug("send request to Overseer queue and wait for response ... " + props);
       ZkNodeProps zkProps = new ZkNodeProps(props);
-      SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
+      SolrResponse overseerResponse = sendToOCPQueue(coreContainer, zkProps, operation.timeOut);
       rsp.getValues().addAll(overseerResponse.getResponse());
       Exception exp = overseerResponse.getException();
       if (exp != null) {
@@ -331,7 +334,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     } else {
       // submits and doesn't wait for anything (no response)
       if (log.isDebugEnabled()) log.debug("send request to Overseer queue and don't wait for anything (no response) ... " + props);
-      coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+      coreContainer.getZkController().getOverseerCollectionQueue()
+          .offer(Utils.toJSON(props));
     }
 
   }
@@ -342,10 +346,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 30 * 1000);
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
-    return sendToOCPQueue(m, DEFAULT_COLLECTION_OP_TIMEOUT);
+    return sendToOCPQueue(coreContainer, m, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  public SolrResponse sendToOCPQueue(ZkNodeProps m, long timeout) throws KeeperException, InterruptedException {
+  public static SolrResponse sendToOCPQueue(CoreContainer coreContainer, ZkNodeProps m, long timeout) throws KeeperException, InterruptedException {
     if (log.isDebugEnabled()) log.debug("send message to OCP {}", m);
     String operation = m.getStr(QUEUE_OPERATION);
     if (operation == null) {
@@ -400,7 +404,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (log.isDebugEnabled()) log.debug("no data in response, checking for timeout");
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
-            + " the collection time out:" + timeout / 1000 + "s");
+            + " the collection time out:" + timeout / 1000 + "s " + m);
       } else if (event.getWatchedEvent() != null) {
         log.info("no timeout, but got this watch event {}", event.getWatchedEvent());
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -412,7 +416,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         // nocommit - look into we may still need this
         // we have to assume success - it was too quick for us to catch the response
 
-        if (log.isDebugEnabled()) log.debug("We did not find the response, there was also no timeout and we did not get a watched event ...");
+        log.error("We did not find the response, there was also no timeout and we did not get a watched event ...");
 
         NamedList<Object> resp = new NamedList<>();
         resp.add("success", "true");
@@ -542,9 +546,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         createSysConfigSet(h.coreContainer);
 
       }
-      if (shardsParam == null) h.copyFromClusterProp(props, ZkStateReader.NUM_SHARDS_PROP);
-      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
-        h.copyFromClusterProp(props, prop);
+//      if (shardsParam == null) h.copyFromClusterProp(props, ZkStateReader.NUM_SHARDS_PROP);
+//      for (String prop : ImmutableSet.of(NRT_REPLICAS, PULL_REPLICAS, TLOG_REPLICAS))
+//        h.copyFromClusterProp(props, prop);
       copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
       return copyPropertiesWithPrefix(req.getParams(), props, "router.");
 
@@ -1366,7 +1370,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
       }
 
-      final Set<String> liveNodes = clusterState.getLiveNodes();
+      final Set<String> liveNodes = zkController.getZkStateReader().getLiveNodes();
       List<Replica> liveReplicas = slice.getReplicas().stream()
           .filter(rep -> liveNodes.contains(rep.getNodeName())).collect(Collectors.toList());
       boolean shouldIncreaseReplicaTerms = liveReplicas.stream()
@@ -1394,6 +1398,76 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "Error executing FORCELEADER operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
+  }
+
+  public static void waitForActiveCollection(String collectionName, CoreContainer cc, SolrResponse createCollResponse)
+      throws KeeperException, InterruptedException {
+
+    if (createCollResponse.getResponse().get("exception") != null) {
+      // the main called failed, don't wait
+      if (log.isInfoEnabled()) {
+        log.info("Not waiting for active collection due to exception: {}", createCollResponse.getResponse().get("exception"));
+      }
+      return;
+    }
+
+    int replicaFailCount;
+    if (createCollResponse.getResponse().get("failure") != null) {
+      replicaFailCount = ((NamedList) createCollResponse.getResponse().get("failure")).size();
+    } else {
+      replicaFailCount = 0;
+    }
+
+    CloudConfig ccfg = cc.getConfig().getCloudConfig();
+    Integer seconds = ccfg.getCreateCollectionWaitTimeTillActive();
+    Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
+    if (log.isInfoEnabled()) {
+      log.info("Wait for new collection to be active for at most {} seconds. Check all shard {}"
+          , seconds, (checkLeaderOnly ? "leaders" : "replicas"));
+    }
+
+    try {
+      cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c) -> {
+
+        if (c == null) {
+          // the collection was not created, don't wait
+          return true;
+        }
+
+        if (c.getSlices() != null) {
+          Collection<Slice> shards = c.getSlices();
+          int replicaNotAliveCnt = 0;
+          for (Slice shard : shards) {
+            Collection<Replica> replicas;
+            if (!checkLeaderOnly) replicas = shard.getReplicas();
+            else {
+              replicas = new ArrayList<Replica>();
+              replicas.add(shard.getLeader());
+            }
+            for (Replica replica : replicas) {
+              String state = replica.getStr(ZkStateReader.STATE_PROP);
+              if (log.isDebugEnabled()) {
+                log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
+                    replica.getCoreUrl(), state);
+              }
+              if (!n.contains(replica.getNodeName())
+                  || !state.equals(Replica.State.ACTIVE.toString())) {
+                replicaNotAliveCnt++;
+                return false;
+              }
+            }
+          }
+
+          return (replicaNotAliveCnt == 0) || (replicaNotAliveCnt <= replicaFailCount);
+        }
+        return false;
+      });
+    } catch (TimeoutException | InterruptedException e) {
+
+      String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
+      throw new ZkController.NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    }
+
   }
 
   private static void verifyShardsParam(String shardsParam) {

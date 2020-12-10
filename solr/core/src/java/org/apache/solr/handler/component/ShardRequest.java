@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -51,7 +52,7 @@ public class ShardRequest {
 
 
   /** list of responses... filled out by framework */
-  public List<ShardResponse> responses = new ArrayList<>();
+  public List<ShardResponse> responses = Collections.synchronizedList(new ArrayList<>());
 
   /** actual shards to send the request to, filled out by framework */
   public String[] actualShards;

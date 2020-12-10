@@ -26,6 +26,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,6 +46,13 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
         .build();
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
+
+  @AfterClass
+  public static void afterTest() throws Exception {
+    jetty = null;
+    EMPTY_STR_LIST.clear();
+  }
+
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {

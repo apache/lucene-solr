@@ -119,7 +119,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // Get the Solr nodes to restore a collection.
     final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
-        zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
+        zkStateReader.getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
 
@@ -311,7 +311,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         params.set(NAME, "snapshot." + slice.getName());
         params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
         params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-        shardRequestTracker.sliceCmd(clusterState, params, null, slice, shardHandler);
+        shardRequestTracker.sliceCmd(params, null, slice, shardHandler);
       }
       shardRequestTracker.processResponses(new NamedList(), shardHandler, true, "Could not restore core");
     }

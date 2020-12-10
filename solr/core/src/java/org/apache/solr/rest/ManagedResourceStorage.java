@@ -59,7 +59,9 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  * from ZooKeeper.
  */
 public abstract class ManagedResourceStorage {
-  
+
+  public static final byte[] EMPTY_BYTES = new byte[0];
+
   /**
    * Hides the underlying storage implementation for data being managed
    * by a ManagedResource. For instance, a ManagedResource may use JSON as
@@ -89,7 +91,7 @@ public abstract class ManagedResourceStorage {
       storageIO = resourceLoader.newInstance(initArgs.get(STORAGE_IO_CLASS_INIT_ARG), StorageIO.class); 
     } else {
       SolrZkClient zkClient = (resourceLoader instanceof ZkSolrResourceLoader) ?
-        ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient() : null;
+        ((ZkSolrResourceLoader)resourceLoader).getZkClient() : null;
       if (zkClient != null) {
         String znodeBase = "/configs/"+configSet;
         log.debug("Setting up ZooKeeper-based storage for the RestManager with znodeBase: {}", znodeBase);
@@ -255,7 +257,7 @@ public abstract class ManagedResourceStorage {
       if (znodeData != null) {
         log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
       } else {
-        znodeData = new byte[0];
+        znodeData = EMPTY_BYTES;
         log.debug("No data found for znode {}", znodePath);
       }
       

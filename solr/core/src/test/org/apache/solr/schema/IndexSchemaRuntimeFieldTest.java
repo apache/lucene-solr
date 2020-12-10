@@ -21,14 +21,21 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   @Test

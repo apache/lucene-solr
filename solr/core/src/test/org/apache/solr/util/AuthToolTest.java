@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.After;
 import org.junit.Before;

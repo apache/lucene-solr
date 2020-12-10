@@ -32,15 +32,23 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
  * Tests {@link SweetSpotSimilarityFactory}
  */
 public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+
+  @Before
+  public void beforeTestSweetSpotSimilarityFactory() throws Exception {
     initCore("solrconfig-basic.xml","schema-sweetspot.xml");
+  }
+
+  @After
+  public void afterTestSweetSpotSimilarityFactory() {
+    deleteCore();
   }
 
   private static float computeNorm(Similarity sim, int length) throws IOException {

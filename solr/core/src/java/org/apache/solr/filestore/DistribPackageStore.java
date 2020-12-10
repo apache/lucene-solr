@@ -375,7 +375,7 @@ public class DistribPackageStore implements PackageStore {
             // at this point a bunch of nodes are already downloading from me
             // I'll wait for them to finish before asking other nodes to download from each other
             try {
-              Thread.sleep(2 * 1000);
+              Thread.sleep(1000);
             } catch (Exception e) {
               ParWork.propagateInterrupt(e);
             }

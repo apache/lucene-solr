@@ -30,6 +30,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.IntPointField;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -46,8 +48,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false");
     // This tests explicitly compares Trie DV with non-DV Trie with DV Points
     // so we don't want randomized DocValues on all Trie fields
@@ -73,6 +75,13 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
                  h.getCore().getLatestSchema().getField("foo_i_p").getType().getClass());
     
   }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
+  }
+
 
   int indexSize;
   List<FldType> types;

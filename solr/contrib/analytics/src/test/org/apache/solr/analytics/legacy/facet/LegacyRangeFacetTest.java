@@ -19,6 +19,7 @@ package org.apache.solr.analytics.legacy.facet;
 
 import java.util.ArrayList;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -113,6 +114,19 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
     assertU(commit());
 
     setResponse(h.query(request(fileToStringArr(LegacyRangeFacetTest.class, fileName))));
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    //INT
+    intLongTestStart = null;
+    intDoubleTestStart = null;
+    intDateTestStart = null;
+
+    //FLOAT
+    floatLongTestStart = null;
+    floatDoubleTestStart = null;
+    floatDateTestStart = null;
   }
 
   @SuppressWarnings("unchecked")

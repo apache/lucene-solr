@@ -18,6 +18,7 @@ package org.apache.solr;
 
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,16 +33,16 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.join.TestScoreJoinQPNoScore;
 import org.apache.solr.servlet.DirectSolrConnection;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
-  private static SolrCore fromCore;
+  private SolrCore fromCore;
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
 //    initCore("solrconfig.xml","schema12.xml"); 
 
@@ -132,8 +133,10 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     return sw.toString();
   }
 
-  @AfterClass
-  public static void nukeAll() {
+  @After
+  public void nukeAll() throws TimeoutException {
+    deleteCore();
+    fromCore.closeAndWait();
     fromCore = null;
   }
 }

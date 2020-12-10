@@ -27,5 +27,5 @@ import java.util.concurrent.TimeUnit;
  */
 public interface LiveNodesPredicate {
 
-  boolean matches(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes);
+  boolean matches(SortedSet<String> newLiveNodes);
 }

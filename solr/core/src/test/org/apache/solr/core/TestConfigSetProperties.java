@@ -21,24 +21,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 //@Ignore // nocommit you would want to write these props to ZK actually ...
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
-
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-  
 
   @Test
   public void testNoConfigSetPropertiesFile() throws Exception {
@@ -84,7 +76,8 @@ public class TestConfigSetProperties extends SolrTestCaseJ4 {
       Files.createDirectories(confDir);
       Files.write(confDir.resolve(filename), props.getBytes(StandardCharsets.UTF_8));
     }
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
-    return ConfigSetProperties.readFromResourceLoader(loader, filename);
+    try (SolrResourceLoader loader = new SolrResourceLoader(testDirectory)) {
+      return ConfigSetProperties.readFromResourceLoader(loader, filename);
+    }
   }
 }

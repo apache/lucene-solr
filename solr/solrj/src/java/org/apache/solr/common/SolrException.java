@@ -195,7 +195,7 @@ public class SolrException extends RuntimeException {
    * For test code - do not log exceptions that match any of these regular expressions.
    * A {@link java.util.concurrent.CopyOnWriteArraySet is recommended}.
    */
-  public static Set<String> ignorePatterns;
+  public static volatile Set<String> ignorePatterns;
 
   /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
   public static String doIgnore(Throwable t, String m) {

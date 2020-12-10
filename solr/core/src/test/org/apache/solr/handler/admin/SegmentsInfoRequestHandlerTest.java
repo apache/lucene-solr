@@ -39,7 +39,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   
   private static final int NUM_SEGMENTS = 2;
 
-  private static int initialRefCount;
+  private static volatile int initialRefCount;
   
   @BeforeClass
   public static void beforeClass() throws Exception {

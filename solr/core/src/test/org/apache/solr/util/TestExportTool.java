@@ -60,7 +60,6 @@ public class TestExportTool extends SolrCloudTestCase {
           .createCollection(COLLECTION_NAME, "conf", 2, 1)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
       String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
           File.separator).getPath();

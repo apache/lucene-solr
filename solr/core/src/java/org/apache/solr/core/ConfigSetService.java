@@ -28,8 +28,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -90,11 +90,13 @@ public abstract class ConfigSetService {
               && !flags.getBooleanArg("trusted")
               ) ? false: true;
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, true);
+      log.info("Trusted configset={} {}", trusted, flags);
+
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, true);
+      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
+      IOUtils.closeQuietly(coreLoader);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
               ": " + e.getMessage(), e);

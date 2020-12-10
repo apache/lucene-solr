@@ -86,7 +86,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
     // This tests that the replicas properly handle schema additions.
 
     int slices = cloudClient.getZkStateReader().getClusterState()
-      .getCollection("collection1").getActiveSlices().size();
+      .getCollection(DEFAULT_COLLECTION).getActiveSlices().size();
     int trials = TEST_NIGHTLY ? 50 : 15;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1)) ;
@@ -113,7 +113,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
       try {
         String request = "/schema/fields?wt=xml";
         String response = client.query(request);
-        String result = BaseTestHarness.validateXPath(response, expectedFields);
+        String result = BaseTestHarness.validateXPath(cluster.getJettySolrRunners().get(0).getCoreContainer().getCores().iterator().next().getResourceLoader(), response, expectedFields);
         if (result != null) {
           String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
           log.error(msg);

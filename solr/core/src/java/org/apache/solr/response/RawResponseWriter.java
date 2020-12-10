@@ -25,6 +25,7 @@ import java.io.Writer;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -97,8 +98,12 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      try(InputStream in = content.getStream()) {
-        IOUtils.copy( in, out );
+      InputStream in = null;
+      try {
+        in = content.getStream();
+        IOUtils.copy(in, out);
+      } finally {
+        Utils.readFully(in);
       }
     } else {
       QueryResponseWriterUtil.writeQueryResponse(out, 

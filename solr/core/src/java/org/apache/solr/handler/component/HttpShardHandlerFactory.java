@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerat
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -447,7 +446,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
 
     /**
-     * @see #checkWhitelist(ClusterState, String, List)
+     * @see #checkWhitelist(ZkStateReader, String, List)
      */
     protected void checkWhitelist(String shardsParamValue, List<String> shardUrls) {
       checkWhitelist(null, shardsParamValue, shardUrls);
@@ -457,18 +456,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
      * Checks that all the hosts for all the shards requested in shards parameter exist in the configured whitelist
      * or in the ClusterState (in case of cloud mode)
      *
-     * @param clusterState The up to date ClusterState, can be null in case of non-cloud mode
+     * @param zkStateReader
      * @param shardsParamValue The original shards parameter
      * @param shardUrls The list of cores generated from the shards parameter.
      */
-    protected void checkWhitelist(ClusterState clusterState, String shardsParamValue, List<String> shardUrls) {
+    protected void checkWhitelist(ZkStateReader zkStateReader, String shardsParamValue, List<String> shardUrls) {
       if (!whitelistHostCheckingEnabled || shardsParamValue == null) {
         return;
       }
       Set<String> localWhitelistHosts;
-      if (whitelistHosts == null && clusterState != null) {
+      if (whitelistHosts == null && zkStateReader != null) {
         // TODO: We could implement caching, based on the version of the live_nodes znode
-        localWhitelistHosts = generateWhitelistFromLiveNodes(clusterState);
+        localWhitelistHosts = generateWhitelistFromLiveNodes(zkStateReader);
       } else if (whitelistHosts != null) {
         localWhitelistHosts = whitelistHosts;
       } else {
@@ -500,9 +499,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       });
     }
 
-    Set<String> generateWhitelistFromLiveNodes(ClusterState clusterState) {
-      return clusterState
-          .getLiveNodes()
+    Set<String> generateWhitelistFromLiveNodes(ZkStateReader zkStateReader) {
+      return
+          zkStateReader.getLiveNodes()
           .stream()
           .map((liveNode) -> liveNode.substring(0, liveNode.indexOf('_')))
           .collect(Collectors.toSet());

@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.BeforeClass;
@@ -42,13 +41,13 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
     args.put("protected", "protected-1.txt,protected-2.txt");  // Protected: foobar, jaxfopbuz, golden, compote
     args.put("wrappedFilters", "lowercase");
 
-    ResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-    ProtectedTermFilterFactory factory = new ProtectedTermFilterFactory(args);
-    factory.inform(loader);
+    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+      ProtectedTermFilterFactory factory = new ProtectedTermFilterFactory(args);
+      factory.inform(loader);
 
-    TokenStream ts = factory.create(whitespaceMockTokenizer(text));
-    BaseTokenStreamTestCase.assertTokenStreamContents(ts,
-        new String[] { "wuthering", "FooBar", "distant", "goldeN", "abc", "compote" });
+      TokenStream ts = factory.create(whitespaceMockTokenizer(text));
+      BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"wuthering", "FooBar", "distant", "goldeN", "abc", "compote"});
+    }
   }
 
   public void testTwoWrappedFilters() {

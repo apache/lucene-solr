@@ -43,6 +43,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();
 
@@ -137,7 +138,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
     CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
-    cluster.waitForRemovedCollection(collectionName);
+
     assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
   }
 }

@@ -114,7 +114,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       ShardRequestTracker shardRequestTracker, @SuppressWarnings({"rawtypes"})NamedList results)
       throws IOException, InterruptedException, KeeperException {
 
-    if (log.isDebugEnabled())  log.debug("addReplica() : {}", Utils.toJSONString(message));
+    log.info("addReplica() : {}", Utils.toJSONString(message));
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -205,7 +205,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           public Response call() {
             if (!onlyUpdateState && createdShardHandler) {
               try {
-                if (log.isDebugEnabled())  log.debug("Processs responses");
+                 log.info("Processs responses");
                 shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
               } catch (Exception e) {
                 ParWork.propagateInterrupt(e);
@@ -236,7 +236,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     try {
       log.info("waiting for created replicas shard={} {}", shard, coreNames);
-      zkStateReader.waitForState(collectionName, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
+      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
         if (collectionState == null) {
           return false;
         }

@@ -86,16 +86,20 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   SchemaField field = null;
   int props = 
     FieldProperties.INDEXED | FieldProperties.STORED;
-  
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig-minimal.xml","schema-preanalyzed.xml");
-  }
+
 
   @Override
   public void setUp() throws Exception {
+    initCore("solrconfig-minimal.xml","schema-preanalyzed.xml");
+
     super.setUp();
     field = new SchemaField("content", new TextField(), props, null);
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    deleteCore();
+    super.tearDown();
   }
   
   @Test

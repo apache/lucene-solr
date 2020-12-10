@@ -32,10 +32,10 @@
     <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
     <AsyncLogger name="org.apache.directory" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-    <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+    <AsyncLogger name="org.apache.solr.hadoop" level="WARN"/>
+    <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
 
-    <AsyncRoot level="INFO">
+    <AsyncRoot level="WARN">
       <AppenderRef ref="STDERR"/>
     </AsyncRoot>
   </Loggers>

@@ -212,7 +212,7 @@ public class Assign {
       createNodeList = createNodeSet == null ? null : new ArrayList<>(new LinkedHashSet<>(StrUtils.splitSmart((String) createNodeSet, ",", true)));
     }
     String collectionName = collection.getName();
-    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, cloudManager.getClusterStateProvider().getClusterState().getLiveNodes(), createNodeList);
+    HashMap<String, ReplicaCount> nodeNameVsShardCount = getNodeNameVsShardCount(collectionName, clusterState, cloudManager.getClusterStateProvider().getLiveNodes(), createNodeList);
 
 
     AssignRequest assignRequest = new AssignRequestBuilder()

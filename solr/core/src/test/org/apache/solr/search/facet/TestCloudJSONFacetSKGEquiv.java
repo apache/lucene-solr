@@ -83,7 +83,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
   private static final int DEFAULT_LIMIT = FacetField.DEFAULT_FACET_LIMIT;
   private static final int MAX_FIELD_NUM = 15;
-  private static final int UNIQUE_FIELD_VALS = TEST_NIGHTLY ? 50 : 10;
+  private static final int UNIQUE_FIELD_VALS = TEST_NIGHTLY ? 50 : 20;
 
   /** Multi-Valued string field suffixes that can be randomized for testing diff facet code paths */
   private static final String[] MULTI_STR_FIELD_SUFFIXES = new String[]
@@ -463,7 +463,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   
   public void testRandom() throws Exception {
 
-    final int numIters = atLeast(TEST_NIGHTLY ? 10 : 3);
+    final int numIters = atLeast(TEST_NIGHTLY ? 10 : 2);
     for (int iter = 0; iter < numIters; iter++) {
       assertFacetSKGsAreConsistent(TermFacet.buildRandomFacets(),
                                    buildRandomQuery(), buildRandomQuery(), buildRandomQuery());

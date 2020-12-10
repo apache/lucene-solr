@@ -162,7 +162,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
 
-    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
 
     List<String> createNodeList = new ArrayList<>(liveNodes);
 
@@ -424,6 +424,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Nightly
   public void addReplicaTest() throws Exception {
     String collectionName = "addReplicaColl";
 
@@ -432,7 +433,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     ArrayList<String> nodeList
-        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
+        = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getLiveNodes());
     Collections.shuffle(nodeList, random());
 
     CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")

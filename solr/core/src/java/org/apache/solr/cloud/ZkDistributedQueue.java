@@ -16,15 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -38,13 +36,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * <p>A ZK-based distributed queue. Optimized for single-consumer,
@@ -80,36 +73,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   final SolrZkClient zookeeper;
 
   final Stats stats;
-
-  /**
-   * A lock that guards all of the mutable state that follows.
-   */
-  private final ReentrantLock updateLock = new ReentrantLock();
-
-  /**
-   * Contains the last set of children fetched from ZK. Elements are removed from the head of
-   * this in-memory set as they are consumed from the queue.  Due to the distributed nature
-   * of the queue, elements may appear in this set whose underlying nodes have been consumed in ZK.
-   * Therefore, methods like {@link #peek()} have to double-check actual node existence, and methods
-   * like {@link #poll()} must resolve any races by attempting to delete the underlying node.
-   */
-  private TreeSet<String> knownChildren = new TreeSet<>();
-
-  /**
-   * Used to wait on ZK changes to the child list; you must hold {@link #updateLock} before waiting on this condition.
-   */
-  private final Condition changed = updateLock.newCondition();
-
-  private boolean isDirty = true;
-
-  private int watcherCount = 0;
-
   private final int maxQueueSize;
-
-  /**
-   * If {@link #maxQueueSize} is set, the number of items we can queue without rechecking the server.
-   */
-  private final AtomicInteger offerPermits = new AtomicInteger(0);
 
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir) {
     this(zookeeper, dir, new Stats());
@@ -130,102 +94,6 @@ public class ZkDistributedQueue implements DistributedQueue {
     this.stats = stats;
     this.maxQueueSize = maxQueueSize;
   }
-
-  /**
-   * Returns the data at the first element of the queue, or null if the queue is
-   * empty.
-   *
-   * @return data at the first element of the queue, or null.
-   */
-  @Override
-  public byte[] peek() throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Returns the data at the first element of the queue, or null if the queue is
-   * empty and block is false.
-   *
-   * @param block if true, blocks until an element enters the queue
-   * @return data at the first element of the queue, or null.
-   */
-  @Override
-  public byte[] peek(boolean block) throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Returns the data at the first element of the queue, or null if the queue is
-   * empty after wait ms.
-   *
-   * @param wait max wait time in ms.
-   * @return data at the first element of the queue, or null.
-   */
-  @Override
-  public byte[] peek(long wait) throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Attempts to remove the head of the queue and return it. Returns null if the
-   * queue is empty.
-   *
-   * @return Head of the queue or null.
-   */
-  @Override
-  public byte[] poll() throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Attempts to remove the head of the queue and return it.
-   *
-   * @return The former head of the queue
-   */
-  @Override
-  public byte[] remove() throws NoSuchElementException, KeeperException, InterruptedException {
-    Timer.Context time = stats.time(dir + "_remove");
-    try {
-      byte[] result = removeFirst();
-      if (result == null) {
-        throw new NoSuchElementException();
-      }
-      return result;
-    } finally {
-      time.stop();
-    }
-  }
-
-//  public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
-//
-//    if (log.isDebugEnabled()) log.debug("Remove paths from queue dir={} paths={}", dir, paths);
-//
-//    if (paths.isEmpty()) {
-//      if (log.isDebugEnabled()) log.debug("paths is empty, return");
-//      return;
-//    }
-//
-//    List<String> fullPaths = new ArrayList<>(paths.size());
-//    for (String node : paths) {
-//      fullPaths.add(dir + "/" + node);
-//    }
-//
-//
-//    if (log.isDebugEnabled()) log.debug("delete nodes {}", fullPaths);
-//    zookeeper.delete(fullPaths, false);
-//    if (log.isDebugEnabled()) log.debug("after delete nodes");
-//
-//    int cacheSizeBefore = knownChildren.size();
-//    knownChildren.removeAll(paths);
-//    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
-//      stats.setQueueLength(knownChildren.size());
-//    } else {
-//      // There are elements get deleted but not present in the cache,
-//      // the cache seems not valid anymore
-//      knownChildren.clear();
-//      isDirty = true;
-//    }
-//  }
 
   public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
     if (paths.isEmpty()) return;
@@ -252,27 +120,6 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
       }
     }
-
-    int cacheSizeBefore = knownChildren.size();
-    knownChildren.removeAll(paths);
-    if (cacheSizeBefore - paths.size() == knownChildren.size() && knownChildren.size() != 0) {
-      stats.setQueueLength(knownChildren.size());
-    } else {
-      // There are elements get deleted but not present in the cache,
-      // the cache seems not valid anymore
-      knownChildren.clear();
-      isDirty = true;
-    }
-  }
-
-  /**
-   * Removes the head of the queue and returns it, blocks until it succeeds.
-   *
-   * @return The former head of the queue
-   */
-  @Override
-  public byte[] take() throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
   }
 
   private static Set<String> OPERATIONS = new HashSet<>();
@@ -289,6 +136,40 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public void offer(byte[] data) throws KeeperException, InterruptedException {
+    CountDownLatch latch = new CountDownLatch(1);
+    Stat stat = zookeeper.exists(dir, new Watcher() {
+      @Override
+      public void process(WatchedEvent event) {
+        if (event.getType() == Watcher.Event.EventType.NodeChildrenChanged) {
+          try {
+            Stat stat = zookeeper.exists(dir, this);
+            if (stat.getNumChildren() <= 15) {
+              latch.countDown();
+              try {
+                zookeeper.getSolrZooKeeper().removeWatches(dir, this, WatcherType.Any, true);
+              } catch (Exception e) {
+                log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+              }
+            }
+          } catch (Exception e) {
+            latch.countDown();
+            log.error("", e);
+          }
+          return;
+        }
+        try {
+          zookeeper.exists(dir, this);
+        } catch (Exception e) {
+          latch.countDown();
+          log.error("", e);
+        }
+      }
+    });
+
+    if (stat.getNumChildren() > 15) {
+      latch.await();
+    }
+
     // TODO - if too many items on the queue, just block
     zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
     return;
@@ -296,6 +177,10 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   public Stats getZkStats() {
     return stats;
+  }
+
+  public SolrZkClient getZookeeper() {
+    return zookeeper;
   }
 
   @Override
@@ -321,59 +206,5 @@ public class ZkDistributedQueue implements DistributedQueue {
       statsMap.put(op, statMap);
     });
     return res;
-  }
-
-  /**
-   * Returns the name if the first known child node, or {@code null} if the queue is empty.
-   * This is the only place {@link #knownChildren} is ever updated!
-   * The caller must double check that the actual node still exists, since the in-memory
-   * list is inherently stale.
-   */
-  private String firstChild(boolean remove, boolean refetchIfDirty) throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Return the current set of children from ZK; does not change internal state.
-   */
-  TreeSet<String> fetchZkChildren(Watcher watcher) throws InterruptedException, KeeperException {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
-   * Return the currently-known set of elements, using child names from memory. If no children are found, or no
-   * children pass {@code acceptFilter}, waits up to {@code waitMillis} for at least one child to become available.
-   * <p>
-   * Package-private to support {@link OverseerTaskQueue} specifically.</p>
-   */
-  @Override
-  public Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws KeeperException, InterruptedException {
-    throw new UnsupportedOperationException();
-  }
-
-  private byte[] removeFirst() throws KeeperException, InterruptedException {
-    while (true) {
-      String firstChild = firstChild(true, false);
-      if (firstChild == null) {
-        return null;
-      }
-      try {
-        String path = dir + "/" + firstChild;
-        byte[] result = zookeeper.getData(path, null, null, true);
-        zookeeper.delete(path, -1, true);
-        stats.setQueueLength(knownChildren.size());
-        return result;
-      } catch (KeeperException.NoNodeException e) {
-        // Another client deleted the node first, remove the in-memory and retry.
-        updateLock.lockInterruptibly();
-        try {
-          // Efficient only for single-consumer
-          knownChildren.clear();
-          isDirty = true;
-        } finally {
-          updateLock.unlock();
-        }
-      }
-    }
   }
 }

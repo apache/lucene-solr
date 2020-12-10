@@ -94,7 +94,6 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
   private SchemaField uniqueKeyField;
 
   private final SolrQueryRequest req;
-  private ZkController zkController;
 
   /**
    * Known errors that occurred in this batch, in order encountered (may not be the same as the 
@@ -134,8 +133,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
     this.req = req;
     this.distribPhase = distribPhase;
     assert ! DistribPhase.FROMLEADER.equals(distribPhase);
-    
-    this.zkController = this.req.getCore().getCoreContainer().getZkController();
+
     this.uniqueKeyField = this.req.getCore().getLatestSchema().getUniqueKeyField();
     assert null != uniqueKeyField : "Factory didn't enforce uniqueKey field?";
   }
@@ -248,7 +246,7 @@ public class TolerantUpdateProcessor extends UpdateRequestProcessor {
         //
         // instead we trust the metadata that the TolerantUpdateProcessor running on the remote node added
         // to the exception when it failed.
-        if ( ! (error.t instanceof SolrException) && ! (error.t instanceof BaseHttpSolrClient.RemoteExecutionException) ) {
+        if ( ! (error.t instanceof SolrException) ) {
           log.error("async update exception is not SolrException, no metadata to process", error.t);
           continue;
         }

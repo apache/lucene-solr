@@ -17,6 +17,8 @@
 package org.apache.solr;
 
 import org.apache.solr.common.params.CommonParams;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -24,10 +26,15 @@ import org.junit.Test;
 
 public class EchoParamsTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     System.setProperty("enable.update.log", "false");
     initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
+  }
+
+  @After
+  public void afterTest() throws Exception {
+    deleteCore();
   }
 
   private static final String HEADER_XPATH = "/response/lst[@name='responseHeader']";

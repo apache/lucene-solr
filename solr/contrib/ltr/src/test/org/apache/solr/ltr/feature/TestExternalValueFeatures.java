@@ -16,39 +16,41 @@
  */
 package org.apache.solr.ltr.feature;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-@Ignore // nocommit flakey
+@LuceneTestCase.Nightly
 public class TestExternalValueFeatures extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
+    restTestHarness.update(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
         "1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
+    restTestHarness.update(adoc("id", "2", "title", "w2", "description", "w2", "popularity",
         "2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
+    restTestHarness.update(adoc("id", "3", "title", "w3", "description", "w3", "popularity",
         "3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
+    restTestHarness.update(adoc("id", "4", "title", "w4", "description", "w4", "popularity",
         "4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
+    restTestHarness.update(adoc("id", "5", "title", "w5", "description", "w5", "popularity",
         "5"));
-    assertU(commit());
+    restTestHarness.update(commit());
 
     loadFeatures("external_features_for_sparse_processing.json");
     loadModels("multipleadditivetreesmodel_external_binary_features.json");
+    super.setUp();
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     aftertest();
   }
 

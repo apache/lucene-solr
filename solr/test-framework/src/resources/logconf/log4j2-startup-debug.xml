@@ -39,6 +39,9 @@
 
     </Appenders>
     <Loggers>
+
+
+        <AsyncLogger name="org.apache.solr.servlet.HttpSolrCall" level="DEBUG"/>
         <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
         <AsyncLogger name="org.apache.hadoop" level="WARN"/>
         <AsyncLogger name="org.apache.directory" level="WARN"/>
@@ -63,9 +66,15 @@
         <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="DEBUG"/>-->
         <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.cloud.ZkController" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.common.cloud.ZkStateReader" level="DEBUG"/>
+
         <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="WARN"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="DEBUG"/>
+
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="TRACE"/>
+
         <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
 
         <AsyncRoot level="INFO">

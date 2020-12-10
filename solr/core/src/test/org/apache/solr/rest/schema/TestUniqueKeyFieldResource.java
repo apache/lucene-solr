@@ -15,10 +15,23 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.rest.SolrRestletTestBase;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestUniqueKeyFieldResource extends SolrRestletTestBase {
+
+
+  @Before
+  public void beforeTest() throws Exception {
+    JettyConfig jettyConfig = JettyConfig.builder()
+        .withSSLConfig(sslConfig.buildServerSSLConfig())
+        .build();
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+  }
 
   @Test
   public void testGetUniqueKey() throws Exception {

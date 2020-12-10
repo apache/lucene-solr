@@ -464,10 +464,10 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
-    final int numDocs = TEST_NIGHTLY ? atLeast(500) : 59;
+    final int numDocs = 5000;//TEST_NIGHTLY ? atLeast(500) : 59;
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient
-         = SolrTestCaseJ4.getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 2)) {
+         = SolrTestCaseJ4.getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 4)) {
       
       for (int i = 0; i < numDocs; i++) {
         log.info("add doc {}", i);
@@ -476,12 +476,9 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
       }
       indexClient.blockUntilFinished();
       assertEquals(0, indexClient.commit().getStatus());
-      indexClient.blockUntilFinished();
     }
-
-    cluster.waitForActiveCollection(collectionName, 3, 12);
-
-    assertEquals(numDocs, cloudClient.query(params("q","*:*")).getResults().getNumFound());
+    long found = cloudClient.query(params("q", "*:*")).getResults().getNumFound();
+    assertEquals(numDocs + " found " + found, numDocs, found);
 
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());

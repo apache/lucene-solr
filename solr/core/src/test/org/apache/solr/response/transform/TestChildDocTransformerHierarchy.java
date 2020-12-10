@@ -32,8 +32,10 @@ import org.apache.solr.response.BasicResultContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   private static AtomicInteger idCounter = new AtomicInteger();

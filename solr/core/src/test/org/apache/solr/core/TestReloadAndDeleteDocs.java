@@ -21,9 +21,15 @@ import org.junit.After;
 
 /** Inspired by SOLR-4858 */
 public class TestReloadAndDeleteDocs extends SolrTestCaseJ4 {
-  
+
+  public void setUp() throws Exception {
+    super.setUp();
+    // initcore happens in test
+  }
+
   @After
-  public void after() throws Exception {
+  public void tearDown() throws Exception {
+    super.tearDown();
     System.clearProperty("enable.update.log");
     deleteCore();
   }

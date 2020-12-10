@@ -105,6 +105,25 @@ public class CloudUtil {
     }
   }
 
+  public static boolean checkIfValidCloudCore(CoreContainer cc, CoreDescriptor desc) {
+    if (desc.getCloudDescriptor() == null) return false;
+    ZkController zkController = cc.getZkController();
+    String coreName = desc.getName();
+
+    // if we see our core node name on a different base url, unload
+    final DocCollection docCollection = zkController.getClusterState().getCollectionOrNull(desc.getCloudDescriptor().getCollectionName());
+    if (docCollection == null || docCollection.getReplica(coreName) == null) {
+
+      try {
+        cc.unload(desc.getName(), true, true, true);
+      } catch (Exception e) {
+        log.error("unload exception", e);
+      }
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Returns a displayable unified path to the given resource. For non-solrCloud that will be the
    * same as getConfigDir, but for Cloud it will be getConfigSetZkPath ending in a /
@@ -200,7 +219,7 @@ public class CloudUtil {
         timeout.sleep(100);
         continue;
       }
-      if (predicate.matches(state.getLiveNodes(), coll)) {
+      if (predicate.matches(cloudManager.getClusterStateProvider().getLiveNodes(), coll)) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }

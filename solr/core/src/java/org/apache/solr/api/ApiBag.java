@@ -61,7 +61,7 @@ public class ApiBag {
   private final boolean isCoreSpecific;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>(128, 0.75f, 10);
+  private final Map<String, PathTrie<Api>> apis = new ConcurrentHashMap<>(32, 0.75f, 3);
 
   public ApiBag(boolean isCoreSpecific) {
     this.isCoreSpecific = isCoreSpecific;
@@ -144,7 +144,7 @@ public class ApiBag {
   }
 
   static void registerIntrospect(List<String> l, PathTrie<Api> registry, Map<String, String> substitutes, Api introspect) {
-    ArrayList<String> copy = new ArrayList<>(l.size() + 1);
+    List<String> copy = Collections.synchronizedList(new ArrayList(l.size() + 1));
     copy.addAll(l);
     copy.add("_introspect");
     registry.insert(copy, substitutes, introspect);

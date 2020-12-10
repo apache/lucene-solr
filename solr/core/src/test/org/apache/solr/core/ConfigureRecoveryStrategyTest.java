@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -40,6 +41,11 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     solrConfigFileName = (random().nextBoolean()
         ? solrConfigFileNameConfigure : solrConfigFileNameCustom);
     initCore(solrConfigFileName, "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    solrConfigFileName = null;
   }
 
   public void testBuilder() throws Exception {

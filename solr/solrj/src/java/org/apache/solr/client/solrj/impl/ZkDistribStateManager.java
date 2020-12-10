@@ -94,7 +94,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public void makePath(String path) throws AlreadyExistsException, KeeperException {
     try {
       zkClient.mkdir(path);
-    } catch (KeeperException.NodeExistsException e) {
+    } catch (KeeperException.NodeExistsException | InterruptedException e) {
       throw new AlreadyExistsException(path);
     }
   }

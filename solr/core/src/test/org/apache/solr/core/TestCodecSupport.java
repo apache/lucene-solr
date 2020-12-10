@@ -34,17 +34,23 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TestHarness;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 import javax.xml.xpath.XPathExpressionException;
 
-//@Ignore // nocommit debug
 public class TestCodecSupport extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTestCodecSupportTest() throws Exception {
     initCore("solrconfig_codec.xml", "schema_codec.xml");
+  }
+
+  @After
+  public void afterTestCodecSupportTest() {
+    deleteCore();
   }
 
   public void testPostingsFormats() {
@@ -99,7 +105,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   private void reloadCoreAndRecreateIndex() {
     h.getCoreContainer().reload(h.coreName);
     assertU(delQ("*:*"));
-    assertU(commit());
     assertU(add(doc("string_f", "foo")));
     assertU(commit());
   }
@@ -130,12 +135,25 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     });
   }
   
-  public void testCompressionMode() throws Exception {
+  public void testCompressionMode1() throws Exception {
     assertEquals("incompatible change in compressionMode property", 
         "compressionMode", SchemaCodecFactory.COMPRESSION_MODE);
     doTestCompressionMode("BEST_SPEED", "BEST_SPEED");
+  }
+
+  public void testCompressionMode2() throws Exception {
+    assertEquals("incompatible change in compressionMode property",
+        "compressionMode", SchemaCodecFactory.COMPRESSION_MODE);
     doTestCompressionMode("BEST_COMPRESSION", "BEST_COMPRESSION");
+  }
+  public void testCompressionMode3() throws Exception {
+    assertEquals("incompatible change in compressionMode property",
+        "compressionMode", SchemaCodecFactory.COMPRESSION_MODE);
     doTestCompressionMode("best_speed", "BEST_SPEED");
+  }
+  public void testCompressionMode4() throws Exception {
+    assertEquals("incompatible change in compressionMode property",
+        "compressionMode", SchemaCodecFactory.COMPRESSION_MODE);;
     doTestCompressionMode("best_compression", "BEST_COMPRESSION");
   }
 
@@ -208,7 +226,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     String path = IndexSchema.normalize("codecFactory", config.getPrefix());
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode(XmlConfigFile.getXpath().compile(path), path, false).children().iterator().next());
+        config.getNode(h.getXpath().compile(path), path, false).children().iterator().next());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();
@@ -217,7 +235,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
       c = new SolrCore(coreContainer, cd,
           new ConfigSet("fakeConfigset", config, schema, null, true));
-      assertNull(coreContainer.registerCore(cd, c, false, false, true));
+      assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());
       assertU(add(doc("string_f", "foo")));

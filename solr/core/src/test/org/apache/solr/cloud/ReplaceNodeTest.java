@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -66,7 +65,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
-    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     String emptyNode = l.remove(0);
@@ -87,7 +86,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
                         //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
     );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(100);
-    cloudClient.request(create);
+    create.processAndWait(cloudClient, 2000);
     
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
     log.info("### Before decommission: {}", collection);
@@ -102,7 +101,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         success = true;
         break;
       }
-      assertFalse(rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertFalse(rsp.getResponse().toString(), rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(250);
     }
   // nocommit

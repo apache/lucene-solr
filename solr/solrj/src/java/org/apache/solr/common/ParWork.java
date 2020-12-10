@@ -71,14 +71,14 @@ public class ParWork implements Closeable {
 
   private final Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(16);
 
-  private static volatile ThreadPoolExecutor EXEC;
+  private static volatile ParWorkExecutor EXEC;
 
   // pretty much don't use it
-  public static ThreadPoolExecutor getRootSharedExecutor() {
+  public static ParWorkExecutor getRootSharedExecutor() {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ThreadPoolExecutor) getParExecutorService("RootExec",
+          EXEC = (ParWorkExecutor) getParExecutorService("RootExec",
               Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 5000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
@@ -88,22 +88,33 @@ public class ParWork implements Closeable {
     return EXEC;
   }
 
-  public static void shutdownRootSharedExec() {
-    shutdownRootSharedExec(true);
+  public static void shutdownParWorkExecutor() {
+    try {
+      shutdownParWorkExecutor(EXEC, true);
+    } finally {
+      EXEC = null;
+    }
   }
 
-  public static void shutdownRootSharedExec(boolean wait) {
-    synchronized (ParWork.class) {
-      if (EXEC != null) {
-        ((ParWorkExecutor)EXEC).disableCloseLock();
-        EXEC.shutdown();
-        EXEC.setKeepAliveTime(1, TimeUnit.NANOSECONDS);
-        EXEC.allowCoreThreadTimeOut(true);
-       // EXEC.shutdownNow();
-        if (wait) ExecutorUtil.shutdownAndAwaitTermination(EXEC);
-        EXEC = null;
+  public static void shutdownParWorkExecutor(ParWorkExecutor executor, boolean wait) {
+    if (executor != null) {
+      ((ParWorkExecutor) executor).disableCloseLock();
+      executor.shutdown();
+      if (wait) {
+        try {
+          executor.awaitTermination(1000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+          log.debug("Interrupted during short wait for root exec termination");
+        }
+        if (!executor.isTerminated()) {
+          log.error("Executor did not shut down fast enough", new SolrException(SolrException.ErrorCode.FORBIDDEN, "Enhance your calm."));
+          executor.shutdownNow();
+
+          ExecutorUtil.shutdownAndAwaitTermination(executor);
+        }
       }
     }
+
   }
 
 
@@ -459,7 +470,14 @@ public class ParWork implements Closeable {
         if (exp instanceof Error) {
           throw (Error) exp;
         }
-        if (exp instanceof  RuntimeException) {
+        if (exp instanceof RuntimeException) {
+          //exp.fillInStackTrace();
+          Throwable rootCause = exp;
+          while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+          }
+          rootCause.initCause(new SolrException(SolrException.ErrorCode.SERVER_ERROR, ""));
+
           throw (RuntimeException) exp;
         }
         throw new RuntimeException(exp);
@@ -630,7 +648,7 @@ public class ParWork implements Closeable {
 
   public static void propagateInterrupt(Throwable t, boolean infoLogMsg) {
     if (t instanceof InterruptedException) {
-      log.info("Interrupted", t.getMessage());
+      log.warn("Interrupted {} while doing work", t.getMessage(), t);
       Thread.currentThread().interrupt();
     } else {
       if (infoLogMsg) {

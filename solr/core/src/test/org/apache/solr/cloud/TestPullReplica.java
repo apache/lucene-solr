@@ -427,11 +427,11 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // Check that there is no leader for the shard
     Replica leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    assertTrue(leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getLiveNodes()));
 
     // Pull replica on the other hand should be active
     Replica pullReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getLiveNodes()));
 
     long highestTerm = 0L;
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
@@ -475,7 +475,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Validate that the new nrt replica is the leader now
     docCollection = getCollectionState(collectionName);
     leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getLiveNodes()));
 
     // If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
     if (removeReplica) {

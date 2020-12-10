@@ -24,8 +24,6 @@ import org.junit.Test;
 
 public class ShardRoutingCustomTest extends SolrCloudBridgeTestCase {
 
-  String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)
-
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
@@ -52,7 +50,7 @@ public class ShardRoutingCustomTest extends SolrCloudBridgeTestCase {
         .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest
-        .addReplicaToShard(collection,"s1")
+        .addReplicaToShard(DEFAULT_COLLECTION,"s1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .setType(useTlogReplicas() ? Replica.Type.TLOG: Replica.Type.NRT)
         .process(cloudClient).isSuccess());

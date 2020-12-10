@@ -41,7 +41,8 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.AfterClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -54,7 +55,6 @@ import static org.hamcrest.CoreMatchers.is;
  * {@link SchemaRequest} and {@link SchemaResponse}.
  */
 public class SchemaTest extends RestTestBase {
-  private static JettySolrRunner jetty;
 
   private static void assertValidSchemaResponse(SolrResponseBase schemaResponse) {
     assertEquals("Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
@@ -96,7 +96,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @BeforeClass
-  public static void init() throws Exception {
+  public static void beforeSolrExampleTestsBase() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
 
@@ -106,15 +106,17 @@ public class SchemaTest extends RestTestBase {
     System.setProperty("enable.update.log", "false");
 
     jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema.xml",
-        "/solr", true, extraServlets);
+            "/solr", true, extraServlets);
   }
 
-  @AfterClass
-  public static void afterSchemaTest() throws Exception  {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception  {
+    super.tearDown();
   }
 
   @Test

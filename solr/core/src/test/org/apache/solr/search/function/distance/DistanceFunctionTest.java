@@ -30,6 +30,8 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "true");
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
     initCore("solrconfig.xml", "schema12.xml");
   }
 

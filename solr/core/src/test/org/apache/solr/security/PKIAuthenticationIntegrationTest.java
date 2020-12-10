@@ -47,6 +47,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
     final String SECURITY_CONF = Utils.toJSONString
       (makeMap("authorization", singletonMap("class", MockAuthorizationPlugin.class.getName()),

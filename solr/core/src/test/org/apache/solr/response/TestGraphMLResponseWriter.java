@@ -63,7 +63,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
     System.out.println("resp:" + graphML);
 
     //Validate the nodes
-    String error = h.validateXPath(graphML,
+    String error = h.validateXPath(solrConfig.getResourceLoader(), graphML,
         "//graph[@id ='G']",
                                    "//graph/node[2][@id ='jim']",
                                    "//graph/node[3][@id ='max']");
@@ -71,7 +71,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       throw new Exception(error);
     }
     //Validate the edges
-    error = h.validateXPath(graphML,
+    error = h.validateXPath(solrConfig.getResourceLoader(),graphML,
                             "//graph/edge[1][@source ='jim']",
                             "//graph/edge[1][@target ='bill']",
                             "//graph/edge[2][@source ='max']",

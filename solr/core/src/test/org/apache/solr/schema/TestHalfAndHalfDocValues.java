@@ -28,6 +28,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -35,8 +37,8 @@ import org.junit.BeforeClass;
  */
 public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     // we need consistent segments that aren't merged because we want to have
     // segments with and without docvalues
     systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
@@ -56,10 +58,11 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
     }
   }
 
-  public void setUp() throws Exception {
-    super.setUp();
-    assertU(delQ("*:*"));
+  @After
+  public void afterTest() {
+    deleteCore();
   }
+
 
   public void testHalfAndHalfDocValues() throws Exception {
     // Insert two docs without docvalues

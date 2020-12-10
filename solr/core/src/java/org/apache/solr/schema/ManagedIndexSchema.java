@@ -34,7 +34,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -76,6 +75,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
@@ -90,7 +91,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
   volatile String managedSchemaResourceName;
 
-  volatile int schemaZkVersion;
+  volatile int schemaZkVersion = 0;
   
   final ReentrantLock schemaUpdateLock;
 
@@ -170,10 +171,9 @@ public final class ManagedIndexSchema extends IndexSchema {
    * 
    * @return true on success 
    */
-  synchronized boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
+  boolean persistManagedSchemaToZooKeeper(boolean createOnly) {
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-    final ZkController zkController = zkLoader.getZkController();
-    final SolrZkClient zkClient = zkController.getZkClient();
+    final SolrZkClient zkClient = zkLoader.getZkClient();
 
     final String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
     boolean success = true;
@@ -189,6 +189,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       if (createOnly) {
         try {
           zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
+          schemaZkVersion = 1;
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
         } catch (KeeperException.NodeExistsException e) {
           // This is okay - do nothing and fall through
@@ -201,17 +202,19 @@ public final class ManagedIndexSchema extends IndexSchema {
           int zkVersion = stat.getVersion();
           ver = schemaZkVersion;
           if (zkVersion != ver) {
-            log.info("Our schema version is not what we found ours={} found={}", schemaZkVersion, zkVersion);
+            log.info("Our schema version is not what we found ours={} found={}", ver, zkVersion);
+
+            success = false;
+            schemaChangedInZk = true;
 
             String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
             log.info(msg);
-            return false;
-           // throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
+            // throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
+          } else {
+
+            zkClient.setData(managedSchemaPath, data, ver, true);
+            log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
           }
-
-
-          zkClient.setData(managedSchemaPath, data, ver, true);
-          log.info("Persisted managed schema version {} at {}", ver, managedSchemaPath);
         } catch (KeeperException.BadVersionException e) {
           // try again with latest schemaZkVersion value
 
@@ -223,20 +226,20 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
     } catch (Exception e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt(); // Restore the interrupted status
-        }
-        final String msg = "Error persisting managed schema at " + managedSchemaPath;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt(); // Restore the interrupted status
       }
-      if (schemaChangedInZk) {
-        String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
-        log.info(msg);
-        throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
-      }
+      final String msg = "Error persisting managed schema at " + managedSchemaPath;
+      log.error(msg, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    }
+    if (schemaChangedInZk) {
+      String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
+      log.info(msg);
+      throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
+    }
 
-      return success;
+    return success;
 
   }
 
@@ -274,21 +277,22 @@ public final class ManagedIndexSchema extends IndexSchema {
       int vers = -1;
       Future<Integer> next = results.get(f);
       // looks to have finished, but need to check the version value too
+
       if (zkController.getCoreContainer().isShutDown()) {
         for (int j = 0; j < results.size(); j++) {
           Future<Integer> fut = results.get(j);
           fut.cancel(false);
         }
-        throw new AlreadyClosedException();
+        return;
       }
-      if (!next.isCancelled()) {
-        try {
-          vers = next.get();
-        } catch (Exception e) {
-          log.warn("", e);
-          // shouldn't happen since we checked isCancelled
-        }
+
+      try {
+        vers = next.get(maxWaitSecs, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        log.warn("", e);
+        // shouldn't happen since we checked isCancelled
       }
+
 
       if (vers == -1) {
         String coreUrl = concurrentTasks.get(f).coreUrl;
@@ -311,10 +315,9 @@ public final class ManagedIndexSchema extends IndexSchema {
   protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String coreName) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
-    final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null && docCollection .getActiveSlices().size() > 0) {
+    Set<String> liveNodes = zkStateReader.getLiveNodes();
+    final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+    if (docCollection != null && docCollection.getActiveSlices().size() > 0) {
       Collection<Slice> activeSlices = docCollection.getActiveSlices();
       for (Slice next : activeSlices) {
         Map<String, Replica> replicasMap = next.getReplicasMap();
@@ -331,6 +334,10 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
     }
     return activeReplicaCoreUrls;
+  }
+
+  public void setSchemaZkVersion(int schemaZkVersion) {
+    this.schemaZkVersion = schemaZkVersion;
   }
 
   private static class GetZkSchemaVersionCallable extends SolrRequest implements Callable<Integer> {
@@ -364,7 +371,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
             if (isClosed.isClosed()) {
-              return -1;
+              throw new AlreadyClosedException();
             }
             NamedList<Object> zkversionResp = solrClient.request(this);
             if (zkversionResp != null)
@@ -375,15 +382,16 @@ public final class ManagedIndexSchema extends IndexSchema {
                 return -1;
               }
 
-              Thread.sleep(50); // slight delay before requesting version again
+              Thread.sleep(10); // slight delay before requesting version again
               log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }
 
           } catch (Exception e) {
-            if (e instanceof InterruptedException) {
-              break; // stop looping
-            } else if (e instanceof  KeeperException.SessionExpiredException) {
+            Throwable cause = e.getCause();
+            if (stoppingException(e) || stoppingException(cause)) {
+              break;
+            } else if (e instanceof  KeeperException.SessionExpiredException || e instanceof RejectedExecutionException) {
               break; // stop looping
             } else {
               log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
@@ -394,6 +402,16 @@ public final class ManagedIndexSchema extends IndexSchema {
       return remoteVersion;
     }
 
+    private boolean stoppingException(Throwable e) {
+      if (e == null) {
+        return false;
+      }
+      if (e instanceof KeeperException.SessionExpiredException || e instanceof RejectedExecutionException
+          || e instanceof InterruptedException || e instanceof AlreadyClosedException) {
+        return true;
+      }
+      return false;
+    }
 
     @Override
     protected SolrResponse createResponse(SolrClient client) {

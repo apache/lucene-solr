@@ -83,11 +83,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +100,14 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private MiniSolrCloudCluster solrCluster;
+
+  @BeforeClass
+  public static void beforTestConfigSetsAPI() throws Exception {
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+    System.setProperty("solr.enablePublicKeyHandler", "true");
+    disableReuseOfCryptoKeys();
+    useFactory(null);
+  }
 
   @Override
   @Before
@@ -154,7 +158,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testCreate() throws Exception {
     // no old, no new
     verifyCreate(null, "configSet1", null, null);
@@ -178,39 +181,40 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final File tmpConfigDir = createTempDir().toFile();
     tmpConfigDir.deleteOnExit();
     FileUtils.copyDirectory(configDir, tmpConfigDir);
-    if (oldProps != null) {
+    if (oldProps != null && oldProps.size() > 0) {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
+    ZkConfigManager configManager = new ZkConfigManager(zkClient());
+    configManager.uploadConfigDir(tmpConfigDir.toPath(), baseConfigSetName);
   }
 
   private void verifyCreate(String baseConfigSetName, String configSetName,
       Map<String, String> oldProps, Map<String, String> newProps) throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    setupBaseConfigSet(baseConfigSetName, oldProps);
+    if (baseConfigSetName != null) {
+      setupBaseConfigSet(baseConfigSetName, oldProps);
+    }
 
     SolrZkClient zkClient = zkClient();
-    try {
-      ZkConfigManager configManager = new ZkConfigManager(zkClient);
-      assertFalse(configManager.configExists(configSetName));
 
-      Create create = new Create();
-      create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
-      if (newProps != null) {
-        Properties p = new Properties();
-        p.putAll(newProps);
-        create.setNewConfigSetProperties(p);
-      }
-      ConfigSetAdminResponse response = create.process(solrClient);
-      assertNotNull(response.getResponse());
-      assertTrue(configManager.configExists(configSetName));
+    ZkConfigManager configManager = new ZkConfigManager(zkClient);
+    assertFalse(configManager.configExists(configSetName));
 
-      verifyProperties(configSetName, oldProps, newProps, zkClient);
-    } finally {
-      zkClient.close();
+    Create create = new Create();
+    create.setBaseConfigSetName(baseConfigSetName).setConfigSetName(configSetName);
+    if (newProps != null) {
+      Properties p = new Properties();
+      p.putAll(newProps);
+      create.setNewConfigSetProperties(p);
     }
+    ConfigSetAdminResponse response = create.process(solrClient);
+    assertNotNull(response.getResponse());
+    assertTrue(configManager.configExists(configSetName));
+
+    verifyProperties(configSetName, oldProps, newProps, zkClient);
+
     solrClient.close();
   }
 
@@ -241,7 +245,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // let's check without merging the maps, since that's what the MessageHandler does
     // (since we'd probably repeat any bug in the MessageHandler here)
     if (oldProps == null && newProps == null) {
-      assertNull(properties);
+      assertTrue(properties == null || properties.size() == 0);
       return;
     }
     assertNotNull(properties);
@@ -249,7 +253,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // check all oldProps are in props
     if (oldProps != null) {
       for (Map.Entry<String, String> entry : oldProps.entrySet()) {
-        assertNotNull(properties.get(entry.getKey()));
+        assertNotNull("Could not find " + entry.getKey() + " in " + properties, properties.get(entry.getKey()));
       }
     }
     // check all newProps are in props
@@ -370,7 +374,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // enable this back when the sleep is removed from protectConfigsHandler() call
   public void testUploadWithLibDirective() throws Exception {
     // Authorization off
     unprotectConfigsHandler();
@@ -378,25 +381,24 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
     Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-      createCollection("newcollection3", "with-lib-directive" + untrustedSuffix,
-          1, 1, solrCluster.getSolrClient());
+      createCollection("newcollection3", "with-lib-directive" + untrustedSuffix, 1, 1, solrCluster.getSolrClient());
     });
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
 
+    // nocommit - work out using newcollection3 and dealing with it finding the collection after first create fails - instead of using newCollection4
     // Authorization on
     final String trustedSuffix = "-trusted";
     protectConfigsHandler();
     uploadConfigSetWithAssertions("with-lib-directive", trustedSuffix, "solr", "SolrRocks");
     // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp = createCollection("newcollection3", "with-lib-directive" + trustedSuffix,
-        1, 1, solrCluster.getSolrClient());
-    
+    CollectionAdminResponse resp = createCollection("newcollection4", "with-lib-directive" + trustedSuffix, 1, 1, solrCluster.getSolrClient());
+
     SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    solrCluster.getSolrClient().add("newcollection3", doc);
-    solrCluster.getSolrClient().commit("newcollection3");
-    assertEquals("4055", solrCluster.getSolrClient().query("newcollection3",
-        params("q", "*:*")).getResults().get(0).get("id"));
+    solrCluster.getSolrClient().add("newcollection4", doc);
+    solrCluster.getSolrClient().commit("newcollection4");
+
+    assertEquals("4055", solrCluster.getSolrClient().query("newcollection4", params("q", "*:*")).getResults().get(0).get("id"));
   }
 
   protected SolrZkClient zkClient() {
@@ -416,7 +418,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         HttpClientUtil.close(cl);
       }
     }
-    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
   
   private void protectConfigsHandler() throws Exception {
@@ -440,14 +441,13 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       String baseUrl = randomJetty.getBaseUrl().toString();
 
       zkClient().setData("/security.json", securityJson.replaceAll("'", "\"").getBytes(UTF_8), true);
-      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 50);
-      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/class", "solr.RuleBasedAuthorizationPlugin", 50);
+      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 100);
+      BasicAuthIntegrationTest.verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/class", "solr.RuleBasedAuthorizationPlugin", 100);
     } finally {
       if (cl != null) {
         HttpClientUtil.close(cl);
       }
     }
-    Thread.sleep(1000); // TODO: Without a delay, the test fails. Some problem with Authc/Authz framework?
   }
 
   private void uploadConfigSetWithAssertions(String configSetName, String suffix, String username, String password) throws Exception {
@@ -582,8 +582,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   public static Map postDataAndGetResponse(CloudHttp2SolrClient cloudClient,
                                            String uri, ByteBuffer bytarr, String username, String password) throws IOException {
 
+    log.info("postDataAndGetResponse {}", uri);
     Map m = null;
-    
     try {
 
       Map<String, String> headers = new HashMap<>(1);
@@ -642,7 +642,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit debug
   public void testDeleteErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -678,7 +677,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testDelete() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -700,7 +698,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
   public void testList() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
@@ -709,7 +706,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     ConfigSetAdminRequest.List list = new ConfigSetAdminRequest.List();
     ConfigSetAdminResponse.List response = list.process(solrClient);
     Collection<String> actualConfigSets = response.getConfigSets();
-    assertEquals(1, actualConfigSets.size()); // only the _default configset
+    assertEquals(1, actualConfigSets.size()); // _default configset suppressed
 
     // test multiple
     Set<String> configSets = new HashSet<String>();

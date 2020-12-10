@@ -16,8 +16,9 @@
  */
 package org.apache.solr.rest.schema;
 
-import net.sf.saxon.Configuration;
+import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.lib.Validation;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.sapling.SaplingElement;
 import net.sf.saxon.sapling.Saplings;
@@ -27,7 +28,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
@@ -48,7 +48,18 @@ import java.util.Map;
 public class FieldTypeXmlAdapter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB= new ThreadLocal<>();
+  protected final static ThreadLocal<DocumentBuilder> THREAD_LOCAL_DB= new ThreadLocal<>() {
+    protected DocumentBuilder initialValue() {
+      DocumentBuilder db;
+      try {
+        db = dbf.newDocumentBuilder();
+      } catch (ParserConfigurationException e) {
+        log.error("Error in parser configuration", e);
+        throw new RuntimeException(e);
+      }
+      return  db;
+    }
+  };
 
 
   public static final javax.xml.parsers.DocumentBuilderFactory dbf;
@@ -65,17 +76,8 @@ public class FieldTypeXmlAdapter {
     }
   }
 
-  public synchronized  static DocumentBuilder getDocumentBuilder() {
+  public static DocumentBuilder getDocumentBuilder() {
     DocumentBuilder db = THREAD_LOCAL_DB.get();
-    if (db == null) {
-      try {
-        db = dbf.newDocumentBuilder();
-      } catch (ParserConfigurationException e) {
-        log.error("Error in parser configuration", e);
-        throw new RuntimeException(e);
-      }
-      THREAD_LOCAL_DB.set(db);
-    }
     return db;
   }
 
@@ -110,28 +112,21 @@ public class FieldTypeXmlAdapter {
     SaplingElement similarity = transformSimilarity(fieldType, json, "similarity");
     if (similarity != null) fieldType = fieldType.withChild(similarity);
 
-    Configuration conf1 = Configuration.newConfiguration();
-    conf1.setValidation(false);
-    conf1.setXIncludeAware(true);
-    conf1.setExpandAttributeDefaults(true);
-    conf1.setNamePool(XmlConfigFile.conf1.getNamePool());
-    conf1.setDocumentNumberAllocator(XmlConfigFile.conf1.getDocumentNumberAllocator());
-
-
-    ParseOptions parseOptions = conf1.getParseOptions();
-    parseOptions.setPleaseCloseAfterUse(true);
-    parseOptions.setExpandAttributeDefaults(true);
-    parseOptions.setXIncludeAware(true);
-    parseOptions.setSchemaValidationMode(0);
-    parseOptions.setEntityResolver(loader.getSysIdResolver());
-    //conf1.setURIResolver(SystemIdResolver.createSystemIdFromResourceName("json"));
 
     try {
-      return fieldType.toNodeInfo(conf1);
+
+      PipelineConfiguration plc = loader.getConf().makePipelineConfiguration();
+      ParseOptions po = plc.getParseOptions();
+      po.setEntityResolver(loader.getSysIdResolver());
+      po.setXIncludeAware(true);
+      po.setDTDValidationMode(Validation.STRIP);
+      po.setExpandAttributeDefaults(true);
+      po.setCheckEntityReferences(false);
+      po.setPleaseCloseAfterUse(true);
+
+      return fieldType.toNodeInfo(plc.getConfiguration());
     } catch (XPathException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } finally {
-      conf1.close();
     }
   }
 

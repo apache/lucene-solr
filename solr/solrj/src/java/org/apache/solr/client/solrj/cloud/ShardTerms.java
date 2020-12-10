@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -36,10 +37,6 @@ public class ShardTerms implements MapWriter {
   private final long maxTerm;
   // ZK node version
   private final int version;
-
-  public ShardTerms () {
-    this(new HashMap<>(), 0);
-  }
 
   public ShardTerms(ShardTerms newTerms, int version) {
     this(newTerms.values, version);
@@ -95,7 +92,7 @@ public class ShardTerms implements MapWriter {
     boolean changed = false;
     boolean foundReplicasInLowerTerms = false;
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     long leaderTerm = newValues.get(leader);
     for (Map.Entry<String, Long> entry : newValues.entrySet()) {
       String key = entry.getKey();
@@ -129,7 +126,7 @@ public class ShardTerms implements MapWriter {
   public ShardTerms ensureHighestTermsAreNotZero() {
     if (maxTerm > 0) return null;
     else {
-      HashMap<String, Long> newValues = new HashMap<>(values);
+      Map<String, Long> newValues = new ConcurrentHashMap<>(values);
       for (String replica : values.keySet()) {
         newValues.put(replica, 1L);
       }
@@ -147,7 +144,7 @@ public class ShardTerms implements MapWriter {
       return null;
     }
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.remove(coreNodeName);
     newValues.remove(recoveringTerm(coreNodeName));
 
@@ -162,7 +159,7 @@ public class ShardTerms implements MapWriter {
   public ShardTerms registerTerm(String coreNodeName) {
     if (values.containsKey(coreNodeName)) return null;
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.put(coreNodeName, 0L);
     return new ShardTerms(newValues, version);
   }
@@ -171,7 +168,7 @@ public class ShardTerms implements MapWriter {
     if (values.getOrDefault(coreNodeName, -1L) == 0) {
       return null;
     }
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.put(coreNodeName, 0L);
     return new ShardTerms(newValues, version);
   }
@@ -185,7 +182,7 @@ public class ShardTerms implements MapWriter {
     long maxTerm = getMaxTerm();
     if (values.get(coreNodeName) == maxTerm) return null;
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.put(coreNodeName, maxTerm);
     newValues.remove(recoveringTerm(coreNodeName));
     return new ShardTerms(newValues, version);
@@ -202,10 +199,11 @@ public class ShardTerms implements MapWriter {
    */
   public ShardTerms startRecovering(String coreNodeName) {
     long maxTerm = getMaxTerm();
-    if (values.get(coreNodeName) == maxTerm)
+    Long val = values.get(coreNodeName);
+    if (val == null || val == maxTerm)
       return null;
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     if (!newValues.containsKey(recoveringTerm(coreNodeName))) {
       long currentTerm = newValues.getOrDefault(coreNodeName, 0L);
       // by keeping old term, we will have more information in leader election
@@ -225,7 +223,7 @@ public class ShardTerms implements MapWriter {
       return null;
     }
 
-    HashMap<String, Long> newValues = new HashMap<>(values);
+    Map<String, Long> newValues = new ConcurrentHashMap<>(values);
     newValues.remove(recoveringTerm(coreNodeName));
     return new ShardTerms(newValues, version);
   }
@@ -246,7 +244,7 @@ public class ShardTerms implements MapWriter {
     return version;
   }
 
-  public Map<String , Long> getTerms() {
+  public Map<String, Long> getTerms() {
     return new HashMap<>(this.values);
   }
 

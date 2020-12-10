@@ -16,57 +16,55 @@
  */
 package org.apache.solr.util;
 
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.SortedMap;
+
 abstract public class RestTestBase extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static volatile RestTestHarness restTestHarness;
-  public static Set<SolrClient> clients = ConcurrentHashMap.newKeySet();
+
 
   @Before
-  public void beforeRestTestBase() throws Exception {
-
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
   }
 
+  @After
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
+
   @AfterClass
-  public synchronized static void cleanUpHarness() throws IOException {
+  public static void afterRestTestBase() throws Exception {
     ParWork.close(restTestHarness, true);
-    for (SolrClient client : clients) {
-      IOUtils.closeQuietly(client);
-    }
-    clients.clear();
     restTestHarness = null;
   }
 
-  public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
-    return client;
-  }
-
-  public synchronized static JettySolrRunner createJettyAndHarness
+  public static JettySolrRunner createJettyAndHarness
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
 
@@ -76,38 +74,38 @@ abstract public class RestTestBase extends SolrJettyTestBase {
     }
     Http2SolrClient client =  getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
     clients.add(client);
-    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME, client);
+    restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME, client, jetty.getCoreContainer().getResourceLoader());
     jettys.add(jetty);
     return jetty;
   }
 
-  /** Validates an update XML String is successful
-   */
-  public static void assertU(String update) {
-    assertU(null, update);
-  }
-
-  /** Validates an update XML String is successful
-   */
-  public static void assertU(String message, String update) {
-    checkUpdateU(message, update, true);
-  }
-
-  /** Validates an update XML String failed
-   */
-  public static void assertFailedU(String update) {
-    assertFailedU(null, update);
-  }
-
-  /** Validates an update XML String failed
-   */
-  public static void assertFailedU(String message, String update) {
-    checkUpdateU(message, update, false);
-  }
+//  /** Validates an update XML String is successful
+//   */
+//  public void assertU(String update) {
+//    assertU(null, update);
+//  }
+//
+//  /** Validates an update XML String is successful
+//   */
+//  public void assertU(String message, String update) {
+//    checkUpdateU(message, update, true);
+//  }
+//
+//  /** Validates an update XML String failed
+//   */
+//  public void assertFailedU(String update) {
+//    assertFailedU(null, update);
+//  }
+//
+//  /** Validates an update XML String failed
+//   */
+//  public void assertFailedU(String message, String update) {
+//    checkUpdateU(message, update, false);
+//  }
 
   /** Checks the success or failure of an update message
    */
-  private static void checkUpdateU(String message, String update, boolean shouldSucceed) {
+  private void checkUpdateU(String message, String update, boolean shouldSucceed) {
     try {
       String m = (null == message) ? "" : message + " ";
       if (shouldSucceed) {
@@ -127,7 +125,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * 
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_" 
    */
-  public static void assertQ(String request, String... tests) {
+  public void assertQ(String request, String... tests) {
     try {
       int queryStartPos = request.indexOf('?');
       String query;
@@ -158,7 +156,9 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       }
       */
 
-      String results = TestHarness.validateXPath(response, tests);
+      CoreContainer cc = jetty.getCoreContainer();
+      assertNotNull(cc);
+      String results = TestHarness.validateXPath(cc.getResourceLoader(), response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
@@ -183,7 +183,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    *
    * @param request a URL path with optional query params, e.g. "/schema/fields?fl=id,_version_" 
    */
-  public static String JQ(String request) throws Exception {
+  public String JQ(String request) throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -216,7 +216,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
-  public static void assertJQ(String request, String... tests) throws Exception {
+  public void assertJQ(String request, String... tests) throws Exception {
     assertJQ(request, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
@@ -234,7 +234,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJQ(String request, double delta, String... tests) throws Exception {
+  public void assertJQ(String request, double delta, String... tests) throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -291,7 +291,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
-  public static void assertJPut(String request, String content, String... tests) throws Exception {
+  public void assertJPut(String request, String content, String... tests) throws Exception {
     assertJPut(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
@@ -311,7 +311,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJPut(String request, String content, double delta, String... tests) throws Exception {
+  public void assertJPut(String request, String content, double delta, String... tests) throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -366,7 +366,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJQ(String,double,String...)
    */
-  public static void assertJPost(String request, String content, String... tests) throws Exception {
+  public void assertJPost(String request, String content, String... tests) throws Exception {
     assertJPost(request, content, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
@@ -386,7 +386,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @param delta tolerance allowed in comparing float/double values
    * @param tests JSON path expression + '==' + expected value
    */
-  public static void assertJPost(String request, String content, double delta, String... tests) throws Exception {
+  public void assertJPost(String request, String content, double delta, String... tests) throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;
@@ -441,7 +441,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * @see org.apache.solr.JSONTestUtil#DEFAULT_DELTA
    * @see #assertJDelete(String,double,String...)
    */
-  public static void assertJDelete(String request, String... tests) throws Exception {
+  public void assertJDelete(String request, String... tests) throws Exception {
     assertJDelete(request, JSONTestUtil.DEFAULT_DELTA, tests);
   }
 
@@ -449,7 +449,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
    * Deletes a resource and then matches some JSON test expressions against the 
    * response using the specified double delta tolerance.
    */
-  public static void assertJDelete(String request, double delta, String... tests) throws Exception {
+  public void assertJDelete(String request, double delta, String... tests) throws Exception {
     int queryStartPos = request.indexOf('?');
     String query;
     String path;

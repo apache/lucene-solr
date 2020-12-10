@@ -85,7 +85,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     for (int i = 0; i < 100; i++) {
       zkStateReader.updateLiveNodes();
-      if (zkStateReader.getClusterState().getLiveNodes().size() == numNodes) return;
+      if (zkStateReader.getLiveNodes().size() == numNodes) return;
       Thread.sleep(200);
     }
     fail("Timeout waiting for number of live nodes = " + numNodes);

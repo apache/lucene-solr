@@ -42,7 +42,7 @@ import java.util.Map;
 public class SolrClientCache implements Serializable, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final ZkStateReader zkStateReader;
+  private ZkStateReader zkStateReader;
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final Http2SolrClient httpClient;
@@ -72,9 +72,7 @@ public class SolrClientCache implements Serializable, Closeable {
   }
 
   public synchronized CloudHttp2SolrClient getCloudSolrClient() {
-    if (zkStateReader == null) {
-      throw new UnsupportedOperationException();
-    }
+    if (zkStateReader == null) throw new UnsupportedOperationException();
     CloudHttp2SolrClient client;
     SolrZkClient zkClient = zkStateReader.getZkClient();
     if (solrClients.containsKey(zkClient.getZkServerAddress())) {
@@ -111,7 +109,7 @@ public class SolrClientCache implements Serializable, Closeable {
 
   public void close() {
     synchronized (this) {
-      try (ParWork closer = new ParWork(this, true)) {
+      try (ParWork closer = new ParWork(this, false, true)) {
         for (Map.Entry<String,SolrClient> entry : solrClients.entrySet()) {
           closer.collect("solrClient", entry.getValue());
         }

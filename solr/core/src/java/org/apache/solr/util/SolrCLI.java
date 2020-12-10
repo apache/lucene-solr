@@ -1201,7 +1201,7 @@ public class SolrCLI implements CLIO {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
       ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
       final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection == null || docCollection.getSlices() == null)
         throw new IllegalArgumentException("Collection "+collection+" not found!");
@@ -1389,7 +1389,7 @@ public class SolrCLI implements CLIO {
 
       try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty()).build()) {
         cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudSolrClient.getZkStateReader().getLiveNodes();
         if (liveNodes.isEmpty())
           throw new IllegalStateException("No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: "+zkHost);
 
@@ -1528,7 +1528,7 @@ public class SolrCLI implements CLIO {
 
     protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
-      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException("No live nodes found! Cannot create a collection until " +
             "there is at least 1 live node in the cluster.");
@@ -2411,7 +2411,7 @@ public class SolrCLI implements CLIO {
     }
 
     protected void deleteCollection(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = cloudSolrClient.getZkStateReader().getLiveNodes();
       if (liveNodes.isEmpty())
         throw new IllegalStateException("No live nodes found! Cannot delete a collection until " +
             "there is at least 1 live node in the cluster.");
@@ -3020,7 +3020,7 @@ public class SolrCLI implements CLIO {
         cloudClient = new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
             .build();
         cloudClient.connect();
-        Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+        Set<String> liveNodes = cloudClient.getZkStateReader().getLiveNodes();
         int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWaitSecs, TimeUnit.SECONDS);
         while (System.nanoTime() < timeout && numLiveNodes < numNodes) {
@@ -3032,7 +3032,7 @@ public class SolrCLI implements CLIO {
             ParWork.propagateInterrupt(ie);
             return;
           }
-          liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+          liveNodes = cloudClient.getZkStateReader().getLiveNodes();
           numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;
         }
         if (numLiveNodes < numNodes) {

@@ -22,12 +22,15 @@ import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class VersionInfoTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxIndexedVersionFromIndex() throws Exception {
+    System.setProperty("enable.update.log", "true");
     initCore("solrconfig-tlog.xml", "schema-version-indexed.xml");
     try (SolrQueryRequest r = req()) {
       SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();
@@ -43,6 +46,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxDocValuesVersionFromIndex() throws Exception {
+    System.setProperty("enable.update.log", "true");
     initCore("solrconfig-tlog.xml","schema-version-dv.xml");
     try (SolrQueryRequest r = req()) {
       SchemaField v = r.getCore().getUpdateHandler().getUpdateLog().getVersionInfo().getVersionField();

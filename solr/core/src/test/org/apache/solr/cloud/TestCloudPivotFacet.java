@@ -39,6 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -114,6 +115,13 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
   public static void initUseFieldRandomizedFactor() {
 
   }
+
+  @AfterClass
+  public static void afterTestCloudPivotFacet() {
+    useFieldRandomizedFactor = -1;
+  }
+
+
 
   @Test
   //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018

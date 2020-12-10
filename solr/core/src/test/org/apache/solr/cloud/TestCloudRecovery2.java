@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
-@Ignore // nocommit why don't we get a new leader on jetty stop?
+@LuceneTestCase.Nightly
 public class TestCloudRecovery2 extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION = "collection1";
@@ -67,7 +67,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       cluster.waitForActiveCollection(COLLECTION, 1, 1, true);
 
-      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (oldLiveNodes, newLiveNodes) -> newLiveNodes.size() == 1);
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
 
       // we need to be sure the jetty has the up to date state, but we are not using a smart client here
       Thread.sleep(250);
@@ -80,7 +80,9 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.start();
 
-      cluster.waitForActiveCollection(COLLECTION, 1, 2);
+      Thread.sleep(250);
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 2, true);
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
@@ -103,6 +105,8 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       node2.stop();
 
 
+      Thread.sleep(250);
+
       new UpdateRequest().add("id", "1", "num", "20")
           .commit(client1, COLLECTION);
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
@@ -110,9 +114,11 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.start();
 
+
+      Thread.sleep(250);
+
       cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
-      waitForState("", COLLECTION, clusterShape(1, 2));
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
         assertEquals("20", v.toString());
@@ -120,12 +126,18 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.stop();
 
+
+      Thread.sleep(250);
+
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
       v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
       SolrTestCaseJ4.      assertEquals("30", v.toString());
 
       node2.start();
+
+
+      Thread.sleep(250);
 
       cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
@@ -138,12 +150,18 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     }
 
     node1.stop();
+
+
+    Thread.sleep(250);
     waitForState("", COLLECTION, (liveNodes, collectionState) -> {
       Replica leader = collectionState.getLeader("s1");
       return leader != null && leader.getNodeName().equals(node2.getNodeName());
     });
 
     node1.start();
+
+
+    Thread.sleep(250);
 
     cluster.waitForActiveCollection(COLLECTION, 1, 2);
 

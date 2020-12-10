@@ -23,7 +23,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
@@ -81,7 +80,7 @@ public class CacheConfig implements MapSerializable{
   }
 
   public static Map<String, CacheConfig> getMultipleConfigs(SolrConfig solrConfig, String configPath) {
-    ArrayList<NodeInfo> nodes = (ArrayList) solrConfig.evaluate(solrConfig.getTreee(), configPath, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList) solrConfig.evaluate(solrConfig.getTree(), configPath, XPathConstants.NODESET);
     if (nodes == null || nodes.size() == 0) return new LinkedHashMap<>();
     Map<String, CacheConfig> result = new HashMap<>(nodes.size());
     for (int i = 0; i < nodes.size(); i++) {
@@ -102,7 +101,7 @@ public class CacheConfig implements MapSerializable{
     NodeInfo node = null;
     try {
       String path = IndexSchema.normalize(xpath, "/config/");
-      node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, false);
+      node = solrConfig.getNode(solrConfig.getResourceLoader().getXPath().compile(path), path, false);
     } catch (XPathExpressionException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }

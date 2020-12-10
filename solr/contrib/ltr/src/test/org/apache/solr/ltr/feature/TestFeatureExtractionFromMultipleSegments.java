@@ -19,14 +19,15 @@ package org.apache.solr.ltr.feature;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.ltr.TestRerankBase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-
+@LuceneTestCase.Nightly
 public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
   static final String AB = "abcdefghijklmnopqrstuvwxyz";
 
@@ -38,43 +39,45 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     return sb.toString();
  }
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     // solrconfig-multiseg.xml contains the merge policy to restrict merging
     setuptest("solrconfig-multiseg.xml", "schema.xml");
     // index 400 documents
     for(int i = 0; i<400;i=i+20) {
-      assertU(adoc("id", Integer.toString(i),   "popularity", "201", "description", "apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+1), "popularity", "201", "description", "d " + randomString(i%6+3), "normHits", "0.11"));
+      restTestHarness.update(adoc("id", Integer.toString(i),   "popularity", "201", "description", "apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+1), "popularity", "201", "description", "d " + randomString(i%6+3), "normHits", "0.11"));
 
-      assertU(adoc("id", Integer.toString(i+2), "popularity", "201", "description", "apple is a company too " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+3), "popularity", "201", "description", "new york city is big apple " + randomString(i%6+3), "normHits", "0.11"));
+      restTestHarness.update(adoc("id", Integer.toString(i+2), "popularity", "201", "description", "apple is a company too " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+3), "popularity", "201", "description", "new york city is big apple " + randomString(i%6+3), "normHits", "0.11"));
 
-      assertU(adoc("id", Integer.toString(i+6), "popularity", "301", "description", "function name " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+7), "popularity", "301", "description", "function " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+6), "popularity", "301", "description", "function name " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+7), "popularity", "301", "description", "function " + randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", Integer.toString(i+8), "popularity", "301", "description", "This is a sample function for testing " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+9), "popularity", "301", "description", "Function to check out stock prices "+randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+10),"popularity", "301", "description", "Some descriptions "+randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+8), "popularity", "301", "description", "This is a sample function for testing " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+9), "popularity", "301", "description", "Function to check out stock prices "+randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+10),"popularity", "301", "description", "Some descriptions "+randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", Integer.toString(i+11), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+12), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
-      assertU(adoc("id", Integer.toString(i+13), "popularity", "201", "description", "New some York is Big. "+ randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+11), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+12), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
+      restTestHarness.update(adoc("id", Integer.toString(i+13), "popularity", "201", "description", "New some York is Big. "+ randomString(i%6+3), "normHits", "0.1"));
 
-      assertU(adoc("id", Integer.toString(i+14), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+15), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
-      assertU(adoc("id", Integer.toString(i+16), "popularity", "401", "description", "barack h", "normHits", "0.0"));
-      assertU(adoc("id", Integer.toString(i+17), "popularity", "201", "description", "red delicious apple " + randomString(i%6+3), "normHits", "0.1"));
-      assertU(adoc("id", Integer.toString(i+18), "popularity", "201", "description", "nyc " + randomString(i%6+3), "normHits", "0.11"));
+      restTestHarness.update(adoc("id", Integer.toString(i+14), "popularity", "201", "description", "apple apple is a company " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+15), "popularity", "201", "description", "Big Apple is New York.", "normHits", "0.01"));
+      restTestHarness.update(adoc("id", Integer.toString(i+16), "popularity", "401", "description", "barack h", "normHits", "0.0"));
+      restTestHarness.update(adoc("id", Integer.toString(i+17), "popularity", "201", "description", "red delicious apple " + randomString(i%6+3), "normHits", "0.1"));
+      restTestHarness.update(adoc("id", Integer.toString(i+18), "popularity", "201", "description", "nyc " + randomString(i%6+3), "normHits", "0.11"));
     }
 
-    assertU(commit());
+    restTestHarness.update(commit());
 
     loadFeatures("comp_features.json");
+    super.setUp();
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     aftertest();
   }
 

@@ -2,6 +2,7 @@ package org.apache.solr.servlet;
 
 import org.apache.solr.common.ParWork;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.Graceful;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -39,9 +41,9 @@ public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
     }
 
     @Override
-    public Future<Void> shutdown() {
+    public CompletableFuture<Void> shutdown() {
         log.error("SHUTDOWN MONITOR HOOK CALLED");
-        return new FutureCallback(true);
+        return new Callback.Completable();
         //return new VoidShutdownFuture();
     }
 

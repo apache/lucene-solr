@@ -29,6 +29,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -36,6 +37,7 @@ import org.junit.Test;
  * the known APIs, i.e. SolrConfigHandler and SchemaHandler.
  */
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+@Ignore
 public class TestConfigSetImmutable extends RestTestBase {
 
   private static final String collection = "collection1";

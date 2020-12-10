@@ -89,7 +89,7 @@ public class PackageStoreAPI {
    * * @lucene.internal
    */
   public ArrayList<String> shuffledNodes() {
-    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getLiveNodes();
     ArrayList<String> l = new ArrayList(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
     Collections.shuffle(l, BlobRepository.RANDOM);
@@ -156,8 +156,10 @@ public class PackageStoreAPI {
         }
         validateName(path, true);
         ContentStream stream = streams.iterator().next();
+        InputStream is = null;
         try {
-          ByteBuffer buf = SimplePostTool.inputStreamToByteArray(stream.getStream());
+          is = stream.getStream();
+          ByteBuffer buf = SimplePostTool.inputStreamToByteArray(is);
           List<String> signatures = readSignatures(req, buf);
           MetaData meta = _createJsonMetaData(buf, signatures);
           PackageStore.FileType type = packageStore.getType(path, true);
@@ -168,6 +170,8 @@ public class PackageStoreAPI {
           rsp.add(CommonParams.FILE, path);
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+        } finally {
+          Utils.readFully(is);
         }
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);

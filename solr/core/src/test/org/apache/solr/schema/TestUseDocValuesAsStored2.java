@@ -34,23 +34,27 @@ import org.junit.Before;
 public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @Before
-  public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+  public void setUp() throws Exception {
+    testSolrHome = createTempDir();
+    FileUtils.copyDirectory(new File(TEST_HOME()), testSolrHome.toFile());
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    createJettyAndHarness(testSolrHome.toAbsolutePath().toString(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, null);
+
+    super.setUp();
   }
 
   @After
-  public void after() throws Exception {
+  public void tearDown() throws Exception {
+    super.tearDown();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
     restTestHarness = null;
+    deleteCore();
   }
   
 
@@ -103,24 +107,24 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     assertEquals(Boolean.FALSE, m.get("useDocValuesAsStored"));
 
     // Index documents to check the effect
-    assertU(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3"));
+    restTestHarness.update(commit());
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*",
+    assertJQ("/select?q=id:myid*&fl=*",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=id,a1,a2,a3",
+    assertJQ("/select?q=id:myid*&fl=id,a1,a2,a3",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a3':'3'}]");
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=a3",
+    assertJQ("/select?q=id:myid*&fl=a3",
         "/response/docs==[{'a3':'3'}]");
 
     // this will return a3 because it is explicitly requested even if '*' is specified
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*,a3",
+    assertJQ("/select?q=id:myid*&fl=*,a3",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a3':'3'}]");
 
     // this will not return a3 because the glob 'a*' will match only stored + useDocValuesAsStored=true fields
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=id,a*",
+    assertJQ("/select?q=id:myid*&fl=id,a*",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
     
     // Test replace-field
@@ -168,10 +172,10 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     assertNotNull("field a4 not found", m);
     assertEquals(Boolean.TRUE, m.get("useDocValuesAsStored"));
 
-    assertU(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3", "a4", "4"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3", "a4", "4"));
+    restTestHarness.update(commit());
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*",
+    assertJQ("/select?q=id:myid*&fl=*",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a4':'4'}]");
 
   }

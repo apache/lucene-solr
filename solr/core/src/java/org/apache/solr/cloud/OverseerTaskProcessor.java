@@ -19,9 +19,9 @@ package org.apache.solr.cloud;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.IOUtils;
@@ -164,7 +164,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             sessionExpired.set(true);
           } catch (InterruptedException e) {
             interrupted.set(true);
-          } catch (KeeperException e) {
+          } catch (Exception e) {
             log.error("Exception removing item from workQueue", e);
           }
           runningTasks.remove(entry.getKey());
@@ -173,14 +173,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     }
 
-    if (interrupted.get()) {
-      Thread.currentThread().interrupt();
-      throw new InterruptedException();
-    }
-
-    if (sessionExpired.get()) {
-      throw new KeeperException.SessionExpiredException();
-    }
   }
 
   public void closing() {
@@ -201,22 +193,22 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     IOUtils.closeQuietly(selector);
 
 
-    if (closeAndDone) {
-      // nocommit
-      //      for (Future future : taskFutures.values()) {
-      //        future.cancel(false);
-      //      }
-      for (Future future : taskFutures.values()) {
-        try {
-          future.get(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (Exception e) {
-          log.info("Exception closing Overseer {} {}", e.getClass().getName(), e.getMessage());
-        }
-      }
-    }
+//    if (closeAndDone) {
+//      // nocommit
+//      //      for (Future future : taskFutures.values()) {
+//      //        future.cancel(false);
+//      //      }
+//      for (Future future : taskFutures.values()) {
+//        try {
+//          future.get(1, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//          ParWork.propagateInterrupt(e);
+//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//        } catch (Exception e) {
+//          log.info("Exception closing Overseer {} {}", e.getClass().getName(), e.getMessage());
+//        }
+//      }
+//    }
 
   }
 
@@ -274,16 +266,18 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     final ZkNodeProps message;
     final String operation;
     private final OverseerMessageHandler.Lock lock;
+    private final ZkStateWriter zkStateWriter;
     volatile OverseerSolrResponse response;
     final QueueEvent head;
     final OverseerMessageHandler messageHandler;
 
-    public Runner(OverseerMessageHandler messageHandler, ZkNodeProps message, String operation, QueueEvent head, OverseerMessageHandler.Lock lock) {
+    public Runner(OverseerMessageHandler messageHandler, ZkNodeProps message, String operation, QueueEvent head, OverseerMessageHandler.Lock lock, ZkStateWriter zkStateWriter) {
       this.message = message;
       this.operation = operation;
       this.head = head;
       this.messageHandler = messageHandler;
       this.lock = lock;
+      this.zkStateWriter = zkStateWriter;
     }
 
 
@@ -299,7 +293,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+
+          response = messageHandler.processMessage(message, operation, zkStateWriter);
         } finally {
           timerContext.stop();
           updateStats(statsName);

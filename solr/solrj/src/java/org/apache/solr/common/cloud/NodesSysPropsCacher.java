@@ -90,12 +90,12 @@ public class NodesSysPropsCacher implements SolrCloseable {
       } else {
         start(tags);
         // start fetching now
-        fetchSysProps(stateReader.getClusterState().getLiveNodes());
+        fetchSysProps(stateReader.getLiveNodes());
       }
       return isClosed;
     });
 
-    stateReader.registerLiveNodesListener((oldLiveNodes, newLiveNodes) -> {
+    stateReader.registerLiveNodesListener((newLiveNodes) -> {
       fetchSysProps(newLiveNodes);
       return isClosed;
     });

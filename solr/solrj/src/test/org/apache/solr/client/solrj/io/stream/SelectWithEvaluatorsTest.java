@@ -74,13 +74,6 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     }
   }
 
-  @Before
-  public void cleanIndex() throws Exception {
-    new UpdateRequest()
-        .deleteByQuery("*:*")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
-  }
-
   @Test
   public void testSelectWithEvaluatorsStream() throws Exception {
 

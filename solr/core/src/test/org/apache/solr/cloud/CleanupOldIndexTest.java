@@ -34,7 +34,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Slow
-@Ignore // nocommit should get new leader on node stop
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -130,7 +129,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     assertTrue(!oldIndexDir1.exists());
     assertTrue(!oldIndexDir2.exists());
 
-    cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
     jetty.stop();
   }

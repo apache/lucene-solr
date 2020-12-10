@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,12 +72,12 @@ public class HttpShardHandler extends ShardHandler {
    */
   public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
 
-  private HttpShardHandlerFactory httpShardHandlerFactory;
-  private Map<ShardResponse,Cancellable> responseCancellableMap;
-  private BlockingQueue<ShardResponse> responses;
-  private AtomicInteger pending;
+  private final HttpShardHandlerFactory httpShardHandlerFactory;
+  private final Map<ShardResponse,Cancellable> responseCancellableMap;
+  private final BlockingQueue<ShardResponse> responses;
+  private final AtomicInteger pending;
   private final Map<String, List<String>> shardToURLs;
-  private LBHttp2SolrClient lbClient;
+  private final LBHttp2SolrClient lbClient;
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory) {
     this.httpShardHandlerFactory = httpShardHandlerFactory;
@@ -88,7 +89,7 @@ public class HttpShardHandler extends ShardHandler {
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
-    shardToURLs = new HashMap<>();
+    shardToURLs = new ConcurrentHashMap<>();
   }
 
   public HttpShardHandler(HttpShardHandlerFactory httpShardHandlerFactory, LBHttp2SolrClient lb) {
@@ -101,7 +102,7 @@ public class HttpShardHandler extends ShardHandler {
     // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
     // This is primarily to keep track of what order we should use to query the replicas of a shard
     // so that we use the same replica for all phases of a distributed request.
-    shardToURLs = new HashMap<>();
+    shardToURLs = new ConcurrentHashMap<>();
   }
 
 
@@ -135,6 +136,9 @@ public class HttpShardHandler extends ShardHandler {
   // Not thread safe... don't use in Callable.
   // Don't modify the returned URL list.
   private List<String> getURLs(String shard) {
+    if (shard == null) {
+      return Collections.emptyList();
+    }
     List<String> urls = shardToURLs.get(shard);
     if (urls == null) {
       urls = httpShardHandlerFactory.buildURLList(shard);
@@ -167,8 +171,8 @@ public class HttpShardHandler extends ShardHandler {
     srsp.setSolrResponse(ssr);
 
     pending.incrementAndGet();
-    // if there are no shards available for a slice, urls.size()==0
-    if (urls.size() == 0) {
+    // if there are no shards available for a slice, urls.size()==0 asyncTracker.register();
+    if (urls.size() == 0 && shard != null) {
       // TODO: what's the right error code here? We should use the same thing when
       // all of the servers for a shard are down.
       SolrException exception = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
@@ -247,23 +251,32 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     try {
       while (pending.get() > 0) {
-        if (httpShardHandlerFactory.isClosed()) {
-          throw new AlreadyClosedException();
-        }
+        log.info("loop ing in httpshardhandler pending {}", pending.get());
 
-        ShardResponse rsp = responses.poll(3, TimeUnit.SECONDS);
-        if (rsp == null) {
+
+        ShardResponse rsp = responses.poll(1, TimeUnit.SECONDS);
+
+        if (rsp == null && pending.get() > 0) {
+          if (httpShardHandlerFactory.isClosed()) {
+            cancelAll();
+            throw new AlreadyClosedException();
+          }
           continue;
         }
-        responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();
+
+        responseCancellableMap.remove(rsp);
+
+
         if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
+        log.info("should reutrn resp? {} {}", rsp.getShardRequest().responses.size(), rsp.getShardRequest().actualShards.length);
+
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
@@ -277,10 +290,11 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void cancelAll() {
-    for (Cancellable cancellable : responseCancellableMap.values()) {
+    responseCancellableMap.values().forEach(cancellable -> {
       cancellable.cancel();
       pending.decrementAndGet();
-    }
+    });
+
     responseCancellableMap.clear();
   }
 
@@ -343,7 +357,7 @@ public class HttpShardHandler extends ShardHandler {
 
     rb.shards = new String[rb.slices.length];
     for (int i = 0; i < rb.slices.length; i++) {
-      rb.shards[i] = createSliceShardsStr(replicaSource.getReplicasBySlice(rb.slices[i], i));
+      rb.shards[i] = createSliceShardsStr(replicaSource.getReplicasBySlice(i));
     }
 
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);

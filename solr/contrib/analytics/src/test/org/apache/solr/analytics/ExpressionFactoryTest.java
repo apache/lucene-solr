@@ -24,7 +24,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.value.constant.ConstantValue;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,8 +34,8 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
 
   private static IndexSchema indexSchema;
 
-  @BeforeClass
-  public static void createSchemaAndFields() throws Exception {
+  @Before
+  public void createSchemaAndFields() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     assertU(adoc("id", "1",
         "int_i", "1",
@@ -56,8 +58,9 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     indexSchema = h.getCore().getLatestSchema();
   }
 
-  @AfterClass
-  public static void cleanUp() throws Exception {
+  @After
+  public void cleanUp() throws Exception {
+    deleteCore();
     indexSchema = null;
   }
 
@@ -68,6 +71,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void userDefinedVariableFunctionTest() {
     ExpressionFactory fact = getExpressionFactory();
 
@@ -171,6 +175,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void reductionManagerCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
 

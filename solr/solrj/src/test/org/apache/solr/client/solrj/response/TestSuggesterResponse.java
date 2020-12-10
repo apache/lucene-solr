@@ -40,7 +40,7 @@ public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
     initCore();
   }
 
-  static String field = "cat";
+  String field = "cat";
 
   @Test
   public void testSuggesterResponseObject() throws Exception {

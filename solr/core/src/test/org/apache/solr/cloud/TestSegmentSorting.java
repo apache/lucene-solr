@@ -158,8 +158,8 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     
     // pick a random doc, and verify that doing an atomic update causes the docid to change
     // ie: not an inplace update
-    final int id = TestUtil.nextInt(random(), 1, numDocs);
-    final int oldDocId = (Integer) cloudSolrClient.getById("" + id, params("fl", "[docid]")).get("[docid]");
+    final int id = Math.max(1,  TestUtil.nextInt(random(), 1, numDocs - 1));
+   //mk final int oldDocId = (Integer) cloudSolrClient.getById("" + id, params("fl", "[docid]")).get("[docid]");
 
     cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", id, updateField, SolrTestCaseJ4.map("inc", "666")));
     cloudSolrClient.commit();

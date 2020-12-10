@@ -167,7 +167,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     String xpath = "//arr[@name='documents']/lst[arr[@name='id']/str='"+parentId1+"']/"+
       "arr[@name='_childDocuments_']/lst[arr[@name='id']/str='"+childId+"']/"+
       "arr[@name='_childDocuments_']/lst[arr[@name='id']/str='"+grandChildrenIds.get(0)+"']";
-    String results = TestHarness.validateXPath(resp, xpath);
+    String results = TestHarness.validateXPath(h.getCore().getResourceLoader(), resp, xpath);
     assertTrue("Debug documents does not contain child documents\n"+resp+"\n"+ xpath+
                                                         "\n"+results, results == null);
     

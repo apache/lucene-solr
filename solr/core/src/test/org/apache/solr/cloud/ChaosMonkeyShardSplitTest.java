@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
@@ -49,7 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Test split phase that occurs when a Collection API split call is made.
  */
 @Slow
-@Ignore("SOLR-4944")
+@LuceneTestCase.AwaitsFix(bugUrl = "SOLR-4944")
 public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -219,7 +220,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
       for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
+        if (!zkStateReader.isNodeLive(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
           allActive = false;
           break;
         }
@@ -250,7 +251,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     SolrZkClient zkClient = zkClient();
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(null, new ZkController.ContextKey("overseer",
-            "overseer"), new ConcurrentHashMap<>());
+            "overseer"));
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     // TODO: close Overseer
     Overseer overseer = new Overseer(updateShardHandler, "/admin/cores",
@@ -258,7 +259,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     overseer.close();
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, overseer);
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec, false);
+    overseerElector.joinElection(false);
     reader.close();
     return zkClient;
   }

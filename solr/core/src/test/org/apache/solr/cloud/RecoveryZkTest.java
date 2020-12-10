@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slow
@@ -60,7 +61,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
         .configure();
   }
 
-  private final List<StoppableIndexingThread> threads = new ArrayList<>();
+  private final List<StoppableIndexingThread> threads = Collections.synchronizedList(new ArrayList<>());
 
   @After
   public void stopThreads() throws InterruptedException {

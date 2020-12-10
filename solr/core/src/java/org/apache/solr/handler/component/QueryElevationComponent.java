@@ -249,7 +249,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             if (log.isInfoEnabled()) {
               log.info("Loading QueryElevation from: {}", fC.getAbsolutePath());
             }
-            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null, true);
+            XmlConfigFile cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null);
             elevationProvider = loadElevationProvider(cfg);
           }
           elevationProviderCache.put(null, elevationProvider);
@@ -374,10 +374,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     XmlConfigFile cfg;
     ZkController zkController = core.getCoreContainer().getZkController();
     if (zkController != null) {
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null, true);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, null, null, null);
     } else {
       InputStream is = VersionedFile.getLatestFile(core.getDataDir(), configFileName);
-      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null, null, true);
+      cfg = new XmlConfigFile(core.getResourceLoader(), configFileName, new InputSource(is), null, null);
     }
     ElevationProvider elevationProvider = loadElevationProvider(cfg);
     assert elevationProvider != null;
@@ -392,8 +392,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    */
   protected ElevationProvider loadElevationProvider(XmlConfigFile config) {
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap = new LinkedHashMap<>();
-    XPath xpath = XmlConfigFile.getXpath();
-    ArrayList<NodeInfo> nodes = (ArrayList) config.evaluate(config.getTreee(), "elevate/query", XPathConstants.NODESET);
+    XPath xpath = config.getResourceLoader().getXPath();
+    ArrayList<NodeInfo> nodes = (ArrayList) config.evaluate(config.getTree(), "elevate/query", XPathConstants.NODESET);
     for (int i = 0; i < nodes.size(); i++) {
       NodeInfo node = nodes.get(i);
       String queryString = DOMUtil.getAttr(node, "text", "missing query 'text'");
@@ -1129,7 +1129,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 
   /** Elevates certain docs to the top. */
-  private class ElevationComparatorSource extends FieldComparatorSource {
+  private static class ElevationComparatorSource extends FieldComparatorSource {
 
     private final IntIntHashMap elevatedWithPriority;
     private final boolean useConfiguredElevatedOrder;

@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -38,8 +39,10 @@ import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -69,9 +72,7 @@ public class JavabinLoader extends ContentStreamLoader {
       is = stream.getStream();
       parseAndLoadDocs(req, rsp, is, processor);
     } finally {
-      if(is != null) {
-        while (is.read() != -1) {}
-      }
+      Utils.readFully(is);
     }
   }
   
@@ -109,13 +110,13 @@ public class JavabinLoader extends ContentStreamLoader {
         try {
           processor.processAdd(addCmd);
           addCmd.clear();
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + document, e);
+        } catch (ZooKeeperException | IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + addCmd.getPrintableId(), e);
         }
       }
     };
     FastInputStream in = FastInputStream.wrap(stream);
-    for (; ; ) {
+    for (; ; ) {;
       if (in.peek() == -1) return;
       try {
         update = new JavaBinUpdateRequestCodec()

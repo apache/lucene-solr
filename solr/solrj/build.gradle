@@ -33,6 +33,8 @@ dependencies {
   api 'org.eclipse.jetty:jetty-http'
   api 'org.eclipse.jetty:jetty-alpn-java-client'
   api 'org.eclipse.jetty:jetty-alpn-client'
+  api 'org.eclipse.jetty:jetty-security'
+
 
   api 'com.fasterxml.woodstox:woodstox-core'
 
@@ -58,6 +60,8 @@ dependencies {
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
+  // https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java
+  runtime 'org.xerial.snappy:snappy-java'
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.eclipse.jetty:jetty-webapp'

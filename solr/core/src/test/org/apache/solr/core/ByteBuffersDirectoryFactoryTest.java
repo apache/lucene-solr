@@ -31,12 +31,7 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   public void testOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();
-    ByteBuffersDirectoryFactory factory = new ByteBuffersDirectoryFactory()  {
-      @Override
-      protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
-        return directory;
-      }
-    };
+    ByteBuffersDirectoryFactory factory = new MyByteBuffersDirectoryFactory(directory);
     String path = "/fake/path";
     Directory dir1 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     Directory dir2 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
@@ -68,5 +63,18 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("q", "a_s:_0_"), "//result[@numFound = '1']");
     deleteCore();
+  }
+
+  private static class MyByteBuffersDirectoryFactory extends ByteBuffersDirectoryFactory {
+    private final Directory directory;
+
+    public MyByteBuffersDirectoryFactory(Directory directory) {
+      this.directory = directory;
+    }
+
+    @Override
+    protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+      return directory;
+    }
   }
 }

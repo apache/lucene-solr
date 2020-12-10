@@ -25,7 +25,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.ZkIndexSchemaReader;
-import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,12 +59,6 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "s1";
 
-    try {
-      cloudClient.getZkStateReader().getZkClient()
-          .makePath("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(), false);
-    } catch (KeeperException.NodeExistsException e) {
-      // okay
-    }
     createCollection(testCollectionName, 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
@@ -90,10 +83,10 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
     assertTrue(listeners.size() > 0);
     ZkIndexSchemaReader expectedListener = null;
     for (OnReconnect listener : listeners) {
-      System.out.println("listener:" + listener.getClass().getSuperclass().getName());
+      log.info("listener:" + listener.getClass().getSuperclass().getName());
       if (listener instanceof ZkIndexSchemaReader) {
         ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
-        System.out.println("leadercoreid:" + leaderCoreId + " against:" + reader.getUniqueCoreId());
+        log.info("leadercoreid:" + leaderCoreId + " against:" + reader.getUniqueCoreId());
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;

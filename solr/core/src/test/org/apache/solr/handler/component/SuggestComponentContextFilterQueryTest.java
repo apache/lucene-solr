@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.spelling.suggest.SuggesterParams;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,17 +29,13 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   static String rh = "/suggest";
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    useFactory(null);
-    initCore("solrconfig-suggestercomponent-context-filter-query.xml", "schema.xml");
-  }
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    assertU(delQ("*:*"));
+    useFactory(null);
+    initCore("solrconfig-suggestercomponent-context-filter-query.xml", "schema.xml");
+
     // id, cat, price, weight, contexts
     assertU(adoc("id", "0", "cat", "This is a title", "price", "5", "weight", "10", "my_contexts_t", "ctx1"));
     assertU(adoc("id", "1", "cat", "This is another title", "price", "10", "weight", "10", "my_contexts_t", "ctx1"));
@@ -47,6 +44,12 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "9", "cat", "example with ctx4 at 50 using my_contexts_s", "price", "50", "weight", "40", "my_contexts_s", "ctx4"));
     assertU((commit()));
     waitForWarming();
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   @Test

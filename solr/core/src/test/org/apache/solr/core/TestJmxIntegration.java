@@ -49,7 +49,6 @@ import java.util.TreeSet;
  *
  * @since solr 1.3
  */
-@Ignore // nocommit jmxreporter not showing up, debug (sys prop should enable it)
 public class TestJmxIntegration extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,7 +60,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.disableMetricsHistoryHandler", "false");
+    System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     // Make sure that at least one MBeanServer is available
     // prior to initializing the core
@@ -76,7 +75,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     registryName = h.getCore().getCoreMetricManager().getRegistryName();
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
     Map<String,SolrMetricReporter> reporters = manager.getReporters(registryName);
-    assertEquals(0, reporters.size());
+    assertEquals(1, reporters.size());
     SolrMetricReporter reporter = reporters.values().iterator().next();
     assertTrue(reporter instanceof SolrJmxReporter);
     SolrJmxReporter jmx = (SolrJmxReporter)reporter;
@@ -105,6 +104,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
     }
     mbeanServer = null;
     newMbeanServer = null;
+    nameFactory = null;
   }
 
   @Before
@@ -177,6 +177,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testJmxOnCoreReload() throws Exception {
     // make sure searcher beans are registered
     assertQ(req("q", "*:*"), "//result[@numFound='0']");

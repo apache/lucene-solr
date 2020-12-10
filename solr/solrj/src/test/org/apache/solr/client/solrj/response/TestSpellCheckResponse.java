@@ -44,7 +44,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     initCore();
   }
 
-  static String field = "name";
+  String field = "name";
 
   @Test
   public void testSpellCheckResponse() throws Exception {

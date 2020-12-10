@@ -31,9 +31,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -69,18 +72,21 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static String COLLECTION = "collection1";
-  protected static String  DEFAULT_COLLECTION = COLLECTION;
+  protected static String COLLECTION;
+  protected static AtomicInteger collectionCount = new AtomicInteger(0);
+  protected static String DEFAULT_COLLECTION ;
 
   protected volatile static CloudHttp2SolrClient cloudClient;
   
@@ -109,7 +115,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   public static RandVal rdate = new RandDate();
   
-  protected static String[] fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
+  protected static String[] fieldNames = null;
   
   protected volatile static int numJettys = 3;
   
@@ -130,7 +136,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static boolean uploadSelectCollection1Config = true;
   protected volatile static boolean formatZk = true;
 
-  protected volatile static SortedMap<ServletHolder, String> extraServlets = Collections.emptySortedMap();
+  protected volatile static SortedMap<ServletHolder, String> extraServlets;
 
   final Pattern filenameExclusions = Pattern.compile(".*solrconfig(?:-|_).*?\\.xml|.*schema(?:-|_).*?\\.xml");
   
@@ -138,15 +144,16 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
-
+    COLLECTION = "collection" + collectionCount.incrementAndGet();
+    DEFAULT_COLLECTION = COLLECTION;
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
+
+
     
     cluster = configureCluster(numJettys).formatZk(formatZk).withSolrXml(TEST_PATH().resolve(solrxmlString)).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
 
-    cluster.getZkClient().clean("/configs/_default");
-
-    SolrZkClient zkClient = cluster.getZkClient();
+    SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
 
     if (!zkClient.exists("/configs/_default")) {
       zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
@@ -171,19 +178,17 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
 
     if (uploadSelectCollection1Config) {
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml"),
-          "/configs/_default/solrconfig.snippet.randomindexconfig.xml", null);
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("enumsConfig.xml"),
-          "/configs/_default/enumsConfig.xml", null);
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("currency.xml"),
-          "/configs/_default/currency.xml", null);
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("old_synonyms.txt"),
-          "/configs/_default/old_synonyms.txt", null);
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("open-exchange-rates.json"),
-          "/configs/_default/open-exchange-rates.json", null);
-      zkClient.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt"),
-          "/configs/_default/mapping-ISOLatin1Accent.txt", null);
-
+      try {
+        zkClient.create("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
+            CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/enumsConfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("enumsConfig.xml").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/currency.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("currency.xml").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/old_synonyms.txt", TEST_PATH().resolve("collection1").resolve("conf").resolve("old_synonyms.txt").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/open-exchange-rates.json", TEST_PATH().resolve("collection1").resolve("conf").resolve("open-exchange-rates.json").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/mapping-ISOLatin1Accent.txt", TEST_PATH().resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt").toFile(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException.NodeExistsException exists) {
+        log.info("extra collection config files already exist in zk");
+      }
     }
 
     if (createCollection1) {
@@ -204,7 +209,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     if (createControl) {
       controlCluster = configureCluster(1).withSolrXml(TEST_PATH().resolve(solrxmlString)).formatZk(formatZk).build();
       
-      SolrZkClient zkClientControl = controlCluster.getZkClient();
+      SolrZkClient zkClientControl = controlCluster.getSolrClient().getZkStateReader().getZkClient();
       
       zkClientControl.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
 
@@ -240,7 +245,12 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     clients.clear();
   }
-  
+
+  @BeforeClass
+  public static void beforeSolrCloudBridgeTestClass() {
+    fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
+    randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
+  }
   
   @AfterClass
   public static void afterSolrCloudBridgeTestCase() throws Exception {
@@ -251,6 +261,9 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       }
     }
     newClients.clear();
+    cloudClient = null;
+    newClients.clear();
+    extraServlets = null;
     createCollection1 = true;
     createControl = false;
     solrconfigString = null;
@@ -258,10 +271,12 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     solrxmlString = "solr.xml";
     numJettys = 3;
     formatZk = true;
-    uploadSelectCollection1Config = false;
+    uploadSelectCollection1Config = true;
     sliceCount = 2;
     replicationFactor = 1;
     enableProxy = false;
+    fieldNames = null;
+    randVals = null;
   }
   
   protected String getBaseUrl(HttpSolrClient client) {
@@ -605,26 +620,31 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
    */
   protected void createCollectionInOneInstance(final SolrClient client, String nodeName,
                                                ExecutorService executor, final String collection,
-                                               final int numShards, int numReplicas) {
+                                               final int numShards, int numReplicas) throws ExecutionException, InterruptedException {
     assertNotNull(nodeName);
     try {
       assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
-          .setCreateNodeSet("")
+          .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
           .process(client).getStatus());
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     }
+    List<Future> futures = new ArrayList<>();
     for (int i = 0; i < numReplicas; i++) {
       final int freezeI = i;
-      executor.execute(() -> {
+      Future future = executor.submit(() -> {
         try {
-          CollectionAdminRequest.addReplicaToShard(collection, "shard"+((freezeI%numShards)+1))
-              .setCoreName(collection + freezeI)
-              .setNode(nodeName).process(client);
-        } catch (SolrServerException | IOException e) {
-          throw new RuntimeException(e);
+          String shard = "s" + ((freezeI % numShards) + 1);
+          log.info("add replica to shard {}", shard);
+          CollectionAdminRequest.addReplicaToShard(collection, shard).setNode(nodeName).process(client);
+        } catch (Exception e) {
+          log.error("", e);
         }
       });
+      futures.add(future);
+    }
+    for (Future future : futures) {
+      future.get();
     }
   }
   
@@ -663,7 +683,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   protected void setupRestTestHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL(), cluster.getSolrClient().getHttpClient());
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL(), cluster.getSolrClient().getHttpClient(), cluster.getJettySolrRunners().get(0).getCoreContainer()
+          .getResourceLoader());
       restTestHarnesses.add(harness);
     }
   }
@@ -745,5 +766,5 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
   }
   
-  protected static RandVal[] randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
+  protected static RandVal[] randVals;
 }

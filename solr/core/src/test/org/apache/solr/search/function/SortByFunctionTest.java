@@ -26,17 +26,16 @@ import org.junit.BeforeClass;
 public class SortByFunctionTest extends SolrTestCaseJ4 {
 
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
-  }
-
-  
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assertU(delQ("*:*"));
-    assertU(commit());
+    initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   public void test() throws Exception {

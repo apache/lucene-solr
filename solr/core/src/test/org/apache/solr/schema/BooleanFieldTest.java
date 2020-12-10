@@ -18,13 +18,20 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class BooleanFieldTest extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig-basic.xml", "schema15.xml");
+  }
+
+  @After
+  public void afterTest() {
+    deleteCore();
   }
 
   // Note, docValues-based boolean tests are tested elsewhere refering to more appropriate schemas

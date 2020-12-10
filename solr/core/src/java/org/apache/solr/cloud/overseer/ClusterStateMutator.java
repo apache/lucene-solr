@@ -110,7 +110,7 @@ public class ClusterStateMutator {
     }
 
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, 0);
+            slices, collectionProps, router, 0, false);
 
     return clusterState.copyWith(cName, newCollection);
   }

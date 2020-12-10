@@ -1829,7 +1829,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getRootSharedExecutor());
     LogReplayer replayer = new LogReplayer(Collections.singletonList(bufferTlog), true);
     return cs.submit(() -> {
-      replayer.run();
+      try {
+        replayer.run();
+      } catch (AlreadyClosedException e) {
+
+      }
       dropBufferTlog();
     }, recoveryInfo);
   }
@@ -1890,6 +1894,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           if (translog == null) break;
           doReplay(translog);
         }
+      } catch (AlreadyClosedException e) {
+        throw e;
       } catch (SolrException e) {
         if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
           SolrException.log(log, e);

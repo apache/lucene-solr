@@ -66,6 +66,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -76,7 +77,6 @@ import org.slf4j.LoggerFactory;
 public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static JettySolrRunner jetty;
 
   public static class RedirectServlet extends HttpServlet {
     @Override
@@ -190,8 +190,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
   }
   
-  @BeforeClass
-  public static void beforeTest() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     JettyConfig jettyConfig = JettyConfig.builder()
         .withServlet(new ServletHolder(RedirectServlet.class), "/redirect/*")
         .withServlet(new ServletHolder(SlowServlet.class), "/slow/*")
@@ -199,6 +199,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    super.setUp();
   }
   
   @Test
@@ -398,7 +399,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  private static class MyHttpRequestInterceptor implements HttpRequestInterceptor {
+  private class MyHttpRequestInterceptor implements HttpRequestInterceptor {
     @Override
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
       BasicClientCookie cookie = new BasicClientCookie(cookieName, cookieValue);

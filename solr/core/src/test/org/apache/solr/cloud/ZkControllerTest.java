@@ -52,7 +52,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit can leak
 public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "collection1";
@@ -198,6 +197,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
       } finally {
+        zkController.disconnect(false);
         zkController.close();
       }
     } finally {
@@ -330,7 +330,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     HttpShardHandlerFactory shardHandlerFactory;
     UpdateShardHandler updateShardHandler;
     public MockCoreContainer() {
-      super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
+      super(new SolrXmlConfig().fromString(TEST_PATH(), "<solr/>"));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       shardHandlerFactory = httpShardHandlerFactory;

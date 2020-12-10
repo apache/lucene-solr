@@ -20,6 +20,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.lucene.util.TestUtil;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.After;
 
@@ -32,15 +33,14 @@ import java.util.ArrayList;
 /** Inspired by LUCENE-5790 */
 public class TestMissingGroups extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema15.xml");
   }
 
   @After
   public void cleanup() throws Exception {
-    clearIndex();
-    assertU(optimize());
+    deleteCore();
   }
 
   public void testGroupsOnMissingValues() throws Exception {

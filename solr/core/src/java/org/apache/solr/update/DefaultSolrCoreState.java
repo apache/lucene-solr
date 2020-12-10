@@ -25,6 +25,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -41,6 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -56,7 +58,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", Integer.getInteger("solr.recoveryThrottle", 100));
 
-  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", Integer.getInteger("solr.leaderThrottle", 100));
+  private final ActionThrottle leaderThrottle = new ActionThrottle("leader", Integer.getInteger("solr.leaderThrottle", 10));
 
   private final AtomicInteger recoveryWaiting = new AtomicInteger();
 
@@ -88,6 +90,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private volatile Callable cdcrBootstrapCallable;
 
   private volatile boolean prepForClose;
+  private volatile boolean recoverying;
 
   @Deprecated
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
@@ -198,10 +201,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   // closes and opens index writers without any locking
   private void changeWriter(SolrCore core, boolean rollback, boolean openNewWriter) throws IOException {
-    if (prepForClose) {
-      throw new AlreadyClosedException();
-    }
-
     String coreName = core.getName();
 
     // We need to null this so it picks up the new writer next get call.
@@ -272,9 +271,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name) throws IOException {
-    if (prepForClose) {
-      throw new AlreadyClosedException();
-    }
     SolrIndexWriter iw;
     try {
       iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getLatestSchema(),
@@ -321,80 +317,117 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void doRecovery(SolrCore core) {
-    if (prepForClose || core.getCoreContainer().isShutDown() || closed) {
-      return;
-    }
+    log.info("Do recovery for core {}", core.getName());
+    recoverying = true;
+    CoreContainer corecontainer = core.getCoreContainer();
+    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     Runnable recoveryTask = () -> {
       MDCLoggingContext.setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
+      boolean success = false;
       try {
         if (SKIP_AUTO_RECOVERY) {
           log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
           return;
         }
 
+        log.info("Going to create and run RecoveryStrategy");
+
+//        try {
+//          Replica leader = core.getCoreContainer().getZkController().getZkStateReader().getLeaderRetry(core.getCoreDescriptor().getCollectionName(), core.getCoreDescriptor().getCloudDescriptor().getShardId(), 1000);
+//          if (leader != null && leader.getName().equals(core.getName())) {
+//            return;
+//          }
+//        } catch (InterruptedException e) {
+//          throw new SolrException(ErrorCode.BAD_REQUEST, e);
+//        } catch (TimeoutException e) {
+//          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+//        }
+
         // check before we grab the lock
-        if (prepForClose || closed || core.getCoreContainer().isShutDown()) {
+        if (prepForClose || closed || corecontainer.isShutDown()) {
           log.warn("Skipping recovery because Solr is shutdown");
           return;
         }
+        recoverying = true;
 
         // if we can't get the lock, another recovery is running
         // we check to see if there is already one waiting to go
         // after the current one, and if there is, bail
         boolean locked = recoveryLock.tryLock();
 
-          if (!locked && recoveryWaiting.get() > 0) {
-            return;
-          }
+        if (!locked && recoveryWaiting.get() > 1) {
+          log.info("Skipping recovery because there is another already queued");
+          return;
+        }
 
+//        if (closed || prepForClose) {
+//          return;
+//        }
+        if (!locked) {
           recoveryWaiting.incrementAndGet();
+          log.info("Wait for recovery lock");
 
-          while (!recoveryLock.tryLock(1, TimeUnit.SECONDS)) {
+          while (!recoveryLock.tryLock(250, TimeUnit.MILLISECONDS)) {
             if (closed || prepForClose) {
+              log.warn("Skipping recovery because we are closed");
+              recoveryWaiting.decrementAndGet();
               return;
             }
           }
           // don't use recoveryLock.getQueueLength() for this
           if (recoveryWaiting.decrementAndGet() > 0) {
             // another recovery waiting behind us, let it run now instead of after we finish
+            log.info("Skipping recovery because there is another in line behind");
             return;
           }
+        }
 
-          // to be air tight we must also check after lock
-          if (prepForClose || closed || core.getCoreContainer().isShutDown()) {
-            log.info("Skipping recovery due to being closed");
-            return;
-          }
+        // to be air tight we must also check after lock
+        if (prepForClose || closed || corecontainer.isShutDown()) {
+          log.info("Skipping recovery due to being closed");
+          return;
+        }
 
-          recoveryThrottle.minimumWaitBetweenActions();
-          recoveryThrottle.markAttemptingAction();
+        recoveryThrottle.minimumWaitBetweenActions();
+        recoveryThrottle.markAttemptingAction();
 
-          recoveryStrat = recoveryStrategyBuilder.create(core.getCoreContainer(), core.getCoreDescriptor(), DefaultSolrCoreState.this);
-          recoveryStrat.setRecoveryLock(recoveryLock);
-          recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
+        recoveryStrat = recoveryStrategyBuilder.create(corecontainer, coreDescriptor, DefaultSolrCoreState.this);
+        recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
 
-          log.info("Running recovery");
-          recoveryStrat.run();
+        log.info("Running recovery");
+        success = true;
+        recoveryStrat.run();
 
       } catch (AlreadyClosedException e) {
-
+        log.warn("Skipping recovery because we are closed");
       } catch (Exception e) {
         log.error("Exception starting recovery", e);
       } finally {
+        recoverying = false;
+        if (recoveryLock.isHeldByCurrentThread()) {
+          recoveryLock.unlock();
+        }
+
         MDCLoggingContext.clear();
       }
     };
+    boolean success = false;
     try {
       // we make recovery requests async - that async request may
       // have to 'wait in line' a bit or bail if a recovery is
       // already queued up - the recovery execution itself is run
       // in another thread on another 'recovery' executor.
       //
-
-      recoveryFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor()
-          .submit(recoveryTask);
+      log.info("Submit recovery for {}", core.getName());
+      recoveryFuture = core.getCoreContainer().getUpdateShardHandler().getRecoveryExecutor().submit(recoveryTask);
+      success = true;
     } catch (RejectedExecutionException e) {
       // fine, we are shutting down
+      log.warn("Skipping recovery because we are closed");
+    } finally {
+      if (!success) {
+        recoverying = false;
+      }
     }
   }
 
@@ -405,6 +438,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void cancelRecovery(boolean wait, boolean prepForClose) {
+    recoverying = false;
+    
     if (prepForClose) {
       this.prepForClose = true;
     }
@@ -435,6 +470,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     recoveringAfterStartup = false;  // once we have successfully recovered, we no longer need to act as if we are recovering after startup
   }
 
+  public boolean isRecoverying() {
+    return recoverying;
+  }
+
+
   /** called from recoveryStrat on a failed recovery */
   @Override
   public void failed() {
@@ -448,6 +488,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // a blocking race, we should not need to
     // though
     // iwLock.writeLock().lock();
+    if (recoverying) {
+      cancelRecovery();
+    }
     try {
       closeIndexWriter(closer);
     } finally {

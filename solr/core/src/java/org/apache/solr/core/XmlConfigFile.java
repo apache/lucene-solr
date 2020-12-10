@@ -16,13 +16,13 @@
  */
 package org.apache.solr.core;
 
-import net.sf.saxon.Configuration;
 import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.event.Sender;
+import net.sf.saxon.lib.ParseOptions;
+import net.sf.saxon.lib.Validation;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
-import net.sf.saxon.xpath.XPathFactoryImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -66,26 +66,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
   protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
 
-  public static final XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
 
-
-  public static Configuration conf1 = null;
- // public static Configuration conf2 = null;
- // public static NamePool pool = null;
-
-  static  {
-    try {
-      // nocommit - review security for xml after recent changes
-      conf1 = Configuration.newConfiguration();
-      conf1.setValidation(false);
-      conf1.setXIncludeAware(true);
-      conf1.setExpandAttributeDefaults(true);
-
-      xpathFactory.setConfiguration(conf1);
-    } catch (Exception e) {
-      log.error("", e);
-    }
-  }
 
   protected final String prefix;
   private final String name;
@@ -93,16 +74,17 @@ public class XmlConfigFile { // formerly simply "Config"
 
   private final Properties substituteProperties;
   protected final TinyDocumentImpl tree;
+
   private int zkVersion = -1;
 
-  public static XPath getXpath() {
-    XPath xPath = THREAD_LOCAL_XPATH.get();
-    if (xPath == null) {
-      xPath = XmlConfigFile.xpathFactory.newXPath();
-      THREAD_LOCAL_XPATH.set(xPath);
-    }
-    return xPath;
-  }
+//  public static XPath getXpath() {
+//    XPath xPath = THREAD_LOCAL_XPATH.get();
+//    if (xPath == null) {
+//      xPath = xpathFactory.newXPath();
+//      THREAD_LOCAL_XPATH.set(xPath);
+//    }
+//    return xPath;
+//  }
 
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
@@ -117,7 +99,7 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix)
       throws IOException {
-    this(loader, name, is, prefix, null, false);
+    this(loader, name, is, prefix, null);
   }
 
   /**
@@ -137,11 +119,8 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps, boolean expand)
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps)
       throws  IOException {
-    if (loader == null) {
-      loader = new SolrResourceLoader(SolrPaths.locateSolrHome());
-    }
     this.loader = loader;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
@@ -158,28 +137,30 @@ public class XmlConfigFile { // formerly simply "Config"
       is = new InputSource(in);
       is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     }
-    Configuration conf2;
+
     try {
       SAXSource source = new SAXSource(is);
 
-      conf2 = Configuration.newConfiguration();
-      conf2.setValidation(false);
-      conf2.setExpandAttributeDefaults(true);
-      conf2.setXIncludeAware(true);
+      PipelineConfiguration plc = getResourceLoader().getConf().makePipelineConfiguration();
+      //      if (is.getSystemId() != null) {
+      //     plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
+      //      }
 
-
-      conf2.setDocumentNumberAllocator(conf1.getDocumentNumberAllocator());
-      conf2.setNamePool(conf1.getNamePool());
-      conf2.setURIResolver(loader.getSysIdResolver().asURIResolver());
-      PipelineConfiguration plc = conf2.makePipelineConfiguration();
-      //plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
-      conf2.getParseOptions().setEntityResolver(loader.getSysIdResolver());
       TinyDocumentImpl docTree;
       SolrTinyBuilder builder = new SolrTinyBuilder(plc, substituteProps);
       try {
         //builder.setStatistics(conf2.getTreeStatistics().SOURCE_DOCUMENT_STATISTICS);
-
-        Sender.send(source, builder, conf2.getParseOptions());
+        builder.open();
+        ParseOptions po = plc.getParseOptions();
+        if (is.getSystemId() != null) {
+          po.setEntityResolver(loader.getSysIdResolver());
+        }
+        po.setXIncludeAware(true);
+        po.setCheckEntityReferences(false);
+        po.setExpandAttributeDefaults(false);
+        po.setDTDValidationMode(Validation.STRIP);
+        po.setPleaseCloseAfterUse(true);
+        Sender.send(source, builder, po);
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
       } finally {
         builder.close();
@@ -237,7 +218,7 @@ public class XmlConfigFile { // formerly simply "Config"
       return name;
     }
 
-  public TinyDocumentImpl getTreee () {
+  public TinyDocumentImpl getTree() {
     return tree;
   }
 
@@ -262,9 +243,9 @@ public class XmlConfigFile { // formerly simply "Config"
   public Object evaluate(TinyDocumentImpl tree, String path, QName type) {
     try {
       String xstr = normalize(path);
-
+      XPath xPath = getResourceLoader().getXPath();
       // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
-      Object o = getXpath().evaluate(xstr, tree, type);
+      Object o = xPath.evaluate(xstr, tree, type);
       return o;
 
     } catch (XPathExpressionException e) {
@@ -277,20 +258,27 @@ public class XmlConfigFile { // formerly simply "Config"
     }
 
     // nocommit
-    public NodeInfo getNode (String expression, boolean errifMissing){
+    public NodeInfo getNode(String expression, boolean errifMissing){
       String path = normalize(expression);
       try {
-        return getNode(getXpath().compile(path), path, tree, errifMissing);
+        XPath xPath = getResourceLoader().getXPath();
+        return getNode(xPath.compile(path), path, tree, errifMissing);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
     }
 
-    public NodeInfo getNode (XPathExpression expression,  String path, boolean errifMissing){
+    public NodeInfo getNode(XPathExpression expression,  String path, boolean errifMissing){
       return getNode(expression, path, tree, errifMissing);
     }
 
-    public NodeInfo getNode (XPathExpression expression, String path, TinyDocumentImpl doc, boolean errIfMissing){
+    public NodeInfo getNode(XPathExpression expression, String path, TinyDocumentImpl doc, boolean errIfMissing){
+//      if (expression == null) {
+//        throw new IllegalArgumentException("null expression");
+//      }
+//      if (doc == null) {
+//        throw new IllegalArgumentException("null doc");
+//      }
       //String xstr = normalize(path);
 
       try {
@@ -331,7 +319,8 @@ public class XmlConfigFile { // formerly simply "Config"
       String xstr = normalize(path);
 
       try {
-        ArrayList nodeList = (ArrayList) getXpath()
+        XPath xPath = getResourceLoader().getXPath();
+        ArrayList nodeList = (ArrayList) xPath
             .evaluate(xstr, tree, XPathConstants.NODESET);
 
         if (null == nodeList) {
@@ -430,7 +419,8 @@ public class XmlConfigFile { // formerly simply "Config"
     public String getVal (String expression, boolean errIfMissing){
       String xstr = normalize(expression);
       try {
-        return getVal(getXpath().compile(xstr), expression, errIfMissing);
+        XPath xPath = getResourceLoader().getXPath();
+        return getVal(xPath.compile(xstr), expression, errIfMissing);
       } catch (XPathExpressionException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
@@ -500,4 +490,5 @@ public class XmlConfigFile { // formerly simply "Config"
       return zkVersion;
     }
 
-  }
+
+}

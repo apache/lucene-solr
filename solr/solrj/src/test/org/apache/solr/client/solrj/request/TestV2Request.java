@@ -161,7 +161,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
     //find a node that does not have a replica for this collection
     final String[] testNode = new String[1];
-    cs.getLiveNodes().forEach(s -> {
+    cluster.getSolrClient().getZkStateReader().getLiveNodes().forEach(s -> {
       if (!s.equals(node[0])) testNode[0] = s;
     });
 

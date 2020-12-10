@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 

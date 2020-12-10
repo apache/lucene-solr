@@ -95,16 +95,17 @@ public abstract class ContentStreamBase implements ContentStream
 
   private String attemptToDetermineTypeFromFirstCharacter() {
     String type = null;
-    try (InputStream stream = getStream()) {
+    try {
+      InputStream stream = getStream();
       // Last ditch effort to determine content, if the first non-white space
       // is a '<' or '{', assume xml or json.
       int data = stream.read();
-      while (( data != -1 ) && ( ( (char)data ) == ' ' )) {
+      while ((data != -1) && (((char) data) == ' ')) {
         data = stream.read();
       }
-      if ((char)data == '<') {
+      if ((char) data == '<') {
         type = ContentType.APPLICATION_XML.getMimeType();
-      } else if ((char)data == '{') {
+      } else if ((char) data == '{') {
         type = ContentType.APPLICATION_JSON.getMimeType();
       }
     } catch (Exception ex) {

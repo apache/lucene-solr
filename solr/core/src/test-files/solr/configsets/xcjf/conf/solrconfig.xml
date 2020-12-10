@@ -23,6 +23,12 @@
 
   <dataDir>${solr.data.dir:}</dataDir>
 
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog enable="${enable.update.log:true}">
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+  </updateHandler>
+
   <requestHandler name="/select" class="solr.SearchHandler" />
 
   <query>

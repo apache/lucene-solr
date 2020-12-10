@@ -24,10 +24,11 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
@@ -41,8 +42,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
   static UpdateLog ulog = null;
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     initCore("solrconfig-tlog.xml", "schema-inplace-updates.xml");
 
     try (SolrQueryRequest req = req()) {
@@ -53,8 +54,10 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     }
   }
 
-  @AfterClass
-  public static void afterClass() {
+  @After
+  public void afterTest() {
+    IOUtils.closeQuietly(ulog);
+    deleteCore();
     ulog = null;
   }
 

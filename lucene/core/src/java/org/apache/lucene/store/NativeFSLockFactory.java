@@ -140,7 +140,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
     }
   }
   
-  private static final void clearLockHeld(Path path) throws IOException {
+  public static final void clearLockHeld(Path path) throws IOException {
     boolean remove = LOCK_HELD.remove(path.toString());
     if (remove == false) {
       throw new AlreadyClosedException("Lock path was cleared but never marked as held: " + path);

@@ -21,13 +21,27 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.UpgradeIndexMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /** Unit tests for {@link WrapperMergePolicyFactory}. */
 public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
 
-  private final SolrResourceLoader resourceLoader = new SolrResourceLoader();
+  private static SolrResourceLoader resourceLoader;
+
+  @BeforeClass
+  public static void beforeWMPFT() {
+    resourceLoader = new SolrResourceLoader();
+  }
+
+  @AfterClass
+  public static void afterWMPFT() {
+    IOUtils.closeQuietly(resourceLoader);
+    resourceLoader = null;
+  }
 
   public void testReturnsDefaultMergePolicyIfNoneSpecified() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();

@@ -77,12 +77,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
   
   @Override
   public Set<String> getLiveNodes() {
-    ClusterState clusterState = getZkStateReader().getClusterState();
-    if (clusterState != null) {
-      return clusterState.getLiveNodes();
-    } else {
-      return Collections.emptySet();
-    }
+    return getZkStateReader().getLiveNodes();
   }
 
 

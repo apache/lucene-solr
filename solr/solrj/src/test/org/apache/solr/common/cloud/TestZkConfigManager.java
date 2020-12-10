@@ -63,7 +63,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadConfig() throws IOException, KeeperException {
+  public void testUploadConfig() throws IOException, KeeperException, InterruptedException {
 
     zkServer.getZkClient().mkdir("/solr");
 
@@ -129,7 +129,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testUploadWithACL() throws IOException, KeeperException {
+  public void testUploadWithACL() throws IOException, KeeperException, InterruptedException {
 
     zkServer.getZkClient().mkdir("/acl");
 

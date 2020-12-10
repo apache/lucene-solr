@@ -31,7 +31,7 @@
     <Loggers>
 
 
-        <AsyncRoot level="WARN">
+        <AsyncRoot level="off">
             <AppenderRef ref="STDOUT"/>
         </AsyncRoot>
     </Loggers>

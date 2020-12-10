@@ -52,19 +52,21 @@ import org.junit.Test;
 public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   protected static SpellingQueryConverter queryConverter;
 
-  protected static String[] DOCS = new String[]{
-          "This is a title",
-          "The quick reb fox jumped over the lazy brown dogs.",
-          "This is a document",
-          "another document",
-          "red fox",
-          "green bun",
-          "green bud"
-  };
+  protected static String[] DOCS;
 
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    DOCS = new String[]{
+            "This is a title",
+            "The quick reb fox jumped over the lazy brown dogs.",
+            "This is a document",
+            "another document",
+            "red fox",
+            "green bun",
+            "green bud"
+    };
+
     initCore("solrconfig.xml","schema.xml");
     //Index something with a title
     for (int i = 0; i < DOCS.length; i++) {
@@ -77,6 +79,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     queryConverter = null;
+    DOCS = null;
   }
 
   @Test

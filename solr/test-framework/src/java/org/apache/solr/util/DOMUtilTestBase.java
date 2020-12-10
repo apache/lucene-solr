@@ -19,7 +19,7 @@ package org.apache.solr.util;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.core.SolrResourceLoader;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -32,12 +32,12 @@ public abstract class DOMUtilTestBase extends SolrTestCase {
     super.setUp();
   }
 
-  public NodeInfo getNode( String xml, String path ) throws Exception {
-    return getNode( BaseTestHarness.getTinyDocument(xml, null), path );
+  public NodeInfo getNode(SolrResourceLoader loader, String xml, String path ) throws Exception {
+    return getNode(loader, BaseTestHarness.getTinyDocument(xml, loader), path );
   }
   
-  public NodeInfo getNode( TinyDocumentImpl doc, String path ) throws Exception {
-    XPath xpath = XmlConfigFile.getXpath();
+  public NodeInfo getNode(SolrResourceLoader loader, TinyDocumentImpl doc, String path ) throws Exception {
+    XPath xpath = loader.getXPath();
     return (NodeInfo)xpath.evaluate(path, doc, XPathConstants.NODE);
   }
 }

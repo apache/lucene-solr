@@ -44,7 +44,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema.xml");
   }
   
-  static String input = json("{\n" +
+  String input = json("{\n" +
       "\n" +
       "'add': {\n" +
       "  'doc': {\n" +

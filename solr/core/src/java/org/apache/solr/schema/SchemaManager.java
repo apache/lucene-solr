@@ -447,7 +447,7 @@ public class SchemaManager {
     String name = core.getLatestSchema().getResourceName();
     if (resourceLoader instanceof ZkSolrResourceLoader) {
       final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)resourceLoader;
-      SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+      SolrZkClient zkClient = core.getCoreContainer().getZkController().getZkClient();
       try {
         if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;

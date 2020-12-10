@@ -41,6 +41,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 
 @Ignore // nocommit - some race on adding a dump request handler and then the next command finding it
+// TODO: switch to bridge test class
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   private static final long TIMEOUT_S = 10;

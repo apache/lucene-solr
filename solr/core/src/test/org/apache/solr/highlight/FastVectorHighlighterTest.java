@@ -21,16 +21,23 @@ import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.TestHarness;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
-  
+
+  @After
+  public void afterTest() throws Exception {
+    deleteCore();
+  }
+
   @Test
   public void testConfig(){
     DefaultSolrHighlighter highlighter = (DefaultSolrHighlighter) HighlightComponent.getHighlighter(h.getCore());

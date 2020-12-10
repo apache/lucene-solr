@@ -218,7 +218,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   private void checkElectionQueues() throws KeeperException, InterruptedException {
 
     DocCollection docCollection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+    Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
 
     for (Slice slice : docCollection.getSlices()) {
       Set<Replica> liveReplicas = new HashSet<>();
@@ -525,7 +525,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
       docCollection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-      liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+      liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
       boolean expectedInactive = true;
 
       for (Slice slice : docCollection.getSlices()) {
@@ -555,7 +555,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
       DocCollection docCollection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME);
-      Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes();
+      Set<String> liveNodes = cluster.getSolrClient().getZkStateReader().getLiveNodes();
       boolean allActive = true;
       for (Slice slice : docCollection.getSlices()) {
         for (Replica rep : slice.getReplicas()) {
@@ -577,7 +577,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   private void concentrateProp(String prop) throws KeeperException, InterruptedException, IOException, SolrServerException {
     // find all the live nodes
     // for each slice, assign the leader to the first replica that is in the lowest position on live_nodes
-    List<String> liveNodes = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes());
+    List<String> liveNodes = new ArrayList<>(cluster.getSolrClient().getZkStateReader().getLiveNodes());
     Collections.shuffle(liveNodes, random());
 
     Map<String, String> uniquePropMap = new TreeMap<>();

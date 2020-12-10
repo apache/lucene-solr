@@ -35,7 +35,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
   private final Overseer overseer;
-  private volatile boolean isClosed = false;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
     super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica(overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer), null, null, overseer.getZkStateReader()), zkClient);
@@ -86,7 +85,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       overseer.start(id, context);
     } else {
       log.info("Will not start Overseer because we are closed");
-      cancelElection();
     }
 
   }
@@ -97,38 +95,28 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
-    try (ParWork closer = new ParWork(this, true)) {
-      if (zkClient.isConnected()) {
-        closer.collect("cancelElection", () -> {
-          try {
-            super.cancelElection();
-          } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            log.error("Exception closing Overseer", e);
-          }
-        });
-      }
-      closer.collect("overseer", () -> {
-        try {
-          overseer.close();
-        } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          log.error("Exception closing Overseer", e);
-        }
-      });
-    }
-  }
+    //try (ParWork closer = new ParWork(this, true)) {
 
-  @Override
-  public void close() {
-    this.isClosed  = true;
+    //    closer.collect("cancelElection", () -> {
     try {
-      cancelElection();
+      super.cancelElection();
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
-      log.error("Exception canceling election", e);
+      log.error("Exception closing Overseer", e);
     }
-    super.close();
+    //  });
+
+    //      closer.collect("overseer", () -> {
+    //        try {
+    //          if (!overseer.isCloseAndDone()) {
+    //            overseer.close();
+    //          }
+    //        } catch (Exception e) {
+    //          ParWork.propagateInterrupt(e);
+    //          log.error("Exception closing Overseer", e);
+    //        }
+    //      });
+    //   }
   }
 
   @Override
@@ -139,11 +127,6 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   @Override
   public void checkIfIamLeaderFired() {
 
-  }
-
-  @Override
-  public boolean isClosed() {
-    return isClosed || !zkClient.isConnected();
   }
 }
 

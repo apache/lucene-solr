@@ -51,7 +51,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -341,8 +340,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for(Slice slice : slices) {

@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,6 +32,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
@@ -38,12 +40,16 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.CoresLocator;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrPaths;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -72,7 +78,8 @@ public class TestHarness extends BaseTestHarness {
   public volatile String coreName;
   protected volatile CoreContainer container;
   public UpdateRequestHandler updater;
- 
+  private Map<String,SolrCore> cores = new ConcurrentHashMap<>();
+
   /**
    * Creates a SolrConfig object for the specified coreName assuming it 
    * follows the basic conventions of being a relative path in the solrHome 
@@ -82,8 +89,8 @@ public class TestHarness extends BaseTestHarness {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile);
+    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome.resolve(coreName))) {
+      return new SolrConfig(loader, confFile);
     } catch (Exception xany) {
       ParWork.propagateInterrupt(xany);
       throw new RuntimeException(xany);
@@ -152,7 +159,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(SolrXmlConfig.fromString(solrHome, solrXml));
+    this(new SolrXmlConfig().fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -177,33 +184,31 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
-                                                                 Integer.getInteger("hostPort", 8983),
-                                                                 System.getProperty("hostContext", ""))
-        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-        .build();
-    if (System.getProperty("zkHost") == null)
-      cloudConfig = null;
-    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
-        HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-        HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-        30000, 30000,
+    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"), Integer.getInteger("hostPort", 8983), System.getProperty("hostContext", ""))
+        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000)).build();
+    if (System.getProperty("zkHost") == null) cloudConfig = null;
+    UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(HttpClientUtil.DEFAULT_MAXCONNECTIONS, HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST, 30000, 30000,
         UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY, UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
-    // universal default metric reporter
-//    Map<String,Object> attributes = new HashMap<>();
-//    attributes.put("name", "default");
-//    attributes.put("class", SolrJmxReporter.class.getName());
-//    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-//    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
-//        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-//        .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
-        .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
-        .setCloudConfig(cloudConfig)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
-       // .setMetricsConfig(metricsConfig)
-        .build();
+    boolean disableJmxReporter = true;
+    String disableJmxReporterProp = System.getProperty("solr.disableDefaultJmxReporter");
+    if (disableJmxReporterProp != null) {
+      disableJmxReporter = Boolean.parseBoolean(disableJmxReporterProp);
+    }
+    if (!disableJmxReporter) {
+      // universal default metric reporter
+      Map<String,Object> attributes = new HashMap<>();
+      attributes.put("name", "default");
+      attributes.put("class", SolrJmxReporter.class.getName());
+      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
+      MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder().setMetricReporterPlugins(new PluginInfo[] {defaultPlugin}).build();
+
+      return new NodeConfig.NodeConfigBuilder("testNode", solrHome).setUseSchemaCache(Boolean.getBoolean("shareSchema")).
+          setCloudConfig(cloudConfig).setUpdateShardHandlerConfig(updateShardHandlerConfig).setMetricsConfig(metricsConfig).build();
+    } else {
+      return new NodeConfig.NodeConfigBuilder("testNode", solrHome).setUseSchemaCache(Boolean.getBoolean("shareSchema")).
+          setCloudConfig(cloudConfig).setUpdateShardHandlerConfig(updateShardHandlerConfig).build();
+    }
   }
 
   public static class TestCoresLocator extends ReadOnlyCoresLocator {
@@ -236,15 +241,16 @@ public class TestHarness extends BaseTestHarness {
     return container;
   }
 
-  /** Gets a core that does not have its refcount incremented (i.e. there is no need to
-   * close when done).  This is not MT safe in conjunction with reloads!
-   */
   public SolrCore getCore() {
-    // get the core & decrease its refcount:
-    // the container holds the core for the harness lifetime
+    SolrCore cached = this.cores.get(coreName);
+    if (cached != null) {
+      return cached;
+    }
     SolrCore core = container.getCore(coreName);
-    if (core != null)
-      core.close();
+    if (core != null) {
+      this.cores.put(coreName, core);
+    }
+
     return core;
   }
 
@@ -254,7 +260,6 @@ public class TestHarness extends BaseTestHarness {
   public SolrCore getCoreInc() {
     return container.getCore(coreName);
   }
-
 
   public void reload() throws Exception {
     container.reload(coreName);
@@ -299,7 +304,7 @@ public class TestHarness extends BaseTestHarness {
     throws Exception {
                 
     String res = query(req);
-    return validateXPathWithEntities(res, loader, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
             
   /**
@@ -370,11 +375,14 @@ public class TestHarness extends BaseTestHarness {
    */
   public void close() {
     if (container != null) {
+
+      cores.forEach((s, solrCore) -> IOUtils.closeQuietly(solrCore));
       try {
         container.shutdown();
       } finally {
         container = null;
       }
+
     }
   }
 

@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Slow
+@LuceneTestCase.Nightly
 public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -42,6 +43,7 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
 
   public TestRequestStatusCollectionAPI() {
     schemaString = "schema15.xml";      // we need a string id
+    System.setProperty("solr.enableMetrics", "true");
   }
 
   @Test

@@ -94,8 +94,8 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (coll == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + collection + " does not exist");
     }
-    if (!clusterState.getLiveNodes().contains(targetNode)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target node: " + targetNode + " not in live nodes: " + clusterState.getLiveNodes());
+    if (!ocmh.zkStateReader.getLiveNodes().contains(targetNode)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target node: " + targetNode + " not in live nodes: " + ocmh.zkStateReader.getLiveNodes());
     }
     Replica replica = null;
     if (message.containsKey(REPLICA_PROP)) {
@@ -190,7 +190,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   private void moveHdfsReplica(ClusterState clusterState, @SuppressWarnings({"rawtypes"}) NamedList results, String dataDir, String targetNode, String async, DocCollection coll, Replica replica,
       Slice slice, int timeout, boolean waitForFinalState) throws Exception {
     String skipCreateReplicaInClusterState = "true";
-    if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
+    if (ocmh.zkStateReader.getLiveNodes().contains(replica.getNodeName())) {
       skipCreateReplicaInClusterState = "false";
       ZkNodeProps removeReplicasProps = new ZkNodeProps(COLLECTION_PROP, coll.getName(), SHARD_ID_PROP, slice.getName(), REPLICA_PROP, replica.getName());
       removeReplicasProps.getProperties().put(CoreAdminParams.DELETE_DATA_DIR, false);

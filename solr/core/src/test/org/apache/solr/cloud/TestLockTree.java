@@ -45,32 +45,32 @@ public class TestLockTree extends SolrTestCaseJ4 {
     Lock coll1Lock = lockTree.getSession().lock(CollectionAction.CREATE,
         Arrays.asList("coll1"));
     assertNotNull(coll1Lock);
-    assertNull("Should not be able to lock coll1/shard1", lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
-        Arrays.asList("coll1", "shard1")));
+    assertNull("Should not be able to lock coll1/s1", lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
+        Arrays.asList("coll1", "S1")));
 
     assertNull(lockTree.getSession().lock(CollectionAction.MOVEREPLICA,
-        Arrays.asList("coll1", "shard1", "core_node2")));
+        Arrays.asList("coll1", "s1", "core_node2")));
     coll1Lock.unlock();
     Lock shard1Lock = lockTree.getSession().lock(CollectionAction.BALANCESHARDUNIQUE,
-        Arrays.asList("coll1", "shard1"));
+        Arrays.asList("coll1", "s1"));
     assertNotNull(shard1Lock);
     shard1Lock.unlock();
     Lock replica1Lock = lockTree.getSession().lock(ADDREPLICAPROP,
-        Arrays.asList("coll1", "shard1", "core_node2"));
+        Arrays.asList("coll1", "s1", "core_node2"));
     assertNotNull(replica1Lock);
 
 
-    List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
-    operations.add(new Pair<>(CollectionAction.MOCK_REPLICA_TASK, Arrays.asList("coll1", "shard1", "core_node2")));
+    List<Pair<CollectionAction, List<String>>> operations = new CopyOnWriteArrayList<>();
+    operations.add(new Pair<>(CollectionAction.MOCK_REPLICA_TASK, Arrays.asList("coll1", "s1", "core_node2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll1")));
-    operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll1", "shard1")));
-    operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll2", "shard2")));
+    operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll1", "s1")));
+    operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll2", "s2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll2")));
 
     List<Set<String>> orderOfExecution = Arrays.asList(
-        ImmutableSet.of("coll1/shard1/core_node2", "coll2/shard2"),
+        ImmutableSet.of("coll1/s1/core_node2", "coll2/s2"),
         ImmutableSet.of("coll1", "coll2"),
-        ImmutableSet.of("coll1/shard1"));
+        ImmutableSet.of("coll1/s1"));
     lockTree = new LockTree();
     for (int counter = 0; counter < orderOfExecution.size(); counter++) {
       LockTree.Session session = lockTree.getSession();

@@ -19,16 +19,24 @@ package org.apache.solr.search.facet;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTestJsonFacetsWithNestedObjects() throws Exception {
     initCore("solrconfig-tlog.xml","schema_latest.xml");
     indexBooksAndReviews();
   }
+
+  @After
+  public void afterTestJsonFacetsWithNestedObjects() throws Exception {
+    deleteCore();
+  }
+
 
   private static void indexBooksAndReviews() throws Exception {
     final Client client = Client.localClient();

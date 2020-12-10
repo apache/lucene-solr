@@ -685,7 +685,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Expect new leader", collectionName,
         (liveNodes, collectionState) -> {
           Replica leader = collectionState.getLeader(shardName);
-          if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+          if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getLiveNodes())) {
             return false;
           }
           return oldLeaderJetty == null || !leader.getNodeName().equals(oldLeaderJetty.getNodeName());
@@ -782,7 +782,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, int timeout) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
-      if (!r.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+      if (!r.isActive(cluster.getSolrClient().getZkStateReader().getLiveNodes())) {
         continue;
       }
       try (Http2SolrClient replicaClient = SolrTestCaseJ4.getHttpSolrClient(r.getCoreUrl())) {

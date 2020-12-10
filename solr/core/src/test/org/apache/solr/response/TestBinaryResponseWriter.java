@@ -39,6 +39,8 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SimplePostTool;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -50,10 +52,15 @@ import org.junit.BeforeClass;
 public class TestBinaryResponseWriter extends SolrTestCaseJ4 {
 
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  @After
+  public void afterClass() throws Exception {
+    deleteCore();
   }
 
   public void testBytesRefWriting() {

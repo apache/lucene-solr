@@ -52,6 +52,7 @@ import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
 
@@ -208,6 +209,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   }
 
+  @Ignore // nocommit
   public void testSearcherListeners() throws Exception {
     MockSearchComponent.registerSlowSearcherListener = false;
         
@@ -236,7 +238,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     try {
       // Create a new core, this should call all the firstSearcherListeners
       newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
-      
+
       //validate that the new core was created with the correct solrconfig
       assertNotNull(newCore.getSearchComponent("mock"));
       assertEquals(MockSearchComponent.class, newCore.getSearchComponent("mock").getClass());
@@ -271,6 +273,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertTrue(connection.request("/select",params, null ).contains("<int name=\"status\">0</int>"));
   }
 
+  @Ignore // nocommit
   public void testDontUseColdSearcher() throws Exception {
     MockSearchComponent.registerFirstSearcherListener = false;
     MockSearchComponent.registerNewSearcherListener = false;

@@ -32,7 +32,9 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
   private final File solrHomeDirectory = createTempDir().toFile();
 
-  public void setMeUp() throws Exception {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     FileUtils.copyDirectory(new File(TEST_HOME()), solrHomeDirectory);
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
@@ -40,9 +42,14 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml", solrHomeDirectory.getAbsolutePath());
   }
 
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
+  }
+
   @Test
   public void testPropertiesReload() throws Exception {
-    setMeUp();
     SolrCore core = h.getCore();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     String testProp = coreDescriptor.getCoreProperty("test", null);

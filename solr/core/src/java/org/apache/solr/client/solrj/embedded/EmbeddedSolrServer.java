@@ -93,7 +93,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * @param solrHome        the solr home directory
    * @param defaultCoreName the core to route requests to by default (optional)
    */
-  public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
+  public EmbeddedSolrServer(Path solrHome, String defaultCoreName) throws IOException {
     this(load(new CoreContainer(solrHome, new Properties())), defaultCoreName);
   }
 

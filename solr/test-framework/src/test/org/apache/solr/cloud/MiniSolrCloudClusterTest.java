@@ -17,29 +17,20 @@
 
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.util.RevertDefaultThreadHandlerRule;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
 @Ignore // nocommit debug
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
-  @ClassRule
-  public static TestRule solrClassRules = RuleChain.outerRule(
-      new SystemPropertiesRestoreRule()).around(
-      new RevertDefaultThreadHandlerRule());
 
   @Test
   public void testErrorsInStartup() throws Exception {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.cloud.ZkNodeProps;
 
 import java.io.Closeable;
@@ -31,7 +32,7 @@ public interface OverseerMessageHandler extends Closeable {
    *
    * @return response
    */
-  OverseerSolrResponse processMessage(ZkNodeProps message, String operation) throws InterruptedException;
+  OverseerSolrResponse processMessage(ZkNodeProps message, String operation, ZkStateWriter zkStateWriter) throws InterruptedException;
 
   /**
    * @return the name of the OverseerMessageHandler

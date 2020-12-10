@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
 /**
@@ -45,7 +46,9 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<>();
-    config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml");
+    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+      config = new SolrConfig(loader, testConfHome + "solrconfig.xml");
+    }
   }
   
   @Override

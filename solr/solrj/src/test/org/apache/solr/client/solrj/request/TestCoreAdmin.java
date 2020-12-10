@@ -16,15 +16,6 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -48,29 +39,31 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
 
+@Ignore
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String tempDirProp;
 
-  @Rule
-  public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   /*
   @Override
   protected File getSolrXml() throws Exception {
     // This test writes on the directory where the solr.xml is located. Better
-    // to copy the solr.xml to
+    // to copy the solr.xml toz
     // the temporary directory where we store the index
     File origSolrXml = new File(SOLR_HOME, SOLR_XML);
     File solrXml = new File(tempDir, SOLR_XML);

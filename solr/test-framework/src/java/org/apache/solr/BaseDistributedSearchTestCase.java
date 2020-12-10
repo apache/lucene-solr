@@ -99,12 +99,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   private AtomicInteger nodeCnt = new AtomicInteger(0);
   protected boolean useExplicitNodeNames;
   
-  @BeforeClass
-  public static void initialize() {
-    assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
-    r = new Random(random().nextLong());
-  }
-  
   /**
    * Set's the value of the "hostContext" system property to a random path 
    * like string (which may or may not contain sub-paths).  This is used 
@@ -115,10 +109,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * this system property.
    * </p>
    * @see #BaseDistributedSearchTestCase()
-   * @see #clearHostContext
    */
   @BeforeClass
   public static void initHostContext() {
+    assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
+    fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
+    randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
+    r = new Random(random().nextLong());
+    systemSetPropertySolrDisableShardsWhitelist("true");
     // Can't use randomRealisticUnicodeString because unescaped unicode is 
     // not allowed in URL paths
     // Can't use URLEncoder.encode(randomRealisticUnicodeString) because
@@ -149,26 +147,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     log.info("Setting hostContext system property: {}", hc);
     System.setProperty("hostContext", hc);
   }
-  
-  /**
-   * Clears the "hostContext" system property
-   * @see #initHostContext
-   */
-  @AfterClass
-  public static void clearHostContext() throws Exception {
-    System.clearProperty("hostContext");
-  }
 
-  @SuppressWarnings("deprecation")
-  @BeforeClass
-  public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableShardsWhitelist("true");
-  }
-
-  @SuppressWarnings("deprecation")
   @AfterClass
-  public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+  public static void afterBaseDistSearchTestCaseClass() {
+    fieldNames = null;
+    randVals = null;
   }
 
   @After
@@ -305,8 +288,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   public static RandVal rdate = new RandDate();
 
-  public static String[] fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
+  public static String[] fieldNames;
+  public static RandVal[] randVals;
 
   protected String[] getFieldNames() {
     return fieldNames;

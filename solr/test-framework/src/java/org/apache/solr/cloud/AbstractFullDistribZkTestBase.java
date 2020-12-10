@@ -553,7 +553,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     System.out.println("jetty cnt:" + jettys.size());
 
-    cloudClient.getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (oldLiveNodes, newLiveNodes) -> newLiveNodes.size() >= jettys.size());
+    cloudClient.getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() >= jettys.size());
 
     try (ParWork closer = new ParWork(this)) {
 
@@ -1282,7 +1282,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       ZkNodeProps props = cjetty.info;
       String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
       boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
-      boolean live = zkStateReader.getClusterState().liveNodesContain(nodeName);
+      boolean live = zkStateReader.isNodeLive(nodeName);
       if (active && live) {
         shardClients.add(cjetty.client.solrClient);
       }
@@ -1361,7 +1361,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
       boolean live = false;
       String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
-      if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+      if (zkStateReader.isNodeLive(nodeName)) {
         live = true;
       }
       if (verbose) System.err.println(" live:" + live);
@@ -1424,7 +1424,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         boolean live = false;
         String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
         ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-        if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+        if (zkStateReader.isNodeLive(nodeName)) {
           live = true;
         }
         System.err.println(" live:" + live);
@@ -1598,7 +1598,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       long count = 0;
       final Replica.State currentState = Replica.State.getState(cjetty.info.getStr(ZkStateReader.STATE_PROP));
       if (currentState == Replica.State.ACTIVE
-          && zkStateReader.getClusterState().liveNodesContain(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          && zkStateReader.isNodeLive(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
         count = client.solrClient.query(query).getResults().getNumFound();
@@ -1972,7 +1972,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final Replica node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
+        if (zkStateReader.isNodeLive(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
           return node.getCoreUrl(); //new ZkCoreNodeProps(node).getCoreUrl();
         }
       }
@@ -2012,7 +2012,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                                   int replicationFactor ,
                                   int numShards ) throws Exception {
     int maxShardsPerNode = ((((numShards+1) * replicationFactor) / getCommonCloudSolrClient()
-        .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+        .getZkStateReader().getLiveNodes().size())) + 1;
     int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     Map<String, Object> props = makeMap(
@@ -2065,7 +2065,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       new JSONWriter(out, 2).write(map);
       cs = out.toString();
     }
-    return cs + "\nLive Nodes:" + cloudClient.getZkStateReader().getClusterState().getLiveNodes();
+    return cs + "\nLive Nodes:" + cloudClient.getZkStateReader().getLiveNodes();
   }
 
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
@@ -2109,7 +2109,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for(Slice s:collection.getSlices()) {
       Replica leader = s.getLeader();
       for (Replica r:s.getReplicas()) {
-        if (!r.isActive(zkStateReader.getClusterState().getLiveNodes())) {
+        if (!r.isActive(zkStateReader.getLiveNodes())) {
           builder.append(String.format(Locale.ROOT, "Replica %s not in liveNodes or is not active%s", r.getName(), System.lineSeparator()));
           continue;
         }
@@ -2146,7 +2146,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         fail("Unable to get leader indexVersion");
       }
       for (Replica pullReplica:s.getReplicas(EnumSet.of(Replica.Type.PULL,Replica.Type.TLOG))) {
-        if (!zkStateReader.getClusterState().liveNodesContain(pullReplica.getNodeName())) {
+        if (!zkStateReader.isNodeLive(pullReplica.getNodeName())) {
           continue;
         }
         while (true) {
@@ -2298,7 +2298,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected void setupRestTestHarnesses() {
     for (final SolrClient client : clients) {
       RestTestHarness harness = new RestTestHarness(() -> ((Http2SolrClient) client).getBaseURL(),
-          (Http2SolrClient) client);
+          (Http2SolrClient) client, jettys.get(0).getCoreContainer().getCores().iterator().next().getSolrConfig().getResourceLoader());
       restTestHarnesses.add(harness);
     }
   }

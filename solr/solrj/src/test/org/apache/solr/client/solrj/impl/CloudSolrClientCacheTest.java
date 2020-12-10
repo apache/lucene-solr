@@ -88,7 +88,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     try (ClusterStateProvider stateProvider = getStateProvider(livenodes, refs)) {
       try (CloudSolrClient cloudClient = new CloudSolrClientBuilder(stateProvider).withLBHttpSolrClient(mockLbclient).build()) {
         livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
-        ClusterState cs = ClusterState.createFromJson((ZkStateReader) stateProvider, 1, coll1State.getBytes(UTF_8), Collections.emptySet());
+        ClusterState cs = ClusterState.createFromJson((ZkStateReader) stateProvider, 1, coll1State.getBytes(UTF_8));
         refs.put(collName, new Ref(collName));
         colls.put(collName, cs.getCollectionOrNull(collName));
         responses.put("request", o -> {

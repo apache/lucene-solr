@@ -876,7 +876,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
      // Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
       Set<String> requestedCollectionNames;
       if (getClusterStateProvider() instanceof ZkClientClusterStateProvider && isAdmin) {
-        requestedCollectionNames = getZkStateReader().getClusterState().getCollectionStates().keySet();
+        requestedCollectionNames = getClusterStateProvider().getClusterState().getCollectionStates().keySet();
       } else {
         requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
       }
@@ -885,7 +885,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (log.isDebugEnabled()) log.debug("build version params for collections {}", requestedCollectionNames);
       for (String requestedCollection : requestedCollectionNames) {
         // track the version of state we're using on the client side using the _stateVer_ param
-        DocCollection coll = getZkStateReader().getClusterState().getCollectionOrNull(requestedCollection);
+        DocCollection coll = getClusterStateProvider().getClusterState().getCollectionOrNull(requestedCollection);
         if (coll != null) {
           int collVer = coll.getZNodeVersion();
           if (requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
@@ -1406,10 +1406,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   public static List<String> populateShardNames(ZkNodeProps message, String router) {
     List<String> shardNames = new ArrayList<>();
-    Integer numSlices = message.getInt(ZkStateReader.NUM_SHARDS_PROP, null);
+    Integer numSlices = message.getInt(ZkStateReader.NUM_SHARDS_PROP, -1);
     if (ImplicitDocRouter.NAME.equals(router)) {
       BaseCloudSolrClient.getShardNames(shardNames, message.getStr("shards", null));
-      numSlices = shardNames.size();
     } else {
       if (numSlices == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ZkStateReader.NUM_SHARDS_PROP + " is a required param (when using CompositeId router).");

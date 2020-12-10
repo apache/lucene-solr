@@ -36,7 +36,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SafeXMLParsing;
@@ -110,7 +109,7 @@ public abstract class AbstractEnumField extends PrimitiveFieldType {
       try {
         log.debug("Reloading enums config file from {}", enumsConfigFile);
         Document doc = SafeXMLParsing.parseConfigXML(log, loader, enumsConfigFile);
-        final XPath xpath = XmlConfigFile.getXpath();
+        final XPath xpath = schema.loader.getXPath();
         final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
         final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
         final int nodesLength = nodes.getLength();

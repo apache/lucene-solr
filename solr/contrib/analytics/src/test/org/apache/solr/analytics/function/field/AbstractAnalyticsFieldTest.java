@@ -231,6 +231,24 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
     indexSchema = null;
     searcher = null;
     ref = null;
+
+    singleInts = null;
+    multiInts = null;
+    singleLongs = null;
+    multiLongs = null;
+    singleFloats = null;
+    multiFloats = null;
+    singleDoubles = null;
+    multiDoubles = null;
+    singleDates = null;
+    multiDates = null;
+    singleStrings = null;
+    multiStrings = null;
+    singleBooleans = null;
+    multiBooleans = null;
+
+    missingDocuments = null;
+
   }
 
   protected <T> void checkSingleFieldValues(Map<String,T> expected, Map<String,T> found, Set<String> missing) {

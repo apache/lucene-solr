@@ -39,6 +39,7 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
@@ -275,19 +276,32 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @Override
   @SuppressWarnings("unchecked")
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) throws InterruptedException {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation, ZkStateWriter zkWriter) throws InterruptedException {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     if (log.isDebugEnabled()) log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
-    ClusterState clusterState = overseer.getZkStateWriter().getClusterstate(false);
-    @SuppressWarnings({"rawtypes"})
-    NamedList results = new NamedList();
-    String collection = message.getStr("collection");
-    if (collection == null) {
-      collection = message.getStr("name");
-    }
+
+    ClusterState clusterState = zkWriter.getClusterstate(false);
+    @SuppressWarnings({"rawtypes"}) NamedList results = new NamedList();
     try {
+      String collection = message.getStr("collection");
+      if (collection == null) {
+        collection = message.getStr("name");
+      }
+
+      if (operation.equals("cleanup")) {
+        log.info("Found item that needs cleanup {}", message);
+        String op = message.getStr(Overseer.QUEUE_OPERATION);
+        CollectionAction action = getCollectionAction(op);
+        Cmd command = commandMap.get(action);
+        boolean drop = command.cleanup(message);
+        if (drop) {
+          return null;
+        }
+        return new OverseerSolrResponse(null);
+      }
+
       CollectionAction action = getCollectionAction(operation);
       Cmd command = commandMap.get(action);
       if (command != null) {
@@ -300,18 +314,20 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
         if (responce.clusterState != null) {
           DocCollection docColl = responce.clusterState.getCollectionOrNull(collection);
-          Map<String, DocCollection> collectionStates = null;
+          Map<String,DocCollection> collectionStates = null;
           if (docColl != null) {
             log.info("create new single collection state for collection {}", docColl.getName());
             collectionStates = new HashMap<>();
             collectionStates.put(docColl.getName(), docColl);
           } else {
             log.info("collection not found in returned state {} {}", collection, responce.clusterState);
-            overseer.getZkStateWriter().removeCollection(collection);
+            if (collection != null) {
+              zkWriter.removeCollection(collection);
+            }
           }
           if (collectionStates != null) {
-            ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
-            overseer.getZkStateWriter().enqueueUpdate(cs, null, false);
+            ClusterState cs = ClusterState.getRefCS(collectionStates, -2);
+            zkWriter.enqueueUpdate(cs, null, false);
           }
 
           overseer.writePendingUpdates();
@@ -323,32 +339,31 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
           if (resp.clusterState != null) {
             DocCollection docColl = resp.clusterState.getCollectionOrNull(collection);
-            Map<String, DocCollection> collectionStates;
+            Map<String,DocCollection> collectionStates;
             if (docColl != null) {
               collectionStates = new HashMap<>();
               collectionStates.put(docColl.getName(), docColl);
             } else {
               collectionStates = new HashMap<>();
             }
-            ClusterState cs = new ClusterState(responce.clusterState.getLiveNodes(), collectionStates);
+            ClusterState cs = ClusterState.getRefCS(collectionStates, -2);
 
-            overseer.getZkStateWriter().enqueueUpdate(cs, null,false);
+            zkWriter.enqueueUpdate(cs, null, false);
             overseer.writePendingUpdates();
           }
         }
 
         if (collection != null && responce.clusterState != null) {
-          Integer version = overseer.getZkStateWriter().lastWrittenVersion(collection);
+          Integer version = zkWriter.lastWrittenVersion(collection);
           if (version != null && !action.equals(DELETE)) {
             results.add("csver", version);
           } else {
-             //deleted
+            //deleted
           }
         }
 
       } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
-                + operation);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
       }
       if (results.get("success") == null) results.add("success", new NamedList<>());
 
@@ -359,24 +374,20 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         results.add("exception", nl);
       }
 
-    }  catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      throw e;
     } catch (Exception e) {
       String collName = message.getStr("collection");
       if (collName == null) collName = message.getStr(NAME);
 
       if (collName == null) {
         log.error("Operation " + operation + " failed", e);
-      } else  {
-        log.error("Collection: " + collName + " operation: " + operation
-                + " failed", e);
+      } else {
+        log.error("Collection: " + collName + " operation: " + operation + " failed", e);
       }
 
       results.add("Operation " + operation + " caused exception:", e);
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       nl.add("msg", e.getMessage());
-      nl.add("rspCode", e instanceof SolrException ? ((SolrException)e).code() : -1);
+      nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
       results.add("exception", nl);
     }
 
@@ -686,7 +697,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
             for (Slice slice : slices) {
               for (Replica replica : slice.getReplicas()) {
                 if (coreUrl.equals(replica.getCoreUrl()) && ((requireActive ? replica.getState().equals(Replica.State.ACTIVE) : true)
-                        && zkStateReader.getClusterState().liveNodesContain(replica.getNodeName()))) {
+                        && zkStateReader.isNodeLive(replica.getNodeName()))) {
                   r.put(coreUrl, replica);
                   break;
                 }
@@ -734,7 +745,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void validateConfigOrThrowSolrException(String configName) throws IOException, KeeperException, InterruptedException {
     boolean isValid = cloudManager.getDistribStateManager().hasData(ZkConfigManager.CONFIGS_ZKNODE + "/" + configName);
     if(!isValid) {
-      overseer.getZkStateReader().getZkClient().printLayout();
+      //overseer.getZkStateReader().getZkClient().printLayout();
       throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find the specified config set: " + configName);
     }
   }
@@ -795,7 +806,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       shardRequestTracker = new ShardRequestTracker(asyncId, message.getStr("operation"), adminPath, zkStateReader, shardHandlerFactory, overseer);
     }
     for (Slice slice : coll.getSlices()) {
-      notLivesReplicas.addAll(shardRequestTracker.sliceCmd(clusterState, params, stateMatcher, slice, shardHandler));
+      notLivesReplicas.addAll(shardRequestTracker.sliceCmd(params, stateMatcher, slice, shardHandler));
     }
     if (processResponses) {
       shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
@@ -1046,6 +1057,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   protected interface Cmd {
     AddReplicaCmd.Response call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception;
+
+    default boolean cleanup(ZkNodeProps message) {
+      return false;
+    }
   }
 
   protected interface Finalize {
@@ -1089,12 +1104,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
      * Send request to all replicas of a slice
      * @return List of replicas which is not live for receiving the request
      */
-    public List<Replica> sliceCmd(ClusterState clusterState, ModifiableSolrParams params, Replica.State stateMatcher,
+    public List<Replica> sliceCmd(ModifiableSolrParams params, Replica.State stateMatcher,
                                   Slice slice, ShardHandler shardHandler) {
       List<Replica> notLiveReplicas = new ArrayList<>();
       for (Replica replica : slice.getReplicas()) {
         if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
-          if (clusterState.liveNodesContain(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          if (zkStateReader.isNodeLive(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
             // For thread safety, only simple clone the ModifiableSolrParams
             ModifiableSolrParams cloneParams = new ModifiableSolrParams();
             cloneParams.add(params);

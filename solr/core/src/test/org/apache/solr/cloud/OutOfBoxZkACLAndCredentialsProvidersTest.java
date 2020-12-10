@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit investigate
 public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -49,6 +48,10 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
+    // this ZooKeeper thread can be in its wait loop a short bit before stopping  TODO: why is this test more prone to it? Seems to be ony in solrj module?
+    // I bet it's ZkSolrResourceLoader in XML Configuration causing an issue being accessed from solrj to core.
+    interruptThreadsOnTearDown(false, "SessionTracker");
+
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
   
@@ -73,9 +76,9 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
     
     SolrZkClient zkClient = zkServer.getZkClient();
-    zkClient.start();
+
     zkClient.makePath("/solr", false, true);
-    zkClient.close();
+
 
     zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     zkClient.start();

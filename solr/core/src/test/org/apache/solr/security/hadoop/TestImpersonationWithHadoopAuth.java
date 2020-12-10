@@ -54,6 +54,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();

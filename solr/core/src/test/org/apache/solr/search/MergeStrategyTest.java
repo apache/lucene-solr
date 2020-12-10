@@ -24,7 +24,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -37,12 +38,21 @@ import java.util.Arrays;
 public class MergeStrategyTest extends BaseDistributedSearchTestCase {
 
   public MergeStrategyTest() {
+    configString = "solrconfig-plugcollector.xml";
+    schemaString = "schema15.xml";
     stress = 0;
   }
 
-  @BeforeClass
-  public static void setUpBeforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-plugcollector.xml", "schema15.xml");
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
   }
 
   @Test

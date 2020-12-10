@@ -17,21 +17,18 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class TestSurroundQueryParser extends SolrTestCaseJ4 {
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schemasurround.xml");
-  }
-  // public String getCoreName() { return "collection1"; }
 
   @Override
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
+
+    initCore("solrconfig.xml", "schemasurround.xml");
    } 
   
   @Override
@@ -39,6 +36,7 @@ public class TestSurroundQueryParser extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
+    deleteCore();
   }
   
   public void testQueryParser() {

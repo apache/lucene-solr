@@ -340,7 +340,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 if (nodeNames.contains(replica.getNodeName())) {
-                  boolean live = clusterState.liveNodesContain(replica
+                  boolean live = zkStateReader.isNodeLive(replica
                       .getNodeName());
                   if (live) {
                     success = false;
@@ -374,7 +374,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
         for (Slice slice : slices) {
           int count = 0;
           for (Replica replica : slice.getReplicas()) {
-            if (replica.getState() == Replica.State.ACTIVE && clusterState.liveNodesContain(replica.getNodeName())) {
+            if (replica.getState() == Replica.State.ACTIVE && cloudClient.getZkStateReader().isNodeLive(replica.getNodeName())) {
               count++;
             }
           }
@@ -386,7 +386,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
       }
       Thread.sleep(200);
     }
-    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + cloudClient.getZkStateReader().getClusterState().getCollection(collection) + " with /live_nodes: " + cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+    fail("Expected numSlices=" + numSlices + " numReplicas=" + numReplicas + " but found " + cloudClient.getZkStateReader().getClusterState().getCollection(collection) + " with /live_nodes: " + cloudClient.getZkStateReader().getLiveNodes());
   }
 
 }

@@ -108,32 +108,18 @@ class SolrCores implements Closeable {
     // list to the pendingCloses list.
 
     // make a copy of the cores then clear the map so the core isn't handed out to a request again
-
+    // nocommit
     if (transientSolrCoreCache != null) {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
 
-    try (ParWork closer = new ParWork(this, true, true)) {
-      cores.forEach((s, core) -> {
-        closer.collect("closeCore-" + core.getName(), () -> {
-          MDCLoggingContext.setCore(core);
-          try {
-            core.closeAndWait(true);
-          } catch (Throwable e) {
-            log.error("Error closing SolrCore", e);
-            ParWork.propagateInterrupt("Error shutting down core", e);
-          } finally {
-            MDCLoggingContext.clear();
-          }
-          return core;
-        });
-      });
 
-      coreList.forEach((core) -> {
+    try (ParWork closer = new ParWork(this, true, true)) {
+      cores.values().forEach((core) -> {
         closer.collect("closeCore-" + core.getName(), () -> {
           MDCLoggingContext.setCore(core);
           try {
-            core.closeAndWait(true);
+            core.closeAndWait();
           } catch (Throwable e) {
             log.error("Error closing SolrCore", e);
             ParWork.propagateInterrupt("Error shutting down core", e);
@@ -187,7 +173,7 @@ class SolrCores implements Closeable {
    * 
    * @return List of currently loaded cores.
    */
-  Set<String> getLoadedCoreNames() {
+  public Set<String> getLoadedCoreNames() {
     Set<String> set;
     set = new TreeSet<>(cores.keySet());
     if (getTransientCacheHandler() != null) {
@@ -284,6 +270,7 @@ class SolrCores implements Closeable {
     if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
 
     SolrCore ret = cores.remove(name);
+    residentDesciptors.remove(name);
     // It could have been a newly-created core. It could have been a transient core. The newly-created cores
     // in particular should be checked. It could have been a dynamic core.
     TransientSolrCoreCache transientHandler = getTransientCacheHandler();
@@ -295,18 +282,20 @@ class SolrCores implements Closeable {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name) {
-    if (closed) {
-      throw new AlreadyClosedException("SolrCores has been closed");
-    }
+
     SolrCore core = cores.get(name);
-    if (core == null && residentDesciptors.get(name) != null && residentDesciptors.get(name).isTransient() &&  getTransientCacheHandler() != null) {
-      core = getTransientCacheHandler().getCore(name);
-    }
 
     if (core != null) {
       core.open();
+      return core;
     }
 
+    if (core == null && residentDesciptors.get(name) != null && residentDesciptors.get(name).isTransient() &&  getTransientCacheHandler() != null) {
+      core = getTransientCacheHandler().getCore(name);
+    }
+    if (core != null) {
+      core.open();
+    }
     return core;
   }
 

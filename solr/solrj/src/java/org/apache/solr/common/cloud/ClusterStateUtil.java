@@ -80,7 +80,7 @@ public class ClusterStateUtil {
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 // on a live node?
-                final boolean live = clusterState.liveNodesContain(replica.getNodeName());
+                final boolean live = zkStateReader.isNodeLive(replica.getNodeName());
                 final boolean isActive = replica.getState() == Replica.State.ACTIVE;
                 if (!live || !isActive) {
                   // fail
@@ -132,7 +132,7 @@ public class ClusterStateUtil {
               Collection<Replica> replicas = slice.getReplicas();
               for (Replica replica : replicas) {
                 // on a live node?
-                boolean live = clusterState.liveNodesContain(replica
+                boolean live = zkStateReader.isNodeLive(replica
                     .getNodeName());
                 if (live) {
                   // fail
@@ -162,7 +162,7 @@ public class ClusterStateUtil {
     int liveAndActive = 0;
     for (Slice slice : slices) {
       for (Replica replica : slice.getReplicas()) {
-        boolean live = zkStateReader.getClusterState().liveNodesContain(replica.getNodeName());
+        boolean live = zkStateReader.isNodeLive(replica.getNodeName());
         boolean active = replica.getState() == Replica.State.ACTIVE;
         if (live && active) {
           liveAndActive++;

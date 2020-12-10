@@ -61,6 +61,7 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
@@ -102,6 +103,36 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     this.timeSource = ocmh.cloudManager.getTimeSource();
     this.zkStateReader = ocmh.zkStateReader;
     this.cloudManager = cloudManager;
+  }
+
+  @Override
+  public boolean cleanup(ZkNodeProps message) {
+    final String collectionName = message.getStr(NAME);
+    boolean activeAndLive = false;
+    DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+    if (collection != null) {
+      Collection<Slice> slices = collection.getSlices();
+      for (Slice slice : slices) {
+
+        if (slice.getLeader() != null && slice.getLeader().isActive(zkStateReader.getLiveNodes())) {
+          activeAndLive = true;
+        }
+      }
+      if (!activeAndLive) {
+        ZkNodeProps m = new ZkNodeProps();
+        try {
+          m.getProperties().put(QUEUE_OPERATION, "delete");
+          m.getProperties().put(NAME, collectionName);
+          ocmh.overseer.getCoreContainer().getZkController().getOverseerCollectionQueue().offer(Utils.toJSON(m), 15000);
+          return false;
+        } catch (KeeperException e) {
+          log.error("", e);
+        } catch (InterruptedException e) {
+          log.error("", e);
+        }
+      }
+    }
+    return true;
   }
 
   @Override
@@ -182,7 +213,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       try {
         replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
       } catch (Exception e) {
-        log.error("", e);
+        log.error("Exception building replica positions", e);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -224,9 +255,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps props = new ZkNodeProps();
         //props.getProperties().putAll(message.getProperties());
         ZkNodeProps addReplicaProps = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP,
-            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.NODE_NAME_PROP,
-            nodeName, "node", nodeName, ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards",
-            message.getStr("shards"), CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState)); props.getProperties().putAll(addReplicaProps.getProperties());
+            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.NODE_NAME_PROP, nodeName, "node", nodeName,
+            ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards", message.getStr("shards"),
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
+        props.getProperties().putAll(addReplicaProps.getProperties());
         if (log.isDebugEnabled()) log.debug("Sending state update to populate clusterstate with new replica {}", props);
 
         clusterState = new AddReplicaCmd(ocmh, true).call(clusterState, props, results).clusterState;
@@ -298,93 +330,98 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     if (log.isDebugEnabled()) log.debug("CreateCollectionCmd clusterstate={}", clusterState);
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    if (results.get("failure") == null && results.get("exception") == null) {
-      List<ReplicaPosition> finalReplicaPositions = replicaPositions;
-      response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
-        @Override
-        public AddReplicaCmd.Response call() {
-          try {
-            shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
-          } catch (KeeperException e) {
-            log.error("", e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-          }
-          //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
-
-          AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-
-          @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
-          if (failure) {
-            log.error("Failure creating collection {}", results.get("failure"));
-            //        // Let's cleanup as we hit an exception
-            //        // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
-            //        // element, which may be interpreted by the user as a positive ack
-            //        // nocommit review
-            try {
-              response.clusterState = ocmh.cleanupCollection(collectionName, new NamedList<Object>()).clusterState;
-            } catch (Exception e) {
-              log.error("Exception trying to clean up collection after fail {}", collectionName);
-            }
-            if (log.isDebugEnabled()) log.debug("Cleaned up artifacts for failed create collection for [{}]", collectionName);
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
-          } else {
-            Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
-            if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
-            if (createNodeSet == null || (!createNodeSet.equals("") && !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY))) {
-            try {
-                zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
-                  if (c == null) {
-                    return false;
-                  }
-                  for (String name : coresToCreate.keySet()) {
-                    log.info("look for core {}", name);
-                    if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
-                      log.info("not the right replica {}", c.getReplica(name));
-                      return false;
-                    }
-                  }
-                  Collection<Slice> slices = c.getSlices();
-                  if (slices.size() < shardNames.size()) {
-                    log.info("wrong number slices {} vs {}", slices.size(), shardNames.size());
-                    return false;
-                  }
-                  for (Slice slice : slices) {
-                    log.info("slice {} leader={}", slice, slice.getLeader());
-                    if (slice.getLeader() == null || slice.getLeader().getState() != Replica.State.ACTIVE) {
-                      log.info("no leader found for slice {}", slice.getName());
-                      return false;
-                    }
-                  }
-                  log.info("return true, everything active");
-                  return true;
-                });
-              } catch(InterruptedException e) {
-                log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              } catch(TimeoutException e){
-                log.error("Exception waiting for active replicas on collection creation {}", collectionName);
-                throw new SolrException(ErrorCode.SERVER_ERROR, e);
-              }
-            }
-
-            if (log.isDebugEnabled()) log.debug("Finished create command on all shards for collection: {}", collectionName);
-
-            // Emit a warning about production use of data driven functionality
-            boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null || message.getStr(COLL_CONF).equals(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
-            if (defaultConfigSetUsed) {
-              results.add("warning", "Using _default configset. Data driven schema functionality" + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:"
-                  + " curl http://{host:port}/solr/" + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
-            }
-
-          }
-
-          return response;
+    List<ReplicaPosition> finalReplicaPositions = replicaPositions;
+    response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
+      @Override
+      public AddReplicaCmd.Response call() {
+        try {
+          shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+        } catch (KeeperException e) {
+          log.error("", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-      };
-    }
+        //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
+
+        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+
+        @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
+        if (failure) {
+          log.error("Failure creating collection {}", results.get("failure"));
+          //        // Let's cleanup as we hit an exception
+          //        // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
+          //        // element, which may be interpreted by the user as a positive ack
+          //        // nocommit review
+          try {
+            AddReplicaCmd.Response rsp = ocmh.cleanupCollection(collectionName, new NamedList<Object>());
+
+            response.clusterState = rsp.clusterState;
+            if (rsp.asyncFinalRunner != null) {
+              rsp.asyncFinalRunner.call();
+            }
+          } catch (Exception e) {
+            log.error("Exception trying to clean up collection after fail {}", collectionName);
+          }
+          if (log.isDebugEnabled()) log.debug("Cleaned up artifacts for failed create collection for [{}]", collectionName);
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName + "\n" + results);
+        } else {
+          Object createNodeSet = message.get(ZkStateReader.CREATE_NODE_SET);
+          if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
+          if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
+            try {
+              zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (l, c) -> {
+                if (c == null) {
+                  return false;
+                }
+                for (String name : coresToCreate.keySet()) {
+                  if (log.isTraceEnabled()) log.trace("look for core {}", name);
+                  if (c.getReplica(name) == null || c.getReplica(name).getState() != Replica.State.ACTIVE) {
+                    if (log.isTraceEnabled()) log.trace("not the right replica or state {}", c.getReplica(name));
+                    return false;
+                  }
+                }
+                Collection<Slice> slices = c.getSlices();
+                if (slices.size() < shardNames.size()) {
+                  if (log.isTraceEnabled()) log.trace("wrong number slices {} vs {}", slices.size(), shardNames.size());
+                  return false;
+                }
+                for (Slice slice : slices) {
+                  if (log.isTraceEnabled()) log.trace("slice {} leader={}", slice, slice.getLeader());
+                  if (slice.getLeader() == null || slice.getLeader().getState() != Replica.State.ACTIVE) {
+                    if (log.isTraceEnabled()) log.trace("no leader found for slice {}", slice.getName());
+                    return false;
+                  }
+                }
+                if (log.isTraceEnabled()) log.trace("return true, everything active");
+                return true;
+              });
+            } catch (InterruptedException e) {
+              log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            } catch (TimeoutException e) {
+              log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          }
+
+          if (log.isDebugEnabled()) log.debug("Finished create command on all shards for collection: {}", collectionName);
+
+          // Emit a warning about production use of data driven functionality
+          boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null || message.getStr(COLL_CONF).equals(ConfigSetsHandlerApi.DEFAULT_CONFIGSET_NAME);
+          if (defaultConfigSetUsed) {
+            results.add("warning",
+                "Using _default configset. Data driven schema functionality" + " is enabled by default, which is NOT RECOMMENDED for production use. To turn it off:" + " curl http://{host:port}/solr/"
+                    + collectionName + "/config -d '{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'");
+          }
+
+        }
+
+        return response;
+      }
+    };
+
     if (log.isDebugEnabled()) log.debug("return cs from create collection cmd {}", clusterState);
     response.clusterState = clusterState;
     return response;
@@ -538,10 +575,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     for (String shardName : slices.keySet()) {
       try {
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/" + shardName, null, CreateMode.PERSISTENT, false);
-        // stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/leader_elect", null, CreateMode.PERSISTENT, false);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/leader_elect", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/leader_elect/" + shardName, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/leader_elect/" + shardName + "/election", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cName + "/leaders/" + shardName, null, CreateMode.PERSISTENT, false);
+        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + cName + "/terms", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE  + "/" + cName + "/terms/" + shardName, ZkStateReader.emptyJson, CreateMode.PERSISTENT, false);
       } catch (AlreadyExistsException e) {
         // okay
@@ -555,7 +593,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
     }
     DocCollection newCollection = new DocCollection(cName,
-            slices, collectionProps, router, 0);
+            slices, collectionProps, router, 0, false);
 
     return newCollection;
   }

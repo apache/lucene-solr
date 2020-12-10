@@ -37,6 +37,7 @@ import org.apache.solr.common.params.QoSParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -75,6 +76,7 @@ import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
@@ -153,7 +155,7 @@ public class HttpSolrCall {
   protected final HttpServletRequest req;
   protected final HttpServletResponse response;
   protected final boolean retry;
-  protected SolrCore core = null;
+  protected volatile SolrCore core = null;
   protected SolrQueryRequest solrReq = null;
   protected SolrRequestHandler handler = null;
   protected final SolrParams queryParams;
@@ -199,10 +201,6 @@ public class HttpSolrCall {
     return req;
   }
 
-  public SolrCore getCore() {
-    return core;
-  }
-
   public SolrParams getQueryParams() {
     return queryParams;
   }
@@ -218,22 +216,19 @@ public class HttpSolrCall {
 
   protected void init() throws Exception {
     // check for management path
-    String alternate = cores.getManagementPath();
-    if (alternate != null && path.startsWith(alternate)) {
-      path = path.substring(0, alternate.length());
-      if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
+
+    if (!cores.isZooKeeperAware()) {
+      String alternate = cores.getManagementPath();
+      if (alternate != null && path.startsWith(alternate)) {
+        path = path.substring(0, alternate.length());
+      }
     }
 
-    // unused feature ?
-    int idx = path.indexOf(':');
-    if (idx > 0) {
-      // save the portion after the ':' for a 'handler' path parameter
-      path = path.substring(0, idx);
-      if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
-    }
-
+    if (log.isDebugEnabled()) log.debug("Full path {} Path is parsed as {} managment path is {}", req.getRequestURI() + req.getQueryString(), path);
       // Check for container handlers
+
     handler = cores.getRequestHandler(path);
+    if (log.isDebugEnabled()) log.debug("Check for handler {} returned {} handlers={}", path, handler, cores.getRequestHandlers().keySet());
     if (handler != null) {
       solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
@@ -243,23 +238,35 @@ public class HttpSolrCall {
       return;
     }
 
+//    int idx = path.lastIndexOf('/');
+//    if (idx > 0) {
+//      // save the portion after the ':' for a 'handler' path parameter
+//      path = path.substring(0, idx);
+//    }
+
     // Parse a core or collection name from the path and attempt to see if it's a core name
-    idx = path.indexOf("/", 1);
+    int idx = path.indexOf("/", 1);
     if (idx > 1) {
-      origCorename = path.substring(1, idx);
+
+      int idx2 = path.indexOf('/', 2);
+      if (idx2 > 0) {
+        // save the portion after the ':' for a 'handler' path parameter
+        origCorename = path.substring(1, idx2);
+      } else {
+        origCorename = path.substring(1, idx);
+        path = path.substring(idx2);
+      }
 
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
 
-      if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {}", origCorename, core, cores.getAllCoreNames());
+      if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
 
       if (core != null) {
         path = path.substring(idx);
         if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
       } else {
-        while (cores.isCoreLoading(origCorename)) {
-          Thread.sleep(250); // nocommit - make efficient
-        }
+        cores.waitForLoadingCore(origCorename, 1000);
         // the core may have just finished loading
         core = cores.getCore(origCorename);
         if (core != null) {
@@ -271,10 +278,6 @@ public class HttpSolrCall {
           }
         }
       }
-    }
-
-    if (core != null) {
-      cores.waitForLoadingCore(origCorename, 150000);
     }
 
 
@@ -353,31 +356,31 @@ public class HttpSolrCall {
   }
 
   private void ensureStatesAreAtLeastAtClient() throws InterruptedException, TimeoutException {
-    if (cores.isZooKeeperAware()) {
-      if (log.isDebugEnabled()) log.debug("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
-      Map<String,Integer> invalidStates = getStateVersions(queryParams.get(CloudSolrClient.STATE_VERSION));
-      if (invalidStates != null) {
-        Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
-        for (Map.Entry<String,Integer> entry : entries) {
-          String collection = entry.getKey();
-          Integer version = entry.getValue();
-          if (log.isDebugEnabled()) log.debug("ensure states are at at least client version {} for collection {}", version, collection);
-          DocCollection docCollection = cores.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
-          if (docCollection != null && docCollection.getZNodeVersion() < version) {
-            cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
-              if (collectionState == null) {
-                return false;
-              }
-              log.info("found server state version {}", collectionState.getZNodeVersion());
-              if (collectionState.getZNodeVersion() < version) {
-                return false;
-              }
-              return true;
-            });
-          }
-        }
-      }
-    }
+//    if (cores.isZooKeeperAware()) {
+//      if (log.isDebugEnabled()) log.debug("State version for request is {}", queryParams.get(CloudSolrClient.STATE_VERSION));
+//      Map<String,Integer> invalidStates = getStateVersions(queryParams.get(CloudSolrClient.STATE_VERSION));
+//      if (invalidStates != null) {
+//        Set<Map.Entry<String,Integer>> entries = invalidStates.entrySet();
+//        for (Map.Entry<String,Integer> entry : entries) {
+//          String collection = entry.getKey();
+//          Integer version = entry.getValue();
+//          if (log.isDebugEnabled()) log.debug("ensure states are at at least client version {} for collection {}", version, collection);
+//          DocCollection docCollection = cores.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
+//          if (docCollection != null && docCollection.getZNodeVersion() < version) {
+//            cores.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+//              if (collectionState == null) {
+//                return false;
+//              }
+//              log.info("found server state version {}", collectionState.getZNodeVersion());
+//              if (collectionState.getZNodeVersion() < version) {
+//                return false;
+//              }
+//              return true;
+//            });
+//          }
+//        }
+//      }
+//    }
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
@@ -387,7 +390,7 @@ public class HttpSolrCall {
         !cores.getZkController().getClusterState().hasCollection(SYSTEM_COLL)) {
       log.info("Going to auto-create {} collection", SYSTEM_COLL);
       SolrQueryResponse rsp = new SolrQueryResponse();
-      String repFactor = String.valueOf(Math.min(3, cores.getZkController().getClusterState().getLiveNodes().size()));
+      String repFactor = String.valueOf(Math.min(3, cores.getZkController().getZkStateReader().getLiveNodes().size()));
       cores.getCollectionsHandler().handleRequestBody(new LocalSolrQueryRequest(null,
           new ModifiableSolrParams()
               .add(ACTION, CREATE.toString())
@@ -451,7 +454,7 @@ public class HttpSolrCall {
     if (log.isDebugEnabled()) log.debug("Extract handler from url path {} {}", handler, path);
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-      if (log.isDebugEnabled()) log.debug("handler=", handler);
+      if (log.isDebugEnabled()) log.debug("handler={} name={}", handler, path);
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
@@ -472,7 +475,6 @@ public class HttpSolrCall {
   }
 
   protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException, TimeoutException {
-    assert core == null;
 
     ensureStatesAreAtLeastAtClient();
 
@@ -569,7 +571,9 @@ public class HttpSolrCall {
     }
 
     try {
-      init();
+      if (action == null) {
+        init();
+      }
 
       // Perform authorization here, if:
       //    (a) Authorization is enabled, and
@@ -583,7 +587,9 @@ public class HttpSolrCall {
       if (cores.getAuthorizationPlugin() != null && shouldAuthorize()
           && !(action == REMOTEQUERY || action == FORWARD)) {
         Action authorizationAction = authorize();
-        if (authorizationAction != null) return authorizationAction;
+        if (authorizationAction == RETURN) {
+          return authorizationAction;
+        }
       }
 
       HttpServletResponse resp = response;
@@ -675,11 +681,13 @@ public class HttpSolrCall {
     try {
       if (solrReq != null) {
         log.debug("Closing out SolrRequest: {}", solrReq);
-        solrReq.close();
+        IOUtils.closeQuietly(solrReq);
       }
     } finally {
       try {
-        if (core != null) core.close();
+        if (core != null) {
+          IOUtils.closeQuietly(core);
+        }
       } finally {
         SolrRequestInfo.clearRequestInfo();
       }
@@ -727,11 +735,13 @@ public class HttpSolrCall {
       }
       AtomicReference<Throwable> failException = new AtomicReference<>();
       InputStreamResponseListener listener = new InputStreamResponseListener() {
-        @Override
-        public void onFailure(Response resp, Throwable t) {
-          log.error("remote proxy failed", t);
-          failException.set(t);
-          super.onFailure(resp, t);
+
+        public void onComplete(Result result) {
+          super.onComplete(result);
+
+          if (result.isFailed()) {
+            failException.set(result.getFailure());
+          }
         }
 
         @Override
@@ -758,13 +768,13 @@ public class HttpSolrCall {
 
       listener.getInputStream().transferTo(response.getOutputStream());
 
-      try {
-        listener.await(60, TimeUnit.SECONDS); // nocommit timeout
-      } catch (InterruptedException e) {
-        log.error("Interrupted waiting for proxy request");
-      } catch (TimeoutException e) {
-        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout proxying request");
-      }
+//      try {
+//        listener.await(60, TimeUnit.SECONDS); // nocommit timeout
+//      } catch (InterruptedException e) {
+//        log.error("Interrupted waiting for proxy request");
+//      } catch (TimeoutException e) {
+//        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout proxying request");
+//      }
 
       if (failException.get() != null) {
         sendError(failException.get());
@@ -848,7 +858,6 @@ public class HttpSolrCall {
 
   protected void sendError(Throwable ex) throws IOException {
     Exception exp = null;
-    SolrCore localCore = null;
     try {
       SolrQueryResponse solrResp = new SolrQueryResponse();
       if (ex instanceof Exception) {
@@ -856,7 +865,6 @@ public class HttpSolrCall {
       } else {
         solrResp.setException(new RuntimeException(ex));
       }
-      localCore = core;
       if (solrReq == null) {
         final SolrParams solrParams;
         if (req != null) {
@@ -874,17 +882,13 @@ public class HttpSolrCall {
     } catch (Exception e) { // This error really does not matter
       exp = e;
     } finally {
-      try {
-        if (exp != null) {
-          SimpleOrderedMap info = new SimpleOrderedMap();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
-          sendError(code, info.toString());
-        }
-      } finally {
-        if (core == null && localCore != null) {
-          localCore.close();
-        }
+
+      if (exp != null) {
+        SimpleOrderedMap info = new SimpleOrderedMap();
+        int code = ResponseUtils.getErrorInfo(ex, info, log);
+        sendError(code, info.toString());
       }
+
     }
   }
 
@@ -1042,7 +1046,7 @@ public class HttpSolrCall {
         }
       }
     }
-    if (log.isDebugEnabled()) log.debug("compare version states result {} {}", stateVer, result);
+    if (log.isTraceEnabled()) log.trace("compare version states result {} {}", stateVer, result);
     return result;
   }
 

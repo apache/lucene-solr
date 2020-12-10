@@ -21,8 +21,10 @@ import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
   private static CoreContainer cc;

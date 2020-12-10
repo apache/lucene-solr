@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import net.sf.saxon.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -101,6 +102,7 @@ import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -161,9 +163,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   public static final String SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST = "solr.disable.shardsWhitelist";
 
-  protected static String coreName = DEFAULT_TEST_CORENAME;
+  protected static volatile String coreName = DEFAULT_TEST_CORENAME;
 
   protected static volatile String initialRootLogLevel;
+  //protected static SolrResourceLoader loader;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
@@ -198,7 +201,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @BeforeClass
-  public static void setupTestCases() {
+  public static void setupTestCases() throws InterruptedException {
+    assertNonBlockingRandomGeneratorAvailable();
+
     initialRootLogLevel = StartupLoggingUtils.getLogLevelString();
     resetExceptionIgnores();
 
@@ -238,6 +243,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
       initCoreDataDir = null;
+      initialRootLogLevel = null;
+      factoryProp = null;
+      lrf = null;
+      h = null;
+      schemaString = null;
+      solrConfig = null;
+      configString = null;
       System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
@@ -336,12 +348,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param xmlStr - the text of an XML file to use. If null, use the what's the absolute minimal file.
    * @throws Exception Lost of file-type things can go wrong.
    */
-  public static void setupNoCoreTest(Path solrHome, String xmlStr) throws Exception {
+  public static void setupNoCoreTest(SolrResourceLoader loader, Path solrHome, String xmlStr) throws Exception {
 
     if (xmlStr == null)
       xmlStr = "<solr></solr>";
     Files.write(solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE), xmlStr.getBytes(StandardCharsets.UTF_8));
-    h = new TestHarness(SolrXmlConfig.fromSolrHome(solrHome, new Properties()));
+    h = new TestHarness(new SolrXmlConfig().fromSolrHome(solrHome, new Properties()));
     lrf = h.getRequestFactory("/select", 0, 20, CommonParams.VERSION, "2.2");
   }
   
@@ -521,7 +533,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * For use in test methods as needed.
    * </p>
    */
-  protected static TestHarness.LocalRequestFactory lrf;
+  protected static volatile TestHarness.LocalRequestFactory lrf;
 
 
   /**
@@ -555,7 +567,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static volatile File initCoreDataDir;
   
   // hack due to File dataDir
-  protected static String hdfsDataDir;
+  protected static volatile String hdfsDataDir;
 
   /**
    * Initializes things your test might need
@@ -568,7 +580,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    */
 
-  private static String factoryProp;
+  private static volatile String factoryProp;
 
 
   public static void initCore() throws Exception {
@@ -593,6 +605,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static void createCore() {
     assertNotNull(testSolrHome);
+
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h = new TestHarness( coreName, hdfsDataDir == null ? initAndGetDataDir().getAbsolutePath() : hdfsDataDir,
             solrConfig,
@@ -776,7 +789,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         tests = allTests;
       }
 
-      String results = h.validateXPath(response, tests);
+      String results = h.validateXPath(h.getCore().getResourceLoader(), response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
@@ -1345,6 +1358,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
 
+  // nocommit - guess this only works for a single replica case? also may not work with parallel
   public static Long addAndGetVersion(SolrInputDocument sdoc, SolrParams params) throws Exception {
     if (params==null || params.get("versions") == null) {
       ModifiableSolrParams mparams = new ModifiableSolrParams(params);
@@ -1858,12 +1872,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
-  public static void assertXmlFile(final File file, String... xpath)
+  public static void assertXmlFile(Configuration conf, SolrResourceLoader loader, final File file, String... xpath)
       throws IOException, SAXException {
 
     try {
       String xml = FileUtils.readFileToString(file, "UTF-8");
-      String results = TestHarness.validateXPath(xml, xpath);
+      String results = TestHarness.validateXPath(loader, xml, xpath);
       if (null != results) {
         String msg = "File XPath failure: file=" + file.getPath() + " xpath="
             + results + "\n\nxml was: " + xml;
@@ -2478,8 +2492,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       if (registeredSearcher != null) {
         registeredSearcher.decref();
       }
-      newestSearcher.decref();
-      Thread.sleep(50);
+      if (newestSearcher != null) {
+        newestSearcher.decref();
+      }
+      Thread.sleep(10);
       registeredSearcher = core.getRegisteredSearcher();
       newestSearcher = core.getNewestSearcher(false);
     }
@@ -2491,7 +2507,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     waitForWarming(h.getCore());
   }
 
-  @BeforeClass
   public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {
     final String EGD = "java.security.egd";
     final String URANDOM = "file:/dev/./urandom";

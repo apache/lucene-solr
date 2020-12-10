@@ -331,9 +331,10 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Asking temp source leader to wait for: {} to be alive on: {}", tempCollectionReplica2, targetLeader.getNodeName());
     }
     cmd = new CoreAdminRequest.WaitForState();
-    cmd.setCoreName(tempSourceLeader.getStr("core"));
+    cmd.setCoreName(tempSourceLeader.getName());
     cmd.setNodeName(targetLeader.getNodeName());
     cmd.setState(Replica.State.ACTIVE);
+    cmd.setShardId(tempSourceLeader.getSlice());
     cmd.setCheckLive(true);
     cmd.setOnlyIfLeader(true);
     params = new ModifiableSolrParams(cmd.getParams());

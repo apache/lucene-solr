@@ -31,6 +31,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -100,6 +101,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
     assert zkController.getCoreContainer().getNodeConfig() != null;
     String myNodeName = zkController.getCoreContainer().getNodeConfig().getNodeName();
     ClusterState state = zkController.getCoreContainer().getZkController().getClusterState();
+    ZkStateReader reader = zkController.getZkStateReader();
     for (CoreDescriptor coreDescriptor : coreDescriptors) {
       CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
       String coll = cloudDescriptor.getCollectionName();
@@ -110,7 +112,7 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
         if (replica.getNodeName().equals(myNodeName)) {
           c.myReplicas++;
         } else {
-          Set<String> liveNodes = state.getLiveNodes();
+          Set<String> liveNodes = reader.getLiveNodes();
           if (liveNodes.contains(replica.getNodeName())) {
             c.totalReplicasInLiveNodes++;
           } else {

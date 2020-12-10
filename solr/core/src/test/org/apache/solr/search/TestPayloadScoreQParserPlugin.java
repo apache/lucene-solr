@@ -18,14 +18,21 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestPayloadScoreQParserPlugin extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+
+  @Before
+  public void before() throws Exception {
     initCore("solrconfig.xml", "schema11.xml");
     createIndex();
+  }
+
+  @After
+  public void after() throws Exception {
+    deleteCore();
   }
 
   public static void createIndex() {

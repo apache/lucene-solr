@@ -52,8 +52,9 @@ class StandaloneReplicaSource implements ReplicaSource {
   }
 
   @Override
-  public List<String> getReplicasBySlice(String slice, int index) {
-    return replicas[index];
+  public List<String> getReplicasBySlice(int sliceNumber) {
+    assert sliceNumber >= 0 && sliceNumber < replicas.length;
+    return replicas[sliceNumber];
   }
 
   static class Builder {

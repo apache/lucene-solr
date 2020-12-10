@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.common.AlreadyClosedException;
@@ -75,6 +75,7 @@ public class ZkShardTerms implements AutoCloseable{
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
+  private ReentrantLock termsLock = new ReentrantLock(true);
 
   /**
    * Listener of a core for shard's term change events
@@ -93,6 +94,8 @@ public class ZkShardTerms implements AutoCloseable{
      * @return true if the listener wanna to be triggered in the next time
      */
     boolean onTermChanged(ShardTerms terms);
+
+    void close();
   }
 
   public ZkShardTerms(String collection, String shard, SolrZkClient zkClient) {
@@ -116,7 +119,7 @@ public class ZkShardTerms implements AutoCloseable{
 
     ShardTerms newTerms;
     while( (newTerms = terms.get().increaseTerms(leader, replicasNeedingRecovery)) != null) {
-      if (forceSaveTerms(newTerms)) return;
+      if (forceSaveTerms(newTerms) || isClosed.get()) return;
     }
   }
 
@@ -138,6 +141,8 @@ public class ZkShardTerms implements AutoCloseable{
    * @return true if this replica has term equals to leader's term, false if otherwise
    */
   public boolean skipSendingUpdatesTo(String coreNodeName) {
+    if (log.isDebugEnabled()) log.debug("skipSendingUpdatesTo {} {}", coreNodeName, terms);
+
     return !terms.get().haveHighestTermValue(coreNodeName);
   }
 
@@ -147,15 +152,20 @@ public class ZkShardTerms implements AutoCloseable{
    * @return true if this replica registered its term, false if otherwise
    */
   public boolean registered(String coreNodeName) {
-    return terms.get().getTerm(coreNodeName) != null;
+    ShardTerms t = terms.get();
+    if (t == null) {
+      return false;
+    }
+    return t.getTerm(coreNodeName) != null;
   }
 
   public void close() {
     // no watcher will be registered
     isClosed.set(true);
 
+    ParWork.close(listeners);
     listeners.clear();
-
+    terms.set(null);
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -168,9 +178,6 @@ public class ZkShardTerms implements AutoCloseable{
    * Add a listener so the next time the shard's term get updated, listeners will be called
    */
   void addListener(CoreTermWatcher listener) {
-    if (isClosed.get()) {
-      throw new AlreadyClosedException();
-    }
     listeners.add(listener);
   }
 
@@ -184,7 +191,7 @@ public class ZkShardTerms implements AutoCloseable{
     listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
     numListeners = listeners.size();
 
-    return removeTerm(cd.getName()) || numListeners == 0;
+    return removeTerm(cd.getName());
   }
 
   // package private for testing, only used by tests
@@ -199,7 +206,7 @@ public class ZkShardTerms implements AutoCloseable{
         return true;
       }
       tries++;
-      if (tries > 30) {
+      if (tries > 60 || isClosed.get()) {
         log.warn("Could not save terms to zk within " + tries + " tries");
         return true;
       }
@@ -215,7 +222,7 @@ public class ZkShardTerms implements AutoCloseable{
   void registerTerm(String coreNodeName) {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().registerTerm(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
@@ -227,14 +234,14 @@ public class ZkShardTerms implements AutoCloseable{
   public void setTermEqualsToLeader(String coreNodeName) {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().setTermEqualsToLeader(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
   public void setTermToZero(String coreNodeName) {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().setTermToZero(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
@@ -244,7 +251,7 @@ public class ZkShardTerms implements AutoCloseable{
   public void startRecovering(String coreNodeName) {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().startRecovering(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
@@ -254,7 +261,7 @@ public class ZkShardTerms implements AutoCloseable{
   public void doneRecovering(String coreNodeName) {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().doneRecovering(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
@@ -269,7 +276,7 @@ public class ZkShardTerms implements AutoCloseable{
   public void ensureHighestTermsAreNotZero() {
     ShardTerms newTerms;
     while ( (newTerms = terms.get().ensureHighestTermsAreNotZero()) != null) {
-      if (forceSaveTerms(newTerms)) break;
+      if (forceSaveTerms(newTerms) || isClosed.get()) break;
     }
   }
 
@@ -335,11 +342,13 @@ public class ZkShardTerms implements AutoCloseable{
     try {
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, null, stat, true);
-      newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
+      ConcurrentHashMap<String,Long> values = new ConcurrentHashMap<>((Map<String,Long>) Utils.fromJSON(data));
+      log.info("refresh shard terms to zk version {}", stat.getVersion());
+      newTerms = new ShardTerms(values, stat.getVersion());
     } catch (KeeperException.NoNodeException e) {
-      if (log.isDebugEnabled()) log.debug("No node found for refresh terms", e);
+      log.warn("No node found for shard terms", e);
       // we have likely been deleted
-      return;
+      throw new AlreadyClosedException(e);
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
@@ -364,13 +373,13 @@ public class ZkShardTerms implements AutoCloseable{
         return;
       } catch (KeeperException e) {
         log.warn("Failed watching shard term for collection: {}, retrying!", collection, e);
-        try {
-          zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
-        } catch (TimeoutException | InterruptedException te) {
-          if (Thread.interrupted()) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, te);
-          }
-        }
+//        try {
+//          zkClient.getConnectionManager().waitForConnected(zkClient.getZkClientTimeout());
+//        } catch (TimeoutException | InterruptedException te) {
+//          if (Thread.interrupted()) {
+//            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, te);
+//          }
+//        }
       }
     }
   }
@@ -404,18 +413,25 @@ public class ZkShardTerms implements AutoCloseable{
    */
   private void setNewTerms(ShardTerms newTerms) {
     boolean isChanged = false;
-    for (;;)  {
-      ShardTerms terms = this.terms.get();
-      if (terms == null || newTerms.getVersion() > terms.getVersion())  {
-        if (this.terms.compareAndSet(terms, newTerms))  {
-          isChanged = true;
+    termsLock.lock();
+    try {
+      for (;;)  {
+        ShardTerms terms = this.terms.get();
+        if (terms == null || newTerms.getVersion() > terms.getVersion())  {
+          if (this.terms.compareAndSet(terms, newTerms))  {
+            isChanged = true;
+            break;
+          }
+        } else  {
           break;
         }
-      } else  {
-        break;
+        if (isClosed.get()) {
+          break;
+        }
       }
+    } finally {
+      termsLock.unlock();
     }
-
     if (isChanged) onTermUpdates(newTerms);
   }
 

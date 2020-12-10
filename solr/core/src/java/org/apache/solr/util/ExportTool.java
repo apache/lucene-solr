@@ -251,7 +251,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   static class JsonSink extends DocsSink {
     private CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
-    private Writer writer;
+    private volatile Writer writer;
 
     public JsonSink(Info info) {
       this.info = info;
@@ -270,9 +270,13 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     @Override
     public void end() throws IOException {
-      writer.flush();
-      fos.flush();
-      fos.close();
+      if (writer != null) {
+        writer.flush();
+      }
+      if (fos != null) {
+        fos.flush();
+        fos.close();
+      }
     }
 
     @Override
@@ -434,25 +438,32 @@ public class ExportTool extends SolrCLI.ToolBase {
           queue.offer(EOFDOC, 10, TimeUnit.SECONDS);
           consumerlatch.await();
         } finally {
-          solrClient.close();
-          sink.end();
+        solrClient.close();
+        sink.end();
 
+        if (producerThreadpool != null) {
           producerThreadpool.shutdownNow();
-          consumerThreadpool.shutdownNow();
-
-          ExecutorUtil.awaitTermination(producerThreadpool);
-          ExecutorUtil.awaitTermination(consumerThreadpool);
-
-          if (failed) {
-            try {
-              Files.delete(new File(out).toPath());
-            } catch (IOException e) {
-              //ignore
-            }
-          }
-          System.out.println("\nTotal Docs exported: " + (docsWritten.get() - 1) +
-                  ". Time taken: " + ((System.currentTimeMillis() - startTime) / 1000) + "secs");
         }
+        if (consumerThreadpool != null) {
+          consumerThreadpool.shutdownNow();
+        }
+
+        if (producerThreadpool != null) {
+          ExecutorUtil.awaitTermination(producerThreadpool);
+        }
+        if (consumerThreadpool != null) {
+          ExecutorUtil.awaitTermination(consumerThreadpool);
+        }
+
+        if (failed) {
+          try {
+            Files.delete(new File(out).toPath());
+          } catch (IOException e) {
+            //ignore
+          }
+        }
+        System.out.println("\nTotal Docs exported: " + (docsWritten.get() - 1) + ". Time taken: " + ((System.currentTimeMillis() - startTime) / 1000) + "secs");
+      }
 
     }
 

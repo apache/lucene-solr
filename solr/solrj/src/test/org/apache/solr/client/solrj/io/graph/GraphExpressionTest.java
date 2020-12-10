@@ -892,7 +892,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
     String xml = readString(reader);
     //Validate the nodes
-    String error = SolrTestCaseJ4.h.validateXPath(xml,
+    String error = SolrTestCaseJ4.h.validateXPath(SolrTestCaseJ4.h.getCore().getResourceLoader(), xml,
         "//graph/node[1][@id ='jim']",
         "//graph/node[2][@id ='max']",
         "//graph/node[3][@id ='sam']");
@@ -900,7 +900,7 @@ public class GraphExpressionTest extends SolrCloudTestCase {
       throw new Exception(error + "\n" + xml);
     }
     //Validate the edges
-    error = SolrTestCaseJ4.h.validateXPath(xml,
+    error = SolrTestCaseJ4.h.validateXPath(SolrTestCaseJ4.h.getCore().getResourceLoader(), xml,
         "//graph/edge[1][@source ='bill']",
         "//graph/edge[1][@target ='jim']",
         "//graph/edge[2][@source ='bill']",

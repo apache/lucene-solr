@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    interruptThreadsOnTearDown(false, "aliveCheckExecutor");
+
     // we recreate per test - they need to be isolated to be solid
     useFactory(null);
     configureCluster(2)
@@ -74,6 +77,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore // nocommit debug
   public void testSolrJAPICalls() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
@@ -184,7 +188,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     
     Slice shard1 = client.getZkStateReader().getClusterState().getCollection(collection).getSlice("s1");
     Replica replica = shard1.getReplicas().iterator().next();
-    for (String liveNode : client.getZkStateReader().getClusterState().getLiveNodes()) {
+    for (String liveNode : client.getZkStateReader().getLiveNodes()) {
       if (!replica.getNodeName().equals(liveNode)) {
         state = new CollectionAdminRequest.MoveReplica(collection, replica.getName(), liveNode)
             .processAndWait(client, MAX_TIMEOUT_SECONDS);

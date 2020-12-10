@@ -18,7 +18,10 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -26,6 +29,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -286,15 +290,33 @@ public class VersionInfo {
     @SuppressWarnings({"rawtypes"})
     Map funcContext = ValueSource.newContext(searcher);
     vs.createWeight(funcContext, searcher);
-    // TODO: multi-thread this
-    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-      int maxDoc = ctx.reader().maxDoc();
-      FunctionValues fv = vs.getValues(funcContext, ctx);
-      for (int doc = 0; doc < maxDoc; doc++) {
-        long v = fv.longVal(doc);
-        maxVersionInIndex = Math.max(v, maxVersionInIndex);
+    List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
+    Set<Long> maxVersions = ConcurrentHashMap.newKeySet(leaves.size());
+    try (ParWork work = new ParWork("maxVersion")) {
+      for (LeafReaderContext ctx : leaves) {
+        work.collect("", () -> {
+          try {
+            int maxDoc = ctx.reader().maxDoc();
+            FunctionValues fv = null;
+
+            fv = vs.getValues(funcContext, ctx);
+            long maxVersion = 0l;
+            for (int doc = 0; doc < maxDoc; doc++) {
+              long v = fv.longVal(doc);
+              maxVersion = Math.max(v, maxVersion);
+            }
+            maxVersions.add(maxVersion);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        });
       }
     }
+
+    for (long version : maxVersions) {
+      maxVersionInIndex = Math.max(maxVersionInIndex, version);
+    }
+
     return maxVersionInIndex;
   }
 

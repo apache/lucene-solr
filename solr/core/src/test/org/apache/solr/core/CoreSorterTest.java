@@ -16,17 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
@@ -40,6 +29,15 @@ import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Ignore // nocommit this mock test needs updating after dropping the separate solrdispatchfilter zkclient
 public class CoreSorterTest extends SolrTestCaseJ4 {
@@ -150,7 +148,6 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         ClusterState mockClusterState = mock(ClusterState.class);
         when(mockZKC.getClusterState()).thenReturn(mockClusterState);
         {
-          when(mockClusterState.getLiveNodes()).thenReturn(new HashSet<>(liveNodes));
           for (Map.Entry<String, DocCollection> entry : collToState.entrySet()) {
             when(mockClusterState.getCollectionOrNull(entry.getKey())).thenReturn(entry.getValue());
           }

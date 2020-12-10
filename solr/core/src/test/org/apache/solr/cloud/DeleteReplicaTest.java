@@ -149,13 +149,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void deleteReplicaAndVerifyDirectoryCleanup() throws Exception {
 
     final String collectionName = "deletereplica_test";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 1, 2);
     Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1");
 
     //Confirm that the instance and data directory exist
@@ -166,12 +164,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName())
         .process(cluster.getSolrClient());
 
-    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 5000);
+    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1", 2000);
 
-    if (leader.equals(newLeader)) {
-      Thread.sleep(500);
-      newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "s1");
-    }
 
     assertFalse(leader.equals(newLeader));
 
@@ -187,10 +181,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3).process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 1, 3);
-
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "s1", 2).process(cluster.getSolrClient());
-    waitForState("Expected a single shard with a single replica", collectionName, clusterShape(1, 1));
 
     SolrException e = expectThrows(SolrException.class,
         "Can't delete the last replica by count",
@@ -399,7 +390,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     for (int i = 0; i < threads.length; i++) {
       int finalI = i;
       threads[i] = new Thread(() -> {
-        int doc = finalI * 10000;
+        int doc = finalI * (TEST_NIGHTLY ? 10000 : 100);
         while (!closed.get()) {
           try {
             cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(doc++)));

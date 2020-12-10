@@ -17,7 +17,8 @@
 package org.apache.solr.rest;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 import java.nio.file.Path;
 import java.util.Properties;
@@ -39,8 +40,8 @@ abstract public class SolrRestletTestBase extends RestTestBase {
    * Creates test harness, including "extra" servlets for all
    * Solr Restlet Application subclasses.
    */
-  @BeforeClass
-  public static void init() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
     Path tempDir = createTempDir();
     Path coresDir = tempDir.resolve("cores");
@@ -57,6 +58,13 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     props.setProperty("configSet", "collection1");
 
     writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
-    createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
+    jetty = createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
+
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 }

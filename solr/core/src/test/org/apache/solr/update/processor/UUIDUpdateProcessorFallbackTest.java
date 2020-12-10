@@ -32,15 +32,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
   Date now = new Date();
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeTest() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema.xml");
+  }
+
+  @After
+  public void afterTest() throws Exception {
+    deleteCore();
   }
 
   public void testFallbackToUnique() throws Exception {

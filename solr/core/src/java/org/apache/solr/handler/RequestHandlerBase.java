@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -68,9 +67,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
  // private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
-  private Timer requestTimes = new Timer();
-  private Timer distribRequestTimes = new Timer();
-  private Timer localRequestTimes = new Timer();
+//  private Timer requestTimes = new Timer();
+//  private Timer distribRequestTimes = new Timer();
+//  private Timer localRequestTimes = new Timer();
   private Counter totalTime = new Counter();
   private Counter distribTotalTime = new Counter();
   private Counter localTotalTime = new Counter();
@@ -160,9 +159,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 //    MetricsMap metricsMap = new MetricsMap((detail, map) ->
 //        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
     //solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
-    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
-    distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
-    localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
+//    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+//    distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
+//    localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
     totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
     distribTotalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, "distrib");
     localTotalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, "local");
@@ -200,9 +199,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 //        }
       }
     }
-    Timer.Context timer = requestTimes.time();
-    @SuppressWarnings("resource")
-    Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
+ //   Timer.Context timer = requestTimes.time();
+  //  @SuppressWarnings("resource")
+  //  Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
     try {
       if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
         req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
@@ -266,13 +265,13 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       }
     } finally {
-      dTimer.stop();
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
+      //dTimer.stop();
+      //long elapsed = timer.stop();
+      //totalTime.inc(elapsed);
       if (distrib) {
-        distribTotalTime.inc(elapsed);
+        //distribTotalTime.inc(elapsed);
       } else {
-        localTotalTime.inc(elapsed);
+        //localTotalTime.inc(elapsed);
       }
     }
   }

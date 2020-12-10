@@ -51,13 +51,13 @@ import java.util.Map;
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
 */
-@LuceneTestCase.AwaitsFix(bugUrl = "Flakey test: testWhitebgox and test will occasionally fail *together*")
+@LuceneTestCase.Nightly // parameterized
 public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final int NUM_DOCS_PER_TYPE = 20;
-  private static final String sleep = "2";
+  private static int NUM_DOCS_PER_TYPE;
+  private static final String sleep = "1";
 
   private static final String COLLECTION = "exitable";
   private static Map<String, Metered> fiveHundredsByNode;
@@ -79,6 +79,8 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   
   @BeforeClass
   public static void setupCluster() throws Exception {
+    NUM_DOCS_PER_TYPE = TEST_NIGHTLY ? 20 : 10;
+
     // create one more node then shard, so that we also test the case of proxied requests.
     Builder clusterBuilder = configureCluster(3)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));

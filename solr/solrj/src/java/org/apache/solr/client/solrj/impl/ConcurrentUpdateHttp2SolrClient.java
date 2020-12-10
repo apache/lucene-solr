@@ -241,7 +241,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                     break;
                   }
                   client.send(out, upd.getRequest(), upd.getCollection());
-                  out.flush();
 
                   notifyQueueAndRunnersIfEmptyQueue();
                   upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);

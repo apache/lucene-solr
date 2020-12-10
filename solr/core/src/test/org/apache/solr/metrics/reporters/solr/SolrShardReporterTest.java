@@ -78,7 +78,7 @@ public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
             cloudDesc.getCollectionName(), cloudDesc.getShardId(), replicaName, null);
         String leaderRegistryName = SolrCoreMetricManager.createLeaderRegistryName(true,
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        boolean leader = cloudDesc.isLeader();
+        boolean leader = jetty.getCoreContainer().getZkController().zkStateReader.getLeader(cloudDesc.getCollectionName(), cloudDesc.getShardId()).getName().equals(cd.getName());
         Slice slice = docCollection.getSlice(cloudDesc.getShardId());
         int numReplicas = slice.getReplicas().size();
         if (leader) {

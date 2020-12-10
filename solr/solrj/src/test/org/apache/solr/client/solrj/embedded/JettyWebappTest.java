@@ -52,9 +52,9 @@ public class JettyWebappTest extends SolrTestCaseJ4
   int port = 0;
   static final String context = "/test";
 
-  @Rule
-  public TestRule solrTestRules =
-    RuleChain.outerRule(new SystemPropertiesRestoreRule());
+//  @Rule
+//  public TestRule solrTestRules =
+//    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   Server server;
 

@@ -17,20 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.lucene.util.LuceneTestCase.random;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,24 +37,30 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static org.apache.lucene.util.LuceneTestCase.random;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   static final String COLLECTION = "dv_coll";
 
@@ -173,18 +165,26 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   @AfterClass
   public static void shutdown() throws Exception {
     shutdownCluster();
+    fieldsToTestSingle = null;
+    fieldsToTestMulti = null;
+    fieldsToTestGroupSortFirst = null;
+    fieldsToTestGroupSortLast = null;
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    CloudHttp2SolrClient client = cluster.getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
+    super.tearDown();
   }
 
   @Before
   public void clean() throws IOException, SolrServerException {
-    CloudHttp2SolrClient client = cluster.getSolrClient();
-    client.deleteByQuery("*:*");
-    client.commit();
     resetFields(fieldsToTestSingle);
     resetFields(fieldsToTestMulti);
     resetFields(fieldsToTestGroupSortFirst);
     resetFields(fieldsToTestGroupSortLast);
-
   }
 
   void resetFields(List<FieldProps> fieldProps) {

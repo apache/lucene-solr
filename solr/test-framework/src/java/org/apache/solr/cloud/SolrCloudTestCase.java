@@ -92,7 +92,7 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 15; // this is SECONDS, not MILLIS
+  public static final int DEFAULT_TIMEOUT = 30; // this is SECONDS, not MILLIS
   public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
   protected static volatile SolrQueuedThreadPool qtp;
@@ -112,15 +112,6 @@ public class SolrCloudTestCase extends SolrTestCase {
     qtp = getQtp();
     qtp.start();
   }
-
-  @AfterClass
-  public static void afterSolrCloudTestCase() throws Exception {
-    if (qtp != null) {
-      qtp.close();
-      qtp = null;
-    }
-  }
-
 
   /**
    * Builder class for a MiniSolrCloudCluster
@@ -242,6 +233,10 @@ public class SolrCloudTestCase extends SolrTestCase {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster configure() throws Exception {
+      if (qtp == null) {
+        qtp = getQtp();
+        qtp.start();
+      }
       return cluster = build();
     }
 
@@ -313,11 +308,10 @@ public class SolrCloudTestCase extends SolrTestCase {
         cluster = null;
       }
     }
-  }
-
-  @Before
-  public void checkClusterConfiguration() {
-
+    if (qtp != null) {
+      qtp.close();
+      qtp = null;
+    }
   }
 
   /* Cluster helper methods ************************************/
@@ -390,19 +384,19 @@ public class SolrCloudTestCase extends SolrTestCase {
   }
 
   public static LiveNodesPredicate containsLiveNode(String node) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       return newNodes.contains(node);
     };
   }
 
   public static LiveNodesPredicate missingLiveNode(String node) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       return !newNodes.contains(node);
     };
   }
 
   public static LiveNodesPredicate missingLiveNodes(List<String> nodes) {
-    return (oldNodes, newNodes) -> {
+    return (newNodes) -> {
       boolean success = true;
       for (String lostNodeName : nodes) {
         if (newNodes.contains(lostNodeName)) {
@@ -528,7 +522,6 @@ public class SolrCloudTestCase extends SolrTestCase {
         cluster.startJettySolrRunner(jettys.get(i));
       }
     }
-    cluster.waitForAllNodes(timeoutSeconds);
   }
 
   public static Map<String, String> mapReplicasToReplicaType(DocCollection collection) {

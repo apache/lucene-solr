@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
@@ -41,10 +42,11 @@ import org.slf4j.LoggerFactory;
 public class ZkSolrResourceLoader extends SolrResourceLoader implements ResourceLoader {
 
   private final String configSetZkPath;
-  private ZkController zkController;
+
   private ZkIndexSchemaReader zkIndexSchemaReader;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final SolrZkClient zkClient;
 
   /**
    * <p>
@@ -56,7 +58,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
   public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
                               ZkController zooKeeperController) {
     super(instanceDir, parent);
-    this.zkController = zooKeeperController;
+    this.zkClient = zooKeeperController.getZkClient();
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
   }
 
@@ -67,16 +69,16 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is;
+
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
     if (log.isDebugEnabled()) log.debug("open resource {}", resource);
 
     try {
 
       Stat stat = new Stat();
-      byte[] bytes = zkController.getZkClient().getData(file, null, stat);
+      byte[] bytes = zkClient.getData(file, null, stat);
       if (bytes == null) {
-        log.error("resource not found {}", resource);
+        if (log.isDebugEnabled()) log.debug("resource not found {}", resource);
         throw new SolrResourceNotFoundException("Can't find resource '" + resource
                 + "' in classpath or '" + configSetZkPath + "', cwd="
                 + System.getProperty("user.dir"));
@@ -96,6 +98,10 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
     }
   }
 
+  public SolrZkClient getZkClient() {
+    return zkClient;
+  }
+
   public static class ZkByteArrayInputStream extends ByteArrayInputStream{
 
     private final Stat stat;
@@ -112,10 +118,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
 
   public String getConfigSetZkPath() {
     return configSetZkPath;
-  }
-  
-  public ZkController getZkController() {
-    return zkController;
   }
 
   public void setZkIndexSchemaReader(ZkIndexSchemaReader zkIndexSchemaReader) {

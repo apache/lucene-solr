@@ -158,7 +158,7 @@ public class RequestParams implements MapSerializable {
     if (loader instanceof ZkSolrResourceLoader) {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
-        Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null);
+        Stat stat = resourceLoader.getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null);
         if (log.isDebugEnabled()) {
           log.debug("latest version of {}/{} in ZK  is : {}", resourceLoader.getConfigSetZkPath(), RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         }

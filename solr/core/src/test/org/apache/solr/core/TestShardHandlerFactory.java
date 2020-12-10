@@ -22,11 +22,17 @@ import java.nio.file.Paths;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.junit.BeforeClass;
 
 /**
  * Tests specifying a custom ShardHandlerFactory
  */
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
   public void testXML() throws Exception {
     Path home = Paths.get(TEST_HOME());

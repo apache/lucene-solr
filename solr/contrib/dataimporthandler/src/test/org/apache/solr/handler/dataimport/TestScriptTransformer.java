@@ -157,7 +157,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     }
   }
 
-  static String xml = "<dataConfig>\n"
+  String xml = "<dataConfig>\n"
           + "<script><![CDATA[\n"
           + "function checkNextToken(row)\t{\n"
           + " var nt = row.get('nextToken');"

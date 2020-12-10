@@ -38,7 +38,7 @@ public class Replica extends ZkNodeProps {
      * replica's state may remain ACTIVE in ZK. To determine if the replica is
      * truly active, you must also verify that its {@link Replica#getNodeName()
      * node} is under {@code /live_nodes} in ZK (or use
-     * {@link ClusterState#liveNodesContain(String)}).
+     * {@link ZkStateReader#isNodeLive(String)} (String)}).
      * </p>
      */
     ACTIVE,

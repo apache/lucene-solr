@@ -29,8 +29,10 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // nocommit
 public class TestCSVResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

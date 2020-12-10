@@ -30,6 +30,7 @@ import org.junit.Test;
 public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
   @Test
+  @Nightly
   public void testPathConstructor() throws IOException {
     Path path = Paths.get(TEST_HOME());
     try (EmbeddedSolrServer server = new EmbeddedSolrServer(path, "collection1")) {
@@ -38,6 +39,7 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void testNodeConfigConstructor() throws Exception {
     Path path = createTempDir();
 

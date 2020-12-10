@@ -32,7 +32,6 @@ import org.mockito.Mockito;
 /**
  * Tests for {@link CloudReplicaSource}
  */
-@Ignore // nocommit
 public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
 
   @BeforeClass

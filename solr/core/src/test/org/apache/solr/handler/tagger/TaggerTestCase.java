@@ -48,6 +48,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -72,6 +73,11 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
   //populated in buildNames; tested in assertTags
   protected static List<String> NAMES;
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    NAMES = null;
+  }
 
   @Override
   public void setUp() throws Exception {

@@ -16,11 +16,6 @@
  */
 package org.apache.solr.metrics;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.Properties;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
@@ -31,23 +26,23 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  *
  */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
 
   @BeforeClass
   public static void setupLoader() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     solrHome = createTempDir().toFile();
   }
 
@@ -118,6 +113,6 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   private NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
-    return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props
+    return new SolrXmlConfig().fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props
   }
 }

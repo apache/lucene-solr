@@ -97,8 +97,10 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
     testSolrHome = solrHome;
     System.setProperty("solr.solr.home", solrHome.toString());
     ignoreException("ignore_exception");
+
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h = new TestHarness(coreName, dataDir.toString(), solrConfig, getSchemaFile());
-    lrf = h.getRequestFactory("",0,20, CommonParams.VERSION,"2.2");
+    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
+
   }
 }

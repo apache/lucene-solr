@@ -47,24 +47,23 @@ import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit flakey
 public class TestSelectiveWeightCreation extends TestRerankBase {
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
     return searcher;
   }
 
-  private static List<Feature> makeFeatures(int[] featureIds) {
+  private List<Feature> makeFeatures(int[] featureIds) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
       Map<String,Object> params = new HashMap<String,Object>();
       params.put("value", i);
-      final Feature f = Feature.getInstance(solrResourceLoader,
+      final Feature f = Feature.getInstance(jetty.getCoreContainer().getCores().iterator().next().getResourceLoader(),
           ValueFeature.class.getName(),
           "f" + i, params);
       f.setIndex(i);
@@ -95,28 +94,31 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
 
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w3 w1", "description", "w1", "popularity", "1"));
-    assertU(adoc("id", "2", "title", "w2",    "description", "w2", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "w3",    "description", "w3", "popularity", "3"));
-    assertU(adoc("id", "4", "title", "w3 w3", "description", "w4", "popularity", "4"));
-    assertU(adoc("id", "5", "title", "w5",    "description", "w5", "popularity", "5"));
-    assertU(commit());
+    restTestHarness.update(adoc("id", "1", "title", "w3 w1", "description", "w1", "popularity", "1"));
+    restTestHarness.update(adoc("id", "2", "title", "w2",    "description", "w2", "popularity", "2"));
+    restTestHarness.update(adoc("id", "3", "title", "w3",    "description", "w3", "popularity", "3"));
+    restTestHarness.update(adoc("id", "4", "title", "w3 w3", "description", "w4", "popularity", "4"));
+    restTestHarness.update(adoc("id", "5", "title", "w5",    "description", "w5", "popularity", "5"));
+    restTestHarness.update(commit());
 
     loadFeatures("external_features.json");
     loadModels("external_model.json");
     loadModels("external_model2.json");
+    super.setUp();
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
+    super.tearDown();
     aftertest();
   }
 
   @Test
+  @Nightly
   public void testScoringQueryWeightCreation() throws IOException, ModelException {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -194,13 +196,15 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     }
     assertEquals(validFeatures, allFeatures.size());
 
-    assertU(delI("10"));assertU(delI("11"));
+    restTestHarness.update(delI("10"));
+    restTestHarness.update(delI("11"));
     r.close();
     dir.close();
   }
 
 
   @Test
+  @Nightly
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
 //    final String docs0fv_sparse = FeatureLoggerTestUtils.toFeatureVector(

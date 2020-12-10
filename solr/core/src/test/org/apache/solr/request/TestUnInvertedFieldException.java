@@ -34,20 +34,18 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema11.xml");
-  }
 
   private int numTerms;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    initCore("solrconfig.xml","schema11.xml");
     numTerms = TestUtil.nextInt(random(), 10, 50);
     createIndex(numTerms);
   }
@@ -56,6 +54,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+    deleteCore();
   }
 
   String t(int tnum) {

@@ -28,14 +28,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
     assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "pain table paintablepine pi ne in able")));
     assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "paint able pineapple goodness in")));
@@ -52,6 +53,11 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     //docfreq=3:  printable
     //docfreq=2:  table
     //docfreq=1:  {all others}
+  }
+
+  @After
+  public void after() {
+    deleteCore();
   }
   
   @Test

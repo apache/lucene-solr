@@ -866,7 +866,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                                                       String collection) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = zkController.getZkStateReader().getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
       final Collection<Slice> activeSlices = docCollection.getActiveSlices();

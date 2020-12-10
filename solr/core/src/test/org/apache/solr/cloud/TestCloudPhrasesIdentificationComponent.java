@@ -41,6 +41,7 @@ import org.apache.solr.common.util.NamedList;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /** 
  * A very simple sanity check that Phrase Identification works across a cloud cluster
@@ -114,6 +115,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
       client.close();
     }
     CLIENTS.clear();
+    CLOUD_CLIENT = null;
   }
 
   public void testBasicPhrases() throws Exception {

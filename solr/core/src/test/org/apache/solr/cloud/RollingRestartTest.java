@@ -126,7 +126,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         log.info("Restarting {}", cloudJetty);
         chaosMonkey.stopJetty(cloudJetty);
         cloudClient.getZkStateReader().updateLiveNodes();
-        boolean liveDesignates = CollectionUtils.intersection(cloudClient.getZkStateReader().getClusterState().getLiveNodes(), designates).size() > 0;
+        boolean liveDesignates = CollectionUtils.intersection(cloudClient.getZkStateReader().getLiveNodes(), designates).size() > 0;
         if (liveDesignates) {
           sawLiveDesignate = true;
           boolean success = waitUntilOverseerDesignateIsLeader(cloudClient.getZkStateReader().getZkClient(), designates, MAX_WAIT_TIME);
@@ -151,7 +151,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         }
 
         cloudClient.getZkStateReader().updateLiveNodes();
-        sawLiveDesignate = CollectionUtils.intersection(cloudClient.getZkStateReader().getClusterState().getLiveNodes(), designates).size() > 0;
+        sawLiveDesignate = CollectionUtils.intersection(cloudClient.getZkStateReader().getLiveNodes(), designates).size() > 0;
 
       }
     }

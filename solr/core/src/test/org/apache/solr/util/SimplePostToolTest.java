@@ -33,13 +33,15 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SimplePostTool.PageFetcher;
 import org.apache.solr.util.SimplePostTool.PageFetcherResult;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * NOTE: do *not* use real hostnames, not even "example.com", in this test.
  *
  * A MockPageFetcher is used to prevent real HTTP requests from being executed.
- */ 
+ */
+@Ignore // nocommit
 public class SimplePostToolTest extends SolrTestCaseJ4 {
 
   SimplePostTool t_file, t_file_auto, t_file_rec, t_web, t_test;

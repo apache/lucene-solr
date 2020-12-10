@@ -17,6 +17,8 @@
 package org.apache.solr;
 
 import org.apache.solr.common.params.CommonParams;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,8 +36,8 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
    * just because you want to add a new test case using solrconfig.xml, 
    * but your new testcase adds a feature that breaks this test.
    */
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solr/collection1/conf/solrconfig.xml","solr/collection1/conf/schema-minimal.xml");
 
     /* make sure some misguided soul doesn't inadvertently give us 
@@ -56,6 +58,11 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(commit()));
     assertNull(h.validateUpdate(optimize()));
 
+  }
+
+  @After
+  public void afterTest() {
+    deleteCore();
   }
 
   @Test

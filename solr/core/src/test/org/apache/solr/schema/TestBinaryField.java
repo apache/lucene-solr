@@ -42,8 +42,6 @@ import java.util.Properties;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
 
-  private static JettySolrRunner jetty;
-
   @BeforeClass
   public static void beforeTest() throws Exception {
     File homeDir = createTempDir().toFile();
@@ -73,7 +71,7 @@ public class TestBinaryField extends SolrJettyTestBase {
       coreProps.store(w, "");
     }
 
-    jetty = createAndStartJetty(homeDir.getAbsolutePath());
+    createAndStartJetty(homeDir.getAbsolutePath());
   }
 
 

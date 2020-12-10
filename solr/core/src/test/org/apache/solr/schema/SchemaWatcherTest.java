@@ -39,21 +39,13 @@ public class SchemaWatcherTest {
     SolrTestCaseJ4.assumeWorkingMockito();
     
     mockSchemaReader = mock(ZkIndexSchemaReader.class);
-    schemaWatcher = new SchemaWatcher(mockSchemaReader, null);
+    schemaWatcher = new SchemaWatcher(mockSchemaReader);
   }
 
   @Test
   public void testProcess() throws Exception {
     schemaWatcher.process(new WatchedEvent(EventType.NodeDataChanged, KeeperState.SyncConnected, "/test"));
-    verify(mockSchemaReader).updateSchema(schemaWatcher, -1);
+    verify(mockSchemaReader).updateSchema(schemaWatcher);
   }
 
-  @Test
-  public void testDiscardReaderReference() throws Exception {
-    schemaWatcher.discardReaderReference();
-
-    schemaWatcher.process(new WatchedEvent(EventType.NodeDataChanged, KeeperState.SyncConnected, "/test"));
-    // after discardReaderReference, SchemaWatcher should no longer hold a ref to the reader
-    verifyZeroInteractions(mockSchemaReader);
-  }
 }

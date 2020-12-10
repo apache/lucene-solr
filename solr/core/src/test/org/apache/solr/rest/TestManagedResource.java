@@ -204,39 +204,37 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   public void testLoadingAndStoringOfManagedData() throws Exception {
     String resourceId = "/config/test/foo";
     String storedResourceId = "_config_test_foo.json";
-    
+
     MockAnalysisComponent observer = new MockAnalysisComponent();
-    List<ManagedResourceObserver> observers = 
-        Arrays.asList((ManagedResourceObserver)observer);
-    
+    List<ManagedResourceObserver> observers = Arrays.asList((ManagedResourceObserver) observer);
+
     // put some data in the storage impl so that we can test 
     // initialization of managed data from storage
-    String storedJson = "{'initArgs':{'someArg':'someVal', 'arg2':true, 'arg3':['one','two','three'],"
-                      + " 'arg4':18, 'arg5':0.9, 'arg6':{ 'uno':1, 'dos':2}},'"
-                      + ManagedResource.MANAGED_JSON_LIST_FIELD+"':['1','2','3']}";
-    ManagedResourceStorage.InMemoryStorageIO storageIO = 
-        new ManagedResourceStorage.InMemoryStorageIO();
+    String storedJson =
+        "{'initArgs':{'someArg':'someVal', 'arg2':true, 'arg3':['one','two','three']," + " 'arg4':18, 'arg5':0.9, 'arg6':{ 'uno':1, 'dos':2}},'" + ManagedResource.MANAGED_JSON_LIST_FIELD
+            + "':['1','2','3']}";
+    ManagedResourceStorage.InMemoryStorageIO storageIO = new ManagedResourceStorage.InMemoryStorageIO();
     storageIO.storage.put(storedResourceId, new BytesRef(json(storedJson)));
-    
-    ManagedTestResource res = new ManagedTestResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
-    res.loadManagedDataAndNotify(observers);
-    
-    assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"))) {
+      ManagedTestResource res = new ManagedTestResource(resourceId, loader, storageIO);
+      res.loadManagedDataAndNotify(observers);
 
-    // now update the managed data (as if it came from the REST API)
-    List<String> updatedData = new ArrayList<>();
-    updatedData.add("1");
-    updatedData.add("2");
-    updatedData.add("3");
-    updatedData.add("4");    
-    res.storeManagedData(updatedData);
+      assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);
 
-    Map<String,Object> jsonObject =
-        (Map<String,Object>) Utils.fromJSONString(storageIO.storage.get(storedResourceId).utf8ToString());
-    List<String> jsonList = 
-        (List<String>)jsonObject.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
-    
-    assertTrue("Managed data was not updated correctly!", jsonList.contains("4"));    
+      // now update the managed data (as if it came from the REST API)
+      List<String> updatedData = new ArrayList<>();
+      updatedData.add("1");
+      updatedData.add("2");
+      updatedData.add("3");
+      updatedData.add("4");
+      res.storeManagedData(updatedData);
+
+      Map<String,Object> jsonObject = (Map<String,Object>) Utils.fromJSONString(storageIO.storage.get(storedResourceId).utf8ToString());
+      List<String> jsonList = (List<String>) jsonObject.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
+
+      assertTrue("Managed data was not updated correctly!", jsonList.contains("4"));
+    }
+
   }
   
   /**
@@ -248,11 +246,11 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   public void testCustomStorageFormat() throws Exception {
     String resourceId = "/schema/test/foo";
     String storedResourceId = "_schema_test_foo.bin";
-    
+
     MockAnalysisComponent observer = new MockAnalysisComponent();
-    List<ManagedResourceObserver> observers = 
+    List<ManagedResourceObserver> observers =
         Arrays.asList((ManagedResourceObserver)observer);
-    
+
     // put some data in the storage impl so that we can test 
     // initialization of managed data from storage
     Map<String,Object> storedData = new HashMap<>();
@@ -277,31 +275,31 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     managedList.add("2");
     managedList.add("3");
     storedData.put(ManagedResource.MANAGED_JSON_LIST_FIELD, managedList);
-    ManagedResourceStorage.InMemoryStorageIO storageIO = 
+    ManagedResourceStorage.InMemoryStorageIO storageIO =
         new ManagedResourceStorage.InMemoryStorageIO();
     storageIO.storage.put(storedResourceId, ser2bytes((Serializable)storedData));
-    
-    CustomStorageFormatResource res = 
-        new CustomStorageFormatResource(resourceId, new SolrResourceLoader(Paths.get("./")), storageIO);
-    res.loadManagedDataAndNotify(observers);
-    
-    assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"))) {
+      CustomStorageFormatResource res = new CustomStorageFormatResource(resourceId, loader, storageIO);
+      res.loadManagedDataAndNotify(observers);
 
-    // now store some data (as if it came from the REST API)
-    List<String> updatedData = new ArrayList<>();
-    updatedData.add("1");
-    updatedData.add("2");
-    updatedData.add("3");
-    updatedData.add("4");    
-    res.storeManagedData(updatedData);
-    
-    Object stored = res.storage.load(resourceId);
-    assertNotNull(stored);
-    assertTrue(stored instanceof Map);
-    Map storedMap = (Map)stored;
-    assertNotNull(storedMap.get("initArgs"));
-    List storedList = (List)storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
-    assertTrue(storedList.contains("4"));
+      assertTrue("Observer was not notified by ManagedResource!", observer.wasNotified);
+
+      // now store some data (as if it came from the REST API)
+      List<String> updatedData = new ArrayList<>();
+      updatedData.add("1");
+      updatedData.add("2");
+      updatedData.add("3");
+      updatedData.add("4");
+      res.storeManagedData(updatedData);
+
+      Object stored = res.storage.load(resourceId);
+      assertNotNull(stored);
+      assertTrue(stored instanceof Map);
+      Map storedMap = (Map) stored;
+      assertNotNull(storedMap.get("initArgs"));
+      List storedList = (List) storedMap.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
+      assertTrue(storedList.contains("4"));
+    }
   }
 
 

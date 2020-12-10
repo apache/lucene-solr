@@ -48,7 +48,6 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
   public void testLeaderUnloaded() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 
@@ -62,20 +61,20 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     String newNodeName = newNode.getNodeName();
 
     // add a replica to the new node so that it starts watching the collection
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(newNodeName)
         .process(solrClient);
 
     cluster.waitForActiveCollection(collectionName, 1, 3);
 
     // now delete the leader
-    Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "shard1");
-    CollectionAdminRequest.deleteReplica(collectionName, "shard1", leader.getName())
+    Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "s1");
+    CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName())
         .process(solrClient);
 
     // add another replica to the new node. When it starts recovering, it will likely have stale state
     // and ask the erstwhile leader to PREPRECOVERY which will hang for about 30 seconds
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(newNodeName)
         .process(solrClient);
   }
@@ -94,7 +93,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     try {
       // in the absence of fixes made in SOLR-9716, prep recovery waits forever and the following statement
       // times out
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+      CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
           .process(solrClient);
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;

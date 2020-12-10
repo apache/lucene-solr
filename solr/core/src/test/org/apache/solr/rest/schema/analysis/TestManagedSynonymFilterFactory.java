@@ -19,9 +19,9 @@ package org.apache.solr.rest.schema.analysis;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
@@ -39,8 +39,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   
   private static File tmpSolrHome;
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
@@ -50,11 +50,12 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     System.setProperty("enable.update.log", "false");
     createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
+    super.setUp();
   }
 
-  @AfterClass
-  public static void afterTest() throws Exception {
-
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
 
@@ -172,9 +173,9 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     }
     // multi-term logic similar to the angry/mad logic (angry ~ origin, mad ~ synonym)
 
-    assertU(adoc(newFieldName, "I am a happy test today but yesterday I was angry", "id", "5150"));
-    assertU(adoc(newFieldName, multiTermOrigin+" is in North Germany.", "id", "040"));
-    assertU(commit());
+    restTestHarness.update(adoc(newFieldName, "I am a happy test today but yesterday I was angry", "id", "5150"));
+    restTestHarness.update(adoc(newFieldName, multiTermOrigin+" is in North Germany.", "id", "040"));
+    restTestHarness.update(commit());
 
     assertQ("/select?q=" + newFieldName + ":angry",
             "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",

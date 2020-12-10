@@ -366,7 +366,7 @@ public class ChaosMonkey {
       CoreContainer cc = cjetty.jetty.getCoreContainer();
       if (cc != null) {
         try (SolrCore core = cc.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          rtIsLeader = core != null && core.getCoreDescriptor().getCloudDescriptor().isLeader();
+          rtIsLeader = core != null;
         }
       } else {
         return null;
@@ -435,7 +435,7 @@ public class ChaosMonkey {
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
           && (replicaType == Replica.Type.TLOG || replicaType == Replica.Type.NRT) 
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+          && zkStateReader.isNodeLive(nodeName)) {
         numIndexersFoundInShard++;
       }
     }
@@ -459,7 +459,7 @@ public class ChaosMonkey {
       
       if (cloudJetty.jetty.isRunning()
           && state == Replica.State.ACTIVE
-          && zkStateReader.getClusterState().liveNodesContain(nodeName)) {
+          && zkStateReader.isNodeLive(nodeName)) {
         numActive++;
       }
     }
@@ -657,7 +657,7 @@ public class ChaosMonkey {
         m.find();
         String jettyPort = m.group(1);
         builder.append(String.format(Locale.ROOT, "%s(%s): {state: %s, type: %s, leader: %s, Live: %s}, ", 
-            replica.getName(), jettyPort, replica.getState(), replica.getType(), (replica.get("leader")!= null), zkStateReader.getClusterState().liveNodesContain(replica.getNodeName())));
+            replica.getName(), jettyPort, replica.getState(), replica.getType(), (replica.get("leader")!= null), zkStateReader.isNodeLive(replica.getNodeName())));
       }
       if (slice.getReplicas().size() > 0) {
         builder.setLength(builder.length() - 2);

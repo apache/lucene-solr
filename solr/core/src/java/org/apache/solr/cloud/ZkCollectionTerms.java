@@ -17,13 +17,12 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Used to manage all ZkShardTerms of a collection
@@ -32,22 +31,19 @@ class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
   private final Map<String, ZkShardTerms> terms;
   private final SolrZkClient zkClient;
-  private boolean closed;
+  private volatile boolean closed;
 
   ZkCollectionTerms(String collection, SolrZkClient client) {
     this.collection = collection;
-    this.terms = new HashMap<>();
+    this.terms = new ConcurrentHashMap<>();
     this.zkClient = client;
     assert ObjectReleaseTracker.track(this);
   }
 
 
-  public ZkShardTerms getShard(String shardId) {
+  ZkShardTerms getShard(String shardId) {
     synchronized (terms) {
       if (!terms.containsKey(shardId)) {
-        if (this.closed) {
-          throw new AlreadyClosedException();
-        }
         terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
       }
       return terms.get(shardId);
@@ -55,25 +51,19 @@ class ZkCollectionTerms implements AutoCloseable {
   }
 
   public ZkShardTerms getShardOrNull(String shardId) {
-    synchronized (terms) {
-      if (!terms.containsKey(shardId)) return null;
-      return terms.get(shardId);
-    }
+    if (!terms.containsKey(shardId)) return null;
+    return terms.get(shardId);
   }
 
   public void register(String shardId, String coreNodeName) {
-    synchronized (terms)  {
-      getShard(shardId).registerTerm(coreNodeName);
-    }
+    getShard(shardId).registerTerm(coreNodeName);
   }
 
   public void remove(String shardId, CoreDescriptor coreDescriptor) {
-    synchronized (terms) {
-      ZkShardTerms zterms = getShardOrNull(shardId);
-      if (zterms != null) {
-        if (zterms.removeTerm(coreDescriptor)) {
-          terms.remove(shardId).close();
-        }
+    ZkShardTerms zterms = getShardOrNull(shardId);
+    if (zterms != null) {
+      if (zterms.removeTerm(coreDescriptor)) {
+        terms.remove(shardId).close();
       }
     }
   }
@@ -81,9 +71,20 @@ class ZkCollectionTerms implements AutoCloseable {
   public void close() {
     synchronized (terms) {
       this.closed = true;
+
       terms.values().forEach(ZkShardTerms::close);
+
+      terms.clear();
     }
     assert ObjectReleaseTracker.release(this);
   }
 
+  public boolean cleanUp() {
+    for (ZkShardTerms zkShardTerms : terms.values()) {
+      if (zkShardTerms.getTerms().size() > 0) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

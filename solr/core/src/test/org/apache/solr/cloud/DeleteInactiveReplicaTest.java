@@ -16,17 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.eclipse.jetty.util.Jetty;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
@@ -41,7 +45,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void deleteInactiveReplicaTest() throws Exception {
+  public void deleteInactiveReplicaTest() throws Exception, NoOpenOverseerFoundException {
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
@@ -51,22 +55,35 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
         .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
+    waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
+      return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
+    });
 
     DocCollection collectionState = getCollectionState(collectionName);
 
     Slice shard = getRandomShard(collectionState);
     Replica replica = getRandomReplica(shard);
-    JettySolrRunner jetty = cluster.getReplicaJetty(replica);
+
+    List<JettySolrRunner> jetties = new ArrayList<>(cluster.getJettySolrRunners());
+    JettySolrRunner overseerJetty = cluster.getCurrentOverseerJetty();
+    jetties.remove(overseerJetty);
+    JettySolrRunner jetty = jetties.iterator().next();
 
     cluster.stopJettySolrRunner(jetty);
+
+    jetties = new ArrayList<>(cluster.getJettySolrRunners());
+    jetties.remove(jetty);
+
+    JettySolrRunner ojetty = jetties.iterator().next();
 
     if (log.isInfoEnabled()) {
       log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
     }
-    CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
-        .process(cluster.getSolrClient());
+    try (SolrClient client = ojetty.newClient()) {
+      CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName()).process(client);
+    }
 
-// TODO: this coule come back in
+// TODO: this could come back in, but we should do simple, then more complicated, perhaps nightly
 
 //    cluster.startJettySolrRunner(jetty);
 //    log.info("restarted jetty");

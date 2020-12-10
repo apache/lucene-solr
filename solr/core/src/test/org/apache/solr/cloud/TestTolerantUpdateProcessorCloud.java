@@ -16,9 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -39,10 +41,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +54,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test of TolerantUpdateProcessor using a MiniSolrCloud.  Updates (that include failures which 
@@ -68,7 +68,7 @@ import java.util.Set;
  * </p>
  *
  */
-@Ignore // nocommit
+@LuceneTestCase.Nightly
 public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -105,7 +105,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    
+    useFactory(null);
     final String configName = "solrCloudCollectionConfig";
     final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
 
@@ -181,21 +181,22 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
 
 //    Thread.sleep(100);
-//    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
 
     SolrDocumentList docs = CLOUD_CLIENT.query(params("q", "*:*",
-                                                      "fl","id,expected_shard_s,[s]")).getResults();
+                                                      "fl","id,expected_shard_s,[shard]")).getResults();
 
     assertEquals(2, docs.getNumFound());
     assertEquals(2, docs.size());
     for (SolrDocument doc : docs) {
-      String expected = COLLECTION_NAME + "_" + doc.getFirstValue("expected_shard_s") + "_replica";
-      String docShard = doc.getFirstValue("[s]").toString();
+      String expected = COLLECTION_NAME + "_" + doc.getFirstValue("expected_shard_s") + "_r";
+      String docShard = (String) doc.getFirstValue("[shard]");
+      assertNotNull(doc.toString(), docShard);
       assertTrue("shard routing prefixes don't seem to be aligned anymore, " +
                  "did someone change the default routing rules? " +
                  "and/or the the default core name rules? " +
                  "and/or the numShards used by this test? ... " +
-                 "couldn't find " + expected + " as substring of [s] == '" + docShard +
+                 "couldn't find " + expected + " as substring of [shard] == '" + docShard +
                  "' ... for docId == " + doc.getFirstValue("id"),
                  docShard.contains(expected));
     }
@@ -217,8 +218,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     }
   }
   
-  @Before
-  private void clearCollection() throws Exception {
+  @After
+  public void clearCollection() throws Exception {
     assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }
@@ -234,15 +235,19 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                                          f("foo_i", 66))).getStatus());
     assertEquals(0, CLOUD_CLIENT.commit().getStatus());
 
+    int cnt = 0;
     for (SolrClient c : Arrays.asList(S_ONE_LEADER_CLIENT, S_TWO_LEADER_CLIENT,
                                       S_ONE_NON_LEADER_CLIENT, S_TWO_NON_LEADER_CLIENT,
                                       NO_COLLECTION_CLIENT, CLOUD_CLIENT)) {
-      assertQueryDocIds(c, true, S_ONE_PRE + "1",  S_TWO_PRE + "2");
+      cnt++;
+      // non leaders can be skipped after falling behind on terms due to fails
+      cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
+      assertQueryDocIds(c, true, S_ONE_PRE + "1", S_TWO_PRE + "2");
       assertQueryDocIds(c, false, "id_not_exists");
 
       // verify adding 2 broken docs causes a clint exception
       SolrException e = expectThrows(SolrException.class,
-          "did not get a top level exception when more then 10 docs failed", () ->
+          "did not get a top level exception when more then 10 docs failed " + cnt, () ->
               update(params(),
                   doc(f("id", S_ONE_PRE + "X"), f("foo_i", "bogus_val_X")),
                   doc(f("id", S_TWO_PRE + "Y"), f("foo_i", "bogus_val_Y"))
@@ -366,6 +371,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertUpdateTolerantErrors("failed opportunistic concurrent delete by id: bogus", rsp,
                                delIErr("bogusId"));
+    client.commit();
     assertQueryDocIds(client, false, docId1);
     assertQueryDocIds(client, true, docId2);
     
@@ -377,7 +383,11 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, rsp.getStatus());
     assertUpdateTolerantErrors("failed opportunistic concurrent delete by query", rsp,
                                delQErr("bogus_field:foo"));
-    assertQueryDocIds(client, false, docId2);
+    client.commit();
+    // non leaders can be skipped after falling behind on terms due to fails
+    if (S_ONE_NON_LEADER_CLIENT != client && S_TWO_NON_LEADER_CLIENT != client) {
+      assertQueryDocIds(client, false, docId2);
+    }
 
   }
 
@@ -417,6 +427,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                    doc(f("id", S_ONE_PRE + "666"), f("foo_i", "1976"))).process(client);
       
       assertEquals(0, rsp.getStatus());
+      cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
       assertUpdateTolerantAddErrors("single shard, 1st doc should fail", rsp, S_ONE_PRE + "42");
       assertEquals(0, client.commit().getStatus());
       assertQueryDocIds(client, false, S_ONE_PRE + "42");
@@ -441,6 +452,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(-1, rsp.getResponseHeader().get("maxErrors"));
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
     // 2 docs on 2 diff shards, first of which should fail
@@ -457,6 +469,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertQueryDocIds(client, true, S_TWO_PRE + "666");
     
     // 2 docs on 2 diff shards, second of which should fail
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
 
     rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                         "commit", "true"),
@@ -465,10 +478,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     assertEquals(0, rsp.getStatus());
     assertUpdateTolerantAddErrors("two shards, 2nd doc should fail", rsp, S_TWO_PRE + "77");
+
     assertQueryDocIds(client, false, S_TWO_PRE + "77");
     assertQueryDocIds(client, true, S_TWO_PRE + "666", S_ONE_PRE + "55");
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
     // many docs from diff shards, 1 from each shard should fail
@@ -499,6 +514,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                       S_TWO_PRE + "25", S_ONE_PRE + "16", S_TWO_PRE + "26");
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
 
     // many docs from diff shards, 1 from each shard should fail and 1 w/o uniqueKey
@@ -531,6 +547,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                       S_TWO_PRE + "25", S_ONE_PRE + "16", S_TWO_PRE + "26");
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 (total) should fail
@@ -596,6 +613,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       }
     }
 
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
+
     assertEquals(0, client.commit().getStatus()); // need to force since update didn't finish
     assertQueryDocIds(client, false
                       // explicitly failed
@@ -612,6 +631,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                       S_TWO_PRE + "25", S_ONE_PRE + "17", S_TWO_PRE + "27");
     
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 from a single shard (two) should fail
@@ -674,6 +694,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       }
     }
 
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.commit().getStatus()); // need to force since update didn't finish
     assertQueryDocIds(client, true
                       , S_ONE_PRE + "z", S_ONE_PRE + "y", S_TWO_PRE + "z", S_TWO_PRE + "y" // first
@@ -692,6 +713,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                       );
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 don't have any uniqueKey specified
@@ -755,6 +777,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                       );
 
     // clean slate
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 from a single shard (two) should fail but
@@ -856,7 +879,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     }
     
     // attempt a request containing 4 errors of various types (add, delI, delQ) .. 1 too many
-
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     SolrException e = expectThrows(SolrException.class,
         "did not get a top level exception when more then 4 updates failed",
         () -> update(params("update.chain", "tolerant-chain-max-errors-10",
@@ -902,10 +925,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
           actualKnownErrsCount, actualKnownErrs.size());
     }
 
+
     // sanity check our 2 existing docs are still here
     assertQueryDocIds(client, true, docId1, docId21);
     assertQueryDocIds(client, false, docId22);
 
+    cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     // tolerate some failures along with a DELQ that should succeed
     rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                         "commit", "true"),
@@ -919,9 +944,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                                delIErr(docId1, "version conflict"),
                                delQErr("zot_i:[42 to gibberish..."),
                                addErr(docId22,"not_a_num"));
+
+
     // one of our previous docs should have been deleted now
     assertQueryDocIds(client, true, docId1);
     assertQueryDocIds(client, false, docId21, docId22);
+
                       
   }
   

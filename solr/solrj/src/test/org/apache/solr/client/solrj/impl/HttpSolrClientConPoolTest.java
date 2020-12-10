@@ -35,35 +35,31 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
-  protected static JettySolrRunner yetty;
-  private static String jettyUrl;
-  private static String yettyUrl;
-  protected static JettySolrRunner jetty;
+  protected JettySolrRunner yetty;
+  private String jettyUrl;
+  private String yettyUrl;
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    yetty = createAndStartJetty(legacyExampleCollection1SolrHome());
-    yettyUrl = yetty.getBaseUrl() + "/" + "collection1";
-    
+  @Before
+  public void setUp() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
     jettyUrl = jetty.getBaseUrl() + "/" + "collection1";
+
+    yetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+    yettyUrl = yetty.getBaseUrl() + "/" + "collection1";
+
+    super.setUp();
   }
   
-  @AfterClass
-  public static void stopYetty() throws Exception {
-    if (null != yetty) {
-      yetty.stop();
-      yetty = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
   
   public void testPoolSize() throws SolrServerException, IOException {

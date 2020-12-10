@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.handler.TestBlobHandler;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 
+@Ignore // nocommit
 public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   public static final Path TEST_PATH = getFile("solr/configsets").toPath();

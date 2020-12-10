@@ -31,7 +31,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.IOUtils;
@@ -39,7 +38,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.junit.AfterClass;
@@ -77,18 +75,15 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
   }
 
   static private Document doc;
-  static private XPathFactory xPathFact;
 
   static private String rawResponse;
 
   @BeforeClass
   public static void beforeClassAbstractAnalysis() {
-    xPathFact = XmlConfigFile.xpathFactory;
   }
 
   @AfterClass
   public static void afterClassAbstractAnalysis() {
-    xPathFact = null;
     doc = null;
     rawResponse = null;
     defaults.clear();
@@ -112,7 +107,7 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
     // This is a little fragile in that it demands the elements have the same name as type, i.e. when looking for a
     // VAL_TYPE.DOUBLE, the element in question is <double name="blah">47.0</double>.
     sb.append("/").append(type.toString()).append("[@name='").append(name).append("']");
-    String val = xPathFact.newXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
+    String val = h.getCore().getResourceLoader().getXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
     try {
       switch (type) {
         case INTEGER: return Integer.parseInt(val);

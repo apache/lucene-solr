@@ -158,7 +158,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
+    Utils.readFully(r.getEntity().getContent());
     assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
   }
 

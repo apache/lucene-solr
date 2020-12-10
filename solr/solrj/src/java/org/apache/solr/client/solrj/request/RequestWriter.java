@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.FastWriter;
 
 /**
  * A RequestWriter is used to write requests to Solr.
@@ -57,19 +58,7 @@ public class RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      return new ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          Writer writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
-          updateRequest.writeXML(writer);
-          writer.flush();
-        }
-
-        @Override
-        public String getContentType() {
-          return ClientUtils.TEXT_XML;
-        }
-      };
+      return new MyContentWriter(updateRequest);
     }
     return req.getContentWriter(ClientUtils.TEXT_XML);
   }
@@ -99,9 +88,9 @@ public class RequestWriter {
   public void write(SolrRequest request, OutputStream os) throws IOException {
     if (request instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) request;
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
-      updateRequest.writeXML(writer);
-      writer.flush();
+      try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8))) {
+        updateRequest.writeXML(writer);
+      }
     }
   }
 
@@ -136,5 +125,25 @@ public class RequestWriter {
   
   protected boolean isNull(Map l) {
     return l == null || l.isEmpty();
+  }
+
+  private static class MyContentWriter implements ContentWriter {
+    private final UpdateRequest updateRequest;
+
+    public MyContentWriter(UpdateRequest updateRequest) {
+      this.updateRequest = updateRequest;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8))) {
+        updateRequest.writeXML(writer);
+      }
+    }
+
+    @Override
+    public String getContentType() {
+      return ClientUtils.TEXT_XML;
+    }
   }
 }

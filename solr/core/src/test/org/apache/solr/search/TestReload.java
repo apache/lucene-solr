@@ -17,9 +17,11 @@
 package org.apache.solr.search;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import java.util.Random;
 
+@Ignore // nocommit
 public class TestReload extends TestRTGBase {
 
   @BeforeClass

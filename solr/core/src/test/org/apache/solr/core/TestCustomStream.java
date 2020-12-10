@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.util.Arrays;
 
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Ignore;
 import org.junit.Test;

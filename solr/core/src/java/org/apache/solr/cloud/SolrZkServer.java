@@ -269,10 +269,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
     boolean multiple = false;
     int port = 0;
     for (QuorumPeer.QuorumServer server : slist.values()) {
-      if (server.addr.getHostName().equals(myHost)) {
+      if (server.addr.getOne().getHostName().equals(myHost)) {
         multiple = me!=null;
         me = server.id;
-        port = server.addr.getPort();
+        port = server.addr.getOne().getPort();
       }
     }
 
@@ -292,7 +292,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
     for (QuorumPeer.QuorumServer server : slist.values()) {
       if (server.addr.equals(thisAddr)) {
         if (clientPortAddress == null || clientPortAddress.getPort() <= 0)
-          setClientPort(server.addr.getPort() - 1);
+          setClientPort(server.addr.getOne().getPort() - 1);
         return server.id;
       }
     }

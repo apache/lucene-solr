@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -91,7 +92,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation, ZkStateWriter zkStateWriter) {
     NamedList results = new NamedList();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
@@ -306,13 +307,15 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;
     Map<String, Object> props = getNewProperties(message);
-    if (props != null) {
-      // read the old config properties and do a merge, if necessary
-      NamedList oldProps = getConfigSetProperties(getPropertyPath(baseConfigSetName, propertyPath));
-      if (oldProps != null) {
-        mergeOldProperties(props, oldProps);
-      }
+    if (props == null) {
+      props = new HashMap<>();
     }
+    // read the old config properties and do a merge, if necessary
+    NamedList oldProps = getConfigSetProperties(getPropertyPath(baseConfigSetName, propertyPath));
+    if (oldProps != null) {
+      mergeOldProperties(props, oldProps);
+    }
+
     byte[] propertyData = getPropertyData(props);
 
     Set<String> copiedToZkPaths = new HashSet<String>();

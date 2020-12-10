@@ -55,39 +55,38 @@ import org.junit.Test;
 
 public class TestLTRScoringQuery extends SolrTestCase {
 
-  public final static SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
-
   private IndexSearcher getSearcher(IndexReader r) {
     final IndexSearcher searcher = newSearcher(r, false, false);
     return searcher;
   }
 
-  private static List<Feature> makeFeatures(int[] featureIds) {
-    final List<Feature> features = new ArrayList<>();
-    for (final int i : featureIds) {
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("value", i);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getName(),
-          "f" + i, params);
-      f.setIndex(i);
-      features.add(f);
+  private static List<Feature> makeFeatures(int[] featureIds) throws IOException {
+    try (SolrResourceLoader solrResourceLoader = new SolrResourceLoader()) {
+      final List<Feature> features = new ArrayList<>();
+      for (final int i : featureIds) {
+        Map<String,Object> params = new HashMap<String,Object>();
+        params.put("value", i);
+        final Feature f = Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
+        f.setIndex(i);
+        features.add(f);
+      }
+
+      return features;
     }
-    return features;
   }
 
-  private static List<Feature> makeFilterFeatures(int[] featureIds) {
-    final List<Feature> features = new ArrayList<>();
-    for (final int i : featureIds) {
-      Map<String,Object> params = new HashMap<String,Object>();
-      params.put("value", i);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          ValueFeature.class.getName(),
-          "f" + i, params);
-      f.setIndex(i);
-      features.add(f);
+  private static List<Feature> makeFilterFeatures(int[] featureIds) throws IOException {
+    try (SolrResourceLoader solrResourceLoader = new SolrResourceLoader()) {
+      final List<Feature> features = new ArrayList<>();
+      for (final int i : featureIds) {
+        Map<String,Object> params = new HashMap<String,Object>();
+        params.put("value", i);
+        final Feature f = Feature.getInstance(solrResourceLoader, ValueFeature.class.getName(), "f" + i, params);
+        f.setIndex(i);
+        features.add(f);
+      }
+      return features;
     }
-    return features;
   }
 
   private LTRScoringQuery.ModelWeight performQuery(TopDocs hits,
@@ -116,7 +115,7 @@ public class TestLTRScoringQuery extends SolrTestCase {
   }
 
   @Test
-  public void testLTRScoringQueryEquality() throws ModelException {
+  public void testLTRScoringQueryEquality() throws ModelException, IOException {
     final List<Feature> features = makeFeatures(new int[] {0, 1, 2});
     final List<Normalizer> norms =
         new ArrayList<Normalizer>(

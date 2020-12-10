@@ -107,14 +107,14 @@ public class HealthCheckHandler extends RequestHandlerBase {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     // Check for isConnected and isClosed
-    if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
+    if(zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isAlive()) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk"));
       return;
     }
 
     // Fail if not in live_nodes
-    if (!clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+    if (!zkStateReader.getLiveNodes().contains(cores.getZkController().getNodeName())) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
       return;

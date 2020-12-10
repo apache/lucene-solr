@@ -6,6 +6,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ReplicaMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -52,7 +53,11 @@ public class OverseerTaskExecutorTask implements Runnable {
     if (log.isDebugEnabled()) log.debug("Process message {} {}", message, operation);
 
     if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
-    zkStateWriter.enqueueUpdate(null, message, true);
+    try {
+      zkStateWriter.enqueueUpdate(null, message, true);
+    } catch (NullPointerException e) {
+      log.info("Overseer is stopped, won't process message");
+    }
 
 
     if (log.isDebugEnabled()) log.debug("State update consumed from queue {}", message);

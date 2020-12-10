@@ -195,6 +195,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       client.close();
     }
     CLIENTS.clear();
+    CLOUD_CLIENT = null;
   }
 
   /** Sanity check that malformed requests produce errors */

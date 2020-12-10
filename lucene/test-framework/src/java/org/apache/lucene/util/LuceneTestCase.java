@@ -588,10 +588,10 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Max 10mb of static data stored in a test suite class after the suite is complete.
+   * Max static data stored in a test suite class after the suite is complete.
    * Prevents static data structures leaking and causing OOMs in subsequent tests.
    */
-  private final static long STATIC_LEAK_THRESHOLD = 5 * 1024;
+  private final static long STATIC_LEAK_THRESHOLD = 600;
 
   /** By-name list of ignored types like loggers etc. */
   private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(
@@ -618,7 +618,7 @@ public abstract class LuceneTestCase extends Assert {
       //.around(new TestRuleLimitSysouts(suiteFailureMarker))
       .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
     // TODO LUCENE-7595: Java 9 does not allow to look into runtime classes, so we have to fix the RAM usage checker!
-    if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+    //if (!Constants.JRE_IS_MINIMUM_JAVA9) {
       r = r.around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
         @Override
         protected boolean accept(java.lang.reflect.Field field) {
@@ -633,7 +633,7 @@ public abstract class LuceneTestCase extends Assert {
           return super.accept(field);
         }
       });
-    }
+    //}
     classRules = r.around(new NoClassHooksShadowingRule())
       .around(new NoInstanceHooksOverridesRule() {
         @Override

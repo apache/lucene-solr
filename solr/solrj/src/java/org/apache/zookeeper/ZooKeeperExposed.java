@@ -40,7 +40,24 @@ public class ZooKeeperExposed {
 //            }
      //   }
     }
-//    @Override
+
+  public void closeCnxn() {
+      if (!clientCnxn.getState().isAlive()) {
+          LOG.debug("Close called on already closed client");
+          return;
+      }
+
+      clientCnxn.sendThread.close();
+      try {
+          clientCnxn.sendThread.join(10);
+      } catch (InterruptedException e) {
+      }
+      clientCnxn.eventThread.queueEventOfDeath();
+      if (clientCnxn.zooKeeperSaslClient != null) {
+          clientCnxn.zooKeeperSaslClient.shutdown();
+      }
+  }
+    //    @Override
 //    public void injectSessionExpiration() {
 //        LOG.info("injectSessionExpiration() called");
 //

@@ -68,10 +68,10 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
-    if (!clusterState.liveNodesContain(source)) {
+    if (!zkStateReader.isNodeLive(source)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source Node: " + source + " is not live");
     }
-    if (target != null && !clusterState.liveNodesContain(target)) {
+    if (target != null && !zkStateReader.isNodeLive(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
     }
     List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);

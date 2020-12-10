@@ -379,26 +379,23 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         throws IOException, SolrServerException {
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-      try (HttpSolrClient client = new HttpSolrClient.Builder()
-          .withHttpClient(httpClient)
-          .withBaseSolrUrl(url)
-          .withResponseParser(new BinaryResponseParser())
-          .markInternalRequest()
-          .build()) {
-        NamedList<Object> rsp = client.request(request);
-        request.response.nl = rsp;
-        return request.response;
+      try {
+        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
+        try (HttpSolrClient client = new HttpSolrClient.Builder().withHttpClient(httpClient).withBaseSolrUrl(url).withResponseParser(new BinaryResponseParser()).markInternalRequest().build()) {
+          NamedList<Object> rsp = client.request(request);
+          request.response.nl = rsp;
+          return request.response;
+        }
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, url, e);
       }
     }
-
   }
 
   public enum Variable {
     FREEDISK("freedisk", null, Double.class),
     TOTALDISK("totaldisk", null, Double.class),
-    CORE_IDX("INDEX.sizeInGB",  "INDEX.sizeInBytes", Double.class)
-    ;
+    CORE_IDX("INDEX.sizeInGB",  "INDEX.sizeInBytes", Double.class);
 
 
     public final String tagName, metricsAttribute;

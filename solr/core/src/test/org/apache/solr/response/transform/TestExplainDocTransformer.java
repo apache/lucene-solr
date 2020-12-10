@@ -20,13 +20,13 @@ package org.apache.solr.response.transform;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestExplainDocTransformer extends SolrTestCaseJ4 {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
 
     assertU(add(doc("id", "1", "name_s", "john", "title_s", "Director", "dept_s","Engineering",
@@ -44,8 +44,7 @@ public class TestExplainDocTransformer extends SolrTestCaseJ4 {
 
   @After
   public void cleanup() throws Exception {
-    assertU(delQ("*:*"));
-    assertU(commit());
+    deleteCore();
   }
 
   @Test

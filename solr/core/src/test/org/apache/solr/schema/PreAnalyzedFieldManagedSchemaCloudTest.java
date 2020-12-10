@@ -27,8 +27,10 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "managed-preanalyzed";

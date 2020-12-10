@@ -104,7 +104,7 @@ public class AnalyticsShardRequestManager {
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
       Collection<Slice> slices = clusterState.getCollection(collection).getActiveSlices();
 

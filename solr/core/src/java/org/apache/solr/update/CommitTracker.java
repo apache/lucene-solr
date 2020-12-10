@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -119,7 +120,9 @@ public final class CommitTracker implements Runnable, Closeable {
     try {
       this.closed = true;
       try {
-        pending.cancel(false);
+        if (pending != null) {
+          pending.cancel(false);
+        }
       } catch (NullPointerException e) {
         // okay
       }
@@ -297,8 +300,15 @@ public final class CommitTracker implements Runnable, Closeable {
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
       command.softCommit = softCommit;
+      boolean isLeader = false;
+      if (core.getCoreContainer().isZooKeeperAware())  {
+        Replica leader = core.getCoreContainer().getZkController().zkStateReader.getLeader(core.getCoreDescriptor().getCollectionName(), core.getCoreDescriptor().getCloudDescriptor().getShardId());
+        if (core.getName().equals(leader.getName())) {
+          isLeader = true;
+        }
+      }
       if (core.getCoreDescriptor().getCloudDescriptor() != null
-          && core.getCoreDescriptor().getCloudDescriptor().isLeader()
+          && isLeader
           && !softCommit) {
         command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
       }

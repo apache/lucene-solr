@@ -25,8 +25,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -40,11 +39,15 @@ import java.util.Iterator;
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrJettyTestBase {
 
-  private static JettySolrRunner jetty;
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+    super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   static final int numdocs = 1000;  

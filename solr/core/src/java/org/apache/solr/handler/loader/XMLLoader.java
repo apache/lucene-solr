@@ -32,6 +32,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.handler.RequestHandlerUtils;
@@ -131,8 +132,7 @@ public class XMLLoader extends ContentStreamLoader {
       } catch(TransformerException te) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
       } finally {
-        // dont close streams
-        // IOUtils.closeQuietly(is);
+        Utils.readFully(is);
       }
       // second step: feed the intermediate DOM tree into StAX parser:
       try {
@@ -169,8 +169,7 @@ public class XMLLoader extends ContentStreamLoader {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       } finally {
         if (parser != null) parser.close();
-        // don't close streams
-        // IOUtils.closeQuietly(is);
+        Utils.readFully(is);
       }
     }
   }

@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,6 +31,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager;
@@ -64,25 +65,28 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
+  private Set<Cancellable> cancels = ConcurrentHashMap.newKeySet(32);
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().idleTimeout((int) TimeUnit.SECONDS.toMillis(30)).build();
     isClosed = null;
   }
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
     assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).idleTimeout((int) TimeUnit.MINUTES.toMillis(5)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().idleTimeout((int) TimeUnit.SECONDS.toMillis(30)).build();
     this.isClosed = isClosed;
   }
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
-  //  nonCommitTracker.waitForComplete();
-    if (isClosed != null && !isClosed.isClosed()) {
+    if (isClosed == null || isClosed != null && !isClosed.isClosed()) {
+      solrClient.waitForOutstandingRequests();
+    } else {
+      cancels.forEach(cancellable -> cancellable.cancel());
       solrClient.waitForOutstandingRequests();
     }
     finished = true;
@@ -222,6 +226,11 @@ public class SolrCmdDistributor implements Closeable {
       log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
 
+    if (isClosed != null && isClosed.isClosed()) {
+      log.warn("Already closed, skippping update");
+      throw new AlreadyClosedException();
+    }
+
     req.uReq.setBasePath(req.node.getUrl());
 
     if (req.synchronous) {
@@ -244,15 +253,22 @@ public class SolrCmdDistributor implements Closeable {
     }
 
     try {
-      solrClient.asyncRequest(req.uReq, null, new AsyncListener<>() {
+      Http2SolrClient client;
+
+      client = solrClient;
+
+      int cancelIndex = cancels.size() - 1;
+      cancels.add(client.asyncRequest(req.uReq, null, new AsyncListener<>() {
         @Override
         public void onSuccess(NamedList result) {
           if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
+          cancels.remove(cancelIndex);
         }
 
         @Override
         public void onFailure(Throwable t) {
           log.error("Exception sending dist update", t);
+          cancels.remove(cancelIndex);
           Error error = new Error();
           error.t = t;
           error.req = req;
@@ -267,13 +283,17 @@ public class SolrCmdDistributor implements Closeable {
 
           if (retry) {
             log.info("Retrying distrib update on error: {}", t.getMessage());
-            submit(req);
+            try {
+              submit(req);
+            } catch (AlreadyClosedException e) {
+              
+            }
             return;
           } else {
             allErrors.add(error);
           }
         }
-      });
+      }));
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
       Error error = new Error();
@@ -373,10 +393,10 @@ public class SolrCmdDistributor implements Closeable {
   public static volatile Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
 
   public static class Error {
-    public Throwable t;
-    public int statusCode = -1;
+    public volatile Throwable t;
+    public volatile int statusCode = -1;
 
-    public Req req;
+    public volatile Req req;
     
     public String toString() {
       StringBuilder sb = new StringBuilder();
@@ -561,17 +581,6 @@ public class SolrCmdDistributor implements Closeable {
 
   public Set<Error> getErrors() {
     return allErrors;
-  }
-
-  private static class RequestPhaser extends Phaser {
-    public RequestPhaser() {
-      super(1);
-    }
-
-    @Override
-    protected boolean onAdvance(int phase, int parties) {
-      return false;
-    }
   }
 }
 

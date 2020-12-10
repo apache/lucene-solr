@@ -39,7 +39,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.index.DefaultMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
@@ -50,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
+import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 
@@ -60,11 +60,11 @@ import javax.xml.xpath.XPathExpressionException;
 public class SolrIndexConfig implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static XPathExpression indexConfigExp;
-  private static XPathExpression mergeSchedulerExp;
-  private static XPathExpression mergePolicyExp;
-  private static XPathExpression ramBufferSizeMBExp;
-  private static XPathExpression checkIntegrityAtMergeExp;
+  private XPathExpression indexConfigExp;
+  private XPathExpression mergeSchedulerExp;
+  private XPathExpression mergePolicyExp;
+  private XPathExpression ramBufferSizeMBExp;
+  private XPathExpression checkIntegrityAtMergeExp;
 
 
   static String indexConfigPath = "indexConfig";
@@ -78,40 +78,6 @@ public class SolrIndexConfig implements MapSerializable {
 
   static String checkIntegrityAtMergePath = indexConfigPath + "/checkIntegrityAtMerge";
 
-
-
-  static {
-
-
-    try {
-
-      indexConfigExp = XmlConfigFile.getXpath().compile(indexConfigPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      mergeSchedulerExp = XmlConfigFile.getXpath().compile(mergeSchedulerPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      mergePolicyExp = XmlConfigFile.getXpath().compile(mergePolicyPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      ramBufferSizeMBExp = XmlConfigFile.getXpath().compile(ramBufferSizeMBPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      checkIntegrityAtMergeExp = XmlConfigFile.getXpath().compile(checkIntegrityAtMergePath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-  }
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
 
@@ -150,8 +116,41 @@ public class SolrIndexConfig implements MapSerializable {
     mergedSegmentWarmerInfo = null;
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
+
+    initExpressions(solrConfig);
   }
-  
+
+  private void initExpressions(SolrConfig solrConfig) {
+    XPath xPath = solrConfig.getResourceLoader().getXPath();
+    try {
+
+      indexConfigExp = xPath.compile(indexConfigPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+
+    try {
+      mergeSchedulerExp = xPath.compile(mergeSchedulerPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      mergePolicyExp = xPath.compile(mergePolicyPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      ramBufferSizeMBExp = xPath.compile(ramBufferSizeMBPath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+    try {
+      checkIntegrityAtMergeExp = xPath.compile(checkIntegrityAtMergePath);
+    } catch (XPathExpressionException e) {
+      log.error("", e);
+    }
+  }
+
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    * @param solrConfig the overall SolrConfig object
@@ -163,6 +162,8 @@ public class SolrIndexConfig implements MapSerializable {
       prefix = "indexConfig";
       log.debug("Defaulting to prefix '{}' for index configuration", prefix);
     }
+
+    initExpressions(solrConfig);
     
     if (def == null) {
       def = new SolrIndexConfig(solrConfig);
@@ -170,7 +171,7 @@ public class SolrIndexConfig implements MapSerializable {
 
     // sanity check: this will throw an error for us if there is more then one
     // config section
-    Object unused = solrConfig.getNode(indexConfigExp, indexConfigPath, false);
+   // Object unused = solrConfig.getNode(indexConfigExp, indexConfigPath, false);
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above

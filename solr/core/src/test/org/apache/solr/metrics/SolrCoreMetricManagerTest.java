@@ -16,12 +16,6 @@
  */
 package org.apache.solr.metrics;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
@@ -36,6 +30,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+
 public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   private static final int MAX_ITERATIONS = 100;
 
@@ -44,6 +44,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     useFactory(null);
     initCore("solrconfig-basic.xml", "schema.xml");
     coreMetricManager = h.getCore().getCoreMetricManager();

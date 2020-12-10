@@ -80,7 +80,6 @@ public class ExecutorUtil {
   public static void awaitTermination(ExecutorService pool) {
     boolean shutdown = false;
     // if interrupted, we still wait a short time for thread stoppage, but then quickly bail
-    TimeOut interruptTimeout = new TimeOut(10000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     TimeOut shutdownTimeout = new TimeOut(30000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     boolean interrupted = false;
     do {
@@ -90,12 +89,9 @@ public class ExecutorUtil {
 
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(10, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(2, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
-        interrupted = true;
-        if (interruptTimeout.hasTimedOut()) {
-          break;
-        }
+
       }
     } while (shutdown == false);
 
@@ -104,7 +100,7 @@ public class ExecutorUtil {
       Thread.currentThread().interrupt();
     }
     
-    if (!pool.isTerminated() || !pool.isShutdown()) {
+    if (!pool.isTerminated()) {
       throw new RuntimeException("Timeout waiting for executor to shutdown");
     }
   }
@@ -124,7 +120,7 @@ public class ExecutorUtil {
    */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(1, 1,
-            0L, TimeUnit.MILLISECONDS,
+            3000L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(),
             threadFactory);
   }

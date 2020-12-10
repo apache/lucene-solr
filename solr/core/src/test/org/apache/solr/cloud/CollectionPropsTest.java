@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

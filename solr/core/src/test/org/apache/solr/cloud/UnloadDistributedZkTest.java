@@ -34,11 +34,12 @@ import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TestInjection;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,16 +53,15 @@ import java.util.concurrent.TimeUnit;
  * work as expected.
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+// TODO this test is pretty based on pre legacy cloud and is not likely very valuable currently
 public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public UnloadDistributedZkTest() throws Exception {
     numJettys = 4;
     sliceCount = 2;
-  }
-
-  @BeforeClass
-  public static void beforeUnloadDistributedZkTest() throws Exception {
+    createCollection1 = false;
+    uploadSelectCollection1Config = true;
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("solr.skipCommitOnClose", "false");
     useFactory(null);
@@ -94,7 +94,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
           }
         }
       }
-      Thread.sleep(1000);
+      Thread.sleep(100);
     }
   }
 
@@ -160,7 +160,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
    * @throws Exception on any problem
    */
   @Test
-  @Ignore // unload is not correct here, we should delete the replica
+  @AwaitsFix(bugUrl = "unload is not correct here, we should delete the replica")
   public void testCoreUnloadAndLeaders() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
 
@@ -312,9 +312,9 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Ignore // nocommit - needs to be hardened
+  @Nightly
   public void testUnloadLotsOfCores() throws Exception {
-    JettySolrRunner jetty = cluster.getJettySolrRunner(0);
+    JettySolrRunner jetty = cluster.getJettySolrRunner(1);
     try (final Http2SolrClient adminClient = (Http2SolrClient) jetty.newClient(15000, 60000)) {
       int numReplicas = atLeast(3);
 
@@ -323,15 +323,15 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
       createCollectionInOneInstance(adminClient, jetty.getNodeName(), testExecutor, "multiunload", 2, numReplicas);
       List<Callable<Object>> calls = new ArrayList<>();
 
-      for (int j = 0; j < numReplicas; j++) {
-        final int freezeJ = j;
+      List<Replica> replicas = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection("multiunload").getReplicas();
+      for (Replica replica : replicas) {
         calls.add(() -> {
           Unload unloadCmd = new Unload(true);
-          unloadCmd.setCoreName("multiunload" + freezeJ);
+          unloadCmd.setCoreName(replica.getName());
           try {
             adminClient.request(unloadCmd);
           } catch (SolrServerException | IOException e) {
-            throw new RuntimeException(e);
+            log.error("", e);
           }
           return null;
         });

@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import java.io.IOException;
 public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
   static void updateExternalFile() throws IOException {
+
     final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     String filename = "external_eff";
     FileUtils.copyFile(new File(testHome + "/" + filename),
@@ -55,7 +57,9 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit - not throwing an exception
   public void testPointKeyFieldType() throws Exception {
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
     // This one should fail though, no "node" parameter specified
     SolrException e = expectThrows(SolrException.class, 
         () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));

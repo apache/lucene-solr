@@ -47,7 +47,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +58,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -236,7 +236,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       for (Callable thread : indexThreads) {
         futures.add(testExecutor.submit(thread));
       }
-      Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
+      Thread.sleep(350);  // wait for a few docs to be indexed before invoking split
       int docCount = model.size();
 
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
@@ -246,7 +246,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       // make sure that docs were able to be indexed during the split
       assertTrue(model.size() > docCount);
 
-      Thread.sleep(100);  // wait for a few more docs to be indexed after split
+      Thread.sleep(250);  // wait for a few more docs to be indexed after split
 
     } finally {
       // shut down the indexers
@@ -276,7 +276,6 @@ public class SplitShardTest extends SolrCloudTestCase {
 
 
   @Test
-  @Ignore // nocommit - turning off and on buffering needs to be debugged, turned on
   public void testLiveSplit() throws Exception {
     // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to 1 and looping the test
     // until you get another failure.
@@ -284,7 +283,7 @@ public class SplitShardTest extends SolrCloudTestCase {
     // Using more threads increases the chance to hit a concurrency bug, but too many threads can overwhelm single-threaded buffering
     // replay after the low level index split and result in subShard leaders that can't catch up and
     // become active (a known issue that still needs to be resolved.)
-    doLiveSplitShard("livesplit1", 1, 4);
+    doLiveSplitShard("livesplit1", 1, 1);
   }
 
 

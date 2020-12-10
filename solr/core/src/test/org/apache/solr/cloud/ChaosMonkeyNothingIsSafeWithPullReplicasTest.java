@@ -254,7 +254,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       // TODO: assert we didnt kill everyone
       
       zkStateReader.updateLiveNodes();
-      assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
+      assertTrue(zkStateReader.getLiveNodes().size() > 0);
       
       
       // we expect full throttle fails, but cloud client should not easily fail

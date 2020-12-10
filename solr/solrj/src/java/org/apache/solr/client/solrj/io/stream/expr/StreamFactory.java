@@ -53,7 +53,7 @@ public class StreamFactory implements Serializable {
   
   public StreamFactory(){
     collectionZkHosts = new HashMap<>();
-    functionNames = new HashMap<>(400);
+    functionNames = new HashMap<>(200);
   }
 
   public StreamFactory(Map<String, Supplier<Class<? extends Expressible>>> functionNames) {

@@ -32,6 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class InfixSuggestersTest extends SolrTestCaseJ4 {
   private static final String rh_analyzing_short = "/suggest_analyzing_infix_short_dictionary";
   private static final String rh_analyzing_long = "/suggest_analyzing_infix_long_dictionary";

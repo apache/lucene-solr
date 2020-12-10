@@ -203,7 +203,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/==[]");
   }
 
-  private static void doWrapperModelPersistenceChecks(String modelName,
+  private void doWrapperModelPersistenceChecks(String modelName,
       String featureStoreName, String baseModelFileName) throws Exception {
     // note that the wrapper and the wrapped model always have the same name
     assertJQ(ManagedModelStore.REST_END_POINT,

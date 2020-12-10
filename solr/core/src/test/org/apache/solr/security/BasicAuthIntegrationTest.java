@@ -81,6 +81,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     useFactory(null);
@@ -176,7 +177,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
      // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
       HttpResponse r = cl.execute(httpPost);
       int statusCode = r.getStatusLine().getStatusCode();
-      Utils.consumeFully(r.getEntity());
+      Utils.readFully(r.getEntity().getContent());
       assertEquals("proper_cred sent, but access denied", 200, statusCode);
       assertPkiAuthMetricsMinimums(0, 0, 0, 0, 0, 0);
       assertAuthMetricsMinimums(2, 1, 1, 0, 0, 0);
@@ -375,7 +376,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
     assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+    Utils.readFully(r.getEntity().getContent());
 
     // HACK (continued)...
 //    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

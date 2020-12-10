@@ -96,7 +96,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, new LiveNodesPredicate() {
       
       @Override
-      public boolean matches(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+      public boolean matches(SortedSet<String> newLiveNodes) {
         boolean success = true;
         for (String lostNodeName : nodes) {
           if (newLiveNodes.contains(lostNodeName)) {
@@ -159,7 +159,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     reader.waitForLiveNodes(30, TimeUnit.SECONDS, new LiveNodesPredicate() {
       
       @Override
-      public boolean matches(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
+      public boolean matches(SortedSet<String> newLiveNodes) {
         boolean success = true;
         for (String lostNodeName : nodes) {
           if (newLiveNodes.contains(lostNodeName)) {

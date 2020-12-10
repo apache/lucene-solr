@@ -22,10 +22,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.core.backup.repository.HdfsBackupRepository;
@@ -40,8 +40,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
+
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
@@ -58,6 +57,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
   @AfterClass
   public static void cleanupLoader() throws Exception {
     solrHome = null;
+    IOUtils.closeQuietly(loader);
     loader = null;
   }
 

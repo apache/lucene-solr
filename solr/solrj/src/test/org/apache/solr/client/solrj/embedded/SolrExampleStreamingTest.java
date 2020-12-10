@@ -41,13 +41,6 @@ import org.junit.BeforeClass;
 @LuceneTestCase.Nightly
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  protected static JettySolrRunner jetty;
-
-  @BeforeClass
-  public static void SolrExampleStreamingTest() throws Exception {
-    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
-
   public SolrClient createNewSolrClient(JettySolrRunner jetty)
   {
     try {

@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
@@ -45,7 +44,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   
   public void testResolving() throws Exception {
     final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
-    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     
@@ -90,17 +89,19 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
         assertTrue(e.getMessage().startsWith("Can't find resource") || e.getMessage().contains("access denied") || e.getMessage().contains("is outside resource loader dir"));
       }
     }
+    loader.close();
   }
 
   public void testUnsafeResolving() throws Exception {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
     
     final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
-    final ResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),
-      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");    
+      SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-config.xml"), "crazy-path-to-schema.xml");
+    loader.close();
   }
 
 }

@@ -106,10 +106,10 @@ enum CoreAdminOperation implements CoreAdminOp {
     SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
 
-    boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
-    boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, false);
+    boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, true);
+    boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, true);
+    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
     CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
     it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (deleteMetricsHistory) {
@@ -257,7 +257,7 @@ enum CoreAdminOperation implements CoreAdminOp {
 
     CoreContainer cc = it.handler.getCoreContainer();
 
-    try ( SolrCore core = cc.getCore(cname) ) {
+    try (SolrCore core = cc.getCore(cname) ) {
       if (core == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }

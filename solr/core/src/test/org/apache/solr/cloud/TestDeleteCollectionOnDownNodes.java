@@ -19,24 +19,33 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
-  @BeforeClass
-  public static void beforeTestDeleteCollectionOnDownNodes() throws Exception {
+  @Before
+  public void beforeTestDeleteCollectionOnDownNodes() throws Exception {
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+
+    CollectionAdminRequest.createCollection("DeleteCollectionOnDownNodes", "conf", 4, 3)
+        .setMaxShardsPerNode(20)
+        .process(cluster.getSolrClient());
+
+  }
+
+  @After
+  public void afterTestDeleteCollectionOnDownNodes() throws Exception {
+    shutdownCluster();
   }
 
   @Test
   public void deleteCollectionWithDownNodes() throws Exception {
 
-    CollectionAdminRequest.createCollection("halfdeletedcollection2", "conf", 4, 3)
-        .setMaxShardsPerNode(20)
-        .process(cluster.getSolrClient());
 
     // stop a couple nodes
     JettySolrRunner j1 = cluster.stopJettySolrRunner(cluster.getRandomJetty(random()));
@@ -44,7 +53,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
 
     // delete the collection
-    CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteCollection("DeleteCollectionOnDownNodes").process(cluster.getSolrClient());
 
     // nocommit - debug
 //    assertFalse("Still found collection that should be gone",

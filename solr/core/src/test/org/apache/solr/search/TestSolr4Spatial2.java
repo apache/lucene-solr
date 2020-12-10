@@ -39,6 +39,7 @@ import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -50,6 +51,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
+    System.setProperty("solr.enableMetrics", "true");
     initCore("solrconfig-spatial.xml", "schema-spatial.xml");
   }
 
@@ -69,6 +71,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // nocommit
   public void testBBox() throws Exception {
     String fieldName = random().nextBoolean() ? "bbox" : "bboxD_dynamic";
     assertU(adoc("id", "0"));//nothing

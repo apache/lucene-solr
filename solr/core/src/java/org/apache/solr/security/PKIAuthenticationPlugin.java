@@ -20,6 +20,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.Principal;
@@ -185,16 +186,18 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   PublicKey getRemotePublicKey(String nodename) {
-    if (!cores.getZkController().getZkStateReader().getClusterState().getLiveNodes().contains(nodename)) return null;
+    if (!cores.getZkController().getZkStateReader().getLiveNodes().contains(nodename)) return null;
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
+    InputStream is = null;
     try {
       String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
       log.debug("Fetching fresh public key from : {}",uri);
       HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
           .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      entity  = rsp.getEntity();
-      byte[] bytes = EntityUtils.toByteArray(entity);
+      is  = rsp.getEntity().getContent();
+
+      byte[] bytes = is.readAllBytes();
       Map m = (Map) Utils.fromJSON(bytes);
       String key = (String) m.get("key");
       if (key == null) {
@@ -210,7 +213,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       log.error("Exception trying to get public key from : {}", url, e);
       return null;
     } finally {
-      Utils.consumeFully(entity);
+      Utils.readFully(is);
     }
 
   }

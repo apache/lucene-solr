@@ -20,7 +20,6 @@ import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 
-
 /**
  * This ignores those threads in Solr for which there is no way to
  * clean up after a suite.
@@ -57,14 +56,14 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     }
 
     // load balancer scheduled executor can be slow to shutdown fully
-    if (threadName.startsWith("aliveCheckExecutor-")) {
-      return true;
-    }
+//    if (threadName.startsWith("aliveCheckExecutor-")) {
+//      return true;
+//    }
 
 
-    if (threadName.startsWith("ProcessThread")) { // zk thread that will stop in a moment - only seems to happen in very low resource env
-      return true;
-    }
+//    if (threadName.startsWith("ProcessThread") || threadName.startsWith("SessionTracker")) { // zk thread that will stop in a moment - only seems to happen in very low resource env
+//      return true;
+//    }
 
     // randomizedtesting claims this leaks, but the thread is already TERMINATED state
     // I think it can be resolved, but for now ...
@@ -74,10 +73,10 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-
-    if (threadName.startsWith("ConnnectionExpirer")) { // org.apache.solr.cloud.TestDistributedMap.classMethod can leak this in TERMINATED state, should go away with apache httpclient
-      return true;
-    }
+//
+//    if (threadName.startsWith("ConnnectionExpirer")) { // org.apache.solr.cloud.TestDistributedMap.classMethod can leak this in TERMINATED state, should go away with apache httpclient
+//      return true;
+//    }
 
     // HDFS nocommit fix
 //    if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007

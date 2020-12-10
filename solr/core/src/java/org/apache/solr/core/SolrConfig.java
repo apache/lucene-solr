@@ -19,8 +19,8 @@ package org.apache.solr.core;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -111,53 +111,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
 
-  private static XPathExpression luceneMatchVersionExp;
-  private static XPathExpression indexDefaultsExp;
-  private static XPathExpression mainIndexExp;
-  private static XPathExpression nrtModeExp;
-  private static XPathExpression unlockOnStartupExp;
-
-  static String luceneMatchVersionPath = "/config/" + IndexSchema.LUCENE_MATCH_VERSION_PARAM;
-
-  static String indexDefaultsPath = "/config/indexDefaults";
-
-  static String mainIndexPath = "/config/mainIndex";
-  static String nrtModePath = "/config/indexConfig/nrtmode";
-
-  static String unlockOnStartupPath = "/config/indexConfig/unlockOnStartup";
-
-  static {
-
-
-    try {
-
-      luceneMatchVersionExp = XmlConfigFile.getXpath().compile(luceneMatchVersionPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      indexDefaultsExp = XmlConfigFile.getXpath().compile(indexDefaultsPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      mainIndexExp = XmlConfigFile.getXpath().compile(mainIndexPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      nrtModeExp = XmlConfigFile.getXpath().compile(nrtModePath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      unlockOnStartupExp = XmlConfigFile.getXpath().compile(unlockOnStartupPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-  }
-
   private volatile RequestParams requestParams;
 
   public enum PluginOpts {
@@ -186,13 +139,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   /**
    * TEST-ONLY: Creates a configuration instance from an instance directory and file name
-   * @param instanceDir the directory used to create the resource loader
+   * @param loader     the SolrResourceLoader used to create the resource loader
    * @param name        the configuration name used by the loader if the stream is null
    */
-  public SolrConfig(Path instanceDir, String name)
+  public SolrConfig(SolrResourceLoader loader, String name)
       throws ParserConfigurationException, IOException, SAXException,
       XMLStreamException {
-    this(new SolrResourceLoader(instanceDir), name, true, null);
+    this(loader, name, true, null);
   }
 
   public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties) {
@@ -219,29 +172,30 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
    * @param substitutableProperties optional properties to substitute into the XML
    */
-  private SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
+  public SolrConfig(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties)
       throws ParserConfigurationException, IOException, SAXException,
       XMLStreamException {
     // insist we have non-null substituteProperties; it might get overlayed
-    super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties, true);
+    super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
+
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(loader, isConfigsetTrusted);
-    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(luceneMatchVersionExp, luceneMatchVersionPath, true));
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(loader.luceneMatchVersionExp, SolrResourceLoader.luceneMatchVersionPath, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-    boolean hasDeprecatedIndexConfig = (getNode(indexDefaultsExp, indexDefaultsPath, false) != null) || (getNode(mainIndexExp, mainIndexPath, false) != null);
+    boolean hasDeprecatedIndexConfig = (getNode(loader.indexDefaultsExp, SolrResourceLoader.indexDefaultsPath, false) != null) || (getNode(loader.mainIndexExp, SolrResourceLoader.mainIndexPath, false) != null);
     if (hasDeprecatedIndexConfig) {
       throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
     } else {
       indexConfigPrefix = "indexConfig";
     }
     assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-            " This config will be removed in future versions.", getNode(nrtModeExp, nrtModePath, false) == null,
+            " This config will be removed in future versions.", getNode(loader.nrtModeExp, SolrResourceLoader.nrtModePath, false) == null,
         true
     );
     assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  "+
@@ -249,7 +203,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
                      "it would be dangerous and should not be done.  For other lockTypes and/or "+
                      "directoryFactory options it may also be dangerous and users must resolve "+
                      "problematic locks manually.",
-                     null == getNode(unlockOnStartupExp, unlockOnStartupPath, false),
+                     null == getNode(loader.unlockOnStartupExp, SolrResourceLoader.unlockOnStartupPath, false),
                      true // 'fail' in trunk
                      );
                      
@@ -538,16 +492,13 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     List<PluginInfo> result = readPluginInfos(pluginInfo.tag, requireName, requireClass);
 
-    if (result.isEmpty()) {
-      return;
-    }
-
     if (1 < result.size() && !pluginInfo.options.contains(MULTI_OK)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Found " + result.size() + " configuration sections when at most " + "1 is allowed matching expression: " + pluginInfo.getCleanTag());
+      throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+              "Found " + result.size() + " configuration sections when at most "
+                  + "1 is allowed matching expression: " + pluginInfo.getCleanTag());
     }
-    log.info("Add plugin {} {}", requireName, result);
-    pluginStore.put(pluginInfo.clazz.getName(), result);
+    if (!result.isEmpty()) pluginStore.put(pluginInfo.clazz.getName(), result);
   }
 
   public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {
@@ -905,7 +856,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (val != null) return Integer.parseInt(val.toString());
     try {
       path = super.normalize(path);
-      return super.getInt(XmlConfigFile.getXpath().compile(path), path, def);
+      XPath xPath = loader.getXPath();
+      return super.getInt(xPath.compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -919,7 +871,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (val != null) return Boolean.parseBoolean(val.toString());
     try {
       path = super.normalize(path);
-      return super.getBool(XmlConfigFile.getXpath().compile(path), path, def);
+      XPath xPath = loader.getXPath();
+      return super.getBool(xPath.compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -932,7 +885,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
     try {
       path = super.normalize(path);
-      return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path);
+      XPath xPath = loader.getXPath();
+      return val != null ? val.toString() : super.get(xPath.compile(path), path);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -945,7 +899,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
     try {
       path = super.normalize(path);
-      return val != null ? val.toString() : super.get(XmlConfigFile.getXpath().compile(path), path, def);
+      XPath xPath = loader.getXPath();
+      return val != null ? val.toString() : super.get(xPath.compile(path), path, def);
     } catch (XPathExpressionException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
@@ -983,7 +938,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       } else {
         if (plugin.options.contains(MULTI_OK)) {
           ArrayList<MapSerializable> l = new ArrayList<>();
-          l.addAll(infos);
+          for (PluginInfo info : infos) l.add(info);
           result.put(tag, l);
         } else {
           result.put(tag, infos.get(0));

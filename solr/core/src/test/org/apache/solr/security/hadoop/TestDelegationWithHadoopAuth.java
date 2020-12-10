@@ -55,6 +55,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    System.setProperty("solr.enablePublicKeyHandler", "true");
     disableReuseOfCryptoKeys();
     HdfsTestUtil.checkAssumptions();
 

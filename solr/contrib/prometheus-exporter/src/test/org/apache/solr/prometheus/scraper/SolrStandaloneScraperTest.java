@@ -19,6 +19,7 @@ package org.apache.solr.prometheus.scraper;
 
 import io.prometheus.client.Collector;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.ParWork;
@@ -28,8 +29,8 @@ import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.apache.solr.util.RestTestBase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,21 +41,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+@LuceneTestCase.Nightly
 public class SolrStandaloneScraperTest extends RestTestBase {
 
-  private static MetricsConfiguration configuration;
-  private static SolrStandaloneScraper solrScraper;
-  private static ExecutorService executor;
-  private static Http2SolrClient solrClient;
+  private MetricsConfiguration configuration;
+  private SolrStandaloneScraper solrScraper;
+  private ExecutorService executor;
+  private Http2SolrClient solrClient;
 
-  @BeforeClass
-  public static void setupBeforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
-    tmpSolrHome.deleteOnExit();
 
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
-
-    initCore("solrconfig.xml", "managed-schema");
 
     createJettyAndHarness(
         tmpSolrHome.getAbsolutePath(),
@@ -76,10 +75,13 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     solrClient.setParser(responseParser);
 
     Helpers.indexAllDocs(solrClient);
+
+    super.setUp();
   }
 
-  @AfterClass
-  public static void cleanUp() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     IOUtils.closeQuietly(solrScraper);
     if (null != executor) {
       executor = null;

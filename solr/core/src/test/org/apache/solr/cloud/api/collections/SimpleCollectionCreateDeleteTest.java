@@ -17,40 +17,39 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.NoOpenOverseerFoundException;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit
-public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestBase {
+public class SimpleCollectionCreateDeleteTest extends SolrCloudBridgeTestCase {
 
   public SimpleCollectionCreateDeleteTest() {
+    numJettys = 2;
     sliceCount = 1;
+    replicationFactor = 1;
   }
 
   @Test
-  @ShardsFixed(num = 1)
-  public void test() throws Exception {
+  public void test() throws Exception, NoOpenOverseerFoundException {
     String overseerNode = OverseerCollectionConfigSetProcessor.getLeaderNode(cloudClient.getZkStateReader().getZkClient());
     String notOverseerNode = null;
-    for (CloudJettyRunner cloudJetty : cloudJettys) {
-      if (!overseerNode.equals(cloudJetty.nodeName)) {
-        notOverseerNode = cloudJetty.nodeName;
-        break;
-      }
-    }
+    Set<String> nodes = new HashSet(cluster.getSolrClient().getZkStateReader().getLiveNodes());
+    nodes.remove(cluster.getCurrentOverseerJetty().getNodeName());
+    notOverseerNode = nodes.iterator().next();
     String collectionName = "SimpleCollectionCreateDeleteTest";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,1,1)
             .setCreateNodeSet(overseerNode);
@@ -74,7 +73,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         }
         
         boolean allContainersEmpty = true;
-        for(JettySolrRunner jetty : jettys) {
+        for(JettySolrRunner jetty : cluster.getJettySolrRunners()) {
           
           Collection<SolrCore> cores = jetty.getCoreContainer().getCores();
           for (SolrCore core : cores) {

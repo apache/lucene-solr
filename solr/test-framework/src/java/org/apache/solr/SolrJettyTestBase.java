@@ -39,7 +39,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,38 +47,55 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  @BeforeClass
-  public static void beforeSolrJettyTestBase() throws Exception {
-
-  }
-
-
-
   public static Set<JettySolrRunner> jettys = ConcurrentHashMap.newKeySet();
   public static Set<SolrClient> clients = ConcurrentHashMap.newKeySet();
 
-  protected volatile SolrClient client;
-  protected volatile JettySolrRunner jetty;
+  protected static volatile SolrClient client;
+  protected static volatile JettySolrRunner jetty;
 
   public static int port;
   public static String context;
 
   @Before
-  public void beforeJettyTestBaseTest() throws Exception {
-    if (jettys.size() > 0) {
+  public void setUp() throws Exception {
+    super.setUp();
+
+    if (jetty == null && jettys.size() > 0) {
       jetty = jettys.iterator().next();
     }
-    if (jetty != null) {
+
+    if (client == null && jettys.size() > 0) {
       SolrClient newClient = createNewSolrClient(jetty);
       clients.add(newClient);
       client = newClient;
     }
+
+  }
+
+  @AfterClass
+  public static void afterSolrJettyTestBase() throws Exception {
+    for (SolrClient client : clients) {
+      IOUtils.closeQuietly(client);
+    }
+    clients.clear();
+
+    for (JettySolrRunner jetty : jettys) {
+      jetty.stop();
+    }
+    jettys.clear();
+
+    jetty = null;
+    client = null;
+    port = 0;
+    context = null;
   }
 
   public static JettySolrRunner createAndStartJetty(String solrHome, String configFile, String schemaFile, String context,
                                             boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets)
       throws Exception {
     // creates the data dir
+
+    initCore(null, null, solrHome);
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
@@ -117,7 +133,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   public static JettySolrRunner createAndStartJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
-    initCore(null, null, solrHome);
 
     Path coresDir = createTempDir().resolve("cores");
 
@@ -145,20 +160,8 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   @After
-  public void afterJettyTestBaseTest() throws Exception {
-    for (SolrClient client : clients) {
-      IOUtils.closeQuietly(client);
-    }
-    clients.clear();
-  }
-
-  @AfterClass
-  public static void afterSolrJettyTestBase() throws Exception {
-
-    for (JettySolrRunner jetty : jettys) {
-      jetty.stop();
-    }
-    jettys.clear();
+  public void tearDown() throws Exception {
+    super.tearDown();
   }
 
   public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {

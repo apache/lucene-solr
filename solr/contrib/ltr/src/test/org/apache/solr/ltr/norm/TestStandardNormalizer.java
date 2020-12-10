@@ -16,19 +16,23 @@
  */
 package org.apache.solr.ltr.norm;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestStandardNormalizer {
+public class TestStandardNormalizer extends SolrTestCase {
 
-  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  private static SolrResourceLoader solrResourceLoader;
 
   private Normalizer implTestStandard(Map<String,Object> params,
       float expectedAvg, float expectedStd) {
@@ -42,6 +46,17 @@ public class TestStandardNormalizer {
     assertEquals(sn.getStd(), expectedStd, 0.0);
     assertEquals("{avg="+expectedAvg+", std="+expectedStd+"}", sn.paramsToMap().toString());
     return n;
+  }
+
+  @BeforeClass
+  public static void beforeClass() {
+    solrResourceLoader = new SolrResourceLoader();
+  }
+
+  @AfterClass
+  public static void afterClass() throws IOException {
+    solrResourceLoader.close();
+    solrResourceLoader = null;
   }
 
   @Test
@@ -129,7 +144,7 @@ public class TestStandardNormalizer {
 
     final Map<String, Object> params = n1.paramsToMap();
     final StandardNormalizer n2 = (StandardNormalizer) Normalizer.getInstance(
-        new SolrResourceLoader(),
+        solrResourceLoader,
         StandardNormalizer.class.getName(),
         params);
     assertEquals(n1.getAvg(), n2.getAvg(), 1e-6);

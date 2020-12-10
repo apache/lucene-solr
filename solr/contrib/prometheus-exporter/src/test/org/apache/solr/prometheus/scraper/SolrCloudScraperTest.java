@@ -156,7 +156,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     assertEquals(1, liveNodeSamples.samples.size());
 
     assertEquals(
-        getClusterState().getLiveNodes().size(),
+        cluster.getSolrClient().getZkStateReader().getLiveNodes().size(),
         liveNodeSamples.samples.get(0).value, 0.001);
 
     Collector.MetricFamilySamples shardLeaderSamples = collection1Metrics.get(1);

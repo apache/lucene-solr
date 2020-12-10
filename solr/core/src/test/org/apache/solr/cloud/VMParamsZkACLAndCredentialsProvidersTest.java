@@ -201,7 +201,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     }
     
     try {
-      zkClient.create(path + "/subnode", null, CreateMode.PERSISTENT, false);
+      zkClient.create(path + "/subnode", (byte[])  null, CreateMode.PERSISTENT, false);
       if (!create) fail("NoAuthException expected ");
       else {
         zkClient.delete(path + "/subnode", -1);

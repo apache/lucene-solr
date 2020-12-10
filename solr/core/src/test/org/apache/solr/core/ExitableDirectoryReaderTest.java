@@ -18,10 +18,12 @@ package org.apache.solr.core;
 
 import java.util.Map;
 
+import org.apache.lucene.search.TimeLimitingCollector;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +46,12 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-delaying-component.xml", "schema_latest.xml");
     createIndex();
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    TimeLimitingCollector.getGlobalTimerThread().stopTimer();
+    TimeLimitingCollector.getGlobalTimerThread().join();
   }
 
   public static void createIndex() {

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.search.stats;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -35,10 +32,12 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.ShardParams;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 public class TestDistribIDF extends SolrTestCaseJ4 {
 
@@ -54,7 +53,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     } else {
       System.setProperty("solr.statsCache", LRUStatsCache.class.getName());
     }
-
+    System.setProperty("enable.update.log", "true");
     super.setUp();
     solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
     // set some system properties for use by tests
@@ -76,7 +75,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit - hmm, finding 0 docs return instead of 2? strange ...
   public void testSimpleQuery() throws Exception {
 
     //3 shards. 3rd shard won't have any data.
@@ -152,7 +150,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   // TODO: this test is flakey, can fail on one of the later collection creates on start
   // => java.lang.IllegalStateException: No core node name found for collection1_local_shard1_replica_n5 replica=null positions:2 cores:2 replicas:1
-  @Ignore // nocommit
   public void testMultiCollectionQuery() throws Exception {
     // collection1 and collection2 are collections which have distributed idf enabled
     // collection1_local and collection2_local don't have distributed idf available

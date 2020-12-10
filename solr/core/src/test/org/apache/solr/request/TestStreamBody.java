@@ -32,6 +32,7 @@ import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class TestStreamBody extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    JettySolrRunner jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-tlog.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-tlog.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
@@ -66,7 +67,7 @@ public class TestStreamBody extends RestTestBase {
 
   @After
   public void after() throws Exception {
-
+    enableStreamBody(false);
   }
 
   // SOLR-3161
@@ -98,7 +99,6 @@ public class TestStreamBody extends RestTestBase {
   // Tests that stream.body is disabled by default, and can be edited through Config API
   @Test
   public void testStreamBodyDefaultAndConfigApi() throws Exception {
-    enableStreamBody(false);
     SolrQuery query = new SolrQuery();
     query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
     query.add("commit", "true");

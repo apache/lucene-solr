@@ -128,9 +128,9 @@ public abstract class ConfigSetAdminRequest
       return getThis();
     }
 
-    public final Properties getNewConfigSetProperties() {
-      return properties;
-    }
+//    public final Properties getNewConfigSetProperties() {
+//      return properties;
+//    }
 
     @Override
     public SolrParams getParams() {

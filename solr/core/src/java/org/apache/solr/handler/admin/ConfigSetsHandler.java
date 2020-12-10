@@ -168,27 +168,29 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
     }
 
     InputStream inputStream = contentStreamsIterator.next().getStream();
+    try {
+      // Create a node for the configuration in zookeeper
+      boolean trusted = getTrusted(req);
+      zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
+          getBytes(StandardCharsets.UTF_8), true);
 
-    // Create a node for the configuration in zookeeper
-    boolean trusted = getTrusted(req);
-    zkClient.makePath(configPathInZk, ("{\"trusted\": " + Boolean.toString(trusted) + "}").
-        getBytes(StandardCharsets.UTF_8), true);
-
-    ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
-    ZipEntry zipEntry = null;
-    while ((zipEntry = zis.getNextEntry()) != null) {
-      String filePathInZk = configPathInZk + "/" + zipEntry.getName();
-      if (zipEntry.isDirectory()) {
-        if (filePathInZk.endsWith("/")) {
-          filePathInZk = filePathInZk.substring(0, filePathInZk.length()-1);
+      ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
+      ZipEntry zipEntry = null;
+      while ((zipEntry = zis.getNextEntry()) != null) {
+        String filePathInZk = configPathInZk + "/" + zipEntry.getName();
+        if (zipEntry.isDirectory()) {
+          if (filePathInZk.endsWith("/")) {
+            filePathInZk = filePathInZk.substring(0, filePathInZk.length() - 1);
+          }
+          zkClient.mkdir(filePathInZk);
+        } else {
+          createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk, IOUtils.toByteArray(zis));
         }
-        zkClient.mkdir(filePathInZk);
-      } else {
-        createZkNodeIfNotExistsAndSetData(zkClient, filePathInZk,
-            IOUtils.toByteArray(zis));
       }
+      zis.close();
+    } finally {
+      Utils.readFully(inputStream);
     }
-    zis.close();
   }
 
   boolean getTrusted(SolrQueryRequest req) {

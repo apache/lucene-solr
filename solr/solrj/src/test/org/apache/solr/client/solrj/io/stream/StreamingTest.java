@@ -248,6 +248,7 @@ public void testParallelUniqueStream() throws Exception {
 
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
     assertEquals(numWorkers, eofTuples.size()); //There should be an EOF tuple for each worker.
+    pstream.close();
   }finally {
     solrClientCache.close();
   }
@@ -345,6 +346,7 @@ public void testParallelRankStream() throws Exception {
 
     assertEquals(10, tuples.size());
     assertOrder(tuples, 10, 9, 8, 7, 6, 5, 4, 3, 2, 0);
+    pstream.close();
   } finally {
     solrClientCache.close();
   }
@@ -568,6 +570,8 @@ public void testParallelRankStream() throws Exception {
       t2 = tuples.get(2);
       maps2 = t2.getMaps("group");
       assertMaps(maps2, 0, 2, 1);
+
+      pstream.close();
     } finally {
       solrClientCache.close();
     }
@@ -1997,6 +2001,8 @@ public void testParallelRankStream() throws Exception {
       assertEquals(7.5, avgi.doubleValue(), 0.001);
       assertEquals(5.5, avgf.doubleValue(), 0.001);
       assertEquals(2, count.doubleValue(), 0.001);
+
+      parallelStream.close();
     } finally {
       solrClientCache.close();
     }
@@ -2033,6 +2039,7 @@ public void testParallelRankStream() throws Exception {
       pstream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(pstream);
       assert (tuples.size() == 0);
+      pstream.close();
     } finally {
       solrClientCache.close();
     }
@@ -2214,6 +2221,7 @@ public void testParallelRankStream() throws Exception {
 
       assertEquals(8, tuples.size());
       assertOrder(tuples, 9, 8, 6, 4, 3, 2, 1, 0);
+      pstream.close();
     } finally {
       solrClientCache.close();
     }
@@ -2256,6 +2264,7 @@ public void testParallelRankStream() throws Exception {
       assertEquals(9, tuples.size());
       Map<String, Tuple> eofTuples = pstream.getEofTuples();
       assertEquals(numWorkers, eofTuples.size()); // There should be an EOF Tuple for each worker.
+      pstream.close();
     } finally {
       solrClientCache.close();
     }

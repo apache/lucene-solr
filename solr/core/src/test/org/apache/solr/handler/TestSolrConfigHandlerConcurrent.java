@@ -1,3 +1,5 @@
+
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -41,6 +43,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -48,6 +51,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 
+
+@Ignore
 public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -81,11 +86,6 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
           }
         };
         threads.add(t);
-        if (!TEST_NIGHTLY) {
-          if (threads.size() > 5) {
-            break;
-          }
-        }
       }
     }
 
@@ -156,9 +156,9 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
       String url = urls.get(urls.size() - 1);
 
       long startTime = System.nanoTime();
-      long maxTimeoutSeconds = 20;
+      long maxTimeoutSeconds = 5;
       while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
-        Thread.sleep(100);
+        Thread.sleep(10);
         errmessages.clear();
         MapWriter m = null;
         MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
@@ -167,7 +167,7 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
         }
 
         if (respMap == null || m == null) {
-            errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap.toString()));
+            errmessages.add(StrUtils.formatString("overlay does not exist for cache: {0} , iteration: {1} response {2} ", cacheName, i, respMap));
             continue;
         }
 

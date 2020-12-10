@@ -146,9 +146,8 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       }
       CloudHttp2SolrClient cloudSolrClient = clientCache.getCloudSolrClient();
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
-      Set<String> liveNodes = clusterState.getLiveNodes();
+      Set<String> liveNodes = zkStateReader.getLiveNodes();
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
       solrParams.add(requestParams);

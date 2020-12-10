@@ -123,7 +123,8 @@ public class TestRestManager extends SolrRestletTestBase {
     
     // verifies a RestManager can be reloaded from a previous RestManager's data
     RestManager restManager2 = new RestManager();
-    restManager2.init(loader, initArgs, storageIO);    
+    restManager2.init(loader, initArgs, storageIO);
+    loader.close();
   }
 
   @Test

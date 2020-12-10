@@ -16,14 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -32,13 +24,22 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     useFactory(null);
     File tempSolrHome = createTempDir().toFile();
     // Schemaless renames schema.xml -> schema.xml.bak, and creates + modifies conf/managed-schema,
@@ -63,7 +64,14 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
       }
     }
     createAndStartJetty(tempSolrHome.getAbsolutePath());
+    super.setUp();
   }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+  }
+
   @Test
   public void testArbitraryJsonIndexing() throws Exception  {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);

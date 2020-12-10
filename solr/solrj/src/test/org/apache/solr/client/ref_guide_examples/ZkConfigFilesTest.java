@@ -45,18 +45,13 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @Before
-  public void clearConfigsBefore() throws Exception {
-    clearConfigs();
-  }
-
   @After
   public void clearConfigsAfter() throws Exception {
     clearConfigs();
   }
 
   private void clearConfigs() throws Exception {
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
+    ZkConfigManager manager = new ZkConfigManager(cluster.getSolrClient().getZkStateReader().getZkClient());
     List<String> configs = manager.listConfigs();
     for (String config : configs) {
       manager.deleteConfigDir(config);
@@ -83,7 +78,7 @@ public class ZkConfigFilesTest extends SolrCloudTestCase {
   private void assertConfigsContainOnly(String... expectedConfigs) throws Exception {
     final int expectedSize = expectedConfigs.length;
 
-    ZkConfigManager manager = new ZkConfigManager(cluster.getZkClient());
+    ZkConfigManager manager = new ZkConfigManager(cluster.getSolrClient().getZkStateReader().getZkClient());
     List<String> actualConfigs = manager.listConfigs();
 
     assertEquals(expectedSize, actualConfigs.size());

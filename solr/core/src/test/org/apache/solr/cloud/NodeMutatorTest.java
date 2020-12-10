@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.common.cloud.ClusterState;
@@ -24,7 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class NodeMutatorTest extends SolrTestCaseJ4Test {
+public class NodeMutatorTest extends SolrTestCaseJ4 {
 
   private static final String NODE3 = "baseUrl3_";
   private static final String NODE3_URL = "http://baseUrl3_";

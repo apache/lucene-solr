@@ -51,7 +51,7 @@ public class SchedulerMetricsCollector implements Closeable {
 
   private final ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
       1,
-      new SolrNamedThreadFactory("scheduled-metrics-collector"));
+      new SolrNamedThreadFactory("scheduled-metrics-collector", true));
 
   private final Executor executor;
 

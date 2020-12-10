@@ -59,7 +59,6 @@ import org.xml.sax.InputSource;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
@@ -125,102 +124,17 @@ public class IndexSchema {
   public static final String UNIQUE_KEY = "uniqueKey";
   public static final String VERSION = "version";
 
-  private static final String AT = "@";
+  public static final String AT = "@";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
   private static final String SOLR_CORE_NAME = "solr.core.name";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
-  private static final String TEXT_FUNCTION = "text()";
-  private static final String XPATH_OR = " | ";
+  public static final String TEXT_FUNCTION = "text()";
+  public static final String XPATH_OR = " | ";
   public static final DynamicField[] TS = new DynamicField[0];
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPY_FIELDS = {};
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPIES = {};
   public static final DynamicField[] EMPTY_DYNAMIC_FIELDS1 = {};
-
-  private static XPathExpression xpathOrExp;
-  private static XPathExpression schemaNameExp;
-  private static XPathExpression schemaVersionExp;
-  private static XPathExpression schemaSimExp;
-  private static XPathExpression defaultSearchFieldExp;
-  private static XPathExpression solrQueryParserDefaultOpExp;
-  private static XPathExpression schemaUniqueKeyExp;
-  private static XPathExpression fieldTypeXPathExpressionsExp;
-  private static XPathExpression copyFieldsExp;
-
-  static String schemaNamePath = stepsToPath(SCHEMA, AT + NAME);
-  static String schemaVersionPath = "/schema/@version";
-
-  static String copyFieldPath = "//" + COPY_FIELD;
-
-  static String fieldTypeXPathExpressions = getFieldTypeXPathExpressions();
-
-  static String  schemaSimPath = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
-
-  static String defaultSearchFieldPath = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
-
-  static String solrQueryParserDefaultOpPath = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
-
-  static String schemaUniqueKeyPath = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
-
-  static {
-    XPath xpath = XmlConfigFile.getXpath();
-    try {
-      String expression = stepsToPath(SCHEMA, FIELD)
-          + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
-          + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
-          + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
-      xpathOrExp = xpath.compile(expression);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-
-      schemaNameExp = xpath.compile(schemaNamePath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      schemaVersionExp = xpath.compile(schemaVersionPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      schemaSimExp = xpath.compile(schemaSimPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-
-    try {
-      defaultSearchFieldExp = xpath.compile(defaultSearchFieldPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      solrQueryParserDefaultOpExp = xpath.compile(solrQueryParserDefaultOpPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      schemaUniqueKeyExp = xpath.compile(schemaUniqueKeyPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      fieldTypeXPathExpressionsExp = xpath.compile(fieldTypeXPathExpressions);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      copyFieldsExp = xpath.compile(copyFieldPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-  }
 
 
   protected volatile String resourceName;
@@ -271,6 +185,7 @@ public class IndexSchema {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
+
     readSchema(is);
     loader.inform(loader);
   }
@@ -279,6 +194,7 @@ public class IndexSchema {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
     this.substitutableProperties = substitutableProperties;
+
   }
 
   /**
@@ -580,10 +496,10 @@ public class IndexSchema {
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties, false);
-      NodeInfo  document = schemaConf.getTreee();
+      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
+      NodeInfo  document = schemaConf.getTree();
     //  Document domDoc = (Document) DocumentOverNodeInfo.wrap(document);
-      TinyAttributeImpl nd = (TinyAttributeImpl) schemaNameExp.evaluate(document, XPathConstants.NODE);
+      TinyAttributeImpl nd = (TinyAttributeImpl) loader.schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder(32);
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
@@ -599,10 +515,10 @@ public class IndexSchema {
       }
 
       //                      /schema/@version
-      String path = normalize(schemaVersionPath, schemaConf.getPrefix());
+      String path = normalize(SolrResourceLoader.schemaVersionPath, schemaConf.getPrefix());
       XPathExpression exp;
       if (path.equals("/schema/@version")) {
-        exp = schemaVersionExp;
+        exp = loader.schemaVersionExp;
       } else {
         throw new UnsupportedOperationException();
       }
@@ -612,14 +528,14 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      ArrayList<NodeInfo> nodes = (ArrayList) fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
+      ArrayList<NodeInfo> nodes = (ArrayList) loader.fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
       typeLoader.load(loader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document);
 
 
-      TinyElementImpl node = (TinyElementImpl) schemaSimExp.evaluate(document, XPathConstants.NODE);
+      TinyElementImpl node = (TinyElementImpl) loader.schemaSimExp.evaluate(document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
@@ -645,20 +561,20 @@ public class IndexSchema {
 
       //                      /schema/defaultSearchField/text()
 
-      Object node2 = defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
+      Object node2 = loader.defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
 
-      node2 = solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
+      node2 = loader.solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
       //                      /schema/uniqueKey/text()
-      TinyTextualElement.TinyTextualElementText tnode = (TinyTextualElement.TinyTextualElementText) schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
+      TinyTextualElement.TinyTextualElementText tnode = (TinyTextualElement.TinyTextualElementText) loader.schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
       if (tnode==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
@@ -738,12 +654,10 @@ public class IndexSchema {
 
   protected void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
-    try (ParWork work = new ParWork(this, false, true)) {
-      for (SchemaAware aware : schemaAware) {
-        work.collect("postReadInform", () -> {
-          aware.inform(this);
-        });
-      }
+    for (SchemaAware aware : schemaAware) {
+      ParWork.getRootSharedExecutor().submit(() -> {
+        aware.inform(this);
+      });
     }
   }
 
@@ -761,7 +675,7 @@ public class IndexSchema {
     //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
 
 
-    ArrayList<NodeInfo> nodes = (ArrayList) xpathOrExp.evaluate(document, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList) loader.xpathOrExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.size(); i++) {
       NodeInfo node = nodes.get(i);
@@ -845,7 +759,7 @@ public class IndexSchema {
    */
   protected void loadCopyFields(NodeInfo document) throws XPathExpressionException {
     String expression = "//" + COPY_FIELD;
-    ArrayList<NodeInfo> nodes = (ArrayList)copyFieldsExp.evaluate(document, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList) loader.copyFieldsExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.size(); i++) {
       NodeInfo node = nodes.get(i);
@@ -886,7 +800,7 @@ public class IndexSchema {
    * @param steps The steps to join with slashes to form a path
    * @return a rooted path: a leading slash followed by the given steps joined with slashes
    */
-  private static String stepsToPath(String... steps) {
+  public static String stepsToPath(String... steps) {
     StringBuilder builder = new StringBuilder();
     for (String step : steps) { builder.append(SLASH).append(step); }
     return builder.toString();
@@ -2045,7 +1959,7 @@ public class IndexSchema {
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-  protected static String getFieldTypeXPathExpressions() {
+  public static String getFieldTypeXPathExpressions() {
     //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
     String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
         + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)

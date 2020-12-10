@@ -33,10 +33,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - be back in a sec...
 public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
   protected static final String CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT = "<solr>\n" +
@@ -76,7 +74,6 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - be back in a sec...
   public void testCreateCollectionCleanup() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo";
@@ -108,7 +105,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   
   @Test
   // TODO: this won't fail as async as that won't wait for the point this data dir issue is hit
-  @Ignore // nocommit - be back in a sec...
+  @Nightly // TODO why does this take 10+ seconds?
   public void testAsyncCreateCollectionCleanup() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo2";

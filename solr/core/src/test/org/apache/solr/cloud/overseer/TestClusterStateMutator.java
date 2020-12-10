@@ -39,7 +39,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
   }
   
   public void testCreateCollection() throws Exception {
-    ClusterState clusterState = new ClusterState(Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
+    ClusterState clusterState = ClusterState.getRefCS(Collections.<String, DocCollection>emptyMap(), -1);
     DistribStateManager mockStateManager = mock(DistribStateManager.class);
     SolrCloudManager dataProvider = mock(SolrCloudManager.class);
     when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);
@@ -55,7 +55,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals(1, collection.getSlicesMap().size());
     assertEquals(1, collection.getMaxShardsPerNode());
 
-    ClusterState state = new ClusterState(Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
+    ClusterState state = ClusterState.getRefCS(Collections.singletonMap("xyz", collection), -1);
     message = new ZkNodeProps(Utils.makeMap(
         "name", "abc",
         "numShards", "2",

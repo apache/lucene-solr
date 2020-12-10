@@ -16,6 +16,16 @@
  */
 package org.apache.solr;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,21 +37,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class TestJoin extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @BeforeClass
-  public static void beforeTests() throws Exception {
+  @Before
+  public void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
 
     if (System.getProperty("solr.tests.IntegerFieldType").contains("Point")) { // all points change at the same time
@@ -50,6 +51,11 @@ public class TestJoin extends SolrTestCaseJ4 {
     }
 
     initCore("solrconfig.xml","schema12.xml");
+  }
+
+  @After
+  public void afterTests() {
+    deleteCore();
   }
 
   private static final String PRIMARY_DEPT_FIELD = "primary_dept_indexed_sdv";

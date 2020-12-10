@@ -29,8 +29,4 @@ import org.junit.BeforeClass;
 @LuceneTestCase.Nightly
 public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeSolrExampleEmbeddedTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-  }
 }

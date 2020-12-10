@@ -16,17 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,12 +24,21 @@ import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
-@Ignore // nocommit - debug
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   /**
@@ -52,20 +50,20 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
    */
   private static final String IMPLICIT_CLUSTER_KEY = "implicitCluster";
   private static final String EXPLICIT_WHITELIST_PROPERTY = "solr.tests.ShardsWhitelistTest.explicitWhitelist.";
-  protected static final String COLLECTION_NAME = "ShardsWhitelistTestCollection";
+  protected final String COLLECTION_NAME = "ShardsWhitelistTestCollection";
 
-  private static int numShards;
-  private static int numReplicas;
-  private static int maxShardsPerNode;
-  private static int nodesPerCluster;
+  private int numShards;
+  private int numReplicas;
+  private int maxShardsPerNode;
+  private int nodesPerCluster;
 
   private static void appendClusterNodes(final StringBuilder sb, final String delimiter,
       final MiniSolrCloudCluster cluster) {
     cluster.getJettySolrRunners().forEach((jetty) -> sb.append(jetty.getBaseUrl().toString() + delimiter));
   }
 
-  @BeforeClass
-  public static void setupClusters() throws Exception {
+  @Before
+  public void setupClusters() throws Exception {
 
     final String[] clusterIds = new String[] {IMPLICIT_CLUSTER_KEY, EXPLICIT_CLUSTER_KEY};
 
@@ -119,8 +117,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
         });
   }
 
-  @AfterClass
-  public static void afterTests() {
+  @After
+  public void afterTests() {
     System.clearProperty(EXPLICIT_WHITELIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 
@@ -160,8 +158,6 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           numDocs("*:*", null, cluster), is(10));
       assertThat("Both shards specified, should work in both clusters",
           numDocs("*:*", "s1,s2", cluster), is(10));
-      assertThat("Both shards specified with collection name, should work in both clusters",
-          numDocs("*:*", COLLECTION_NAME + "_s1", cluster), is(numDocs("*:*", "s1", cluster)));
 
       // test using explicit urls from within the cluster
       assertThat("Shards has the full URLs, should be allowed since they are internal. Cluster=" + entry.getKey(),

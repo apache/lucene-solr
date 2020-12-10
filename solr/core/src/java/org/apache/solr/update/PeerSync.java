@@ -163,7 +163,7 @@ public class PeerSync implements SolrMetricProducer {
    */
   public PeerSyncResult sync() {
     if (ulog == null) {
-      syncErrors.inc();
+      if (syncErrors != null) syncErrors.inc();
       return PeerSyncResult.failure();
     }
     Timer.Context timerContext = null;
@@ -174,12 +174,14 @@ public class PeerSync implements SolrMetricProducer {
 
       // check if we already in sync to begin with 
       if(doFingerprint && alreadyInSync()) {
-        syncSkipped.inc();
+        if (syncSkipped != null) syncSkipped.inc();
         return PeerSyncResult.success();
       }
 
       // measure only when actual sync is performed
-      timerContext = syncTime.time();
+      if (syncTime != null) {
+        timerContext = syncTime.time();
+      }
 
       // Fire off the requests before getting our own recent updates (for better concurrency)
       // This also allows us to avoid getting updates we don't need... if we got our updates and then got their updates,
@@ -203,22 +205,25 @@ public class PeerSync implements SolrMetricProducer {
       } else {
         // we have no versions and hence no frame of reference to tell if we can use a peers
         // updates to bring us into sync
-        if (log.isInfoEnabled()) {
-          log.info("{} DONE. We have no versions. sync failed.", msg());
-        }
+
+        log.info("{} DONE. We have no versions. sync failed.", msg());
+
         for (;;)  {
-          ShardResponse srsp = shardHandler.takeCompletedOrError();
+          log.info("looping in check for versions on others");
+          ShardResponse srsp = shardHandler.takeCompletedIncludingErrors();
           if (srsp == null) break;
           if (srsp.getException() == null)  {
-            @SuppressWarnings({"unchecked"})
+            log.info("checking if others have versions {} {}", srsp.getSolrResponse().getResponse());
             List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
             if (otherVersions != null && !otherVersions.isEmpty())  {
-              syncErrors.inc();
+              if (syncErrors != null) syncErrors.inc();
+              log.info("found another replica with versions");
               return PeerSyncResult.failure(true);
             }
           }
         }
-        syncErrors.inc();
+        if (syncErrors != null) syncErrors.inc();
+        log.info("found no other replica with versions");
         return PeerSyncResult.failure(false);
       }
 
@@ -233,7 +238,7 @@ public class PeerSync implements SolrMetricProducer {
             log.info("{} DONE. sync failed", msg());
           }
           shardHandler.cancelAll();
-          syncErrors.inc();
+          if (syncErrors != null) syncErrors.inc();
           return PeerSyncResult.failure();
         }
       }
@@ -251,7 +256,7 @@ public class PeerSync implements SolrMetricProducer {
         log.info("{} DONE. sync {}", msg(), (success ? "succeeded" : "failed"));
       }
       if (!success) {
-        syncErrors.inc();
+        if (syncErrors != null) syncErrors.inc();
       }
       return success ?  PeerSyncResult.success() : PeerSyncResult.failure();
     } finally {

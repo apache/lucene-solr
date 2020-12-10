@@ -94,11 +94,11 @@ public class TestConfig extends SolrTestCaseJ4 {
     s = solrConfig.get("propTest[@attr2='default-from-config']", "default");
     assertEquals("prefix-proptwo-suffix", s);
 
-    ArrayList<NodeInfo> nl = (ArrayList) solrConfig.evaluate(solrConfig.getTreee(), "propTest", XPathConstants.NODESET);
+    ArrayList<NodeInfo> nl = (ArrayList) solrConfig.evaluate(solrConfig.getTree(), "propTest", XPathConstants.NODESET);
     assertEquals(1, nl.size());
     assertEquals("prefix-proptwo-suffix", nl.get(0).getStringValue());
     String path = IndexSchema.normalize("propTest", solrConfig.getPrefix());
-    NodeInfo node = solrConfig.getNode(XmlConfigFile.getXpath().compile(path), path, true);
+    NodeInfo node = solrConfig.getNode(solrConfig.getResourceLoader().getXPath().compile(path), path, true);
     assertEquals("prefix-proptwo-suffix", node.getStringValue());
   }
 
@@ -114,13 +114,15 @@ public class TestConfig extends SolrTestCaseJ4 {
  @Test
  public void testCacheEnablingDisabling() throws Exception {
    // ensure if cache is not defined in the config then cache is disabled 
-   SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-defaults.xml");
-   assertNull(sc.filterCacheConfig);
-   assertNull(sc.queryResultCacheConfig);
-   assertNull(sc.documentCacheConfig);
-   //
-   assertNotNull(sc.userCacheConfigs);
-   assertEquals(Collections.<String, CacheConfig>emptyMap(), sc.userCacheConfigs);
+   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+     SolrConfig sc = new SolrConfig(loader, "solrconfig-defaults.xml");
+     assertNull(sc.filterCacheConfig);
+     assertNull(sc.queryResultCacheConfig);
+     assertNull(sc.documentCacheConfig);
+     //
+     assertNotNull(sc.userCacheConfigs);
+     assertEquals(Collections.<String,CacheConfig>emptyMap(), sc.userCacheConfigs);
+   }
    
    // enable all the core caches (and one user cache) via system properties and verify 
    System.setProperty("filterCache.enabled", "true");
@@ -128,8 +130,10 @@ public class TestConfig extends SolrTestCaseJ4 {
    System.setProperty("documentCache.enabled", "true");
    System.setProperty("user_definied_cache_XXX.enabled","true");
    // user_definied_cache_ZZZ.enabled defaults to false in config
-   
-   sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-cache-enable-disable.xml");
+   SolrConfig sc;
+   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+     sc = new SolrConfig(loader, "solrconfig-cache-enable-disable.xml");
+   }
    assertNotNull(sc.filterCacheConfig);
    assertNotNull(sc.queryResultCacheConfig);
    assertNotNull(sc.documentCacheConfig);
@@ -145,7 +149,9 @@ public class TestConfig extends SolrTestCaseJ4 {
    System.setProperty("user_definied_cache_XXX.enabled","true");
    System.setProperty("user_definied_cache_ZZZ.enabled","true");
 
-   sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-cache-enable-disable.xml");
+   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+     sc = new SolrConfig(loader, "solrconfig-cache-enable-disable.xml");
+   }
    assertNull(sc.filterCacheConfig);
    assertNull(sc.queryResultCacheConfig);
    assertNull(sc.documentCacheConfig);
@@ -169,8 +175,10 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     int numDefaultsTested = 0;
     int numNullDefaults = 0;
-
-    SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-defaults.xml");
+    SolrConfig sc;
+    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+       sc = new SolrConfig(loader, "solrconfig-defaults.xml");
+    }
     SolrIndexConfig sic = sc.indexConfig;
 
     ++numDefaultsTested; assertEquals("default useCompoundFile", false, sic.useCompoundFile);
@@ -234,25 +242,25 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxSizeSettingWithoutAutoCommit() throws Exception {
-    SolrConfig solrConfig = new SolrConfig(TEST_PATH().resolve("collection1"), "bad-solrconfig-no-autocommit-tag.xml");
-    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommitMaxSizeBytes);
-    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxDocs);
-    Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxTime);
+    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+      SolrConfig solrConfig = new SolrConfig(loader, "bad-solrconfig-no-autocommit-tag.xml");
+      Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommitMaxSizeBytes);
+      Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxDocs);
+      Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxTime);
+    }
   }
 
   // sanity check that sys properties are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
     System.setProperty("solr.tests.ramBufferSizeMB", "100");
-    SolrConfig sc = new SolrConfig(TEST_PATH().resolve("collection1"), "solrconfig-basic.xml");
-    SolrIndexConfig sic = sc.indexConfig;
+    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+      SolrConfig sc = new SolrConfig(loader, "solrconfig-basic.xml");
+      SolrIndexConfig sic = sc.indexConfig;
 
-    assertEquals("ramBufferSizeMB sysprop", 
-                 Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), 
-                                    sic.ramBufferSizeMB, 0.0D);
-    assertEquals("ramPerThreadHardLimitMB sysprop",
-        Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")), sic.ramPerThreadHardLimitMB);
-    assertEquals("useCompoundFile sysprop", 
-                 Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
+      assertEquals("ramBufferSizeMB sysprop", Double.parseDouble(System.getProperty("solr.tests.ramBufferSizeMB")), sic.ramBufferSizeMB, 0.0D);
+      assertEquals("ramPerThreadHardLimitMB sysprop", Integer.parseInt(System.getProperty("solr.tests.ramPerThreadHardLimitMB")), sic.ramPerThreadHardLimitMB);
+      assertEquals("useCompoundFile sysprop", Boolean.parseBoolean(System.getProperty("useCompoundFile")), sic.useCompoundFile);
+    }
   }
 
 }

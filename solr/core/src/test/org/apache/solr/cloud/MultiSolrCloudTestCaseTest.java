@@ -17,22 +17,22 @@
 
 package org.apache.solr.cloud;
 
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
 
-  private static int numClouds;
-  private static int numCollectionsPerCloud;
+  private int numClouds;
+  private int numCollectionsPerCloud;
 
-  private static int numShards;
-  private static int numReplicas;
-  private static int maxShardsPerNode;
-  private static int nodesPerCluster;
+  private int numShards;
+  private int numReplicas;
+  private int maxShardsPerNode;
+  private int nodesPerCluster;
 
-  @BeforeClass
-  public static void setupClusters() throws Exception {
-
+  @Before
+  public void setupClusters() throws Exception {
     numClouds = random().nextInt(TEST_NIGHTLY ? 4 : 2); //  0..3
     final String[] clusterIds = new String[numClouds];
     for (int ii=0; ii<numClouds; ++ii) {
@@ -70,6 +70,17 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
             }
           }
         });
+  }
+
+  @After
+  public void afterMultiSolrCloudTestCaseTest() {
+    numClouds = 0;
+    numCollectionsPerCloud = 0;
+
+    numShards = 0;
+    numReplicas = 0;
+    maxShardsPerNode =0;
+    nodesPerCluster = 0;
   }
 
   @Test

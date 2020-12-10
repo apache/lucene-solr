@@ -19,13 +19,15 @@ package org.apache.solr.highlight;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 
 /** simple tests for PostingsSolrHighlighter */
 public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
   
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void beforeClass() throws Exception {
     initCore("solrconfig-postingshighlight.xml", "schema-postingshighlight.xml");
     
     // test our config is sane, just to be sure:
@@ -39,15 +41,15 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
+
     assertU(adoc("text", "document one", "text2", "document one", "text3", "crappy document", "id", "101"));
     assertU(adoc("text", "second document", "text2", "second document", "text3", "crappier document", "id", "102"));
     assertU(commit());
+  }
+  
+  @After
+  public void afterTest() {
+    deleteCore();
   }
   
   public void testSimple() {

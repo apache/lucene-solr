@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -53,12 +54,28 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
     assert (closeTracker = new CloseTracker(false)) != null;
   }
 
-  public void shutdown() {
-    assert closeTracker.close();
+  public synchronized void shutdown() {
+    if (isShutdown()) {
+      return;
+    }
+
+    if (closeTracker != null) closeTracker.close();
+    setKeepAliveTime(1, TimeUnit.NANOSECONDS);
+    for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount()); i++) {
+      try {
+        submit(() -> {
+        });
+      } catch (RejectedExecutionException e) {
+        break;
+      }
+    }
+    allowCoreThreadTimeOut(true);
+
     super.shutdown();
   }
 
   public List<Runnable> shutdownNow() {
+    shutdown();
     return super.shutdownNow();
   }
 

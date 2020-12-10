@@ -17,7 +17,8 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.misc.SweetSpotSimilarity;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * Tests per-field similarity support in the schema when SchemaSimilarityFactory is explicitly
@@ -26,11 +27,18 @@ import org.junit.BeforeClass;
  */
 public class TestPerFieldSimilarityWithDefaultOverride extends BaseSimilarityTestCase {
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     initCore("solrconfig-basic.xml","schema-sim-default-override.xml");
+    super.setUp();
   }
-  
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    deleteCore();
+  }
+
   /** test a field where the sim is specified directly */
   public void testDirect() throws Exception {
     assertNotNull(getSimilarity("sim1text", SweetSpotSimilarity.class));

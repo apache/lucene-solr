@@ -56,7 +56,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - handle slice state right
   public void test() throws Exception {
 
     final String collection = "deleteShard";
@@ -108,7 +107,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
   @Test
   // commented 4-Sep-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
-  @Ignore // nocommit - fix waits
   public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "deleteshard_test";

@@ -16,10 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -35,8 +31,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class TestTolerantSearch extends SolrJettyTestBase {
   
@@ -46,7 +46,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard2;
   private static File solrHome;
   
-  private static File createSolrHome() throws Exception {
+  private File createSolrHome() throws Exception {
     File workDir = createTempDir().toFile();
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"), new File(workDir, "collection1/conf/solrconfig.xml"));
@@ -67,8 +67,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   }
   
   
-  @BeforeClass
-  public static void createThings() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     solrHome = createSolrHome();
     JettySolrRunner jetty = createAndStartJetty(solrHome.getAbsolutePath());
@@ -107,11 +107,12 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     doc.setField("title", "foo bar");
     collection1.add(doc);
     collection1.commit();
-    
+    super.setUp();
   }
   
-  @AfterClass
-  public static void destroyThings() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     if (null != collection1) {
       collection1.close();
       collection1 = null;

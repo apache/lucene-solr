@@ -117,8 +117,7 @@ public final class ToleratedUpdateError {
     
     assert null != id;
     this.id = id;
-    
-    assert null != message;
+
     this.message = message;
   }
 

@@ -16,42 +16,39 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-
 public class DOMUtilTest extends DOMUtilTestBase {
   
-  public void testAddToNamedListPrimitiveTypes() throws Exception {
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    DOMUtil.addToNamedList( getNode( "<str name=\"String\">STRING</str>", "/str" ), namedList, null );
-    assertTypeAndValue( namedList, "String", "STRING" );
-    DOMUtil.addToNamedList( getNode( "<int name=\"Integer\">100</int>", "/int" ), namedList, null );
-    assertTypeAndValue( namedList, "Integer", Integer.valueOf( 100 ) );
-    DOMUtil.addToNamedList( getNode( "<long name=\"Long\">200</long>", "/long" ), namedList, null );
-    assertTypeAndValue( namedList, "Long", Long.valueOf( 200 ) );
-    DOMUtil.addToNamedList( getNode( "<float name=\"Float\">300</float>", "/float" ), namedList, null );
-    assertTypeAndValue( namedList, "Float", Float.valueOf( 300 ) );
-    DOMUtil.addToNamedList( getNode( "<double name=\"Double\">400</double>", "/double" ), namedList, null );
-    assertTypeAndValue( namedList, "Double", Double.valueOf( 400 ) );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">true</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", true );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">on</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", true );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">yes</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", true );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">false</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">off</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">no</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
-  }
+//  public void testAddToNamedListPrimitiveTypes() throws Exception {
+//    NamedList<Object> namedList = new SimpleOrderedMap<>();
+//    DOMUtil.addToNamedList( getNode( "<str name=\"String\">STRING</str>", "/str" ), namedList, null );
+//    assertTypeAndValue( namedList, "String", "STRING" );
+//    DOMUtil.addToNamedList( getNode( "<int name=\"Integer\">100</int>", "/int" ), namedList, null );
+//    assertTypeAndValue( namedList, "Integer", Integer.valueOf( 100 ) );
+//    DOMUtil.addToNamedList( getNode( "<long name=\"Long\">200</long>", "/long" ), namedList, null );
+//    assertTypeAndValue( namedList, "Long", Long.valueOf( 200 ) );
+//    DOMUtil.addToNamedList( getNode( "<float name=\"Float\">300</float>", "/float" ), namedList, null );
+//    assertTypeAndValue( namedList, "Float", Float.valueOf( 300 ) );
+//    DOMUtil.addToNamedList( getNode( "<double name=\"Double\">400</double>", "/double" ), namedList, null );
+//    assertTypeAndValue( namedList, "Double", Double.valueOf( 400 ) );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">true</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", true );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">on</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", true );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">yes</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", true );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">false</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", false );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">off</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", false );
+//    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">no</bool>", "/bool" ), namedList, null );
+//    assertTypeAndValue( namedList, "Boolean", false );
+//  }
 
-  private void assertTypeAndValue( NamedList<Object> namedList, String key, Object value ) {
-    Object v = namedList.get( key );
-    assertNotNull( v );
-    assertEquals( key, v.getClass().getSimpleName() );
-    assertEquals( value, v );
-    namedList.remove( key );
-  }
+//  private void assertTypeAndValue( NamedList<Object> namedList, String key, Object value ) {
+//    Object v = namedList.get( key );
+//    assertNotNull( v );
+//    assertEquals( key, v.getClass().getSimpleName() );
+//    assertEquals( value, v );
+//    namedList.remove( key );
+//  }
 }

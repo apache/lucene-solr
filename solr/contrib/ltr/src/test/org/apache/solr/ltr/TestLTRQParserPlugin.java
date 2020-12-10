@@ -17,27 +17,31 @@
 package org.apache.solr.ltr;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+
 import org.junit.Test;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
 
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     setuptest(true);
 
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
+    super.setUp();
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     aftertest();
   }
 
   @Test
+  @Nightly
   public void ltrModelIdMissingTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -52,6 +56,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
+  @Nightly
   public void ltrModelIdDoesNotExistTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -66,6 +71,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
+  @Nightly
   public void ltrBadRerankDocsTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -80,6 +86,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
+  @Nightly
   public void ltrMoreResultsThanReRankedTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -113,6 +120,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
+  @Nightly
   public void ltrNoResultsTest() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg23");

@@ -30,6 +30,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Facilitates testing Solr's REST API via a provided embedded Jetty
@@ -38,8 +39,8 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
   private Http2SolrClient sorlClient;
   
-  public RestTestHarness(RESTfulServerProvider serverProvider, Http2SolrClient sorlClient) {
-    super(null);
+  public RestTestHarness(RESTfulServerProvider serverProvider, Http2SolrClient sorlClient, SolrResourceLoader loader) {
+    super(loader);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 5000);
     params.set(HttpClientUtil.PROP_SO_TIMEOUT, 10000);
@@ -75,7 +76,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validateQuery(String request, String... tests) throws Exception {
 
     String res = query(request);
-    return validateXPathWithEntities(res, loader, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
 
 
@@ -92,7 +93,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String validatePut(String request, String content, String... tests) throws Exception {
 
     String res = put(request, content);
-    return validateXPathWithEntities(res, loader, tests);
+    return validateXPathWithEntities(loader, res, tests);
   }
 
 
@@ -183,7 +184,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkResponseStatus(String xml, String code) throws Exception {
     try {
       String response = query(xml);
-      String valid = validateXPathWithEntities(response, loader,"//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, response,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -193,7 +194,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkAdminResponseStatus(String xml, String code) throws Exception {
     try {
       String response = adminQuery(xml);
-      String valid = validateXPathWithEntities(response, loader,"//int[@name='status']="+code );
+      String valid = validateXPathWithEntities(loader, response,"//int[@name='status']="+code );
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -205,7 +206,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public void reload() throws Exception {
     String coreName = (String)evaluateXPath
-        (adminQuery("/admin/cores?wt=xml&action=STATUS"),
+        (loader, adminQuery("/admin/cores?wt=xml&action=STATUS"),
          "//lst[@name='status']/lst[1]/str[@name='name']",
          XPathConstants.STRING);
     String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");

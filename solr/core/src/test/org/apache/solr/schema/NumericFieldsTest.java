@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -25,10 +26,16 @@ import org.junit.Test;
 public class NumericFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    types = new String[]{"int", "long", "float", "double", "date"};
     initCore("solrconfig-basic.xml", "schema-numeric.xml");
   }
 
-  static String[] types = new String[]{"int", "long", "float", "double", "date"};
+  @AfterClass
+  public static void afterClass() throws Exception {
+    types = null;
+  }
+
+  static String[] types;
 
   public static SolrInputDocument getDoc(String id, Integer number, String date) {
     SolrInputDocument doc = new SolrInputDocument();

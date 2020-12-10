@@ -184,8 +184,8 @@ public class ClusterStateMockUtil {
       }
     }
 
-    ClusterState clusterState = new ClusterState(new HashSet<>(Arrays.asList(liveNodes)), collectionStates);
-    MockZkStateReader reader = new MockZkStateReader(clusterState, collectionStates.keySet());
+    ClusterState clusterState = ClusterState.getRefCS(collectionStates, -1);
+    MockZkStateReader reader = new MockZkStateReader(clusterState, new HashSet(Arrays.asList(liveNodes)), collectionStates.keySet());
 
     String json;
     json = new String(Utils.toJSON(clusterState), StandardCharsets.UTF_8);

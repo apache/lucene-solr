@@ -32,7 +32,10 @@ import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.ZooKeeperExposed;
+import org.apache.zookeeper.proto.RequestHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,7 @@ public class SolrZooKeeper extends ZooKeeper {
   }
 
   public void closeCnxn() {
-    final Thread t = new Thread() {
+    final Thread t = new Thread("ZkThread") {
       @Override
       public void run() {
         try {
@@ -100,26 +103,23 @@ public class SolrZooKeeper extends ZooKeeper {
 
   @Override
   public void close() {
-    assert closeTracker.close();
-    //    try (ParWork closer = new ParWork(this)) {
-    //      closer.collect("zookeeper", ()->{
-    //        try {
-    //          SolrZooKeeper.super.close();
-    //        } catch (InterruptedException e) {
-    //          ParWork.propagateInterrupt(e);
-    //        }
-    //      });
-    ////      closer.collect("keep send thread from sleeping", ()->{
-    ////       // ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
-    ////
-    ////      //  zk.interruptSendThread();
-    ////       // zk.interruptEventThread();
-    ////      });
+    if (closeTracker != null) closeTracker.close();
     try {
-      SolrZooKeeper.super.close();
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e, true);
+      try {
+        RequestHeader h = new RequestHeader();
+        h.setType(ZooDefs.OpCode.closeSession);
+
+        cnxn.submitRequest(h, null, null, null);
+      } catch (InterruptedException e) {
+        // ignore, close the send/event threads
+      } finally {
+        ZooKeeperExposed zk = new ZooKeeperExposed(this, cnxn);
+        zk.closeCnxn();
+      }
+    } catch (Exception e) {
+      log.warn("Exception closing zookeeper client", e);
     }
+
   }
 
 }

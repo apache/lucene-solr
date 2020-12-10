@@ -613,37 +613,19 @@ public class Utils {
       }
 
       /**
-       * If the passed entity has content, make sure it is fully
-       * read and closed.
-       *
-       * @param entity to consume or null
-       */
-      public static void consumeFully (HttpEntity entity){
-        if (entity != null) {
-          try {
-            // make sure the stream is full read
-            readFully(entity.getContent());
-          } catch (UnsupportedOperationException e) {
-            // nothing to do then
-          } catch (IOException e) {
-            // quiet
-          } finally {
-            // close the stream
-            EntityUtils.consumeQuietly(entity);
-          }
-        }
-      }
-
-      /**
        * Make sure the InputStream is fully read.
        *
        * @param is to read
-       * @throws IOException on problem with IO
        */
-      private static void readFully (InputStream is) throws IOException {
-        is.skip(is.available());
-        while (is.read() != -1) {}
-        is.close();
+      public static void readFully (InputStream is) {
+        if (is == null) return;
+        try {
+          is.skip(is.available());
+          while (is.read() != -1) {
+          }
+        } catch (IOException e) {
+
+        }
       }
 
       @SuppressWarnings({"unchecked"})
@@ -683,6 +665,7 @@ public class Utils {
 
       public static SpecProvider getSpec ( final String name){
         return () -> {
+          //log.error("Get spec {} {}", CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
           return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
         };
       }
@@ -694,7 +677,7 @@ public class Utils {
           // split "collection1_shard1_1_replica1" into parts
           if (coreName.length() > collectionName.length()) {
             String str = coreName.substring(collectionName.length() + 1);
-            int pos = str.lastIndexOf("_r_[a-z]");
+            int pos = str.lastIndexOf("_r_");
             if (pos == -1) { // ?? no _replicaN part ??
               return str;
             } else {
@@ -838,8 +821,10 @@ public class Utils {
           throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
         }
         HttpEntity entity = rsp.getEntity();
+        InputStream is = null;
+
         try {
-          InputStream is = entity.getContent();
+          is = entity.getContent();
           if (consumer != null) {
 
             result = consumer.accept(is);
@@ -847,7 +832,7 @@ public class Utils {
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
         } finally {
-          Utils.consumeFully(entity);
+          Utils.readFully(is);
         }
         return result;
       }

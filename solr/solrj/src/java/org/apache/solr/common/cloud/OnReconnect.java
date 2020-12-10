@@ -27,4 +27,5 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
  */
 public interface OnReconnect {
   void command() throws SessionExpiredException;
+  String getName();
 }
