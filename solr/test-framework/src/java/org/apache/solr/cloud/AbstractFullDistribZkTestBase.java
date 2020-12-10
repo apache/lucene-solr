@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 import java.io.File;
@@ -72,6 +73,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -255,17 +257,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     if (isSSLMode()) {
-      System.clearProperty("urlScheme");
+      System.clearProperty(URL_SCHEME);
       try (ZkStateReader zkStateReader = new ZkStateReader(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT)) {
         try {
           zkStateReader.getZkClient().create(ZkStateReader.CLUSTER_PROPS,
-              Utils.toJSON(Collections.singletonMap("urlScheme", "https")),
+              Utils.toJSON(Collections.singletonMap(URL_SCHEME, "https")),
               CreateMode.PERSISTENT, true);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS,
               null, null, true));
-          zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus("urlScheme", "https")), true);
+          zkStateReader.getZkClient().setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, "https")), true);
         }
       }
     }
@@ -776,7 +778,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
-    String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
     assertNotNull(replicaBaseUrl);
 
     List<JettySolrRunner> runners = new ArrayList<>(jettys);
@@ -838,7 +840,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           int port = new URI(((HttpSolrClient) client).getBaseURL())
               .getPort();
 
-          if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
+          if (replica.getBaseUrl().contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
@@ -864,7 +866,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         Set<Entry<String,Replica>> entries = slice.getReplicasMap().entrySet();
         for (Entry<String,Replica> entry : entries) {
           Replica replica = entry.getValue();
-          if (replica.getStr(ZkStateReader.BASE_URL_PROP).contains(":" + port)) {
+          if (replica.getBaseUrl().contains(":" + port)) {
             List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
             if (list == null) {
               list = new ArrayList<>();
@@ -876,7 +878,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             cjr.info = replica;
             cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = entry.getKey();
-            cjr.url = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
+            // TODO: no trailing slash on end desired, so replica.getCoreUrl is not applicable here
+            cjr.url = replica.getBaseUrl() + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
             if (isLeader) {
@@ -2000,8 +2003,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection); //new ZkCoreNodeProps(node).getCoreUrl();
+        final String nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
+        if (clusterState.liveNodesContain(nodeName)) {
+          return ZkCoreNodeProps.getCoreUrl(UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName), collection);
         }
       }
     }

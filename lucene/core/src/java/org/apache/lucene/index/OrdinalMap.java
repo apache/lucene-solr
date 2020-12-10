@@ -172,10 +172,12 @@ public class OrdinalMap implements Accountable {
 
   /** Cache key of whoever asked for this awful thing */
   public final IndexReader.CacheKey owner;
+  // number of global ordinals
+  final long valueCount;
   // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
-  final PackedLongValues globalOrdDeltas;
+  final LongValues globalOrdDeltas;
   // globalOrd -> first segment container
-  final PackedLongValues firstSegments;
+  final LongValues firstSegments;
   // for every segment, segmentOrd -> globalOrd
   final LongValues segmentToGlobalOrds[];
   // the map from/to segment ids
@@ -193,6 +195,7 @@ public class OrdinalMap implements Accountable {
     // slow anyway
     PackedLongValues.Builder globalOrdDeltas = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     PackedLongValues.Builder firstSegments = PackedLongValues.packedBuilder(PackedInts.COMPACT);
+    long firstSegmentBits = 0L;
     final PackedLongValues.Builder[] ordDeltas = new PackedLongValues.Builder[subs.length];
     for (int i = 0; i < ordDeltas.length; i++) {
       ordDeltas[i] = PackedLongValues.monotonicBuilder(acceptableOverheadRatio);
@@ -267,17 +270,30 @@ public class OrdinalMap implements Accountable {
 
       // for each unique term, just mark the first segment index/delta where it occurs
       firstSegments.add(firstSegmentIndex);
+      firstSegmentBits |= firstSegmentIndex;
       globalOrdDeltas.add(globalOrdDelta);
       globalOrd++;
     }
 
-    this.firstSegments = firstSegments.build();
-    this.globalOrdDeltas = globalOrdDeltas.build();
+    long ramBytesUsed = BASE_RAM_BYTES_USED + segmentMap.ramBytesUsed();
+    this.valueCount = globalOrd;
+
+    // If the first segment contains all of the global ords, then we can apply a small optimization
+    // and hardcode the first segment indices and global ord deltas as all zeroes.
+    if (ordDeltaBits.length > 0 && ordDeltaBits[0] == 0L && firstSegmentBits == 0L) {
+      this.firstSegments = LongValues.ZEROES;
+      this.globalOrdDeltas = LongValues.ZEROES;
+    } else {
+      PackedLongValues packedFirstSegments = firstSegments.build();
+      PackedLongValues packedGlobalOrdDeltas = globalOrdDeltas.build();
+      this.firstSegments = packedFirstSegments;
+      this.globalOrdDeltas = packedGlobalOrdDeltas;
+      ramBytesUsed += packedFirstSegments.ramBytesUsed() + packedGlobalOrdDeltas.ramBytesUsed();
+    }
+
     // ordDeltas is typically the bottleneck, so let's see what we can do to make it faster
     segmentToGlobalOrds = new LongValues[subs.length];
-    long ramBytesUsed = BASE_RAM_BYTES_USED + this.globalOrdDeltas.ramBytesUsed()
-      + this.firstSegments.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds)
-      + segmentMap.ramBytesUsed();
+    ramBytesUsed += RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds);
     for (int i = 0; i < ordDeltas.length; ++i) {
       final PackedLongValues deltas = ordDeltas[i].build();
       if (ordDeltaBits[i] == 0L) {
@@ -317,6 +333,7 @@ public class OrdinalMap implements Accountable {
         ramBytesUsed += RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds[i]);
       }
     }
+
     this.ramBytesUsed = ramBytesUsed;
   }
 
@@ -348,7 +365,7 @@ public class OrdinalMap implements Accountable {
    * Returns the total number of unique terms in global ord space.
    */
   public long getValueCount() {
-    return globalOrdDeltas.size();
+    return valueCount;
   }
 
   @Override
@@ -359,10 +376,9 @@ public class OrdinalMap implements Accountable {
   @Override
   public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
-    resources.add(Accountables.namedAccountable("global ord deltas", globalOrdDeltas));
-    resources.add(Accountables.namedAccountable("first segments", firstSegments));
     resources.add(Accountables.namedAccountable("segment map", segmentMap));
-    // TODO: would be nice to return actual child segment deltas too, but the optimizations are confusing
+    // TODO: would be nice to return the ordinal and segment maps too, but it's not straightforward
+    //  because of optimizations.
     return resources;
   }
 }

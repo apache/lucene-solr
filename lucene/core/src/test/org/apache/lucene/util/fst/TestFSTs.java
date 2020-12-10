@@ -854,7 +854,7 @@ public class TestFSTs extends LuceneTestCase {
         System.out.println("TEST: cycle=" + cycle);
       }
       RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                  newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+          newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(IndexWriterConfig.OpenMode.CREATE));
       Document doc = new Document();
       Field idField = newStringField("id", "", Field.Store.NO);
       doc.add(idField);

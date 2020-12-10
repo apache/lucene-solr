@@ -27,8 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -42,11 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FileSwitchDirectory;
-import org.apache.lucene.store.FilterDirectory;
 
 /** This class emulates the new Java 7 "Try-With-Resources" statement.
  * Remove once Lucene is on Java 7.
@@ -480,147 +474,6 @@ public final class IOUtils {
         // Throw original exception
         throw e;
       }
-    }
-  }
-
-  /** If the dir is an {@link FSDirectory} or wraps one via possibly
-   *  nested {@link FilterDirectory} or {@link FileSwitchDirectory},
-   *  this returns {@link #spins(Path)} for the wrapped directory,
-   *  else, true.
-   *
-   *  @throws IOException if {@code path} does not exist.
-   *
-   *  @lucene.internal */
-  public static boolean spins(Directory dir) throws IOException {
-    dir = FilterDirectory.unwrap(dir);
-    if (dir instanceof FileSwitchDirectory) {
-      FileSwitchDirectory fsd = (FileSwitchDirectory) dir;
-      // Spinning is contagious:
-      return spins(fsd.getPrimaryDir()) || spins(fsd.getSecondaryDir());
-    } else if (dir instanceof ByteBuffersDirectory) {
-      return false;
-    } else if (dir instanceof FSDirectory) {
-      return spins(((FSDirectory) dir).getDirectory());
-    } else {
-      return true;
-    }
-  }
-
-  /** Rough Linux-only heuristics to determine whether the provided
-   *  {@code Path} is backed by spinning storage.  For example, this
-   *  returns false if the disk is a solid-state disk.
-   *
-   *  @param path a location to check which must exist. the mount point will be determined from this location.
-   *  @return false if the storage is non-rotational (e.g. an SSD), or true if it is spinning or could not be determined
-   *  @throws IOException if {@code path} does not exist.
-   *
-   *  @lucene.internal */
-  public static boolean spins(Path path) throws IOException {
-    // resolve symlinks (this will throw exception if the path does not exist)
-    path = path.toRealPath();
-    
-    // Super cowboy approach, but seems to work!
-    if (!Constants.LINUX) {
-      return true; // no detection
-    }
-
-    try {
-      return spinsLinux(path);
-    } catch (Exception exc) {
-      // our crazy heuristics can easily trigger SecurityException, AIOOBE, etc ...
-      return true;
-    }
-  }
-  
-  // following methods are package-private for testing ONLY
-  
-  // note: requires a real or fake linux filesystem!
-  static boolean spinsLinux(Path path) throws IOException {
-    FileStore store = getFileStore(path);
-    
-    // if fs type is tmpfs, it doesn't spin.
-    // this won't have a corresponding block device
-    if ("tmpfs".equals(store.type())) {
-      return false;
-    }
-    
-    // get block device name
-    String devName = store.name();
-
-    // not a device (e.g. NFS server)
-    if (!devName.startsWith("/")) {
-      return true;
-    }
-    
-    // resolve any symlinks to real block device (e.g. LVM)
-    // /dev/sda0 -> sda0
-    // /devices/XXX -> sda0
-    devName = path.getRoot().resolve(devName).toRealPath().getFileName().toString();
-  
-    // now try to find the longest matching device folder in /sys/block
-    // (that starts with our dev name):
-    Path sysinfo = path.getRoot().resolve("sys").resolve("block");
-    Path devsysinfo = null;
-    int matchlen = 0;
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(sysinfo)) {
-      for (Path device : stream) {
-        String name = device.getFileName().toString();
-        if (name.length() > matchlen && devName.startsWith(name)) {
-          devsysinfo = device;
-          matchlen = name.length();
-        }
-      }
-    }
-    
-    if (devsysinfo == null) {
-      return true; // give up
-    }
-    
-    // read first byte from rotational, it's a 1 if it spins.
-    Path rotational = devsysinfo.resolve("queue").resolve("rotational");
-    try (InputStream stream = Files.newInputStream(rotational)) {
-      return stream.read() == '1'; 
-    }
-  }
-  
-  // Files.getFileStore(Path) useless here!
-  // don't complain, just try it yourself
-  static FileStore getFileStore(Path path) throws IOException {
-    FileStore store = Files.getFileStore(path);
-    String mount = getMountPoint(store);
-
-    // find the "matching" FileStore from system list, it's the one we want, but only return
-    // that if it's unambiguous (only one matching):
-    FileStore sameMountPoint = null;
-    for (FileStore fs : path.getFileSystem().getFileStores()) {
-      if (mount.equals(getMountPoint(fs))) {
-        if (sameMountPoint == null) {
-          sameMountPoint = fs;
-        } else {
-          // more than one filesystem has the same mount point; something is wrong!
-          // fall back to crappy one we got from Files.getFileStore
-          return store;
-        }
-      }
-    }
-
-    if (sameMountPoint != null) {
-      // ok, we found only one, use it:
-      return sameMountPoint;
-    } else {
-      // fall back to crappy one we got from Files.getFileStore
-      return store;    
-    }
-  }
-  
-  // these are hacks that are not guaranteed, may change across JVM versions, etc.
-  static String getMountPoint(FileStore store) {
-    String desc = store.toString();
-    int index = desc.lastIndexOf(" (");
-    if (index != -1) {
-      return desc.substring(0, index);
-    } else {
-      return desc;
     }
   }
 

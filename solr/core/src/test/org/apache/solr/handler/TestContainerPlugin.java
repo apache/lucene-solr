@@ -28,6 +28,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
+import org.apache.solr.api.ConfigurablePlugin;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,10 +39,14 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
@@ -56,7 +62,6 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
@@ -86,14 +91,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //test with an invalid class
       V2Request req = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", plugin))
           .build();
       expectError(req, cluster.getSolrClient(), errPath, "No method with @Command in class");
-
-      //test with an invalid class
-      plugin.klass = C1.class.getName();
-      expectError(req, cluster.getSolrClient(), errPath, "No @EndPoints");
 
       //test with a valid class. This should succeed now
       plugin.klass = C3.class.getName();
@@ -102,7 +103,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //just check if the plugin is indeed registered
       V2Request readPluginState = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build();
       V2Response rsp = readPluginState.process(cluster.getSolrClient());
       assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
@@ -111,13 +112,13 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/plugin/my/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/testkey", "testval"));
 
       //now remove the plugin
       new V2Request.Builder("/cluster/plugin")
-          .withMethod(POST)
+          .POST()
           .forceV2(true)
           .withPayload("{remove : testplugin}")
           .build()
@@ -142,19 +143,19 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/my-random-name/my/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m1"));
 
   TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/my-random-prefix/their/plugin")
               .forceV2(true)
-              .withMethod(GET)
+              .GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of("/method.name", "m2"));
       //now remove the plugin
       new V2Request.Builder("/cluster/plugin")
-          .withMethod(POST)
+          .POST()
           .forceV2(true)
           .withPayload("{remove : my-random-name}")
           .build()
@@ -162,14 +163,81 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
       expectFail( () -> new V2Request.Builder("/my-random-prefix/their/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build()
           .process(cluster.getSolrClient()));
       expectFail(() -> new V2Request.Builder("/my-random-prefix/their/plugin")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build()
           .process(cluster.getSolrClient()));
+
+      // test ClusterSingleton plugin
+      plugin.name = "clusterSingleton";
+      plugin.klass = C6.class.getName();
+      req.process(cluster.getSolrClient());
+
+      //just check if the plugin is indeed registered
+      readPluginState = new V2Request.Builder("/cluster/plugin")
+          .forceV2(true)
+          .GET()
+          .build();
+      rsp = readPluginState.process(cluster.getSolrClient());
+      assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
+
+      assertTrue("ccProvided", C6.ccProvided);
+      assertTrue("startCalled", C6.startCalled);
+      assertFalse("stopCalled", C6.stopCalled);
+
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC()));
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
+      assertEquals( CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC2()));
+
+      CConfig cfg = new CConfig();
+      cfg.boolVal = Boolean.TRUE;
+      cfg.strVal = "Something";
+      cfg.longVal = 1234L;
+      PluginMeta p = new PluginMeta();
+      p.name = "hello";
+      p.klass = CC.class.getName();
+      p.config = cfg;
+
+      new V2Request.Builder("/cluster/plugin")
+          .forceV2(true)
+          .POST()
+          .withPayload(singletonMap("add", p))
+          .build()
+          .process(cluster.getSolrClient());
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("hello/plugin")
+              .forceV2(true)
+              .GET()
+              .build().process(cluster.getSolrClient()),
+          ImmutableMap.of("/config/boolVal", "true", "/config/strVal", "Something","/config/longVal", "1234" ));
+
+        cfg.strVal = "Something else";
+        new V2Request.Builder("/cluster/plugin")
+                .forceV2(true)
+                .POST()
+                .withPayload(singletonMap("update", p))
+                .build()
+                .process(cluster.getSolrClient());
+
+        TestDistribPackageStore.assertResponseValues(10,
+                () -> new V2Request.Builder("hello/plugin")
+                        .forceV2(true)
+                        .GET()
+                        .build().process(cluster.getSolrClient()),
+                ImmutableMap.of("/config/boolVal", "true", "/config/strVal", cfg.strVal,"/config/longVal", "1234" ));
+
+        // kill the Overseer leader
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        if (!jetty.getCoreContainer().getZkController().getOverseer().isClosed()) {
+          cluster.stopJettySolrRunner(jetty);
+          cluster.waitForJettyToStop(jetty);
+        }
+      }
+      assertTrue("stopCalled", C6.stopCalled);
     } finally {
       cluster.shutdown();
     }
@@ -211,7 +279,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       add.files = singletonList(FILE1);
       V2Request addPkgVersionReq = new V2Request.Builder("/cluster/package")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", add))
           .build();
       addPkgVersionReq.process(cluster.getSolrClient());
@@ -228,14 +296,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       plugin.version = add.version;
       final V2Request req1 = new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("add", plugin))
           .build();
       req1.process(cluster.getSolrClient());
       //verify the plugin creation
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/cluster/plugin").
-              withMethod(GET)
+              GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of(
               "/plugin/myplugin/class", plugin.klass,
@@ -244,7 +312,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //let's test this now
       Callable<NavigableObject> invokePlugin = () -> new V2Request.Builder("/plugin/my/path")
           .forceV2(true)
-          .withMethod(GET)
+          .GET()
           .build().process(cluster.getSolrClient());
       TestDistribPackageStore.assertResponseValues(10,
           invokePlugin,
@@ -259,7 +327,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       plugin.version = add.version;
       new V2Request.Builder("/cluster/plugin")
           .forceV2(true)
-          .withMethod(POST)
+          .POST()
           .withPayload(singletonMap("update", plugin))
           .build()
       .process(cluster.getSolrClient());
@@ -267,7 +335,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       //now verify if it is indeed updated
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/cluster/plugin").
-              withMethod(GET)
+              GET()
               .build().process(cluster.getSolrClient()),
           ImmutableMap.of(
               "/plugin/myplugin/class", plugin.klass,
@@ -289,12 +357,88 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
   }
 
+  public static class CC1 extends CC {
+
+  }
+  public static class CC2 extends CC1 {
+
+  }
+  public static class CC implements ConfigurablePlugin<CConfig> {
+    private CConfig cfg;
+
+
+
+    @Override
+    public void configure(CConfig cfg) {
+      this.cfg = cfg;
+
+    }
+
+    @EndPoint(method = GET,
+        path = "/hello/plugin",
+        permission = PermissionNameProvider.Name.READ_PERM)
+    public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("config", cfg);
+    }
+
+  }
+
+  public static class CConfig implements ReflectMapWriter {
+
+    @JsonProperty
+    public String strVal;
+
+    @JsonProperty
+    public Long longVal;
+
+    @JsonProperty
+    public Boolean boolVal;
+  }
+
+  public static class C6 implements ClusterSingleton {
+    static boolean startCalled = false;
+    static boolean stopCalled = false;
+    static boolean ccProvided = false;
+
+    private State state = State.STOPPED;
+
+    public C6(CoreContainer cc) {
+      if (cc != null) {
+        ccProvided = true;
+      }
+    }
+
+    @Override
+    public String getName() {
+      return "C6";
+    }
+
+    @Override
+    public void start() throws Exception {
+      state = State.STARTING;
+      startCalled = true;
+      state = State.RUNNING;
+    }
+
+    @Override
+    public State getState() {
+      return state;
+    }
+
+    @Override
+    public void stop() {
+      state = State.STOPPING;
+      stopCalled = true;
+      state = State.STOPPED;
+    }
+  }
+
+
   public static class C5 implements ResourceLoaderAware {
     static ByteBuffer classData;
     private  SolrResourceLoader resourceLoader;
 
     @Override
-    @SuppressWarnings("unchecked")
     public void inform(ResourceLoader loader) throws IOException {
       this.resourceLoader = (SolrResourceLoader) loader;
       try {

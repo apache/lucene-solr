@@ -46,7 +46,8 @@ Several parameters can be used to trigger faceting based on the indexed terms in
 
 When using these parameters, it is important to remember that "term" is a very specific concept in Lucene: it relates to the literal field/value pairs that are indexed after any analysis occurs. For text fields that include stemming, lowercasing, or word splitting, the resulting terms may not be what you expect.
 
-If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String. Make sure both are `indexed="true"`. (For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>.)
+If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String. The Text field should have `indexed="true" docValues=“false"` if used for searching but not faceting and the String field should have `indexed="false" docValues="true"` if used for faceting but not searching.
+(For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>.)
 
 Unless otherwise specified, all of the parameters below can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.<parameter>`
 
@@ -617,7 +618,7 @@ To limit field facet with certain terms specify them comma separated with `terms
 
 `facet.field={!terms='alfa,betta,with\,with\',with space'}symbol`
 
-This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.   
+This local parameter overrides default logic for `facet.sort`. if `facet.sort` is omitted, facets are returned in the given terms order that might be changed with `index` and `count` values. Note: other parameters might not be fully supported when this parameter is supplied.
 
 == Related Topics
 

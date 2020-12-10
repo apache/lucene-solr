@@ -31,12 +31,15 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -322,9 +325,24 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
         return res;
       }
     }
-    
-    Document doc = indexReader.document(ordinal);
-    FacetLabel ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+
+    int readerIndex = ReaderUtil.subIndex(ordinal, indexReader.leaves());
+    LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
+    // TODO: Use LUCENE-9476 to get the bulk lookup API for extracting BinaryDocValues
+    BinaryDocValues values = leafReader.getBinaryDocValues(Consts.FULL);
+
+    FacetLabel ret;
+
+    if (values == null || values.advanceExact(ordinal-indexReader.leaves().get(readerIndex).docBase) == false) {
+      // The index uses the older StoredField format to store the mapping
+      // On recreating the index, the values will be stored using the BinaryDocValuesField format
+      Document doc = indexReader.document(ordinal);
+      ret = new FacetLabel(FacetsConfig.stringToPath(doc.get(Consts.FULL)));
+    } else {
+      // The index uses the BinaryDocValuesField format to store the mapping
+      ret = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
+    }
+
     synchronized (categoryCache) {
       categoryCache.put(catIDInteger, ret);
     }

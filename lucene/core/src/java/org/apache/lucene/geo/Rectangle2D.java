@@ -118,13 +118,13 @@ final class Rectangle2D implements Component2D {
 
   @Override
   public WithinRelation withinPoint(double x, double y) {
-    return WithinRelation.DISJOINT;
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
   }
 
   @Override
   public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
                                    double aX, double aY, boolean ab, double bX, double bY) {
-    if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) ==false &&
+    if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) == false &&
         edgesIntersect(aX, aY, bX, bY)) {
       return WithinRelation.NOTWITHIN;
     }
@@ -232,28 +232,25 @@ final class Rectangle2D implements Component2D {
 
   /** create a component2D from the provided LatLon rectangle */
   static Component2D create(Rectangle rectangle) {
+    // behavior of LatLonPoint.newBoxQuery()
+    double minLongitude = rectangle.minLon;
+    boolean crossesDateline = rectangle.minLon > rectangle.maxLon;
+    if (minLongitude == 180.0 && crossesDateline) {
+      minLongitude = -180;
+      crossesDateline = false;
+    }
     // need to quantize!
     double qMinLat = decodeLatitude(encodeLatitudeCeil(rectangle.minLat));
     double qMaxLat = decodeLatitude(encodeLatitude(rectangle.maxLat));
-    double qMinLon = decodeLongitude(encodeLongitudeCeil(rectangle.minLon));
+    double qMinLon = decodeLongitude(encodeLongitudeCeil(minLongitude));
     double qMaxLon = decodeLongitude(encodeLongitude(rectangle.maxLon));
-    if (qMinLat > qMaxLat) {
-      // encodeLatitudeCeil may cause minY to be > maxY iff
-      // the delta between the longitude < the encoding resolution
-      qMinLat = qMaxLat;
-    }
-    if (rectangle.minLon > rectangle.maxLon) {
+    if (crossesDateline) {
       // for rectangles that cross the dateline we need to create two components
       Component2D[] components = new Component2D[2];
       components[0] = new Rectangle2D(MIN_LON_INCL_QUANTIZE, qMaxLon, qMinLat, qMaxLat);
       components[1] = new Rectangle2D(qMinLon, MAX_LON_INCL_QUANTIZE, qMinLat, qMaxLat);
       return ComponentTree.create(components);
     } else {
-      // encodeLongitudeCeil may cause minX to be > maxX iff
-      // the delta between the longitude < the encoding resolution
-      if (qMinLon > qMaxLon) {
-        qMinLon = qMaxLon;
-      }
       return new Rectangle2D(qMinLon, qMaxLon, qMinLat, qMaxLat);
     }
   }

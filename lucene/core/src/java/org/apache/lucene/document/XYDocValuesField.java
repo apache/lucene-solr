@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYEncodingUtils;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.DocValuesType;
@@ -36,6 +37,10 @@ import org.apache.lucene.search.SortField;
  * <p>
  * This field defines static factory methods for common operations:
  * <ul>
+ *   <li>{@link #newSlowBoxQuery newSlowBoxQuery()} for matching points within a bounding box.
+ *   <li>{@link #newSlowDistanceQuery newSlowDistanceQuery()} for matching points within a specified distance.
+ *   <li>{@link #newSlowPolygonQuery newSlowPolygonQuery()} for matching points within an arbitrary polygon.
+ *   <li>{@link #newSlowGeometryQuery newSlowGeometryQuery()} for matching points within an arbitrary geometry.
  *   <li>{@link #newDistanceSort newDistanceSort()} for ordering documents by distance from a specified location.
  * </ul>
  * <p>
@@ -173,6 +178,21 @@ public class XYDocValuesField extends Field {
    * @throws IllegalArgumentException if {@code field} is null or polygons is empty or contain a null polygon.
    */
   public static Query newSlowPolygonQuery(String field, XYPolygon... polygons) {
-    return new XYDocValuesPointInGeometryQuery(field, polygons);
+    return newSlowGeometryQuery(field, polygons);
+  }
+
+  /**
+   * Create a query for matching points within the supplied geometries. XYLine geometries are not supported.
+   * This query is usually slow as it does not use an index structure and needs
+   * to verify documents one-by-one in order to know whether they match. It is
+   * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
+   * {@link XYPointField#newGeometryQuery(String, XYGeometry...)}.
+   * @param field field name. must not be null.
+   * @param geometries array of XY geometries. must not be null or empty.
+   * @return query matching points within the given geometries.
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null, empty or contains a null or XYLine geometry.
+   */
+  public static Query newSlowGeometryQuery(String field, XYGeometry... geometries) {
+    return new XYDocValuesPointInGeometryQuery(field, geometries);
   }
 }

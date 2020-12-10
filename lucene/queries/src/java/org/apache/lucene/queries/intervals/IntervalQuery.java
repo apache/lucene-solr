@@ -99,7 +99,7 @@ public final class IntervalQuery extends Query {
   private IntervalQuery(String field, IntervalsSource intervalsSource, IntervalScoreFunction scoreFunction) {
     Objects.requireNonNull(field, "null field aren't accepted");
     Objects.requireNonNull(intervalsSource, "null intervalsSource aren't accepted");
-    Objects.requireNonNull(scoreFunction, "null scoreFunction aren't accepted");
+    Objects.requireNonNull(scoreFunction, "null searchStrategy aren't accepted");
     this.field = field;
     this.intervalsSource = intervalsSource;
     this.scoreFunction = scoreFunction;

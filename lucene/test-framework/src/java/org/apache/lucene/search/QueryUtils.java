@@ -35,6 +35,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -204,6 +205,11 @@ public class QueryUtils {
 
       @Override
       public NumericDocValues getNormValues(String field) throws IOException {
+        return null;
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) throws IOException {
         return null;
       }
 

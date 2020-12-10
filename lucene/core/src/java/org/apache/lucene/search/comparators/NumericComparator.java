@@ -39,19 +39,19 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     protected final T missingValue;
     protected final String field;
     protected final boolean reverse;
-    protected final boolean primarySort;
     private final int bytesCount; // how many bytes are used to encode this number
 
     protected boolean topValueSet;
     protected boolean singleSort; // singleSort is true, if sort is based on a single sort field.
     protected boolean hitsThresholdReached;
     protected boolean queueFull;
+    private boolean canSkipDocuments;
 
     protected NumericComparator(String field, T missingValue, boolean reverse, int sortPos, int bytesCount) {
         this.field = field;
         this.missingValue = missingValue;
         this.reverse = reverse;
-        this.primarySort = (sortPos == 0);
+        this.canSkipDocuments = (sortPos == 0); // skipping functionality is only relevant for primary sort
         this.bytesCount = bytesCount;
     }
 
@@ -65,17 +65,22 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         singleSort = true;
     }
 
+    @Override
+    public void disableSkipping() {
+        canSkipDocuments = false;
+    }
+
     /**
      * Leaf comparator for {@link NumericComparator} that provides skipping functionality
      */
     public abstract class NumericLeafComparator implements LeafFieldComparator {
         protected final NumericDocValues docValues;
         private final PointValues pointValues;
-        private final boolean enableSkipping; // if skipping functionality should be enabled
+        private final boolean enableSkipping; // if skipping functionality should be enabled on this segment
         private final int maxDoc;
         private final byte[] minValueAsBytes;
         private final byte[] maxValueAsBytes;
-
+        
         private DocIdSetIterator competitiveIterator;
         private long iteratorCost;
         private int maxDocVisited = 0;
@@ -83,9 +88,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
         public NumericLeafComparator(LeafReaderContext context) throws IOException {
             this.docValues = getNumericDocValues(context, field);
-            this.pointValues = primarySort ? context.reader().getPointValues(field) : null;
+            this.pointValues = canSkipDocuments ? context.reader().getPointValues(field) : null;
             if (pointValues != null) {
-                this.enableSkipping = true; // skipping is enabled on primarySort and when points are available
+                this.enableSkipping = true; // skipping is enabled when points are available
                 this.maxDoc = context.reader().maxDoc();
                 this.maxValueAsBytes = reverse == false ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;
                 this.minValueAsBytes = reverse ? new byte[bytesCount] : topValueSet ? new byte[bytesCount] : null;

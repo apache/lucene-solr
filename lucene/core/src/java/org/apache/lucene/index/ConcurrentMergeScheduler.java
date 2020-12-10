@@ -32,7 +32,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.CollectionUtil;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -52,36 +51,24 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *  incoming threads by pausing until one more merges
  *  complete.</p>
  *
- *  <p>This class attempts to detect whether the index is
- *  on rotational storage (traditional hard drive) or not
- *  (e.g. solid-state disk) and changes the default max merge
- *  and thread count accordingly.  This detection is currently
- *  Linux-only, and relies on the OS to put the right value
- *  into /sys/block/&lt;dev&gt;/block/rotational.  For all
- *  other operating systems it currently assumes a rotational
- *  disk for backwards compatibility.  To enable default
- *  settings for spinning or solid state disks for such
- *  operating systems, use {@link #setDefaultMaxMergesAndThreads(boolean)}.
+ *  <p>This class sets defaults based on Java's view of the
+ *  cpu count, and it assumes a solid state disk (or similar).
+ *  If you have a spinning disk and want to maximize performance,
+ *  use {@link #setDefaultMaxMergesAndThreads(boolean)}.
  */ 
 public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Dynamic default for {@code maxThreadCount} and {@code maxMergeCount},
-   *  used to detect whether the index is backed by an SSD or rotational disk and
-   *  set {@code maxThreadCount} accordingly.  If it's an SSD,
-   *  {@code maxThreadCount} is set to {@code max(1, min(4, cpuCoreCount/2))},
-   *  otherwise 1.  Note that detection only currently works on
-   *  Linux; other platforms will assume the index is not on an SSD. */
+   *  based on CPU core count.
+   *  {@code maxThreadCount} is set to {@code max(1, min(4, cpuCoreCount/2))}.
+   *  {@code maxMergeCount} is set to {@code maxThreadCount + 5}.
+   */
   public static final int AUTO_DETECT_MERGES_AND_THREADS = -1;
 
   /** Used for testing.
    *
    * @lucene.internal */
   public static final String DEFAULT_CPU_CORE_COUNT_PROPERTY = "lucene.cms.override_core_count";
-
-  /** Used for testing.
-   *
-   * @lucene.internal */
-  public static final String DEFAULT_SPINS_PROPERTY = "lucene.cms.override_spins";
 
   /** List of currently active {@link MergeThread}s. */
   protected final List<MergeThread> mergeThreads = new ArrayList<>();
@@ -410,21 +397,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private synchronized void initDynamicDefaults(Directory directory) throws IOException {
     if (maxThreadCount == AUTO_DETECT_MERGES_AND_THREADS) {
-      boolean spins = IOUtils.spins(directory);
-
-      // Let tests override this to help reproducing a failure on a machine that has a different
-      // core count than the one where the test originally failed:
-      try {
-        String value = System.getProperty(DEFAULT_SPINS_PROPERTY);
-        if (value != null) {
-          spins = Boolean.parseBoolean(value);
-        }
-      } catch (Exception ignored) {
-        // that's fine we might hit a SecurityException etc. here just continue
-      }
-      setDefaultMaxMergesAndThreads(spins);
+      setDefaultMaxMergesAndThreads(false);
       if (verbose()) {
-        message("initDynamicDefaults spins=" + spins + " maxThreadCount=" + maxThreadCount + " maxMergeCount=" + maxMergeCount);
+        message("initDynamicDefaults maxThreadCount=" + maxThreadCount + " maxMergeCount=" + maxMergeCount);
       }
     }
   }

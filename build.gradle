@@ -89,10 +89,10 @@ ext {
       "ecj": "3.19.0",
       "javacc": "7.0.4",
       "jflex": "1.7.0",
-      "jgit": "5.3.0.201903130848-r",
+      "jgit": "5.9.0.202009080501-r",
       "flexmark": "0.61.24",
   ]
-  
+
   // Allow definiting external tool locations using system props.
   externalTool = { name ->
     def resolved = propertyOrDefault("${name}.exe", name as String)
@@ -153,6 +153,9 @@ apply from: file('gradle/generation/util.gradle')
 apply from: file('gradle/generation/snowball.gradle')
 apply from: file('gradle/generation/kuromoji.gradle')
 apply from: file('gradle/generation/nori.gradle')
+
+// Shared configuration of subprojects containing native code.
+apply from: file('gradle/native/disable-native.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')

@@ -27,3 +27,4 @@ public class MyPatternReplaceCharFilterFactory extends TestPackages.BasePatternR
     super(args);
   }
 }
+

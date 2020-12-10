@@ -131,5 +131,5 @@ public interface LeafFieldComparator {
    */
   default void setHitsThresholdReached() throws IOException{
   }
-
+  
 }

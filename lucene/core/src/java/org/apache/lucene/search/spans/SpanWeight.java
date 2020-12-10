@@ -20,6 +20,7 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -156,13 +157,19 @@ public abstract class SpanWeight extends Weight {
     if (scorer != null) {
       int newDoc = scorer.iterator().advance(doc);
       if (newDoc == doc) {
-        float freq = scorer.sloppyFreq();
-        LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), field, true);
-        Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
-        Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
-        return Explanation.match(scoreExplanation.getValue(),
-            "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
-            scoreExplanation);
+        if (simScorer != null) {
+          float freq = scorer.sloppyFreq();
+          LeafSimScorer docScorer = new LeafSimScorer(simScorer, context.reader(), field, true);
+          Explanation freqExplanation = Explanation.match(freq, "phraseFreq=" + freq);
+          Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
+          return Explanation.match(scoreExplanation.getValue(),
+              "weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:",
+              scoreExplanation);
+        } else {
+          // simScorer won't be set when scoring isn't needed
+          return Explanation.match(0f, String.format(Locale.ROOT,
+              "match %s in %s without score", getQuery(), doc));
+        }
       }
     }
 

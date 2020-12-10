@@ -23,13 +23,17 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
-abstract class PhraseWeight extends Weight {
+/** Expert: Weight class for phrase matching */
+public abstract class PhraseWeight extends Weight {
 
   final ScoreMode scoreMode;
   final Similarity.SimScorer stats;
   final Similarity similarity;
   final String field;
 
+  /** Expert: Creates PhraseWeight instance
+   * @lucene.internal
+   */
   protected PhraseWeight(Query query, String field, IndexSearcher searcher, ScoreMode scoreMode) throws IOException {
     super(query);
     this.scoreMode = scoreMode;

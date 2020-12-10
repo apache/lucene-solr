@@ -181,7 +181,7 @@ final class Polygon2D implements Component2D {
 
   @Override
   public WithinRelation withinPoint(double x, double y) {
-    return WithinRelation.DISJOINT;
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
   }
 
   @Override

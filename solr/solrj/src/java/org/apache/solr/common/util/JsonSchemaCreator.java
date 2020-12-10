@@ -87,6 +87,7 @@ public class JsonSchemaCreator {
       if(p.required()) required.add(name);
     }
     if(!required.isEmpty()) map.put("required", new ArrayList<>(required));
+     map.put("additionalProperties", true);
 
   }
 }

@@ -101,6 +101,24 @@ public class TestFeatureField extends LuceneTestCase {
 
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, s.iterator().nextDoc());
 
+    q = FeatureField.newLinearQuery("features", "pagerank", 3f);
+    w = q.createWeight(searcher, ScoreMode.TOP_SCORES, 2);
+    s = w.scorer(context);
+
+    assertEquals(0, s.iterator().nextDoc());
+    assertEquals((float) (6.0 * 10), s.score(), 0f);
+
+    assertEquals(1, s.iterator().nextDoc());
+    assertEquals((float) (6.0 * 100), s.score(), 0f);
+
+    assertEquals(3, s.iterator().nextDoc());
+    assertEquals((float) (6.0 * 1), s.score(), 0f);
+
+    assertEquals(4, s.iterator().nextDoc());
+    assertEquals((float) (6.0 * 42), s.score(), 0f);
+
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, s.iterator().nextDoc());
+
     q = FeatureField.newSaturationQuery("features", "pagerank", 3f, 4.5f);
     w = q.createWeight(searcher, ScoreMode.TOP_SCORES, 2);
     s = w.scorer(context);
@@ -188,16 +206,19 @@ public class TestFeatureField extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
 
     QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", 1f, 4.5f), searcher);
+    QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", 1f), searcher);
     QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", 1f, 12f), searcher);
     QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", 1f, 12f, 0.6f), searcher);
 
     // Test boosts that are > 1
     QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", 3f, 4.5f), searcher);
+    QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", 3f), searcher);
     QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", 3f, 12f), searcher);
     QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", 3f, 12f, 0.6f), searcher);
 
     // Test boosts that are < 1
     QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", .2f, 4.5f), searcher);
+    QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", .2f), searcher);
     QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", .2f, 12f), searcher);
     QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", .2f, 12f, 0.6f), searcher);
 
@@ -207,6 +228,10 @@ public class TestFeatureField extends LuceneTestCase {
 
   public void testLogSimScorer() {
     doTestSimScorer(new FeatureField.LogFunction(4.5f).scorer(3f));
+  }
+
+  public void testLinearSimScorer() {
+    doTestSimScorer(new FeatureField.LinearFunction().scorer(1f));
   }
 
   public void testSatuSimScorer() {

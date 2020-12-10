@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -49,6 +50,11 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
     return LatLonPoint.newPolygonQuery(field, polygons);
+  }
+
+  @Override
+  protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
+    return LatLonPoint.newGeometryQuery(field, geometry);
   }
 
   @Override

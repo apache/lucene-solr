@@ -21,6 +21,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
@@ -46,6 +47,7 @@ public final class SimpleTextCodec extends Codec {
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
   private final PointsFormat pointsFormat = new SimpleTextPointsFormat();
+  private final VectorFormat vectorFormat = new SimpleTextVectorFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -99,5 +101,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public PointsFormat pointsFormat() {
     return pointsFormat;
+  }
+
+  @Override
+  public VectorFormat vectorFormat() {
+    return vectorFormat;
   }
 }

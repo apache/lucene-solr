@@ -22,9 +22,12 @@ import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -34,6 +37,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -433,7 +437,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // search by same point
-    Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
+    Query q = LatLonShape.newPointQuery(FIELDNAME, QueryRelation.INTERSECTS, new double[] {p.lat, p.lon});
     assertEquals(1, s.count(q));
     IOUtils.close(r, dir);
   }
@@ -777,10 +781,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
     double lat = GeoTestUtil.nextLatitude();
     double lon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
-    }
+    final double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
     Circle circle = new Circle(lat, lon, radiusMeters);
     Component2D circle2D = LatLonGeometry.create(circle);
     int expected;
@@ -828,5 +829,76 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(0, s.count(q));
 
     IOUtils.close(r, dir);
+  }
+
+  public void testContainsWrappingBooleanQuery() throws Exception {
+
+    double[] lats = new double[] {-30, -30, 30, 30, -30};
+    double[] lons = new double[] {-30, 30, 30, -30, -30};
+    Polygon polygon = new Polygon(lats, lons);
+
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, polygon);
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    LatLonGeometry[] geometries = new LatLonGeometry[] { new Rectangle(0, 1, 0, 1), new Point(4, 4) };
+    // geometries within the polygon
+    Query q = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, geometries);
+    TopDocs topDocs = s.search(q, 1);
+    assertEquals(1, topDocs.scoreDocs.length);
+    assertEquals(1.0, topDocs.scoreDocs[0].score, 0.0);
+    IOUtils.close(r, dir);
+  }
+
+  public void testContainsIndexedGeometryCollection() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Polygon polygon = new Polygon(new double[] {-64, -64, 64, 64, -64}, new double[] {-132, 132, 132, -132, -132});
+    Field[] polygonFields = LatLonShape.createIndexableFields(FIELDNAME, polygon);
+    // POINT(5, 5) inside the indexed polygon
+    Field[] pointFields = LatLonShape.createIndexableFields(FIELDNAME, 5, 5);
+    int numDocs = random().nextInt(1000);
+    // index the same multi geometry many times
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      for (Field f : polygonFields) {
+        doc.add(f);
+      }
+      for(int j = 0; j < 10; j++) {
+        for (Field f : pointFields) {
+          doc.add(f);
+        }
+      }
+      w.addDocument(doc);
+    }
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry 
+    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is 
+    // inside the query as well, hence the result is 0.
+    Polygon polygonQuery = new Polygon(new double[] {4, 4, 6, 6, 4}, new double[] {4, 6, 6, 4, 4});
+    Query query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, polygonQuery);
+    assertEquals(0, searcher.count(query));
+
+    Rectangle rectangle = new Rectangle(4.0, 6.0, 4.0, 6.0);
+    query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, rectangle);
+    assertEquals(0, searcher.count(query));
+    
+    Circle circle = new Circle(5, 5, 10000);
+    query = LatLonShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, circle);
+    assertEquals(0, searcher.count(query));
+    
+    IOUtils.close(w, reader, dir);
   }
 }

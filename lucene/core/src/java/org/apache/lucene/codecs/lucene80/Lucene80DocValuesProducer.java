@@ -174,6 +174,20 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
 
   private BinaryEntry readBinary(ChecksumIndexInput meta) throws IOException {
     BinaryEntry entry = new BinaryEntry();
+    if (version >= Lucene80DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
+      int b = meta.readByte();
+      switch (b) {
+        case 0:
+        case 1:
+          // valid
+          break;
+        default:
+          throw new CorruptIndexException("Unexpected byte: " + b + ", expected 0 or 1", meta);
+      }
+      entry.compressed = b != 0;
+    } else {
+      entry.compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
+    }
     entry.dataOffset = meta.readLong();
     entry.dataLength = meta.readLong();
     entry.docsWithFieldOffset = meta.readLong();
@@ -183,19 +197,19 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.numDocsWithField = meta.readInt();
     entry.minLength = meta.readInt();
     entry.maxLength = meta.readInt();
-    if ((version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED && entry.numDocsWithField > 0) ||  entry.minLength < entry.maxLength) {
+    if ((entry.compressed && entry.numDocsWithField > 0) ||  entry.minLength < entry.maxLength) {
       entry.addressesOffset = meta.readLong();
 
       // Old count of uncompressed addresses 
       long numAddresses = entry.numDocsWithField + 1L;
       // New count of compressed addresses - the number of compresseed blocks
-      if (version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED) {
+      if (entry.compressed) {
         entry.numCompressedChunks = meta.readVInt();
         entry.docsPerChunkShift = meta.readVInt();
         entry.maxUncompressedChunkSize = meta.readVInt();
         numAddresses = entry.numCompressedChunks;
       }      
-      
+
       final int blockShift = meta.readVInt();
       entry.addressesMeta = DirectMonotonicReader.loadMeta(meta, numAddresses, blockShift);
       ramBytesUsed += entry.addressesMeta.ramBytesUsed();
@@ -303,6 +317,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private static class BinaryEntry {
+    boolean compressed;
     long dataOffset;
     long dataLength;
     long docsWithFieldOffset;
@@ -680,9 +695,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
   }
   
-  // BWC - old binary format 
-  private BinaryDocValues getUncompressedBinary(FieldInfo field) throws IOException {
-    BinaryEntry entry = binaries.get(field.name);
+  private BinaryDocValues getUncompressedBinary(BinaryEntry entry) throws IOException {
     if (entry.docsWithFieldOffset == -2) {
       return DocValues.emptyBinary();
     }
@@ -844,11 +857,16 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
 
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    if (version < Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED) {
-      return getUncompressedBinary(field);
-    }
-    
     BinaryEntry entry = binaries.get(field.name);
+    if (entry.compressed) {
+      return getCompressedBinary(entry);
+    } else {
+      return getUncompressedBinary(entry);
+    }
+  }
+
+  private BinaryDocValues getCompressedBinary(BinaryEntry entry) throws IOException { 
+    
     if (entry.docsWithFieldOffset == -2) {
       return DocValues.emptyBinary();
     }

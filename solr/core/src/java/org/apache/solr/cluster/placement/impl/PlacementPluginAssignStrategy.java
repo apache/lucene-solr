@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPlan;
@@ -53,8 +54,9 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
       throws Assign.AssignmentException, IOException, InterruptedException {
 
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(solrCloudManager);
+    SolrCollection solrCollection = new SimpleClusterAbstractionsImpl.SolrCollectionImpl(collection);
 
-    PlacementRequestImpl placementRequest = PlacementRequestImpl.toPlacementRequest(cluster, collection, assignRequest);
+    PlacementRequestImpl placementRequest = PlacementRequestImpl.toPlacementRequest(cluster, solrCollection, assignRequest);
 
     final PlacementPlan placementPlan;
     try {

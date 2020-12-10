@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * A fully specified plan or instructions for placement, deletion or move to be applied to the cluster.<p>
  * Fully specified means the actual {@link Node}'s on which to place replicas have been decided.
- *
+ * <p>
  * Instances are created by plugin code using {@link PlacementPlanFactory}. This interface obviously doesn't expose much but
  * the underlying Solr side implementation has all that is needed (and will do at least one cast in order to execute the
  * plan, likely then using some type of visitor pattern).

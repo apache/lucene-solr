@@ -20,7 +20,9 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Rectangle;
 
 /** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
@@ -73,21 +75,8 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      if (queryRelation == QueryRelation.CONTAINS) {
-        return false;
-      }
-      Point p = (Point)shape;
-      double lat = encoder.quantizeY(p.lat);
-      double lon = encoder.quantizeX(p.lon);
-      boolean isDisjoint = lat < minLat || lat > maxLat;
-
-      isDisjoint = isDisjoint || ((minLon > maxLon)
-          ? lon < minLon && lon > maxLon
-          : lon < minLon || lon > maxLon);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return isDisjoint;
-      }
-      return isDisjoint == false;
+      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override

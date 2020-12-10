@@ -21,7 +21,10 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
+import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.FieldDoc;
@@ -177,7 +180,8 @@ public class LatLonDocValuesField extends Field {
    * @throws IllegalArgumentException if {@code field} is null, location has invalid coordinates, or radius is invalid.
    */
   public static Query newSlowDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
-    return new LatLonDocValuesDistanceQuery(field, latitude, longitude, radiusMeters);
+    Circle circle = new Circle(latitude, longitude, radiusMeters);
+    return newSlowGeometryQuery(field, circle);
   }
 
   /**
@@ -192,6 +196,26 @@ public class LatLonDocValuesField extends Field {
    * @throws IllegalArgumentException if {@code field} is null or polygons is empty or contain a null polygon.
    */
   public static Query newSlowPolygonQuery(String field, Polygon... polygons) {
-    return new LatLonDocValuesPointInPolygonQuery(field, polygons);
+    return newSlowGeometryQuery(field, polygons);
+  }
+
+  /**
+   * Create a query for matching points within the supplied geometries. Line geometries are not supported.
+   * This query is usually slow as it does not use an index structure and needs
+   * to verify documents one-by-one in order to know whether they match. It is
+   * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
+   * {@link LatLonPoint#newGeometryQuery(String, LatLonGeometry...)}.
+   * @param field field name. must not be null.
+   * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
+   * @return query matching points within the given polygons.
+   * @throws IllegalArgumentException if {@code field} is null, {@code latLonGeometries} is null, empty or contain a null or line geometry.
+   */
+  public static Query newSlowGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
+    if (latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {
+      LatLonGeometry geometry = latLonGeometries[0];
+      Rectangle rect = (Rectangle) geometry;
+      return newSlowBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    }
+    return new LatLonDocValuesPointInGeometryQuery(field, latLonGeometries);
   }
 }

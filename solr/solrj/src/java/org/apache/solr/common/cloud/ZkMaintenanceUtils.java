@@ -26,10 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -260,11 +260,14 @@ public class ZkMaintenanceUtils {
       return;
     }
 
-    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+    ArrayList<String> paths = new ArrayList<>();
 
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
     });
+
+    // sort the list in descending order to ensure that child entries are deleted first
+    paths.sort(Comparator.comparingInt(String::length).reversed());
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
@@ -329,7 +332,7 @@ public class ZkMaintenanceUtils {
 
   private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
-    if (data != null && data.length > 1) { // There are apparently basically empty ZNodes.
+    if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
       log.info("Writing file {}", file);
       Files.write(file.toPath(), data);
       return data.length;

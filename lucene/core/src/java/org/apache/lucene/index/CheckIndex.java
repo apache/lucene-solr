@@ -220,6 +220,9 @@ public final class CheckIndex implements Closeable {
 
       /** Status of index sort */
       public IndexSortStatus indexSortStatus;
+
+      /** Status of vectors */
+      public VectorValuesStatus vectorValuesStatus;
     }
     
     /**
@@ -374,7 +377,25 @@ public final class CheckIndex implements Closeable {
       /** Total number of fields with points. */
       public int totalValueFields;
       
-      /** Exception thrown during doc values test (null on success) */
+      /** Exception thrown during point values test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing VectorValues
+     */
+    public static final class VectorValuesStatus {
+
+      VectorValuesStatus() {
+      }
+
+      /** Total number of vector values tested. */
+      public long totalVectorValues;
+
+      /** Total number of fields with vectors. */
+      public int totalVectorFields;
+
+      /** Exception thrown during vector values test (null on success) */
       public Throwable error = null;
     }
 
@@ -730,6 +751,9 @@ public final class CheckIndex implements Closeable {
 
           // Test PointValues
           segInfoStat.pointsStatus = testPoints(reader, infoStream, failFast);
+
+          // Test VectorValues
+          segInfoStat.vectorValuesStatus = testVectors(reader, infoStream, failFast);
 
           // Test index sort
           segInfoStat.indexSortStatus = testSort(reader, indexSort, infoStream, failFast);
@@ -1940,6 +1964,65 @@ public final class CheckIndex implements Closeable {
       }
 
       msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d points] [took %.3f sec]", status.totalValueFields, status.totalValuePoints, nsToSec(System.nanoTime()-startNS)));
+
+    } catch (Throwable e) {
+      if (failFast) {
+        throw IOUtils.rethrowAlways(e);
+      }
+      msg(infoStream, "ERROR: " + e);
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
+
+  /**
+   * Test the vectors index
+   * @lucene.experimental
+   */
+  public static Status.VectorValuesStatus testVectors(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null) {
+      infoStream.print("    test: vectors..............");
+    }
+    long startNS = System.nanoTime();
+    FieldInfos fieldInfos = reader.getFieldInfos();
+    Status.VectorValuesStatus status = new Status.VectorValuesStatus();
+    try {
+
+      if (fieldInfos.hasVectorValues()) {
+        for (FieldInfo fieldInfo : fieldInfos) {
+          if (fieldInfo.hasVectorValues()) {
+            int dimension = fieldInfo.getVectorDimension();
+            if (dimension <= 0) {
+              throw new RuntimeException("Field \"" + fieldInfo.name + "\" has vector values but dimension is " + dimension);
+            }
+            VectorValues values = reader.getVectorValues(fieldInfo.name);
+            if (values == null) {
+              continue;
+            }
+
+            status.totalVectorFields++;
+
+            int docCount = 0;
+            while (values.nextDoc() != NO_MORE_DOCS) {
+              int valueLength = values.vectorValue().length;
+              if (valueLength != dimension) {
+                throw new RuntimeException("Field \"" + fieldInfo.name + "\" has a value whose dimension=" + valueLength + " not matching the field's dimension=" + dimension);
+              }
+              ++docCount;
+            }
+            if (docCount != values.size()) {
+              throw new RuntimeException("Field \"" + fieldInfo.name + "\" has size=" + values.size() + " but when iterated, returns " + docCount + " docs with values");
+            }
+            status.totalVectorValues += docCount;
+          }
+        }
+      }
+
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d vectors] [took %.3f sec]", status.totalVectorFields, status.totalVectorValues, nsToSec(System.nanoTime()-startNS)));
 
     } catch (Throwable e) {
       if (failFast) {

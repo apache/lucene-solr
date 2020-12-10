@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
@@ -28,6 +29,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL // tests compare for http:
 public class NodeMutatorTest extends SolrTestCaseJ4Test {
 
   private static final String NODE3 = "baseUrl3_";

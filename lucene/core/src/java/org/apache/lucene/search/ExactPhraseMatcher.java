@@ -33,7 +33,10 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.PriorityQueue;
 
-final class ExactPhraseMatcher extends PhraseMatcher {
+/** Expert: Find exact phrases
+ * @lucene.internal
+ */
+public final class ExactPhraseMatcher extends PhraseMatcher {
 
   private static class PostingsAndPosition {
     private final PostingsEnum postings;
@@ -50,7 +53,8 @@ final class ExactPhraseMatcher extends PhraseMatcher {
   private final DocIdSetIterator approximation;
   private final ImpactsDISI impactsApproximation;
 
-  ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, ScoreMode scoreMode, SimScorer scorer, float matchCost) {
+  /** Expert: Creates ExactPhraseMatcher instance */
+  public ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, ScoreMode scoreMode, SimScorer scorer, float matchCost) {
     super(matchCost);
 
     final DocIdSetIterator approximation = ConjunctionDISI.intersectIterators(Arrays.stream(postings).map(p -> p.postings).collect(Collectors.toList()));

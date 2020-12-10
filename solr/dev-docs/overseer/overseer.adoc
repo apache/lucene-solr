@@ -531,7 +531,7 @@ Then finally the real work is done! The (deprecated) http shard handler is used 
 It ends up executing `CoreAdminOperation.CREATE_OP` that calls `CoreContainer
 .create()` for the core of the replica.
 
-The rest of the method deals with failures, with `withCollection` and with `alias`.
+The rest of the method deals with failures with `alias`.
 
 [[bug9]]
 [WARNING]
