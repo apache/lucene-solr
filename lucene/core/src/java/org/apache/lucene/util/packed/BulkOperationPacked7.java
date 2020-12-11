@@ -100,7 +100,7 @@ final class BulkOperationPacked7 extends BulkOperationPacked {
       values[valuesOffset++] = (int) ((block6 >>> 36) & 127L);
       values[valuesOffset++] = (int) ((block6 >>> 43) & 127L);
       values[valuesOffset++] = (int) ((block6 >>> 50) & 127L);
-      values[valuesOffset++] = (int) ((block6 >>> 57) & 127L);
+      values[valuesOffset++] = (int) (block6 >>> 57);
     }
   }
 
@@ -121,7 +121,7 @@ final class BulkOperationPacked7 extends BulkOperationPacked {
       values[valuesOffset++] = ((byte5 & 3) << 5) | (byte4 >>> 3);
       final int byte6 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = ((byte6 & 1) << 6) | (byte5 >>> 2);
-      values[valuesOffset++] = byte6 >> 1;
+      values[valuesOffset++] = (byte6 >>> 1);
     }
   }
 
@@ -129,76 +129,76 @@ final class BulkOperationPacked7 extends BulkOperationPacked {
   public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
-      values[valuesOffset++] = (block0 & 127L);
-      values[valuesOffset++] = ((block0 >>> 7) & 127L);
-      values[valuesOffset++] = ((block0 >>> 14) & 127L);
-      values[valuesOffset++] = ((block0 >>> 21) & 127L);
-      values[valuesOffset++] = ((block0 >>> 28) & 127L);
-      values[valuesOffset++] = ((block0 >>> 35) & 127L);
-      values[valuesOffset++] = ((block0 >>> 42) & 127L);
-      values[valuesOffset++] = ((block0 >>> 49) & 127L);
-      values[valuesOffset++] = ((block0 >>> 56) & 127L);
+      values[valuesOffset++] = block0 & 127L;
+      values[valuesOffset++] = (block0 >>> 7) & 127L;
+      values[valuesOffset++] = (block0 >>> 14) & 127L;
+      values[valuesOffset++] = (block0 >>> 21) & 127L;
+      values[valuesOffset++] = (block0 >>> 28) & 127L;
+      values[valuesOffset++] = (block0 >>> 35) & 127L;
+      values[valuesOffset++] = (block0 >>> 42) & 127L;
+      values[valuesOffset++] = (block0 >>> 49) & 127L;
+      values[valuesOffset++] = (block0 >>> 56) & 127L;
       final long block1 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block1 & 63L) << 1) | (block0 >>> 63));
-      values[valuesOffset++] = ((block1 >>> 6) & 127L);
-      values[valuesOffset++] = ((block1 >>> 13) & 127L);
-      values[valuesOffset++] = ((block1 >>> 20) & 127L);
-      values[valuesOffset++] = ((block1 >>> 27) & 127L);
-      values[valuesOffset++] = ((block1 >>> 34) & 127L);
-      values[valuesOffset++] = ((block1 >>> 41) & 127L);
-      values[valuesOffset++] = ((block1 >>> 48) & 127L);
-      values[valuesOffset++] = ((block1 >>> 55) & 127L);
+      values[valuesOffset++] = ((block1 & 63L) << 1) | (block0 >>> 63);
+      values[valuesOffset++] = (block1 >>> 6) & 127L;
+      values[valuesOffset++] = (block1 >>> 13) & 127L;
+      values[valuesOffset++] = (block1 >>> 20) & 127L;
+      values[valuesOffset++] = (block1 >>> 27) & 127L;
+      values[valuesOffset++] = (block1 >>> 34) & 127L;
+      values[valuesOffset++] = (block1 >>> 41) & 127L;
+      values[valuesOffset++] = (block1 >>> 48) & 127L;
+      values[valuesOffset++] = (block1 >>> 55) & 127L;
       final long block2 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block2 & 31L) << 2) | (block1 >>> 62));
-      values[valuesOffset++] = ((block2 >>> 5) & 127L);
-      values[valuesOffset++] = ((block2 >>> 12) & 127L);
-      values[valuesOffset++] = ((block2 >>> 19) & 127L);
-      values[valuesOffset++] = ((block2 >>> 26) & 127L);
-      values[valuesOffset++] = ((block2 >>> 33) & 127L);
-      values[valuesOffset++] = ((block2 >>> 40) & 127L);
-      values[valuesOffset++] = ((block2 >>> 47) & 127L);
-      values[valuesOffset++] = ((block2 >>> 54) & 127L);
+      values[valuesOffset++] = ((block2 & 31L) << 2) | (block1 >>> 62);
+      values[valuesOffset++] = (block2 >>> 5) & 127L;
+      values[valuesOffset++] = (block2 >>> 12) & 127L;
+      values[valuesOffset++] = (block2 >>> 19) & 127L;
+      values[valuesOffset++] = (block2 >>> 26) & 127L;
+      values[valuesOffset++] = (block2 >>> 33) & 127L;
+      values[valuesOffset++] = (block2 >>> 40) & 127L;
+      values[valuesOffset++] = (block2 >>> 47) & 127L;
+      values[valuesOffset++] = (block2 >>> 54) & 127L;
       final long block3 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block3 & 15L) << 3) | (block2 >>> 61));
-      values[valuesOffset++] = ((block3 >>> 4) & 127L);
-      values[valuesOffset++] = ((block3 >>> 11) & 127L);
-      values[valuesOffset++] = ((block3 >>> 18) & 127L);
-      values[valuesOffset++] = ((block3 >>> 25) & 127L);
-      values[valuesOffset++] = ((block3 >>> 32) & 127L);
-      values[valuesOffset++] = ((block3 >>> 39) & 127L);
-      values[valuesOffset++] = ((block3 >>> 46) & 127L);
-      values[valuesOffset++] = ((block3 >>> 53) & 127L);
+      values[valuesOffset++] = ((block3 & 15L) << 3) | (block2 >>> 61);
+      values[valuesOffset++] = (block3 >>> 4) & 127L;
+      values[valuesOffset++] = (block3 >>> 11) & 127L;
+      values[valuesOffset++] = (block3 >>> 18) & 127L;
+      values[valuesOffset++] = (block3 >>> 25) & 127L;
+      values[valuesOffset++] = (block3 >>> 32) & 127L;
+      values[valuesOffset++] = (block3 >>> 39) & 127L;
+      values[valuesOffset++] = (block3 >>> 46) & 127L;
+      values[valuesOffset++] = (block3 >>> 53) & 127L;
       final long block4 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block4 & 7L) << 4) | (block3 >>> 60));
-      values[valuesOffset++] = ((block4 >>> 3) & 127L);
-      values[valuesOffset++] = ((block4 >>> 10) & 127L);
-      values[valuesOffset++] = ((block4 >>> 17) & 127L);
-      values[valuesOffset++] = ((block4 >>> 24) & 127L);
-      values[valuesOffset++] = ((block4 >>> 31) & 127L);
-      values[valuesOffset++] = ((block4 >>> 38) & 127L);
-      values[valuesOffset++] = ((block4 >>> 45) & 127L);
-      values[valuesOffset++] = ((block4 >>> 52) & 127L);
+      values[valuesOffset++] = ((block4 & 7L) << 4) | (block3 >>> 60);
+      values[valuesOffset++] = (block4 >>> 3) & 127L;
+      values[valuesOffset++] = (block4 >>> 10) & 127L;
+      values[valuesOffset++] = (block4 >>> 17) & 127L;
+      values[valuesOffset++] = (block4 >>> 24) & 127L;
+      values[valuesOffset++] = (block4 >>> 31) & 127L;
+      values[valuesOffset++] = (block4 >>> 38) & 127L;
+      values[valuesOffset++] = (block4 >>> 45) & 127L;
+      values[valuesOffset++] = (block4 >>> 52) & 127L;
       final long block5 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block5 & 3L) << 5) | (block4 >>> 59));
-      values[valuesOffset++] = ((block5 >>> 2) & 127L);
-      values[valuesOffset++] = ((block5 >>> 9) & 127L);
-      values[valuesOffset++] = ((block5 >>> 16) & 127L);
-      values[valuesOffset++] = ((block5 >>> 23) & 127L);
-      values[valuesOffset++] = ((block5 >>> 30) & 127L);
-      values[valuesOffset++] = ((block5 >>> 37) & 127L);
-      values[valuesOffset++] = ((block5 >>> 44) & 127L);
-      values[valuesOffset++] = ((block5 >>> 51) & 127L);
+      values[valuesOffset++] = ((block5 & 3L) << 5) | (block4 >>> 59);
+      values[valuesOffset++] = (block5 >>> 2) & 127L;
+      values[valuesOffset++] = (block5 >>> 9) & 127L;
+      values[valuesOffset++] = (block5 >>> 16) & 127L;
+      values[valuesOffset++] = (block5 >>> 23) & 127L;
+      values[valuesOffset++] = (block5 >>> 30) & 127L;
+      values[valuesOffset++] = (block5 >>> 37) & 127L;
+      values[valuesOffset++] = (block5 >>> 44) & 127L;
+      values[valuesOffset++] = (block5 >>> 51) & 127L;
       final long block6 = blocks[blocksOffset++];
-      values[valuesOffset++] = (((block6 & 1L) << 6) | (block5 >>> 58));
-      values[valuesOffset++] = ((block6 >>> 1) & 127L);
-      values[valuesOffset++] = ((block6 >>> 8) & 127L);
-      values[valuesOffset++] = ((block6 >>> 15) & 127L);
-      values[valuesOffset++] = ((block6 >>> 22) & 127L);
-      values[valuesOffset++] = ((block6 >>> 29) & 127L);
-      values[valuesOffset++] = ((block6 >>> 36) & 127L);
-      values[valuesOffset++] = ((block6 >>> 43) & 127L);
-      values[valuesOffset++] = ((block6 >>> 50) & 127L);
-      values[valuesOffset++] = ((block6 >>> 57) & 127L);
+      values[valuesOffset++] = ((block6 & 1L) << 6) | (block5 >>> 58);
+      values[valuesOffset++] = (block6 >>> 1) & 127L;
+      values[valuesOffset++] = (block6 >>> 8) & 127L;
+      values[valuesOffset++] = (block6 >>> 15) & 127L;
+      values[valuesOffset++] = (block6 >>> 22) & 127L;
+      values[valuesOffset++] = (block6 >>> 29) & 127L;
+      values[valuesOffset++] = (block6 >>> 36) & 127L;
+      values[valuesOffset++] = (block6 >>> 43) & 127L;
+      values[valuesOffset++] = (block6 >>> 50) & 127L;
+      values[valuesOffset++] = block6 >>> 57;
     }
   }
 
@@ -219,7 +219,7 @@ final class BulkOperationPacked7 extends BulkOperationPacked {
       values[valuesOffset++] = ((byte5 & 3) << 5) | (byte4 >>> 3);
       final long byte6 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = ((byte6 & 1) << 6) | (byte5 >>> 2);
-      values[valuesOffset++] = byte6 >> 1;
+      values[valuesOffset++] = (byte6 >>> 1);
     }
   }
 

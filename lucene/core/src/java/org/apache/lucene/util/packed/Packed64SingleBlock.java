@@ -91,7 +91,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk get
     assert index % valuesPerBlock == 0;
     @SuppressWarnings("deprecation")
-    final PackedInts.Decoder decoder = BulkOperation.ofLegacy(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    final PackedInts.Decoder decoder = LegacyBulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
     assert decoder.longBlockCount() == 1;
     assert decoder.longValueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
@@ -136,7 +136,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk set
     assert index % valuesPerBlock == 0;
     @SuppressWarnings("deprecation")
-    final BulkOperation op = BulkOperation.ofLegacy(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    final LegacyBulkOperation op = LegacyBulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
     assert op.longBlockCount() == 1;
     assert op.longValueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;

@@ -28,7 +28,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
 
   final int packedIntsVersion;
   final PackedInts.Format format;
-  final BulkOperation bulkOperation;
+  final PackedInts.Decoder bulkOperation;
   final byte[] nextBlocks;
   final LongsRef nextValues;
   final int iterations;
@@ -39,7 +39,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     this.format = format;
     this.packedIntsVersion = packedIntsVersion;
     bulkOperation = packedIntsVersion < PackedInts.VERSION_LITTLE_ENDIAN 
-            ? BulkOperation.ofLegacy(format, bitsPerValue) : BulkOperation.of(format, bitsPerValue);
+            ? LegacyBulkOperation.of(format, bitsPerValue) : BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
     assert valueCount == 0 || iterations > 0;
     nextBlocks = new byte[iterations * bulkOperation.byteBlockCount()];

@@ -31,7 +31,7 @@ final class BulkOperationPacked1 extends BulkOperationPacked {
   public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
-      for (int shift = 0; shift < 64; shift++) {
+      for (int shift = 0; shift <= 63; shift += 1) {
         values[valuesOffset++] = (int) ((block >>> shift) & 1);
       }
     }
@@ -56,7 +56,7 @@ final class BulkOperationPacked1 extends BulkOperationPacked {
   public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
-      for (int shift = 0; shift < 64; shift++) {
+      for (int shift = 0; shift <= 63; shift += 1) {
         values[valuesOffset++] = (block >>> shift) & 1;
       }
     }

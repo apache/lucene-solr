@@ -21,7 +21,7 @@ package org.apache.lucene.util.packed;
 /**
  * Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED}.
  */
-class LegacyBulkOperationPacked extends BulkOperation {
+class LegacyBulkOperationPacked extends LegacyBulkOperation {
 
   private final int bitsPerValue;
   private final int longBlockCount;
