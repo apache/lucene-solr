@@ -501,7 +501,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // force open a realTimeSearcher to trigger a ulog cache refresh.
       // This refresh makes RTG handler aware of this update.q
       if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-        ulog.openRealtimeSearcher();
+        RealTimeGetComponent.openRealtimeSearcherOnNextGet(cmd.getReq().getCore());
       }
 
       if (clonedDoc != null) {

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -103,6 +104,8 @@ public class RealTimeGetComponent extends SearchComponent
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Set<String> NESTED_META_FIELDS = Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME, IndexSchema.NEST_PARENT_FIELD_NAME);
   public static final String COMPONENT_NAME = "get";
+  
+  private final AtomicBoolean openRealtimeSearcherOnNextGet = new AtomicBoolean();
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -298,6 +301,11 @@ public class RealTimeGetComponent extends SearchComponent
        }
 
        // didn't find it in the update log, so it should be in the newest searcher opened
+       if(openRealtimeSearcherOnNextGet.getAndSet(false)) {
+         if (ulog != null) {
+           ulog.openRealtimeSearcher();
+         }
+       }
        searcherInfo.init();
        // don't bother with ResultContext yet, we won't need it if doc doesn't match filters
 
@@ -619,6 +627,16 @@ public class RealTimeGetComponent extends SearchComponent
   }
   
   /**
+   * Marks the {@link RealTimeGetComponent} of the corresponding {@link SolrCore} to reload its realtime searcher before the next access.
+   * 
+   * @param core The core holding the {@link RealTimeGetComponent} which needs to reload the realtime searcher.
+   */
+  public static void openRealtimeSearcherOnNextGet(final SolrCore core) {
+    RealTimeGetComponent rtg = (RealTimeGetComponent) core.getSearchComponent(COMPONENT_NAME);
+    rtg.openRealtimeSearcherOnNextGet.set(true);
+  }
+  
+  /**
    * Obtains the latest document for a given id from the tlog or through the realtime searcher (if not found in the tlog). 
    * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
    * @param onlyTheseNonStoredDVs If not-null, populate only these DV fields in the document fetched through the realtime searcher. 
@@ -638,6 +656,14 @@ public class RealTimeGetComponent extends SearchComponent
         return null;
       }
 
+      RealTimeGetComponent rtg = (RealTimeGetComponent) core.getSearchComponent(COMPONENT_NAME);
+      if(rtg.openRealtimeSearcherOnNextGet.getAndSet(false)) {
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        if(ulog!=null) {
+          ulog.openRealtimeSearcher();
+        }
+      }
+      
       if (sid == null) {
         // didn't find it in the update log, so it should be in the newest searcher opened
         if (searcher == null) {
