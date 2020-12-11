@@ -31,6 +31,7 @@ class BulkOperationPacked extends BulkOperation {
   private final long mask;
   private final int intMask;
   private final int byteOffset;
+  private final int bitPerValueOffset;
   private final int longOffset;
 
   public BulkOperationPacked(int bitsPerValue) {
@@ -57,7 +58,8 @@ class BulkOperationPacked extends BulkOperation {
     }
     this.intMask = (int) mask;
     assert longValueCount * bitsPerValue == 64 * longBlockCount;
-    this.byteOffset = bitsPerValue - 8;
+    this.byteOffset = 8 - bitsPerValue;
+    this.bitPerValueOffset = bitsPerValue - 8;
     this.longOffset = 64 - bitsPerValue;
   }
 
@@ -109,7 +111,7 @@ class BulkOperationPacked extends BulkOperation {
     int pos = 0;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
       final long bytes = blocks[blocksOffset++] & 0xFFL;
-      if (pos < byteOffset) {
+      if (pos < bitsPerValue - 8) {
         // just buffer
         nextValue |= bytes << pos;
         pos += 8;
@@ -117,7 +119,7 @@ class BulkOperationPacked extends BulkOperation {
         // flush
         int bits = bitsPerValue - pos;
         values[valuesOffset++] = nextValue | ((bytes & ((1L << bits) - 1)) << pos);
-        while (bits >= byteOffset) {
+        while (bits <= byteOffset) {
           values[valuesOffset++] = (bytes >>> bits) & mask;
           bits += bitsPerValue;
         }
@@ -162,7 +164,7 @@ class BulkOperationPacked extends BulkOperation {
     int pos = 0;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
       final int bytes = blocks[blocksOffset++] & 0xFF;
-      if (pos < byteOffset) {
+      if (pos < bitPerValueOffset) {
         // just buffer
         nextValue |= bytes << pos;
         pos += 8;
@@ -170,7 +172,7 @@ class BulkOperationPacked extends BulkOperation {
         // flush
         int bits = bitsPerValue - pos;
         values[valuesOffset++] = (nextValue | ((bytes & ((1 << bits) - 1)) << pos));
-        while (bits >= byteOffset) {
+        while (bits <= byteOffset) {
           values[valuesOffset++] = ((bytes >>> bits) & intMask);
           bits += bitsPerValue;
         }
@@ -240,7 +242,7 @@ class BulkOperationPacked extends BulkOperation {
     for (int i = 0; i < byteValueCount * iterations; ++i) {
       final long v = values[valuesOffset++];
       assert PackedInts.unsignedBitsRequired(v) <= bitsPerValue;
-      if (pos < -byteOffset) {
+      if (pos < byteOffset) {
         // just buffer
         nextBlock |= v << pos;
         pos += bitsPerValue;
@@ -248,7 +250,7 @@ class BulkOperationPacked extends BulkOperation {
         // flush as many blocks as possible
         blocks[blocksOffset++] = (byte) (nextBlock | (v  << pos));
         int bits = 8 - pos;
-        while (bits <= byteOffset) {
+        while (bits <= bitPerValueOffset) {
           blocks[blocksOffset++] = (byte) (v >> bits);
           bits += 8;
         }
@@ -268,7 +270,7 @@ class BulkOperationPacked extends BulkOperation {
     for (int i = 0; i < byteValueCount * iterations; ++i) {
       final int v = values[valuesOffset++];
       assert PackedInts.unsignedBitsRequired(v & 0xFFFFFFFFL) <= bitsPerValue;
-      if (pos < -byteOffset) {
+      if (pos < byteOffset) {
         // just buffer
         nextBlock |= v << pos;
         pos += bitsPerValue;
@@ -276,7 +278,7 @@ class BulkOperationPacked extends BulkOperation {
         // flush as many blocks as possible
         blocks[blocksOffset++] = (byte) (nextBlock | (v << pos));
         int bits = 8 - pos;
-        while (bits <= byteOffset) {
+        while (bits <= bitPerValueOffset) {
           blocks[blocksOffset++] = (byte) (v >>> bits);
           bits += 8;
         }
