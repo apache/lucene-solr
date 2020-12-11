@@ -155,9 +155,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     if (tableSize >= 0) {
       entry.table = new long[tableSize];
       ramBytesUsed += RamUsageEstimator.sizeOf(entry.table);
-      for (int i = 0; i < tableSize; ++i) {
-        entry.table[i] = meta.readLong();
-      }
+      meta.readLongs(entry.table, 0, tableSize);
     }
     if (tableSize < -1) {
       entry.blockShift = -2 - tableSize;
