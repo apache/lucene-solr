@@ -723,6 +723,8 @@ public class ZkController implements Closeable {
     assert cd != null;
 
     String collection = cd.getCollectionName();
+    if (collection == null) return;
+
     DocCollection dc = getClusterState().getCollectionOrNull(collection);
     if (dc == null) return;
 
