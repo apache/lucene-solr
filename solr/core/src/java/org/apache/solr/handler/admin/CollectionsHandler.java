@@ -1306,7 +1306,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, slice.getName(), zkController.getZkClient())) {
       // if an active replica is the leader, then all is fine already
       Replica leader = slice.getLeader();
-      if (leader != null && leader.getState() == State.ACTIVE && zkShardTerms.getHighestTerm() == zkShardTerms.getTerm(leader.getName())) {
+      if (leader != null && leader.getState() == State.ACTIVE) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
       }
