@@ -169,6 +169,7 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42));
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12));
+
     ScorerSupplier s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 1);
     assertEquals(42 + 12, s.cost());
     assertEquals(42 + 12, s.get(random().nextInt(100)).iterator().cost());
@@ -177,20 +178,39 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
     s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 1);
     assertEquals(42 + 12 + 20, s.cost());
     assertEquals(42 + 12 + 20, s.get(random().nextInt(100)).iterator().cost());
-    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 2);
-    assertEquals(12 + 20, s.cost());
-    assertEquals(12 + 20, s.get(random().nextInt(100)).iterator().cost());
+
+    ScoreMode scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
+    int minShouldMatchSumScorerCost = 12 + 20;
+    int wandScorerCost = 42 + 12 + 20;
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    int cost = scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost;
+    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 2);
+    assertEquals(cost, s.cost());
+    assertEquals(cost, s.get(random().nextInt(100)).iterator().cost());
 
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30));
+
     s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 1);
     assertEquals(42 + 12 + 20 + 30, s.cost());
     assertEquals(42 + 12 + 20 + 30, s.get(random().nextInt(100)).iterator().cost());
-    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 2);
-    assertEquals(12 + 20 + 30, s.cost());
-    assertEquals(12 + 20 + 30, s.get(random().nextInt(100)).iterator().cost());
-    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 3);
-    assertEquals(12 + 20, s.cost());
-    assertEquals(12 + 20, s.get(random().nextInt(100)).iterator().cost());
+
+    scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
+    minShouldMatchSumScorerCost = 12 + 20 + 30;
+    wandScorerCost = 42 + 12 + 20 + 30;
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    cost = scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost;
+    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 2);
+    assertEquals(cost, s.cost());
+    assertEquals(cost, s.get(random().nextInt(100)).iterator().cost());
+
+    scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
+    minShouldMatchSumScorerCost = 12 + 20;
+    wandScorerCost = 42 + 30 + 12 + 20;
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    cost = scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost;
+    s = new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 3);
+    assertEquals(cost, s.cost());
+    assertEquals(cost, s.get(random().nextInt(100)).iterator().cost());
   }
 
   public void testDuelCost() throws Exception {
@@ -282,45 +302,64 @@ public class TestBoolean2ScorerSupplier extends LuceneTestCase {
       subs.put(occur, new ArrayList<>());
     }
 
+    ScoreMode scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
     // minShouldMatch is 2 so the 2 least costly clauses will lead iteration
     // and their cost will be 30+12=42
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(50, 42));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 42));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 42));
-    new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 2).get(100); // triggers assertions as a side-effect
+    int minShouldMatchSumScorerCost = 30 + 12;
+    // the cost calculation here copies that in WANDScorer's constructor
+    int wandScorerCost = 50 + 12 + 30;
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    int adjustedLeadCost = scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost;
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(50, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, adjustedLeadCost));
+    new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 2).get(100); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
+    scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
     // If the leadCost is less than the msm cost, then it wins
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 20));
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 20));
     subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 20));
-    new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 2).get(20); // triggers assertions as a side-effect
+    new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 2).get(20); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 62));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 62));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 62));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, 62));
-    new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 2).get(100); // triggers assertions as a side-effect
+    scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
+    minShouldMatchSumScorerCost = 12 + 30 + 20; // 62
+    // the cost calculation here copies that in WANDScorer's constructor
+    wandScorerCost = 42 + 12 + 30 + 20; // 104
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    adjustedLeadCost = Math.min(100, scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost);
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, adjustedLeadCost));
+    new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 2).get(100); // triggers assertions as a side-effect
 
     subs = new EnumMap<>(Occur.class);
     for (Occur occur : Occur.values()) {
       subs.put(occur, new ArrayList<>());
     }
 
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, 32));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, 32));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, 32));
-    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, 32));
-    new Boolean2ScorerSupplier(new FakeWeight(), subs, RandomPicks.randomFrom(random(), ScoreMode.values()), 3).get(100); // triggers assertions as a side-effect
+    scoreMode = RandomPicks.randomFrom(random(), ScoreMode.values());
+    minShouldMatchSumScorerCost = 12 + 20; // 32
+    // the cost calculation here copies that in WANDScorer's constructor
+    wandScorerCost = 42 + 12 + 30 + 20; // 104
+    // nocommit WANDScorer only applicable when ScoreMode.TOP_SCORES
+    adjustedLeadCost = Math.min(100, scoreMode == ScoreMode.TOP_SCORES ? wandScorerCost : minShouldMatchSumScorerCost);
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(42, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(12, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(30, adjustedLeadCost));
+    subs.get(Occur.SHOULD).add(new FakeScorerSupplier(20, adjustedLeadCost));
+    new Boolean2ScorerSupplier(new FakeWeight(), subs, scoreMode, 3).get(100); // triggers assertions as a side-effect
   }
 
   public void testProhibitedLeadCost() throws IOException {

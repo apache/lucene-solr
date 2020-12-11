@@ -130,10 +130,19 @@ final class WANDScorer extends Scorer {
 
   int upTo; // upper bound for which max scores are valid
 
-  WANDScorer(Weight weight, Collection<Scorer> scorers) throws IOException {
+  int minShouldMatch;
+  int freq;
+
+  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) throws IOException {
     super(weight);
 
+    if (minShouldMatch > scorers.size()) {
+      throw new IllegalArgumentException("minShouldMatch should be <= the number of scorers");
+    }
+
     this.minCompetitiveScore = 0;
+    this.minShouldMatch = minShouldMatch > 0 ? minShouldMatch : 0;
+
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
 
@@ -271,6 +280,19 @@ final class WANDScorer extends Scorer {
             return false;
           }
         }
+
+        // minCompetitiveScore satisfied, now checks if the doc has enough required number of matches
+        // Combining this loop with the above makes for complicated conditional checks, so keeping them separate for readability
+        while (freq < minShouldMatch) {
+          if (freq + tailSize >= minShouldMatch) {
+            // a match on doc is still possible, try to
+            // advance scorers from the tail
+            advanceTail();
+          } else {
+            return false;
+          }
+        }
+
         return true;
       }
 
@@ -288,6 +310,7 @@ final class WANDScorer extends Scorer {
     lead.next = this.lead;
     this.lead = lead;
     leadMaxScore += lead.maxScore;
+    freq += 1;
   }
 
   /** Move disis that are in 'lead' back to the tail.  */
@@ -425,6 +448,7 @@ final class WANDScorer extends Scorer {
     lead = head.pop();
     lead.next = null;
     leadMaxScore = lead.maxScore;
+    freq = 1;
     doc = lead.doc;
     while (head.size() > 0 && head.top().doc == doc) {
       addLead(head.pop());
@@ -442,6 +466,23 @@ final class WANDScorer extends Scorer {
         break;
       }
     }
+
+      // nocommit Do we still need the following given TwoPhaseIterator.matches already performs the check
+//     minCompetitiveScore satisfied, now checks if the doc has enough required number of matches
+//    while (freq < minShouldMatch) {
+//      if (freq + tailSize >= minShouldMatch) {
+//        // a match on doc is still possible, try to
+//        // advance scorers from the tail
+//        advanceTail();
+//      } else {
+//        pushBackLeads(doc + 1);
+//        moveToNextCandidate(doc + 1);
+//        assert ensureConsistent();
+//        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+//          break;
+//        }
+//      }
+//    }
 
     return doc;
   }

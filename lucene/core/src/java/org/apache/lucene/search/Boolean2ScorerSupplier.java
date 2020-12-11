@@ -68,9 +68,15 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       return minRequiredCost.getAsLong();
     } else {
       final Collection<ScorerSupplier> optionalScorers = subs.get(Occur.SHOULD);
-      final long shouldCost = MinShouldMatchSumScorer.cost(
-          optionalScorers.stream().mapToLong(ScorerSupplier::cost),
-          optionalScorers.size(), minShouldMatch);
+      // nocommit The cost calculation here copies that in WANDScorer's constructor, and may need to be adjusted?
+      final long shouldCost = scoreMode == ScoreMode.TOP_SCORES ?
+                              optionalScorers.stream().mapToLong(ScorerSupplier::cost).sum() :
+                              MinShouldMatchSumScorer.cost(
+                                      optionalScorers.stream().mapToLong(ScorerSupplier::cost),
+                                      optionalScorers.size(),
+                                      minShouldMatch);
+
+
       return Math.min(minRequiredCost.orElse(Long.MAX_VALUE), shouldCost);
     }
   }
@@ -195,10 +201,13 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       for (ScorerSupplier scorer : optional) {
         optionalScorers.add(scorer.get(leadCost));
       }
-      if (minShouldMatch > 1) {
+
+      if (scoreMode == ScoreMode.TOP_SCORES) {
+        return new WANDScorer(weight, optionalScorers, minShouldMatch);
+      } else if (minShouldMatch > 1) {
+        // nocommit minShouldMath > 1 && scoreMode != ScoreMode.TOP_SCORES still requires MinShouldMatchSumScorer.
+        // Do we want to depcate this entirely now ?
         return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
-      } else if (scoreMode == ScoreMode.TOP_SCORES) {
-        return new WANDScorer(weight, optionalScorers);
       } else {
         return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
