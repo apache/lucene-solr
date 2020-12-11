@@ -98,23 +98,12 @@ public class ParWork implements Closeable {
 
   public static void shutdownParWorkExecutor(ParWorkExecutor executor, boolean wait) {
     if (executor != null) {
-      ((ParWorkExecutor) executor).disableCloseLock();
+      executor.disableCloseLock();
       executor.shutdown();
       if (wait) {
-        try {
-          executor.awaitTermination(1000, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-          log.debug("Interrupted during short wait for root exec termination");
-        }
-        if (!executor.isTerminated()) {
-          log.error("Executor did not shut down fast enough", new SolrException(SolrException.ErrorCode.FORBIDDEN, "Enhance your calm."));
-          executor.shutdownNow();
-
-          ExecutorUtil.shutdownAndAwaitTermination(executor);
-        }
+        ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
     }
-
   }
 
 

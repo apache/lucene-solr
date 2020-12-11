@@ -69,7 +69,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
 
   public void testWaitForStateBeforeShutDown() throws Exception {
     final String col_name = "test_col";
-    final ExecutorService executor = testExecutor;
+    final ExecutorService executor = getTestExecutor();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
       (1, createTempDir(), buildJettyConfig("/solr"));
     try {

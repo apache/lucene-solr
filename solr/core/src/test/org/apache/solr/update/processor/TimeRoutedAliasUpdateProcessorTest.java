@@ -306,7 +306,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // Using threads to ensure that two TRA's  are simultaneously preemptively creating and don't
     // interfere with each other
-    ExecutorService executorService = testExecutor;
+    ExecutorService executorService = getTestExecutor();
 
     Exception[] threadExceptions = new Exception[2];
     boolean[] threadStarted = new boolean[2];

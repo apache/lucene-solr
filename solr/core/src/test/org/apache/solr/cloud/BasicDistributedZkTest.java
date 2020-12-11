@@ -162,7 +162,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     
     sliceCount = 2;
-    completionService = new ExecutorCompletionService<>(testExecutor);
+    completionService = new ExecutorCompletionService<>(getTestExecutor());
     pending = new HashSet<>();
     
   }
@@ -709,7 +709,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       int cnt = 3;
 
       // create the cores
-      createCollectionInOneInstance(httpSolrClient, jetty.getNodeName(), testExecutor, "multiunload2", 1, cnt);
+      createCollectionInOneInstance(httpSolrClient, jetty.getNodeName(), getTestExecutor(), "multiunload2", 1, cnt);
     }
 
     cloudJettys.get(0).jetty.stop();
@@ -1018,8 +1018,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       unloadCmd.setCoreName(props.getName());
 
       String leader = props.getCoreUrl();
-      
-      testExecutor.execute(new Runnable() {
+
+      getTestExecutor().execute(new Runnable() {
         
         @Override
         public void run() {

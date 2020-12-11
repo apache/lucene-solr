@@ -81,7 +81,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
       initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), searcher));
     }
 
-    final ExecutorService pool  = testExecutor;
+    final ExecutorService pool  = getTestExecutor();
 
     try {
       TestInjection.uifOutOfMemoryError = true;

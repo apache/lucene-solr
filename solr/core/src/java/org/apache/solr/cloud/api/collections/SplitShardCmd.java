@@ -444,9 +444,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
         }
 
+        // don't fail on this
         String msgOnError = "SPLITSHARD failed while asking sub shard leaders to apply buffered updates";
-        shardRequestTracker.processResponses(results, shardHandler, true, msgOnError, Collections.singleton("org.apache.solr.common.SolrException"));
-        handleFailureOnAsyncRequest(results, msgOnError);
+        shardRequestTracker.processResponses(results, shardHandler, false, msgOnError);
+        //handleFailureOnAsyncRequest(results, msgOnError);
       }
       t.stop();
 

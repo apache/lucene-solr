@@ -303,18 +303,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     final String collectionName = "reloaded_collection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(10).process(cluster.getSolrClient());
 
-    // get core open times
-    Map<String, Long> urlToTimeBefore = new HashMap<>();
-    collectStartTimes(collectionName, urlToTimeBefore);
-    assertTrue(urlToTimeBefore.size() > 0);
-
-    Thread.sleep(50);
-
     CollectionAdminRequest.reloadCollection(collectionName).processAsync(cluster.getSolrClient());
-
-    // reloads make take a short while
-    boolean allTimesAreCorrect = waitForReloads(collectionName, urlToTimeBefore);
-    assertTrue("some core start times did not change on reload", allTimesAreCorrect);
   }
 
   private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {

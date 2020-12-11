@@ -40,7 +40,7 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
   private CloseTracker closeTracker;
 
   public ParWorkExecutor(String name, int maxPoolsSize) {
-    this(name, 0, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
+    this(name, 4, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize) {
@@ -58,10 +58,9 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
     if (isShutdown()) {
       return;
     }
-
     if (closeTracker != null) closeTracker.close();
     setKeepAliveTime(1, TimeUnit.NANOSECONDS);
-    for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount()); i++) {
+    for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount() + 1); i++) {
       try {
         submit(() -> {
         });
@@ -69,6 +68,7 @@ public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
         break;
       }
     }
+    setKeepAliveTime(1, TimeUnit.NANOSECONDS);
     allowCoreThreadTimeOut(true);
 
     super.shutdown();

@@ -225,7 +225,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     final AtomicInteger numFailure = new AtomicInteger(0);
     final CountDownLatch latch = new CountDownLatch((TEST_NIGHTLY ? 10 : 3));
     
-    ExecutorService es = testExecutor;
+    ExecutorService es = getTestExecutor();
     List<Future> futures = new ArrayList<>();
     try {
       for (int i = 0; i < (TEST_NIGHTLY ? 10 : 3); i++) {

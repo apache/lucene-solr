@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,7 +90,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -168,9 +168,7 @@ public class IndexFetcher {
 
   private Integer soTimeout;
 
-  private boolean downloadTlogFiles = false;
-
-  private boolean skipCommitOnMasterVersionZero = false;
+  private boolean skipCommitOnMasterVersionZero = true;
 
   private boolean clearLocalIndexFirst = false;
 
@@ -334,6 +332,8 @@ public class IndexFetcher {
 
       files = (List<Map<String,Object>>) response.get(CONF_FILES);
       if (files != null) confFilesToDownload = Collections.synchronizedList(files);
+
+
     } catch (SolrServerException e) {
       throw new IOException(e);
     }
@@ -518,6 +518,7 @@ public class IndexFetcher {
 
       tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
 
+
       // cindex dir...
       indexDirPath = solrCore.getIndexDir();
       indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -579,6 +580,7 @@ public class IndexFetcher {
 
           long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir,
               tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? Long.valueOf(bytesDownloaded / timeTakenSeconds) : null);
           log.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
@@ -594,6 +596,7 @@ public class IndexFetcher {
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
             }
+
             if (successfulInstall) {
               if (isFullCopyNeeded) {
                 // let the system know we are changing dir's and the old one
@@ -614,19 +617,20 @@ public class IndexFetcher {
             }
           } else {
             terminateAndWaitFsyncService();
-            if (isFullCopyNeeded && successfulInstall) {
+            if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (!successfulInstall) {
                 log.error("Modify index props failed");
               }
               if (successfulInstall) deleteTmpIdxDir = false;
-            } else if (successfulInstall) {
+            } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
 
               if (!successfulInstall) {
                 log.error("Move index files failed");
               }
             }
+
             if (successfulInstall) {
               logReplicationTimeAndConfFiles(modifiedConfFiles,
                   successfulInstall);
@@ -635,7 +639,7 @@ public class IndexFetcher {
         } finally {
           solrCore.searchEnabled = true;
           solrCore.indexEnabled = true;
-          if (!isFullCopyNeeded && successfulInstall) {
+          if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
         }
@@ -674,6 +678,8 @@ public class IndexFetcher {
               reloadCore);
           successfulInstall = fetchLatestIndex(true, reloadCore).getSuccessful();
         }
+
+        markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
         log.error("User aborted Replication");
@@ -720,7 +726,7 @@ public class IndexFetcher {
       }
     } finally {
 
-      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
+      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload;
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
@@ -1028,9 +1034,11 @@ public class IndexFetcher {
     doDifferentialCopy = false; // what about windows or link unsupported?
 
     long totalSpaceRequired = 0;
-    for (Map<String, Object> file : filesToDownload) {
-      long size = (Long) file.get(SIZE);
-      totalSpaceRequired += size;
+    synchronized (filesToDownload) {
+      for (Map<String,Object> file : filesToDownload) {
+        long size = (Long) file.get(SIZE);
+        totalSpaceRequired += size;
+      }
     }
 
     if (log.isInfoEnabled()) {
@@ -1045,14 +1053,15 @@ public class IndexFetcher {
     try {
       // nocommit
     //try (ParWork parWork = new ParWork(this, false)) {
-      for (Map<String,Object> file : filesToDownload) {
-        String filename = (String) file.get(NAME);
-        long size = (Long) file.get(SIZE);
-        CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
-        boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
+      synchronized (filesToDownload) {
+        for (Map<String,Object> file : filesToDownload) {
+          String filename = (String) file.get(NAME);
+          long size = (Long) file.get(SIZE);
+          CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
+          boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
 
-        boolean finalDoDifferentialCopy = doDifferentialCopy;
-      //  parWork.collect("IndexFetcher", () -> {
+          boolean finalDoDifferentialCopy = doDifferentialCopy;
+          //  parWork.collect("IndexFetcher", () -> {
           if (log.isDebugEnabled()) {
             log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
           }
@@ -1064,8 +1073,11 @@ public class IndexFetcher {
               }
               // A hard link here should survive the eventual directory move, and should be more space efficient as
               // compared to a file copy. TODO: Maybe we could do a move safely here?
-            //  Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+
+              // TODO: only for local
+              //Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
               bytesDownloaded.add(localFile.length());
+              moveAFile(tmpIndexDir, tmpIndexDir, filename);
             } else {
               try {
                 dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
@@ -1084,9 +1096,10 @@ public class IndexFetcher {
               log.debug("Skipping download for {} because it already exists", file.get(NAME));
             }
           }
-     //   });
+          //   });
 
-       }
+        }
+      }
     } finally {
       fileFetchRequests.clear();
     }
@@ -1161,8 +1174,6 @@ public class IndexFetcher {
     this.solrCore.closeSearcher();
     assert testWait.getAsBoolean();
     solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
-    //solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(this.solrCore, false);
-   // solrCore.getUpdateHandler().getSolrCoreState().newIndexWriter(this.solrCore, false);
     for (String f : filesTobeDeleted) {
       try {
         indexDir.deleteFile(f);
@@ -1189,7 +1200,7 @@ public class IndexFetcher {
     CompareResult compareResult = new CompareResult();
     try {
       try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
-        long indexFileLen = indexInput.length();
+        long indexFileLen = indexDir.fileLength(filename);
         long indexFileChecksum = 0;
         
         if (backupIndexFileChecksum != null) {
@@ -1245,7 +1256,7 @@ public class IndexFetcher {
    *  unexpected error. */
   private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
-      dir.openInput(fileName, IOContext.DEFAULT).close();
+      dir.openInput(fileName, IOContext.READONCE).close();
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;
@@ -1268,17 +1279,20 @@ public class IndexFetcher {
         if (checksum != null) {
           if (!(compareFile(dir, filename, length, checksum).equal)) {
             // file exists and size or checksum is different, therefore we must download it again
+            log.info("Index is stale using checksums");
             return true;
           }
         } else {
           if (length != dir.fileLength(filename)) {
             log.warn("File {} did not match. expected length is {} and actual length is {}",
                 filename, length, dir.fileLength(filename));
+            log.info("Index is stale using file lengths");
             return true;
           }
         }
       }
     }
+    log.info("Index is not stale");
     return false;
   }
 
@@ -1325,22 +1339,24 @@ public class IndexFetcher {
       }
     }
     String segmentsFile = null;
-    for (Map<String, Object> f : filesDownloaded) {
-      String fname = (String) f.get(NAME);
-      // the segments file must be copied last
-      // or else if there is a failure in between the
-      // index will be corrupted
-      if (fname.startsWith("segments_")) {
-        //The segments file must be copied in the end
-        //Otherwise , if the copy fails index ends up corrupted
-        segmentsFile = fname;
-        continue;
+    synchronized (filesToDownload) {
+      for (Map<String,Object> f : filesDownloaded) {
+        String fname = (String) f.get(NAME);
+        // the segments file must be copied last
+        // or else if there is a failure in between the
+        // index will be corrupted
+        if (fname.startsWith("segments_")) {
+          //The segments file must be copied in the end
+          //Otherwise , if the copy fails index ends up corrupted
+          segmentsFile = fname;
+          continue;
+        }
+        if (!moveAFile(tmpIdxDir, indexDir, fname)) return false;
       }
-      if (!moveAFile(tmpIdxDir, indexDir, fname)) return false;
-    }
-    //copy the segments file last
-    if (segmentsFile != null) {
-      if (!moveAFile(tmpIdxDir, indexDir, segmentsFile)) return false;
+      //copy the segments file last
+      if (segmentsFile != null) {
+        if (!moveAFile(tmpIdxDir, indexDir, segmentsFile)) return false;
+      }
     }
     return true;
   }
@@ -1494,13 +1510,19 @@ public class IndexFetcher {
   }
 
   static boolean delTree(File dir) {
-    try {
-      org.apache.lucene.util.IOUtils.rm(dir.toPath());
-      return true;
-    } catch (IOException e) {
-      log.warn("Unable to delete directory : {}", dir, e);
-      return false;
+    while (Files.exists(dir.toPath())) {
+
+      try {
+        Files.walk(dir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+      } catch (NoSuchFileException e) {
+
+      } catch (IOException e) {
+        log.warn("Unable to delete directory : {}", dir, e);
+        return false;
+      }
     }
+
+    return true;
   }
 
   /**
@@ -1647,7 +1669,7 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
-        final FastInputStream is = getStream();
+        final InputStream is = getStream();
         while (true) {
           int result;
           try {
@@ -1659,13 +1681,10 @@ public class IndexFetcher {
             }
             //if there is an error continue. But continue from the point where it got broken
           } finally {
+
             if (is != null) {
-              if (is != null) {
-                while (is.read() != -1) {}
-                // is.close();
+              while (is.read() != -1) {
               }
-              // dont close
-              //IOUtils.closeQuietly(is);
             }
           }
         }
@@ -1682,7 +1701,7 @@ public class IndexFetcher {
       }
     }
 
-    private int fetchPackets(FastInputStream fis) throws Exception {
+    private int fetchPackets(InputStream fis) throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
       try {
@@ -1693,7 +1712,7 @@ public class IndexFetcher {
             throw new ReplicationHandlerException("User aborted replication");
           }
           long checkSumServer = -1;
-          fis.readFully(intbytes);
+          fis.read(intbytes, 0, intbytes.length);
           //read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
@@ -1707,11 +1726,12 @@ public class IndexFetcher {
           }
           if (checksum != null) {
             //read the checksum
-            fis.readFully(longbytes);
+            fis.read(longbytes, 0, longbytes.length);
             checkSumServer = readLong(longbytes);
           }
           //then read the packet of bytes
-          fis.readFully(buf, 0, packetSize);
+          fis.read(buf, 0, packetSize);
+
           //compare the checksum as sent from the master
           if (includeChecksum) {
             checksum.reset();
@@ -1801,7 +1821,7 @@ public class IndexFetcher {
     /**
      * Open a new stream using HttpClient
      */
-    private FastInputStream getStream() throws IOException {
+    private InputStream getStream() throws IOException {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -1815,16 +1835,16 @@ public class IndexFetcher {
 //        params.set(COMPRESSION, "true");
 //      }
       //use checksum
-      if (this.includeChecksum) {
-        params.set(CHECKSUM, true);
-      }
+
+      params.set(CHECKSUM, true);
+
       //wt=filestream this is a custom protocol
       params.set(CommonParams.WT, FILE_STREAM);
       // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
       // the server starts from the offset
-      if (bytesDownloaded > 0) {
-        params.set(OFFSET, Long.toString(bytesDownloaded));
-      }
+//      if (bytesDownloaded > 0) {
+//        params.set(OFFSET, Long.toString(bytesDownloaded));
+//      }
 
 
       @SuppressWarnings({"rawtypes"})
@@ -1849,12 +1869,14 @@ public class IndexFetcher {
           @Override
           public void onFailure(Throwable throwable) {
             log.error("Exception fetching file", throwable);
+            latch.countDown();
           }
         });
 
         fileFetchRequests.put(fileName, resp);
-
-        latch.await();
+        if (!stop) {
+          latch.await(5, TimeUnit.SECONDS );
+        }
         is = ais.get();
         if (is == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
@@ -1862,13 +1884,12 @@ public class IndexFetcher {
 //        if (useInternalCompression) {
 //          is = new InflaterInputStream(is);
 //        }
-        return new FastInputStream(is);
+        return is;
       } catch (Exception e) {
         //close stream on error
         try {
           while (is.read() != -1) {
           }
-          // is.close();
         } catch (Exception e1) {
           // quietly
         }

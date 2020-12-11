@@ -441,7 +441,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final int numThreads = random().nextInt(TEST_NIGHTLY ? 4 : 2) + 1;
     final List<Future<?>> futures = new ArrayList<>(numThreads);
     for (int i = 0; i < numThreads; i++) {
-      futures.add(testExecutor.submit(new BatchIndexer(i)));
+      futures.add(getTestExecutor().submit(new BatchIndexer(i)));
     }
     final int totalDocsExpected = numThreads * numBatchesPerThread * numDocsPerBatch;
 

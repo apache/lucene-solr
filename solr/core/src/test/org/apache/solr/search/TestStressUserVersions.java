@@ -316,7 +316,7 @@ public class TestStressUserVersions extends TestRTGBase {
       threads.add(thread);
     }
 
-    testExecutor.invokeAll(threads);
+    getTestExecutor().invokeAll(threads);
   }
 
 }

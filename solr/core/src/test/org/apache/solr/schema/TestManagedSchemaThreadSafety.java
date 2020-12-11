@@ -117,7 +117,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     client.upConfig(configset("cloud-managed-upgrade"), configsetName);
 
 
-    ExecutorService executor = testExecutor;
+    ExecutorService executor = getTestExecutor();
     
     try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
 

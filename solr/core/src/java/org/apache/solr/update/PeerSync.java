@@ -210,7 +210,7 @@ public class PeerSync implements SolrMetricProducer {
 
         for (;;)  {
           log.info("looping in check for versions on others");
-          ShardResponse srsp = shardHandler.takeCompletedIncludingErrors();
+          ShardResponse srsp = shardHandler.takeCompletedOrError();
           if (srsp == null) break;
           if (srsp.getException() == null)  {
             log.info("checking if others have versions {} {}", srsp.getSolrResponse().getResponse());

@@ -101,7 +101,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   @Ignore // nocommit don't think the test is right
   public void testReloadDuringBuild() throws Exception {
-    ExecutorService executor = testExecutor;
+    ExecutorService executor = getTestExecutor();
     // Build the suggester in the background with a long dictionary
     Future job = executor.submit(() ->
             expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
@@ -118,7 +118,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   @Ignore // nocommit don't think the test is right
   public void testShutdownDuringBuild() throws Exception {
-    ExecutorService executor = testExecutor;
+    ExecutorService executor = getTestExecutor();
     try {
       LinkedHashMap<Class<? extends Throwable>, List<Class<? extends Throwable>>> expected = new LinkedHashMap<>();
       expected.put(RuntimeException.class, Arrays.asList

@@ -320,7 +320,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
 
       // create the cores
-      createCollectionInOneInstance(adminClient, jetty.getNodeName(), testExecutor, "multiunload", 2, numReplicas);
+      createCollectionInOneInstance(adminClient, jetty.getNodeName(), getTestExecutor(), "multiunload", 2, numReplicas);
       List<Callable<Object>> calls = new ArrayList<>();
 
       List<Replica> replicas = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection("multiunload").getReplicas();
@@ -337,7 +337,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
         });
         Thread.sleep(random().nextInt(50));
       }
-      testExecutor.invokeAll(calls);
+      getTestExecutor().invokeAll(calls);
     }
   }
 }

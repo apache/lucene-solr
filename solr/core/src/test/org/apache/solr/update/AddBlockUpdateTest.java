@@ -111,7 +111,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     }
     inputFactory = XMLInputFactory.newInstance();
 
-    exe = testExecutor;
+    exe = getTestExecutor();
 
     counter.set(0);
     initCore("solrconfig.xml", "schema15.xml");

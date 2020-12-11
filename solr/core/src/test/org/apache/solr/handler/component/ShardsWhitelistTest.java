@@ -37,7 +37,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
@@ -52,10 +51,10 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
   private static final String EXPLICIT_WHITELIST_PROPERTY = "solr.tests.ShardsWhitelistTest.explicitWhitelist.";
   protected final String COLLECTION_NAME = "ShardsWhitelistTestCollection";
 
-  private int numShards;
-  private int numReplicas;
-  private int maxShardsPerNode;
-  private int nodesPerCluster;
+  private volatile int numShards;
+  private volatile int numReplicas;
+  private volatile int maxShardsPerNode;
+  private volatile int nodesPerCluster;
 
   private static void appendClusterNodes(final StringBuilder sb, final String delimiter,
       final MiniSolrCloudCluster cluster) {
@@ -70,7 +69,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
     numShards = 2; // +random().nextInt(2);
     numReplicas = 1; // +random().nextInt(2);
     maxShardsPerNode = 1; // +random().nextInt(2);
-    nodesPerCluster = (numShards * numReplicas + (maxShardsPerNode - 1)) / maxShardsPerNode;
+    nodesPerCluster = numShards * numReplicas;
 
     final StringBuilder sb = new StringBuilder();
 
@@ -129,6 +128,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
+
     assertThat(getShardHandlerFactory(EXPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), notNullValue());
     assertThat(getShardHandlerFactory(IMPLICIT_CLUSTER_KEY).getWhitelistHostChecker().getWhitelistHosts(), nullValue());
 
@@ -144,13 +144,19 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
     MiniSolrCloudCluster implicitCluster = clusterId2cluster.get(IMPLICIT_CLUSTER_KEY);
     MiniSolrCloudCluster explicitCluster = clusterId2cluster.get(EXPLICIT_CLUSTER_KEY);
 
-    for (Map.Entry<String,MiniSolrCloudCluster> entry : clusterId2cluster.entrySet()) {
+
+    clusterId2cluster.forEach((s, miniSolrCloudCluster) -> {
+
+      miniSolrCloudCluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards);
+
       List<SolrInputDocument> docs = new ArrayList<>(10);
       for (int i = 0; i < 10; i++) {
-        docs.add(new SolrInputDocument("id", entry.getKey() + i));
+        docs.add(new SolrInputDocument("id", s + i));
       }
-      MiniSolrCloudCluster cluster = entry.getValue();
-      cluster.getSolrClient().add(COLLECTION_NAME, docs);
+      MiniSolrCloudCluster cluster = miniSolrCloudCluster;
+      try {
+        cluster.getSolrClient().add(COLLECTION_NAME, docs);
+
       cluster.getSolrClient().commit(COLLECTION_NAME, true, true);
 
       // test using ClusterState elements
@@ -160,7 +166,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           numDocs("*:*", "s1,s2", cluster), is(10));
 
       // test using explicit urls from within the cluster
-      assertThat("Shards has the full URLs, should be allowed since they are internal. Cluster=" + entry.getKey(),
+      assertThat("Shards has the full URLs, should be allowed since they are internal. Cluster=" + s,
           numDocs("*:*", getShardUrl("s1", cluster) + "," + getShardUrl("s2", cluster), cluster), is(10));
       assertThat("Full URL without scheme",
           numDocs("*:*", getShardUrl("s1", cluster).replaceAll("http://", "") + ","
@@ -172,7 +178,12 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           numDocs("*:*", "s1," + getShardUrl("s2", cluster), cluster), is(10));
       assertThat("Mix URL and cluster state object",
           numDocs("*:*", getShardUrl("s1", cluster) + ",s2", cluster), is(10));
-    }
+      } catch (SolrServerException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    });
 
     // explicit whitelist includes all the nodes in both clusters. Requests should be allowed to go through
     assertThat("A request to the explicit cluster with shards that point to the implicit one",

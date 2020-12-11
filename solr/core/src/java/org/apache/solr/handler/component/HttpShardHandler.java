@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.SolrSingleThreaded;
 import org.apache.solr.common.cloud.Replica;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -251,30 +249,33 @@ public class HttpShardHandler extends ShardHandler {
   private ShardResponse take(boolean bailOnError) {
     try {
       while (pending.get() > 0) {
-        log.info("loop ing in httpshardhandler pending {}", pending.get());
+        //log.info("loop ing in httpshardhandler pending {}", pending.get());
 
 
-        ShardResponse rsp = responses.poll(1, TimeUnit.SECONDS);
+       // ShardResponse rsp = responses.poll(3, TimeUnit.SECONDS);
 
-        if (rsp == null && pending.get() > 0) {
-          if (httpShardHandlerFactory.isClosed()) {
-            cancelAll();
-            throw new AlreadyClosedException();
-          }
-          continue;
-        }
+//        if (rsp == null) {
+////          if (pending.get() > 0 && httpShardHandlerFactory.isClosed()) {
+////            cancelAll();
+////            throw new AlreadyClosedException();
+////          }
+//          continue;
+//        }
+        ShardResponse rsp = responses.take();
+        responseCancellableMap.remove(rsp);
 
         pending.decrementAndGet();
 
-        responseCancellableMap.remove(rsp);
-
-
-        if (bailOnError && rsp.getException() != null) return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
         // not after the completion of "call" so we know when the last response
         // for a request was received.  Otherwise we might return the same
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
+
+        if (bailOnError && rsp.getException() != null) {
+          return rsp; // if exception, return immediately
+        }
+
         log.info("should reutrn resp? {} {}", rsp.getShardRequest().responses.size(), rsp.getShardRequest().actualShards.length);
 
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {

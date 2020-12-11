@@ -246,7 +246,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
             }
           }
         };
-      futures.add(testExecutor.submit(threads[thread]));
+      futures.add(getTestExecutor().submit(threads[thread]));
 
     }
 

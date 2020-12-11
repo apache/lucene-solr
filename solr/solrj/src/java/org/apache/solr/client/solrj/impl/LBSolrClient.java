@@ -752,17 +752,20 @@ public abstract class LBSolrClient extends SolrClient {
   public void close() {
     this.closed = true;
 
-    ScheduledThreadPoolExecutor aexec = aliveCheckExecutor;
-    if (aexec != null) {
+//    ScheduledThreadPoolExecutor aexec = aliveCheckExecutor;
+//    if (aexec != null) {
+//      aliveCheckExecutor.shutdown();
+//      try {
+//        boolean success = aliveCheckExecutor.awaitTermination(1, TimeUnit.SECONDS);
+//        if (!success) {
+//          aliveCheckExecutor.shutdownNow();
+//        }
+//      } catch (InterruptedException e) {
+//        ParWork.propagateInterrupt(e);
+//      }
+
+    if (aliveCheckExecutor != null) {
       aliveCheckExecutor.shutdown();
-      try {
-        boolean success = aliveCheckExecutor.awaitTermination(1, TimeUnit.SECONDS);
-        if (!success) {
-          aliveCheckExecutor.shutdownNow();
-        }
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-      }
     }
     assert ObjectReleaseTracker.release(this);
   }

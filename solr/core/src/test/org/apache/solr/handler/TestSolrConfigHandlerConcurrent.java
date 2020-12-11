@@ -90,7 +90,7 @@ public class TestSolrConfigHandlerConcurrent extends SolrCloudBridgeTestCase {
     }
 
 
-    testExecutor.invokeAll(threads);
+    getTestExecutor().invokeAll(threads);
 
     boolean success = true;
 

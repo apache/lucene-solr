@@ -115,7 +115,7 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   
   public SharedFSAutoReplicaFailoverTest() {
-    completionService = new ExecutorCompletionService<>(testExecutor);
+    completionService = new ExecutorCompletionService<>(getTestExecutor());
     pending = new HashSet<>();
   }
 

@@ -85,7 +85,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      Future<?> future = testExecutor.submit(new MyNoLimitsCallable(orderedExecutor, lockId, events));
+      Future<?> future = getTestExecutor().submit(new MyNoLimitsCallable(orderedExecutor, lockId, events));
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {

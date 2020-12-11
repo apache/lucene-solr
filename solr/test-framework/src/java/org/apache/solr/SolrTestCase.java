@@ -79,13 +79,13 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -136,7 +136,7 @@ public class SolrTestCase extends LuceneTestCase {
 
   private static volatile Random random;
 
-  protected volatile static ParWorkExecutor testExecutor;
+  private volatile static ParWorkExecutor testExecutor;
 
   private static volatile CryptoKeys.RSAKeyPair reusedKeys;
 
@@ -247,11 +247,6 @@ public class SolrTestCase extends LuceneTestCase {
     random = LuceneTestCase.random();
 
     testStartTime = System.nanoTime();
-
-
-
-    testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecytir", 10, 100, 500, new BlockingArrayQueue(30));
-    ((ParWorkExecutor) testExecutor).enableCloseLock();
 
     interruptThreadsOnTearDown(false,"-SendThread"); // zookeeper send thread that can pause in ClientCnxnSocketNIO#cleanup
 
@@ -506,6 +501,11 @@ public class SolrTestCase extends LuceneTestCase {
     try {
 
       SysStats.getSysStats().stopMonitor();
+
+      if (testExecutor != null) {
+        testExecutor.disableCloseLock();
+        testExecutor.shutdown();
+      }
 
 
       AlreadyClosedException lastAlreadyClosedExp = CloseTracker.lastAlreadyClosedEx;
@@ -875,6 +875,17 @@ public class SolrTestCase extends LuceneTestCase {
         }
       }
       return true;
+    }
+  }
+
+  public static ExecutorService getTestExecutor() {
+    synchronized (SolrTestCase.class) {
+      if (testExecutor != null) {
+        return testExecutor;
+      }
+      testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecutor", 10, 100, 500, new BlockingArrayQueue(30, 16));
+      ((ParWorkExecutor) testExecutor).enableCloseLock();
+      return testExecutor;
     }
   }
 

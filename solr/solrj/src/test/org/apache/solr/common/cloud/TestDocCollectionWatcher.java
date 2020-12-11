@@ -60,7 +60,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
   private Future<Boolean> waitInBackground(String collection, long timeout, TimeUnit unit,
       CollectionStatePredicate predicate) {
-    return testExecutor.submit(() -> {
+    return getTestExecutor().submit(() -> {
       try {
         cluster.getSolrClient().waitForState(collection, timeout, unit, predicate);
       } catch (InterruptedException | TimeoutException e) {

@@ -50,6 +50,7 @@ import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
 import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -71,6 +72,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,7 +167,7 @@ public class Http2SolrClient extends SolrClient {
       }
       this.serverBaseUrl = serverBaseUrl;
     }
-    Integer moar = 1500;
+    Integer moar = 512;
     if (builder.maxOutstandingAsyncRequests != null) moar = builder.maxOutstandingAsyncRequests;
     asyncTracker = new AsyncTracker(moar); // nocommit
     this.headers = builder.headers;
@@ -201,7 +203,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private HttpClient createHttpClient(Builder builder) {
-    HttpClient httpClient;
+    HttpClient httpClient = null;
 
     SslContextFactory.Client sslContextFactory = null;
     boolean ssl = false;
@@ -237,6 +239,15 @@ public class Http2SolrClient extends SolrClient {
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(8192);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
+
+
+      transport.setConnectionPoolFactory(destination -> {
+        Pool pool = new Pool(Pool.StrategyType.FIRST, getHttpClient().getMaxConnectionsPerDestination(), true);
+        MultiplexConnectionPool mulitplexPool = new MultiplexConnectionPool(destination, pool, destination,  getHttpClient().getMaxRequestsQueuedPerDestination());
+        mulitplexPool.setMaximizeConnections(false);
+        mulitplexPool.preCreateConnections(2);
+        return mulitplexPool;
+      });
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     }
 
@@ -432,7 +443,6 @@ public class Http2SolrClient extends SolrClient {
     }
     final ResponseParser parser = solrRequest.getResponseParser() == null
         ? this.parser: solrRequest.getResponseParser();
-    log.info("DOREGISTER TRACKER");
     asyncTracker.register();
     try {
       req.send(new InputStreamResponseListener() {
@@ -451,9 +461,19 @@ public class Http2SolrClient extends SolrClient {
               NamedList<Object> body = processErrorsAndResponse(solrRequest, parser, response, stream);
 //              log.info("UNREGISTER TRACKER");
 //              asyncTracker.arrive();
+
               asyncListener.onSuccess(body);
 
-            }  catch (Exception e) {
+            } catch (Exception e) {
+              if (stream != null) {
+                try {
+                  while (stream.read() != -1) {
+                  }
+                  // is.close();
+                } catch (Exception e1) {
+                  // quietly
+                }
+              }
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                 asyncListener.onFailure(e);
               }
@@ -468,7 +488,14 @@ public class Http2SolrClient extends SolrClient {
            try {
              if (result.isFailed()) {
                failure = result.getFailure();
-
+               if (stream != null) {
+                 try {
+                   while (stream.read() != -1) {
+                   }
+                 } catch (Exception e) {
+                   // quietly
+                 }
+               }
                if (failure != CANCELLED_EXCEPTION) {
                  asyncListener.onFailure(failure);
                }
@@ -490,6 +517,7 @@ public class Http2SolrClient extends SolrClient {
          }
       });
     } catch (Exception e) {
+
       if (e != CANCELLED_EXCEPTION) {
         asyncListener.onFailure(e);
       }
@@ -952,12 +980,12 @@ public class Http2SolrClient extends SolrClient {
       return rsp;
     } finally {
       if (shouldClose) {
-//        try {
-//          while(is.read() != -1) { }
-//          // is.close();
-//        } catch (IOException e) {
-//          // quietly
-//        }
+        try {
+          while(is.read() != -1) { }
+          // is.close();
+        } catch (IOException e) {
+          // quietly
+        }
       }
     }
   }
@@ -1066,7 +1094,7 @@ public class Http2SolrClient extends SolrClient {
   public static class Builder {
 
     public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", 512);
-    public int maxRequestsQueuedPerDestination = 2048;
+    public int maxRequestsQueuedPerDestination = 512;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
@@ -1417,33 +1445,42 @@ public class Http2SolrClient extends SolrClient {
         try {
           asyncListener.onSuccess(stream);
         } catch (Exception e) {
-//              if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-//                asyncListener.onFailure(e);
-//              }
-        } finally {
-//              if (stream != null) {
-//                try {
-//                  while(stream.read() != -1) { }
-//                  // is.close();
-//                } catch (IOException e) {
-//                  // quietly
-//                }
-//              }
+          if (stream != null) {
+            try {
+              while (stream.read() != -1) {
+              }
+            } catch (IOException e1) {
+              // quietly
+            }
+          }
+          if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
+            asyncListener.onFailure(e);
+          }
         }
       });
     }
 
     public void onComplete(Result result) {
 
-        super.onComplete(result);
+      super.onComplete(result);
 
-        if (result.isFailed()) {
-          Throwable failure = result.getFailure();
-          if (failure != CANCELLED_EXCEPTION) { // avoid retrying on load balanced search requests - keep in mind this
-            // means cancelled requests won't notify the caller of fail or complete
-            asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+      if (stream != null) {
+        try {
+          while (stream.read() != -1) {
           }
+        } catch (IOException e) {
+          // quietly
         }
+      }
+
+      if (result.isFailed()) {
+        Throwable failure = result.getFailure();
+
+        if (failure != CANCELLED_EXCEPTION) { // avoid retrying on load balanced search requests - keep in mind this
+          // means cancelled requests won't notify the caller of fail or complete
+          asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+        }
+      }
 
     }
   }

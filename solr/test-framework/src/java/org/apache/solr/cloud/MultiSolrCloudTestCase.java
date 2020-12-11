@@ -40,7 +40,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected Map<String,MiniSolrCloudCluster> clusterId2cluster;
+  protected volatile Map<String,MiniSolrCloudCluster> clusterId2cluster;
 
   protected static abstract class DefaultClusterCreateFunction implements Function<String,MiniSolrCloudCluster> {
 
@@ -81,8 +81,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
-        .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
-        // nocommit - still need to harden processAndWait
+        .processAsync(cluster.getSolrClient());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -119,7 +118,6 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         log.error("", e);
       }
     });
-    clusterId2cluster.clear();
     clusterId2cluster = null;
   }
 

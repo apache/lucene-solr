@@ -162,7 +162,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       }
       try {
 
-        testExecutor.invokeAll(thrashers);
+        getTestExecutor().invokeAll(thrashers);
 
         // sanity check the *real* live_nodes entries from ZK match what the thrashers added
         int totalAdded = 1; // 1 real live node when we started

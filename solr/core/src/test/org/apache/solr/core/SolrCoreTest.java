@@ -188,7 +188,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     final int LOOP = 100;
     final int MT = 16;
-    ExecutorService service = testExecutor;
+    ExecutorService service = getTestExecutor();
     List<Callable<Integer>> callees = new ArrayList<>(MT);
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {

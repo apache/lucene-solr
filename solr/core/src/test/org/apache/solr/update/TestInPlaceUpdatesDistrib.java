@@ -278,7 +278,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -326,7 +326,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     updates.add(simulatedDeleteRequest("inplace_updatable_float:"+(newinplace_updatable_float + 1), version0 + 3));
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
 
     // re-order the updates by swapping the last two
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -800,7 +800,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
 
     cluster.waitForActiveCollection(COLLECTION, sliceCount, replicationFactor * sliceCount);
 
@@ -872,7 +872,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     }
 
     // Reordering needs to happen using parallel threads
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
     // re-order the last two updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
     Collections.swap(reorderedUpdates, 2, 3);
@@ -952,7 +952,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     cluster.getJettyForShard(COLLECTION, SHARD1, 1).getDebugFilter().addDelay(
         "Waiting for dependant update to timeout", 1, 6000);
 
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
     List<Future> futures = new ArrayList<>();
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
@@ -1025,7 +1025,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       cluster.getJettyForShard(COLLECTION, SHARD1, 1).getDebugFilter().addDelay("Waiting for dependant update to timeout", 1, 5999); // the first update
       cluster.getJettyForShard(COLLECTION, SHARD1, 1).getDebugFilter().addDelay("Waiting for dependant update to timeout", 4, 5998); // the delete update
 
-      threadpool = testExecutor;
+      threadpool = getTestExecutor();
       futures = new ArrayList<>();
       for (UpdateRequest update : updates) {
         AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,
@@ -1279,7 +1279,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     cluster.getJettyForShard(COLLECTION, SHARD1, 1).getDebugFilter().addDelay(
         "Waiting for dependant update to timeout", 2, 8000);
 
-    ExecutorService threadpool = testExecutor;
+    ExecutorService threadpool = getTestExecutor();
     List<Future> futures = new ArrayList<>();
     for (UpdateRequest update : updates) {
       AsyncUpdateWithRandomCommit task = new AsyncUpdateWithRandomCommit(update, cloudClient,

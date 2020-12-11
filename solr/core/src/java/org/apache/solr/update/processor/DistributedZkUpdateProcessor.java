@@ -72,7 +72,6 @@ import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,8 +225,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
           params.set(COMMIT_END_POINT, "replicas");
 
-          List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica, true);
-
+          List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
 
           if (log.isDebugEnabled()) log.debug(
               "processCommit - Found the following replicas to send commit to {}",
@@ -906,7 +904,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     return false;
   }
 
-  protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica, boolean isCommit) {
+  protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
     if (log.isDebugEnabled()) log.debug("leader is {}", leaderReplica.getName());
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)

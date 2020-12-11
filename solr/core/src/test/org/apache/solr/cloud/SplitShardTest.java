@@ -234,7 +234,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       }
 
       for (Callable thread : indexThreads) {
-        futures.add(testExecutor.submit(thread));
+        futures.add(getTestExecutor().submit(thread));
       }
       Thread.sleep(350);  // wait for a few docs to be indexed before invoking split
       int docCount = model.size();
