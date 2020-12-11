@@ -299,6 +299,7 @@ public class ZkShardTerms implements AutoCloseable{
   /**
    * Set new terms to ZK, the version of new terms must match the current ZK term node
    * @param newTerms to be set
+   * @param action reason we are updating terms, for logging
    * @return true if terms is saved successfully to ZK, false if otherwise
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
@@ -314,7 +315,7 @@ public class ZkShardTerms implements AutoCloseable{
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
-    } catch (KeeperException | InterruptedException e) {
+    } catch (RuntimeException | KeeperException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while saving shard term for collection: " + collection, e);
     }

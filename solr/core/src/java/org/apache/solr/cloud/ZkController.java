@@ -718,40 +718,44 @@ public class ZkController implements Closeable {
   /**
    * Best effort to give up the leadership of a shard in a core after hitting a tragic exception
    * @param cd The current core descriptor
-   * @param tragicException The tragic exception from the {@code IndexWriter}
    */
-  public void giveupLeadership(CoreDescriptor cd, Throwable tragicException) {
-    assert tragicException != null;
+  public void giveupLeadership(CoreDescriptor cd) {
     assert cd != null;
-    DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName());
+
+    String collection = cd.getCollectionName();
+    DocCollection dc = getClusterState().getCollectionOrNull(collection);
     if (dc == null) return;
 
     Slice shard = dc.getSlice(cd.getCloudDescriptor().getShardId());
     if (shard == null) return;
 
     // if this replica is not a leader, it will be put in recovery state by the leader
-    if (shard.getReplica(cd.getCloudDescriptor().getCoreNodeName()) != shard.getLeader()) return;
+    String leader = cd.getCloudDescriptor().getCoreNodeName();
+    if (shard.getReplica(leader) != shard.getLeader()) return;
 
+    Set<String> liveNodes = getClusterState().getLiveNodes();
     int numActiveReplicas = shard.getReplicas(
         rep -> rep.getState() == Replica.State.ACTIVE
             && rep.getType() != Type.PULL
-            && getClusterState().getLiveNodes().contains(rep.getNodeName())
+            && liveNodes.contains(rep.getNodeName())
     ).size();
 
     // at least the leader still be able to search, we should give up leadership if other replicas can take over
     if (numActiveReplicas >= 2) {
-      String collection = cd.getCollectionName();
-      String leader = cd.getCloudDescriptor().getCoreNodeName();
-
       ContextKey key = new ContextKey(collection, leader);
       ElectionContext context = electionContexts.get(key);
-      LeaderElector elector = ((ShardLeaderElectionContextBase) context).getLeaderElector();
-      try {
-        log.warn("Leader {} met tragic exception, give up its leadership", key);
-        elector.retryElection(context, false);
-      } catch (KeeperException | InterruptedException | IOException e) {
-        SolrZkClient.checkInterrupted(e);
-        log.error("Met exception on give up leadership for {}", key, e);
+      if (context instanceof ShardLeaderElectionContextBase) {
+        LeaderElector elector = ((ShardLeaderElectionContextBase) context).getLeaderElector();
+        try {
+          log.warn("Leader {} met tragic exception, give up its leadership", key);
+          elector.retryElection(context, false);
+        } catch (KeeperException | InterruptedException | IOException e) {
+          SolrZkClient.checkInterrupted(e);
+          log.error("Met exception on give up leadership for {}", key, e);
+        }
+      } else {
+        // The node is probably already gone
+        log.warn("Could not get election context {} to give up leadership", key);
       }
     }
   }

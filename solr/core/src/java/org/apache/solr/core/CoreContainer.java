@@ -2156,16 +2156,21 @@ public class CoreContainer {
     Throwable tragicException;
     try {
       tragicException = solrCore.getSolrCoreState().getTragicException();
-
-      // we open a new IndexWriter to pick up the latest config
-      solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // rollback = true?
     } catch (IOException e) {
       // failed to open an indexWriter
       tragicException = e;
     }
 
     if (tragicException != null && isZooKeeperAware()) {
-      getZkController().giveupLeadership(solrCore.getCoreDescriptor(), tragicException);
+      getZkController().giveupLeadership(solrCore.getCoreDescriptor());
+
+      try {
+        // If the error was something like a full file system disconnect, this probably won't help
+        // But if it is a transient disk failure then it's worth a try
+        solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // should we rollback?
+      } catch (IOException e) {
+        log.warn("Could not roll index writer after tragedy");
+      }
     }
 
     return tragicException != null;
