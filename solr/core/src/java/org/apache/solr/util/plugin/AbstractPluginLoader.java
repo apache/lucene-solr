@@ -21,14 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -86,7 +85,7 @@ public abstract class AbstractPluginLoader<T>
    * @param node - the XML node defining this plugin
    */
   @SuppressWarnings("unchecked")
-  protected T create(SolrClassLoader loader, String name, String className, Node node ) throws Exception
+  protected T create(SolrClassLoader loader, String name, String className, ConfigNode node ) throws Exception
   {
     return loader.newInstance(className, pluginClassType, getDefaultPackages());
   }
@@ -103,7 +102,7 @@ public abstract class AbstractPluginLoader<T>
    * @param plugin - the plugin to initialize
    * @param node - the XML node defining this plugin
    */
-  abstract protected void init( T plugin, Node node ) throws Exception;
+  abstract protected void init( T plugin, ConfigNode node ) throws Exception;
 
   /**
    * Initializes and registers each plugin in the list.
@@ -135,15 +134,13 @@ public abstract class AbstractPluginLoader<T>
    * If a default element is defined, it will be returned from this function.
    * 
    */
-  public T load(SolrClassLoader loader, NodeList nodes )
+  public T load(SolrClassLoader loader, List<ConfigNode> nodes )
   {
     List<PluginInitInfo> info = new ArrayList<>();
     T defaultPlugin = null;
     
     if (nodes !=null ) {
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-  
+      for (ConfigNode node : nodes) {
         String name = null;
         try {
           name = DOMUtil.getAttr(node, NAME, requireName ? type : null);
@@ -225,7 +222,7 @@ public abstract class AbstractPluginLoader<T>
    * The created class for the plugin will be returned from this function.
    * 
    */
-  public T loadSingle(SolrClassLoader loader, Node node) {
+  public T loadSingle(SolrClassLoader loader, ConfigNode node) {
     List<PluginInitInfo> info = new ArrayList<>();
     T plugin = null;
 
@@ -277,9 +274,9 @@ public abstract class AbstractPluginLoader<T>
    */
   private class PluginInitInfo {
     final T plugin;
-    final Node node;
+    final ConfigNode node;
 
-    PluginInitInfo(T plugin, Node node) {
+    PluginInitInfo(T plugin, ConfigNode node) {
       this.plugin = plugin;
       this.node = node;
     }
