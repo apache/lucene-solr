@@ -79,23 +79,18 @@ public final class FieldTypePluginLoader
     FieldType ft = loader.newInstance(className, FieldType.class);
     ft.setTypeName(name);
     
-//    String expression = "./analyzer[@type='query']";
     ConfigNode anode = node.child(it -> "query".equals(it.attributes().get("type")) , "analyzer");
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-//    expression = "./analyzer[@type='multiterm']";
     anode = node.child(it -> "multiterm".equals(it.attributes().get("type") ), "analyzer");
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
-//    expression = "./analyzer[not(@type)] | ./analyzer[@type='index']";
     anode = node.child(it ->
         (it.attributes().get("type") == null || "index".equals(it.attributes().get("type"))), "analyzer");
-//    anode = (Node)xpath.evaluate(expression, node, XPathConstants.NODE);
     Analyzer analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-//    expression = "./similarity";
     anode = node.child("similarity") ;
 
     SimilarityFactory simFactory = IndexSchema.readSimilarity(loader, anode);
@@ -188,21 +183,12 @@ public final class FieldTypePluginLoader
     final SolrClassLoader loader = schema.getSolrClassLoader();
 
     // parent node used to be passed in as "fieldtype"
-    // if (!fieldtype.hasChildNodes()) return null;
-    // Node node = DOMUtil.getChild(fieldtype,"analyzer");
-    
+
     if (node == null) return null;
-//    NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(node,"class", null);
 
     // check for all of these up front, so we can error if used in 
     // conjunction with an explicit analyzer class.
-//    NodeList charFilterNodes = (NodeList)xpath.evaluate
-//      ("./charFilter",  node, XPathConstants.NODESET);
-//    NodeList tokenizerNodes = (NodeList)xpath.evaluate
-//      ("./tokenizer", node, XPathConstants.NODESET);
-//    NodeList tokenFilterNodes = (NodeList)xpath.evaluate
-//      ("./filter", node, XPathConstants.NODESET);
     List<ConfigNode> charFilterNodes = node.children("charFilter");
     List<ConfigNode> tokenizerNodes = node.children("tokenizer");
     List<ConfigNode> tokenFilterNodes = node.children("filter");

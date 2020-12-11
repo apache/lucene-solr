@@ -161,7 +161,6 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
   private ConfigNode rootNode;
-//  static AtomicLong totalSchemaLoadTime = new AtomicLong();
 
 
   /**
@@ -175,9 +174,7 @@ public class IndexSchema {
     this.resourceName = Objects.requireNonNull(name);
     ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
-//      long start = System.currentTimeMillis();
       readSchema(schemaResource);
-//      System.out.println("schema-load-time : "+ totalSchemaLoadTime.addAndGet (System.currentTimeMillis() - start));
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -491,14 +488,10 @@ public class IndexSchema {
         log.info("{}", sb);
       }
 
-      //                      /schema/@version
-//      expression = stepsToPath(SCHEMA, AT + VERSION);
       version =  Float.parseFloat(rootNode.attributes().get("version","1.0f"));
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
-//      expression = getFieldTypeXPathExpressions();
-//      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
 
       List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
       ConfigNode types = rootNode.child(TYPES);
@@ -508,8 +501,6 @@ public class IndexSchema {
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(rootNode);
 
-//      expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
-//      Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
 
       similarityFactory = readSimilarity(solrClassLoader, rootNode.child(SIMILARITY));
       if (similarityFactory == null) {
@@ -534,25 +525,16 @@ public class IndexSchema {
         }
       }
 
-      //                      /schema/defaultSearchField/text()
-//      expression = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
-//      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       ConfigNode node = rootNode.child("defaultSearchField");
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
-      ///schema/solrQueryParser/@defaultOperator
-//      expression = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
-//      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       node = rootNode.child(it -> it.attributes().get("defaultOperator") != null, "solrQueryParser");
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
-      //  /schema/uniqueKey/text()
-//      expression = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
-//      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
       node = rootNode.child(UNIQUE_KEY);
 
       if (node==null) {
@@ -606,8 +588,6 @@ public class IndexSchema {
       }
 
       /////////////// parse out copyField commands ///////////////
-      // Map<String,ArrayList<SchemaField>> cfields = new HashMap<String,ArrayList<SchemaField>>();
-      // expression = "/schema/copyField";
 
       dynamicCopyFields = new DynamicCopy[] {};
       loadCopyFields(rootNode);
@@ -647,22 +627,13 @@ public class IndexSchema {
     
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
- /*   String expression = stepsToPath(SCHEMA, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);*/
     List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
     ConfigNode child = n.child(FIELDS);
     if(child != null) {
       nodes.addAll(child.children(null, FIELD_KEYS));
     }
 
-//    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
-
     for (ConfigNode node : nodes) {
-      //      SimpleMap<String> attrs = node.attributes();
-
       String name = DOMUtil.getAttr(node, NAME, "field definition");
       log.trace("reading field def {}", name);
       String type = DOMUtil.getAttr(node, TYPE, "field " + name);
@@ -739,9 +710,6 @@ public class IndexSchema {
    * Loads the copy fields
    */
   protected synchronized void loadCopyFields(ConfigNode n) {
-//    String expression = "//" + COPY_FIELD;
-//    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
-
     List<ConfigNode> nodes = n.children(COPY_FIELD);
     ConfigNode f = n.child(FIELDS);
     if (f != null) {
