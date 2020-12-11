@@ -217,6 +217,8 @@ Improvements
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
   and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
+  
+* SOLR-14827: Refactor schema loading to not use XPath (noble)
 
 Optimizations
 ---------------------
