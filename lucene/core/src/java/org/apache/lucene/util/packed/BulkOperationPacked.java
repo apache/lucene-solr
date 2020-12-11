@@ -31,7 +31,7 @@ class BulkOperationPacked extends BulkOperation {
   private final long mask;
   private final int intMask;
   private final int byteOffset;
-  private final int bitPerValueOffset;
+  private final int bitsUsedOffset;
   private final int longOffset;
 
   public BulkOperationPacked(int bitsPerValue) {
@@ -59,7 +59,7 @@ class BulkOperationPacked extends BulkOperation {
     this.intMask = (int) mask;
     assert longValueCount * bitsPerValue == 64 * longBlockCount;
     this.byteOffset = 8 - bitsPerValue;
-    this.bitPerValueOffset = bitsPerValue - 8;
+    this.bitsUsedOffset = bitsPerValue - 8;
     this.longOffset = 64 - bitsPerValue;
   }
 
@@ -86,48 +86,47 @@ class BulkOperationPacked extends BulkOperation {
   @Override
   public void decode(long[] blocks, int blocksOffset, long[] values,
       int valuesOffset, int iterations) {
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < longValueCount * iterations; ++i) {
-      if (pos == longOffset) {
-        values[valuesOffset++] = (blocks[blocksOffset++] >>> pos) & mask;
-        pos = 0;
-      } else if (pos > longOffset) {
-        values[valuesOffset] = blocks[blocksOffset++] >>> pos;
-        final int bitsLeft = 64 - pos;
-        pos = bitsPerValue - bitsLeft;
-        values[valuesOffset++] |= (blocks[blocksOffset] & ((1L << pos) - 1)) << bitsLeft;
+      if (bitsUsed == longOffset) {
+        values[valuesOffset++] = (blocks[blocksOffset++] >>> bitsUsed);
+        bitsUsed = 0;
+      } else if (bitsUsed > longOffset) {
+        values[valuesOffset++] = (blocks[blocksOffset++] >>> bitsUsed)
+                | ((blocks[blocksOffset] << (64 - bitsUsed)) & mask);
+        bitsUsed -= longOffset;
       } else {
-        values[valuesOffset++] = (blocks[blocksOffset] >>> pos) & mask;
-        pos += bitsPerValue;
+        values[valuesOffset++] = (blocks[blocksOffset] >>> bitsUsed) & mask;
+        bitsUsed += bitsPerValue;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
 
   @Override
   public void decode(byte[] blocks, int blocksOffset, long[] values,
                      int valuesOffset, int iterations) {
     long nextValue = 0L;
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
       final long bytes = blocks[blocksOffset++] & 0xFFL;
-      if (pos < bitPerValueOffset) {
+      if (bitsUsed < bitsUsedOffset) {
         // just buffer
-        nextValue |= bytes << pos;
-        pos += 8;
+        nextValue |= bytes << bitsUsed;
+        bitsUsed += 8;
       } else {
         // flush
-        int bits = bitsPerValue - pos;
-        values[valuesOffset++] = nextValue | ((bytes & ((1L << bits) - 1)) << pos);
+        values[valuesOffset++] = nextValue | ((bytes << bitsUsed) & mask);
+        int bits = bitsPerValue - bitsUsed;
         while (bits <= byteOffset) {
           values[valuesOffset++] = (bytes >>> bits) & mask;
           bits += bitsPerValue;
         }
         nextValue = bytes >>> bits;
-        pos = 8 - bits;
+        bitsUsed = 8 - bits;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
   
   @Override
@@ -136,22 +135,21 @@ class BulkOperationPacked extends BulkOperation {
     if (bitsPerValue > 32) {
       throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < longValueCount * iterations; ++i) { ;
-      if (pos == longOffset) {
-        values[valuesOffset++] = (int) (blocks[blocksOffset++] >>> pos) & intMask;
-        pos = 0;
-      } else if (pos > longOffset) {
-        values[valuesOffset] =(int) (blocks[blocksOffset++] >>> pos);
-        final int bitsLeft = 64 - pos;
-        pos = bitsPerValue - bitsLeft;
-        values[valuesOffset++] |= (((blocks[blocksOffset])) & ((1L << pos) - 1)) << bitsLeft;
+      if (bitsUsed == longOffset) {
+        values[valuesOffset++] = (int) (blocks[blocksOffset++] >>> bitsUsed);
+        bitsUsed = 0;
+      } else if (bitsUsed > longOffset) {
+        values[valuesOffset++] = (int)((blocks[blocksOffset++] >>> bitsUsed)
+                | ((blocks[blocksOffset] << (64 - bitsUsed)) & mask));
+        bitsUsed -= longOffset;
       } else {
-        values[valuesOffset++] = (int)(blocks[blocksOffset] >>> pos) & intMask;
-        pos+= bitsPerValue;
+        values[valuesOffset++] = (int)(blocks[blocksOffset] >>> bitsUsed) & intMask;
+        bitsUsed += bitsPerValue;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
   
   @Override
@@ -161,105 +159,105 @@ class BulkOperationPacked extends BulkOperation {
       throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
     int nextValue = 0;
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
       final int bytes = blocks[blocksOffset++] & 0xFF;
-      if (pos < bitPerValueOffset) {
+      if (bitsUsed < bitsUsedOffset) {
         // just buffer
-        nextValue |= bytes << pos;
-        pos += 8;
+        nextValue |= bytes << bitsUsed;
+        bitsUsed += 8;
       } else {
         // flush
-        int bits = bitsPerValue - pos;
-        values[valuesOffset++] = (nextValue | ((bytes & ((1 << bits) - 1)) << pos));
+        values[valuesOffset++] = (nextValue | ((bytes << bitsUsed) & intMask));
+        int bits = bitsPerValue - bitsUsed;
         while (bits <= byteOffset) {
           values[valuesOffset++] = ((bytes >>> bits) & intMask);
           bits += bitsPerValue;
         }
         // then buffer
         nextValue = bytes >>> bits;
-        pos = 8 - bits;
+        bitsUsed = 8 - bits;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
 
   @Override
   public void encode(long[] values, int valuesOffset, long[] blocks,
       int blocksOffset, int iterations) {
     long nextBlock = 0;
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < longValueCount * iterations; ++i) {
-      if (pos < longOffset) {
-        nextBlock |= values[valuesOffset++] << pos;
-        pos += bitsPerValue;
-      } else if (pos == longOffset) {
-        nextBlock |=  values[valuesOffset++] << pos;
+      if (bitsUsed < longOffset) {
+        nextBlock |= values[valuesOffset++] << bitsUsed;
+        bitsUsed += bitsPerValue;
+      } else if (bitsUsed == longOffset) {
+        nextBlock |=  values[valuesOffset++] << bitsUsed;
         blocks[blocksOffset++] = nextBlock;
         nextBlock = 0;
-        pos = 0;
+        bitsUsed = 0;
       } else { // pos > longOffset
-        final int bitsLeft = 64 - pos;
-        nextBlock |= (values[valuesOffset] & ((1L << bitsLeft) - 1)) << pos;
+        nextBlock |= values[valuesOffset] << bitsUsed;
         blocks[blocksOffset++] = nextBlock;
-        nextBlock = values[valuesOffset++] >>> bitsLeft;
-        pos = bitsPerValue - bitsLeft;
+        final int bits = 64 - bitsUsed;
+        nextBlock = values[valuesOffset++] >>> bits;
+        bitsUsed = bitsPerValue - bits;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
 
   @Override
   public void encode(int[] values, int valuesOffset, long[] blocks,
       int blocksOffset, int iterations) {
     long nextBlock = 0;
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < longValueCount * iterations; ++i) {
-      if (pos < longOffset) {
-        nextBlock |= (values[valuesOffset++] & 0xFFFFFFFFL) << pos;
-        pos += bitsPerValue;
-      } else if (pos == longOffset) {
-        nextBlock |=  (values[valuesOffset++] & 0xFFFFFFFFL) << pos;
+      if (bitsUsed < longOffset) {
+        nextBlock |= (values[valuesOffset++] & 0xFFFFFFFFL) << bitsUsed;
+        bitsUsed += bitsPerValue;
+      } else if (bitsUsed == longOffset) {
+        nextBlock |=  (values[valuesOffset++] & 0xFFFFFFFFL) << bitsUsed;
         blocks[blocksOffset++] = nextBlock;
         nextBlock = 0;
-        pos = 0;
+        bitsUsed = 0;
       } else { // pos > longOffset
-        final int bitsLeft = 64 - pos;
-        nextBlock |= (values[valuesOffset] & ((1L << bitsLeft) - 1)) << pos;
+        nextBlock |=  (values[valuesOffset] & 0xFFFFFFFFL) << bitsUsed;
         blocks[blocksOffset++] = nextBlock;
-        nextBlock = values[valuesOffset++] >>> bitsLeft;
-        pos = bitsPerValue - bitsLeft;
+        final int bits = 64 - bitsUsed;
+        nextBlock = values[valuesOffset++] >>> bits;
+        bitsUsed = bitsPerValue - bits;
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
 
   @Override
   public void encode(long[] values, int valuesOffset, byte[] blocks,
       int blocksOffset, int iterations) {
     int nextBlock = 0;
-    int pos = 0;
+    int bitsUsed = 0;
     for (int i = 0; i < byteValueCount * iterations; ++i) {
       final long v = values[valuesOffset++];
       assert PackedInts.unsignedBitsRequired(v) <= bitsPerValue;
-      if (pos < byteOffset) {
+      if (bitsUsed < byteOffset) {
         // just buffer
-        nextBlock |= v << pos;
-        pos += bitsPerValue;
+        nextBlock |= v << bitsUsed;
+        bitsUsed += bitsPerValue;
       } else {
         // flush as many blocks as possible
-        blocks[blocksOffset++] = (byte) (nextBlock | (v  << pos));
-        int bits = 8 - pos;
-        while (bits <= bitPerValueOffset) {
+        blocks[blocksOffset++] = (byte) (nextBlock | (v << bitsUsed));
+        int bits = 8 - bitsUsed;
+        while (bits <= bitsUsedOffset) {
           blocks[blocksOffset++] = (byte) (v >> bits);
           bits += 8;
         }
         // then buffer
-        pos = bitsPerValue - bits;
-        nextBlock = (int)  ((v >>> bits) & ((1L << pos) - 1));
+        bitsUsed = bitsPerValue - bits;
+        nextBlock = (int)  ((v >>> bits) & ((1L << bitsUsed) - 1));
       }
     }
-    assert pos == 0;
+    assert bitsUsed == 0;
   }
 
   @Override
@@ -278,7 +276,7 @@ class BulkOperationPacked extends BulkOperation {
         // flush as many blocks as possible
         blocks[blocksOffset++] = (byte) (nextBlock | (v << pos));
         int bits = 8 - pos;
-        while (bits <= bitPerValueOffset) {
+        while (bits <= bitsUsedOffset) {
           blocks[blocksOffset++] = (byte) (v >>> bits);
           bits += 8;
         }
