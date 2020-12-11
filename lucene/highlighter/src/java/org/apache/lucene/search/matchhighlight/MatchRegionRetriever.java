@@ -269,7 +269,7 @@ public class MatchRegionRetriever {
           // only those terms that the query hinted at when passed
           // a QueryVisitor.
           //
-          // Alternative straties are also possible and may make sense
+          // Alternative strategies are also possible and may make sense
           // depending on the use case (OffsetsFromValues, for example).
           return new OffsetsFromTokens(field, analyzer);
 

@@ -84,6 +84,9 @@ API Changes
 
 Improvements
 
+* LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
+  (Dawid Weiss)
+
 * LUCENE-9618: Do not call IntervalIterator.nextInterval after NO_MORE_DOCS is returned. (Haoyu Zhai)
 
 * LUCENE-9576: Improve ConcurrentMergeScheduler settings by default, assuming modern I/O.
