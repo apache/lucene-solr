@@ -111,7 +111,7 @@ class BulkOperationPacked extends BulkOperation {
     int pos = 0;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
       final long bytes = blocks[blocksOffset++] & 0xFFL;
-      if (pos < bitsPerValue - 8) {
+      if (pos < bitPerValueOffset) {
         // just buffer
         nextValue |= bytes << pos;
         pos += 8;
