@@ -253,8 +253,6 @@ Optimizations
 
 * LUCENE-9536: Reduced memory usage for OrdinalMap when a segment has all
   values. (Julie Tibshirani via Adrien Grand)
-  
-* LUCENE-9021: QueryParser: re-use the LookaheadSuccess exception. (Przemek Bruski via Mikhail Khludnev)
 
 Bug Fixes
 ---------------------
