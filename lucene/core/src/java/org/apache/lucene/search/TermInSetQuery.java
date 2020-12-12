@@ -172,6 +172,10 @@ public class TermInSetQuery extends Query implements Accountable {
     return termData;
   }
 
+  public String getField() {
+    return field;
+  }
+
   @Override
   public String toString(String defaultField) {
     StringBuilder builder = new StringBuilder();
