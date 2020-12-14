@@ -153,13 +153,13 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     String drillExpr = String.format(Locale.US, drillExprTmpl, ALIAS_NAME, dim, dim, rollupExpr);
 
-    String rollupOverDrill = String.format("rollup(" +
+    String rollupOverDrill = String.format(Locale.US, "rollup(" +
         "\n  %s," +
         "\n  over=\"%s\"," +
         "\n  sum(sum(a_d)), wsum(avg(a_d)), min(min(a_d)), max(max(a_d)), count(*)," +
         "\n)", drillExpr, dim);
 
-    System.out.println(">> drill: "+drillExpr);
+    //System.out.println(">> drill: "+drillExpr);
 
     TupleStream stream = factory.constructStream(drillExpr);
     stream.setStreamContext(streamContext);
