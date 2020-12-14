@@ -40,11 +40,12 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
       'cfs': 'index',
       'nocfs': 'index',
       'sorted': 'sorted',
+      'bestcompression': 'index',
       'moreterms': 'moreterms',
       'dvupdates': 'dvupdates',
       'emptyIndex': 'empty'
     }[indextype]
-  if indextype in ('cfs', 'nocfs'):
+  if indextype in ('cfs', 'nocfs', 'bestcompression'):
     dirname = 'index.%s' % indextype
     filename = '%s.%s-%s.zip' % (prefix, index_version, indextype)
   else:
@@ -63,6 +64,7 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
     'cfs': 'testCreateCFS',
     'nocfs': 'testCreateNoCFS',
     'sorted': 'testCreateSortedIndex',
+    'bestcompression': 'testCreateBestCompression',
     'moreterms': 'testCreateMoreTermsIndex',
     'dvupdates': 'testCreateIndexWithDocValuesUpdates',
     'emptyIndex': 'testCreateEmptyIndex'
@@ -239,10 +241,8 @@ def main():
   current_version = scriptutil.Version.parse(scriptutil.find_current_version())
   create_and_add_index(source, 'cfs', c.version, current_version, c.temp_dir)
   create_and_add_index(source, 'nocfs', c.version, current_version, c.temp_dir)
-  should_make_sorted =     current_version.is_back_compat_with(c.version) \
-                       and (c.version.major > 6 or (c.version.major == 6 and c.version.minor >= 2))
-  if should_make_sorted:
-    create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
+  create_and_add_index(source, 'sorted', c.version, current_version, c.temp_dir)
+  create_and_add_index(source, 'bestcompression', c.version, current_version, c.temp_dir)
   if c.version.minor == 0 and c.version.bugfix == 0 and c.version.major < current_version.major:
     create_and_add_index(source, 'moreterms', c.version, current_version, c.temp_dir)
     create_and_add_index(source, 'dvupdates', c.version, current_version, c.temp_dir)
@@ -250,9 +250,7 @@ def main():
     print ('\nMANUAL UPDATE REQUIRED: edit TestBackwardsCompatibility to enable moreterms, dvupdates, and empty index testing')
     
   print('\nAdding backwards compatibility tests')
-  update_backcompat_tests(['cfs', 'nocfs'], c.version, current_version)
-  if should_make_sorted:
-    update_backcompat_tests(['sorted'], c.version, current_version)
+  update_backcompat_tests(['cfs', 'nocfs', 'sorted', 'bestcompression'], c.version, current_version)
 
   print('\nTesting changes')
   check_backcompat_tests()
