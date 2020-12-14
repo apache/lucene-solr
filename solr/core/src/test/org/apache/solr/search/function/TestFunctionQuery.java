@@ -1148,4 +1148,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         /*id*/1, /*score*/2,
         /*id*/2, /*score*/2);
   }
+
+  /**
+   * Tests a specific (edge) case where a subQuery is null, because no terms are
+   * found in the query. Below such subQuery is created from a field query on a
+   * query text containing only stopwords. Feeding the resulting null-subQuery
+   * into a QueryValueSource (and then using it in for example an if function)
+   * may not produce NullPointerExceptions.
+   */
+  @Test
+  public void testPieter() throws Exception {
+    clearIndex();
+    assertJQ(req("q", "{!func}if($subQuery,1,0)", "subQuery", "{!field f=text v='stopworda'}")
+        , "/response/numFound==0");
+  }
 }
