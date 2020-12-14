@@ -22,17 +22,23 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Function;
+
 
 /**
  * Breaking out some utility methods into a separate class as part of SOLR-4196. These utils have nothing to do with
  * the DOM (they came from DomUtils) and it's really confusing to see them in something labeled DOM
  */
 public class PropertiesUtil {
+  public static String substituteProperty(String value, Properties coreProperties) {
+    if(coreProperties == null) return substitute(value, null);
+    return substitute(value, coreProperties::getProperty);
+  }
   /*
   * This method borrowed from Ant's PropertyHelper.replaceProperties:
   *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
   */
-  public static String substituteProperty(String value, Properties coreProperties) {
+  public static String substitute(String value, Function<String,String> coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
     }
@@ -56,7 +62,7 @@ public class PropertiesUtil {
           propertyName = propertyName.substring(0, colon_index);
         }
         if (coreProperties != null) {
-          fragment = coreProperties.getProperty(propertyName);
+          fragment = coreProperties.apply(propertyName);
         }
         if (fragment == null) {
           fragment = System.getProperty(propertyName, defaultValue);

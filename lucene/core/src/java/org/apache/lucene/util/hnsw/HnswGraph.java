@@ -19,12 +19,10 @@ package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.RandomAccessVectorValues;
@@ -67,7 +65,7 @@ public final class HnswGraph {
 
   HnswGraph(int maxConn, VectorValues.SearchStrategy searchStrategy) {
     graph = new ArrayList<>();
-    graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
+    graph.add(Neighbors.create(maxConn, searchStrategy));
     this.maxConn = maxConn;
     this.searchStrategy = searchStrategy;
   }
@@ -85,39 +83,38 @@ public final class HnswGraph {
   public static Neighbors search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                  Random random) throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
-    // TODO: use unbounded priority queue
-    TreeSet<Neighbor> candidates;
-    if (searchStrategy.reversed) {
-      candidates = new TreeSet<>(Comparator.reverseOrder());
-    } else {
-      candidates = new TreeSet<>();
-    }
-    int size = vectors.size();
-    for (int i = 0; i < numSeed && i < size; i++) {
-      int entryPoint = random.nextInt(size);
-      candidates.add(new Neighbor(entryPoint, searchStrategy.compare(query, vectors.vectorValue(entryPoint))));
-    }
+
+    Neighbors results = Neighbors.create(topK, searchStrategy);
+    Neighbors candidates = Neighbors.createReversed(-numSeed, searchStrategy);
     // set of ordinals that have been visited by search on this layer, used to avoid backtracking
     Set<Integer> visited = new HashSet<>();
-    // TODO: use PriorityQueue's sentinel optimization?
-    Neighbors results = Neighbors.create(topK, searchStrategy.reversed);
-    for (Neighbor c : candidates) {
-      visited.add(c.node());
-      results.insertWithOverflow(c);
+
+    int size = vectors.size();
+    int boundedNumSeed = Math.min(numSeed, 2 * size);
+    for (int i = 0; i < boundedNumSeed; i++) {
+      int entryPoint = random.nextInt(size);
+      if (visited.add(entryPoint)) {
+        results.insertWithOverflow(entryPoint, searchStrategy.compare(query, vectors.vectorValue(entryPoint)));
+      }
+    }
+    Neighbors.NeighborIterator it = results.iterator();
+    for (int nbr = it.next(); nbr != NO_MORE_DOCS; nbr = it.next()) {
+      candidates.add(nbr, it.score());
     }
     // Set the bound to the worst current result and below reject any newly-generated candidates failing
     // to exceed this bound
     BoundsChecker bound = BoundsChecker.create(searchStrategy.reversed);
-    bound.bound = results.top().score();
+    bound.bound = results.topScore();
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
-      Neighbor c = candidates.pollLast();
+      float topCandidateScore = candidates.topScore();
       if (results.size() >= topK) {
-        if (bound.check(c.score())) {
+        if (bound.check(topCandidateScore)) {
           break;
         }
       }
-      graphValues.seek(c.node());
+      int topCandidateNode = candidates.pop();
+      graphValues.seek(topCandidateNode);
       int friendOrd;
       while ((friendOrd = graphValues.nextNeighbor()) != NO_MORE_DOCS) {
         if (visited.contains(friendOrd)) {
@@ -125,11 +122,9 @@ public final class HnswGraph {
         }
         visited.add(friendOrd);
         float score = searchStrategy.compare(query, vectors.vectorValue(friendOrd));
-        if (results.size() < topK || bound.check(score) == false) {
-          Neighbor n = new Neighbor(friendOrd, score);
-          candidates.add(n);
-          results.insertWithOverflow(n);
-          bound.bound = results.top().score();
+        if (results.insertWithOverflow(friendOrd, score)) {
+          candidates.add(friendOrd, score);
+          bound.bound = results.topScore();
         }
       }
     }
@@ -138,18 +133,21 @@ public final class HnswGraph {
   }
 
   /**
-   * Returns the nodes connected to the given node by its outgoing neighborNodes in an unpredictable order. Each node inserted
-   * by HnswGraphBuilder corresponds to a vector, and the node is the vector's ordinal.
-   * @param node the node whose friends are returned
+   * Returns the {@link Neighbors} connected to the given node.
+   * @param node the node whose neighbors are returned
    */
-  public int[] getNeighbors(int node) {
+  public Neighbors getNeighbors(int node) {
+    return graph.get(node);
+  }
+
+  public int[] getNeighborNodes(int node) {
     Neighbors neighbors = graph.get(node);
-    int[] result = new int[neighbors.size()];
-    int i = 0;
-    for (Neighbor n : neighbors) {
-      result[i++] = n.node();
+    int[] nodes = new int[neighbors.size()];
+    Neighbors.NeighborIterator it = neighbors.iterator();
+    for (int neighbor = it.next(), i = 0; neighbor != NO_MORE_DOCS; neighbor = it.next()) {
+      nodes[i++] = neighbor;
     }
-    return result;
+    return nodes;
   }
 
   /** Connects two nodes symmetrically, limiting the maximum number of connections from either node.
@@ -175,24 +173,12 @@ public final class HnswGraph {
   boolean connect(int node1, int node2, float score) {
     //System.out.println("    HnswGraph.connect " + node1 + " -> " + node2);
     assert node1 >= 0 && node2 >= 0;
-    Neighbors nn = graph.get(node1);
-    assert nn != null;
-    if (nn.size() == maxConn) {
-      Neighbor top = nn.top();
-      if (score < top.score() == nn.reversed()) {
-        top.update(node2, score);
-        nn.updateTop();
-        return true;
-      }
-    } else {
-      nn.add(new Neighbor(node2, score));
-      return true;
-    }
-    return false;
+    return graph.get(node1)
+        .insertWithOverflow(node2, score);
   }
 
   int addNode() {
-    graph.add(Neighbors.create(maxConn, searchStrategy.reversed));
+    graph.add(Neighbors.create(maxConn, searchStrategy));
     return graph.size() - 1;
   }
 
@@ -201,23 +187,17 @@ public final class HnswGraph {
    */
   private class HnswGraphValues extends KnnGraphValues {
 
-    private int arcUpTo;
-    private int[] neighborNodes;
+    private Neighbors.NeighborIterator it;
 
     @Override
     public void seek(int targetNode) {
-      arcUpTo = 0;
-      neighborNodes = HnswGraph.this.getNeighbors(targetNode);
+      it = HnswGraph.this.getNeighbors(targetNode).iterator();
     }
 
     @Override
     public int nextNeighbor() {
-      if (arcUpTo >= neighborNodes.length) {
-        return NO_MORE_DOCS;
-      }
-      return neighborNodes[arcUpTo++];
+      return it.next();
     }
-
   }
 
 }

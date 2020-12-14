@@ -1,6 +1,7 @@
 = Solr Plugins
 :page-children: libs, \
-    package-manager
+    package-manager, \
+    cluster-plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -55,3 +56,7 @@ Contrib modules ship with Solr so there's no effort for them but not so for othe
 Describes a new and experimental system to manage packages of plugins in SolrCloud.
 It includes CLI commands, cluster-wide installation, use of plugin registries that host plugins, cryptographically signed plugins for security, and more.
 Only some plugins support this as of now (support for more types of plugins coming soon).
+
+* <<cluster-plugins.adoc#cluster-plugins,Cluster Plugins>>:
+Describes the API used for managing cluster-level plugins such as request handlers,
+cluster-level event producer and replica placement plugins.

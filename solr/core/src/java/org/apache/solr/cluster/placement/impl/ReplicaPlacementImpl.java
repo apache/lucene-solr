@@ -60,6 +60,11 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
     return replicaType;
   }
 
+  @Override
+  public String toString() {
+    return solrCollection.getName() + "/" + shardName + "/" + replicaType + "->" + node.getName();
+  }
+
   /**
    * Translates a set of {@link ReplicaPlacement} returned by a plugin into a list of {@link ReplicaPosition} expected
    * by {@link org.apache.solr.cloud.api.collections.Assign.AssignStrategy}
