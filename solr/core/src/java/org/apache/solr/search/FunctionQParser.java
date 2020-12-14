@@ -362,7 +362,7 @@ public class FunctionQParser extends QParser {
       }
       Query subQuery = subParser.getQuery();
       if (subQuery == null) {
-        valueSource = new DoubleConstValueSource(0.0f);
+        valueSource = new ConstValueSource(0.0f);
       } else if (subQuery instanceof FunctionQuery) {
         valueSource = ((FunctionQuery) subQuery).getValueSource();
       } else {
