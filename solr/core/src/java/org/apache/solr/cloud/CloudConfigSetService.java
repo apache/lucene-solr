@@ -17,8 +17,13 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -39,12 +44,26 @@ import org.slf4j.LoggerFactory;
  */
 public class CloudConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+  private Map<String, ConfigCacheEntry> cache = new ConcurrentHashMap<>();
   private final ZkController zkController;
 
   public CloudConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
+  }
+
+  public void storeConfig(String resource, ConfigNode config, int znodeVersion) {
+    cache.put(resource, new ConfigCacheEntry(config, znodeVersion));
+  }
+
+  public ConfigNode getConfig(String resource, int znodeVersion) {
+    ConfigCacheEntry e = cache.get(resource);
+    if (e == null) return null;
+    ConfigNode configNode = e.configNode.get();
+    if (configNode == null) cache.remove(resource);
+    if (e.znodeVersion == znodeVersion) return configNode;
+    if (e.znodeVersion < znodeVersion) cache.remove(resource);
+    return null;
   }
 
   @Override
@@ -110,5 +129,18 @@ public class CloudConfigSetService extends ConfigSetService {
   @Override
   public String configSetName(CoreDescriptor cd) {
     return "configset " + cd.getConfigSet();
+  }
+
+  private static class ConfigCacheEntry {
+    final WeakReference<ConfigNode> configNode;
+    final int znodeVersion;
+
+    private ConfigCacheEntry(ConfigNode configNode, int znodeVersion) {
+      this.configNode = new WeakReference<>(configNode);
+      this.znodeVersion = znodeVersion;
+    }
+  }
+  public SolrCloudManager getSolrCloudManager() {
+    return zkController.getSolrCloudManager();
   }
 }
