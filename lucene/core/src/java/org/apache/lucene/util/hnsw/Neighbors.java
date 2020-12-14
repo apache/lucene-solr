@@ -17,60 +17,70 @@
 
 package org.apache.lucene.util.hnsw;
 
-import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.util.LongHeap;
+import org.apache.lucene.util.NumericUtils;
 
-/** Neighbors queue. */
-public abstract class Neighbors extends PriorityQueue<Neighbor> {
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
-  public static Neighbors create(int maxSize, boolean reversed) {
-    if (reversed) {
-      return new ReverseNeighbors(maxSize);
-    } else {
-      return new ForwardNeighbors(maxSize);
-    }
+/** Neighbors encodes the neighbors of a node in the HNSW graph. */
+public class Neighbors {
+
+  private static final int INITIAL_SIZE = 128;
+
+  public static Neighbors create(int maxSize, VectorValues.SearchStrategy searchStrategy) {
+    return new Neighbors(maxSize, searchStrategy, searchStrategy.reversed);
   }
 
-  public abstract boolean reversed();
+  public static Neighbors createReversed(int maxSize, VectorValues.SearchStrategy searchStrategy) {
+    return new Neighbors(maxSize, searchStrategy, !searchStrategy.reversed);
+  }
+
+  private final LongHeap heap;
+  private final VectorValues.SearchStrategy searchStrategy;
 
   // Used to track the number of neighbors visited during a single graph traversal
   private int visitedCount;
 
-  private Neighbors(int maxSize) {
-    super(maxSize);
+  private Neighbors(int maxSize, VectorValues.SearchStrategy searchStrategy, boolean reversed) {
+    this.searchStrategy = searchStrategy;
+    if (reversed) {
+      heap = LongHeap.create(LongHeap.Order.MAX, maxSize);
+    } else {
+      heap = LongHeap.create(LongHeap.Order.MIN, maxSize);
+    }
   }
 
-  private static class ForwardNeighbors extends Neighbors {
-    ForwardNeighbors(int maxSize) {
-      super(maxSize);
-    }
-
-    @Override
-    protected boolean lessThan(Neighbor a, Neighbor b) {
-      if (a.score() == b.score()) {
-        return a.node() > b.node();
-      }
-      return a.score() < b.score();
-    }
-
-    @Override
-    public boolean reversed() { return false; }
+  public int size() {
+    return heap.size();
   }
 
-  private static class ReverseNeighbors extends Neighbors {
-    ReverseNeighbors(int maxSize) {
-      super(maxSize);
-    }
+  public boolean reversed() {
+    return searchStrategy.reversed;
+  }
 
-    @Override
-    protected boolean lessThan(Neighbor a, Neighbor b) {
-      if (a.score() == b.score()) {
-        return a.node() > b.node();
-      }
-      return b.score() < a.score();
-    }
+  public void add(int newNode, float newScore) {
+    heap.push(encode(newNode, newScore));
+  }
 
-    @Override
-    public boolean reversed() { return true; }
+  public boolean insertWithOverflow(int newNode, float newScore) {
+    return heap.insertWithOverflow(encode(newNode, newScore));
+  }
+
+  private long encode(int node, float score) {
+    return (((long) NumericUtils.floatToSortableInt(score)) << 32) | node;
+  }
+
+  public int pop() {
+    return (int) heap.pop();
+  }
+
+  public int topNode() {
+    return (int) heap.top();
+  }
+
+  public float topScore() {
+    return NumericUtils.sortableIntToFloat((int) (heap.top() >> 32));
   }
 
   void setVisitedCount(int visitedCount) {
@@ -81,13 +91,32 @@ public abstract class Neighbors extends PriorityQueue<Neighbor> {
     return visitedCount;
   }
 
+  public NeighborIterator iterator() {
+    return new NeighborIterator();
+  }
+
+  class NeighborIterator {
+    private long value;
+    private final LongHeap.LongIterator heapIterator = heap.iterator();
+
+    /** Return the next node */
+    public int next() {
+      if (heapIterator.hasNext()) {
+        value = heapIterator.next();
+        return (int) value;
+      }
+      return NO_MORE_DOCS;
+    }
+
+    /** Return the score corresponding to the last node returned by next() */
+    public float score() {
+      return NumericUtils.sortableIntToFloat((int) (value >> 32));
+    }
+  }
+
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Neighbors=[");
-    this.iterator().forEachRemaining(sb::append);
-    sb.append("]");
-    return sb.toString();
+    return "Neighbors[" + heap.size() + "]";
   }
 
 }

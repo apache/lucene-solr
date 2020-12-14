@@ -18,13 +18,15 @@ package org.apache.lucene.search.matchhighlight;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
+import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -59,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -87,6 +90,8 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
 
   private Analyzer analyzer;
 
+  private static final String STOPWORD1 = "stopword";
+
   @Before
   public void setup() throws IOException {
     TYPE_STORED_WITH_OFFSETS = new FieldType(TextField.TYPE_STORED);
@@ -101,7 +106,15 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
     final int positionGap = RandomizedTest.randomFrom(new int[]{0, 1, 100});
     Analyzer whitespaceAnalyzer =
         new AnalyzerWithGaps(offsetGap, positionGap,
-            new WhitespaceAnalyzer(WhitespaceTokenizer.DEFAULT_MAX_WORD_LEN));
+            new Analyzer() {
+              @Override
+              protected TokenStreamComponents createComponents(String fieldName) {
+                Tokenizer tokenizer = new WhitespaceTokenizer(CharTokenizer.DEFAULT_MAX_WORD_LEN);
+                TokenStream tokenStream;
+                tokenStream = new StopFilter(tokenizer, new CharArraySet(Set.of(STOPWORD1), true));
+                return new TokenStreamComponents(tokenizer, tokenStream);
+              }
+            });
 
     SynonymMap synonymMap = TestMatchHighlighter.buildSynonymMap(new String[][] {
         {"foo\u0000bar", "syn1"},
@@ -359,6 +372,41 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
               ));
         }
     );
+  }
+
+  @Test
+  public void testDegenerateIntervalsWithPositions() throws IOException {
+    testDegenerateIntervals(FLD_TEXT_POS);
+  }
+
+  @Test @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9634: " +
+      "Highlighting of degenerate spans on fields with offsets doesn't work properly")
+  public void testDegenerateIntervalsWithOffsets() throws IOException {
+    testDegenerateIntervals(FLD_TEXT_POS_OFFS);
+  }
+
+  public void testDegenerateIntervals(String field) throws IOException {
+    new IndexBuilder(this::toField)
+        .doc(field, fmt("foo %s bar", STOPWORD1))
+        .build(analyzer, reader -> {
+          assertThat(
+              highlights(reader, new IntervalQuery(
+                  field,
+                  Intervals.extend(
+                      Intervals.term("bar"), 1, 3))),
+              containsInAnyOrder(
+                  fmt("0: (%s: 'foo %s >bar<')", field, STOPWORD1)
+              ));
+
+          assertThat(
+              highlights(reader, new IntervalQuery(
+                  field,
+                  Intervals.extend(
+                      Intervals.term("bar"), 5, 100))),
+              containsInAnyOrder(
+                  fmt("0: (%s: '>foo %s bar<')", field, STOPWORD1)
+              ));
+        });
   }
 
   @Test

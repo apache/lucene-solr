@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -37,8 +39,22 @@ public class DOMUtil {
 
   public static final String XML_RESERVED_PREFIX = "xml";
 
+  public static final Set<String>  NL_TAGS = Set.of("str", "int","long","float","double","bool");
+
+
   public static Map<String,String> toMap(NamedNodeMap attrs) {
     return toMapExcept(attrs);
+  }
+  public static Map<String,String> toMap(ConfigNode node) {
+    return toMapExcept(node);
+  }
+  public static Map<String,String> toMapExcept(ConfigNode node, String... exclusions) {
+    Map<String,String> args = new HashMap<>();
+    node.attributes().forEachEntry((k, v) -> {
+      for (String ex : exclusions) if (ex.equals(k)) return;
+        args.put(k,v);
+    });
+    return args;
   }
 
   public static Map<String,String> toMapExcept(NamedNodeMap attrs, String... exclusions) {
@@ -92,6 +108,16 @@ public class DOMUtil {
     return val;
   }
 
+  public static String getAttr(ConfigNode node, String name, String missing_err) {
+    String attr = node.attributes().get(name);
+    if (attr == null) {
+      if (missing_err == null) return null;
+      throw new RuntimeException(missing_err + ": missing mandatory attribute '" + name + "'");
+    }
+    return attr;
+
+  }
+
   public static String getAttr(Node node, String name, String missing_err) {
     return getAttr(node.getAttributes(), name, missing_err);
   }
@@ -108,6 +134,10 @@ public class DOMUtil {
   @SuppressWarnings({"rawtypes"})
   public static List childNodesToList(Node nd) {
     return nodesToList(nd.getChildNodes());
+  }
+
+  public static NamedList<Object> childNodesToNamedList(ConfigNode node) {
+    return readNamedListChildren(node);
   }
 
   public static NamedList<Object> nodesToNamedList(NodeList nlst) {
@@ -160,33 +190,64 @@ public class DOMUtil {
       val = childNodesToList(nd);
     } else {
       final String textValue = getText(nd);
-      try {
-        if ("str".equals(type)) {
-          val = textValue;
-        } else if ("int".equals(type)) {
-          val = Integer.valueOf(textValue);
-        } else if ("long".equals(type)) {
-          val = Long.valueOf(textValue);
-        } else if ("float".equals(type)) {
-          val = Float.valueOf(textValue);
-        } else if ("double".equals(type)) {
-          val = Double.valueOf(textValue);
-        } else if ("bool".equals(type)) {
-          val = StrUtils.parseBool(textValue);
-        }
-        // :NOTE: Unexpected Node names are ignored
-        // :TODO: should we generate an error here?
-      } catch (NumberFormatException nfe) {
-        throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-           "Value " + (null != name ? ("of '" +name+ "' ") : "") +
-           "can not be parsed as '" +type+ "': \"" + textValue + "\"",
-           nfe);
-      }
+      val = parseVal(type, name, textValue);
     }
 
     if (nlst != null) nlst.add(name,val);
     if (arr != null) arr.add(val);
+  }
+
+  private static Object parseVal(String type, String name, String textValue) {
+    Object val = null;
+    try {
+      if ("str".equals(type)) {
+        val = textValue;
+      } else if ("int".equals(type)) {
+        val = Integer.valueOf(textValue);
+      } else if ("long".equals(type)) {
+        val = Long.valueOf(textValue);
+      } else if ("float".equals(type)) {
+        val = Float.valueOf(textValue);
+      } else if ("double".equals(type)) {
+        val = Double.valueOf(textValue);
+      } else if ("bool".equals(type)) {
+        val = StrUtils.parseBool(textValue);
+      }
+      // :NOTE: Unexpected Node names are ignored
+      // :TODO: should we generate an error here?
+    } catch (NumberFormatException nfe) {
+      throw new SolrException
+        (SolrException.ErrorCode.SERVER_ERROR,
+         "Value " + (null != name ? ("of '" + name + "' ") : "") +
+         "can not be parsed as '" + type + "': \"" + textValue + "\"",
+         nfe);
+    }
+    return val;
+  }
+
+  public static NamedList<Object> readNamedListChildren(ConfigNode configNode) {
+    NamedList<Object> result = new NamedList<>();
+    configNode.forEachChild(it -> {
+      String tag = it.name();
+      String varName = it.attributes().get("name");
+      if (NL_TAGS.contains(tag)) {
+        result.add(varName, parseVal(tag, varName, it.textValue()));
+      }
+      if ("lst".equals(tag)) {
+        result.add(varName, readNamedListChildren(it));
+      } else if ("arr".equals(tag)) {
+        List<Object> l = new ArrayList<>();
+        result.add(varName, l);
+        it.forEachChild(n -> {
+          if (NL_TAGS.contains(n.name())) {
+            l.add(parseVal(n.name(), null, n.textValue()));
+          }
+          return Boolean.TRUE;
+        });
+      }
+      return Boolean.TRUE;
+    });
+    return result;
   }
 
   /**

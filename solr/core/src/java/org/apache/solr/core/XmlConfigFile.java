@@ -20,11 +20,6 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -144,7 +139,7 @@ public class XmlConfigFile { // formerly simply "Config"
       db.setErrorHandler(xmllog);
       try {
         doc = db.parse(is);
-        origDoc = copyDoc(doc);
+        origDoc = doc;
       } finally {
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
@@ -152,7 +147,7 @@ public class XmlConfigFile { // formerly simply "Config"
       if (substituteProps != null) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
-    } catch (ParserConfigurationException | SAXException | TransformerException e)  {
+    } catch (ParserConfigurationException | SAXException e)  {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
@@ -178,15 +173,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return this.substituteProperties;
   }
 
-  private static Document copyDoc(Document doc) throws TransformerException {
-    TransformerFactory tfactory = TransformerFactory.newInstance();
-    Transformer tx = tfactory.newTransformer();
-    DOMSource source = new DOMSource(doc);
-    DOMResult result = new DOMResult();
-    tx.transform(source, result);
-    return (Document) result.getNode();
-  }
-  
+
   /**
    * @since solr 1.3
    */
@@ -234,10 +221,6 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public Node getNode(String path, boolean errifMissing) {
     return getNode(path, doc, errifMissing);
-  }
-
-  public Node getUnsubstitutedNode(String path, boolean errIfMissing) {
-    return getNode(path, origDoc, errIfMissing);
   }
 
   public Node getNode(String path, Document doc, boolean errIfMissing) {
