@@ -90,14 +90,14 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
       CodecUtil.writeIndexHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
       CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
 
-      writeSegmentInfo(entries, data, dir, si);
+      writeCompoundFile(entries, data, dir, si);
       
       CodecUtil.writeFooter(data);
       CodecUtil.writeFooter(entries);
     }
   }
   
-  private void writeSegmentInfo(IndexOutput entries, IndexOutput data, Directory dir, SegmentInfo si) throws IOException {
+  private void writeCompoundFile(IndexOutput entries, IndexOutput data, Directory dir, SegmentInfo si) throws IOException {
     // write number of files
     entries.writeVInt(si.files().size());
     for (String file : si.files()) {
