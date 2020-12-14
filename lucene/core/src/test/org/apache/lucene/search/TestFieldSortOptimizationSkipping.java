@@ -115,7 +115,7 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
-  public void testSortOptWithBooleanQueries() throws IOException {
+  public void testSortOptWithBooleanQueriesAndConstantScoreQuery() throws IOException {
     try (
       Directory dir = newDirectory();
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
@@ -191,6 +191,19 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
           bq.add(IntPoint.newRangeQuery("field1", 20, Integer.MAX_VALUE), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term("field2", "value1")), BooleanClause.Occur.MUST_NOT);
           Query query = bq.build();
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+
+        { // test that sort optimization is enabled in a ConstantScoreQuery
+          Query query = new ConstantScoreQuery(IntPoint.newRangeQuery("field1", 20, Integer.MAX_VALUE));
           TotalHitCountCollector countCollector = new TotalHitCountCollector();
           searcher.search(query, countCollector);
           final int totalHitsCount = countCollector.getTotalHits();

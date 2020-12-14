@@ -110,7 +110,7 @@ public final class ConstantScoreQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Weight innerWeight = searcher.createWeight(query, ScoreMode.convertToNoScores(scoreMode), 1f);
+    final Weight innerWeight = searcher.createWeight(query, scoreMode.withNoScores(), 1f);
     if (scoreMode.needsScores()) {
       return new ConstantScoreWeight(this, boost) {
         @Override
