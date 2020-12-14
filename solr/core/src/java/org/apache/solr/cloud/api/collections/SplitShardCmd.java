@@ -434,7 +434,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           .assignPullReplicas(numPull.get())
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.cloudManager, clusterState, collection);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
+          ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+          clusterState, collection);
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       t.stop();
 
@@ -457,7 +459,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             ZkStateReader.CORE_NAME_PROP, solrCoreName,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-            ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
             ZkStateReader.NODE_NAME_PROP, subShardNodeName,
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));

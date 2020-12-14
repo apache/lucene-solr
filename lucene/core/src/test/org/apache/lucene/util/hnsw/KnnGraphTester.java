@@ -165,10 +165,16 @@ public class KnnGraphTester {
       usage();
     }
     if (reindex) {
+      if (docVectorsPath == null) {
+        throw new IllegalArgumentException("-docs argument is required when indexing");
+      }
       reindexTimeMsec = createIndex(Paths.get(docVectorsPath), indexPath);
     }
     switch (operation) {
       case "-search":
+        if (docVectorsPath == null) {
+          throw new IllegalArgumentException("-docs argument is required when searching");
+        }
         testSearch(indexPath, Paths.get(queryPath), getNN(Paths.get(docVectorsPath), Paths.get(queryPath)));
         break;
       case "-forceMerge":
@@ -420,16 +426,16 @@ public class KnnGraphTester {
             .order(ByteOrder.LITTLE_ENDIAN)
             .asFloatBuffer();
           offset += blockSize;
-          Neighbors queue = Neighbors.create(topK, SEARCH_STRATEGY.reversed);
+          Neighbors queue = Neighbors.create(topK, SEARCH_STRATEGY);
           for (; j < numDocs && vectors.hasRemaining(); j++) {
             vectors.get(vector);
             float d = SEARCH_STRATEGY.compare(query, vector);
-            queue.insertWithOverflow(new Neighbor(j, d));
+            queue.insertWithOverflow(j, d);
           }
           result[i] = new int[topK];
           for (int k = topK - 1; k >= 0; k--) {
-            Neighbor n = queue.pop();
-            result[i][k] = n.node();
+            result[i][k] = queue.topNode();
+            queue.pop();
             //System.out.print(" " + n);
           }
           if (quiet == false && (i + 1) % 10 == 0) {

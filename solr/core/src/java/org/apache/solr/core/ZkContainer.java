@@ -36,15 +36,21 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS;
+import static org.apache.solr.common.cloud.UrlScheme.HTTPS_PORT_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
 /**
  * Used by {@link CoreContainer} to hold ZooKeeper / SolrCloud info, especially {@link ZkController}.
@@ -131,10 +137,14 @@ public class ZkContainer {
         ZkController zkController = new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
         if (zkRun != null) {
-          if (StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+          if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
-            new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, "https");
+            new ClusterProperties(zkController.getZkClient()).setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
+            UrlScheme.INSTANCE.setUrlScheme(HTTPS);
+          } else {
+            UrlScheme.INSTANCE.setUrlScheme(System.getProperty(URL_SCHEME, HTTP));
           }
+
           if (zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
             // we are part of an ensemble and we are not uploading the config - pause to give the config time
             // to get up

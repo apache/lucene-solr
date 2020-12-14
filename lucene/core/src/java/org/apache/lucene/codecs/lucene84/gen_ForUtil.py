@@ -375,6 +375,7 @@ def writeRemainderWithSIMDOptimize(bpv, next_primitive, remaining_bits_per_long,
     num_values /= 2
     iteration *= 2
 
+
   f.write('    shiftLongs(tmp, %d, tmp, 0, 0, MASKS%d[%d]);\n' % (iteration * num_longs, next_primitive, remaining_bits_per_long))
   f.write('    for (int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
   tmp_idx = 0

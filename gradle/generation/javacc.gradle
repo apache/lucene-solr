@@ -120,6 +120,9 @@ configure(project(":lucene:queryparser")) {
           text = text.replace(
               "new java.util.ArrayList<int[]>",
               "new java.util.ArrayList<>")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
           return text
         })
       }
