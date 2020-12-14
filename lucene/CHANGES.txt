@@ -39,6 +39,9 @@ Optimizations
 * LUCENE-9536: Reduced memory usage for OrdinalMap when a segment has all
   values. (Julie Tibshirani via Adrien Grand)
 
+* LUCENE-9636: Faster decoding of postings for some numbers of bits per value.
+  (Guo Feng via Adrien Grand)
+
 Bug Fixes
 ---------------------
 
