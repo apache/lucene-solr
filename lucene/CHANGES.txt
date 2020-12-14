@@ -256,6 +256,9 @@ Optimizations
   
 * LUCENE-9021: QueryParser: re-use the LookaheadSuccess exception. (Przemek Bruski via Mikhail Khludnev)
 
+* LUCENE-9636: Faster decoding of postings for some numbers of bits per value.
+  (Guo Feng via Adrien Grand)
+
 Bug Fixes
 ---------------------
 
