@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -80,10 +81,10 @@ public class TestSchemaManager extends SolrTestCaseJ4 {
   public void testSchemaLoadingPerf() {
     SolrConfig config = TestHarness.createConfig(testSolrHome, "collection1", "solrconfig.xml");
     List<String> names = Arrays.asList("schema.xml", "schema11.xml", "schema12.xml", "schema15.xml");
-    long start = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     for (String name : names) {
       IndexSchema schema = IndexSchemaFactory.buildIndexSchema(name, config);
     }
-    System.out.println("time taken : "+ (System.currentTimeMillis() -start));
+    System.out.println(timer.stop());
   }
 }
