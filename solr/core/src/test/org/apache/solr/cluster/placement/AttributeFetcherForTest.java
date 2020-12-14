@@ -19,8 +19,6 @@ package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.AttributeFetcher;
-import org.apache.solr.cluster.placement.AttributeValues;
 
 import java.util.Set;
 
@@ -79,7 +77,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
 
   @Override
   public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames) {
-    throw new UnsupportedOperationException("Not yet implemented...");
+    return this;
   }
 
   @Override

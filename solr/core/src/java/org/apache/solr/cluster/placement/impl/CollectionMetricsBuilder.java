@@ -31,30 +31,31 @@ public class CollectionMetricsBuilder {
 
   final Map<String, ShardMetricsBuilder> shardMetricsBuilders = new HashMap<>();
 
-  public void addShard(String shardName, ShardMetricsBuilder shardMetricsBuilder) {
+
+  public void addShardMetrics(String shardName, ShardMetricsBuilder shardMetricsBuilder) {
     shardMetricsBuilders.put(shardName, shardMetricsBuilder);
   }
 
   public CollectionMetrics build() {
     final Map<String, ShardMetrics> metricsMap = new HashMap<>();
     shardMetricsBuilders.forEach((shard, builder) -> metricsMap.put(shard, builder.build()));
-    return shardName -> {
-      if (metricsMap.containsKey(shardName)) {
-        return Optional.of(metricsMap.get(shardName));
-      } else {
-        return Optional.empty();
-      }
-    };
+    return shardName -> Optional.ofNullable(metricsMap.get(shardName));
   }
 
   public static class ShardMetricsBuilder {
     final Map<String, ReplicaMetricsBuilder> replicaMetricsBuilders = new HashMap<>();
 
-    public void addReplica(String replicaName, ReplicaMetricsBuilder replicaMetricsBuilder) {
+    public ShardMetricsBuilder addReplicaMetrics(String replicaName, ReplicaMetricsBuilder replicaMetricsBuilder) {
       replicaMetricsBuilders.put(replicaName, replicaMetricsBuilder);
+      return this;
     }
 
-    private static final String LEADER = "__leader__";
+    public ShardMetricsBuilder setLeaderMetrics(ReplicaMetricsBuilder replicaMetricsBuilder) {
+      replicaMetricsBuilders.put(LEADER, replicaMetricsBuilder);
+      return this;
+    }
+
+    public static final String LEADER = "__leader__";
 
     public ShardMetrics build() {
       final Map<String, ReplicaMetrics> metricsMap = new HashMap<>();
@@ -68,20 +69,12 @@ public class CollectionMetricsBuilder {
       return new ShardMetrics() {
         @Override
         public Optional<ReplicaMetrics> getLeaderMetrics() {
-          if (metricsMap.containsKey(LEADER)) {
-            return Optional.of(metricsMap.get(LEADER));
-          } else {
-            return Optional.empty();
-          }
+          return Optional.ofNullable(metricsMap.get(LEADER));
         }
 
         @Override
         public Optional<ReplicaMetrics> getReplicaMetrics(String replicaName) {
-          if (metricsMap.containsKey(replicaName)) {
-            return Optional.of(metricsMap.get(replicaName));
-          } else {
-            return Optional.empty();
-          }
+          return Optional.ofNullable(metricsMap.get(replicaName));
         }
       };
     }
@@ -116,11 +109,7 @@ public class CollectionMetricsBuilder {
 
         @Override
         public Optional<Object> getReplicaMetric(String metricName) {
-          if (metrics.containsKey(metricName)) {
-            return Optional.of(metrics.get(metricName));
-          } else {
-            return Optional.empty();
-          }
+          return Optional.ofNullable(metrics.get(metricName));
         }
       };
     }

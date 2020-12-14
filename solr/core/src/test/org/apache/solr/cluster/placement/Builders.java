@@ -49,7 +49,11 @@ public class Builders {
     public ClusterBuilder initializeLiveNodes(int countNodes) {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
-        nodeBuilders.add(new NodeBuilder().setNodeName("node_" + n)); // Default name, can be changed
+        NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
+        nodeBuilder.setTotalDiskGB(10000L);
+        nodeBuilder.setFreeDiskGB(5000L);
+        nodeBuilder.setDiskType(AttributeFetcher.DiskHardwareType.SSD);
+        nodeBuilders.add(nodeBuilder);
       }
       return this;
     }
@@ -89,7 +93,9 @@ public class Builders {
 
     public AttributeFetcher buildAttributeFetcher() {
       Map<Node, Integer> nodeToCoreCount = new HashMap<>();
+      Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType = new HashMap<>();
       Map<Node, Long> nodeToFreeDisk = new HashMap<>();
+      Map<Node, Long> nodeToTotalDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
       Map<String, Map<Node, Double>> metrics = new HashMap<>();
       Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
@@ -101,11 +107,18 @@ public class Builders {
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         Node node = nodeBuilder.build();
 
+        if (nodeBuilder.getDiskType() != null) {
+          nodeToDiskType.put(node, nodeBuilder.getDiskType());
+        }
+
         if (nodeBuilder.getCoreCount() != null) {
           nodeToCoreCount.put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
           nodeToFreeDisk.put(node, nodeBuilder.getFreeDiskGB());
+        }
+        if (nodeBuilder.getTotalDiskGB() != null) {
+          nodeToTotalDisk.put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
           nodeBuilder.getSysprops().forEach((name, value) -> {
@@ -123,10 +136,16 @@ public class Builders {
 
       collectionBuilders.forEach(builder -> {
         collectionMetrics.put(builder.collectionName, builder.collectionMetricsBuilder.build());
+        SolrCollection collection = builder.build();
+        collection.iterator().forEachRemaining(shard ->
+            shard.iterator().forEachRemaining(replica -> {
+                nodeToCoreCount.compute(replica.getNode(), (node, count) ->
+                    (count == null) ? 1 : count + 1);
+            }));
       });
 
-      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, Map.of(), nodeToFreeDisk,
-          Map.of(), Map.of(), Map.of(), sysprops, metrics, collectionMetrics);
+      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, nodeToDiskType, nodeToFreeDisk,
+          nodeToTotalDisk, Map.of(), Map.of(), sysprops, metrics, collectionMetrics);
       return new AttributeFetcherForTest(attributeValues);
     }
   }
@@ -234,18 +253,46 @@ public class Builders {
      * Initializes shard and replica builders for the collection based on passed parameters. Replicas are assigned round
      * robin to the nodes. The shard leader is the first NRT replica of each shard (or first TLOG is no NRT).
      * Shard and replica configuration can be modified afterwards, the returned builder hierarchy is a convenient starting point.
+     * @param countShards number of shards to create
+     * @param countNrtReplicas number of NRT replicas per shard
+     * @param countTlogReplicas number of TLOG replicas per shard
+     * @param countPullReplicas number of PULL replicas per shard
+     * @param nodes list of nodes to place replicas on.
      */
     public CollectionBuilder initializeShardsReplicas(int countShards, int countNrtReplicas, int countTlogReplicas,
-                                               int countPullReplicas, List<NodeBuilder> nodes) {
+                                                      int countPullReplicas, List<NodeBuilder> nodes) {
+      return initializeShardsReplicas(countShards, countNrtReplicas, countTlogReplicas, countPullReplicas, nodes, null);
+    }
+
+    /**
+     * Initializes shard and replica builders for the collection based on passed parameters. Replicas are assigned round
+     * robin to the nodes. The shard leader is the first NRT replica of each shard (or first TLOG is no NRT).
+     * Shard and replica configuration can be modified afterwards, the returned builder hierarchy is a convenient starting point.
+     * @param countShards number of shards to create
+     * @param countNrtReplicas number of NRT replicas per shard
+     * @param countTlogReplicas number of TLOG replicas per shard
+     * @param countPullReplicas number of PULL replicas per shard
+     * @param nodes list of nodes to place replicas on.
+     * @param initialSizeGBPerShard initial replica size (in GB) per shard
+     */
+    public CollectionBuilder initializeShardsReplicas(int countShards, int countNrtReplicas, int countTlogReplicas,
+                                               int countPullReplicas, List<NodeBuilder> nodes,
+                                                      List<Integer> initialSizeGBPerShard) {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
 
       shardBuilders = new LinkedList<>();
+      if (initialSizeGBPerShard != null && initialSizeGBPerShard.size() != countShards) {
+        throw new RuntimeException("list of shard sizes must be the same length as the countShards!");
+      }
 
       for (int shardNumber = 1; shardNumber <= countShards; shardNumber++) {
         String shardName = buildShardName(shardNumber);
 
+        CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder = new CollectionMetricsBuilder.ShardMetricsBuilder();
+
         LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
+        CollectionMetricsBuilder.ReplicaMetricsBuilder leaderMetrics = null;
 
         // Iterate on requested counts, NRT then TLOG then PULL. Leader chosen as first NRT (or first TLOG if no NRT)
         List<Pair<Replica.ReplicaType, Integer>> replicaTypes = List.of(
@@ -270,15 +317,23 @@ public class Builders {
                 .setReplicaState(Replica.ReplicaState.ACTIVE).setReplicaNode(node);
             replicas.add(replicaBuilder);
 
+            CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder();
+            shardMetricsBuilder.addReplicaMetrics(replicaName, replicaMetricsBuilder);
+            if (initialSizeGBPerShard != null) {
+              replicaMetricsBuilder.setSizeGB(initialSizeGBPerShard.get(shardNumber - 1));
+            }
             if (leader == null && type != Replica.ReplicaType.PULL) {
               leader = replicaBuilder;
+              leaderMetrics = replicaMetricsBuilder;
             }
           }
         }
 
         ShardBuilder shardBuilder = new ShardBuilder();
         shardBuilder.setShardName(shardName).setReplicaBuilders(replicas).setLeader(leader);
+        shardMetricsBuilder.setLeaderMetrics(leaderMetrics);
         shardBuilders.add(shardBuilder);
+        collectionMetricsBuilder.addShardMetrics(shardName, shardMetricsBuilder);
       }
 
       return this;
@@ -404,6 +459,8 @@ public class Builders {
     private String nodeName = null;
     private Integer coreCount = null;
     private Long freeDiskGB = null;
+    private Long totalDiskGB = null;
+    private AttributeFetcher.DiskHardwareType diskType;
     private Map<String, String> sysprops = null;
     private Map<String, Double> metrics = null;
 
@@ -422,12 +479,22 @@ public class Builders {
       return this;
     }
 
+    public NodeBuilder setTotalDiskGB(Long totalDiskGB) {
+      this.totalDiskGB = totalDiskGB;
+      return this;
+    }
+
     public NodeBuilder setSysprop(String key, String value) {
       if (sysprops == null) {
         sysprops = new HashMap<>();
       }
       String name = AttributeFetcherImpl.getSystemPropertySnitchTag(key);
       sysprops.put(name, value);
+      return this;
+    }
+
+    public NodeBuilder setDiskType(AttributeFetcher.DiskHardwareType diskType) {
+      this.diskType = diskType;
       return this;
     }
 
@@ -446,6 +513,14 @@ public class Builders {
 
     public Long getFreeDiskGB() {
       return freeDiskGB;
+    }
+
+    public Long getTotalDiskGB() {
+      return totalDiskGB;
+    }
+
+    public AttributeFetcher.DiskHardwareType getDiskType() {
+      return diskType;
     }
 
     public Map<String, String> getSysprops() {

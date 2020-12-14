@@ -211,7 +211,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         nodeToHeapUsage,
         nodeToSystemLoadAverage,
         syspropSnitchToNodeToValue,
-        metricSnitchToNodeToValue);
+        metricSnitchToNodeToValue, null);
   }
 
   private static SolrInfoBean.Group getGroupFromMetricRegistry(NodeMetricRegistry registry) {
