@@ -2151,7 +2151,7 @@ function start_solr() {
   fi
 
   # If SSL-related system props are set, add them to SOLR_OPTS
-  if [ "$SOLR_SSL_ENABLED" ]; then
+  if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
     SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
