@@ -77,6 +77,8 @@ Bug Fixes
 * SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
   state back from ZK. (Timothy Potter)
 
+* SOLR-15046: Check if SOLR_SSL_ENABLED strictly equal to true for setting solr.jetty.https.port (Timothy Potter)
+
 
 Other Changes
 ---------------------
