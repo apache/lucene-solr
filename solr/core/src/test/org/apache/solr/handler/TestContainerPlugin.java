@@ -200,7 +200,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       PluginMeta p = new PluginMeta();
       p.name = "hello";
       p.klass = CC.class.getName();
-      p.config = cfg;
+      p._config = cfg;
 
       new V2Request.Builder("/cluster/plugin")
           .forceV2(true)

@@ -24,12 +24,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
@@ -143,7 +138,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
-    Map<String, Object> pluginInfos = null;
+    Map<String, Object> pluginInfos;
     try {
       pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
     } catch (IOException e) {
@@ -181,9 +176,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       } else {
         //ADDED or UPDATED
         PluginMetaHolder info = newState.get(e.getKey());
-        ApiInfo apiInfo = null;
         List<String> errs = new ArrayList<>();
-        apiInfo = new ApiInfo(info,errs);
+        ApiInfo apiInfo = new ApiInfo(info,errs);
         if (!errs.isEmpty()) {
           log.error(StrUtils.join(errs, ','));
           continue;
@@ -239,8 +233,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
-    Map result = makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
-    return result;
+    return (Map) makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
   }
 
   private static class ApiHolder extends Api {
@@ -273,7 +266,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     private final PluginMetaHolder holder;
 
     @JsonProperty
-    private PluginMeta info;
+    private final PluginMeta info;
 
     @JsonProperty(value = "package")
     public final String pkg;
@@ -393,8 +386,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       if (instance instanceof ConfigurablePlugin) {
         Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
         if (c != null) {
-          holder.meta.config = mapper.readValue(Utils.toJSON(holder.original), c);
-          ((ConfigurablePlugin) instance).configure(holder.meta.config);
+          Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+          holder.meta._config = mapper.readValue(Utils.toJSON(original), c);
+          ((ConfigurablePlugin) instance).configure(holder.meta._config);
         }
       }
       if (instance instanceof ResourceLoaderAware) {
@@ -412,7 +406,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   }
 
-  /**Get the generic type of a {@link ConfigurablePlugin}
+  /**
+   * Get the generic type of a {@link ConfigurablePlugin}
    */
   @SuppressWarnings("rawtypes")
   public static Class getConfigClass(ConfigurablePlugin<?> o) {
@@ -436,16 +431,12 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     return new ApiInfo(new PluginMetaHolder(info), errs);
 
   }
-  public ApiInfo createInfo(PluginMetaHolder info, List<String> errs) {
-    return new ApiInfo(info, errs);
-
-  }
 
   public enum Diff {
-    ADDED, REMOVED, UNCHANGED, UPDATED;
+    ADDED, REMOVED, UNCHANGED, UPDATED
   }
 
-  public static Map<String, Diff> compareMaps(Map<String,? extends Object> a, Map<String,? extends Object> b) {
+  public static Map<String, Diff> compareMaps(Map<String, ?> a, Map<String, ?> b) {
     if(a.isEmpty() && b.isEmpty()) return null;
     Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
     a.forEach((k, v) -> {
