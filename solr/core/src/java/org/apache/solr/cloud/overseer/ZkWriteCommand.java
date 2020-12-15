@@ -17,16 +17,34 @@
 package org.apache.solr.cloud.overseer;
 
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 
 public class ZkWriteCommand {
+
   public final String name;
   public final DocCollection collection;
-  public final boolean noop;
 
+  public final boolean noop;
+  // persist the collection state. If this is false, it means the collection state is not modified
+  public final boolean persistCollState;
+  public final PerReplicaStates.WriteOps ops;
+
+  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStates.WriteOps replicaOps, boolean persistCollState) {
+    boolean isPerReplicaState = collection.isPerReplicaState();
+    this.name = name;
+    this.collection = collection;
+    this.noop = false;
+    this.ops = isPerReplicaState ? replicaOps : null;
+    this.persistCollState = isPerReplicaState ? persistCollState : true;
+  }
   public ZkWriteCommand(String name, DocCollection collection) {
     this.name = name;
     this.collection = collection;
     this.noop = false;
+    persistCollState = true;
+    this.ops = collection != null && collection.isPerReplicaState() ?
+        PerReplicaStates.WriteOps.touchChildren():
+        null;
   }
 
   /**
@@ -36,6 +54,8 @@ public class ZkWriteCommand {
     this.noop = true;
     this.name = null;
     this.collection = null;
+    this.ops = null;
+    persistCollState = true;
   }
 
   public static ZkWriteCommand noop() {

@@ -23,11 +23,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -655,7 +657,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
     private final String collName;
-    private long lastUpdateTime;
+    private volatile long lastUpdateTime;
     private DocCollection cachedDocCollection;
 
     public LazyCollectionRef(String collName) {
@@ -675,7 +677,7 @@ public class ZkStateReader implements SolrCloseable {
             exists = zkClient.exists(getCollectionPath(collName), null, true);
           } catch (Exception e) {
           }
-          if (exists != null && exists.getVersion() == cachedDocCollection.getZNodeVersion()) {
+          if (exists != null && !cachedDocCollection.isModified(exists.getVersion(), exists.getCversion())) {
             shouldFetch = false;
           }
         }
@@ -1195,9 +1197,11 @@ public class ZkStateReader implements SolrCloseable {
    */
   class StateWatcher implements Watcher {
     private final String coll;
+    private final String collectionPath;
 
     StateWatcher(String coll) {
       this.coll = coll;
+      collectionPath = getCollectionPath(coll);
     }
 
     @Override
@@ -1216,11 +1220,15 @@ public class ZkStateReader implements SolrCloseable {
       Set<String> liveNodes = ZkStateReader.this.liveNodes;
       if (log.isInfoEnabled()) {
         log.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
-            event, coll, liveNodes.size());
+                event, coll, liveNodes.size());
       }
 
-      refreshAndWatch();
+      refreshAndWatch(event.getType());
 
+    }
+
+    public void refreshAndWatch() {
+      refreshAndWatch(null);
     }
 
     /**
@@ -1228,8 +1236,16 @@ public class ZkStateReader implements SolrCloseable {
      * As a side effect, updates {@link #clusterState} and {@link #watchedCollectionStates}
      * with the results of the refresh.
      */
-    public void refreshAndWatch() {
+    public void refreshAndWatch(EventType eventType) {
       try {
+        if (eventType == null || eventType == EventType.NodeChildrenChanged) {
+          refreshAndWatchChildren();
+          if (eventType == EventType.NodeChildrenChanged) {
+            //only per-replica states modified. return
+            return;
+          }
+        }
+
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
         synchronized (getUpdateLock()) {
@@ -1244,6 +1260,32 @@ public class ZkStateReader implements SolrCloseable {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.error("Unwatched collection: [{}]", coll, e);
+      }
+    }
+
+    private void refreshAndWatchChildren() throws KeeperException, InterruptedException {
+      Stat stat = new Stat();
+      List<String> replicaStates = null;
+      try {
+        replicaStates = zkClient.getChildren(collectionPath, this, stat, true);
+        PerReplicaStates newStates = new PerReplicaStates(collectionPath, stat.getCversion(), replicaStates);
+        DocCollection oldState = watchedCollectionStates.get(coll);
+        DocCollection newState = null;
+        if (oldState != null) {
+          newState = oldState.copyWith(newStates);
+        } else {
+          newState = fetchCollectionState(coll, null);
+        }
+        updateWatchedCollection(coll, newState);
+        synchronized (getUpdateLock()) {
+          constructState(Collections.singleton(coll));
+        }
+        if (log.isDebugEnabled()) {
+          log.debug("updated per-replica states changed for: {}, ver: {} , new vals: {}",  coll, stat.getCversion(), replicaStates);
+        }
+
+      } catch (NoNodeException e) {
+        log.info("{} is deleted, stop watching children", collectionPath);
       }
     }
   }
@@ -1419,9 +1461,19 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  private DocCollection fetchCollectionState(String coll, Watcher watcher) throws KeeperException, InterruptedException {
-    String collectionPath = getCollectionPath(coll);
+  public DocCollection fetchCollectionState(String coll, Watcher watcher) throws KeeperException, InterruptedException {
+    String collectionPath  = getCollectionPath(coll);
     while (true) {
+      ClusterState.initReplicaStateProvider(() -> {
+        try {
+          PerReplicaStates replicaStates = getReplicaStates(new PerReplicaStates(collectionPath, 0, Collections.emptyList()));
+          log.info("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
+          return replicaStates;
+        } catch (Exception e) {
+          //TODO
+          throw new RuntimeException(e);
+        }
+      });
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
@@ -1439,6 +1491,8 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
+      } finally {
+        ClusterState.clearReplicaStateProvider();
       }
     }
   }
@@ -1566,8 +1620,23 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
+    state = updatePerReplicaState(state);
     if (stateWatcher.onStateChanged(state) == true) {
       removeDocCollectionWatcher(collection, stateWatcher);
+    }
+  }
+
+  private DocCollection updatePerReplicaState(DocCollection c) {
+    if (c == null || !c.isPerReplicaState()) return c;
+    PerReplicaStates current = c.getPerReplicaStates();
+    PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
+    if (newPrs != current) {
+      log.debug("just-in-time update for a fresh per-replica-state {}", c.getName());
+      DocCollection modifiedColl = c.copyWith(newPrs);
+      updateWatchedCollection(c.getName(), modifiedColl);
+      return modifiedColl;
+    } else {
+      return c;
     }
   }
 
@@ -1804,7 +1873,9 @@ public class ZkStateReader implements SolrCloseable {
           break;
         }
       } else {
-        if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
+        int oldCVersion = oldState.getPerReplicaStates() == null ? -1 : oldState.getPerReplicaStates().cversion;
+        int newCVersion = newState.getPerReplicaStates() == null ? -1 : newState.getPerReplicaStates().cversion;
+        if (oldState.getZNodeVersion() >= newState.getZNodeVersion() && oldCVersion >= newCVersion) {
           // no change to state, but we might have been triggered by the addition of a
           // state watcher, so run notifications
           updated = true;
@@ -2198,7 +2269,17 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  public DocCollection getCollection(String collection) {
-    return clusterState.getCollectionOrNull(collection);
+  public PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+    return PerReplicaStates.fetch(path, zkClient, null);
+
   }
+
+  public PerReplicaStates getReplicaStates(PerReplicaStates current) throws KeeperException, InterruptedException {
+    return PerReplicaStates.fetch(current.path, zkClient, current);
+  }
+
+  public DocCollection getCollection(String collection) {
+    return clusterState == null ? null : clusterState.getCollectionOrNull(collection);
+  }
+
 }
