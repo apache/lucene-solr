@@ -86,7 +86,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -116,7 +115,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MarkerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
@@ -552,57 +550,39 @@ public class HttpSolrCall {
           remoteQuery(coreUrl + path, resp);
           return RETURN;
         case PROCESS:
-          /*
-           We track update requests so that we can preserve consistency by waiting for them to complete
-           on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
-           See how the SolrCoreState#pauseUpdatesAndAwaitInflightRequests() method is used in CoreContainer#shutdown()
-
-           Also see https://issues.apache.org/jira/browse/SOLR-14942 for details on why we do not care for
-           other kinds of requests.
-          */
-          if (handler instanceof UpdateRequestHandler && !core.getSolrCoreState().registerInFlightUpdate()) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Updates are temporarily paused for core: " + core.getName());
-          }
-          try {
-            final Method reqMethod = Method.getMethod(req.getMethod());
-            HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
-            // unless we have been explicitly told not to, do cache validation
-            // if we fail cache validation, execute the query
-            if (config.getHttpCachingConfig().isNever304() ||
-                    !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
-              SolrQueryResponse solrRsp = new SolrQueryResponse();
-              /* even for HEAD requests, we need to execute the handler to
-               * ensure we don't get an error (and to make sure the correct
-               * QueryResponseWriter is selected and we get the correct
-               * Content-Type)
-               */
-              SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
-              mustClearSolrRequestInfo = true;
-              execute(solrRsp);
-              if (shouldAudit()) {
-                EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
-                if (shouldAudit(eventType)) {
-                  cores.getAuditLoggerPlugin().doAudit(
-                          new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
-                }
+          final Method reqMethod = Method.getMethod(req.getMethod());
+          HttpCacheHeaderUtil.setCacheControlHeader(config, resp, reqMethod);
+          // unless we have been explicitly told not to, do cache validation
+          // if we fail cache validation, execute the query
+          if (config.getHttpCachingConfig().isNever304() ||
+                  !HttpCacheHeaderUtil.doCacheHeaderValidation(solrReq, req, reqMethod, resp)) {
+            SolrQueryResponse solrRsp = new SolrQueryResponse();
+            /* even for HEAD requests, we need to execute the handler to
+             * ensure we don't get an error (and to make sure the correct
+             * QueryResponseWriter is selected and we get the correct
+             * Content-Type)
+             */
+            SolrRequestInfo.setRequestInfo(new SolrRequestInfo(solrReq, solrRsp, action));
+            mustClearSolrRequestInfo = true;
+            execute(solrRsp);
+            if (shouldAudit()) {
+              EventType eventType = solrRsp.getException() == null ? EventType.COMPLETED : EventType.ERROR;
+              if (shouldAudit(eventType)) {
+                cores.getAuditLoggerPlugin().doAudit(
+                        new AuditEvent(eventType, req, getAuthCtx(), solrReq.getRequestTimer().getTime(), solrRsp.getException()));
               }
-              HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
-              Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
-              while (headers.hasNext()) {
-                Map.Entry<String, String> entry = headers.next();
-                resp.addHeader(entry.getKey(), entry.getValue());
-              }
-              QueryResponseWriter responseWriter = getResponseWriter();
-              if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
-              writeResponse(solrRsp, responseWriter, reqMethod);
             }
-            return RETURN;
-          } finally {
-            if (handler instanceof UpdateRequestHandler) {
-              // every registered request must also be de-registered
-              core.getSolrCoreState().deregisterInFlightUpdate();
+            HttpCacheHeaderUtil.checkHttpCachingVeto(solrRsp, resp, reqMethod);
+            Iterator<Map.Entry<String, String>> headers = solrRsp.httpHeaders();
+            while (headers.hasNext()) {
+              Map.Entry<String, String> entry = headers.next();
+              resp.addHeader(entry.getKey(), entry.getValue());
             }
+            QueryResponseWriter responseWriter = getResponseWriter();
+            if (invalidStates != null) solrReq.getContext().put(CloudSolrClient.STATE_VERSION, invalidStates);
+            writeResponse(solrRsp, responseWriter, reqMethod);
           }
+          return RETURN;
         default: return action;
       }
     } catch (Throwable ex) {
@@ -1071,13 +1051,13 @@ public class HttpSolrCall {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getStr(BASE_URL_PROP).equals(cores.getZkController().getBaseUrl())) {
+          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }
 
           if (origCorename != null) {
-            coreUrl = replica.getStr(BASE_URL_PROP) + "/" + origCorename;
+            coreUrl = replica.getBaseUrl() + "/" + origCorename;
           } else {
             coreUrl = replica.getCoreUrl();
             if (coreUrl.endsWith("/")) {

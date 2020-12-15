@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -270,7 +269,8 @@ public class Assign {
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
-                                                          Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
+                                                          Object createNodeSet, SolrCloudManager cloudManager,
+                                                          PlacementPlugin placementPlugin) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -296,7 +296,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(cloudManager, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(placementPlugin, clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -492,13 +492,13 @@ public class Assign {
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
+   * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
+   * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(SolrCloudManager solrCloudManager, ClusterState clusterState, DocCollection collection) {
-    PlacementPlugin plugin = PlacementPluginConfigImpl.getPlacementPlugin(solrCloudManager);
-
-    if (plugin != null) {
+  public static AssignStrategy createAssignStrategy(PlacementPlugin placementPlugin, ClusterState clusterState, DocCollection collection) {
+    if (placementPlugin != null) {
       // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(collection, plugin);
+      return new PlacementPluginAssignStrategy(collection, placementPlugin);
     }  else {
         return new LegacyAssignStrategy();
       }

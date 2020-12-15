@@ -19,7 +19,7 @@ package org.apache.solr.util.plugin;
 import java.util.Map;
 
 import org.apache.solr.common.util.DOMUtil;
-import org.w3c.dom.Node;
+import org.apache.solr.common.ConfigNode;
 
 /**
  *
@@ -35,7 +35,7 @@ public class NamedListPluginLoader<T extends NamedListInitializedPlugin> extends
   }
 
   @Override
-  protected void init(T plugin,Node node) throws Exception {
+  protected void init(T plugin, ConfigNode node) throws Exception {
     plugin.init( DOMUtil.childNodesToNamedList(node) );
   }
 

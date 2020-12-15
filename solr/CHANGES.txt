@@ -7,6 +7,7 @@ https://github.com/apache/lucene-solr/blob/master/solr/solr-ref-guide/src/solr-u
 ==================  9.0.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
+Docker and contrib modules have separate CHANGES.md files.
 
 New Features
 ---------------------
@@ -41,14 +42,28 @@ Improvements
 
 * SOLR-14880: Support coreRootDirectory setting when create new cores from command line, in standalone mode (Alexandre Rafalovitch)
 
-* SOLR-14972: Change default port of prometheus exporter to 8989 because it clashed with default embedded zookeeper port (janhoy)
-
 * SOLR-14926, SOLR-14926, SOLR-13506: Modernize and clean up search results clustering contrib. This issue upgrades
   the clustering contrib to the new Carrot2 4.x line, dropping several CVE-prone dependencies along the way.
   The parameters and configuration of the contrib extensions have changed. The documentation in Solr ref guide
   has been rewritten from scratch to be up to date. Clustering code has been rewritten from scratch to work
   properly regardless of the mode (standalone, distributed). The API has been stripped of ancient, unused, interfaces
   and simplified. (Dawid Weiss)
+
+* SOLR-14972: Prometheus: Change default port of prometheus exporter to 8989
+  because it clashed with default embedded zookeeper port (janhoy)
+
+* SOLR-14001: Docker: Removed /var/solr initialization from the Dockerfile; depend on init_var_solr.sh instead.
+  This leads to more consistent behavior no matter how /var/solr is mounted.
+  * init_var_solr.sh is now invoked by docker-entrypoint.sh; not in a bunch of other places.
+  * as before, you can set NO_INIT_VAR_SOLR=1 to short-circuit this.
+  * init_var_solr.sh no longer echo's anything.  For verbosity, set VERBOSE=yes.
+  (David Smiley)
+
+* SOLR-14957: Docker, Prometheus: Add Prometheus Exporter to docker PATH. Fix classpath issues.
+  (Houston Putman)
+
+* SOLR-14949: Docker: Ability to customize the FROM image when building.
+  (Houston Putman)
 
 Other Changes
 ----------------------
@@ -144,17 +159,26 @@ Other Changes
 * SOLR-14944: Remove the "spins" metrics - support for detection of spinning disks has been
   removed in LUCENE-9576. (ab)
 
-* SOLR-14957: Add Prometheus Exporter to docker PATH. Fix classpath issues. (Houston Putman)
-
 * SOLR-14912: Clean up solr-extraction contrib to produce solr-extraction-* jar
   (instead of solr-cell-*). (Dawid Weiss)
 
 * SOLR-14978: Enable OOM Killer Script in Solr Foreground. Simplify getting heap dumps on OOM. (Mike Drob, Houston Putman)
 
-* SOLR-14949: Ability to customize docker image name/base image (Houston Putman)
-
 * SOLR-14035: Remove deprecated preferLocalShards=true support in favour of the shards.preference=replica.location:local alternative.
   (Alex Bulygin via Christine Poerschke)
+
+* SOLR-14934: Remove redundent deprecated "solr.solr.home" logic (hossman)
+
+* SOLR-14915: Prometheus: Reduced dependencies from Solr server down to just SolrJ.  Don't add WEB-INF/lib.
+  * Can run via gradle, "gradlew run"
+  * Has own log4j2.xml now
+  * Was missing some dependencies in lib/; now has all except SolrJ & logging.
+  (David Smiley, Houston Putman)
+
+* SOLR-14789: Docker: Migrate docker image creation from docker-solr repo to solr/docker.
+  (Houston Putman, Martijn Koster, Tim Potter, David Smiley, janhoy, Mike Drob)
+
+* SOLR-15016: Replica placement plugins should use container plugins API / configs. (ab, ilan)
 
 Bug Fixes
 ---------------------
@@ -164,6 +188,13 @@ Bug Fixes
 ==================  8.8.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Upgrade Notes
+---------------------
+
+* Internal logic for identifying 'Solr Home' has been refactored to make testing less error prone.  Plugin
+  developers using SolrPaths.locateSolrHome() or 'new SolrResourceLoader' should check deprecation warnings as existing
+  some existing functionality will be removed in 9.0.  See SOLR-14934 for more details.
 
 New Features
 ---------------------
@@ -184,6 +215,16 @@ Improvements
 * SOLR-14977 : ContainerPlugins should be configurable with custom objects (noble, ab)
 
 * SOLR-15015 : Add interleaving algorithm parameter support in Learning To Rank (Alessandro Benedetti)
+
+* SOLR-8673: Make JSON Facets extendable (Tim Owen via Mikhail Khludnev)
+
+* SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
+  and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
+  default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
+  
+* SOLR-14827: Refactor schema loading to not use XPath (noble)
+
+* SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
 
 Optimizations
 ---------------------
@@ -208,12 +249,28 @@ Bug Fixes
 
 * SOLR-14993: Unable to download zookeeper files of 1byte in size (Erick Erickson, Allen Sooredoo)
 
+* SOLR-14851: Http2SolrClient doesn't handle keystore type correctly (Andras Salamon via janhoy)
+
+* SOLR-15009: Correctly propogate exceptions from DirectoryFactory.exists (Mike Drob)
+
+* SOLR-15017: Core lib directories were not being recognized unless the solrconfig included a <lib> directive.
+  (Thomas Mortagne)
+
+* SOLR-14934: Refactored duplicate "Solr Home" logic into a single place to eliminate risk of tests using divergent values
+  for a single solr node.  (hossman)
+
+* SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
+  state back from ZK. (Timothy Potter)
+
+
 Other Changes
 ---------------------
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
+
+* SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
 
 ==================  8.7.0 ==================
 

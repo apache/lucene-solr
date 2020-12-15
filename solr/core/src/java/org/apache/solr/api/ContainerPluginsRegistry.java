@@ -389,6 +389,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
           holder.meta._config = mapper.readValue(Utils.toJSON(original), c);
           ((ConfigurablePlugin) instance).configure(holder.meta._config);
+
         }
       }
       if (instance instanceof ResourceLoaderAware) {
@@ -417,7 +418,10 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       for (Type type : interfaces) {
         if (type instanceof ParameterizedType) {
           ParameterizedType parameterizedType = (ParameterizedType) type;
-          if (parameterizedType.getRawType() == ConfigurablePlugin.class) {
+          Type rawType = parameterizedType.getRawType();
+          if (rawType == ConfigurablePlugin.class ||
+              // or if a super interface is a ConfigurablePlugin
+              ((rawType instanceof Class) && ConfigurablePlugin.class.isAssignableFrom((Class) rawType))) {
             return (Class) parameterizedType.getActualTypeArguments()[0];
           }
         }

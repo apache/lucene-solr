@@ -31,6 +31,7 @@ import org.mockito.Mockito;
 /**
  * Tests for {@link CloudReplicaSource}
  */
+@SolrTestCaseJ4.SuppressSSL // lots of assumptions about http: in this test
 public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
 
   @BeforeClass

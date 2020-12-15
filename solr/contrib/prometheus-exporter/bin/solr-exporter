@@ -82,23 +82,11 @@ for JAR in $(find "$BASEDIR"/../../dist/solrj-lib -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
-for JAR in $(find "$BASEDIR"/../../dist -name 'solr-core-*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
 for JAR in $(find "$BASEDIR"/../../dist -name 'solr-solrj-*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 for JAR in $(find "$BASEDIR"/../../dist -name 'solr-prometheus-exporter-*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
-for JAR in $(find "$BASEDIR"/lucene-libs -name '*.jar')
-do
-  CLASSPATH="$CLASSPATH":"$JAR"
-done
-for JAR in $(find "$BASEDIR"/../../server/solr-webapp/webapp/WEB-INF/lib -name '*.jar')
 do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
@@ -122,8 +110,6 @@ if [ -z ${GC_TUNE+x} ]; then
 else
     GC_TUNE="$GC_TUNE"
 fi
-
-EXTRA_JVM_ARGUMENTS="-Dlog4j.configurationFile=file:"$BASEDIR"/../../server/resources/log4j2-console.xml"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
@@ -163,7 +149,6 @@ exec "$JAVACMD" \
   $JAVA_MEM_OPTS \
   $GC_TUNE \
   $JAVA_OPTS \
-  $EXTRA_JVM_ARGUMENTS \
   $ZK_CREDS_AND_ACLS \
   -classpath "$CLASSPATH" \
   -Dapp.name="solr-exporter" \

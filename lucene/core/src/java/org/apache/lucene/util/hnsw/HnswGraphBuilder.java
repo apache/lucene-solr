@@ -18,6 +18,7 @@
 package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.index.KnnGraphValues;
@@ -25,6 +26,9 @@ import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.InfoStream;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /**
  * Builder for HNSW graph. See {@link HnswGraph} for a gloss on the algorithm and the meaning of the hyperparameters.
@@ -33,6 +37,7 @@ public final class HnswGraphBuilder {
 
   // default random seed for level generation
   private static final long DEFAULT_RAND_SEED = System.currentTimeMillis();
+  public static final String HNSW_COMPONENT = "HNSW";
 
   // expose for testing.
   public static long randSeed = DEFAULT_RAND_SEED;
@@ -48,6 +53,10 @@ public final class HnswGraphBuilder {
 
   private final int maxConn;
   private final int beamWidth;
+
+  // TODO: how to pass this in?
+  InfoStream infoStream = InfoStream.getDefault();
+  // InfoStream infoStream = new PrintStreamInfoStream(System.out);
 
   private final BoundedVectorValues boundedVectors;
   private final VectorValues.SearchStrategy searchStrategy;
@@ -86,8 +95,17 @@ public final class HnswGraphBuilder {
     if (vectors == boundedVectors.raDelegate) {
       throw new IllegalArgumentException("Vectors to build must be independent of the source of vectors provided to HnswGraphBuilder()");
     }
+    long start = System.nanoTime(), t = start;
     for (int node = 1; node < vectors.size(); node++) {
       insert(vectors.vectorValue(node));
+      if (node % 10000 == 0) {
+        if (infoStream.isEnabled(HNSW_COMPONENT)) {
+          long now = System.nanoTime();
+          infoStream.message(HNSW_COMPONENT,
+              String.format(Locale.ROOT, "HNSW built %d in %d/%d ms", node, ((now - t) / 1_000_000), ((now - start) / 1_000_000)));
+          t = now;
+        }
+      }
     }
     return hnsw;
   }
@@ -137,10 +155,12 @@ public final class HnswGraphBuilder {
 
   private void addNearestNeighbors(int newNode, Neighbors neighbors) {
     // connect the nearest neighbors, relying on the graph's Neighbors' priority queues to drop off distant neighbors
-    for (Neighbor neighbor : neighbors) {
-     if (hnsw.connect(newNode, neighbor.node(), neighbor.score())) {
-       hnsw.connect(neighbor.node(), newNode, neighbor.score());
-     }
+    Neighbors.NeighborIterator it = neighbors.iterator();
+    for (int node = it.next(); node != NO_MORE_DOCS; node = it.next()) {
+      float score = it.score();
+      if (hnsw.connect(newNode, node, score)) {
+        hnsw.connect(node, newNode, score);
+      }
     }
   }
 

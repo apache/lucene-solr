@@ -165,6 +165,10 @@ public class SolrLogPostTool {
     private boolean finished = false;
     private String cause;
     private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
+    private Pattern minute = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d)");
+    private Pattern tenSecond = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d:\\d)");
+
+
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
@@ -187,7 +191,12 @@ public class SolrLogPostTool {
 
         if (line != null) {
           SolrInputDocument lineDoc = new SolrInputDocument();
-          lineDoc.setField("date_dt", parseDate(line));
+          String date = parseDate(line);
+          String minute = parseMinute(line);
+          String tenSecond = parseTenSecond(line);
+          lineDoc.setField("date_dt", date);
+          lineDoc.setField("time_minute_s", minute);
+          lineDoc.setField("time_ten_second_s", tenSecond);
           lineDoc.setField("line_t", line);
           lineDoc.setField("type_s", "other"); // Overridden by known types below
 
@@ -245,7 +254,27 @@ public class SolrLogPostTool {
       Matcher m = p.matcher(line);
       if(m.find()) {
         String date = m.group(1);
-        return date.replace(" ", "T");
+        return date.replace(" ", "T")+"Z";
+      }
+
+      return null;
+    }
+
+    private String parseMinute(String line) {
+      Matcher m = minute.matcher(line);
+      if(m.find()) {
+        String date = m.group(1);
+        return date.replace(" ", "T")+":00Z";
+      }
+
+      return null;
+    }
+
+    private String parseTenSecond(String line) {
+      Matcher m = tenSecond.matcher(line);
+      if(m.find()) {
+        String date = m.group(1);
+        return date.replace(" ", "T")+"0Z";
       }
 
       return null;

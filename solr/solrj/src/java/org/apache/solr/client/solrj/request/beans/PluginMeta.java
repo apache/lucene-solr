@@ -48,6 +48,7 @@ public class PluginMeta implements ReflectMapWriter {
   public MapWriter _config;
 
 
+
   public PluginMeta copy() {
     PluginMeta result = new PluginMeta();
     result.name = name;
@@ -70,6 +71,7 @@ public class PluginMeta implements ReflectMapWriter {
       return Objects.equals(this.name, that.name) &&
           Objects.equals(this.klass, that.klass) &&
           Objects.equals(this.version, that.version) &&
+
           Objects.equals(this._config, that._config);
     }
     return false;
