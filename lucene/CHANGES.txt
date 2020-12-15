@@ -220,6 +220,9 @@ Other
 
 * LUCENE-9544: add regenerate gradle script for nori dictionary (Namgyu Kim)
 
+* LUCENE-9627: Remove unused Lucene50FieldInfosFormat codec and small refactor some codecs
+  to separate reading header/footer from reading content of the file. (Ignacio Vera)
+
 ======================= Lucene 8.8.0 =======================
 
 New Features

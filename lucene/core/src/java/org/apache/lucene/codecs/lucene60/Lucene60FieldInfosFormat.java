@@ -104,6 +104,22 @@ import org.apache.lucene.store.IndexOutput;
  */
 public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
 
+  /** Extension of field infos */
+  static final String EXTENSION = "fnm";
+
+  // Codec header
+  static final String CODEC_NAME = "Lucene60FieldInfos";
+  static final int FORMAT_START = 0;
+  static final int FORMAT_SOFT_DELETES = 1;
+  static final int FORMAT_SELECTIVE_INDEXING = 2;
+  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
+
+  // Field flags
+  static final byte STORE_TERMVECTOR = 0x1;
+  static final byte OMIT_NORMS = 0x2;
+  static final byte STORE_PAYLOADS = 0x4;
+  static final byte SOFT_DELETES_FIELD = 0x8;
+
   /** Sole constructor. */
   public Lucene60FieldInfosFormat() {
   }
@@ -113,7 +129,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
     final String fileName = IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, EXTENSION);
     try (ChecksumIndexInput input = directory.openChecksumInput(fileName, context)) {
       Throwable priorE = null;
-      FieldInfo infos[] = null;
+      FieldInfo[] infos = null;
       try {
         int version = CodecUtil.checkIndexHeader(input,
                                    Lucene60FieldInfosFormat.CODEC_NAME, 
@@ -121,56 +137,8 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
                                    Lucene60FieldInfosFormat.FORMAT_CURRENT,
                                    segmentInfo.getId(), segmentSuffix);
         
-        final int size = input.readVInt(); //read in the size
-        infos = new FieldInfo[size];
-        
-        // previous field's attribute map, we share when possible:
-        Map<String,String> lastAttributes = Collections.emptyMap();
-        
-        for (int i = 0; i < size; i++) {
-          String name = input.readString();
-          final int fieldNumber = input.readVInt();
-          if (fieldNumber < 0) {
-            throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
-          }
-          byte bits = input.readByte();
-          boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
-          boolean omitNorms = (bits & OMIT_NORMS) != 0;
-          boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
-          boolean isSoftDeletesField = (bits & SOFT_DELETES_FIELD) != 0;
-
-          final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
-          
-          // DV Types are packed in one byte
-          final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
-          final long dvGen = input.readLong();
-          Map<String,String> attributes = input.readMapOfStrings();
-          // just use the last field's map if its the same
-          if (attributes.equals(lastAttributes)) {
-            attributes = lastAttributes;
-          }
-          lastAttributes = attributes;
-          int pointDataDimensionCount = input.readVInt();
-          int pointNumBytes;
-          int pointIndexDimensionCount = pointDataDimensionCount;
-          if (pointDataDimensionCount != 0) {
-            if (version >= Lucene60FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
-              pointIndexDimensionCount = input.readVInt();
-            }
-            pointNumBytes = input.readVInt();
-          } else {
-            pointNumBytes = 0;
-          }
-
-          try {
-            infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
-                                     indexOptions, docValuesType, dvGen, attributes,
-                                     pointDataDimensionCount, pointIndexDimensionCount, pointNumBytes,
-                                     0, VectorValues.SearchStrategy.NONE, isSoftDeletesField);
-          } catch (IllegalStateException e) {
-            throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
-          }
-        }
+        infos = readFieldInfos(input, version);
+       
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -178,6 +146,60 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
       }
       return new FieldInfos(infos);
     }
+  }
+
+  private FieldInfo[] readFieldInfos(IndexInput input, int version) throws IOException {
+    final int size = input.readVInt(); //read in the size
+    FieldInfo[] infos = new FieldInfo[size];
+
+    // previous field's attribute map, we share when possible:
+    Map<String,String> lastAttributes = Collections.emptyMap();
+
+    for (int i = 0; i < size; i++) {
+      String name = input.readString();
+      final int fieldNumber = input.readVInt();
+      if (fieldNumber < 0) {
+        throw new CorruptIndexException("invalid field number for field: " + name + ", fieldNumber=" + fieldNumber, input);
+      }
+      byte bits = input.readByte();
+      boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
+      boolean omitNorms = (bits & OMIT_NORMS) != 0;
+      boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
+      boolean isSoftDeletesField = (bits & SOFT_DELETES_FIELD) != 0;
+
+      final IndexOptions indexOptions = getIndexOptions(input, input.readByte());
+
+      // DV Types are packed in one byte
+      final DocValuesType docValuesType = getDocValuesType(input, input.readByte());
+      final long dvGen = input.readLong();
+      Map<String,String> attributes = input.readMapOfStrings();
+      // just use the last field's map if its the same
+      if (attributes.equals(lastAttributes)) {
+        attributes = lastAttributes;
+      }
+      lastAttributes = attributes;
+      int pointDataDimensionCount = input.readVInt();
+      int pointNumBytes;
+      int pointIndexDimensionCount = pointDataDimensionCount;
+      if (pointDataDimensionCount != 0) {
+        if (version >= Lucene60FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
+          pointIndexDimensionCount = input.readVInt();
+        }
+        pointNumBytes = input.readVInt();
+      } else {
+        pointNumBytes = 0;
+      }
+
+      try {
+        infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads,
+                indexOptions, docValuesType, dvGen, attributes,
+                pointDataDimensionCount, pointIndexDimensionCount, pointNumBytes,
+                0, VectorValues.SearchStrategy.NONE, isSoftDeletesField);
+      } catch (IllegalStateException e) {
+        throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
+      }
+    }
+    return infos;
   }
   
   static {
@@ -301,20 +323,4 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
       CodecUtil.writeFooter(output);
     }
   }
-  
-  /** Extension of field infos */
-  static final String EXTENSION = "fnm";
-  
-  // Codec header
-  static final String CODEC_NAME = "Lucene60FieldInfos";
-  static final int FORMAT_START = 0;
-  static final int FORMAT_SOFT_DELETES = 1;
-  static final int FORMAT_SELECTIVE_INDEXING = 2;
-  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
-  
-  // Field flags
-  static final byte STORE_TERMVECTOR = 0x1;
-  static final byte OMIT_NORMS = 0x2;
-  static final byte STORE_PAYLOADS = 0x4;
-  static final byte SOFT_DELETES_FIELD = 0x8;
 }
