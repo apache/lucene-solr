@@ -30,7 +30,7 @@ import org.junit.Test;
 public class TestJsonRangeFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
-  private static boolean cache = true;
+  private static String cache;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
@@ -42,7 +42,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     initCore("solrconfig-tlog.xml","schema_latest.xml");
-    cache = random().nextBoolean();
+    cache = Boolean.toString(random().nextBoolean());
   }
 
   /**
@@ -101,7 +101,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
    * will cause the correct "actual_end" to be returned
    */
   private void doRangeOtherWhitebox(Client client) throws Exception {
-    client.queryDefaults().set("cache", Boolean.toString(cache));
+    client.queryDefaults().set("cache", cache);
     indexSimple(client);
 
     // false is default, but randomly check explicit false as well
@@ -180,7 +180,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doDateFacets(Client client) throws Exception {
-    client.queryDefaults().set("cache", Boolean.toString(cache));
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     boolean multiValue = random().nextBoolean();
     String dateField = multiValue? "b_dts": "b_dt";
@@ -248,7 +248,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doRangeFacetWithRanges(Client client) throws Exception {
-    client.queryDefaults().set("cache", Boolean.toString(cache));
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     indexSimple(client);
 
@@ -320,7 +320,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doRangeFacetWithRangesInNewFormat(Client client) throws Exception {
-    client.queryDefaults().set("cache", Boolean.toString(cache));
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     indexSimple(client);
     SolrParams p = params("q", "*:*", "rows", "0");
