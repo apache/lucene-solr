@@ -45,7 +45,7 @@ public class PluginMeta implements ReflectMapWriter {
   public String pathPrefix;
 
   /** Plugin configuration object, optional. */
-  public MapWriter _config;
+  public MapWriter config;
 
 
 
@@ -54,14 +54,14 @@ public class PluginMeta implements ReflectMapWriter {
     result.name = name;
     result.klass = klass;
     result.version = version;
-    result._config = _config;
+    result.config = config;
     return result;
   }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     ReflectMapWriter.super.writeMap(ew);
-    ew.putIfNotNull("config", _config);
+    ew.putIfNotNull("config", config);
   }
 
   @Override
@@ -72,7 +72,7 @@ public class PluginMeta implements ReflectMapWriter {
           Objects.equals(this.klass, that.klass) &&
           Objects.equals(this.version, that.version) &&
 
-          Objects.equals(this._config, that._config);
+          Objects.equals(this.config, that.config);
     }
     return false;
   }

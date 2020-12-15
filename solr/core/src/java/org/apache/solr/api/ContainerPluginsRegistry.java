@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -68,7 +69,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
   private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -387,8 +389,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
         if (c != null) {
           Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
-          holder.meta._config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin) instance).configure(holder.meta._config);
+          holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
+          ((ConfigurablePlugin) instance).configure(holder.meta.config);
 
         }
       }
