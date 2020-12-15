@@ -31,7 +31,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeCoreCount() {
+  public AttributeFetcher requestNodeCoresCount() {
     return this;
   }
 
@@ -76,7 +76,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames) {
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric> metricNames) {
     return this;
   }
 

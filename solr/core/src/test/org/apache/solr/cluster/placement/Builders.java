@@ -50,8 +50,8 @@ public class Builders {
       nodeBuilders = new LinkedList<>();
       for (int n = 0; n < countNodes; n++) {
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
-        nodeBuilder.setTotalDiskGB(10000L);
-        nodeBuilder.setFreeDiskGB(5000L);
+        nodeBuilder.setTotalDiskGB(10000.0);
+        nodeBuilder.setFreeDiskGB(5000.0);
         nodeBuilder.setDiskType(AttributeFetcher.DiskHardwareType.SSD);
         nodeBuilders.add(nodeBuilder);
       }
@@ -94,10 +94,10 @@ public class Builders {
     public AttributeFetcher buildAttributeFetcher() {
       Map<Node, Integer> nodeToCoreCount = new HashMap<>();
       Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType = new HashMap<>();
-      Map<Node, Long> nodeToFreeDisk = new HashMap<>();
-      Map<Node, Long> nodeToTotalDisk = new HashMap<>();
+      Map<Node, Double> nodeToFreeDisk = new HashMap<>();
+      Map<Node, Double> nodeToTotalDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
-      Map<String, Map<Node, Double>> metrics = new HashMap<>();
+      Map<String, Map<Node, Object>> metrics = new HashMap<>();
       Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
 
       // TODO And a few more missing and will be added...
@@ -318,7 +318,7 @@ public class Builders {
             replicas.add(replicaBuilder);
 
             CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder();
-            shardMetricsBuilder.addReplicaMetrics(replicaName, replicaMetricsBuilder);
+            shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.setSizeGB(initialSizeGBPerShard.get(shardNumber - 1));
             }
@@ -333,7 +333,7 @@ public class Builders {
         shardBuilder.setShardName(shardName).setReplicaBuilders(replicas).setLeader(leader);
         shardMetricsBuilder.setLeaderMetrics(leaderMetrics);
         shardBuilders.add(shardBuilder);
-        collectionMetricsBuilder.addShardMetrics(shardName, shardMetricsBuilder);
+        collectionMetricsBuilder.getShardMetricsBuilders().put(shardName, shardMetricsBuilder);
       }
 
       return this;
@@ -458,8 +458,8 @@ public class Builders {
   public static class NodeBuilder {
     private String nodeName = null;
     private Integer coreCount = null;
-    private Long freeDiskGB = null;
-    private Long totalDiskGB = null;
+    private Double freeDiskGB = null;
+    private Double totalDiskGB = null;
     private AttributeFetcher.DiskHardwareType diskType;
     private Map<String, String> sysprops = null;
     private Map<String, Double> metrics = null;
@@ -474,12 +474,12 @@ public class Builders {
       return this;
     }
 
-    public NodeBuilder setFreeDiskGB(Long freeDiskGB) {
+    public NodeBuilder setFreeDiskGB(Double freeDiskGB) {
       this.freeDiskGB = freeDiskGB;
       return this;
     }
 
-    public NodeBuilder setTotalDiskGB(Long totalDiskGB) {
+    public NodeBuilder setTotalDiskGB(Double totalDiskGB) {
       this.totalDiskGB = totalDiskGB;
       return this;
     }
@@ -511,11 +511,11 @@ public class Builders {
       return coreCount;
     }
 
-    public Long getFreeDiskGB() {
+    public Double getFreeDiskGB() {
       return freeDiskGB;
     }
 
-    public Long getTotalDiskGB() {
+    public Double getTotalDiskGB() {
       return totalDiskGB;
     }
 

@@ -32,8 +32,8 @@ public class CollectionMetricsBuilder {
   final Map<String, ShardMetricsBuilder> shardMetricsBuilders = new HashMap<>();
 
 
-  public void addShardMetrics(String shardName, ShardMetricsBuilder shardMetricsBuilder) {
-    shardMetricsBuilders.put(shardName, shardMetricsBuilder);
+  public Map<String, ShardMetricsBuilder> getShardMetricsBuilders() {
+    return shardMetricsBuilders;
   }
 
   public CollectionMetrics build() {
@@ -45,9 +45,8 @@ public class CollectionMetricsBuilder {
   public static class ShardMetricsBuilder {
     final Map<String, ReplicaMetricsBuilder> replicaMetricsBuilders = new HashMap<>();
 
-    public ShardMetricsBuilder addReplicaMetrics(String replicaName, ReplicaMetricsBuilder replicaMetricsBuilder) {
-      replicaMetricsBuilders.put(replicaName, replicaMetricsBuilder);
-      return this;
+    public Map<String, ReplicaMetricsBuilder> getReplicaMetricsBuilders() {
+      return replicaMetricsBuilders;
     }
 
     public ShardMetricsBuilder setLeaderMetrics(ReplicaMetricsBuilder replicaMetricsBuilder) {
@@ -82,10 +81,10 @@ public class CollectionMetricsBuilder {
 
   public static class ReplicaMetricsBuilder {
     final Map<String, Object> metrics = new HashMap<>();
-    int sizeGB = 0;
+    Double sizeGB;
     boolean leader;
 
-    public ReplicaMetricsBuilder setSizeGB(int size) {
+    public ReplicaMetricsBuilder setSizeGB(double size) {
       this.sizeGB = size;
       return this;
     }
@@ -103,7 +102,7 @@ public class CollectionMetricsBuilder {
     public ReplicaMetrics build() {
       return new ReplicaMetrics() {
         @Override
-        public int getReplicaSizeGB() {
+        public Double getReplicaSizeGB() {
           return sizeGB;
         }
 

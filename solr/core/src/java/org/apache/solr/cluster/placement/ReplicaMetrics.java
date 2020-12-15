@@ -23,6 +23,7 @@ import java.util.Optional;
  *
  */
 public interface ReplicaMetrics {
-  int getReplicaSizeGB();
+
+  Double getReplicaSizeGB();
   Optional<Object> getReplicaMetric(String metricName);
 }

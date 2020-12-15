@@ -66,7 +66,7 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
 
       Set<Node> nodes = request.getTargetNodes();
 
-      attributeFetcher.requestNodeCoreCount();
+      attributeFetcher.requestNodeCoresCount();
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
 

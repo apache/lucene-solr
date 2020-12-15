@@ -194,7 +194,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // Request all needed attributes
       attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
-      attributeFetcher.requestNodeCoreCount().requestNodeFreeDisk();
+      attributeFetcher.requestNodeCoresCount().requestNodeFreeDisk();
       attributeFetcher.fetchFrom(nodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 

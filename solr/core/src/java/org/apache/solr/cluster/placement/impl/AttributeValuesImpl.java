@@ -28,25 +28,25 @@ import java.util.Optional;
 public class AttributeValuesImpl implements AttributeValues {
   final Map<Node, Integer> nodeToCoreCount;
   final Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType;
-  final Map<Node, Long> nodeToFreeDisk;
-  final Map<Node, Long> nodeToTotalDisk;
+  final Map<Node, Double> nodeToFreeDisk;
+  final Map<Node, Double> nodeToTotalDisk;
   final Map<Node, Double> nodeToHeapUsage;
   final Map<Node, Double> nodeToSystemLoadAverage;
   // sysprop name / node -> value
   final Map<String, Map<Node, String>> syspropSnitchToNodeToValue;
   // metricName / node -> value
-  final Map<String, Map<Node, Double>> metricSnitchToNodeToValue;
+  final Map<String, Map<Node, Object>> metricSnitchToNodeToValue;
   // collection / shard / replica / metricName -> value
   final Map<String, CollectionMetrics> collectionMetrics;
 
   public AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
                              Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType,
-                             Map<Node, Long> nodeToFreeDisk,
-                             Map<Node, Long> nodeToTotalDisk,
+                             Map<Node, Double> nodeToFreeDisk,
+                             Map<Node, Double> nodeToTotalDisk,
                              Map<Node, Double> nodeToHeapUsage,
                              Map<Node, Double> nodeToSystemLoadAverage,
                              Map<String, Map<Node, String>> syspropSnitchToNodeToValue,
-                             Map<String, Map<Node, Double>> metricSnitchToNodeToValue,
+                             Map<String, Map<Node, Object>> metricSnitchToNodeToValue,
                              Map<String, CollectionMetrics> collectionMetrics) {
     this.nodeToCoreCount = nodeToCoreCount;
     this.nodeToDiskType = nodeToDiskType;
@@ -70,12 +70,12 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  public Optional<Long> getFreeDisk(Node node) {
+  public Optional<Double> getFreeDisk(Node node) {
     return Optional.ofNullable(nodeToFreeDisk.get(node));
   }
 
   @Override
-  public Optional<Long> getTotalDisk(Node node) {
+  public Optional<Double> getTotalDisk(Node node) {
     return Optional.ofNullable(nodeToTotalDisk.get(node));
   }
 
@@ -105,8 +105,8 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  public Optional<Double> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry) {
-    Map<Node, Double> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricSnitchTag(metricName, registry));
+  public Optional<Object> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry) {
+    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricSnitchTag(metricName, registry));
     if (nodeToValue == null) {
       return Optional.empty();
     }
@@ -115,8 +115,11 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<Object> getNodeMetric(Node node, String metricKey) {
-    // TODO implement
-    return Optional.empty();
+    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricKeySnitchTag(metricKey));
+    if (nodeToValue == null) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(nodeToValue.get(node));
   }
 
   @Override

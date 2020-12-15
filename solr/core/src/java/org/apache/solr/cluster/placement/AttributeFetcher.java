@@ -29,7 +29,7 @@ public interface AttributeFetcher {
   /**
    * Request the number of cores on each node. To get the value use {@link AttributeValues#getCoresCount(Node)}
    */
-  AttributeFetcher requestNodeCoreCount();
+  AttributeFetcher requestNodeCoresCount();
 
   /**
    * Request the disk hardware type on each node. To get the value use {@link AttributeValues#getDiskType(Node)}
@@ -76,7 +76,7 @@ public interface AttributeFetcher {
    * Note that this request will fetch information from nodes relevant to the collection
    * replicas and not the ones specified in {@link #fetchFrom(Set)} (though they may overlap).
    */
-  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<String> metricNames);
+  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric> metricNames);
 
   /**
    * The set of nodes from which to fetch all node related attributes. Calling this method is mandatory if any of the {@code requestNode*}

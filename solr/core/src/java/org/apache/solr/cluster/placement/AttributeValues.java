@@ -36,12 +36,12 @@ public interface AttributeValues {
   /**
    * For the given node: Free disk size in Gigabytes of the partition on which cores are stored
    */
-  Optional<Long> getFreeDisk(Node node);
+  Optional<Double> getFreeDisk(Node node);
 
   /**
    * For the given node: Total disk size in Gigabytes of the partition on which cores are stored
    */
-  Optional<Long> getTotalDisk(Node node);
+  Optional<Double> getTotalDisk(Node node);
 
   /**
    * For the given node: Percentage between 0 and 100 of used heap over max heap
@@ -66,7 +66,7 @@ public interface AttributeValues {
   /**
    * For the given node: metric of specific name and registry
    */
-  Optional<Double> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry);
+  Optional<Object> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry);
 
 
   /**

@@ -79,7 +79,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
     AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeCoreCount()
+        .requestNodeCoresCount()
         .requestNodeDiskType()
         .requestNodeFreeDisk()
         .requestNodeTotalDisk()
@@ -90,7 +90,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
       assertTrue("coreCount present", coreCount.isPresent());
       Optional<AttributeFetcher.DiskHardwareType> diskType = attributeValues.getDiskType(node);
       assertTrue("diskType present", diskType.isPresent());
-      Optional<Long> diskOpt = attributeValues.getFreeDisk(node);
+      Optional<Double> diskOpt = attributeValues.getFreeDisk(node);
       assertTrue("freeDisk", diskOpt.isPresent());
       diskOpt = attributeValues.getTotalDisk(node);
       assertTrue("totalDisk", diskOpt.isPresent());
@@ -106,9 +106,9 @@ public class BuildersTest extends SolrTestCaseJ4 {
       assertTrue("leader metrics", replicaMetricsOpt.isPresent());
       ReplicaMetrics leaderMetrics = replicaMetricsOpt.get();
       if (shardName.endsWith("1")) {
-        assertEquals("size", 10, leaderMetrics.getReplicaSizeGB());
+        assertEquals("size", Double.valueOf(10), leaderMetrics.getReplicaSizeGB());
       } else {
-        assertEquals("size", 20, leaderMetrics.getReplicaSizeGB());
+        assertEquals("size", Double.valueOf(20), leaderMetrics.getReplicaSizeGB());
       }
       Shard shard = collection.getShard(shardName);
       shard.iterator().forEachRemaining(r -> {
@@ -116,9 +116,9 @@ public class BuildersTest extends SolrTestCaseJ4 {
         assertTrue("replica metrics", metricsOpt.isPresent());
         ReplicaMetrics metrics = metricsOpt.get();
         if (shardName.endsWith("1")) {
-          assertEquals("size", 10, metrics.getReplicaSizeGB());
+          assertEquals("size", Double.valueOf(10), metrics.getReplicaSizeGB());
         } else {
-          assertEquals("size", 20, metrics.getReplicaSizeGB());
+          assertEquals("size", Double.valueOf(20), metrics.getReplicaSizeGB());
         }
       });
     }

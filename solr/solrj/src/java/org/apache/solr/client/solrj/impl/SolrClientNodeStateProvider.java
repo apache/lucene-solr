@@ -63,10 +63,6 @@ import static java.util.Collections.emptyMap;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  //only for debugging
-  public static SolrClientNodeStateProvider INST;
-
-
 
   private final CloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
@@ -81,7 +77,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    if(log.isDebugEnabled()) INST = this;
   }
 
   protected ClusterStateProvider getClusterStateProvider() {
@@ -214,18 +209,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         } else if (tag.startsWith(METRICS_PREFIX)) {
           metricsKeyVsTag.put(tag.substring(METRICS_PREFIX.length()), tag);
         }
-      }
-      if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
-        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", (Function<Object, Pair<String, Object>>) o -> {
-          if("true".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
-          }
-          if("false".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
-          }
-          return new Pair<>(ImplicitSnitch.DISKTYPE,null);
-
-        });
       }
       if (!metricsKeyVsTag.isEmpty()) {
         fetchReplicaMetrics(solrNode, snitchContext, metricsKeyVsTag);
