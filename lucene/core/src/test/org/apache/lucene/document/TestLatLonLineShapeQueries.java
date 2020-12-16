@@ -21,9 +21,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Rectangle;
 
 /** random bounding box, line, and polygon query tests for random generated {@link Line} types */
 @SuppressWarnings("SimpleText")
@@ -74,13 +72,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     protected LineValidator(Encoder encoder) {
       super(encoder);
     }
-
-    @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
+    
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;

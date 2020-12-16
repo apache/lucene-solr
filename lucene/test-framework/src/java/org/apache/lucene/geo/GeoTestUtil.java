@@ -391,6 +391,23 @@ public class GeoTestUtil {
     return new Polygon(result[0], result[1]);
   }
 
+  public static Point nextPoint() {
+    double lat = nextLatitude();
+    double lon = nextLongitude();
+    return new Point(lat, lon);
+  }
+
+  public static Line nextLine() {
+    Polygon p = nextPolygon();
+    double[] lats = new double[p.numPoints() - 1];
+    double[] lons = new double[lats.length];
+    for (int i = 0; i < lats.length; ++i) {
+      lats[i] = p.getPolyLat(i);
+      lons[i] = p.getPolyLon(i);
+    }
+    return new Line(lats, lons);
+  }
+  
   public static Circle nextCircle() {
     double lat = nextLatitude();
     double lon = nextLongitude();

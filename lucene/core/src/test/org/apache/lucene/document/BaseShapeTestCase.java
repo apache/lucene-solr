@@ -212,6 +212,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   protected abstract Component2D toCircle2D(Object circle);
 
+  protected abstract Component2D toRectangle2D(double minX, double maxX, double minY, double maxY);
+
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -299,37 +301,18 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
-
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
+     
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
       for (int docID = 0; docID < maxDoc; ++docID) {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
-        double minLon = rectMinX(rect);
-        double maxLon = rectMaxX(rect);
-        double minLat = rectMinY(rect);
-        double maxLat = rectMaxY(rect);
+        double minX = rectMinX(rect);
+        double maxX = rectMaxX(rect);
+        double minY = rectMinY(rect);
+        double maxY = rectMaxY(rect);
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
@@ -339,10 +322,13 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
           if (queryRelation == QueryRelation.CONTAINS && rectCrossesDateline(rect)) {
             // For contains we need to call the validator for each section. 
             // It is only expected if both sides are contained.
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL, shapes[id]) &&
-                    VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon, shapes[id]);
+            Component2D left = toRectangle2D(minX, GeoUtils.MAX_LON_INCL, minY, maxY);
+            Component2D right = toRectangle2D(GeoUtils.MIN_LON_INCL, maxX, minY, maxY);
+            expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(left, shapes[id]) &&
+                    VALIDATOR.setRelation(queryRelation).testComponentQuery(right, shapes[id]);
           } else {
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, minLon, maxLon, shapes[id]);
+            Component2D component2D = toRectangle2D(minX, maxX, minY, maxY);
+            expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(component2D, shapes[id]);
           }
         }
 
@@ -362,7 +348,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(lat=" + ENCODER.quantizeYCeil(rectMinY(rect)) + " TO " + ENCODER.quantizeY(rectMaxY(rect)) + " lon=" + minLon + " TO " + ENCODER.quantizeX(rectMaxX(rect)) + ")\n");
+          b.append("  rect=Rectangle(lat=" + ENCODER.quantizeYCeil(rectMinY(rect)) + " TO " + ENCODER.quantizeY(rectMaxY(rect)) + " lon=" + minX + " TO " + ENCODER.quantizeX(rectMaxX(rect)) + ")\n");
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -401,26 +387,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -492,26 +459,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -589,26 +537,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -681,26 +610,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -748,7 +658,30 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
   }
 
+  private FixedBitSet searchIndex(IndexSearcher s, Query query, int maxDoc) throws IOException {
+    final FixedBitSet hits = new FixedBitSet(maxDoc);
+    s.search(query, new SimpleCollector() {
 
+      private int docBase;
+
+      @Override
+      public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE_NO_SCORES;
+      }
+
+      @Override
+      protected void doSetNextReader(LeafReaderContext context)  {
+        docBase = context.docBase;
+      }
+
+      @Override
+      public void collect(int doc) {
+        hits.set(docBase+doc);
+      }
+    });
+    return hits;
+  }
+  
   protected abstract Validator getValidator();
 
   protected static abstract class Encoder {
@@ -758,8 +691,6 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     abstract double quantizeXCeil(double raw);
     abstract double quantizeY(double raw);
     abstract double quantizeYCeil(double raw);
-    abstract double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
-    abstract ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
   }
 
   private int scaledIterationCount(int shapes) {
@@ -783,9 +714,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
-
-    public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-
+    
     public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
     public Validator setRelation(QueryRelation relation) {

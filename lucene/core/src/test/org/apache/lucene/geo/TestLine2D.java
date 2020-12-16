@@ -17,7 +17,6 @@
 
 package org.apache.lucene.geo;
 
-import org.apache.lucene.document.TestLatLonLineShapeQueries;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -72,7 +71,7 @@ public class TestLine2D extends LuceneTestCase {
   }
 
   public void testRandomTriangles() {
-    Line line = TestLatLonLineShapeQueries.getNextLine();
+    Line line = GeoTestUtil.nextLine();
     Component2D line2D = Line2D.create(line);
 
     for (int i =0; i < 100; i++) {
