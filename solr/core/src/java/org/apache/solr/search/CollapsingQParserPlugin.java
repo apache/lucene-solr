@@ -602,7 +602,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.contexts = new LeafReaderContext[segments];
       this.onlyElevatedRepresentativeVisible = onlyElevatedRepresentativeVisible;
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for(int i=0; i<con.size(); i++) {
+      for(int i = 0; i < con.size(); i++) {
         contexts[i] = con.get(i);
       }
 
@@ -808,7 +808,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.contexts = new LeafReaderContext[segments];
       this.onlyElevatedRepresentativeVisible = onlyElevatedRepresentativeVisible;
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for(int i=0; i<con.size(); i++) {
+      for(int i = 0; i < con.size(); i++) {
         contexts[i] = con.get(i);
       }
 
