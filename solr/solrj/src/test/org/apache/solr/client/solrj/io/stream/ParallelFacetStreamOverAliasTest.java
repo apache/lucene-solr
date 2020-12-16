@@ -35,13 +35,16 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RTimer;
@@ -75,6 +78,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.tests.numeric.dv", "true");
+
     final RTimer timer = new RTimer();
     configureCluster(NUM_COLLECTIONS).withMetrics(false)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
@@ -122,9 +127,20 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias(ALIAS_NAME, aliasedCollectionString).process(cluster.getSolrClient());
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void testDrillOverAlias() throws Exception {
+
+    for (int c=0; c < CARD; c++) {
+      SolrQuery query = new SolrQuery("a_i:"+c);
+      query.setRows(1000);
+      query.setFields("a_i", "a_d");
+      query.addGetFieldStatistics("a_d");
+      QueryResponse resp = cluster.getSolrClient().query(ALIAS_NAME, query);
+      SolrDocumentList results = resp.getResults();
+      System.out.println("For query "+query+", found: "+results.getNumFound()+"; stats: "+resp.getFieldStatsInfo().get("a_d"));
+    }
+
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
@@ -132,34 +148,22 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     String zkhost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new SolrDefaultStreamFactory().withCollectionZkHost(ALIAS_NAME, zkhost);
 
-    String dim = "a_i";
-    String col = "a_d";
-
-    String metrics = String.format(Locale.US, "sum(%s), avg(%s), min(%s), max(%s), count(*)", col, col, col, col);
-    String rollupExprTmpl = "rollup(" +
-        "\n    input()," +
-        "\n    over=\"%s\"," +
-        "\n    %s" +
-        "\n  )";
-    String rollupExpr = String.format(Locale.US, rollupExprTmpl, dim, metrics);
-
-    String drillExprTmpl = "drill(\n";
-    drillExprTmpl += "  %s,\n";
-    drillExprTmpl += "  q=\"*:*\",\n";
-    drillExprTmpl += "  fl=\"%s\",\n";
-    drillExprTmpl += "  sort=\"%s asc\",\n";
-    drillExprTmpl += "  %s\n";
-    drillExprTmpl += ")";
-
-    String drillExpr = String.format(Locale.US, drillExprTmpl, ALIAS_NAME, dim, dim, rollupExpr);
-
-    String rollupOverDrill = String.format(Locale.US, "rollup(" +
-        "\n  %s," +
-        "\n  over=\"%s\"," +
-        "\n  sum(sum(a_d)), wsum(avg(a_d)), min(min(a_d)), max(max(a_d)), count(*)," +
-        "\n)", drillExpr, dim);
-
-    //System.out.println(">> drill: "+drillExpr);
+    String drillExpr = "" +
+        "rollup(\n" +
+        "  drill(\n" +
+        "    SOME_ALIAS_WITH_MANY_COLLS,\n" +
+        "    q=\"*:*\", \n" +
+        "    fl=\"a_i,a_d\", \n" +
+        "    sort=\"a_i asc\", \n" +
+        "    rollup(\n" +
+        "      input(), \n" +
+        "      over=\"a_i\", \n" +
+        "      sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)" +
+        "    )\n" +
+        "  ),\n" +
+        "  over=\"a_i\",\n" +
+        "  sum(sum(a_d)), wsum(avg(a_d)), min(min(a_d)), max(max(a_d)), sum(count(*)),\n" +
+        ")";
 
     TupleStream stream = factory.constructStream(drillExpr);
     stream.setStreamContext(streamContext);
@@ -180,11 +184,19 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
-    String dim = "a_i";
-    String col = "a_d";
-    String facetExprTmpl = "facet(%s, plist=%s, q=\"*:*\", fl=\"%s\", sort=\"%s asc\", buckets=\"%s\", bucketSorts=\"count(*) asc\", bucketSizeLimit=10000, %s)";
-    String metrics = String.format(Locale.US, "sum(%s), avg(%s), min(%s), max(%s), count(*)", col, col, col, col);
-    String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true", dim, dim, dim, metrics);
+    String facetExprTmpl = ""+
+        "facet(\n" +
+        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" +
+        "  q=\"*:*\", \n" +
+        "  fl=\"a_i\", \n" +
+        "  sort=\"a_i asc\", \n" +
+        "  buckets=\"a_i\", \n" +
+        "  bucketSorts=\"count(*) asc\", \n" +
+        "  bucketSizeLimit=10000, \n" +
+        "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
+        ")\n";
+
+    String facetExpr = String.format(Locale.US, facetExprTmpl, "");
 
     String zkhost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new SolrDefaultStreamFactory().withCollectionZkHost(ALIAS_NAME, zkhost);
@@ -208,7 +220,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     //}
 
     // now re-execute the same expression w/o plist
-    facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "false", dim, dim, dim, metrics);
+    facetExpr = String.format(Locale.US, facetExprTmpl, "plist=false,");
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
