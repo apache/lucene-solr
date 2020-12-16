@@ -1159,7 +1159,6 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   @Test
   public void testNullSubQuery() throws Exception {
     clearIndex();
-    assertJQ(req("q", "{!func}if($subQuery,1,0)", "subQuery", "{!field f=text v='stopworda'}")
-        , "/response/numFound==0");
+    assertJQ(req("q", "{!func}if($subQuery,1,0)", "subQuery", "{!field f=text v='stopworda'}"));
   }
 }
