@@ -334,6 +334,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return r;
   }
 
+  public PerReplicaStates.State getReplicaState() {
+    return replicaState;
+  }
 
   public Object clone() {
     return new Replica(name, node, collection, shard, core, state, type, propMap);
