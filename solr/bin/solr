@@ -841,12 +841,11 @@ function stop_solr() {
 
   JETTY_RUN="$SOLR_PID_DIR"
   JETTY_PID="solr-$SOLR_PORT.pid"
-  rm $SOLR_PID_DIR/$JETTY_PID
 
   echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
   "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY" org.apache.solr.servlet.StopJetty || true
-  sleep .3
-
+  PID=$(cat $SOLR_PID_DIR/$JETTY_PID)
+  rm $SOLR_PID_DIR/$JETTY_PID
 } # end stop_solr
 
 if [ $# -eq 1 ]; then
@@ -2179,6 +2178,9 @@ function start_solr() {
   fi
 
 }
+
+find "$SOLR_SERVER_DIR/lib" -type f -exec cat {} > /dev/null \;
+find "$SOLR_SERVER_DIR/lib/ext" -type f -exec cat {} > /dev/null \;
 
 start_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
 

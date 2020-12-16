@@ -18,7 +18,7 @@ public class StopJetty {
   public static void main(String[] args) {
     int port = Integer.getInteger("STOP.PORT",-1);
     String key = System.getProperty("STOP.KEY",null);
-    int timeout =  Integer.getInteger("STOP.WAIT",0);
+    int timeout =  Integer.getInteger("STOP.WAIT",30);
     stop(port,key,timeout);
   }
 
