@@ -1390,7 +1390,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       // Wait till we have an active leader
       try {
-        zkController.getZkStateReader().getLeaderRetry(collectionName, sliceId, 30);
+        zkController.getZkStateReader().getLeaderRetry(collectionName, sliceId, 30000);
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         log.info("Couldn't successfully force leader, collection: {}, shard: {}. Cluster state: {}", collectionName, sliceId, clusterState);

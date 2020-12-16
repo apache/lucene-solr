@@ -149,7 +149,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -901,7 +900,9 @@ public class CoreContainer implements Closeable {
           if (isZooKeeperAware() && !CloudUtil.checkIfValidCloudCore(this, cd)) {
             continue;
           }
-
+          if (isZooKeeperAware()) {
+            ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false));
+          }
           coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
             SolrCore core;
             try {
@@ -1219,9 +1220,9 @@ public class CoreContainer implements Closeable {
     return coresLocator;
   }
 
-  protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean registerInZk, boolean closeOld) {
+  protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean closeOld) {
 
-    log.info("registerCore name={}, registerInZk={}, skipRecovery={}", cd.getName(), registerInZk);
+    log.info("registerCore name={}, skipRecovery={}", cd.getName());
 
     if (core == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Can not register a null core.");
@@ -1247,9 +1248,6 @@ public class CoreContainer implements Closeable {
 
     if (old == null || old == core) {
       log.info("registering core: " + cd.getName());
-      if (registerInZk) {
-        zkSys.registerInZk(core);
-      }
       return null;
     } else {
       log.info("replacing core: " + cd.getName());
@@ -1257,9 +1255,6 @@ public class CoreContainer implements Closeable {
         if (old != null) {
           old.close();
         }
-      }
-      if (registerInZk) {
-        zkSys.registerInZk(core);
       }
       return old;
     }
@@ -1411,6 +1406,10 @@ public class CoreContainer implements Closeable {
           if (isShutDown) {
             throw new AlreadyClosedException("Solr has been shutdown.");
           }
+          solrCores.markCoreAsLoading(dcore);
+          if (isZooKeeperAware()) {
+            ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, dcore, false));
+          }
           core = new SolrCore(this, dcore, coreConfig);
         } catch (Exception e) {
           core = processCoreCreateException(e, dcore, coreConfig);
@@ -1418,11 +1417,13 @@ public class CoreContainer implements Closeable {
 
         core.start();
 
-        old = registerCore(dcore, core, isZooKeeperAware(), true);
+        old = registerCore(dcore, core, true);
         registered = true;
       } catch (Exception e){
 
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } finally {
+        solrCores.markCoreAsNotLoading(dcore);
       }
 
 
@@ -1471,15 +1472,14 @@ public class CoreContainer implements Closeable {
             });
           }
         }
+        if (isShutDown) {
+          SolrCore finalCore1 = core;
+          ParWork.getRootSharedExecutor().submit(() -> {
 
-        //        SolrCore finalCore1 = core;
-        //        ParWork.getRootSharedExecutor().submit(() -> {
-        //          try {
-        //            finalCore1.closeAndWait(false);
-        //          } catch (TimeoutException timeoutException) {
-        //            throw new SolrException(ErrorCode.SERVER_ERROR, timeoutException);
-        //          }
-        //        });
+            finalCore1.closeAndWait();
+
+          });
+        }
       }
       MDCLoggingContext.clear();
     }
@@ -1757,7 +1757,7 @@ public class CoreContainer implements Closeable {
               }
             }
 
-            oldCore = registerCore(cd, newCore, false, true);
+            oldCore = registerCore(cd, newCore, true);
 
             success = true;
           } catch (Exception e) {
@@ -1984,7 +1984,7 @@ public class CoreContainer implements Closeable {
         CoreDescriptor cd = core.getCoreDescriptor();
         cd.setProperty("name", toName);
         core.setName(toName);
-        registerCore(cd, core, isZooKeeperAware(), false);
+        registerCore(cd, core, false);
         SolrCore old = solrCores.remove(name);
 
         coresLocator.rename(this, old.getCoreDescriptor(), core.getCoreDescriptor());

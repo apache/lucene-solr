@@ -967,7 +967,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 //  }
 
   public boolean isNodeLive(String node) {
-    return liveNodes.contains(node);
+    return getLiveNodes().contains(node);
 
   }
 
@@ -989,8 +989,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Slice slice = coll.getSlice(shard);
       if (slice != null) {
         Replica leader = slice.getLeader();
-        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
+        if (leader != null && leader.getState() == Replica.State.ACTIVE && isNodeLive(leader.getNodeName())) {
           return leader;
+        }
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE && isNodeLive(replica.getNodeName())) {
+            return replica;
+          }
         }
       }
     }
@@ -1003,9 +1009,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         Slice slice = c.getSlice(shard);
         if (slice == null) return false;
         Replica leader = slice.getLeader();
-        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
+        if (leader != null && leader.getState() == Replica.State.ACTIVE && isNodeLive(leader.getNodeName())) {
           returnLeader.set(leader);
           return true;
+        }
+        Collection<Replica> replicas = slice.getReplicas();
+        for (Replica replica : replicas) {
+          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE && isNodeLive(replica.getNodeName())) {
+            returnLeader.set(replica);
+            return true;
+          }
         }
 
         return false;
@@ -1478,8 +1491,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             Replica.State state = null;
             if (!entry.getValue().equals("l")) {
               state = Replica.State.shortStateToState((String) entry.getValue());
-            } else {
-              state = Replica.State.ACTIVE;
             }
             if (log.isDebugEnabled()) log.debug("Got additional state update {} {}", core, state == null ? "leader" : state);
             Replica replica = docCollection.getReplica(core);
@@ -1492,12 +1503,26 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               Map properties = new HashMap(replica.getProperties());
               if (entry.getValue().equals("l")) {
                 if (log.isDebugEnabled()) log.debug("state is leader, set to active and leader prop");
-                setLeader = true;
-                properties.put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE);
+                properties.put(ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
                 properties.put("leader", "true");
-              } else {
+
+                for (Replica r : replicasMap.values()) {
+                  if (r == replica) {
+                    continue;
+                  }
+                  if ("true".equals(r.getProperty(LEADER_PROP))) {
+                    Map<String,Object> props = new HashMap<>(r.getProperties());
+                    props.remove(LEADER_PROP);
+                    Replica newReplica = new Replica(r.getName(), props, coll, r.getSlice(), ZkStateReader.this);
+                    replicasMap.put(r.getName(), newReplica);
+                  }
+                }
+              } else if (state != null) {
                 if (log.isDebugEnabled()) log.debug("std state, set to {}", state);
                 properties.put(ZkStateReader.STATE_PROP, state.toString());
+                if (state != Replica.State.ACTIVE && "true".equals(properties.get(LEADER_PROP))) {
+                  properties.remove(LEADER_PROP);
+                }
               }
 
               Replica newReplica = new Replica(core, properties, coll, replica.getSlice(), ZkStateReader.this);
@@ -1507,12 +1532,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
               replicasMap.put(core, newReplica);
 
               Slice newSlice = new Slice(slice.getName(), replicasMap, slice.getProperties(), coll, ZkStateReader.this);
-
-              if (setLeader) {
-                newSlice.setLeader(newReplica);
-              } else {
-                newSlice.setLeader(slice.getLeader());
-              }
 
               Map<String,Slice> newSlices = new HashMap<>(docCollection.getSlicesMap());
               newSlices.put(slice.getName(), newSlice);

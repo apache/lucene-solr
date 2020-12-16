@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
@@ -47,8 +48,11 @@ class ZkCollectionTerms implements AutoCloseable {
   ZkShardTerms getShard(String shardId) throws Exception {
     collectionToTermsLock.lock();
     try {
+      ZkShardTerms zkterms = null;
       if (!terms.containsKey(shardId)) {
-        terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
+        zkterms = new ZkShardTerms(collection, shardId, zkClient);
+        IOUtils.closeQuietly(terms.put(shardId, zkterms));
+        return zkterms;
       }
       return terms.get(shardId);
     } finally {

@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -37,10 +36,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
@@ -102,6 +99,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     String coreName = leaderProps.getName();
 
     log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard core={}", context.leaderProps.getSlice(), coreName);
+    cc.waitForLoadingCore(coreName, 15000);
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         log.error("No SolrCore found, cannot become leader {}", coreName);
@@ -186,9 +184,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               success = true;
             }
           }
+        } else {
+          log.info("Our sync attempt succeeded");
         }
-        log.info("Our sync attempt succeeded");
-
         // solrcloud_debug
 //        if (log.isDebugEnabled()) {
 //          try {
@@ -228,6 +226,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // in case of leaderVoteWait timeout, a replica with lower term can win the election
         if (setTermToMax) {
           log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " + "without being up-to-date with the previous leader", coreName);
+          zkController.createCollectionTerms(collection);
           zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreName);
         }
 
@@ -245,6 +244,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         ParWork.propagateInterrupt("Already closed or interrupted, bailing..", e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (SessionExpiredException e) {
+        SolrException.log(log, "SessionExpired", e);
         throw e;
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);

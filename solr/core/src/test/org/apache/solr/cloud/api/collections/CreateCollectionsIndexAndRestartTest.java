@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-//@LuceneTestCase.AwaitsFix(bugUrl = "This an experimental test class")
+@LuceneTestCase.AwaitsFix(bugUrl = "This an experimental test class")
 public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

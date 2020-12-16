@@ -311,27 +311,28 @@ public class ZkController implements Closeable, Runnable {
     }
   }
 
-  private class RegisterCoreAsync implements Callable<Object> {
+  public static class RegisterCoreAsync implements Callable<Object> {
 
-    CoreDescriptor descriptor;
-    boolean afterExpiration;
+    private final ZkController zkController;
+    final CoreDescriptor descriptor;
+    final boolean afterExpiration;
 
-    RegisterCoreAsync(CoreDescriptor descriptor, boolean afterExpiration) {
+    public RegisterCoreAsync(ZkController zkController, CoreDescriptor descriptor, boolean afterExpiration) {
       this.descriptor = descriptor;
       this.afterExpiration = afterExpiration;
+      this.zkController = zkController;
     }
 
     public Object call() throws Exception {
       if (log.isInfoEnabled()) {
         log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
       }
-      if (cc.getLoadedCoreNames().contains(descriptor.getName())) {
-        register(descriptor.getName(), descriptor);
-        return descriptor;
-      }
-      return null;
+
+      zkController.register(descriptor.getName(), descriptor, afterExpiration);
+      return descriptor;
     }
   }
+
 
   // notifies registered listeners after the ZK reconnect in the background
   private static class OnReconnectNotifyAsync implements Callable<Object> {
@@ -490,7 +491,7 @@ public class ZkController implements Closeable, Runnable {
                     // unload solrcores that have been 'failed over'
                     // throwErrorIfReplicaReplaced(descriptor);
 
-                    ParWork.getRootSharedExecutor().submit(new RegisterCoreAsync(descriptor, true));
+                    ParWork.getRootSharedExecutor().submit(new RegisterCoreAsync(ZkController.this, descriptor, true));
 
                   } catch (Exception e) {
                     SolrException.log(log, "Error registering SolrCore", e);
@@ -1314,12 +1315,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public String register(String coreName, final CoreDescriptor desc) throws Exception {
-    try (SolrCore core = cc.getCore(coreName)) {
-      if (core == null || core.isClosing() || getCoreContainer().isShutDown()) {
-        throw new AlreadyClosedException();
-      }
-     return register(core, desc, false);
-    }
+     return register(coreName, desc, false);
   }
 
   /**
@@ -1327,27 +1323,21 @@ public class ZkController implements Closeable, Runnable {
    *
    * @return the shardId for the SolrCore
    */
-  private String register(SolrCore core, final CoreDescriptor desc, boolean afterExpiration) throws Exception {
-    if (getCoreContainer().isShutDown()) {
+  private String register(String coreName, final CoreDescriptor desc, boolean afterExpiration) throws Exception {
+    if (getCoreContainer().isShutDown() || isDcCalled()) {
       throw new AlreadyClosedException();
     }
     MDCLoggingContext.setCoreDescriptor(cc, desc);
-    String coreName = core.getName();
-
-    if (core.isClosing() || cc.isShutDown()) {
-      throw new AlreadyClosedException();
-    }
-
+    ZkShardTerms shardTerms;
     try {
       final String baseUrl = getBaseUrl();
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
       final String collection = cloudDesc.getCollectionName();
       final String shardId = cloudDesc.getShardId();
 
-
       log.info("Register terms for replica {}", coreName);
       createCollectionTerms(collection);
-      ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
+      shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       getZkStateReader().registerCore(cloudDesc.getCollectionName());
@@ -1444,53 +1434,61 @@ public class ZkController implements Closeable, Runnable {
       // TODO: should this be moved to another thread? To recoveryStrat?
       // TODO: should this actually be done earlier, before (or as part of)
       // leader election perhaps?
-
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-      boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
-      if (isTlogReplicaAndNotLeader) {
-        String commitVersion = ReplicateFromLeader.getCommitVersion(core);
-        if (commitVersion != null) {
-          ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+      cc.waitForLoadingCore(coreName, 15000);
+      try (SolrCore core = cc.getCore(coreName)) {
+        if (core == null || core.isClosing() || getCoreContainer().isShutDown()) {
+          throw new AlreadyClosedException();
         }
-      }
-      // we will call register again after zk expiration and on reload
-      if (!afterExpiration &&  ulog != null && !isTlogReplicaAndNotLeader) {
-        // disable recovery in case shard is in construction state (for shard splits)
-        Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
-        if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
-          Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
-          if (recoveryFuture != null) {
-            log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
-            recoveryFuture.get(); // NOTE: this could potentially block for
-            // minutes or more!
-            // TODO: public as recovering in the mean time?
-            // TODO: in the future we could do peersync in parallel with recoverFromLog
-          } else {
-            if (log.isDebugEnabled()) {
-              log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
+        if (isTlogReplicaAndNotLeader) {
+          String commitVersion = ReplicateFromLeader.getCommitVersion(core);
+          if (commitVersion != null) {
+            ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+          }
+        }
+        // we will call register again after zk expiration and on reload
+        if (!afterExpiration && ulog != null && !isTlogReplicaAndNotLeader) {
+          // disable recovery in case shard is in construction state (for shard splits)
+          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
+          if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
+            Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
+            if (recoveryFuture != null) {
+              log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
+              recoveryFuture.get(); // NOTE: this could potentially block for
+              // minutes or more!
+              // TODO: public as recovering in the mean time?
+              // TODO: in the future we could do peersync in parallel with recoverFromLog
+            } else {
+              if (log.isDebugEnabled()) {
+                log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+              }
             }
           }
         }
-      }
 
-    //  boolean didRecovery = checkRecovery(isLeader, collection, coreName, shardId, core, cc);
+        if (replica.getType() != Type.PULL) {
+          checkRecovery(isLeader, collection, coreName, shardId, core, cc);
+        }
 
-      if (isTlogReplicaAndNotLeader) {
-        startReplicationFromLeader(coreName, true);
-      }
+        if (isTlogReplicaAndNotLeader) {
+          startReplicationFromLeader(coreName, true);
+        }
 
-      if (replica.getType() == Type.PULL) {
-        startReplicationFromLeader(coreName, false);
-      }
+        if (replica.getType() == Type.PULL) {
+          startReplicationFromLeader(coreName, false);
+        }
 
-      //        if (!isLeader) {
-      //          publish(desc, Replica.State.ACTIVE, true);
-      //        }
+        //        if (!isLeader) {
+        //          publish(desc, Replica.State.ACTIVE, true);
+        //        }
 
-      if (replica.getType() != Type.PULL) {
-        // the watcher is added to a set so multiple calls of this method will left only one watcher
-        if (log.isDebugEnabled()) log.debug("add shard terms listener for {}", coreName);
-        shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
+        if (replica.getType() != Type.PULL && shardTerms != null) {
+          // the watcher is added to a set so multiple calls of this method will left only one watcher
+          if (log.isDebugEnabled()) log.debug("add shard terms listener for {}", coreName);
+          shardTerms.addListener(new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
+        }
       }
 
       desc.getCloudDescriptor().setHasRegistered(true);
@@ -1668,28 +1666,17 @@ public class ZkController implements Closeable, Runnable {
   private boolean checkRecovery(final boolean isLeader,
                                 final String collection, String coreZkNodeName, String shardId,
                                 SolrCore core, CoreContainer cc) throws Exception {
-    boolean doRecovery = true;
+
     if (!isLeader) {
 
-      if (doRecovery && !core.getUpdateHandler().getSolrCoreState().isRecoverying()) {
+      if (!core.getUpdateHandler().getSolrCoreState().isRecoverying()) {
         if (log.isInfoEnabled()) {
           log.info("Core needs to recover:{}", core.getName());
         }
         core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
         return true;
       }
-      log.info("get shard terms {} {} {}", core.getName(), collection, shardId);
-      ZkShardTerms zkShardTerms = getShardTerms(collection, shardId);
-      if (zkShardTerms.registered(coreZkNodeName) && !zkShardTerms.canBecomeLeader(coreZkNodeName)) {
-        if (log.isInfoEnabled()) {
-          log.info("Leader's term larger than core {}; starting recovery process", core.getName());
-        }
-        core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
-        return true;
-      } else {
-        log.info("Leaders term did not force us into recovery");
 
-      }
     } else {
       log.info("I am the leader, no recovery necessary");
     }
