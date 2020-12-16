@@ -241,16 +241,21 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     SolrCollection collection = cluster.getCollection(COLLECTION);
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
     String someMetricName = "solr.jvm:system.properties:user.name";
+    String sysprop = "user.name";
+    String sysenv = "PWD";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
         .requestNodeHeapUsage()
         .requestNodeMetric(someMetricName)
+        .requestNodeSystemProperty(sysprop)
+        .requestNodeEnvironmentVariable(sysenv)
         .requestNodeTotalDisk()
         .requestNodeFreeDisk()
         .requestNodeCoresCount()
         .requestCollectionMetrics(collection, Set.of(ReplicaMetric.QUERY_RATE_1MIN, ReplicaMetric.UPDATE_RATE_1MIN));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
+    String pwd = System.getenv("PWD");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
       assertTrue("heap usage", attributeValues.getHeapUsage(node).isPresent());
@@ -260,6 +265,12 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       Optional<Object> userNameOpt = attributeValues.getNodeMetric(node, someMetricName);
       assertTrue("user.name", userNameOpt.isPresent());
       assertEquals("userName", userName, userNameOpt.get());
+      Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
+      assertTrue("sysprop", syspropOpt.isPresent());
+      assertEquals("user.name sysprop", userName, syspropOpt.get());
+      Optional<String> sysenvOpt = attributeValues.getEnvironmentVariable(node, sysenv);
+      assertTrue("sysenv", sysenvOpt.isPresent());
+      assertEquals("PWD sysenv", pwd, sysenvOpt.get());
     }
     assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
     CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();

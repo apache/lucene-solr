@@ -49,6 +49,7 @@ public class ImplicitSnitch extends Snitch {
   public static final String ROLE = "role";
   public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
+  public static final String SYSENV = "sysenv.";
   public static final String SYSLOADAVG = "sysLoadAvg";
   public static final String HEAPUSAGE = "heapUsage";
   public static final List<String> IP_SNITCHES = Collections.unmodifiableList(Arrays.asList("ip_1", "ip_2", "ip_3", "ip_4"));

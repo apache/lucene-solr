@@ -32,8 +32,8 @@ public class AttributeValuesImpl implements AttributeValues {
   final Map<Node, Double> nodeToTotalDisk;
   final Map<Node, Double> nodeToHeapUsage;
   final Map<Node, Double> nodeToSystemLoadAverage;
-  // sysprop name / node -> value
-  final Map<String, Map<Node, String>> syspropSnitchToNodeToValue;
+  // sysprop (or sysenv) name / node -> value
+  final Map<String, Map<Node, String>> systemSnitchToNodeToValue;
   // metricName / node -> value
   final Map<String, Map<Node, Object>> metricSnitchToNodeToValue;
   // collection / shard / replica / metricName -> value
@@ -45,7 +45,7 @@ public class AttributeValuesImpl implements AttributeValues {
                              Map<Node, Double> nodeToTotalDisk,
                              Map<Node, Double> nodeToHeapUsage,
                              Map<Node, Double> nodeToSystemLoadAverage,
-                             Map<String, Map<Node, String>> syspropSnitchToNodeToValue,
+                             Map<String, Map<Node, String>> systemSnitchToNodeToValue,
                              Map<String, Map<Node, Object>> metricSnitchToNodeToValue,
                              Map<String, CollectionMetrics> collectionMetrics) {
     this.nodeToCoreCount = nodeToCoreCount;
@@ -54,7 +54,7 @@ public class AttributeValuesImpl implements AttributeValues {
     this.nodeToTotalDisk = nodeToTotalDisk;
     this.nodeToHeapUsage = nodeToHeapUsage;
     this.nodeToSystemLoadAverage = nodeToSystemLoadAverage;
-    this.syspropSnitchToNodeToValue = syspropSnitchToNodeToValue;
+    this.systemSnitchToNodeToValue = systemSnitchToNodeToValue;
     this.metricSnitchToNodeToValue = metricSnitchToNodeToValue;
     this.collectionMetrics = collectionMetrics;
   }
@@ -91,7 +91,7 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<String> getSystemProperty(Node node, String name) {
-    Map<Node, String> nodeToValue = syspropSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemPropertySnitchTag(name));
+    Map<Node, String> nodeToValue = systemSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemPropertySnitchTag(name));
     if (nodeToValue == null) {
       return Optional.empty();
     }
@@ -100,8 +100,11 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<String> getEnvironmentVariable(Node node, String name) {
-    // TODO implement
-    return Optional.empty();
+    Map<Node, String> nodeToValue = systemSnitchToNodeToValue.get(AttributeFetcherImpl.getSystemEnvSnitchTag(name));
+    if (nodeToValue == null) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(nodeToValue.get(node));
   }
 
   @Override
@@ -124,11 +127,6 @@ public class AttributeValuesImpl implements AttributeValues {
 
   @Override
   public Optional<CollectionMetrics> getCollectionMetrics(String collectionName) {
-    CollectionMetrics metrics = collectionMetrics.get(collectionName);
-    if (metrics == null) {
-      return Optional.empty();
-    } else {
-      return Optional.of(metrics);
-    }
+    return Optional.ofNullable(collectionMetrics.get(collectionName));
   }
 }

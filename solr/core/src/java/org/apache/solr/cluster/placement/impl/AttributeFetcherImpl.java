@@ -46,7 +46,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   boolean requestedNodeTotalDisk;
   boolean requestedNodeHeapUsage;
   boolean requestedNodeSystemLoadAverage;
-  Set<String> requestedNodeSystemPropertiesSnitchTags = new HashSet<>();
+  Set<String> requestedNodeSystemSnitchTags = new HashSet<>();
   Set<String> requestedNodeMetricSnitchTags = new HashSet<>();
   Map<SolrCollection, Set<ReplicaMetric>> requestedCollectionMetrics = new HashMap<>();
 
@@ -95,13 +95,14 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
   @Override
   public AttributeFetcher requestNodeSystemProperty(String name) {
-    requestedNodeSystemPropertiesSnitchTags.add(getSystemPropertySnitchTag(name));
+    requestedNodeSystemSnitchTags.add(getSystemPropertySnitchTag(name));
     return this;
   }
 
   @Override
   public AttributeFetcher requestNodeEnvironmentVariable(String name) {
-    throw new UnsupportedOperationException("Not yet implemented...");
+    requestedNodeSystemSnitchTags.add(getSystemEnvSnitchTag(name));
+    return this;
   }
 
   @Override
@@ -141,7 +142,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     Map<Node, Double> nodeToTotalDisk = new HashMap<>();
     Map<Node, Double> nodeToHeapUsage = new HashMap<>();
     Map<Node, Double> nodeToSystemLoadAverage = new HashMap<>();
-    Map<String, Map<Node, String>> syspropSnitchToNodeToValue = new HashMap<>();
+    Map<String, Map<Node, String>> systemSnitchToNodeToValue = new HashMap<>();
     Map<String, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
     Map<String, CollectionMetricsBuilder> collectionMetricsBuilders = new HashMap<>();
     Map<Node, Set<String>> nodeToReplicaInternalTags = new HashMap<>();
@@ -175,9 +176,9 @@ public class AttributeFetcherImpl implements AttributeFetcher {
       allSnitchTagsToInsertion.put(ImplicitSnitch.SYSLOADAVG,
           (node, value) -> nodeToSystemLoadAverage.put(node, ((Number) value).doubleValue()));
     }
-    for (String sysPropSnitch : requestedNodeSystemPropertiesSnitchTags) {
+    for (String sysPropSnitch : requestedNodeSystemSnitchTags) {
       final Map<Node, String> sysPropMap = new HashMap<>();
-      syspropSnitchToNodeToValue.put(sysPropSnitch, sysPropMap);
+      systemSnitchToNodeToValue.put(sysPropSnitch, sysPropMap);
       allSnitchTagsToInsertion.put(sysPropSnitch, (node, value) -> sysPropMap.put(node, (String) value));
     }
     for (String metricSnitch : requestedNodeMetricSnitchTags) {
@@ -264,7 +265,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         nodeToTotalDisk,
         nodeToHeapUsage,
         nodeToSystemLoadAverage,
-        syspropSnitchToNodeToValue,
+        systemSnitchToNodeToValue,
         metricSnitchToNodeToValue, collectionMetrics);
   }
 
@@ -289,5 +290,9 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
   public static String getSystemPropertySnitchTag(String name) {
     return ImplicitSnitch.SYSPROP + name;
+  }
+
+  public static String getSystemEnvSnitchTag(String name) {
+    return ImplicitSnitch.SYSENV + name;
   }
 }
