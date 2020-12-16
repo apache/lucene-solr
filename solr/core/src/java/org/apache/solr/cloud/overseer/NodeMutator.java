@@ -80,7 +80,7 @@ public class NodeMutator {
       }
 
       if (needToUpdateCollection) {
-        if(docCollection.isPerReplicaState()) {
+        if (docCollection.isPerReplicaState()) {
           zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy),
               PerReplicaStates.WriteOps.downReplicas(downedReplicas, docCollection.getPerReplicaStates()), false));
         } else {

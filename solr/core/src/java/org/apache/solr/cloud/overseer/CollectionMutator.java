@@ -113,11 +113,11 @@ public class CollectionMutator {
     boolean hasAnyOps = false;
     PerReplicaStates.WriteOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
-      if(prop.equals(DocCollection.PER_REPLICA_STATE)) {
+      if (prop.equals(DocCollection.PER_REPLICA_STATE)) {
          String val = message.getStr(DocCollection.PER_REPLICA_STATE);
-         if(val == null) continue;
+         if (val == null) continue;
         boolean enable = Boolean.parseBoolean(val);
-        if(enable == coll.isPerReplicaState()) {
+        if (enable == coll.isPerReplicaState()) {
           //already enabled
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
@@ -155,7 +155,7 @@ public class CollectionMutator {
     }
 
     DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode());
-    if(replicaOps == null){
+    if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);
     } else {
       return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);

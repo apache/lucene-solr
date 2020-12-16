@@ -1612,10 +1612,10 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
-      if(forcePublish || sendToOverseer(coll, coreNodeName)) {
+      if (forcePublish || sendToOverseer(coll, coreNodeName)) {
         overseerJobQueue.offer(Utils.toJSON(m));
       } else {
-//        if(log.isInfoEnabled()) {
+//        if (log.isInfoEnabled()) {
           //nocommit make this debug
           log.info("bypassed overseer for message : {}", Utils.toJSONString(m));
 //        }
