@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
@@ -64,7 +65,8 @@ import org.slf4j.LoggerFactory;
 public class AnnotatedApi extends Api implements PermissionNameProvider , Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;

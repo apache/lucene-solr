@@ -18,10 +18,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYRectangle;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon} types */
 public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
@@ -29,21 +26,6 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
     return ShapeType.POLYGON;
-  }
-
-  @Override
-  protected XYPolygon nextShape() {
-    XYPolygon p;
-    while (true) {
-      // if we can't tessellate; then random polygon generator created a malformed shape
-      p = (XYPolygon)getShapeType().nextShape();
-      try {
-        Tessellator.tessellate(p);
-        return p;
-      } catch (IllegalArgumentException e) {
-        continue;
-      }
-    }
   }
 
   @Override
@@ -60,13 +42,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     protected PolygonValidator(Encoder encoder) {
       super(encoder);
     }
-
-    @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
+    
     @Override
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon polygon = (XYPolygon) o;

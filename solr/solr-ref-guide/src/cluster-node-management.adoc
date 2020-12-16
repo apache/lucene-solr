@@ -130,8 +130,11 @@ Add, edit or delete a cluster-wide property.
 === CLUSTERPROP Parameters
 
 `name`::
-The name of the property. Supported properties names are `location`, `maxCoresPerNode`, `urlScheme` and `defaultShardPreferences`. Other properties can be set
-(for example, if you need them for custom plugins) but they must begin with the prefix `ext.`. Unknown properties that don't begin with `ext.` will be rejected.
+The name of the property. Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
+If the <<solr-tracing.adoc#solr-tracing,Jaeger tracing contrib>> has been enabled, the property `samplePercentage` is also available.
++
+Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
+Unknown properties that don't begin with `ext.` will be rejected.
 
 `val`::
 The value of the property. If the value is empty or null, the property is unset.

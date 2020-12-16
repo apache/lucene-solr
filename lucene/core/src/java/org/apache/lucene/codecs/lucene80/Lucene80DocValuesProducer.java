@@ -78,7 +78,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
                                         Lucene80DocValuesFormat.VERSION_CURRENT,
                                         state.segmentInfo.getId(),
                                         state.segmentSuffix);
+        
         readFields(in, state.fieldInfos);
+        
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -113,7 +115,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private void readFields(ChecksumIndexInput meta, FieldInfos infos) throws IOException {
+  private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     for (int fieldNumber = meta.readInt(); fieldNumber != -1; fieldNumber = meta.readInt()) {
       FieldInfo info = infos.fieldInfo(fieldNumber);
       if (info == null) {
@@ -136,13 +138,13 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private NumericEntry readNumeric(ChecksumIndexInput meta) throws IOException {
+  private NumericEntry readNumeric(IndexInput meta) throws IOException {
     NumericEntry entry = new NumericEntry();
     readNumeric(meta, entry);
     return entry;
   }
 
-  private void readNumeric(ChecksumIndexInput meta, NumericEntry entry) throws IOException {
+  private void readNumeric(IndexInput meta, NumericEntry entry) throws IOException {
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
     entry.jumpTableEntryCount = meta.readShort();
@@ -172,7 +174,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.valueJumpTableOffset = meta.readLong();
   }
 
-  private BinaryEntry readBinary(ChecksumIndexInput meta) throws IOException {
+  private BinaryEntry readBinary(IndexInput meta) throws IOException {
     BinaryEntry entry = new BinaryEntry();
     if (version >= Lucene80DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
       int b = meta.readByte();
@@ -218,7 +220,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     return entry;
   }
 
-  private SortedEntry readSorted(ChecksumIndexInput meta) throws IOException {
+  private SortedEntry readSorted(IndexInput meta) throws IOException {
     SortedEntry entry = new SortedEntry();
     entry.docsWithFieldOffset = meta.readLong();
     entry.docsWithFieldLength = meta.readLong();
@@ -232,7 +234,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     return entry;
   }
 
-  private SortedSetEntry readSortedSet(ChecksumIndexInput meta) throws IOException {
+  private SortedSetEntry readSortedSet(IndexInput meta) throws IOException {
     SortedSetEntry entry = new SortedSetEntry();
     byte multiValued = meta.readByte();
     switch (multiValued) {
@@ -261,7 +263,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     return entry;
   }
 
-  private static void readTermDict(ChecksumIndexInput meta, TermsDictEntry entry) throws IOException {
+  private static void readTermDict(IndexInput meta, TermsDictEntry entry) throws IOException {
     entry.termsDictSize = meta.readVLong();
     entry.termsDictBlockShift = meta.readInt();
     final int blockShift = meta.readInt();
@@ -281,7 +283,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.termsIndexAddressesLength = meta.readLong();
   }
 
-  private SortedNumericEntry readSortedNumeric(ChecksumIndexInput meta) throws IOException {
+  private SortedNumericEntry readSortedNumeric(IndexInput meta) throws IOException {
     SortedNumericEntry entry = new SortedNumericEntry();
     readNumeric(meta, entry);
     entry.numDocsWithField = meta.readInt();

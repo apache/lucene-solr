@@ -46,7 +46,6 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// add core container and stop passing core around...
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -120,11 +119,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
       }
 
-      boolean allReplicasInLine = false;
       if (!weAreReplacement) {
-        allReplicasInLine = waitForReplicasToComeUp(leaderVoteWait);
+        waitForReplicasToComeUp(leaderVoteWait);
       } else {
-        allReplicasInLine = areAllReplicasParticipating();
+        areAllReplicasParticipating();
       }
 
       if (isClosed) {
@@ -237,7 +235,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       }
 
-      boolean isLeader = true;
       if (!isClosed) {
         try {
           if (replicaType == Replica.Type.TLOG) {
@@ -281,7 +278,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          isLeader = false;
           SolrException.log(log, "There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {

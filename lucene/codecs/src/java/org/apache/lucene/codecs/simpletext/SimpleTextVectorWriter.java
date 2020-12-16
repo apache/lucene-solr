@@ -93,11 +93,11 @@ public class SimpleTextVectorWriter extends VectorWriter {
       writeInt(meta, docId);
       newline(meta);
     }
-    writeField(meta, FIELD_NUMBER, -1);
   }
 
   @Override
   public void finish() throws IOException {
+    writeField(meta, FIELD_NUMBER, -1);
     SimpleTextUtil.writeChecksum(meta, scratch);
     SimpleTextUtil.writeChecksum(vectorData, scratch);
   }

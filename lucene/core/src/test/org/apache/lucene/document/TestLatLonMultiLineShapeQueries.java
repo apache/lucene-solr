@@ -74,24 +74,6 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Line[] lines = (Line[])shape;
       for (Line l : lines) {
