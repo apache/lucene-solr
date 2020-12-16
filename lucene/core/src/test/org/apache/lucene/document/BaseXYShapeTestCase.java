@@ -137,7 +137,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   public XYLine nextLine() {
     return ShapeTestUtil.nextLine();
   }
-  
+
   @Override
   protected XYPolygon nextPolygon() {
     return ShapeTestUtil.nextPolygon();
