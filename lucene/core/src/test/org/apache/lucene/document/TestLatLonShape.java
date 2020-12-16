@@ -424,8 +424,8 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
-    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat, p.lon);
+    Point p = GeoTestUtil.nextPoint();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.getLat(), p.getLon());
     for (Field f : fields) {
       document.add(f);
     }
@@ -437,7 +437,7 @@ public class TestLatLonShape extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // search by same point
-    Query q = LatLonShape.newPointQuery(FIELDNAME, QueryRelation.INTERSECTS, new double[] {p.lat, p.lon});
+    Query q = LatLonShape.newPointQuery(FIELDNAME, QueryRelation.INTERSECTS, new double[] {p.getLat(), p.getLon()});
     assertEquals(1, s.count(q));
     IOUtils.close(r, dir);
   }
@@ -767,8 +767,8 @@ public class TestLatLonShape extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
-    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
-    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
+    Point p = GeoTestUtil.nextPoint();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.getLat(), p.getLon());
     for (Field f : fields) {
       document.add(f);
     }
@@ -786,7 +786,7 @@ public class TestLatLonShape extends LuceneTestCase {
     Component2D circle2D = LatLonGeometry.create(circle);
     int expected;
     int expectedDisjoint;
-    if (circle2D.contains(p.lon, p.lat))  {
+    if (circle2D.contains(p.getLon(), p.getLat()))  {
       expected = 1;
       expectedDisjoint = 0;
     } else {
