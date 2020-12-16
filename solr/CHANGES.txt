@@ -262,12 +262,17 @@ Bug Fixes
 * SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
   state back from ZK. (Timothy Potter)
 
+* SOLR-15046: Check if SOLR_SSL_ENABLED strictly equal to true for setting solr.jetty.https.port (Timothy Potter)
+
 * SOLR-14939: JSON range faceting to support cache=false parameter. (Christine Poerschke, Mike Drob)
 
 Other Changes
 ---------------------
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
+
+* SOLR-14981: Removed search results clustering contrib from 8x (due to Carrot2 incompatibility with Java 1.8).
+  (Dawid Weiss)
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
