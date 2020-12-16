@@ -25,7 +25,9 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
@@ -531,7 +533,20 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   private Query[] filters;
   private DocSet[] intersections;
   private void rangeStats(Range range, int slot) throws IOException {
-    Query rangeQ = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+    final Query rangeQ;
+    {
+      final Query rangeQuery = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
+      if (fcontext.cache) {
+        rangeQ = rangeQuery;
+      } else if (rangeQuery instanceof ExtendedQuery) {
+        ((ExtendedQuery) rangeQuery).setCache(false);
+        rangeQ = rangeQuery;
+      } else {
+        final WrappedQuery wrappedQuery = new WrappedQuery(rangeQuery);
+        wrappedQuery.setCache(false);
+        rangeQ = wrappedQuery;
+      }
+    }
     // TODO: specialize count only
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
     filters[slot] = rangeQ;

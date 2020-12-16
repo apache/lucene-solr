@@ -38,6 +38,7 @@ public class FacetContext {
   Query filter;  // TODO: keep track of as a DocSet or as a Query?
   DocSet base;
   FacetContext parent;
+  boolean cache = true;
   int flags;
   FacetDebugInfo debugInfo;
 
@@ -100,6 +101,7 @@ public class FacetContext {
     ctx.filter = filter;
 
     // carry over from parent
+    ctx.cache = cache;
     ctx.flags = flags;
     ctx.qcontext = qcontext;
     ctx.req = req;

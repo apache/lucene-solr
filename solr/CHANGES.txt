@@ -79,6 +79,7 @@ Bug Fixes
 
 * SOLR-15046: Check if SOLR_SSL_ENABLED strictly equal to true for setting solr.jetty.https.port (Timothy Potter)
 
+* SOLR-14939: JSON range faceting to support cache=false parameter. (Christine Poerschke, Mike Drob)
 
 Other Changes
 ---------------------
