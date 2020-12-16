@@ -21,9 +21,7 @@ import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYRectangle;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYLine} types */
 public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
@@ -72,12 +70,6 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
       super.setRelation(relation);
       LINEVALIDATOR.queryRelation = relation;
       return this;
-    }
-
-    @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override

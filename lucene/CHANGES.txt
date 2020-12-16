@@ -283,6 +283,8 @@ Other
 
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
+* LUCENE-9637: Removes some unused code and replaces the Point implementation on ShapeField/ShapeQuery 
+  random tests. (Ignacio Vera)
 
 ======================= Lucene 8.7.0 =======================
 
