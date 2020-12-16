@@ -344,7 +344,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!isClosed()) {
       try {
         try {
-          Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1000);
+          Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 5000);
           if (leader != null && leader.getName().equals(coreName)) {
             log.info("We are the leader, STOP recovery");
             return;
@@ -392,7 +392,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         Replica leaderprops;
         try {
-          leaderprops = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1000);
+          leaderprops = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
         } catch (Exception e) {
           log.error("Could not get leader for {} {} {}", cloudDesc.getCollectionName(), cloudDesc.getShardId(), zkStateReader.getClusterState().getCollectionOrNull(cloudDesc.getCollectionName()), e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -572,7 +572,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!successfulRecovery && !isClosed()) {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        final Replica leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1000);
+        final Replica leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 5000);
 
         log.info("Begin buffering updates. core=[{}]", coreName);
         // recalling buffer updates will drop the old buffer tlog

@@ -2049,7 +2049,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     try {
 
       // wait for the watcher predicate to return true, or time out
-      if (!latch.await(wait, unit) || isClosed()) {
+      if (!latch.await(wait, unit)) {
         throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + "live=" + liveNodes
                 + docCollection.get());
       }
