@@ -124,10 +124,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           } catch (NoNodeException e) {
             // fine
           }
-          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration. {}", leaderSeqPath);
+          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration. {} {}", leaderPath, leaderSeqPath);
         }
-        leaderSeqPath = null;
-
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
           ParWork.propagateInterrupt(e);

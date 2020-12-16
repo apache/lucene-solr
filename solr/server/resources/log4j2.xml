@@ -73,7 +73,7 @@
       <AppenderRef ref="SlowLogFile"/>
     </AsyncLogger>
 
-    <AsyncRoot level="DEBUG">
+    <AsyncRoot level="INFO">
       <AppenderRef ref="MainLogFile"/>
     </AsyncRoot>
   </Loggers>

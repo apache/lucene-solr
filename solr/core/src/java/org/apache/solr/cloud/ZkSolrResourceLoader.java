@@ -88,7 +88,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);
     } catch (KeeperException.NoNodeException e) {
-      log.error("resource not found {}", resource);
       throw new SolrResourceNotFoundException("Can't find resource '" + resource
               + "' in classpath or '" + configSetZkPath + "', cwd="
               + System.getProperty("user.dir"));

@@ -716,7 +716,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
-      Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", reader, zkController,
+      Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", zkController,
           new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
       overseers.add(overseer);
       ElectionContext ec = new OverseerElectionContext(server.getZkAddress().replaceAll("/", "_"), zkClient, overseer);
@@ -1240,7 +1240,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     httpShardHandlerFactorys.add(httpShardHandlerFactory);
 
 
-    Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", reader, zkController,
+    Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", zkController,
         new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(server.getZkAddress().replaceAll("/", "_"), zkClient, overseer);

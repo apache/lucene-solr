@@ -341,7 +341,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected synchronized CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) throws IOException {
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      int zkClientTimeout = Integer.getInteger("zkClientTimeout", 30000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
+      int zkClientTimeout = Integer.getInteger("zkClientTimeout", 45000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
       if (zkClient != null) {
         throw new IllegalStateException();
       }

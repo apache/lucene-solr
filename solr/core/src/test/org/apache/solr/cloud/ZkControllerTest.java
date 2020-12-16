@@ -191,7 +191,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           CreateMode.PERSISTENT, true);
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-      ZkController zkController = new ZkController(cc, zkClient, cloudConfig, () -> null);
+      ZkController zkController = new ZkController(cc, zkClient, cloudConfig);
       zkController.start();
       try {
         String configName = zkController.getZkStateReader().readConfigName(COLLECTION_NAME);
@@ -221,7 +221,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-        zkController = new ZkController(cc, server.getZkClient(), cloudConfig, () -> null);
+        zkController = new ZkController(cc, server.getZkClient(), cloudConfig);
       } catch (IllegalArgumentException e) {
         fail("ZkController did not normalize host name correctly");
       } finally {
@@ -277,7 +277,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       try {
         CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
-        zkController = new ZkController(cc, server.getZkClient(), cloudConfig, () -> null);
+        zkController = new ZkController(cc, server.getZkClient(), cloudConfig);
         zkControllerRef.set(zkController);
 
         zkController.getZkClient().makePath(ZkStateReader.getCollectionPathRoot(collectionName), new byte[0], CreateMode.PERSISTENT, true);

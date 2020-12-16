@@ -215,7 +215,7 @@ public class FastInputStream extends DataInputInputStream {
   public byte readByte() throws IOException {
     if (pos >= end) {
       refill();
-      if (pos >= end) throw new EOFException();
+      if (pos >= end) throw new EOFException("pos=" + pos + " end=" + end);
     }
     return buf[pos++];
   }

@@ -55,7 +55,6 @@ import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.BytesContentProvider;
@@ -84,7 +83,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -153,10 +151,13 @@ public class Http2SolrClient extends SolrClient {
   private volatile boolean closeClient;
   private SolrQueuedThreadPool httpClientExecutor;
   private SolrScheduledExecutorScheduler scheduler;
+  private volatile boolean closed;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     assert (closeTracker = new CloseTracker()) != null;
-    assert ObjectReleaseTracker.track(this);
+    if (builder.http2SolrClient == null) {
+      assert ObjectReleaseTracker.track(this);
+    }
     if (serverBaseUrl != null)  {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
         serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
@@ -217,7 +218,7 @@ public class Http2SolrClient extends SolrClient {
       ssl = true;
     }
     // nocommit - look at config again as well
-    int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 12);
+    int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 6);
     httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
         null, -1, null);
@@ -245,7 +246,7 @@ public class Http2SolrClient extends SolrClient {
         Pool pool = new Pool(Pool.StrategyType.FIRST, getHttpClient().getMaxConnectionsPerDestination(), true);
         MultiplexConnectionPool mulitplexPool = new MultiplexConnectionPool(destination, pool, destination,  getHttpClient().getMaxRequestsQueuedPerDestination());
         mulitplexPool.setMaximizeConnections(false);
-        mulitplexPool.preCreateConnections(2);
+        mulitplexPool.preCreateConnections(4);
         return mulitplexPool;
       });
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
@@ -290,7 +291,7 @@ public class Http2SolrClient extends SolrClient {
     if (log.isTraceEnabled()) log.trace("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
    // assert closeTracker != null ? closeTracker.close() : true;
     asyncTracker.close();
-    
+    closed = true;
     if (closeClient) {
       try {
         httpClient.stop();
@@ -434,9 +435,13 @@ public class Http2SolrClient extends SolrClient {
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
   public Cancellable asyncRequest(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection, AsyncListener<NamedList<Object>> asyncListener) {
-    Request req;
+    Integer idleTimeout = solrRequest.getParams().getInt("idleTimeout");
+    TheRequest req;
     try {
       req = makeRequest(solrRequest, collection);
+      if (idleTimeout != null) {
+        req.request.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+      }
     } catch (Exception e) {
       asyncListener.onFailure(e);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
@@ -445,77 +450,74 @@ public class Http2SolrClient extends SolrClient {
         ? this.parser: solrRequest.getResponseParser();
     asyncTracker.register();
     try {
-      req.send(new InputStreamResponseListener() {
+      req.request.send(new InputStreamResponseListener() {
 
-        private volatile InputStream stream;
+        private volatile boolean arrived;
 
         @Override
         public void onHeaders(Response response) {
           super.onHeaders(response);
           InputStreamResponseListener listener = this;
-          stream = listener.getInputStream();
-          ParWork.getRootSharedExecutor().execute(() -> {
+          httpClient.getExecutor().execute(() -> {
             if (log.isTraceEnabled()) log.trace("async response ready");
 
             try {
-              NamedList<Object> body = processErrorsAndResponse(solrRequest, parser, response, stream);
+              NamedList<Object> body = processErrorsAndResponse(solrRequest, parser, listener);
 //              log.info("UNREGISTER TRACKER");
 //              asyncTracker.arrive();
 
               asyncListener.onSuccess(body);
 
             } catch (Exception e) {
-              if (stream != null) {
-                try {
-                  while (stream.read() != -1) {
-                  }
-                  // is.close();
-                } catch (Exception e1) {
-                  // quietly
-                }
-              }
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                 asyncListener.onFailure(e);
               }
+            } finally {
+              arrived = true;
+              asyncTracker.arrive();
             }
           });
         }
 
-        @Override
-        public void onComplete(Result result) {
-          super.onComplete(result);
-          Throwable failure;
-           try {
-             if (result.isFailed()) {
-               failure = result.getFailure();
-               if (stream != null) {
-                 try {
-                   while (stream.read() != -1) {
-                   }
-                 } catch (Exception e) {
-                   // quietly
-                 }
-               }
-               if (failure != CANCELLED_EXCEPTION) {
-                 asyncListener.onFailure(failure);
-               }
 
-             }
-           } finally {
-             log.info("UNREGISTER TRACKER");
-             asyncTracker.arrive();
-             if (stream != null) {
-               try {
-                 while (stream.read() != -1) {
-                 }
-                 // is.close();
-               } catch (Exception e) {
-                 // quietly
-               }
-             }
-           }
-         }
+        @Override
+        public void onFailure(Response response, Throwable failure) {
+          super.onFailure(response, failure);
+          try {
+            if (SolrException.getRootCause(failure) != CANCELLED_EXCEPTION) {
+              asyncListener.onFailure(failure);
+            } else {
+              asyncListener.onSuccess(new NamedList<>());
+            }
+
+          } finally {
+            if (!arrived) {
+              asyncTracker.arrive();
+            }
+          }
+        }
+
+        //        @Override
+//        public void onComplete(Result result) {
+//         // super.onComplete(result);
+//          Throwable failure;
+//           try {
+//             if (result.isFailed()) {
+//               failure = result.getFailure();
+//               if (failure != CANCELLED_EXCEPTION) {
+//                 asyncListener.onFailure(failure);
+//               }
+//
+//             }
+//           } finally {
+//             log.info("UNREGISTER TRACKER");
+//             asyncTracker.arrive();
+//           }
+//         }
       });
+      if (req.afterSend != null) {
+        req.afterSend.run();
+      }
     } catch (Exception e) {
 
       if (e != CANCELLED_EXCEPTION) {
@@ -524,8 +526,9 @@ public class Http2SolrClient extends SolrClient {
       //log.info("UNREGISTER TRACKER");
      // asyncTracker.arrive();
     }
+
     return () -> {
-      boolean success = req.abort(CANCELLED_EXCEPTION);
+      boolean success = req.request.abort(CANCELLED_EXCEPTION);
       if (success) {
 
       }
@@ -533,82 +536,48 @@ public class Http2SolrClient extends SolrClient {
   }
 
   public Cancellable asyncRequestRaw(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection, AsyncListener<InputStream> asyncListener) {
-    Request req;
+    TheRequest req;
     try {
       req = makeRequest(solrRequest, collection);
     } catch (Exception e) {
       asyncListener.onFailure(e);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
+    MyInputStreamResponseListener mysl = new MyInputStreamResponseListener(httpClient, asyncListener);
     try {
-      req.send(new MyInputStreamResponseListener(asyncListener));
+      req.request.send(mysl);
     } catch (Exception e) {
-      if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-        asyncListener.onFailure(e);
-      }
+      asyncListener.onFailure(e);
 
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
-    return () -> {
-      boolean success = req.abort(CANCELLED_EXCEPTION);
+    if (req.afterSend != null) {
+      req.afterSend.run();
+    }
+    return new Cancellable() {
+      @Override
+      public void cancel() {
+        boolean success = req.request.abort(CANCELLED_EXCEPTION);
+      }
+      @Override
+      public InputStream getStream() {
+        return mysl.getInputStream();
+      }
     };
   }
 
   @Override
   public NamedList<Object> request(@SuppressWarnings({"rawtypes"}) SolrRequest solrRequest, String collection) throws SolrServerException, IOException {
-    Request req = makeRequest(solrRequest, collection);
-    final ResponseParser parser = solrRequest.getResponseParser() == null
-        ? this.parser: solrRequest.getResponseParser();
+    TheRequest req = makeRequest(solrRequest, collection);
+    final ResponseParser parser = solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     InputStream is = null;
-    try {
-      InputStreamResponseListener listener = new InputStreamResponseListener();
-      req.send(listener);
-      is = listener.getInputStream();
-      Response response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
-      return processErrorsAndResponse(solrRequest, parser, response, is);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    } catch (TimeoutException e) {
-      throw new SolrServerException(
-          "Timeout occured while waiting response from server at: " + req.getURI(), e);
-    } catch (ExecutionException e) {
-      Throwable cause = e.getCause();
-      if (cause instanceof ConnectException) {
-        throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
-      }
-      if (cause instanceof SolrServerException) {
-        throw (SolrServerException) cause;
-      } else if (cause instanceof IOException) {
-        throw new SolrServerException(
-            "IOException occured when talking to server at: " + getBaseURL(), cause);
-      }
-      throw new SolrServerException(cause.getMessage(), cause);
-    } finally {
-      if (!wantStream(solrRequest.getResponseParser())) {
-        if (is != null) {
-          try {
-            while (is.read() != -1) {
-            }
-            // is.close();
-          } catch (Exception e) {
-            // quietly
-          }
-        }
-      }
-    }
-  }
 
-  private NamedList<Object> processErrorsAndResponse(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest,
-                                                     ResponseParser parser, Response response, InputStream is) throws SolrServerException {
-    ContentType contentType = getContentType(response);
-    String mimeType = null;
-    String encoding = null;
-    if (contentType != null) {
-      mimeType = contentType.getMimeType();
-      encoding = contentType.getCharset() != null? contentType.getCharset().name() : null;
+    InputStreamResponseListener listener = new InputStreamResponseListener();
+    req.request.send(listener);
+    if (req.afterSend != null) {
+      req.afterSend.run();
     }
-    return processErrorsAndResponse(response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest));
+    return processErrorsAndResponse(solrRequest, parser, listener);
   }
 
   private ContentType getContentType(Response response) {
@@ -628,10 +597,20 @@ public class Http2SolrClient extends SolrClient {
     this.serverBaseUrl = baseUrl;
   }
 
-  private Request makeRequest(SolrRequest solrRequest, String collection)
+
+  private static class TheRequest {
+
+    TheRequest(Request request) {
+      this.request = request;
+    }
+    Request request;
+    Runnable afterSend;
+  }
+
+  private TheRequest makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
-    Request req = createRequest(solrRequest, collection);
-    decorateRequest(req, solrRequest);
+    TheRequest req = createRequest(solrRequest, collection);
+    decorateRequest(req.request, solrRequest);
     return req;
   }
 
@@ -663,7 +642,7 @@ public class Http2SolrClient extends SolrClient {
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
-  private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
+  private TheRequest createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 
@@ -715,7 +694,7 @@ public class Http2SolrClient extends SolrClient {
         req = req.header(entry.getKey(), entry.getValue());
       }
       req = req.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
-      return req;
+      return new TheRequest(req);
     }
 
     if (SolrRequest.METHOD.DELETE == solrRequest.getMethod()) {
@@ -724,7 +703,7 @@ public class Http2SolrClient extends SolrClient {
         req = req.header(entry.getKey(), entry.getValue());
       }
       req = req.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
-      return req;
+      return new TheRequest(req);
     }
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod() || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
@@ -754,17 +733,19 @@ public class Http2SolrClient extends SolrClient {
         OutputStreamContentProvider oscw = new OutputStreamContentProvider();
 
         Request r = req.content(oscw, contentWriter.getContentType());
-        ParWork.getRootSharedExecutor().execute(() -> {
+
+        TheRequest theRequest = new TheRequest(r);
+        theRequest.afterSend = () -> {
           OutputStream os = oscw.getOutputStream();
           try {
             contentWriter.write(os);
-          } catch (IOException e) {
+          } catch (Exception e) {
             log.error("Error writing content", e);
           } finally {
             org.apache.solr.common.util.IOUtils.closeQuietly(os);
           }
-        });
-        return r;
+        };
+        return theRequest;
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
         ModifiableSolrParams queryParams = calculateQueryParams(this.queryParams, wparams);
@@ -776,7 +757,7 @@ public class Http2SolrClient extends SolrClient {
         for (Map.Entry<String,String> entry : headers.entrySet()) {
           req = req.header(entry.getKey(), entry.getValue());
         }
-        return fillContentStream(req, streams, wparams, isMultipart);
+        return new TheRequest(fillContentStream(req, streams, wparams, isMultipart));
       } else {
         // It is has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
@@ -788,7 +769,7 @@ public class Http2SolrClient extends SolrClient {
         for (Map.Entry<String,String> entry : headers.entrySet()) {
           req = req.header(entry.getKey(), entry.getValue());
         }
-        return req;
+        return new TheRequest(req);
       }
     }
 
@@ -852,38 +833,15 @@ public class Http2SolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private NamedList<Object> processErrorsAndResponse(Response response,
-                                                     final ResponseParser processor,
-                                                     InputStream is,
-                                                     String mimeType,
-                                                     String encoding,
-                                                     final boolean isV2Api)
+  private NamedList<Object> processErrorsAndResponse(SolrRequest solrRequest, final ResponseParser processor,
+                                                     InputStreamResponseListener listener)
       throws SolrServerException {
-    boolean shouldClose = true;
-    try {
-      // handle some http level checks before trying to parse the response
-      int httpStatus = response.getStatus();
 
-      switch (httpStatus) {
-        case HttpStatus.SC_OK:
-        case HttpStatus.SC_BAD_REQUEST:
-        case HttpStatus.SC_CONFLICT: // 409
-          break;
-        case HttpStatus.SC_MOVED_PERMANENTLY:
-        case HttpStatus.SC_MOVED_TEMPORARILY:
-          if (!httpClient.isFollowRedirects()) {
-            throw new SolrServerException(
-                "Server at " + getBaseURL() + " sent back a redirect ("
-                    + httpStatus + ").");
-          }
-          break;
-        default:
-          if (processor == null || mimeType == null) {
-            throw new RemoteSolrException(response.getRequest().getURI().toString(), httpStatus, "non ok status: " + httpStatus
-                + ", message:" + response.getReason(),
-                null);
-          }
-      }
+    boolean isV2Api = isV2ApiRequest(solrRequest);
+    boolean shouldClose = true;
+
+    InputStream is = listener.getInputStream();
+    try {
 
       if (wantStream(processor)) {
         // no processor specified, return raw stream
@@ -894,8 +852,23 @@ public class Http2SolrClient extends SolrClient {
         return rsp;
       }
 
+      Response response = null;
+      try {
+        response = listener.get(idleTimeout, TimeUnit.MILLISECONDS);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+      }
+
+      ContentType contentType = getContentType(response);
+      String mimeType = null;
+      String encoding = null;
+      if (contentType != null) {
+        mimeType = contentType.getMimeType();
+        encoding = contentType.getCharset() != null? contentType.getCharset().name() : null;
+      }
+
       String procCt = processor.getContentType();
-      if (procCt != null) {
+      if (procCt != null && mimeType != null) {
         String procMimeType = ContentType.parse(procCt).getMimeType().trim()
             .toLowerCase(Locale.ROOT);
 
@@ -908,21 +881,48 @@ public class Http2SolrClient extends SolrClient {
               encoding != null ? encoding : FALLBACK_CHARSET.name();
           try {
             msg = msg + " " + IOUtils.toString(is, exceptionEncoding);
-          } catch (IOException e) {
-            throw new RemoteSolrException(serverBaseUrl, httpStatus,
-                "Could not parse response with encoding " + exceptionEncoding,
-                e);
+          } catch (Exception e) {
+            try {
+              throw new RemoteSolrException(serverBaseUrl, listener.get(0, TimeUnit.SECONDS).getStatus(),
+                  "Could not parse response with encoding " + exceptionEncoding,
+                  e);
+            } catch (Exception e1) {
+              log.warn("", e1);
+            }
           }
-          throw new RemoteSolrException(serverBaseUrl, httpStatus, msg, null);
+          throw new RemoteSolrException(serverBaseUrl, 527, msg, null);
         }
       }
 
       NamedList<Object> rsp;
+      int httpStatus = 527;
+
+      try {
+        httpStatus = listener.get(10, TimeUnit.SECONDS).getStatus();
+      } catch (Exception e) {
+        log.warn("", e);
+      }
+
+      if (httpStatus == 404) {
+        throw new RemoteSolrException(response.getRequest().getURI().toString(), httpStatus, "non ok status: " + httpStatus
+            + ", message:" + response.getReason(),
+            null);
+      }
+
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        throw new RemoteSolrException(serverBaseUrl, httpStatus, e.getMessage(), e);
+        try {
+
+          if (httpStatus == 200) {
+            return new NamedList<>();
+          }
+          throw new RemoteSolrException(serverBaseUrl, httpStatus, "status: " + httpStatus, e);
+        } catch (Exception e1) {
+          log.warn("", e1);
+        }
+
+        throw new RemoteSolrException(serverBaseUrl, 527, "", e);
       }
 
       // log.error("rsp:{}", rsp);
@@ -1014,7 +1014,7 @@ public class Http2SolrClient extends SolrClient {
     return serverBaseUrl;
   }
 
-  public static class AsyncTracker {
+  public class AsyncTracker {
 
     private final Semaphore available;
 
@@ -1030,20 +1030,24 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
-    public synchronized void waitForComplete() {
+    public void waitForComplete() {
       if (log.isTraceEnabled()) log.trace("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
 
       try {
         phaser.arriveAndAwaitAdvance();
       } catch (IllegalStateException e) {
-        log.warn("Unexpected, perhaps came after closel; ?", e);
+        log.warn("Unexpected, perhaps came after close; ?", e);
       }
 
       if (log.isTraceEnabled()) log.trace("After wait for outstanding requests {}", phaser);
     }
 
     public void close() {
-      if (available != null) available.drainPermits();
+      if (available != null) {
+        while (available.hasQueuedThreads()) {
+          available.release(available.getQueueLength());
+        }
+      }
       phaser.forceTermination();
     }
 
@@ -1066,7 +1070,11 @@ public class Http2SolrClient extends SolrClient {
         try {
           phaser.arriveAndDeregister();
         } catch (IllegalStateException e) {
-          log.warn("Unexpected, perhaps came after closel; ?", e);
+          if (closed) {
+            log.warn("Came after close", e);
+          } else {
+            throw e;
+          }
         }
       } finally {
         if (available != null) available.release();
@@ -1094,12 +1102,12 @@ public class Http2SolrClient extends SolrClient {
   public static class Builder {
 
     public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", 512);
-    public int maxRequestsQueuedPerDestination = 512;
+    public int maxRequestsQueuedPerDestination = 1600;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
     private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
     private Integer connectionTimeout;
-    private Integer maxConnectionsPerHost = 6;
+    private Integer maxConnectionsPerHost = 32;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     protected Map<String,String> headers = new ConcurrentHashMap<>();
@@ -1429,59 +1437,37 @@ public class Http2SolrClient extends SolrClient {
 
   private static class MyInputStreamResponseListener extends InputStreamResponseListener {
     private final AsyncListener<InputStream> asyncListener;
+    private final HttpClient httpClient;
     private volatile InputStream stream;
 
-    public MyInputStreamResponseListener(AsyncListener<InputStream> asyncListener) {
+    public MyInputStreamResponseListener(HttpClient httpClient, AsyncListener<InputStream> asyncListener) {
       this.asyncListener = asyncListener;
+      this.httpClient = httpClient;
     }
 
     @Override
     public void onHeaders(Response response) {
       super.onHeaders(response);
-      InputStreamResponseListener listener = this;
-      ParWork.getRootSharedExecutor().execute(() -> {
-        if (log.isDebugEnabled()) log.debug("stream async response ready");
-        stream = listener.getInputStream();
-        try {
-          asyncListener.onSuccess(stream);
-        } catch (Exception e) {
-          if (stream != null) {
-            try {
-              while (stream.read() != -1) {
-              }
-            } catch (IOException e1) {
-              // quietly
-            }
-          }
-          if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-            asyncListener.onFailure(e);
-          }
-        }
-      });
+//      InputStreamResponseListener listener = this;
+//      httpClient.getExecutor().execute(() -> {
+//        if (log.isDebugEnabled()) log.debug("stream async response ready");
+//        stream = listener.getInputStream();
+//        try {
+//          asyncListener.onSuccess(stream);
+//        } catch (Exception e) {
+//          log.error("Exception in async stream listener",e);
+//        }
+//      });
     }
 
-    public void onComplete(Result result) {
-
-      super.onComplete(result);
-
-      if (stream != null) {
-        try {
-          while (stream.read() != -1) {
-          }
-        } catch (IOException e) {
-          // quietly
-        }
+    @Override
+    public void onFailure(Response response, Throwable failure) {
+      super.onFailure(response, failure);
+      try {
+        asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+      } catch (Exception e) {
+        log.error("Exception in async failure listener", e);
       }
-
-      if (result.isFailed()) {
-        Throwable failure = result.getFailure();
-
-        if (failure != CANCELLED_EXCEPTION) { // avoid retrying on load balanced search requests - keep in mind this
-          // means cancelled requests won't notify the caller of fail or complete
-          asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
-        }
-      }
-
     }
   }
 }

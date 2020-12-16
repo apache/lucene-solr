@@ -240,7 +240,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
     try (Http2SolrClient client = getHttpSolrClient(clientUrl)) {
       SolrQuery q = new SolrQuery("*:*");
       // default = false
-      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+      SolrException e = expectThrows(SolrException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
 
       client.setFollowRedirects(true);
@@ -248,7 +248,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
 
       //And back again:
       client.setFollowRedirects(false);
-      e = expectThrows(SolrServerException.class, () -> client.query(q));
+      e = expectThrows(SolrException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
     }
 

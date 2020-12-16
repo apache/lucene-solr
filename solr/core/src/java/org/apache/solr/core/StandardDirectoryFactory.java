@@ -92,7 +92,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   public boolean exists(String path) throws IOException {
     // we go by the persistent storage ... 
     File dirFile = new File(path);
-    return dirFile.canRead() && dirFile.list().length > 0;
+    String[] list = dirFile.list();
+    return dirFile.canRead() && list != null && list.length > 0;
   }
   
   public boolean isPersistent() {

@@ -119,16 +119,16 @@ public class LBHttp2SolrClient extends LBSolrClient {
           String url;
           try {
             url = it.nextOrError(e);
-          } catch (SolrServerException ex) {
+          } catch (Exception ex) {
             asyncListener.onFailure(e);
             return;
           }
           try {
             MDC.put("LBSolrClient.url", url);
 
-            if (cancelled.get()) {
-              return;
-            }
+//            if (cancelled.get()) {
+//              return;
+//            }
             Cancellable cancellable = doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
             currentCancellable.set(cancellable);
 
@@ -165,6 +165,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                          boolean isZombie, RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
+
     return ((Http2SolrClient)getClient(baseUrl)).asyncRequest(req.getRequest(), null, new AsyncListener<>() {
       @Override
       public void onSuccess(NamedList<Object> result) {

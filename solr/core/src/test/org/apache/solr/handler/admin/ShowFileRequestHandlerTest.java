@@ -58,7 +58,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
             "does-not-exist-404.txt"));
     request.setPath("/admin/file");
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
-    assertEquals(404, e.code());
+    assertEquals(e.toString(), 404, e.code());
   }
 
   public void test404Locally() throws Exception {

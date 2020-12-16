@@ -729,11 +729,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       //        }
       if (!locked) {
         reloadyWaiting.incrementAndGet();
-        log.info("Wait for recovery lock");
+        log.info("Wait for reload lock");
 
         while (!lock.tryLock(250, TimeUnit.MILLISECONDS)) {
           if (coreContainer.isShutDown() || isClosed() || closing) {
-            log.warn("Skipping recovery because we are closed");
+            log.warn("Skipping reload because we are closed");
             reloadyWaiting.decrementAndGet();
             throw new AlreadyClosedException();
           }
@@ -1049,7 +1049,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
-      coreContainer.solrCores.addCoreDescriptor(cd);
 
       setName(name);
 
@@ -1615,7 +1614,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * expert: increments the core reference count
    */
   public void open() {
-    if (refCount.get() == -1) {
+    if (refCount.get() <= 0) {
       throw new AlreadyClosedException();
     }
     int cnt = refCount.incrementAndGet();
@@ -1675,21 +1674,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     if (count == 0) {
       try {
-        coreContainer.solrCoreCloseExecutor.submit(() -> {
-          try {
-            doClose();
-          } catch (Exception e) {
-            log.error("Exception waiting for core to close", e);
-          }
-        });
-      } catch (RejectedExecutionException e) {
-        try {
-          doClose();
-        } catch (Exception e1) {
-          log.error("Exception waiting for core to close", e1);
-        }
+        doClose();
+      } catch (Exception e1) {
+        log.error("Exception waiting for core to close", e1);
       }
-
       return;
     }
 
@@ -1709,13 +1697,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int cnt = 0;
-    while (!canBeClosed()) {
+    while (!canBeClosed() || refCount.get() != -1) {
       cnt++;
       try {
         synchronized (closeAndWait) {
           closeAndWait.wait(250);
         }
-        if (cnt >= 2) {
+        if (cnt >= 4 && !closing) {
           close();
         }
         log.warn("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
@@ -1730,10 +1718,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   void doClose() {
-    if (closing) {
-      return;
-    }
-
     ReentrantLock reloadLock = null;
     try {
       if (getUpdateHandler() != null && getUpdateHandler().getSolrCoreState() != null) {
@@ -1742,11 +1726,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       if (closing) {
+        while (refCount.get() != -1) {
+          synchronized (closeAndWait) {
+            try {
+              closeAndWait.wait(250);
+            } catch (InterruptedException e) {
+
+            }
+          }
+        }
+
         return;
       }
 
       log.info("{} CLOSING SolrCore {} {}", logid, this, new RuntimeException().getStackTrace()[0]);
-
+      assert ObjectReleaseTracker.release(this);
       this.closing = true;
 
       searcherReadyLatch.countDown();
@@ -1769,15 +1763,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           coreContainer.getZkController().removeShardLeaderElector(name);
         }
 
-        int noops = searcherExecutor.getPoolSize() - searcherExecutor.getActiveCount();
-        for (int i = 0; i < noops + 1; i++) {
-          try {
-            searcherExecutor.submit(() -> {
-            });
-          } catch (RejectedExecutionException e) {
-            break;
-          }
-        }
+//        int noops = searcherExecutor.getPoolSize() - searcherExecutor.getActiveCount();
+//        for (int i = 0; i < noops + 1; i++) {
+//          try {
+//            searcherExecutor.submit(() -> {
+//            });
+//          } catch (RejectedExecutionException e) {
+//            break;
+//          }
+//        }
 
         searcherExecutor.shutdown();
 
@@ -1928,15 +1922,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     } finally {
-      log.info("close done refcount {} {}", refCount == null ? null : refCount.get(), name);
+      if (log.isDebugEnabled()) log.debug("close done refcount {} {}", refCount == null ? null : refCount.get(), name);
       refCount.set(-1);
       if (reloadLock != null && reloadLock.isHeldByCurrentThread()) reloadLock.unlock();
-      assert ObjectReleaseTracker.release(this);
+
       infoRegistry.clear();
 
       //areAllSearcherReferencesEmpty();
-
-
 
       synchronized (closeAndWait) {
         closeAndWait.notifyAll();
@@ -3310,20 +3302,27 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("Removing SolrCore dataDir on unload {}", cd.getInstanceDir().resolve(cd.getDataDir()));
       Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
       try {
-        if (Files.exists(dataDir)) {
-          Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-        }
+          while (Files.exists(dataDir)) {
+            try {
+              Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            } catch (NoSuchFileException e) {
 
-      } catch (Exception e) {
-        log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir, e);
-      }
+            }
+          }
+        } catch (IOException e) {
+          log.error("Failed to delete data dir for unloaded core: {} dir: {}", cd.getName(), dataDir, e);
+        }
     }
     if (deleteInstanceDir) {
       try {
-        if (Files.exists(cd.getInstanceDir())) {
-          Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        while (Files.exists(cd.getInstanceDir())) {
+          try {
+            Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+          } catch (NoSuchFileException e) {
+
+          }
         }
-      } catch (Exception e) {
+      } catch (IOException e) {
         log.error("Failed to delete instance dir for unloaded core: {} dir: {}", cd.getName(), cd.getInstanceDir(), e);
       }
     }

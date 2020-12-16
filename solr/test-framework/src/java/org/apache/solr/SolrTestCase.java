@@ -279,6 +279,10 @@ public class SolrTestCase extends LuceneTestCase {
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
       disableReuseOfCryptoKeys();
+      System.setProperty("solr.zkstatewriter.throttle", "30");
+      System.setProperty("solr.stateworkqueue.throttle", "0");
+
+
       System.setProperty("solr.enablePublicKeyHandler", "false");
       System.setProperty("solr.zkregister.leaderwait", "3000");
       System.setProperty("solr.lbclient.live_check_interval", "3000");
@@ -883,7 +887,7 @@ public class SolrTestCase extends LuceneTestCase {
       if (testExecutor != null) {
         return testExecutor;
       }
-      testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecutor", 10, 100, 500, new BlockingArrayQueue(30, 16));
+      testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecutor", 3, 100, 3000, new BlockingArrayQueue(30, 16));
       ((ParWorkExecutor) testExecutor).enableCloseLock();
       return testExecutor;
     }

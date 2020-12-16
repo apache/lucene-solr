@@ -80,7 +80,7 @@ public class HttpClientUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final int DEFAULT_CONNECT_TIMEOUT = 5000;
-  public static final int DEFAULT_SO_TIMEOUT = (int) TimeUnit.MINUTES.toMillis(5);
+  public static final int DEFAULT_SO_TIMEOUT = (int) TimeUnit.MINUTES.toMillis(1);
   public static final int DEFAULT_MAXCONNECTIONSPERHOST = 100000;
   public static final int DEFAULT_MAXCONNECTIONS = 100000;
 

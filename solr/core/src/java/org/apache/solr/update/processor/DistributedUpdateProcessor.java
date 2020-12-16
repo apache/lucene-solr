@@ -269,36 +269,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               ulog.openRealtimeSearcher();
             }
           }
-        } else {
-          // TODO: possibly set checkDeleteByQueries as a flag on the command?
-          // if the update updates a doc that is part of a nested structure,
-          // force open a realTimeSearcher to trigger a ulog cache refresh.
-          // This refresh makes RTG handler aware of this update.q
-
-          SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-          cloneCmd = (AddUpdateCommand) cmd.clone();
-          cloneCmd.solrDoc = clonedDoc;
-          localFuture = ParWork.getRootSharedExecutor().submit(() -> {
-            // TODO: possibly set checkDeleteByQueries as a flag on the command?
-            if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
-            try {
-              doLocalAdd(cmd);
-            } catch (Exception e) {
-              ParWork.propagateInterrupt(e);
-              if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-              }
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-            // if the update updates a doc that is part of a nested structure,
-            // force open a realTimeSearcher to trigger a ulog cache refresh.
-            // This refresh makes RTG handler aware of this update.q
-            if (ulog != null) {
-              if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-                ulog.openRealtimeSearcher();
-              }
-            }
-          });
         }
 
       } catch (Exception e) {
@@ -312,51 +282,55 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (doDist) {
 
-      boolean zkAware = req.getCore().getCoreContainer().isZooKeeperAware();
-      if (log.isTraceEnabled()) log.trace("Is zk aware {}", zkAware);
-      if (zkAware) {
+      SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+      cloneCmd = (AddUpdateCommand) cmd.clone();
+      cloneCmd.solrDoc = clonedDoc;
 
-        AddUpdateCommand finalCloneCmd ;
-        if (cloneCmd != null) {
-          finalCloneCmd = cloneCmd;
-        } else {
-          finalCloneCmd = cmd;
-        }
-        distFuture = ParWork.getRootSharedExecutor().submit(() -> {
-          if (log.isTraceEnabled()) log.trace("Run distrib add collection");
-
-          try {
-            doDistribAdd(finalCloneCmd);
-            if (log.isTraceEnabled()) log.trace("after distrib add collection");
-          } catch (Throwable e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        });
-
+      AddUpdateCommand finalCloneCmd;
+      if (cloneCmd != null) {
+        finalCloneCmd = cloneCmd;
+      } else {
+        finalCloneCmd = cmd;
       }
+      distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+        if (log.isTraceEnabled()) log.trace("Run distrib add collection");
 
-    }
-
-    if (localFuture != null) {
-      try {
-        localFuture.get();
-      } catch (Exception e) {
-        log.error("Exception on local add", e);
-        Throwable t;
-        if (e instanceof ExecutionException) {
-          t = e.getCause();
-        } else {
-          t = e;
+        try {
+          doDistribAdd(finalCloneCmd);
+          if (log.isTraceEnabled()) log.trace("after distrib add collection");
+        } catch (Throwable e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
+      });
+
+      // TODO: possibly set checkDeleteByQueries as a flag on the command?
+      // if the update updates a doc that is part of a nested structure,
+      // force open a realTimeSearcher to trigger a ulog cache refresh.
+      // This refresh makes RTG handler aware of this update.q
+
+      // TODO: possibly set checkDeleteByQueries as a flag on the command?
+      if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
+      try {
+        doLocalAdd(cmd);
+      } catch (Exception e) {
         if (distFuture != null) {
           distFuture.cancel(true);
         }
-        if (t instanceof SolrException) {
-          throw (SolrException) t;
+        if (e instanceof RuntimeException) {
+          throw (RuntimeException) e;
         }
-        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
+      // if the update updates a doc that is part of a nested structure,
+      // force open a realTimeSearcher to trigger a ulog cache refresh.
+      // This refresh makes RTG handler aware of this update.q
+      if (ulog != null) {
+        if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+          ulog.openRealtimeSearcher();
+        }
+      }
+
     }
 
     if (distFuture != null) {

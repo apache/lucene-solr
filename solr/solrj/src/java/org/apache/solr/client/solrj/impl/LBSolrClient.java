@@ -224,6 +224,10 @@ public abstract class LBSolrClient extends SolrClient {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
       if (serverStr == null) {
+        if (previousEx instanceof BaseHttpSolrClient.RemoteSolrException) {
+          throw (BaseHttpSolrClient.RemoteSolrException) previousEx;
+        }
+
         throw new SolrServerException("No live SolrServers available to handle this request"+suffix, previousEx);
       }
       numServersTried++;
@@ -370,6 +374,9 @@ public abstract class LBSolrClient extends SolrClient {
       } finally {
         MDC.remove("LBSolrClient.url");
       }
+    }
+    if (ex instanceof BaseHttpSolrClient.RemoteSolrException) {
+      throw (BaseHttpSolrClient.RemoteSolrException) ex;
     }
     throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
   }

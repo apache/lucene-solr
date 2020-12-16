@@ -72,7 +72,7 @@ public abstract class SolrCoreState {
       solrCoreStateRefCnt--;
       log.info("SolrCoreState ref count {}", solrCoreStateRefCnt);
 
-      if (solrCoreStateRefCnt <= 0) {
+      if (solrCoreStateRefCnt == 0) {
         closed = true;
         close = true;
       }

@@ -119,46 +119,42 @@ public final class ManagedIndexSchema extends IndexSchema {
    * @param createOnly set to false to allow update of existing schema
    */
   public boolean persistManagedSchema(boolean createOnly) {
-    schemaUpdateLock.lock();
-    try {
-      if (loader instanceof ZkSolrResourceLoader) {
-        return persistManagedSchemaToZooKeeper(createOnly);
-      }
-      // Persist locally
-      File managedSchemaFile = new File(loader.getConfigDir(), managedSchemaResourceName);
-      OutputStreamWriter writer = null;
-      try {
-        File parentDir = managedSchemaFile.getParentFile();
-        if (!parentDir.isDirectory()) {
-          if (!parentDir.mkdirs()) {
-            final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
-            log.error(msg);
-            throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-          }
-        }
-        final FileOutputStream out = new FileOutputStream(managedSchemaFile);
-        writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-        persist(writer);
-        if (log.isInfoEnabled()) {
-          log.info("Upgraded to managed schema at {}", managedSchemaFile.getPath());
-        }
-      } catch (IOException e) {
-        final String msg = "Error persisting managed schema " + managedSchemaFile;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-      } finally {
-        IOUtils.closeQuietly(writer);
-        try {
-          FileUtils.sync(managedSchemaFile);
-        } catch (IOException e) {
-          final String msg = "Error syncing the managed schema file " + managedSchemaFile;
-          log.error(msg, e);
-        }
-      }
-      return true;
-    } finally {
-      schemaUpdateLock.unlock();
+
+    if (loader instanceof ZkSolrResourceLoader) {
+      return persistManagedSchemaToZooKeeper(createOnly);
     }
+    // Persist locally
+    File managedSchemaFile = new File(loader.getConfigDir(), managedSchemaResourceName);
+    OutputStreamWriter writer = null;
+    try {
+      File parentDir = managedSchemaFile.getParentFile();
+      if (!parentDir.isDirectory()) {
+        if (!parentDir.mkdirs()) {
+          final String msg = "Can't create managed schema directory " + parentDir.getAbsolutePath();
+          log.error(msg);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
+        }
+      }
+      final FileOutputStream out = new FileOutputStream(managedSchemaFile);
+      writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+      persist(writer);
+      if (log.isInfoEnabled()) {
+        log.info("Upgraded to managed schema at {}", managedSchemaFile.getPath());
+      }
+    } catch (IOException e) {
+      final String msg = "Error persisting managed schema " + managedSchemaFile;
+      log.error(msg, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    } finally {
+      IOUtils.closeQuietly(writer);
+      try {
+        FileUtils.sync(managedSchemaFile);
+      } catch (IOException e) {
+        final String msg = "Error syncing the managed schema file " + managedSchemaFile;
+        log.error(msg, e);
+      }
+    }
+    return true;
   }
 
   /**
@@ -1236,14 +1232,9 @@ public final class ManagedIndexSchema extends IndexSchema {
   @Override
   protected void postReadInform() {
     super.postReadInform();
-    // we need another thread because we share a virtual pool and the informResourceLoaderAwareObjectsForFieldType
-    // also uses ParWork and we can't have this nesting and use a limited, caller runs pool
-    try (ParWork worker = new ParWork(this, true, true)) {
-      for (FieldType fieldType : fieldTypes.values()) {
-        worker.collect("informResourceLoaderAwareObjectsForFieldType", () -> {
-          informResourceLoaderAwareObjectsForFieldType(fieldType);
-        });
-      }
+
+    for (FieldType fieldType : fieldTypes.values()) {
+      informResourceLoaderAwareObjectsForFieldType(fieldType);
     }
   }
 
@@ -1381,45 +1372,35 @@ public final class ManagedIndexSchema extends IndexSchema {
    * are loaded (as they depend on this callback to complete initialization work)
    */
   protected void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
-    // we are nested in a ParWork call and since we share the same virtual executor, we need to ensure
-    // the caller thread is not used here with requireAnotherThread
-    try (ParWork worker = new ParWork(this, true, true)) {
 
-      CharFilterFactory[] charFilters = chain.getCharFilterFactories();
-      for (CharFilterFactory next : charFilters) {
-        if (next instanceof ResourceLoaderAware) {
-          worker.collect("informResourceLoaderAwareObjectsInChain", ()->{
-            try {
-              ((ResourceLoaderAware) next).inform(loader);
-            } catch (IOException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-          });
+    CharFilterFactory[] charFilters = chain.getCharFilterFactories();
+    for (CharFilterFactory next : charFilters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) next).inform(loader);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
+    }
 
-      TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
-      if (tokenizerFactory instanceof ResourceLoaderAware) {
-        worker.collect("tokenizerFactoryResourceLoaderAware", ()->{
-          try {
-            ((ResourceLoaderAware) tokenizerFactory).inform(loader);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        });
+    TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
+    if (tokenizerFactory instanceof ResourceLoaderAware) {
 
+      try {
+        ((ResourceLoaderAware) tokenizerFactory).inform(loader);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
+    }
 
-      TokenFilterFactory[] filters = chain.getTokenFilterFactories();
-      for (TokenFilterFactory next : filters) {
-        if (next instanceof ResourceLoaderAware) {
-          worker.collect("TokenFilterFactoryResourceLoaderAware", ()->{
-            try {
-              ((ResourceLoaderAware) next).inform(loader);
-            } catch (IOException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-          });
+    TokenFilterFactory[] filters = chain.getTokenFilterFactories();
+    for (TokenFilterFactory next : filters) {
+      if (next instanceof ResourceLoaderAware) {
+        try {
+          ((ResourceLoaderAware) next).inform(loader);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
     }

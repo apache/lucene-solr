@@ -42,10 +42,10 @@ class SolrCores implements Closeable {
 
   private volatile boolean closed;
 
-  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(16, 0.75f, 3);
+  private final Map<String, SolrCore> cores = new ConcurrentHashMap<>(16, 0.75f, 16);
 
   // These descriptors, once loaded, will _not_ be unloaded, i.e. they are not "transient".
-  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(16, 0.75f, 3);
+  private final Map<String, CoreDescriptor> residentDesciptors = new ConcurrentHashMap<>(16, 0.75f, 16);
 
   private final CoreContainer container;
 
@@ -113,23 +113,20 @@ class SolrCores implements Closeable {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }
 
-
-    try (ParWork closer = new ParWork(this, true, true)) {
-      cores.values().forEach((core) -> {
-        closer.collect("closeCore-" + core.getName(), () -> {
-          MDCLoggingContext.setCore(core);
-          try {
-            core.closeAndWait();
-          } catch (Throwable e) {
-            log.error("Error closing SolrCore", e);
-            ParWork.propagateInterrupt("Error shutting down core", e);
-          } finally {
-            MDCLoggingContext.clear();
-          }
-          return core;
-        });
+    cores.forEach((s, solrCore) -> {
+      container.solrCoreCloseExecutor.submit(() -> {
+        MDCLoggingContext.setCore(solrCore);
+        try {
+          solrCore.closeAndWait();
+        } catch (Throwable e) {
+          log.error("Error closing SolrCore", e);
+          ParWork.propagateInterrupt("Error shutting down core", e);
+        } finally {
+          MDCLoggingContext.clear();
+        }
+        return solrCore;
       });
-    }
+    });
 
   }
   
@@ -141,6 +138,7 @@ class SolrCores implements Closeable {
         return getTransientCacheHandler().addCore(cd.getName(), core);
       }
     } else {
+      residentDesciptors.put(cd.getName(), cd);
       return cores.put(cd.getName(), core);
     }
 
@@ -209,7 +207,7 @@ class SolrCores implements Closeable {
    */
   public Collection<String> getAllCoreNames() {
     Set<String> set;
-    set = new TreeSet<>(cores.keySet());
+    set = new TreeSet<>();
     if (getTransientCacheHandler() != null) {
       set.addAll(getTransientCacheHandler().getAllCoreNames());
     }
@@ -283,6 +281,8 @@ class SolrCores implements Closeable {
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name) {
 
+    CoreDescriptor cd = residentDesciptors.get(name);
+
     SolrCore core = cores.get(name);
 
     if (core != null) {
@@ -295,6 +295,10 @@ class SolrCores implements Closeable {
     }
     if (core != null) {
       core.open();
+    }
+
+    if (core == null && cd != null) {
+      throw new IllegalStateException("found a descriptor but no core");
     }
     return core;
   }
@@ -403,7 +407,7 @@ class SolrCores implements Closeable {
       while (isCoreLoading(core)) {
         synchronized (loadingSignal) {
           try {
-            loadingSignal.wait(1000);
+            loadingSignal.wait(250);
           } catch (InterruptedException e) {
             ParWork.propagateInterrupt(e);
             return;
@@ -417,7 +421,7 @@ class SolrCores implements Closeable {
   }
 
   public boolean isCoreLoading(String name) {
-    if (container.startedLoadingCores() && currentlyLoadingCores.contains(name)) {
+    if (currentlyLoadingCores.contains(name)) {
       return true;
     }
     return false;

@@ -20,18 +20,22 @@ package org.apache.solr.cloud;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.zookeeper.KeeperException;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Used to manage all ZkShardTerms of a collection
  */
 class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
-  private final Map<String, ZkShardTerms> terms;
+  private final Map<String,ZkShardTerms> terms;
+
+  private final ReentrantLock collectionToTermsLock = new ReentrantLock(true);
+
   private final SolrZkClient zkClient;
-  private volatile boolean closed;
 
   ZkCollectionTerms(String collection, SolrZkClient client) {
     this.collection = collection;
@@ -40,51 +44,69 @@ class ZkCollectionTerms implements AutoCloseable {
     assert ObjectReleaseTracker.track(this);
   }
 
-
-  ZkShardTerms getShard(String shardId) {
-    synchronized (terms) {
+  ZkShardTerms getShard(String shardId) throws Exception {
+    collectionToTermsLock.lock();
+    try {
       if (!terms.containsKey(shardId)) {
         terms.put(shardId, new ZkShardTerms(collection, shardId, zkClient));
       }
       return terms.get(shardId);
+    } finally {
+      collectionToTermsLock.unlock();
     }
   }
 
   public ZkShardTerms getShardOrNull(String shardId) {
-    if (!terms.containsKey(shardId)) return null;
-    return terms.get(shardId);
+    collectionToTermsLock.lock();
+    try {
+      if (!terms.containsKey(shardId)) return null;
+      return terms.get(shardId);
+    } finally {
+      collectionToTermsLock.unlock();
+    }
   }
 
-  public void register(String shardId, String coreNodeName) {
+  public void register(String shardId, String coreNodeName) throws Exception {
     getShard(shardId).registerTerm(coreNodeName);
   }
 
-  public void remove(String shardId, CoreDescriptor coreDescriptor) {
-    ZkShardTerms zterms = getShardOrNull(shardId);
-    if (zterms != null) {
-      if (zterms.removeTerm(coreDescriptor)) {
-        terms.remove(shardId).close();
+  public void remove(String shardId, CoreDescriptor coreDescriptor) throws KeeperException, InterruptedException {
+    collectionToTermsLock.lock();
+    try {
+      ZkShardTerms zterms = getShardOrNull(shardId);
+      if (zterms != null) {
+        if (zterms.removeTerm(coreDescriptor)) {
+          terms.remove(shardId).close();
+        }
       }
+    } finally {
+      collectionToTermsLock.unlock();
     }
   }
 
   public void close() {
-    synchronized (terms) {
-      this.closed = true;
-
+    collectionToTermsLock.lock();
+    try {
       terms.values().forEach(ZkShardTerms::close);
 
       terms.clear();
+    } finally {
+      collectionToTermsLock.unlock();
     }
     assert ObjectReleaseTracker.release(this);
   }
 
   public boolean cleanUp() {
-    for (ZkShardTerms zkShardTerms : terms.values()) {
-      if (zkShardTerms.getTerms().size() > 0) {
-        return false;
+    collectionToTermsLock.lock();
+    try {
+      for (ZkShardTerms zkShardTerms : terms.values()) {
+        if (zkShardTerms.getTerms().size() > 0) {
+          return false;
+        }
       }
+      return true;
+    } finally {
+      collectionToTermsLock.unlock();
     }
-    return true;
   }
 }

@@ -152,7 +152,7 @@ public class ZkContainer implements Closeable {
         if (log.isDebugEnabled()) {
           log.debug("create zkController");
         }
-        zkController = new ZkController(cc, zkClient, config, descriptorsSupplier);
+        zkController = new ZkController(cc, zkClient, config);
 
         if (log.isDebugEnabled()) log.debug("done zkController create");
       } catch (InterruptedException e) {

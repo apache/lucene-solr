@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.routing.ShufflingReplicaListTransformer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class CloudHttp2SolrClientWireMockTest extends BaseSolrClientWireMockTest
     assertEquals(1L, response.getResults().getNumFound());
   }
 
-  @Test(expected = SolrServerException.class)
+  @Test(expected = SolrException.class)
   public void testQueryRequestErrorHandling() throws Exception {
     stubFor(get(urlPathEqualTo("/solr/wireMock/select"))
         .willReturn(aResponse().withStatus(500)));

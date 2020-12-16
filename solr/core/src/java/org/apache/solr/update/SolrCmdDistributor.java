@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * Used for distributing commands from a shard leader to its replicas.
  */
 public class SolrCmdDistributor implements Closeable {
-  private static final int MAX_RETRIES_ON_FORWARD = 1;
+  private static final int MAX_RETRIES_ON_FORWARD = 2;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ConnectionManager.IsClosed isClosed;
   private final ZkStateReader zkStateReader;
@@ -65,19 +65,19 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
-  private Set<Cancellable> cancels = ConcurrentHashMap.newKeySet(32);
+  private final Set<Cancellable> cancels = ConcurrentHashMap.newKeySet(32);
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().idleTimeout((int) TimeUnit.SECONDS.toMillis(30)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().build();
     isClosed = null;
   }
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler, ConnectionManager.IsClosed isClosed) {
-    assert ObjectReleaseTracker.track(this);
+    //assert ObjectReleaseTracker.track(this);
     this.zkStateReader = zkStateReader;
-    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().idleTimeout((int) TimeUnit.SECONDS.toMillis(30)).build();
+    this.solrClient = new Http2SolrClient.Builder().withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().build();
     this.isClosed = isClosed;
   }
 

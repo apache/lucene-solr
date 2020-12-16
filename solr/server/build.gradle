@@ -58,6 +58,7 @@ dependencies {
   api 'org.eclipse.jetty:jetty-webapp'
   api 'org.eclipse.jetty:jetty-xml'
   api 'org.eclipse.jetty:jetty-alpn-server'
+  api 'org.eclipse.jetty:jetty-quickstart'
 
   api 'org.eclipse.jetty.http2:http2-server'
   api 'org.eclipse.jetty.http2:http2-common'

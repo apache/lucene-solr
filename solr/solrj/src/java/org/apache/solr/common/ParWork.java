@@ -79,7 +79,7 @@ public class ParWork implements Closeable {
       synchronized (ParWork.class) {
         if (EXEC == null) {
           EXEC = (ParWorkExecutor) getParExecutorService("RootExec",
-              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 250), Integer.MAX_VALUE, 5000,
+              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 15), Integer.MAX_VALUE, 1000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
         }
@@ -482,9 +482,9 @@ public class ParWork implements Closeable {
     Thread thread = Thread.currentThread();
 
     ExecutorService service = null;
-    if (thread instanceof  SolrThread) {
-      service = ((SolrThread) thread).getExecutorService();
-    }
+//    if (thread instanceof  SolrThread) {
+//      service = ((SolrThread) thread).getExecutorService();
+//    }
 
     if (service == null) {
       ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();

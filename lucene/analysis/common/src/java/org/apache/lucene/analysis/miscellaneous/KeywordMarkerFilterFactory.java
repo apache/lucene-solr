@@ -51,6 +51,8 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
   private final boolean ignoreCase;
   private Pattern pattern;
   private CharArraySet protectedWords;
+
+  private volatile boolean informed;
   
   /** Creates a new KeywordMarkerFilterFactory */
   public KeywordMarkerFilterFactory(Map<String,String> args) {
@@ -70,6 +72,8 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
+    if (informed) return;
+    informed = true;
     if (wordFiles != null) {  
       protectedWords = getWordSet(loader, wordFiles, ignoreCase);
     }

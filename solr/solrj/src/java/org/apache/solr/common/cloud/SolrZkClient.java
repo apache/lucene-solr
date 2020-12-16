@@ -157,7 +157,7 @@ public class SolrZkClient implements Closeable {
       this.zkACLProvider = zkACLProvider;
     }
 
-    zkCmdExecutor = new ZkCmdExecutor(this,5, new IsClosed() {
+    zkCmdExecutor = new ZkCmdExecutor(this,30, new IsClosed() {
 
       @Override
       public boolean isClosed() {

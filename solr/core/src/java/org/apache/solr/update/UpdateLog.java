@@ -38,6 +38,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -195,9 +196,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected final LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
   protected int numOldRecords;  // number of records in the recent logs
 
-  protected Map<BytesRef,LogPtr> map = new HashMap<>(32);
-  protected Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
-  protected Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
+  protected volatile Map<BytesRef,LogPtr> map = new ConcurrentHashMap<>(32);
+  protected volatile Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
+  protected volatile Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
   protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
   protected TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap2
 
@@ -210,12 +211,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
-  protected LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+  protected Map<BytesRef, LogPtr> oldDeletes = Collections.synchronizedMap(new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
     @Override
     protected boolean removeEldestEntry(@SuppressWarnings({"rawtypes"})Map.Entry eldest) {
       return size() > numDeletesToKeep;
     }
-  };
+  });
 
   /**
    * Holds the query and the version for a DeleteByQuery command
@@ -229,6 +230,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return "DBQ{version=" + version + ",q="+q+"}";
     }
   }
+
+  private final Lock dbqLock = new ReentrantLock(true);
 
   protected final LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
@@ -309,13 +312,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @return the current transaction log's size (based on its output stream)
    */
   public long getCurrentLogSizeFromStream() {
-    tlogLock.lock();
-    try {
-      TransactionLog ftlog = tlog;
-      return ftlog == null ? 0 : ftlog.getLogSizeFromStream();
-    } finally {
-      tlogLock.unlock();
-    }
+    // no lock
+    TransactionLog ftlog = tlog;
+    return ftlog == null ? 0 : ftlog.getLogSizeFromStream();
   }
 
   public long getTotalLogsNumber() {
@@ -616,8 +615,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // TODO: in the future we could support a real position for a REPLAY update.
         // Only currently would be useful for RTG while in recovery mode though.
         LogPtr ptr = new LogPtr(pos, cmd.getVersion(), prevPointer);
-
-        map.put(cmd.getIndexedId(), ptr);
+        if (cmd.getIndexedId() != null) {
+          map.put(cmd.getIndexedId(), ptr);
+        }
 
         if (trace) {
 
@@ -777,8 +777,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (prevMap != null) prevMap.clear();
       if (prevMap2 != null) prevMap2.clear();
 
+
       oldDeletes.clear();
-      deleteByQueries.clear();
+
+      dbqLock.lock();
+      try {
+        deleteByQueries.clear();
+      } finally {
+        dbqLock.unlock();
+      }
 
     } finally {
       tlogLock.unlock();
@@ -792,7 +799,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     dbq.q = q;
     dbq.version = version;
 
-    tlogLock.lock();
+    dbqLock.lock();
     try {
       if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
         // common non-reordered case
@@ -818,27 +825,27 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         deleteByQueries.removeLast();
       }
     } finally {
-      tlogLock.unlock();
+      dbqLock.unlock();
     }
   }
 
   public List<DBQ> getDBQNewer(long version) {
-    tlogLock.lock();
+    List<DBQ> dbqList;
+    dbqLock.lock();
     try {
       if (deleteByQueries.isEmpty() || deleteByQueries.getFirst().version < version) {
         // fast common case
         return null;
       }
-
-      List<DBQ> dbqList = new ArrayList<>();
+      dbqList = new ArrayList<>();
       for (DBQ dbq : deleteByQueries) {
         if (dbq.version <= version) break;
         dbqList.add(dbq);
       }
-      return dbqList;
     } finally {
-      tlogLock.unlock();
+      dbqLock.unlock();
     }
+    return dbqList;
   }
 
   protected void newMap() {
@@ -848,7 +855,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     prevMap = map;
     prevMapLog = tlog;
 
-    map = new HashMap<>();
+    map = new ConcurrentHashMap<>(32);
   }
 
   private void clearOldMaps() {
@@ -1123,22 +1130,17 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public Long lookupVersion(BytesRef indexedId) {
     LogPtr entry;
 
-    tlogLock.lock();
-    try {
-      entry = map.get(indexedId);
-      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      if (entry == null && prevMap != null) {
-        entry = prevMap.get(indexedId);
-        // something found in prevMap will always be found in prevMapLog (which could be tlog or prevTlog)
-        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      }
-      if (entry == null && prevMap2 != null) {
-        entry = prevMap2.get(indexedId);
-        // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
-        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      }
-    } finally {
-      tlogLock.unlock();
+    entry = map.get(indexedId);
+    // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
+    if (entry == null && prevMap != null) {
+      entry = prevMap.get(indexedId);
+      // something found in prevMap will always be found in prevMapLog (which could be tlog or prevTlog)
+      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
+    }
+    if (entry == null && prevMap2 != null) {
+      entry = prevMap2.get(indexedId);
+      // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
+      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
     }
 
     if (entry != null) {
@@ -1154,12 +1156,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // We can't get any version info for deletes from the index, so if the doc
     // wasn't found, check a cache of recent deletes.
-    tlogLock.lock();
-    try {
-      entry = oldDeletes.get(indexedId);
-    } finally {
-      tlogLock.unlock();
-    }
+
+    entry = oldDeletes.get(indexedId);
+
     if (entry != null) {
       return entry.version;
     }
@@ -1222,7 +1221,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // The deleteByQueries and oldDeletes lists
       // would've been populated by items from the logs themselves (which we
       // will replay now). So lets clear them out here before the replay.
-      deleteByQueries.clear();
+
+      dbqLock.lock();
+      try {
+        deleteByQueries.clear();
+      } finally {
+        dbqLock.unlock();
+      }
       oldDeletes.clear();
     } finally {
       versionInfo.unblockUpdates();

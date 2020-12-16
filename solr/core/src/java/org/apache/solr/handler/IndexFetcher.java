@@ -16,6 +16,78 @@
  */
 package org.apache.solr.handler;
 
+import com.google.common.base.Strings;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.RTimer;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.JAVABIN;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.ReplicationHandler.ALIAS;
+import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
+import static org.apache.solr.handler.ReplicationHandler.CMD_DETAILS;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
+import static org.apache.solr.handler.ReplicationHandler.CMD_INDEX_VERSION;
+import static org.apache.solr.handler.ReplicationHandler.COMMAND;
+import static org.apache.solr.handler.ReplicationHandler.COMPRESSION;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILE_SHORT;
+import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
+import static org.apache.solr.handler.ReplicationHandler.FILE;
+import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
+import static org.apache.solr.handler.ReplicationHandler.FileInfo;
+import static org.apache.solr.handler.ReplicationHandler.GENERATION;
+import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
+import static org.apache.solr.handler.ReplicationHandler.MASTER_URL;
+import static org.apache.solr.handler.ReplicationHandler.OFFSET;
+import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -48,70 +120,16 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
-
-import com.google.common.base.Strings;
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesOutputStream;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.TestInjection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.JAVABIN;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ReplicationHandler.*;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -121,7 +139,7 @@ import static org.apache.solr.handler.ReplicationHandler.*;
  * @since solr 1.4
  */
 public class IndexFetcher {
-  private static final int _100K = 100000;
+  private static final int _10K = 10000;
 
   public static final String INDEX_PROPERTIES = "index.properties";
 
@@ -155,6 +173,7 @@ public class IndexFetcher {
   private volatile Future<?> fsyncServiceFuture;
 
   private volatile boolean stop = false;
+  private volatile boolean abort = false;
 
   private boolean useInternalCompression = false;
 
@@ -168,7 +187,7 @@ public class IndexFetcher {
 
   private Integer soTimeout;
 
-  private boolean skipCommitOnMasterVersionZero = true;
+  private boolean skipCommitOnMasterVersionZero = false;
 
   private boolean clearLocalIndexFirst = false;
 
@@ -332,8 +351,6 @@ public class IndexFetcher {
 
       files = (List<Map<String,Object>>) response.get(CONF_FILES);
       if (files != null) confFilesToDownload = Collections.synchronizedList(files);
-
-
     } catch (SolrServerException e) {
       throw new IOException(e);
     }
@@ -353,6 +370,8 @@ public class IndexFetcher {
    * @throws IOException if an exception occurs
    */
   IndexFetchResult fetchLatestIndex(boolean forceReplication, boolean forceCoreReload) throws IOException, InterruptedException {
+    stop = false;
+    abort = false;
 
     this.clearLocalIndexFirst = false;
     boolean cleanupDone = false;
@@ -518,7 +537,6 @@ public class IndexFetcher {
 
       tmpIndexDir = solrCore.getDirectoryFactory().get(tmpIndexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
 
-
       // cindex dir...
       indexDirPath = solrCore.getIndexDir();
       indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -570,16 +588,21 @@ public class IndexFetcher {
         boolean reloadCore = false;
 
         try {
+
+          log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
+          successfulInstall = false;
+          long bytesDownloaded;
+          try {
+             bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+          } catch (CheckSumFailException e) {
+            isFullCopyNeeded = true;
+            bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+          }
+
           // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
           }
-
-          log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
-          successfulInstall = false;
-
-          long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir,
-              tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
 
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? Long.valueOf(bytesDownloaded / timeTakenSeconds) : null);
@@ -596,7 +619,6 @@ public class IndexFetcher {
             } else {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
             }
-
             if (successfulInstall) {
               if (isFullCopyNeeded) {
                 // let the system know we are changing dir's and the old one
@@ -617,20 +639,19 @@ public class IndexFetcher {
             }
           } else {
             terminateAndWaitFsyncService();
-            if (isFullCopyNeeded) {
+            if (isFullCopyNeeded && successfulInstall) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (!successfulInstall) {
                 log.error("Modify index props failed");
               }
               if (successfulInstall) deleteTmpIdxDir = false;
-            } else {
+            } else if (successfulInstall) {
               successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
 
               if (!successfulInstall) {
                 log.error("Move index files failed");
               }
             }
-
             if (successfulInstall) {
               logReplicationTimeAndConfFiles(modifiedConfFiles,
                   successfulInstall);
@@ -639,7 +660,7 @@ public class IndexFetcher {
         } finally {
           solrCore.searchEnabled = true;
           solrCore.indexEnabled = true;
-          if (!isFullCopyNeeded) {
+          if (!isFullCopyNeeded && successfulInstall) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
         }
@@ -678,8 +699,6 @@ public class IndexFetcher {
               reloadCore);
           successfulInstall = fetchLatestIndex(true, reloadCore).getSuccessful();
         }
-
-        markReplicationStop();
         return successfulInstall ? IndexFetchResult.INDEX_FETCH_SUCCESS : IndexFetchResult.INDEX_FETCH_FAILURE;
       } catch (ReplicationHandlerException e) {
         log.error("User aborted Replication");
@@ -712,8 +731,6 @@ public class IndexFetcher {
       if (!successfulInstall) {
         try {
           logReplicationTimeAndConfFiles(null, successfulInstall);
-        } catch (AlreadyClosedException e) {
-
         } catch (Exception e) {
           // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
           log.warn("Could not log failed replication details", e);
@@ -726,14 +743,13 @@ public class IndexFetcher {
       }
     } finally {
 
-      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload;
+      filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
       if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
       fsyncService = null;
       fsyncServiceFuture = null;
-      stop = false;
       fsyncException = null;
 
       // order below is important
@@ -948,22 +964,7 @@ public class IndexFetcher {
   }
 
   private void reloadCore() {
-    final CountDownLatch latch = new CountDownLatch(1);
-    new Thread(() -> {
-      try {
-        solrCore.getCoreContainer().reload(solrCore.getName());
-      } catch (Exception e) {
-        log.error("Could not reload core ", e);
-      } finally {
-        latch.countDown();
-      }
-    }).start();
-    try {
-      latch.await();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException("Interrupted while waiting for core reload to finish", e);
-    }
+    solrCore.getCoreContainer().reload(solrCore.getName());
   }
 
   private void downloadConfFiles(List<Map<String, Object>> confFilesToDownload, long latestGeneration) throws Exception {
@@ -1020,18 +1021,19 @@ public class IndexFetcher {
   private long downloadIndexFiles(boolean downloadCompleteIndex, Directory indexDir, Directory tmpIndexDir,
                                   String indexDirPath, String tmpIndexDirPath, long latestGeneration)
       throws Exception {
+    if (!abort) {
+      stop = false;
+    } else {
+      throw new ReplicationHandlerException("User aborted replication");
+    }
     if (log.isDebugEnabled()) {
       log.debug("Download files to dir: {}", Arrays.asList(indexDir.listAll()));
     }
     LongAdder bytesDownloaded = new LongAdder();
     LongAdder bytesSkippedCopying = new LongAdder();
-    boolean doDifferentialCopy = (indexDir instanceof FSDirectory ||
-        (indexDir instanceof FilterDirectory && FilterDirectory.unwrap(indexDir) instanceof FSDirectory))
-        && (tmpIndexDir instanceof FSDirectory ||
-        (tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
-
-    // nocommit
-    doDifferentialCopy = false; // what about windows or link unsupported?
+    boolean doDifferentialCopy =
+        (indexDir instanceof FSDirectory || (indexDir instanceof FilterDirectory && FilterDirectory.unwrap(indexDir) instanceof FSDirectory)) && (tmpIndexDir instanceof FSDirectory || (
+            tmpIndexDir instanceof FilterDirectory && FilterDirectory.unwrap(tmpIndexDir) instanceof FSDirectory));
 
     long totalSpaceRequired = 0;
     synchronized (filesToDownload) {
@@ -1050,53 +1052,70 @@ public class IndexFetcher {
       log.warn("WARNING: clearing disk space ahead of time to avoid running out of space, could cause problems with current SolrCore approxTotalSpaceReqd{}, usableSpace={}", atsr, usableSpace);
       deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
+    log.info("Files to download {}", filesToDownload);
     try {
       // nocommit
-    //try (ParWork parWork = new ParWork(this, false)) {
-      synchronized (filesToDownload) {
-        for (Map<String,Object> file : filesToDownload) {
-          String filename = (String) file.get(NAME);
-          long size = (Long) file.get(SIZE);
-          CompareResult compareResult = compareFile(indexDir, filename, size, (Long) file.get(CHECKSUM));
-          boolean alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
+      try (ParWork parWork = new ParWork(this, true)) {
+        synchronized (filesToDownload) {
+          for (Map<String,Object> file : filesToDownload) {
+            String filename = (String) file.get(NAME);
+            long size = (Long) file.get(SIZE);
+            Long serverChecksum = (Long) file.get(CHECKSUM);
+            CompareResult compareResult = compareFile(indexDir, filename, size, serverChecksum);
 
-          boolean finalDoDifferentialCopy = doDifferentialCopy;
-          //  parWork.collect("IndexFetcher", () -> {
-          if (log.isDebugEnabled()) {
-            log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
-          }
-          if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
-            File localFile = new File(indexDirPath, filename);
-            if (downloadCompleteIndex && finalDoDifferentialCopy && compareResult.equal && compareResult.checkSummed && localFile.exists()) {
-              if (log.isInfoEnabled()) {
-                log.info("Don't need to download this file. Local file's path is: {}, checksum is: {}", localFile.getAbsolutePath(), file.get(CHECKSUM));
-              }
-              // A hard link here should survive the eventual directory move, and should be more space efficient as
-              // compared to a file copy. TODO: Maybe we could do a move safely here?
-
-              // TODO: only for local
-              //Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
-              bytesDownloaded.add(localFile.length());
-              moveAFile(tmpIndexDir, tmpIndexDir, filename);
-            } else {
-              try {
-                dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
-                currentFile = file;
-                dirFileFetcher.fetchFile();
-                bytesDownloaded.add(dirFileFetcher.getBytesDownloaded());
-              } catch (Exception e) {
-                log.error("Problem downloading file {}", file, e);
-              } finally {
-                fileFetchRequests.remove(file.get(NAME));
-              }
+            if (compareResult.checkSummed && !compareResult.equal && !downloadCompleteIndex && !doDifferentialCopy) {
+              stop = true;
+              log.error("Checksum failed, start over with full copy replication");
+              throw new CheckSumFailException();
             }
-            filesDownloaded.add(new HashMap<>(file));
-          } else {
+
+            boolean alwaysDownload = false;
+            if (serverChecksum == null) {
+              alwaysDownload = filesToAlwaysDownloadIfNoChecksums(filename, size, compareResult);
+            }
+
+            boolean finalDoDifferentialCopy = doDifferentialCopy;
+            //  parWork.collect("IndexFetcher", () -> {
             if (log.isDebugEnabled()) {
-              log.debug("Skipping download for {} because it already exists", file.get(NAME));
+              log.debug("Downloading file={} size={} checksum={} alwaysDownload={}", filename, size, file.get(CHECKSUM), alwaysDownload);
+            }
+            if (!compareResult.equal || downloadCompleteIndex || alwaysDownload) {
+              File localFile = new File(indexDirPath, filename);
+              if (downloadCompleteIndex && finalDoDifferentialCopy && compareResult.equal && compareResult.checkSummed && localFile.exists()) {
+                if (log.isInfoEnabled()) {
+                  log.info("Don't need to download this file. Local file's path is: {}, checksum is: {}", localFile.getAbsolutePath(), file.get(CHECKSUM));
+                }
+                // A hard link here should survive the eventual directory move, and should be more space efficient as
+                // compared to a file copy. TODO: Maybe we could do a move safely here?
+
+                // TODO: only for local
+                //Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+                bytesDownloaded.add(localFile.length());
+                moveAFile(indexDir, tmpIndexDir, filename);
+              } else {
+                try {
+                  dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
+                  currentFile = file;
+                  dirFileFetcher.fetchFile();
+                  bytesDownloaded.add(dirFileFetcher.getBytesDownloaded());
+                } catch (CheckSumFailException e) {
+                  throw e;
+                } catch (Exception e) {
+                  log.error("Problem downloading file {}", file, e);
+                } finally {
+                  fileFetchRequests.remove(file.get(NAME));
+                }
+              }
+              if (stop) {
+                throw new AlreadyClosedException();
+              }
+              filesDownloaded.add(Collections.unmodifiableMap(file));
+            } else {
+              if (log.isDebugEnabled()) {
+                log.debug("Skipping download for {} because it already exists", file.get(NAME));
+              }
             }
           }
-          //   });
 
         }
       }
@@ -1188,7 +1207,7 @@ public class IndexFetcher {
     // without checksums to compare, we always download .si, .liv, segments_N,
     // and any very small files
     return !compareResult.checkSummed && (filename.endsWith(".si") || filename.endsWith(".liv")
-    || filename.startsWith("segments_") || size < _100K);
+    || filename.startsWith("segments_") || size < _10K);
   }
 
   protected static class CompareResult {
@@ -1200,7 +1219,7 @@ public class IndexFetcher {
     CompareResult compareResult = new CompareResult();
     try {
       try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
-        long indexFileLen = indexDir.fileLength(filename);
+        long indexFileLen = indexInput.length();
         long indexFileChecksum = 0;
         
         if (backupIndexFileChecksum != null) {
@@ -1530,6 +1549,7 @@ public class IndexFetcher {
    */
   void abortFetch() {
     stop = true;
+    abort = true;
     fileFetchRequests.forEach((s, cancellable) -> {
       if (cancellable != null) {
         cancellable.cancel();
@@ -1632,7 +1652,6 @@ public class IndexFetcher {
     private byte[] buf;
     private final Checksum checksum;
     private int errorCount = 0;
-    private volatile boolean aborted = false;
 
     FileFetcher(FileInterface file, Map<String, Object> fileDetails, String saveAs,
                 String solrParamOutput, long latestGen) throws IOException {
@@ -1661,6 +1680,8 @@ public class IndexFetcher {
       bytesDownloaded = 0;
       try {
         fetch();
+      } catch(CheckSumFailException e) {
+        throw e;
       } catch(Exception e) {
         SolrException.log(IndexFetcher.log, "Error fetching file", e);
         throw e;
@@ -1669,14 +1690,14 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
-        final InputStream is = getStream();
-        while (true) {
+
+        while (true && !stop && !abort) {
+          final FastInputStream is = getStream();
           int result;
           try {
             //fetch packets one by one in a single request
             result = fetchPackets(is);
-            if (result == 0 || result == NO_CONTENT) {
-
+            if (result == 0) {
               return;
             }
             //if there is an error continue. But continue from the point where it got broken
@@ -1701,18 +1722,19 @@ public class IndexFetcher {
       }
     }
 
-    private int fetchPackets(InputStream fis) throws Exception {
+    private int fetchPackets(FastInputStream fis) throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
       try {
         while (true) {
-          if (stop) {
-            stop = false;
-            aborted = true;
+          if (abort) {
             throw new ReplicationHandlerException("User aborted replication");
           }
+          if (stop) {
+            throw new ReplicationHandlerException("Index fetch stopped");
+          }
           long checkSumServer = -1;
-          fis.read(intbytes, 0, intbytes.length);
+          fis.readFully(intbytes);
           //read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
@@ -1726,21 +1748,21 @@ public class IndexFetcher {
           }
           if (checksum != null) {
             //read the checksum
-            fis.read(longbytes, 0, longbytes.length);
+            fis.readFully(longbytes);
             checkSumServer = readLong(longbytes);
           }
           //then read the packet of bytes
-          fis.read(buf, 0, packetSize);
-
+          fis.readFully(buf, 0, packetSize);
           //compare the checksum as sent from the master
           if (includeChecksum) {
             checksum.reset();
             checksum.update(buf, 0, packetSize);
             long checkSumClient = checksum.getValue();
             if (checkSumClient != checkSumServer) {
-              log.error("Checksum not matched between client and server for file: {}", fileName);
+              log.error("Checksum not matched between client and server for file: {} {} {}", fileName, checkSumClient, checkSumServer);
               //if checksum is wrong it is a problem return (there doesn't seem to be a retry in this case.)
-              return 1;
+              stop = true;
+              throw new CheckSumFailException();
             }
           }
           //if everything is fine, write down the packet to the file
@@ -1753,6 +1775,8 @@ public class IndexFetcher {
           if (bytesDownloaded >= size)
             return 0;
         }
+      } catch (CheckSumFailException e) {
+        throw e;
       } catch (ReplicationHandlerException e) {
         log.error("Exception fetching files", e);
         throw e;
@@ -1811,7 +1835,7 @@ public class IndexFetcher {
           log.error("Error deleting file: {}", this.saveAs, e);
         }
         //if the failure is due to a user abort it is returned normally else an exception is thrown
-        if (!aborted)
+        if (!stop)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unable to download " + fileName + " completely. Downloaded "
                   + bytesDownloaded + "!=" + size);
@@ -1821,7 +1845,7 @@ public class IndexFetcher {
     /**
      * Open a new stream using HttpClient
      */
-    private InputStream getStream() throws IOException {
+    private FastInputStream getStream() throws IOException {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -1835,16 +1859,16 @@ public class IndexFetcher {
 //        params.set(COMPRESSION, "true");
 //      }
       //use checksum
-
-      params.set(CHECKSUM, true);
-
+      if (this.includeChecksum) {
+        params.set(CHECKSUM, true);
+      }
       //wt=filestream this is a custom protocol
       params.set(CommonParams.WT, FILE_STREAM);
       // This happen if there is a failure there is a retry. the offset=<sizedownloaded> ensures that
       // the server starts from the offset
-//      if (bytesDownloaded > 0) {
-//        params.set(OFFSET, Long.toString(bytesDownloaded));
-//      }
+      if (bytesDownloaded > 0) {
+        params.set(OFFSET, Long.toString(bytesDownloaded));
+      }
 
 
       @SuppressWarnings({"rawtypes"})
@@ -1857,34 +1881,29 @@ public class IndexFetcher {
         req.setMethod(SolrRequest.METHOD.POST);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         //response =
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<InputStream> ais = new AtomicReference<>();
-        Cancellable resp = solrClient.asyncRequestRaw(req, null, new AsyncListener<InputStream>() {
+
+        Cancellable resp = solrClient.asyncRequestRaw(req, null, new AsyncListener<>() {
           @Override
           public void onSuccess(InputStream is) {
-            ais.set(is);
-            latch.countDown();
+
           }
 
           @Override
           public void onFailure(Throwable throwable) {
             log.error("Exception fetching file", throwable);
-            latch.countDown();
           }
         });
 
         fileFetchRequests.put(fileName, resp);
-        if (!stop) {
-          latch.await(5, TimeUnit.SECONDS );
-        }
-        is = ais.get();
+
+        is = resp.getStream();
         if (is == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
         }
 //        if (useInternalCompression) {
 //          is = new InflaterInputStream(is);
 //        }
-        return is;
+        return new FastInputStream(is);
       } catch (Exception e) {
         //close stream on error
         try {

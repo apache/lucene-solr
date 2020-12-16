@@ -617,7 +617,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
 
-  protected synchronized void removeDirectory(CacheValue cacheValue) throws IOException {
+  protected void removeDirectory(CacheValue cacheValue) throws IOException {
     // this page intentionally left blank
   }
 

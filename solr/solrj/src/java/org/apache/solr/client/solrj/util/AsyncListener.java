@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.util;
 
+import java.io.InputStream;
+
 /**
  * Listener for async requests
  */
@@ -27,6 +29,7 @@ public interface AsyncListener<T> {
   default void onStart() {
 
   }
+
   void onSuccess(T t);
   void onFailure(Throwable throwable);
 

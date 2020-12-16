@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient solrZkClient;
 
-  private long retryDelay = 50L;
+  private long retryDelay = 500L;
   private int retryCount;
   private IsClosed isClosed;
   
@@ -69,14 +70,14 @@ public class ZkCmdExecutor {
     while (tryCnt < retryCount) {
       try {
         return (T) operation.execute();
-      } catch (KeeperException.ConnectionLossException e) {
+      } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
         log.warn("ConnectionLost to ZK");
         if (exception == null) {
           exception = e;
         }
-        if (!solrZkClient.getSolrZooKeeper().getState().isAlive()) {
-          break;
-        }
+//        if (!solrZkClient.getSolrZooKeeper().getState().isAlive()) {
+//          break;
+//        }
         retryDelay(tryCnt);
       }
       tryCnt++;
@@ -92,7 +93,7 @@ public class ZkCmdExecutor {
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
     if (isClosed != null && isClosed.isClosed()) {
-      return;
+     throw new AlreadyClosedException();
     }
     long sleep = retryDelay;
     log.info("delaying for retry, attempt={} retryDelay={} sleep={}", attemptCount, retryDelay, sleep);

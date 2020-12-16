@@ -170,7 +170,11 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         assertFalse(r.getName().endsWith("_n1")); // make sure node was replaced
       }
     }
-//    try {
+
+    // TODO should not need this
+    cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
+
+    //    try {
 //      CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
 //    } catch (BaseHttpSolrClient.RemoteSolrException e) {
 //      // nocommit fails with Error from server at null: Cannot unload non-existent core [replacenodetest_coll_shard4_replica_n27]}

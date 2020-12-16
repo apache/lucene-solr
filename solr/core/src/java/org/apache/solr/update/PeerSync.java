@@ -210,7 +210,7 @@ public class PeerSync implements SolrMetricProducer {
 
         for (;;)  {
           log.info("looping in check for versions on others");
-          ShardResponse srsp = shardHandler.takeCompletedOrError();
+          ShardResponse srsp = shardHandler.takeCompletedIncludingErrors();
           if (srsp == null) break;
           if (srsp.getException() == null)  {
             log.info("checking if others have versions {} {}", srsp.getSolrResponse().getResponse());
@@ -237,7 +237,6 @@ public class PeerSync implements SolrMetricProducer {
           if (log.isInfoEnabled()) {
             log.info("{} DONE. sync failed", msg());
           }
-          shardHandler.cancelAll();
           if (syncErrors != null) syncErrors.inc();
           return PeerSyncResult.failure();
         }
@@ -361,7 +360,7 @@ public class PeerSync implements SolrMetricProducer {
         }
       }
       
-      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && (((SolrException) srsp.getException()).code() == 503 || ((SolrException) srsp.getException()).code() == 404)) {
         log.warn("{} got a 503 from {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
         return true;
       }
@@ -574,6 +573,11 @@ public class PeerSync implements SolrMetricProducer {
 
     public static PeerSyncResult failure(boolean otherHasVersions)  {
       return new PeerSyncResult(false, otherHasVersions);
+    }
+
+    @Override
+    public String toString() {
+      return "PeerSyncResult{" + "success=" + success + ", otherHasVersions=" + otherHasVersions + '}';
     }
   }
 

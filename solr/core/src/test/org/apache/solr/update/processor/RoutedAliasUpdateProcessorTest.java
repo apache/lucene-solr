@@ -275,22 +275,14 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
       try (CloudSolrClient solrClient = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
-        try {
-          exec = getTestExecutor();
-          List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
-          for (SolrInputDocument solrInputDocument : solrInputDocuments) {
-            String col = collections.get(random().nextInt(collections.size()));
-            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
-          }
-          for (Future<UpdateResponse> future : futures) {
-            assertUpdateResponse(future.get());
-          }
-          // at this point there shouldn't be any tasks running
-          assertEquals(0, exec.shutdownNow().size());
-        } finally {
-          if (exec != null) {
-            exec.shutdownNow();
-          }
+        exec = getTestExecutor();
+        List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
+        for (SolrInputDocument solrInputDocument : solrInputDocuments) {
+          String col = collections.get(random().nextInt(collections.size()));
+          futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+        }
+        for (Future<UpdateResponse> future : futures) {
+          assertUpdateResponse(future.get());
         }
       }
     } else {

@@ -399,9 +399,6 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       // this will be detected and the cmd's schema updated.
       IndexSchema oldSchema;
       for (; ; ) {
-        if (cmd.getReq().getCore().getCoreContainer().isShutDown() || cmd.getReq().getCore().isClosing()) {
-          throw new AlreadyClosedException();
-        }
         List<SchemaField> newFields = new ArrayList<>();
         // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API
         // build a selector each time through the loop b/c the schema we are

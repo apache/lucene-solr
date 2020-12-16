@@ -105,6 +105,13 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       collection = extCollection;
     }
 
+    log.info("Check if collection exists in zookeeper {}", collection);
+
+    if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection " + collection);
+    }
+
+
     checkNotColocatedWith(zkStateReader, collection);
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
@@ -114,13 +121,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       // should be taken care of as part of collection delete operation.
       SolrZkClient zkClient = zkStateReader.getZkClient();
       SolrSnapshotManager.cleanupCollectionLevelSnapshots(zkClient, collection);
-
-      log.info("Check if collection exists in zookeeper {}", collection);
-
-      if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection");
-      }
-
 
       log.info("Collection exists, remove it, {}", collection);
       // remove collection-level metrics history
@@ -136,6 +136,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
       params.set(CoreAdminParams.DELETE_DATA_DIR, true);
       params.set(CoreAdminParams.DELETE_METRICS_HISTORY, deleteHistory);
+
+      //params.set("idleTimeout", 8000);
 
       String asyncId = message.getStr(ASYNC);
 
@@ -156,15 +158,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     } finally {
 
-      // make sure it's gone again after cores have been removed
-      try {
-        ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
-        zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
-        ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
-      } catch (Exception e) {
-        log.error("Exception while trying to remove collection zknode", e);
-      }
-
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
         ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> {
@@ -179,7 +172,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
 
-
     //if (results.get("failure") == null && results.get("exception") == null) {
 
     ShardHandler finalShardHandler = shardHandler;
@@ -192,42 +184,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);
             // TODO: wait for delete collection?
            // zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (l, c) -> c == null);
-            CountDownLatch latch = new CountDownLatch(1);
-            Stat stat = zkStateReader.getZkClient().exists(ZkStateReader.getCollectionPath(collection), new Watcher() {
-              @Override
-              public void process(WatchedEvent event) {
 
-                  if (event.getType() == Watcher.Event.EventType.NodeDeleted) {
-                    latch.countDown();
-                  } else {
-                    try {
-                      Stat stat2 = zkStateReader.getZkClient().exists(ZkStateReader.getCollectionPath(collection), this, true);
-                      if (stat2 != null) {
-                        latch.countDown();
-                      }
-                    } catch (KeeperException e) {
-                      log.error("", e);
-                    } catch (InterruptedException e) {
-                      log.error("", e);
-                    }
-                  }
-
-              }
-            }, true);
-            if (stat == null) {
-              latch.countDown();
-            }
-
-            boolean success = latch.await(10, TimeUnit.SECONDS);
-            if (!success) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for collection to be removed");
-            }
           } catch (Exception e) {
             log.error("Exception waiting for results of delete collection cmd", e);
           }
         }
+        // make sure it's gone again after cores have been removed
+        try {
+          ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
+          zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
 
-
+        } catch (Exception e) {
+          log.error("Exception while trying to remove collection zknode", e);
+        }
 
         AddReplicaCmd.Response response = new AddReplicaCmd.Response();
         return response;

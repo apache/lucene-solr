@@ -173,7 +173,7 @@ public class PerThreadExecService extends AbstractExecutorService {
 
     Runnable finalRunnable = runnable;
     try {
-      service.execute(() -> runIt(finalRunnable, true, false));
+      service.submit(() -> runIt(finalRunnable, true, false));
     } catch (Exception e) {
       running.decrementAndGet();
       synchronized (awaitTerminate) {

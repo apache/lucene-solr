@@ -108,8 +108,7 @@ public class UpdateShardHandler implements SolrInfoBean {
           .connectionTimeout(cfg.getDistributedConnectionTimeout())
           .idleTimeout(cfg.getDistributedSocketTimeout());
     }
-    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest()
-        .maxRequestsQueuedPerDestination(12000).strictEventOrdering(false).build();
+    updateOnlyClient = updateOnlyClientBuilder.markInternalRequest().strictEventOrdering(false).build();
     updateOnlyClient.enableCloseLock();
    // updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
     Set<String> queryParams = new HashSet<>(2);
@@ -120,7 +119,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
 
     Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
-    recoveryOnlyClientBuilder = recoveryOnlyClientBuilder.connectionTimeout(5000).idleTimeout(30000);
+    recoveryOnlyClientBuilder = recoveryOnlyClientBuilder.connectionTimeout(5000).idleTimeout(10000);
 
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.markInternalRequest().build();

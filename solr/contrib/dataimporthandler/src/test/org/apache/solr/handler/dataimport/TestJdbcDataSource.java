@@ -60,6 +60,7 @@ import static org.mockito.Mockito.when;
  *
  * @since solr 1.3
  */
+@Ignore
 public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   private Driver driver;
   private DataSource dataSource;

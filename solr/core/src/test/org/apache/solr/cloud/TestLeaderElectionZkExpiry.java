@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -53,7 +52,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
           .setLeaderConflictResolveWait(5000)
           .setLeaderVoteWait(5000)
           .build();
-      final ZkController zkController = new ZkController(cc, server.getZkClient(), cloudConfig, () -> Collections.emptyList());
+      final ZkController zkController = new ZkController(cc, server.getZkClient(), cloudConfig);
       try {
         Thread killer = new Thread() {
           @Override

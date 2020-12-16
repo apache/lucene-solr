@@ -181,7 +181,7 @@ public class BlockPoolSlice {
     shutdownHook = new Runnable() {
       @Override
       public void run() {
-        addReplicaThreadPool.shutdownNow();
+        addReplicaThreadPool.shutdown();
       }
     };
     ShutdownHookManager.get().addShutdownHook(shutdownHook,

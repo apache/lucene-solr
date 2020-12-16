@@ -293,7 +293,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
         NamedList<Object> results = new NamedList<>();
-        SolrZkClient zk = h.coreContainer.getZkController().getZkStateReader().getZkClient();
+        SolrZkClient zk = h.coreContainer.getZkController().getZkClient();
         ZkConfigManager zkConfigManager = new ZkConfigManager(zk);
         List<String> configSetsList = zkConfigManager.listConfigs();
         results.add("configSets", configSetsList);

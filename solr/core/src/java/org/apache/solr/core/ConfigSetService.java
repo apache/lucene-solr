@@ -90,7 +90,7 @@ public abstract class ConfigSetService {
               && !flags.getBooleanArg("trusted")
               ) ? false: true;
 
-      log.info("Trusted configset={} {}", trusted, flags);
+      if (log.isDebugEnabled()) log.debug("Trusted configset={} {}", trusted, flags);
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);

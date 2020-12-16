@@ -257,6 +257,9 @@ public class HttpSolrCall {
         path = path.substring(idx2);
       }
 
+      cores.waitForLoadingCore(origCorename, 15000);
+      // the core may have just finished loading
+
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
 
@@ -266,8 +269,6 @@ public class HttpSolrCall {
         path = path.substring(idx);
         if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
       } else {
-        cores.waitForLoadingCore(origCorename, 1000);
-        // the core may have just finished loading
         core = cores.getCore(origCorename);
         if (core != null) {
           path = path.substring(idx);
@@ -746,6 +747,7 @@ public class HttpSolrCall {
 
         @Override
         public void onHeaders(Response resp) {
+          super.onHeaders(resp);
           //System.out.println("resp code:" + resp.getStatus());
           for (HttpField field : resp.getHeaders()) {
             String headerName = field.getName();

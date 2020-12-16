@@ -110,7 +110,7 @@ public class ExecutorUtil {
    */
   public static ExecutorService newMDCAwareFixedThreadPool(int nThreads, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(nThreads, nThreads,
-        0L, TimeUnit.MILLISECONDS,
+        3000L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         threadFactory);
   }
@@ -137,14 +137,14 @@ public class ExecutorUtil {
    */
   public static ExecutorService newMDCAwareCachedThreadPool(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(0, Integer.MAX_VALUE,
-        60L, TimeUnit.SECONDS,
+        3L, TimeUnit.SECONDS,
         new SynchronousQueue<>(),
         threadFactory);
   }
 
   public static ExecutorService newMDCAwareCachedThreadPool(int maxThreads, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(0, maxThreads,
-        60L, TimeUnit.SECONDS,
+        3L, TimeUnit.SECONDS,
         new LinkedBlockingQueue<>(maxThreads),
         threadFactory);
   }

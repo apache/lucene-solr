@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -30,7 +31,6 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -232,7 +232,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
         is(0));
   }
 
-  private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws IOException {
+  private void assertForbidden(String query, String shards, MiniSolrCloudCluster cluster) throws Exception {
     ignoreException("not on the shards whitelist");
     try {
       numDocs(
@@ -240,10 +240,9 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           shards,
           cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
-    } catch (SolrServerException e) {
-      assertThat(e.getCause(), instanceOf(SolrException.class));
-      assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(((SolrException) e.getCause()).getMessage(), containsString("not on the shards whitelist"));
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+      assertThat(e.getMessage(), containsString("not on the shards whitelist"));
     }
     unIgnoreException("not on the shards whitelist");
   }
@@ -254,7 +253,7 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
   }
 
   private int numDocs(String queryString, String shardsParamValue, MiniSolrCloudCluster cluster, String... otherParams)
-      throws SolrServerException, IOException {
+      throws SolrServerException, BaseHttpSolrClient.RemoteSolrException, IOException {
     SolrQuery q = new SolrQuery(queryString);
     if (shardsParamValue != null) {
       q.set("shards", shardsParamValue);

@@ -75,7 +75,7 @@ public class ZkStateWriter {
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
 
-  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 50), new TimeSource.NanoTimeSource(){
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 100), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
       ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
     }
@@ -226,16 +226,16 @@ public class ZkStateWriter {
                   for (Replica replica : replicas) {
                     if (replica.getState() != Replica.State.DOWN && replica.getNodeName().equals(entry.getValue())) {
                       log.info("set downnode for replica {}", replica);
+                      // nocommit
+                      Slice slice = docColl.getSlice(replica.getSlice());
+                      slice.setLeader(null);
                       replica.setState(Replica.State.DOWN);
                       updates.getProperties().put(replica.getName(), Replica.State.getShortState(Replica.State.DOWN));
                       dirtyState.add(docColl.getName());
                     }
                   }
                 });
-              }
-            }
-            for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
-              if (!entry.getKey().equalsIgnoreCase("downnode")) {
+              } else {
                 String core = entry.getKey();
                 String collectionAndStateString = (String) entry.getValue();
                 log.info("collectionAndState={}", collectionAndStateString);
@@ -290,8 +290,11 @@ public class ZkStateWriter {
                       updates.getProperties().put(replica.getName(), "l");
                       dirtyState.add(collection);
                     } else {
-
                       Replica.State state = Replica.State.getState(setState);
+                      Replica existingLeader = docColl.getSlice(replica).getLeader();
+                      if (state == Replica.State.DOWN && existingLeader != null && existingLeader.getName().equals(replica.getName())) {
+                        docColl.getSlice(replica).setLeader(null);
+                      }
                       updates.getProperties().put(replica.getName(), Replica.State.getShortState(state));
                       // log.info("set state {} {}", state, replica);
                       replica.setState(state);
@@ -440,7 +443,7 @@ public class ZkStateWriter {
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
-                  log.info("write state updates for collection {} {}", collection.getName(), updates);
+                  if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
                   dirtyState.remove(collection.getName());
                   reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
                 }
@@ -448,9 +451,6 @@ public class ZkStateWriter {
 
             } catch (InterruptedException | AlreadyClosedException e) {
               log.info("We have been closed or one of our resources has, bailing {}", e.getClass().getSimpleName() + ":" + e.getMessage());
-
-            } catch (KeeperException.SessionExpiredException e) {
-              log.error("", e);
 
             } catch (Exception e) {
               log.error("Failed processing update=" + collection, e);
@@ -532,6 +532,8 @@ public class ZkStateWriter {
       trackVersions.remove(collection);
       reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1);
       reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1);
+    } catch (KeeperException.NoNodeException e) {
+
     } catch (InterruptedException e) {
       log.error("", e);
     } catch (KeeperException e) {

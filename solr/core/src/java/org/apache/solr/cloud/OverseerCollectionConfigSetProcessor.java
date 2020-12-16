@@ -33,9 +33,9 @@ import java.io.IOException;
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
   public OverseerCollectionConfigSetProcessor(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer) throws KeeperException {
-    this(cc, myId, overseerLbClient, adminPath, stats, overseer, overseer.getCollectionQueue(cc.getZkController().getZkStateReader().getZkClient(), stats),
-        Overseer.getRunningMap(cc.getZkController().getZkStateReader().getZkClient()), Overseer.getCompletedMap(cc.getZkController().getZkStateReader().getZkClient()),
-        Overseer.getFailureMap(cc.getZkController().getZkStateReader().getZkClient()));
+    this(cc, myId, overseerLbClient, adminPath, stats, overseer, overseer.getCollectionQueue(cc.getZkController().getZkClient(), stats),
+        Overseer.getRunningMap(cc.getZkController().getZkClient()), Overseer.getCompletedMap(cc.getZkController().getZkClient()),
+        Overseer.getFailureMap(cc.getZkController().getZkClient()));
   }
 
   protected OverseerCollectionConfigSetProcessor(CoreContainer cc, String myId, LBHttp2SolrClient overseerLbClient, String adminPath, Stats stats, Overseer overseer, OverseerTaskQueue workQueue,

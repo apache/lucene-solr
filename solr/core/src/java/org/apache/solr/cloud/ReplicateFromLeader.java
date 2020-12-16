@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -96,7 +97,7 @@ public class ReplicateFromLeader implements Closeable {
       replicationProcess = new ReplicationHandler();
       if (switchTransactionLog) {
         replicationProcess.setPollListener((solrCore, fetchResult) -> {
-          if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
+          if (fetchResult.getSuccessful()) {
             String commitVersion = getCommitVersion(core);
             if (commitVersion == null) return;
             if (Long.parseLong(commitVersion) == lastVersion) return;
@@ -107,6 +108,21 @@ public class ReplicateFromLeader implements Closeable {
             cuc.setVersion(Long.parseLong(commitVersion));
             updateLog.commitAndSwitchToNewTlog(cuc);
             lastVersion = Long.parseLong(commitVersion);
+            try {
+              cc.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+            } catch (Exception e) {
+              log.warn("Failed publishing as ACTIVE", e);
+            }
+          }
+        });
+      } else {
+        replicationProcess.setPollListener((solrCore, fetchResult) -> {
+          if (fetchResult.getSuccessful()) {
+            try {
+              cc.getZkController().publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
+            } catch (Exception e) {
+              log.warn("Failed publishing as ACTIVE", e);
+            }
           }
         });
       }

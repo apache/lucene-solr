@@ -244,7 +244,7 @@ public class ZkMaintenanceUtils {
           }
         }
       } catch (KeeperException.NoNodeException r) {
-        return;
+
       }
     });
   }
@@ -260,7 +260,7 @@ public class ZkMaintenanceUtils {
           }
         }
       } catch (KeeperException.NoNodeException r) {
-        return;
+
       }
     });
   }
@@ -283,11 +283,7 @@ public class ZkMaintenanceUtils {
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
-        try {
-          zkClient.delete(subpath, -1);
-        } catch (KeeperException.NotEmptyException | KeeperException.NoNodeException e) {
-          // expected
-        }
+        clean(zkClient, path);
       }
     }
   }

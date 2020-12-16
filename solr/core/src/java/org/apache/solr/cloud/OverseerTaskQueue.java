@@ -155,6 +155,22 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
 
       if (latchEventType == null || event.getType() == latchEventType) {
+        try {
+          Stat stat = zkClient.exists(path, this, true);
+          if (stat != null && stat.getDataLength() > 0) {
+            close();
+            lock.lock();
+            try {
+              this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
+              eventReceived.signalAll();
+            } finally {
+              lock.unlock();
+            }
+          }
+        } catch (Exception e) {
+          log.error("", e);
+        }
+
         lock.lock();
         try {
           this.event = event;
@@ -166,9 +182,10 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         try {
           Stat stat = zkClient.exists(path, this, true);
           if (stat != null && stat.getDataLength() > 0) {
-            this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
+            close();
             lock.lock();
             try {
+              this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
               eventReceived.signalAll();
             } finally {
               lock.unlock();
@@ -180,15 +197,16 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       }
     }
 
-    public void await(long timeoutMs) throws InterruptedException {
+    public void await(long timeoutMs) {
       TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
       lock.lock();
       try {
-        if (this.event != null) {
-          return;
-        }
-        while (!timeout.hasTimedOut() && event == null && !closed) {
-          eventReceived.await(500, TimeUnit.MILLISECONDS);
+        while (!timeout.hasTimedOut() && event == null) {
+          try {
+            eventReceived.await(500, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+
+          }
         }
 
         if (timeout.hasTimedOut()) {
@@ -207,15 +225,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     public void close() throws IOException {
       this.closed = true;
       try {
-        zkClient.getSolrZooKeeper().removeWatches(path, this, Watcher.WatcherType.Any, true);
+        zkClient.getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
-      }
-      try {
-        lock.lock();
-        eventReceived.signalAll();
-      } finally {
-        lock.unlock();
       }
     }
   }
@@ -268,17 +280,17 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       Stat stat = zookeeper.exists(watchID, watcher, true);
 
       // create the request node
-     String path = createRequestNode(data, watchID);
+      String path = createRequestNode(data, watchID);
       if (log.isDebugEnabled()) log.debug("created request node at {}", path);
-      if (stat != null) {
-        pendingResponses.incrementAndGet();
-        if (log.isDebugEnabled()) log.debug("wait on latch {}", timeout);
-        watcher.await(timeout);
-      }
+
+      pendingResponses.incrementAndGet();
+      if (log.isDebugEnabled()) log.debug("wait on latch {}", timeout);
+      watcher.await(timeout);
+
       byte[] bytes = zookeeper.getData(watchID, null, null, true);
       if (log.isDebugEnabled()) log.debug("get data from response node {} {} {}", watchID, bytes == null ? null : bytes.length, watcher.getWatchedEvent());
 
-      if (bytes == null) {
+      if (bytes == null || bytes.length == 0) {
         log.error("Found no data at response node {}", watchID);
       }
       // create the event before deleting the node, otherwise we can get the deleted

@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -148,6 +149,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -374,7 +376,7 @@ public class CoreContainer implements Closeable {
 
     this.replayUpdatesExecutor = new OrderedExecutor(cfg.getReplayUpdatesThreads(),
         ParWork.getParExecutorService("replayUpdatesExecutor", cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(),
-            0, new LinkedBlockingQueue<>(cfg.getReplayUpdatesThreads())));
+            3000, new LinkedBlockingQueue<>(cfg.getReplayUpdatesThreads())));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -415,13 +417,11 @@ public class CoreContainer implements Closeable {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-
-    solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(16, Runtime.getRuntime().availableProcessors()),
+    solrCoreLoadExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(16, Runtime.getRuntime().availableProcessors() / 2),
         false, false);
 
-    solrCoreCloseExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(6, Runtime.getRuntime().availableProcessors() / 2),
+    solrCoreCloseExecutor = new PerThreadExecService(ParWork.getRootSharedExecutor(), Math.max(16, Runtime.getRuntime().availableProcessors() / 2),
         false, false);
-
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1070,7 +1070,7 @@ public class CoreContainer implements Closeable {
     // must do before isShutDown=true
     if (isZooKeeperAware()) {
       try {
-        cancelCoreRecoveries(false, true);
+        cancelCoreRecoveries(true, true);
       } catch (Exception e) {
 
         ParWork.propagateInterrupt(e);
@@ -1224,7 +1224,11 @@ public class CoreContainer implements Closeable {
     log.info("registerCore name={}, registerInZk={}, skipRecovery={}", cd.getName(), registerInZk);
 
     if (core == null) {
-      throw new RuntimeException("Can not register a null core.");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Can not register a null core.");
+    }
+
+    if (isShutDown()) {
+      throw new AlreadyClosedException("Already closed");
     }
 
     //    if (isShutDown) {
@@ -1446,7 +1450,7 @@ public class CoreContainer implements Closeable {
       log.error("Unable to create SolrCore", t);
       SolrException e = new SolrException(ErrorCode.SERVER_ERROR, "JVM Error creating core [" + dcore.getName() + "]: " + t.getMessage(), t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
-      solrCores.removeCoreDescriptor(dcore);
+      solrCores.remove(dcore.getName());
 
       throw t;
     } finally {
@@ -1545,9 +1549,13 @@ public class CoreContainer implements Closeable {
               getZkController().getShardTerms(desc.getCollectionName(), desc.getShardId()).setTermToZero(dcore.getName());
               return new SolrCore(this, dcore, coreConfig);
             }
-          } catch (SolrException se) {
+          } catch (Exception se) {
             se.addSuppressed(original);
-            throw se;
+            if (se instanceof  SolrException) {
+              throw (SolrException) se;
+            } else {
+              throw new SolrException(ErrorCode.SERVER_ERROR, se);
+            }
           }
         }
         if (original instanceof RuntimeException) {
@@ -1891,11 +1899,15 @@ public class CoreContainer implements Closeable {
           // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
           // which we may not be able to do because of the init error.  So we just go with what we
           // can glean from the CoreDescriptor - datadir and instancedir
-          SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
-          // If last time around we didn't successfully load, make sure that all traces of the coreDescriptor are gone.
-          if (cd != null) {
-            solrCores.removeCoreDescriptor(cd);
-            coresLocator.delete(this, cd);
+          try {
+            SolrCore.deleteUnloadedCore(loadFailure.cd, deleteDataDir, deleteInstanceDir);
+            // If last time around we didn't successfully load, make sure that all traces of the coreDescriptor are gone.
+            if (cd != null) {
+              solrCores.remove(cd.getName());
+              coresLocator.delete(this, cd);
+            }
+          } catch (Exception e) {
+            SolrException.log(log, "Failed try to unload failed core:" + cd.getName() + " dir:" + cd.getInstanceDir());
           }
           return;
         }
@@ -1905,7 +1917,11 @@ public class CoreContainer implements Closeable {
 
       core = solrCores.remove(name);
       if (core != null) {
-        core.getSolrCoreState().cancelRecovery(false, true);
+        try {
+          core.getSolrCoreState().cancelRecovery(false, true);
+        } catch (Exception e) {
+          SolrException.log(log, "Failed canceling recovery for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
+        }
       }
       if (cd == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Cannot unload non-existent core [" + name + "]");
@@ -1921,14 +1937,11 @@ public class CoreContainer implements Closeable {
       }
 
       if (core != null) {
-        SolrCore finalCore = core;
-        solrCoreCloseExecutor.submit(() -> {
-          try {
-            finalCore.closeAndWait();
-          } catch (Exception e) {
-            log.error("Exception closing failed core", e);
-          }
-        });
+        try {
+         core.closeAndWait();
+        } catch (Exception e) {
+          SolrException.log(log, "Failed closing or waiting for closed core:" + cd.getName() + " dir:" + cd.getInstanceDir());
+        }
       }
 
       if (exception != null) {
@@ -1944,7 +1957,7 @@ public class CoreContainer implements Closeable {
 
             }
           }
-        } catch (IOException e) {
+        } catch (Exception e) {
           SolrException.log(log, "Failed to delete instance dir for core:" + cd.getName() + " dir:" + cd.getInstanceDir());
         }
       }
@@ -1969,9 +1982,7 @@ public class CoreContainer implements Closeable {
         metricManager.swapRegistries(oldRegistryName, newRegistryName);
         // The old coreDescriptor is obsolete, so remove it. registerCore will put it back.
         CoreDescriptor cd = core.getCoreDescriptor();
-        solrCores.removeCoreDescriptor(cd);
         cd.setProperty("name", toName);
-        solrCores.addCoreDescriptor(cd);
         core.setName(toName);
         registerCore(cd, core, isZooKeeperAware(), false);
         SolrCore old = solrCores.remove(name);

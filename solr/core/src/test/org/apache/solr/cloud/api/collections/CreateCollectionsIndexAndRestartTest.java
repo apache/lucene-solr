@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-@LuceneTestCase.AwaitsFix(bugUrl = "This an experimental test class")
+//@LuceneTestCase.AwaitsFix(bugUrl = "This an experimental test class")
 public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -62,7 +62,7 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
       Future<?> future = ParWork.getRootSharedExecutor().submit(() -> {
         try {
           log.info("Create {}", collectionName);
-          CollectionAdminRequest.createCollection(collectionName, "conf", 1, 6).setMaxShardsPerNode(100).process(cluster.getSolrClient());
+          CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(100).process(cluster.getSolrClient());
           StoppableIndexingThread indexThread;
           for (int j = 0; j < 2; j++) {
             indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), Integer.toString(j), false, 100, 10, false);
@@ -91,7 +91,7 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
 
     for (int i = 0; i < 10; i ++) {
       final String collectionName = "testCollection" + i;
-      cluster.waitForActiveCollection(collectionName, 1, 6);
+      cluster.waitForActiveCollection(collectionName, 2, 4);
     }
 
 
@@ -109,7 +109,7 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     for (int r = 0; r < 2; r++) {
       for (int i = 0; i < 10; i++) {
         final String collectionName = "testCollection" + i;
-        cluster.waitForActiveCollection(collectionName, 1, 6);
+        cluster.waitForActiveCollection(collectionName, 2, 4);
       }
     }
   }

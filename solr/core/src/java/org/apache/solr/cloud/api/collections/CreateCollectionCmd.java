@@ -296,6 +296,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
         coresToCreate.put(coreName, sreq);
       }
+
+      ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null, false);
+      ocmh.overseer.getZkStateWriter().writePendingUpdates();
+
       if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas", coresToCreate.size());
       for (Map.Entry<String,ShardRequest> e : coresToCreate.entrySet()) {
         ShardRequest sreq = e.getValue();
@@ -423,7 +427,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     };
 
     if (log.isDebugEnabled()) log.debug("return cs from create collection cmd {}", clusterState);
-    response.clusterState = clusterState;
+    //response.clusterState = clusterState;
     return response;
   }
 

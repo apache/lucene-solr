@@ -85,7 +85,8 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
   private final String stopWordFiles;
   private final String format;
   private final boolean ignoreCase;
-  
+  private volatile boolean informed;
+
   /** Creates a new StopFilterFactory */
   public StopFilterFactory(Map<String,String> args) {
     super(args);
@@ -104,6 +105,9 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
+    if (informed) return;
+    informed = true;
+
     if (stopWordFiles != null) {
       if (FORMAT_WORDSET.equalsIgnoreCase(format)) {
         stopWords = getWordSet(loader, stopWordFiles, ignoreCase);

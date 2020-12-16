@@ -95,6 +95,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
     super.tearDown();
     IOUtils.closeQuietly(solrCloudScraper);
     if (null != executor) {
+      executor.shutdown();
       executor.shutdownNow();
       executor = null;
     }

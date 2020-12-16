@@ -159,7 +159,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
               locked = lock.tryLock(versionBucketLockTimeoutMs, TimeUnit.MILLISECONDS);
               if (locked) {
 
-                Thread.sleep(100);
+                Thread.sleep(150);
 
                 return function.apply();
               } else {

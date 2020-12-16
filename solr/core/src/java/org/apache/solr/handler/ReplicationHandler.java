@@ -654,6 +654,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
+            if (file.equals("write.lock")) continue;
             Map<String, Object> fileMeta = new HashMap<>();
             fileMeta.put(NAME, file);
             fileMeta.put(SIZE, dir.fileLength(file));
@@ -705,8 +706,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       rsp.add(CMD_GET_FILE_LIST, result);
       
-      if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware())
+      if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware()) {
+        rsp.add(STATUS, OK_STATUS);
         return;
+      }
       log.debug("Adding config files to list: {}", includeConfFiles);
       //if configuration files need to be included get their details
       rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));

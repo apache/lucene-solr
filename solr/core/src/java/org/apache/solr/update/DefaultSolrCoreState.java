@@ -322,7 +322,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     CoreContainer corecontainer = core.getCoreContainer();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     Runnable recoveryTask = () -> {
-      MDCLoggingContext.setCoreDescriptor(core.getCoreContainer(), core.getCoreDescriptor());
       boolean success = false;
       try {
         if (SKIP_AUTO_RECOVERY) {
@@ -407,8 +406,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         if (recoveryLock.isHeldByCurrentThread()) {
           recoveryLock.unlock();
         }
-
-        MDCLoggingContext.clear();
       }
     };
     boolean success = false;

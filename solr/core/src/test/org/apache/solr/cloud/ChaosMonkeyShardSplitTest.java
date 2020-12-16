@@ -33,7 +33,6 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.zookeeper.KeeperException;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -254,8 +253,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
             "overseer"));
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     // TODO: close Overseer
-    Overseer overseer = new Overseer(updateShardHandler, "/admin/cores",
-            reader, null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
+    Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
     overseer.close();
     ElectionContext ec = new OverseerElectionContext(address.replaceAll("/", "_"), zkClient, overseer);
     overseerElector.setup(ec);

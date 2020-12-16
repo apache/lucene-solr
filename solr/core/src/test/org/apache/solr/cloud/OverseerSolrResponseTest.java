@@ -22,11 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class OverseerSolrResponseTest extends SolrTestCaseJ4 {
-  
-  public void testEmpty() {
-    assertSerializeDeserialize(new NamedList<Object>());
-  }
-  
+
   public void testWithSingleObject() {
     NamedList<Object> responseNl = new NamedList<>();
     responseNl.add("foo", "bar");

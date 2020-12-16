@@ -24,27 +24,29 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ParWorkExecutor extends ExecutorUtil.MDCAwareThreadPoolExecutor {
+public class ParWorkExecutor extends ThreadPoolExecutor {
   private static final Logger log = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
-  public static final int KEEP_ALIVE_TIME = 5000;
+  public static final int KEEP_ALIVE_TIME = 3000;
 
   private static AtomicInteger threadNumber = new AtomicInteger(0);
 
   private CloseTracker closeTracker;
 
   public ParWorkExecutor(String name, int maxPoolsSize) {
-    this(name, 4, maxPoolsSize, KEEP_ALIVE_TIME, new SynchronousQueue<>());
+    this(name, 4, maxPoolsSize, KEEP_ALIVE_TIME, new LinkedBlockingDeque<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize) {
-    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME,  new SynchronousQueue<>());
+    this(name, corePoolsSize, maxPoolsSize, KEEP_ALIVE_TIME,  new LinkedBlockingDeque<>());
   }
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize,

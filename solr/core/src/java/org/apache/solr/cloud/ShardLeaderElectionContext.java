@@ -152,7 +152,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
-
+        if (core.getCoreContainer().isShutDown()) {
+          return;
+        }
         result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
         log.warn("Sync strategy result {}", result);
         success = result.isSuccess();

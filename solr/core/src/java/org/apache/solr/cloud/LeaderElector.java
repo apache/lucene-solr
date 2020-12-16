@@ -32,6 +32,7 @@ import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,6 +88,8 @@ public class LeaderElector implements Closeable {
   private volatile Future<?> joinFuture;
   private volatile boolean isCancelled;
 
+  private ExecutorService executor = ParWork.getExecutorService(1);
+
   private volatile String state = OUT_OF_ELECTION;
 
   //  public LeaderElector(SolrZkClient zkClient) {
@@ -113,16 +117,17 @@ public class LeaderElector implements Closeable {
    *
    * @param replacement has someone else been the leader already?
    */
-  private boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
+  private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
     //if (checkClosed(context)) return false;
 
     if (log.isDebugEnabled()) log.debug("Check if I am leader {}", context.getClass().getSimpleName());
     if (isClosed) {
       log.info("elector is closed, won't join election");
+      return false;
     }
 
-    ParWork.getRootSharedExecutor().submit(() -> {
+    executor.submit(() -> {
       context.checkIfIamLeaderFired();
     });
 
@@ -209,7 +214,8 @@ public class LeaderElector implements Closeable {
           if (context.leaderSeqPath == null) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Election has been cancelled");
           }
-          zkClient.exists(watchedNode, watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context));
+          watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
+          zkClient.exists(watchedNode, watcher);
           state = WAITING_IN_ELECTION;
           if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
           try (SolrCore core = zkController.getCoreContainer().getCore(context.leaderProps.getName())) {
@@ -314,7 +320,7 @@ public class LeaderElector implements Closeable {
 
   public void joinElection(boolean replacement,boolean joinAtHead) {
     if (!isClosed && !zkController.getCoreContainer().isShutDown() && !zkController.isDcCalled() && zkClient.isAlive()) {
-      joinFuture = ParWork.getRootSharedExecutor().submit(() -> {
+      joinFuture = executor.submit(() -> {
         try {
           isCancelled = false;
           doJoinElection(context, replacement, joinAtHead);
@@ -547,16 +553,22 @@ public class LeaderElector implements Closeable {
         return;
       }
       try {
-        // am I the next leader?
-        boolean tryagain = checkIfIamLeader(context, true);
-        if (tryagain) {
-          Thread.sleep(50);
-          tryagain = checkIfIamLeader(context, true);
-        }
+        if (event.getType() == EventType.NodeDeleted) {
+          // am I the next leader?
+          boolean tryagain = true;
+          while (tryagain) {
+            tryagain = checkIfIamLeader(context, true);
+          }
+        } else {
+          Stat exists = zkClient.exists(watchedNode, this);
+          if (exists == null) {
+            close();
+            boolean tryagain = true;
 
-        if (tryagain) {
-          Thread.sleep(50);
-          checkIfIamLeader(context, true);
+            while (tryagain) {
+              tryagain = checkIfIamLeader(context, true);
+            }
+          }
         }
       } catch (AlreadyClosedException | InterruptedException e) {
         log.info("Already shutting down");

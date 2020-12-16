@@ -170,7 +170,7 @@ public class HttpShardHandler extends ShardHandler {
 
     pending.incrementAndGet();
     // if there are no shards available for a slice, urls.size()==0 asyncTracker.register();
-    if (urls.size() == 0 && shard != null) {
+    if (urls.size() == 0 && shard != null && !"".equals(shard)) {
       // TODO: what's the right error code here? We should use the same thing when
       // all of the servers for a shard are down.
       SolrException exception = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
@@ -252,11 +252,10 @@ public class HttpShardHandler extends ShardHandler {
         //log.info("loop ing in httpshardhandler pending {}", pending.get());
 
 
-       // ShardResponse rsp = responses.poll(3, TimeUnit.SECONDS);
-
+//        ShardResponse rsp = responses.poll(3, TimeUnit.SECONDS);
+//
 //        if (rsp == null) {
 ////          if (pending.get() > 0 && httpShardHandlerFactory.isClosed()) {
-////            cancelAll();
 ////            throw new AlreadyClosedException();
 ////          }
 //          continue;

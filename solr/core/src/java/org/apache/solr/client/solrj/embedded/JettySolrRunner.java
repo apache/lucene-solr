@@ -569,7 +569,7 @@ public class JettySolrRunner implements Closeable {
       }
 
       if (getCoreContainer() != null && System.getProperty("zkHost") != null && wait) {
-        SolrZkClient zkClient = getCoreContainer().getZkController().getZkStateReader().getZkClient();
+        SolrZkClient zkClient = getCoreContainer().getZkController().getZkClient();
         CountDownLatch latch = new CountDownLatch(1);
 
         Watcher watcher = new ClusterReadyWatcher(latch, zkClient);
@@ -594,12 +594,12 @@ public class JettySolrRunner implements Closeable {
           ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
         }
-
-        log.info("waitForNode: {}", getNodeName());
-
-        ZkStateReader reader = getCoreContainer().getZkController().getZkStateReader();
-
-        reader.waitForLiveNodes(30, TimeUnit.SECONDS, (n) -> n != null && getNodeName() != null && n.contains(getNodeName()));
+// if we need this, us client, not reader
+//        log.info("waitForNode: {}", getNodeName());
+//
+//        ZkStateReader reader = getCoreContainer().getZkController().getZkStateReader();
+//
+//        reader.waitForLiveNodes(30, TimeUnit.SECONDS, (n) -> n != null && getNodeName() != null && n.contains(getNodeName()));
       }
 
     } finally {

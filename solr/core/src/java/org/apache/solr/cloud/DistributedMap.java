@@ -41,7 +41,7 @@ public class DistributedMap {
 
   protected SolrZkClient zookeeper;
 
-  protected static final String PREFIX = "mn-";
+  protected static final String PREFIX = "qnr-";
 
   public DistributedMap(SolrZkClient zookeeper, String dir) throws KeeperException {
     if (log.isDebugEnabled()) log.debug("create DistributedMap dir={}", dir);
@@ -49,9 +49,19 @@ public class DistributedMap {
     this.zookeeper = zookeeper;
   }
 
+  public void update(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+    String path = dir + "/" + PREFIX + trackingId;
+    log.info("set data in distmap {}", path);
+    if (data == null || data.length == 0) {
+      throw new IllegalArgumentException();
+    }
+    zookeeper.setData(path, data, true);
+  }
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
-    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false, true);
+    String path = dir + "/" + PREFIX + trackingId;
+    log.info("put in distmap {}", path);
+    zookeeper.makePath(path, data, CreateMode.PERSISTENT, null, false, true);
   }
   
   /**

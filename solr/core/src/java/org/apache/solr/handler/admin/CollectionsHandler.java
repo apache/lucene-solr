@@ -76,7 +76,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.rewrite.handler.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,7 +245,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   protected void copyFromClusterProp(Map<String, Object> props, String prop) throws IOException {
     if (props.get(prop) != null) return;//if it's already specified , return
-    Object defVal = new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
+    Object defVal = new ClusterProperties(coreContainer.getZkController().getZkClient())
         .getClusterProperty(ImmutableList.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, prop), null);
     if (defVal != null) props.put(prop, String.valueOf(defVal));
   }
@@ -397,7 +396,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     QueueEvent event = coreContainer.getZkController()
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
-    if (event.getBytes() != null) {
+    if (event.getBytes() != null && event.getBytes().length > 0) {
       if (log.isDebugEnabled()) log.debug("got a response, lets deserialize {}", Utils.toJSON(m));
       return OverseerSolrResponseSerializer.deserialize(event.getBytes());
     } else {
@@ -474,7 +473,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   private static void createSysConfigSet(CoreContainer coreContainer) throws KeeperException, InterruptedException {
-    SolrZkClient zk = coreContainer.getZkController().getZkStateReader().getZkClient();
+    SolrZkClient zk = coreContainer.getZkController().getZkClient();
     zk.mkdir(ZkStateReader.CONFIGS_ZKNODE + "/" + CollectionAdminParams.SYSTEM_COLL);
 
     try {
@@ -1380,7 +1379,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         //TODO only increase terms of replicas less out-of-sync
         liveReplicas.stream()
             .filter(rep -> zkShardTerms.registered(rep.getName()))
-            .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
+            .forEach(rep -> {
+              try {
+                zkShardTerms.setTermEqualsToLeader(rep.getName());
+              } catch (Exception e) {
+                log.error("Exception in shard terms", e);
+              }
+            });
       }
 
       // Wait till we have an active leader

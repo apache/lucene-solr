@@ -174,7 +174,9 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String fileName : fileNames) {
       unCache(fileName);
     }
-    in.sync(fileNames);
+    if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit
+      in.sync(fileNames);
+    }
   }
 
   @Override
@@ -210,16 +212,15 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // it for defensive reasons... or in case the app is
     // doing something custom (creating outputs directly w/o
     // using IndexWriter):
-    IOUtils.close(
-        () -> {
-          if (!closed.getAndSet(true)) {
-            for(String fileName : cacheDirectory.listAll()) {
-              unCache(fileName);
-            }
+    if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit)
+      IOUtils.close(() -> {
+        if (!closed.getAndSet(true)) {
+          for (String fileName : cacheDirectory.listAll()) {
+            unCache(fileName);
           }
-        },
-        cacheDirectory,
-        in);
+        }
+      }, cacheDirectory, in);
+    }
   }
 
   /** Subclass can override this to customize logic; return

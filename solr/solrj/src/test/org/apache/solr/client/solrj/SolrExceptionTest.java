@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
 import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
@@ -48,7 +49,7 @@ public class SolrExceptionTest extends SolrTestCase {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }
-    } catch (SolrServerException sse) {
+    } catch (SolrException sse) {
       gotExpectedError = true;
       /***
       assertTrue(UnknownHostException.class == sse.getRootCause().getClass()

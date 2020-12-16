@@ -442,9 +442,11 @@ public class ExportTool extends SolrCLI.ToolBase {
         sink.end();
 
         if (producerThreadpool != null) {
+          producerThreadpool.shutdown();
           producerThreadpool.shutdownNow();
         }
         if (consumerThreadpool != null) {
+          consumerThreadpool.shutdown();
           consumerThreadpool.shutdownNow();
         }
 

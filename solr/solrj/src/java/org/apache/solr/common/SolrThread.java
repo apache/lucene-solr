@@ -10,16 +10,16 @@ public class SolrThread extends Thread {
   public SolrThread(ThreadGroup group, Runnable r, String name) {
     super(group, r, name);
 
-    Thread createThread = Thread.currentThread();
-    if (createThread instanceof SolrThread) {
-      // nocommit - disabled for now
-      ExecutorService service = null;//((SolrThread) createThread).getExecutorService();
-      if (service == null) {
-        createExecutorService();
-      } else {
-        setExecutorService(service);
-      }
-    }
+//    Thread createThread = Thread.currentThread();
+//    if (createThread instanceof SolrThread) {
+//      // nocommit - disabled for now
+//      ExecutorService service = null;//((SolrThread) createThread).getExecutorService();
+//      if (service == null) {
+//        createExecutorService();
+//      } else {
+//        setExecutorService(service);
+//      }
+//    }
 
   }
 

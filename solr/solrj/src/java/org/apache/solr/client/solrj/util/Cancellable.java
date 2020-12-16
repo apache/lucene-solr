@@ -17,6 +17,11 @@
 
 package org.apache.solr.client.solrj.util;
 
+import java.io.InputStream;
+
 public interface Cancellable {
   void cancel();
+  default InputStream getStream() {
+    return null;
+  }
 }

@@ -540,7 +540,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     killThread.interrupt();
 
     scheduleThread.join();
-    scheduler.shutdownNow();
+    scheduler.shutdown();
 
     connLossThread.join();
     killThread.join();

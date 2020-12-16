@@ -1109,13 +1109,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       List<Replica> notLiveReplicas = new ArrayList<>();
       for (Replica replica : slice.getReplicas()) {
         if ((stateMatcher == null || Replica.State.getState(replica.getStr(ZkStateReader.STATE_PROP)) == stateMatcher)) {
-          if (zkStateReader.isNodeLive(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          if (zkStateReader.isNodeLive(replica.getNodeName())) {
             // For thread safety, only simple clone the ModifiableSolrParams
             ModifiableSolrParams cloneParams = new ModifiableSolrParams();
             cloneParams.add(params);
             cloneParams.set(CoreAdminParams.CORE, replica.getName());
 
-            sendShardRequest(replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler);
+            sendShardRequest(replica.getNodeName(), cloneParams, shardHandler);
           } else {
             notLiveReplicas.add(replica);
           }
