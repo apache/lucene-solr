@@ -506,7 +506,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     // Change the query to insert forced documents
     SolrParams params = rb.req.getParams();
-    if(params.getBool(ELEVATE_DOCS_WITHOUT_MATCHING_Q, true)) {
+    if (params.getBool(ELEVATE_DOCS_WITHOUT_MATCHING_Q, true)) {
       if (params.getBool(QueryElevationParams.EXCLUSIVE, false)) {
         // We only want these elevated results
         rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
