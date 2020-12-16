@@ -123,6 +123,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
 import static org.apache.solr.common.cloud.DocCollection.RULE;
 import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
@@ -495,6 +496,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           POLICY,
           WAIT_FOR_FINAL_STATE,
           WITH_COLLECTION,
+          PER_REPLICA_STATE,
           ALIAS);
 
       props.putIfAbsent(STATE_FORMAT, "2");
@@ -1453,6 +1455,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               }
               if (!n.contains(replica.getNodeName())
                   || !state.equals(Replica.State.ACTIVE.toString())) {
+                if(log.isDebugEnabled()) {
+                  log.debug("inactive replica {} , state {}", replica.getName(), replica.getReplicaState());
+                }
                 replicaNotAliveCnt++;
                 return false;
               }
@@ -1464,7 +1469,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return false;
       });
     } catch (TimeoutException | InterruptedException e) {
-
+      cc.getZkController().getZkStateReader().debugCollectionState(collectionName);
       String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }

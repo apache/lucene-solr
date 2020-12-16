@@ -93,6 +93,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       .configure();
 
     assertEquals(0, (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
+                     .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
                      .setMaxShardsPerNode(maxShardsPerNode)
                      .setProperties(Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                      .process(cluster.getSolrClient())).getStatus());

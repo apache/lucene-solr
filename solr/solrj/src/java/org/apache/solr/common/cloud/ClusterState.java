@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,15 +24,19 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Immutable state of the cloud. Normally you can get the state by using
@@ -39,6 +44,8 @@ import org.noggit.JSONWriter;
  * @lucene.experimental
  */
 public class ClusterState implements JSONWriter.Writable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   private final Integer znodeVersion;
 
@@ -256,6 +263,12 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
+    if("true".equals(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
+      log.info("a collection {} has per-replica state" , name);
+      //this collection has replica states stored outside
+      ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
+      if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
+    }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
@@ -420,5 +433,63 @@ public class ClusterState implements JSONWriter.Writable {
   public int size() {
     return collectionStates.size();
   }
+  interface ReplicaStatesProvider {
+
+    Optional<ReplicaStatesProvider> get();
+
+    PerReplicaStates getStates();
+
+  }
+
+  private static final ReplicaStatesProvider EMPTYSTATEPROVIDER = new ReplicaStatesProvider() {
+    @Override
+    public Optional<ReplicaStatesProvider> get() {
+      return Optional.empty();
+    }
+
+    @Override
+    public PerReplicaStates getStates() {
+      throw new RuntimeException("Invalid operation");
+    }
+
+  };
+
+  private static ThreadLocal<ReplicaStatesProvider> REPLICASTATES_PROVIDER = new ThreadLocal<>();
+
+
+  public static ReplicaStatesProvider getReplicaStatesProvider() {
+    return  (REPLICASTATES_PROVIDER.get() == null)? EMPTYSTATEPROVIDER: REPLICASTATES_PROVIDER.get() ;
+  }
+  public static void initReplicaStateProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
+    REPLICASTATES_PROVIDER.set(new StatesProvider(replicaStatesSupplier));
+  }
+
+
+  public static void clearReplicaStateProvider(){
+    REPLICASTATES_PROVIDER.remove();
+  }
+
+  private static class StatesProvider implements ReplicaStatesProvider {
+    private final Supplier<PerReplicaStates> replicaStatesSupplier;
+    private PerReplicaStates perReplicaStates;
+    private boolean isPerReplicaState = false;
+
+    public StatesProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
+      this.replicaStatesSupplier = replicaStatesSupplier;
+    }
+
+    @Override
+    public Optional<ReplicaStatesProvider> get() {
+      return isPerReplicaState ? Optional.of(this) : Optional.empty();
+    }
+
+    @Override
+    public PerReplicaStates getStates() {
+      if(perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
+      return perReplicaStates;
+    }
+
+  }
+
 
 }

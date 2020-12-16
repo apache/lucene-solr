@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 //import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -41,6 +43,7 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.filestore.PackageStoreAPI;
@@ -50,6 +53,9 @@ import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.Op;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +77,29 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() {
     System.clearProperty("enable.packages");
+  }
+
+  public void testZkBehavior() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
+    try{
+      SolrZkClient zkClient = cluster.getZkClient();
+      zkClient.create("/test-node", null, CreateMode.PERSISTENT, true);
+
+      Stat stat = zkClient.exists("/test-node", null, true);
+      System.out.println(stat.getCversion());
+      List<Op> ops = Arrays.asList(
+          Op.create("/test-node/abc", null, zkClient.getZkACLProvider().getACLsToAdd("/test-node/abc"), CreateMode.PERSISTENT),
+          Op.delete("/test-node/abc", -1));
+      zkClient.multi(ops, true);
+      stat = zkClient.exists("/test-node", null, true);
+      System.out.println(stat.getCversion());
+    } finally {
+      cluster.shutdown();
+    }
+
   }
 
   @Test

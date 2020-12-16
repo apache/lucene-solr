@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -45,6 +46,8 @@ public class NodeMutator {
 
     Map<String, DocCollection> collections = clusterState.getCollectionsMap();
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+       List<String> downedReplicas = new ArrayList<>();
+
       String collection = entry.getKey();
       DocCollection docCollection = entry.getValue();
 
@@ -68,6 +71,7 @@ public class NodeMutator {
             Replica newReplica = new Replica(replica.getName(), props, collection, slice.getName());
             newReplicas.put(replica.getName(), newReplica);
             needToUpdateCollection = true;
+            downedReplicas.add(replica.getName());
           }
         }
 
@@ -76,7 +80,12 @@ public class NodeMutator {
       }
 
       if (needToUpdateCollection) {
-        zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
+        if(docCollection.isPerReplicaState()) {
+          zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy),
+              PerReplicaStates.WriteOps.downReplicas(downedReplicas, docCollection.getPerReplicaStates()), false));
+        } else {
+          zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
+        }
       }
     }
 
