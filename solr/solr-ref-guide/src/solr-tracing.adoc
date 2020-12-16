@@ -17,22 +17,24 @@
 // under the License.
 
 Solr includes a general tracing framework based on OpenTracing that can be used to trace lifecycle of a request for performance monitoring.
-Tracing data can be configured and send to arbitrary backend like Jaeger, Zipkin, Datadog, etc. For now only Jaeger is
-supported out of the box.
+
+Tracing data can be configured to send to arbitrary backend like Jaeger, Zipkin, Datadog, etc.
+At the moment, only Jaeger is supported out of the box.
 
 A sampled distributed tracing query request on Jaeger looks like this:
 
 .Tracing of a Solr query
-image::images/solr-tracing/query-request-tracing.png[image,width=600]
+image::images/solr-tracing/query-request-tracing.png[]
 
-== Setup Tracer
+== Configuring Tracer
 
-`TracerConfigurator` is a class used for provide an instance of `io.opentracing.Tracer` based on configuration in `solr.xml`.
-Like `JaegerTracerConfigurator` provide JaegerTracer instance to Solr node.
+`TracerConfigurator` is a class used to provide an instance of `io.opentracing.Tracer` based on configuration in `solr.xml`.
+The `JaegerTracerConfigurator` provides a JaegerTracer instance to a Solr node.
 
-A setup of a `TracerConfigurator` looks like this
+A setup of a `TracerConfigurator` in `solr.xml` looks like this:
 
-```xml
+[source,xml]
+----
 <solr>
   <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
     <str name="agentHost">localhost</str>
@@ -42,29 +44,33 @@ A setup of a `TracerConfigurator` looks like this
     <int name="maxQueueSize">10000</int>
   </tracerConfig>
 </solr>
-```
+----
 
-If `<tracerConfig>` part is absent, `TracerConfigurator` will try to pick up the `Tracer` instance was registered in
-in `io.opentracing.util.GlobalTracer`. By doing this some backend like DataDog is supported out of the box since
-https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] use Javaagent to register a `Tracer` in
+If `<tracerConfig>` is absent, `TracerConfigurator` will try to pick up the `Tracer` instance that was registered in `io.opentracing.util.GlobalTracer`.
+By doing this some backends like DataDog are supported out of the box since
+https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] uses Javaagent to register a `Tracer` in
 `io.opentracing.util.GlobalTracer`.
 
 === Configuring Sample Rate
 
-By default only 0.1% of requests are sampled, this ensure that tracing activities does not affect performance of a node.
+By default only 0.1% of requests are sampled, this ensures that tracing activities do not affect performance of a node.
 
-The rate can be changed on the fly (without restarting Solr nodes) by setting new sample rate in cluster property. For example,
-below call set sample rate to 100%
-```
+The rate can be changed without needing to restart Solr nodes by setting the new sample rate as a cluster property using the Collections API's <<cluster-node-management.adoc#clusterprop,CLUSTERPROP>> command.
+
+For example, the following sets the `samplePercentage` property to 100%:
+
+[source,text]
 /admin/collections?action=CLUSTERPROP&name=samplePercentage&val=100
-```
 
 == Jaeger Tracer Configurator
 
-Module `contrib/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
-Note that all library of jaegertracer-configurator must be included in the classpath of all nodes then Jaeger tracer can be setup in `solr.xml` like this:
+The `contrib/jagertracer-configurator` provides a default implementation for setting up Jaeger Tracer.
 
-```
+Note that all libraries of `jaegertracer-configurator` must be included in the classpath of all nodes.
+Then Jaeger tracer can be set up in `solr.xml` like this:
+
+[source,xml]
+----
 <tracerConfig name="tracerConfig" class="org.apache.solr.jaeger.JaegerTracerConfigurator">
   <str name="agentHost">localhost</str>
   <int name="agentPort">5775</int>
@@ -72,16 +78,54 @@ Note that all library of jaegertracer-configurator must be included in the class
   <int name="flushInterval">1000</int>
   <int name="maxQueueSize">10000</int>
 </tracerConfig>
-```
+----
 
-List of parameters for JaegerTracerConfigurator include:
-|===
-|Parameter|Type|Required|Default|Description
-|agentHost|string|Yes||The host of Jaeger backend
-|agentPort|int|Yes||The port of Jaeger port
-|logsSpans|bool|No|true|Whether the tracer should also log the spans
-|flushInterval|int|No|5000|The tracer's flush interval (ms)
-|maxQueueSize|int|No|10000|The tracer's maximum queue size
-|===
+The parameters for `JaegerTracerConfigurator` include:
 
-Other parameters which are not listed above can be configured using System Properties or Environment Variables. The full list are listed at https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
+`agentHost`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The Jaeger backend host.
+
+`agentPort`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The Jaeger port.
+
+`logSpans`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Whether the tracer should also log the spans.
+
+`flushInterval`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: `5000` (ms)
+|===
++
+The tracer's flush interval.
+
+`maxQueueSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: `10000`
+|===
++
+The tracer's maximum queue size.
+
+Other parameters which are not listed above can be configured using system properties or environment variables.
+The full list of parameters can be found in the https://github.com/jaegertracing/jaeger-client-java/blob/master/jaeger-core/README.md[Jaeger-README].
