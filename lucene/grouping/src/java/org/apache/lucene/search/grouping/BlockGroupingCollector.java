@@ -357,8 +357,8 @@ public class BlockGroupingCollector extends SimpleCollector {
 
     return new TopGroups<>(new TopGroups<>(groupSort.getSort(),
                                        withinGroupSort.getSort(),
-                                       totalHitCount, totalGroupedHitCount, groups, maxScore),
-                         totalGroupCount);
+                                      (long) totalHitCount, (long) totalGroupedHitCount, groups, maxScore),
+                          (long) totalGroupCount);
   }
 
   @Override
