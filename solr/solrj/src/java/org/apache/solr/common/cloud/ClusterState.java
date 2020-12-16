@@ -263,8 +263,8 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
-    if("true".equals(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
-      log.info("a collection {} has per-replica state" , name);
+    if ("true".equals(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
+      log.info("a collection {} has per-replica state", name); // nocommit should be a debug
       //this collection has replica states stored outside
       ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
       if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
@@ -485,7 +485,7 @@ public class ClusterState implements JSONWriter.Writable {
 
     @Override
     public PerReplicaStates getStates() {
-      if(perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
+      if (perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
       return perReplicaStates;
     }
 

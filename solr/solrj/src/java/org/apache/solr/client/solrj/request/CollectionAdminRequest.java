@@ -593,7 +593,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
-      if(Boolean.TRUE.equals(perReplicaState)) {
+      if (Boolean.TRUE.equals(perReplicaState)) {
         params.set(PER_REPLICA_STATE, perReplicaState);
       }
       if (rule != null) params.set(DocCollection.RULE, rule);

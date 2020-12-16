@@ -1455,7 +1455,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               }
               if (!n.contains(replica.getNodeName())
                   || !state.equals(Replica.State.ACTIVE.toString())) {
-                if(log.isDebugEnabled()) {
+                if (log.isDebugEnabled()) {
                   log.debug("inactive replica {} , state {}", replica.getName(), replica.getReplicaState());
                 }
                 replicaNotAliveCnt++;

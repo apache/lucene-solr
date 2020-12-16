@@ -115,7 +115,7 @@ public class ZkStateWriter {
     if (isNoOps(cmds)) return prevState;
 
     boolean forceFlush = false;
-    if(cmds.size() == 1) {
+    if (cmds.size() == 1) {
       //most messages result in only one command. let's deal with it right away
       ZkWriteCommand cmd = cmds.get(0);
       if (cmd.collection != null && cmd.collection.isPerReplicaState()) {
@@ -131,13 +131,13 @@ public class ZkStateWriter {
         try {
           return writeUpdate(cmd);
         } finally {
-          if(callback !=null) callback.onWrite();
+          if (callback !=null) callback.onWrite();
         }
       }
     } else {
       //there are more than one commands created as a result of this message
       for (ZkWriteCommand cmd : cmds) {
-        if(cmd.collection != null && cmd.collection.isPerReplicaState()) {
+        if (cmd.collection != null && cmd.collection.isPerReplicaState()) {
           // we don't try to optimize for this case. let's flush out all after this
           forceFlush = true;
           break;
@@ -233,7 +233,7 @@ public class ZkStateWriter {
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 
-          if(cmd.ops != null && cmd.ops.isPreOp()) {
+          if (cmd.ops != null && cmd.ops.isPreOp()) {
             PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
             //nocommit
             /*PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(cmd.collection.getName()), reader.getZkClient());
@@ -244,7 +244,7 @@ public class ZkStateWriter {
             clusterState = clusterState.copyWith(name,
                   cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
-          if(!cmd.persistCollState) continue;
+          if (!cmd.persistCollState) continue;
           if (c == null) {
             // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
             log.debug("going to delete state.json {}", path);
@@ -267,7 +267,7 @@ public class ZkStateWriter {
           } else if (c.getStateFormat() == 1) {
             isClusterStateModified = true;
           }
-          if(cmd.ops != null && !cmd.ops.isPreOp()) {
+          if (cmd.ops != null && !cmd.ops.isPreOp()) {
             PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if ( currentCollState != null) {

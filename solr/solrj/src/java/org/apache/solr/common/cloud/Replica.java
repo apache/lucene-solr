@@ -146,7 +146,7 @@ public class Replica extends ZkNodeProps {
     ClusterState.getReplicaStatesProvider().get().ifPresent(it -> {
       log.debug("A replica  {} state fetched from per-replica state", name);
       replicaState = it.getStates().get(name);
-      if(replicaState!= null) {
+      if (replicaState!= null) {
         propMap.put(ZkStateReader.STATE_PROP, replicaState.state.toString().toLowerCase(Locale.ROOT));
         if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
       }
@@ -265,7 +265,7 @@ public class Replica extends ZkNodeProps {
   }
 
   public boolean isLeader() {
-    if(replicaState != null) return replicaState.isLeader;
+    if (replicaState != null) return replicaState.isLeader;
      return getStr(Slice.LEADER) != null;
   }
   @Override

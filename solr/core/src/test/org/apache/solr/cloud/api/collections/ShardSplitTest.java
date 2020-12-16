@@ -823,7 +823,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           OverseerCollectionMessageHandler.NUM_SLICES, numShards,
           "router.field", shard_fld);
-      if(SolrCloudTestCase.USE_PER_REPLICA_STATE) {
+      if (SolrCloudTestCase.USE_PER_REPLICA_STATE) {
         props.put(DocCollection.PER_REPLICA_STATE, Boolean.TRUE);
       }
 
@@ -887,7 +887,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           OverseerCollectionMessageHandler.NUM_SLICES, numShards);
-     if(SolrCloudTestCase.USE_PER_REPLICA_STATE) {
+     if (SolrCloudTestCase.USE_PER_REPLICA_STATE) {
        props.put(DocCollection.PER_REPLICA_STATE, Boolean.TRUE);
      }
       createCollection(collectionInfos, collectionName,props,client);

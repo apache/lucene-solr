@@ -88,15 +88,15 @@ public class PerReplicaStates implements ReflectMapWriter {
    */
   public static Set<String> findModifiedReplicas(PerReplicaStates old, PerReplicaStates fresh) {
     Set<String> result = new HashSet<>();
-    if(fresh == null) {
+    if (fresh == null) {
       old.states.forEachKey(result::add);
       return result;
     }
     old.states.forEachEntry((s, state) -> {
-      //the state is modified or missing
-      if(!Objects.equals(fresh.get(s) , state)) result.add(s);
+      // the state is modified or missing
+      if (!Objects.equals(fresh.get(s) , state)) result.add(s);
     });
-    fresh.states.forEachEntry((s, state) -> { if(old.get(s) == null ) result.add(s);
+    fresh.states.forEachEntry((s, state) -> { if (old.get(s) == null ) result.add(s);
     });
     return result;
   }
@@ -410,7 +410,7 @@ public class PerReplicaStates implements ReflectMapWriter {
         @Override
         protected List<Op> refresh(PerReplicaStates rs) {
           List<Op> ops = new ArrayList<>(4);
-          if(next != null) {
+          if (next != null) {
             State st = rs.get(next);
             if (st != null) {
               if (!st.isLeader) {
@@ -430,7 +430,7 @@ public class PerReplicaStates implements ReflectMapWriter {
             State st = rs.get(r);
             if (st == null) continue;//unlikely
             if (!Objects.equals(r, next)) {
-              if(st.isLeader) {
+              if (st.isLeader) {
                 //some other replica is the leader now. unset
                 ops.add(new Op(Op.Type.ADD, new State(st.replica, st.state, Boolean.FALSE, st.version + 1)));
                 ops.add(new Op(Op.Type.DELETE, st));
@@ -576,7 +576,7 @@ public class PerReplicaStates implements ReflectMapWriter {
       int count = 0;
       @Override
       public void accept(String s, State state) {
-        if(count++ > 0) sb.append(", ");
+        if (count++ > 0) sb.append(", ");
         sb.append(state.asString);
         for (State d : state.getDuplicates()) sb.append(d.asString);
       }
