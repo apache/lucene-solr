@@ -48,12 +48,6 @@ configure(projects) { prj ->
       }
     }
   }
-
-  // Known problematic files.
-  //
-  //targetExclude "**/HTMLStripCharFilter.java", "**/UAX29URLEmailTokenizerImpl.java",
-  //    "**/PatternParser.java", "**/BuildNavDataFiles.java", "**/CheckLinksAndAnchors.java",
-  //    "**/TestSubQueryTransformer.java"
 }
 
 // Add an alias to 'spotlessApply' simply called 'tidy' and add
