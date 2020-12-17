@@ -53,7 +53,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  * <p>Note: The graph may be searched by multiple threads concurrently, but updates are not thread-safe. Also note: there is no notion of
  * deletions. Document searching built on top of this must do its own deletion-filtering.</p>
  */
-public final class HnswGraph {
+public final class HnswGraph extends KnnGraphValues {
 
   private final int maxConn;
   private final VectorValues.SearchStrategy searchStrategy;
@@ -61,6 +61,10 @@ public final class HnswGraph {
   // Each entry lists the top maxConn neighbors of a node. The nodes correspond to vectors added to HnswBuilder, and the
   // node values are the ordinals of those vectors.
   private final List<NeighborArray> graph;
+
+  // KnnGraphValues iterator members
+  private int upto;
+  private NeighborArray cur;
 
   HnswGraph(int maxConn, VectorValues.SearchStrategy searchStrategy) {
     graph = new ArrayList<>();
@@ -79,7 +83,7 @@ public final class HnswGraph {
    * @param vectors vector values
    * @param graphValues the graph values. May represent the entire graph, or a level in a hierarchical graph.
    * @param random a source of randomness, used for generating entry points to the graph
-   * @return a priority queue holding the neighbors found
+   * @return a priority queue holding the closest neighbors found
    */
   public static NeighborQueue search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
                                      Random random) throws IOException {
@@ -109,7 +113,6 @@ public final class HnswGraph {
     // to exceed this bound
     BoundsChecker bound = BoundsChecker.create(searchStrategy.reversed);
     bound.set(results.topScore());
-    //System.out.println("hnsw search topK=" + topK + " candidates=" + candidates);
     while (candidates.size() > 0) {
       // get the best candidate (closest or best scoring)
       float topCandidateScore = candidates.topScore();
@@ -121,7 +124,6 @@ public final class HnswGraph {
       int topCandidateNode = candidates.pop();
       graphValues.seek(topCandidateNode);
       int friendOrd;
-      //System.out.println(" check nbrs of " +topCandidateNode);
       while ((friendOrd = graphValues.nextNeighbor()) != NO_MORE_DOCS) {
         if (visited.get(friendOrd)) {
           continue;
@@ -149,11 +151,8 @@ public final class HnswGraph {
     return graph.get(node);
   }
 
-  KnnGraphValues getGraphValues() {
-    return new HnswGraphValues();
-  }
-
-  int size() {
+  @Override
+  public int size() {
     return graph.size();
   }
 
@@ -162,32 +161,18 @@ public final class HnswGraph {
     return graph.size() - 1;
   }
 
-  /**
-   * Present this graph as KnnGraphValues, used for searching while inserting new nodes.
-   */
-  private class HnswGraphValues extends KnnGraphValues {
+  @Override
+  public void seek(int targetNode) {
+    cur = getNeighbors(targetNode);
+    upto = -1;
+  }
 
-    private int upto;
-    private NeighborArray cur;
-
-    @Override
-    public void seek(int targetNode) {
-      cur = getNeighbors(targetNode);
-      upto = -1;
+  @Override
+  public int nextNeighbor() {
+    if (++upto < cur.size()) {
+      return cur.node[upto];
     }
-
-    @Override
-    public int size() {
-      return graph.size();
-    }
-
-    @Override
-    public int nextNeighbor() {
-      if (++upto < cur.size()) {
-        return cur.node[upto];
-      }
-      return NO_MORE_DOCS;
-    }
+    return NO_MORE_DOCS;
   }
 
 }

@@ -429,7 +429,7 @@ public final class Lucene90VectorReader extends VectorReader {
   }
 
   /** Read the nearest-neighbors graph from the index input */
-  private final class IndexedKnnGraphReader extends KnnGraphValues {
+  private final static class IndexedKnnGraphReader extends KnnGraphValues {
 
     final HnswGraphFieldEntry entry;
     final IndexInput dataIn;

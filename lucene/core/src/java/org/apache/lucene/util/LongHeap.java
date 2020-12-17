@@ -36,7 +36,7 @@ public abstract class LongHeap {
    */
   public enum Order {
     MIN, MAX
-  };
+  }
 
   private final int maxSize;
 
@@ -175,7 +175,7 @@ public abstract class LongHeap {
     size = 0;
   }
 
-  private final void upHeap(int origPos) {
+  private void upHeap(int origPos) {
     int i = origPos;
     long value = heap[i];         // save bottom value
     int j = i >>> 1;
@@ -187,7 +187,7 @@ public abstract class LongHeap {
     heap[i] = value;            // install saved value
   }
 
-  private final void downHeap(int i) {
+  private void downHeap(int i) {
     long value = heap[i];          // save top value
     int j = i << 1;            // find smaller child
     int k = j + 1;

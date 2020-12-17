@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
@@ -129,18 +128,17 @@ public final class HnswGraphBuilder {
 
   /** Inserts a doc with vector value to the graph */
   void addGraphNode(float[] value) throws IOException {
-    KnnGraphValues graphValues = hnsw.getGraphValues();
-    NeighborQueue candidates = HnswGraph.search(value, beamWidth, beamWidth, vectorValues, graphValues, random);
+    NeighborQueue candidates = HnswGraph.search(value, beamWidth, beamWidth, vectorValues, hnsw, random);
 
     int node = hnsw.addNode();
 
     // connect neighbors to the new node, using a diversity heuristic that chooses successive
     // nearest neighbors that are closer to the new node than they are to the previously-selected
     // neighbors
-    addDiverseNeighbors(node, value, candidates, buildVectors);
+    addDiverseNeighbors(node, candidates, buildVectors);
   }
 
-  private void addDiverseNeighbors(int node, float[] value, NeighborQueue candidates, RandomAccessVectorValues vectors) throws IOException {
+  private void addDiverseNeighbors(int node, NeighborQueue candidates, RandomAccessVectorValues vectors) throws IOException {
     // For each of the beamWidth nearest candidates (going from best to worst), select it only if it is closer to target
     // than it is to any of the already-selected neighbors (ie selected in this method, since the node is new and has no
     // prior neighbors).

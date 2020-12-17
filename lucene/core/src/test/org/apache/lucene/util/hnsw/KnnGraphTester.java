@@ -218,6 +218,7 @@ public class KnnGraphTester {
   }
 
   private String formatIndexPath(Path docsPath) {
+    // nocommit: specialize indexPath
     // TODO: add more dimensions to the name to guarantee uniqueness?
     return docsPath.getFileName() + ".index";
   }
@@ -636,7 +637,7 @@ public class KnnGraphTester {
       }
 
       @Override
-      public BytesRef binaryValue(int targetOrd) throws IOException {
+      public BytesRef binaryValue(int targetOrd) {
         throw new UnsupportedOperationException();
       }
     }

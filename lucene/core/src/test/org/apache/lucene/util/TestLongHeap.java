@@ -26,7 +26,7 @@ import static org.apache.lucene.util.LongHeap.Order.MIN;
 public class TestLongHeap extends LuceneTestCase {
 
   private static class AssertingLongHeap extends LongHeap {
-    public AssertingLongHeap(int count) {
+    AssertingLongHeap(int count) {
       super(count);
     }
 
@@ -35,7 +35,7 @@ public class TestLongHeap extends LuceneTestCase {
       return (a < b);
     }
 
-    protected final void checkValidity() {
+    final void checkValidity() {
       long[] heapArray = getHeapArray();
       for (int i = 1; i <= size(); i++) {
         int parent = i >>> 1;

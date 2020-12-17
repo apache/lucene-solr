@@ -92,7 +92,7 @@ public class TestHnsw extends LuceneTestCase {
           assertEquals(indexedDoc, ctx.reader().numDocs());
           assertVectorsEqual(v3, values);
           KnnGraphValues graphValues = ((Lucene90VectorReader) ((CodecReader) ctx.reader()).getVectorReader()).getGraphValues("field");
-          assertGraphEqual(hnsw.getGraphValues(), graphValues, nVec);
+          assertGraphEqual(hnsw, graphValues, nVec);
         }
       }
     }
@@ -107,7 +107,7 @@ public class TestHnsw extends LuceneTestCase {
     HnswGraphBuilder builder = new HnswGraphBuilder(vectors, 16, 100, random().nextInt());
     HnswGraph hnsw = builder.build(vectors.randomAccess());
     // run some searches
-    NeighborQueue nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw.getGraphValues(), random());
+    NeighborQueue nn = HnswGraph.search(new float[]{1, 0}, 10, 5, vectors.randomAccess(), hnsw, random());
     int sum = 0;
     for (int node : nn.nodes()) {
       sum += node;
@@ -115,8 +115,9 @@ public class TestHnsw extends LuceneTestCase {
     // We expect to get approximately 100% recall; the lowest docIds are closest to zero; sum(0,9) = 45
     assertTrue("sum(result docs)=" + sum, sum < 75);
     for (int i = 0; i < nDoc; i++) {
-      int[] nodes = hnsw.getNeighbors(i).node;
-      for (int j = 0; j < nodes.length; j++) {
+      NeighborArray neighbors = hnsw.getNeighbors(i);
+      int[] nodes = neighbors.node;
+      for (int j = 0; j < neighbors.size(); j++) {
         // all neighbors should be valid node ids.
         assertTrue(nodes[j] < nDoc);
       }
@@ -222,7 +223,7 @@ public class TestHnsw extends LuceneTestCase {
     int totalMatches = 0;
     for (int i = 0; i < 100; i++) {
       float[] query = randomVector(random(), dim);
-      NeighborQueue actual = HnswGraph.search(query, topK, 100, vectors, hnsw.getGraphValues(), random());
+      NeighborQueue actual = HnswGraph.search(query, topK, 100, vectors, hnsw, random());
       NeighborQueue expected = new NeighborQueue(topK, vectors.searchStrategy.reversed);
       for (int j = 0; j < size; j++) {
         float[] v = vectors.vectorValue(j);
