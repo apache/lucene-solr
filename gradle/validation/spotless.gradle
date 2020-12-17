@@ -1,31 +1,74 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * LUCENE-9564: This adds automatic (and enforced) code formatting.
+ */
 
 def resources = scriptResources(buildscript)
- 
-allprojects { prj ->
-  plugins.withType(JavaPlugin) {
-    prj.apply plugin: 'com.diffplug.spotless'
 
+// We'll progressively add projects with automated formatting here.
+def projects = [
+    project(":lucene:core")
+]
+
+configure(projects) { prj ->
+  prj.apply plugin: 'com.diffplug.spotless'
+
+  spotless {
+    java {
+      licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+      lineEndings 'UNIX'
+      endWithNewline()
+      googleJavaFormat('1.9')
+
+      target 'src/**'
+    }
+  }
+
+  if (project.path == ":lucene:core") {
     spotless {
       java {
-        licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
-        lineEndings 'UNIX'
-        endWithNewline()
-        googleJavaFormat('1.9')
-
-        // Known problematic files.
-        targetExclude "**/HTMLStripCharFilter.java", "**/UAX29URLEmailTokenizerImpl.java", 
-           "**/PatternParser.java", "**/BuildNavDataFiles.java", "**/CheckLinksAndAnchors.java",
-           "**/TestSubQueryTransformer.java"
+        target "src/**/org/apache/lucene/analysis/standard/**"
+        targetExclude "**/StandardTokenizerImpl.jflex"
       }
-
-      check.dependsOn(spotlessCheck)
     }
+  }
 
-    task tidy() {
-      description "Applies automatic format to Java sources."
-      group "Verification"
+  // Known problematic files.
+  //
+  //targetExclude "**/HTMLStripCharFilter.java", "**/UAX29URLEmailTokenizerImpl.java",
+  //    "**/PatternParser.java", "**/BuildNavDataFiles.java", "**/CheckLinksAndAnchors.java",
+  //    "**/TestSubQueryTransformer.java"
+}
 
-      dependsOn spotlessApply
-    }
+// Add an alias to 'spotlessApply' simply called 'tidy' and add
+// spotlessCheck to check.
+allprojects { prj ->
+  task tidy() {
+    description "Applies formatters and cleanups to sources."
+    group "verification"
+  }
+
+  tasks.matching { task -> task.name == "spotlessApply" }.configureEach { v ->
+    tidy.dependsOn v
+  }
+
+  tasks.matching { task -> task.name == "spotlessCheck" }.configureEach { v ->
+    check.dependsOn v
   }
 }
