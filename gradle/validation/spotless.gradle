@@ -34,7 +34,8 @@ allprojects { prj ->
 
         switch (project.path) {
           case ":lucene:core":
-            target "src/**/org/apache/lucene/analysis/standard/**"
+            target "src/**/org/apache/lucene/analysis/standard/**",
+                   "src/**/org/apache/lucene/analysis/tokenattributes/**"
             targetExclude "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
             break
 
