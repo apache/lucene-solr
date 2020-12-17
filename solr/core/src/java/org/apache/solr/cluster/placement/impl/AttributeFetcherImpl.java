@@ -48,7 +48,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   boolean requestedNodeSystemLoadAverage;
   Set<String> requestedNodeSystemSnitchTags = new HashSet<>();
   Set<String> requestedNodeMetricSnitchTags = new HashSet<>();
-  Map<SolrCollection, Set<ReplicaMetric>> requestedCollectionMetrics = new HashMap<>();
+  Map<SolrCollection, Set<ReplicaMetric<?>>> requestedCollectionMetrics = new HashMap<>();
 
   Set<Node> nodes = Collections.emptySet();
 
@@ -118,7 +118,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric> metricNames) {
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames) {
     requestedCollectionMetrics.put(solrCollection, Set.copyOf(metricNames));
     return this;
   }
@@ -146,7 +146,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     Map<String, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
     Map<String, CollectionMetricsBuilder> collectionMetricsBuilders = new HashMap<>();
     Map<Node, Set<String>> nodeToReplicaInternalTags = new HashMap<>();
-    Map<String, Set<ReplicaMetric>> requestedCollectionNamesMetrics = requestedCollectionMetrics.entrySet().stream()
+    Map<String, Set<ReplicaMetric<?>>> requestedCollectionNamesMetrics = requestedCollectionMetrics.entrySet().stream()
         .collect(Collectors.toMap(e -> e.getKey().getName(), e -> e.getValue()));
 
     // In order to match the returned values for the various snitches, we need to keep track of where each
@@ -236,7 +236,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                 if (replica.isLeader()) {
                   shardMetricsBuilder.setLeaderMetrics(replicaMetricsBuilder);
                 }
-                Set<ReplicaMetric> requestedMetrics = requestedCollectionNamesMetrics.get(replica.getCollection());
+                Set<ReplicaMetric<?>> requestedMetrics = requestedCollectionNamesMetrics.get(replica.getCollection());
                 if (requestedMetrics == null) {
                   throw new RuntimeException("impossible error");
                 }

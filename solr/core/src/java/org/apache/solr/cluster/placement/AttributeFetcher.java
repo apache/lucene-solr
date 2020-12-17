@@ -76,7 +76,7 @@ public interface AttributeFetcher {
    * Note that this request will fetch information from nodes relevant to the collection
    * replicas and not the ones specified in {@link #fetchFrom(Set)} (though they may overlap).
    */
-  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric> metricNames);
+  AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames);
 
   /**
    * The set of nodes from which to fetch all node related attributes. Calling this method is mandatory if any of the {@code requestNode*}

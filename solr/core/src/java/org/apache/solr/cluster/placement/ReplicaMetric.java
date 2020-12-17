@@ -27,8 +27,16 @@ import java.util.function.Function;
 public class ReplicaMetric<T> {
 
   private static final double GB = 1024 * 1024 * 1024;
+  @SuppressWarnings("unchecked")
+  private final Function<Object, T> NO_CONVERTER = v -> {
+    try {
+      return (T) v;
+    } catch (ClassCastException cce) {
+      return null;
+    }
+  };
 
-  public static final ReplicaMetric<Double> INDEX_SIZE_GB = new ReplicaMetric("sizeGB", "INDEX.sizeInBytes",
+  public static final ReplicaMetric<Double> INDEX_SIZE_GB = new ReplicaMetric<>("sizeGB", "INDEX.sizeInBytes",
       v -> {
         double sizeInBytes;
         if (!(v instanceof Number)) {
@@ -46,24 +54,27 @@ public class ReplicaMetric<T> {
         return sizeInBytes / GB;
       });
 
-  public static final ReplicaMetric<Double> QUERY_RATE_1MIN = new ReplicaMetric("queryRate", "QUERY./select.requestTimes:1minRate");
-  public static final ReplicaMetric<Double> UPDATE_RATE_1MIN = new ReplicaMetric("updateRate", "UPDATE./update.requestTimes:1minRate");
+  public static final ReplicaMetric<Double> QUERY_RATE_1MIN = new ReplicaMetric<>("queryRate", "QUERY./select.requestTimes:1minRate");
+  public static final ReplicaMetric<Double> UPDATE_RATE_1MIN = new ReplicaMetric<>("updateRate", "UPDATE./update.requestTimes:1minRate");
 
   private final String name;
   private final String internalName;
   private final Function<Object, T> converter;
 
   public ReplicaMetric(String name, String internalName) {
-    this(name, internalName, v -> (T) v);
+    this(name, internalName, null);
   }
 
   public ReplicaMetric(String name, String internalName, Function<Object, T> converter) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(internalName);
-    Objects.requireNonNull(converter);
     this.name = name;
     this.internalName = internalName;
-    this.converter = converter;
+    if (converter == null) {
+      this.converter = NO_CONVERTER;
+    } else {
+      this.converter = converter;
+    }
   }
 
   public String getName() {
@@ -86,7 +97,7 @@ public class ReplicaMetric<T> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ReplicaMetric that = (ReplicaMetric) o;
+    ReplicaMetric<?> that = (ReplicaMetric<?>) o;
     return name.equals(that.name) && internalName.equals(that.internalName) && converter.equals(that.converter);
   }
 
