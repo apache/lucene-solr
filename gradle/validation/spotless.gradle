@@ -50,7 +50,7 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
-        // Disable for everything else for now.
+          // Disable for everything else for now.
           default:
             target 'non-existing/**'
             break
