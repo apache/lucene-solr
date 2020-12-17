@@ -137,28 +137,30 @@ class LatLonDocValuesQuery extends Query {
         if (values == null) {
           return null;
         }
+        final TwoPhaseIterator iterator;
         if (component2DPredicate == null) {
           if (queryRelation == ShapeField.QueryRelation.DISJOINT) {
             // all documents match the query
-            return new ConstantScoreScorer(this, boost, scoreMode, matchAllIterator(values));
+            iterator = matchAllIterator(values);
           } else {
+            // any document match the query
             return null;
           }
+        } else {
+          switch (queryRelation) {
+            case INTERSECTS:
+              iterator = intersects(values, component2DPredicate);
+              break;
+            case WITHIN:
+              iterator = within(values, component2DPredicate);
+              break;
+            case DISJOINT:
+              iterator = disjoint(values, component2DPredicate);
+              break;
+            default:
+              throw new IllegalArgumentException("Invalid query relationship:[" + queryRelation + "]");
+          }
         }
-        final TwoPhaseIterator iterator;
-        switch (queryRelation) {
-          case INTERSECTS:
-            iterator = intersects(values, component2DPredicate); 
-            break;
-          case WITHIN: 
-            iterator = within(values, component2DPredicate); 
-            break;
-          case DISJOINT: 
-            iterator = disjoint(values, component2DPredicate); 
-            break;
-          default: throw new IllegalArgumentException("Invalid query relationship:[" + queryRelation + "]");
-        }
-        
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
@@ -268,6 +270,7 @@ class LatLonDocValuesQuery extends Query {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
+       
         if (component2Ds.size() == 0) {
           return null;
         }
