@@ -181,7 +181,7 @@ public class LatLonDocValuesField extends Field {
    */
   public static Query newSlowDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     Circle circle = new Circle(latitude, longitude, radiusMeters);
-    return newSlowGeometryQuery(field, circle);
+    return newSlowGeometryQuery(field, ShapeField.QueryRelation.INTERSECTS, circle);
   }
 
   /**
@@ -196,26 +196,29 @@ public class LatLonDocValuesField extends Field {
    * @throws IllegalArgumentException if {@code field} is null or polygons is empty or contain a null polygon.
    */
   public static Query newSlowPolygonQuery(String field, Polygon... polygons) {
-    return newSlowGeometryQuery(field, polygons);
+    return newSlowGeometryQuery(field, ShapeField.QueryRelation.INTERSECTS, polygons);
   }
 
   /**
-   * Create a query for matching points within the supplied geometries. Line geometries are not supported.
+   * Create a query for matching one or more geometries against the provided {@link ShapeField.QueryRelation}. 
+   * Line geometries are not supported for WITHIN relationship.
    * This query is usually slow as it does not use an index structure and needs
    * to verify documents one-by-one in order to know whether they match. It is
    * best used wrapped in an {@link IndexOrDocValuesQuery} alongside a
-   * {@link LatLonPoint#newGeometryQuery(String, LatLonGeometry...)}.
+   * {@link LatLonPoint#newGeometryQuery(String, ShapeField.QueryRelation, LatLonGeometry...)}.
    * @param field field name. must not be null.
+   * @param queryRelation The relation the points needs to satisfy with the provided geometries, must not be null.       
    * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
    * @return query matching points within the given polygons.
-   * @throws IllegalArgumentException if {@code field} is null, {@code latLonGeometries} is null, empty or contain a null or line geometry.
+   * @throws IllegalArgumentException if {@code field} is null, {@code queryRelation} is null, {@code latLonGeometries} is null,
+   * empty or contain a null or line geometry.
    */
-  public static Query newSlowGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
-    if (latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {
+  public static Query newSlowGeometryQuery(String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
+    if (queryRelation == ShapeField.QueryRelation.INTERSECTS && latLonGeometries.length == 1 && latLonGeometries[0] instanceof Rectangle) {
       LatLonGeometry geometry = latLonGeometries[0];
       Rectangle rect = (Rectangle) geometry;
       return newSlowBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     }
-    return new LatLonDocValuesPointInGeometryQuery(field, latLonGeometries);
+    return new LatLonDocValuesQuery(field, queryRelation, latLonGeometries);
   }
 }

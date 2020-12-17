@@ -53,9 +53,9 @@ import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween
  * Base test case for testing spherical and cartesian geometry indexing and search functionality
  * <p>
  * This class is implemented by {@link BaseXYShapeTestCase} for testing XY cartesian geometry
- * and {@link BaseLatLonShapeTestCase} for testing Lat Lon geospatial geometry
+ * and {@link BaseLatLonSpatialTestCase} for testing Lat Lon geospatial geometry
  **/
-public abstract class BaseShapeTestCase extends LuceneTestCase {
+public abstract class BaseSpatialTestCase extends LuceneTestCase {
 
   /** name of the LatLonShape indexed field */
   protected static final String FIELD_NAME = "shape";
@@ -63,7 +63,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   public final Validator VALIDATOR;
   protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
 
-  public BaseShapeTestCase() {
+  public BaseSpatialTestCase() {
     ENCODER = getEncoder();
     VALIDATOR = getValidator();
   }
