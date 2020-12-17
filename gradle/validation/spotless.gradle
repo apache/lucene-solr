@@ -40,7 +40,8 @@ allprojects { prj ->
             break
 
           case ":lucene:analysis:common":
-            target "src/**/org/apache/lucene/analysis/ar/**"
+            target "src/**/org/apache/lucene/analysis/ar/**",
+                   "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**"
             break
 
