@@ -59,13 +59,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
-import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
+import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 
 /**
  * This class is experimental and subject to change.
@@ -80,6 +75,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
       REPLICATION_FACTOR,
       COLL_CONF,
+      WITH_COLLECTION,
+      COLOCATED_WITH,
       READ_ONLY);
 
   protected final CollectionAction action;
@@ -426,7 +423,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String configName = null;
     protected String createNodeSet = null;
     protected String routerName;
-    protected String policy;
     protected String shards;
     protected String routerField;
     protected Integer numShards;
@@ -436,7 +432,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected Properties properties;
     protected String alias;
-    protected String[] rule , snitch;
+    protected String[] rule, snitch;
+    protected String withCollection;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -473,6 +470,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
+    public Create setWithCollection(String withCollection) { this.withCollection = withCollection; return this; }
 
     public Create setAlias(String alias) {
       this.alias = alias;
@@ -505,6 +503,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       this.shards = shards;
       return this;
+    }
+
+    public String getWithCollection() {
+      return withCollection;
     }
 
     public Properties getProperties() {
@@ -559,13 +561,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
+      params.setNonNull(WITH_COLLECTION, withCollection);
       params.setNonNull(ALIAS, alias);
       return params;
-    }
-
-    public Create setPolicy(String policy) {
-      this.policy = policy;
-      return this;
     }
   }
 
