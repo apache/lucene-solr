@@ -201,7 +201,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
     code = code * 31 + positionLength;
     if (type != null)
       code = code * 31 + type.hashCode();
-    code = code * 31 + termFrequency;;
+    code = code * 31 + termFrequency;
     return code;
   }
 
