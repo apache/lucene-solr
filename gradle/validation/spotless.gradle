@@ -33,7 +33,12 @@ allprojects { prj ->
         googleJavaFormat('1.9')
 
         switch (project.path) {
-          // Disable for everything else for now.
+          case ":lucene:core":
+            target "src/**/org/apache/lucene/analysis/standard/**"
+            targetExclude "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            break
+
+        // Disable for everything else for now.
           default:
             target 'non-existing/**'
             break
