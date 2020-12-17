@@ -45,6 +45,11 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
+          case ":lucene:highlighter":
+            target "src/**/org/apache/lucene/search/matchhighlight/**"
+            targetExclude "**/resources/**"
+            break
+
         // Disable for everything else for now.
           default:
             target 'non-existing/**'
