@@ -54,7 +54,7 @@ public class CollectionMetricsBuilder {
       return this;
     }
 
-    public static final String LEADER = "__leader__";
+    static final String LEADER = "__leader__";
 
     public ShardMetrics build() {
       final Map<String, ReplicaMetrics> metricsMap = new HashMap<>();
