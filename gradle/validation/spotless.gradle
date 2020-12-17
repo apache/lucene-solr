@@ -36,7 +36,12 @@ allprojects { prj ->
           case ":lucene:core":
             target "src/**/org/apache/lucene/analysis/standard/**",
                    "src/**/org/apache/lucene/analysis/tokenattributes/**"
-            targetExclude "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            targetExclude "**/resources/**", "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            break
+
+          case ":lucene:analysis:common":
+            target "src/**/org/apache/lucene/analysis/ar/**"
+            targetExclude "**/resources/**"
             break
 
         // Disable for everything else for now.
