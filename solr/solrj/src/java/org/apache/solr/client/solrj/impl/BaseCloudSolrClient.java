@@ -716,7 +716,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         if (rf == null || routeRf < rf)
           rf = routeRf;
       }
-      minRf = (Integer)header.get(UpdateRequest.MIN_REPFACT);
 
       List<SimpleOrderedMap<String>> shardTolerantErrors =
           (List<SimpleOrderedMap<String>>) header.get("errors");
@@ -751,8 +750,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     cheader.add("QTime", timeMillis);
     if (rf != null)
       cheader.add(UpdateRequest.REPFACT, rf);
-    if (minRf != null)
-      cheader.add(UpdateRequest.MIN_REPFACT, minRf);
     if (null != toleratedErrors) {
       cheader.add("maxErrors", ToleratedUpdateError.getUserFriendlyMaxErrors(maxToleratedErrors));
       cheader.add("errors", toleratedErrors);

@@ -548,9 +548,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     doc.addField("a_t", "hello" + docId);
 
     UpdateRequest up = new UpdateRequest();
-    if (minRf != null) {
-      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-    }
     up.add(doc);
     return cloudClient.getMinAchievedReplicationFactor(collection, solrClient.request(up, collection));
   }
