@@ -17,6 +17,7 @@
 package org.apache.lucene.codecs.blocktree;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.TypeReader;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
@@ -76,7 +78,7 @@ import org.apache.lucene.util.fst.Outputs;
 public final class BlockTreeTermsReader extends FieldsProducer {
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
-  
+
   static final BytesRef NO_OUTPUT = FST_OUTPUTS.getNoOutput();
 
   static final int OUTPUT_FLAGS_NUM_BITS = 2;
@@ -113,6 +115,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
 
   // Open input to the main terms dict file (_X.tib)
   final IndexInput termsIn;
+  final TypeReader<IndexInput> termsInReader;
+
   // Open input to the terms index file (_X.tip)
   final IndexInput indexIn;
 
@@ -126,19 +130,20 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   private final List<String> fieldList;
 
   final String segment;
-  
+
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
+  public BlockTreeTermsReader(ByteOrder byteOrder, PostingsReaderBase postingsReader, SegmentReadState state) throws IOException {
     boolean success = false;
-    
+
     this.postingsReader = postingsReader;
     this.segment = state.segmentInfo.name;
 
     try {
       String termsName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_EXTENSION);
       termsIn = state.directory.openInput(termsName, state.context);
+      termsInReader = termsIn.getTypeReader(byteOrder);
       version = CodecUtil.checkIndexHeader(termsIn, TERMS_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
       String indexName = IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_INDEX_EXTENSION);
@@ -169,40 +174,43 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             indexMetaIn = termsMetaIn = metaIn;
             postingsReader.init(metaIn, state);
           } else {
-            seekDir(termsIn);
-            seekDir(indexIn);
+            seekDir(termsInReader);
+            seekDir(indexIn.getTypeReader(byteOrder));
             indexMetaIn = indexIn;
             termsMetaIn = termsIn;
           }
 
-          final int numFields = termsMetaIn.readVInt();
+          TypeReader<IndexInput> termsMetaInReader = termsMetaIn.getTypeReader(byteOrder);
+          TypeReader<IndexInput> metaInReader = metaIn.getTypeReader(byteOrder);
+
+          final int numFields = termsMetaInReader.readVInt();
           if (numFields < 0) {
             throw new CorruptIndexException("invalid numFields: " + numFields, termsMetaIn);
           }
           fieldMap = new HashMap<>((int) (numFields / 0.75f) + 1);
           for (int i = 0; i < numFields; ++i) {
-            final int field = termsMetaIn.readVInt();
-            final long numTerms = termsMetaIn.readVLong();
+            final int field = termsMetaInReader.readVInt();
+            final long numTerms = termsMetaInReader.readVLong();
             if (numTerms <= 0) {
               throw new CorruptIndexException("Illegal numTerms for field number: " + field, termsMetaIn);
             }
-            final BytesRef rootCode = readBytesRef(termsMetaIn);
+            final BytesRef rootCode = readBytesRef(termsMetaInReader);
             final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
             if (fieldInfo == null) {
               throw new CorruptIndexException("invalid field number: " + field, termsMetaIn);
             }
-            final long sumTotalTermFreq = termsMetaIn.readVLong();
+            final long sumTotalTermFreq = termsMetaInReader.readVLong();
             // when frequencies are omitted, sumDocFreq=sumTotalTermFreq and only one value is written.
-            final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsMetaIn.readVLong();
-            final int docCount = termsMetaIn.readVInt();
+            final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : termsMetaInReader.readVLong();
+            final int docCount = termsMetaInReader.readVInt();
             if (version < VERSION_META_LONGS_REMOVED) {
-              final int longsSize = termsMetaIn.readVInt();
+              final int longsSize = termsMetaInReader.readVInt();
               if (longsSize < 0) {
                 throw new CorruptIndexException("invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize, termsMetaIn);
               }
             }
-            BytesRef minTerm = readBytesRef(termsMetaIn);
-            BytesRef maxTerm = readBytesRef(termsMetaIn);
+            BytesRef minTerm = readBytesRef(termsMetaInReader);
+            BytesRef maxTerm = readBytesRef(termsMetaInReader);
             if (docCount < 0 || docCount > state.segmentInfo.maxDoc()) { // #docs with field must be <= #docs
               throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + state.segmentInfo.maxDoc(), termsMetaIn);
             }
@@ -212,7 +220,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             if (sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
               throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq, termsMetaIn);
             }
-            final long indexStartFP = indexMetaIn.readVLong();
+            final long indexStartFP = termsMetaInReader.readVLong();
             FieldReader previous = fieldMap.put(fieldInfo.name,
                 new FieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
                     indexStartFP, indexMetaIn, indexIn, minTerm, maxTerm));
@@ -221,8 +229,8 @@ public final class BlockTreeTermsReader extends FieldsProducer {
             }
           }
           if (version >= VERSION_META_FILE) {
-            indexLength = metaIn.readLong();
-            termsLength = metaIn.readLong();
+            indexLength = metaInReader.readLong();
+            termsLength = metaInReader.readLong();
           }
         } catch (Throwable exception) {
           priorE = exception;
@@ -255,12 +263,12 @@ public final class BlockTreeTermsReader extends FieldsProducer {
     }
   }
 
-  private static BytesRef readBytesRef(IndexInput in) throws IOException {
+  private static BytesRef readBytesRef(TypeReader<?> in) throws IOException {
     int numBytes = in.readVInt();
     if (numBytes < 0) {
       throw new CorruptIndexException("invalid bytes length: " + numBytes, in);
     }
-    
+
     BytesRef bytes = new BytesRef();
     bytes.length = numBytes;
     bytes.bytes = new byte[numBytes];
@@ -270,9 +278,10 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Seek {@code input} to the directory offset. */
-  private static void seekDir(IndexInput input) throws IOException {
+  private static void seekDir(TypeReader<IndexInput> reader) throws IOException {
+    IndexInput input = reader.input();
     input.seek(input.length() - CodecUtil.footerLength() - 8);
-    long offset = input.readLong();
+    long offset = reader.readLong();
     input.seek(offset);
   }
 
@@ -285,7 +294,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   public void close() throws IOException {
     try {
       IOUtils.close(indexIn, termsIn, postingsReader);
-    } finally { 
+    } finally {
       // Clear so refs to terms index is GCable even if
       // app hangs onto us:
       fieldMap.clear();
@@ -341,13 +350,13 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   }
 
   @Override
-  public void checkIntegrity() throws IOException { 
+  public void checkIntegrity() throws IOException {
     // terms index
     CodecUtil.checksumEntireFile(indexIn);
 
     // term dictionary
     CodecUtil.checksumEntireFile(termsIn);
-      
+
     // postings
     postingsReader.checkIntegrity();
   }

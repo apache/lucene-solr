@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.store.TypeReader;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
@@ -31,6 +32,11 @@ public class CorruptIndexException extends IOException {
 
   private final String message;
   private final String resourceDescription;
+
+  /** Create exception with a message only */
+  public CorruptIndexException(String message, TypeReader input) {
+    this(message, Objects.toString(input), null);
+  }
 
   /** Create exception with a message only */
   public CorruptIndexException(String message, DataInput input) {

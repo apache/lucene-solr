@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 /** 
  * Abstract base class for input from a file in a {@link Directory}.  A
@@ -118,13 +119,14 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
    * The default implementation calls {@link #slice}, and it doesn't support random access,
    * it implements absolute reads as seek+read.
    */
-  public RandomAccessInput randomAccessSlice(long offset, long length) throws IOException {
+  public RandomAccessInput randomAccessSlice(ByteOrder byteOrder, long offset, long length) throws IOException {
     final IndexInput slice = slice("randomaccess", offset, length);
     if (slice instanceof RandomAccessInput) {
       // slice() already supports random access
       return (RandomAccessInput) slice;
     } else {
       // return default impl
+      TypeReader<?> cin = slice.getTypeReader(byteOrder);
       return new RandomAccessInput() {
         @Override
         public byte readByte(long pos) throws IOException {
@@ -135,19 +137,19 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
         @Override
         public short readShort(long pos) throws IOException {
           slice.seek(pos);
-          return slice.readShort();
+          return cin.readShort();
         }
         
         @Override
         public int readInt(long pos) throws IOException {
           slice.seek(pos);
-          return slice.readInt();
+          return cin.readInt();
         }
         
         @Override
         public long readLong(long pos) throws IOException {
           slice.seek(pos);
-          return slice.readLong();
+          return cin.readLong();
         }
 
         @Override
@@ -156,5 +158,13 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
         }
       };
     }
+  }
+
+  // Implement covariant for convenience.
+  @Override
+  public TypeReader<IndexInput> getTypeReader(ByteOrder byteOrder) {
+    @SuppressWarnings("unchecked")
+    TypeReader<IndexInput> self = (TypeReader<IndexInput>) super.getTypeReader(byteOrder);
+    return self;
   }
 }

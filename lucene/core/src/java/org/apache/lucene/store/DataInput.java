@@ -18,17 +18,7 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import org.apache.lucene.util.BitUtil;
+import java.nio.ByteOrder;
 
 /**
  * Abstract base class for performing read operations of Lucene's low-level
@@ -55,268 +45,42 @@ public abstract class DataInput implements Cloneable {
    */
   private byte[] skipBuffer;
 
-  /** Reads and returns a single byte.
+  /**
+   * Reads and returns a single byte.
+   *
    * @see DataOutput#writeByte(byte)
    */
   public abstract byte readByte() throws IOException;
 
-  /** Reads a specified number of bytes into an array at the specified offset.
-   * @param b the array to read bytes into
+  /**
+   * Reads a specified number of bytes into an array at the specified offset.
+   *
+   * @param b      the array to read bytes into
    * @param offset the offset in the array to start storing bytes
-   * @param len the number of bytes to read
-   * @see DataOutput#writeBytes(byte[],int)
+   * @param len    the number of bytes to read
+   * @see DataOutput#writeBytes(byte[], int)
    */
   public abstract void readBytes(byte[] b, int offset, int len)
-    throws IOException;
+      throws IOException;
 
-  /** Reads a specified number of bytes into an array at the
+  /**
+   * Reads a specified number of bytes into an array at the
    * specified offset with control over whether the read
    * should be buffered (callers who have their own buffer
    * should pass in "false" for useBuffer).  Currently only
    * {@link BufferedIndexInput} respects this parameter.
-   * @param b the array to read bytes into
-   * @param offset the offset in the array to start storing bytes
-   * @param len the number of bytes to read
+   *
+   * @param b         the array to read bytes into
+   * @param offset    the offset in the array to start storing bytes
+   * @param len       the number of bytes to read
    * @param useBuffer set to false if the caller will handle
-   * buffering.
-   * @see DataOutput#writeBytes(byte[],int)
+   *                  buffering.
+   * @see DataOutput#writeBytes(byte[], int)
    */
   public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
-    throws IOException
-  {
+      throws IOException {
     // Default to ignoring useBuffer entirely
     readBytes(b, offset, len);
-  }
-
-  /** Reads two bytes and returns a short.
-   * @see DataOutput#writeByte(byte)
-   */
-  public short readShort() throws IOException {
-    return (short) (((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF));
-  }
-
-  /** Reads four bytes and returns an int.
-   * @see DataOutput#writeInt(int)
-   */
-  public int readInt() throws IOException {
-    return ((readByte() & 0xFF) << 24) | ((readByte() & 0xFF) << 16)
-         | ((readByte() & 0xFF) <<  8) |  (readByte() & 0xFF);
-  }
-
-  /** Reads an int stored in variable-length format.  Reads between one and
-   * five bytes.  Smaller values take fewer bytes.  Negative numbers are
-   * supported, but should be avoided.
-   * <p>
-   * The format is described further in {@link DataOutput#writeVInt(int)}.
-   * 
-   * @see DataOutput#writeVInt(int)
-   */
-  public int readVInt() throws IOException {
-    /* This is the original code of this method,
-     * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
-     * readByte() is inlined. So the loop was unwinded!
-    byte b = readByte();
-    int i = b & 0x7F;
-    for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      b = readByte();
-      i |= (b & 0x7F) << shift;
-    }
-    return i;
-    */
-    byte b = readByte();
-    if (b >= 0) return b;
-    int i = b & 0x7F;
-    b = readByte();
-    i |= (b & 0x7F) << 7;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7F) << 14;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7F) << 21;
-    if (b >= 0) return i;
-    b = readByte();
-    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-    i |= (b & 0x0F) << 28;
-    if ((b & 0xF0) == 0) return i;
-    throw new IOException("Invalid vInt detected (too many bits)");
-  }
-
-  /**
-   * Read a {@link BitUtil#zigZagDecode(int) zig-zag}-encoded
-   * {@link #readVInt() variable-length} integer.
-   * @see DataOutput#writeZInt(int)
-   */
-  public int readZInt() throws IOException {
-    return BitUtil.zigZagDecode(readVInt());
-  }
-
-  /** Reads eight bytes and returns a long.
-   * @see DataOutput#writeLong(long)
-   */
-  public long readLong() throws IOException {
-    return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
-  }
-
-  /**
-   * Read a specified number of longs with the little endian byte order.
-   * <p>This method can be used to read longs whose bytes have been
-   * {@link Long#reverseBytes reversed} at write time:
-   * <pre class="prettyprint">
-   * for (long l : longs) {
-   *   output.writeLong(Long.reverseBytes(l));
-   * }
-   * </pre>
-   * @lucene.experimental
-   */
-  // TODO: LUCENE-9047: Make the entire DataInput/DataOutput API little endian
-  // Then this would just be `readLongs`?
-  public void readLELongs(long[] dst, int offset, int length) throws IOException {
-    Objects.checkFromIndexSize(offset, length, dst.length);
-    for (int i = 0; i < length; ++i) {
-      dst[offset + i] = Long.reverseBytes(readLong());
-    }
-  }
-
-  /** Reads a long stored in variable-length format.  Reads between one and
-   * nine bytes.  Smaller values take fewer bytes.  Negative numbers are not
-   * supported.
-   * <p>
-   * The format is described further in {@link DataOutput#writeVInt(int)}.
-   * 
-   * @see DataOutput#writeVLong(long)
-   */
-  public long readVLong() throws IOException {
-    return readVLong(false);
-  }
-
-  private long readVLong(boolean allowNegative) throws IOException {
-    /* This is the original code of this method,
-     * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
-     * readByte() is inlined. So the loop was unwinded!
-    byte b = readByte();
-    long i = b & 0x7F;
-    for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      b = readByte();
-      i |= (b & 0x7FL) << shift;
-    }
-    return i;
-    */
-    byte b = readByte();
-    if (b >= 0) return b;
-    long i = b & 0x7FL;
-    b = readByte();
-    i |= (b & 0x7FL) << 7;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 14;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 21;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 28;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 35;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 42;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 49;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7FL) << 56;
-    if (b >= 0) return i;
-    if (allowNegative) {
-      b = readByte();
-      i |= (b & 0x7FL) << 63;
-      if (b == 0 || b == 1) return i;
-      throw new IOException("Invalid vLong detected (more than 64 bits)");
-    } else {
-      throw new IOException("Invalid vLong detected (negative values disallowed)");
-    }
-  }
-
-  /**
-   * Read a {@link BitUtil#zigZagDecode(long) zig-zag}-encoded
-   * {@link #readVLong() variable-length} integer. Reads between one and ten
-   * bytes.
-   * @see DataOutput#writeZLong(long)
-   */
-  public long readZLong() throws IOException {
-    return BitUtil.zigZagDecode(readVLong(true));
-  }
-
-  /** Reads a string.
-   * @see DataOutput#writeString(String)
-   */
-  public String readString() throws IOException {
-    int length = readVInt();
-    final byte[] bytes = new byte[length];
-    readBytes(bytes, 0, length);
-    return new String(bytes, 0, length, StandardCharsets.UTF_8);
-  }
-
-  /** Returns a clone of this stream.
-   *
-   * <p>Clones of a stream access the same data, and are positioned at the same
-   * point as the stream they were cloned from.
-   *
-   * <p>Expert: Subclasses must ensure that clones may be positioned at
-   * different points in the input from each other and from the stream they
-   * were cloned from.
-   */
-  @Override
-  public DataInput clone() {
-    try {
-      return (DataInput) super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new Error("This cannot happen: Failing to clone DataInput");
-    }
-  }
-  
-  /** 
-   * Reads a Map&lt;String,String&gt; previously written
-   * with {@link DataOutput#writeMapOfStrings(Map)}. 
-   * @return An immutable map containing the written contents.
-   */
-  public Map<String,String> readMapOfStrings() throws IOException {
-    int count = readVInt();
-    if (count == 0) {
-      return Collections.emptyMap();
-    } else if (count == 1) {
-      return Collections.singletonMap(readString(), readString());
-    } else {
-      Map<String,String> map = count > 10 ? new HashMap<>() : new TreeMap<>();
-      for (int i = 0; i < count; i++) {
-        final String key = readString();
-        final String val = readString();
-        map.put(key, val);
-      }
-      return Collections.unmodifiableMap(map);
-    }
-  }
-  
-  /** 
-   * Reads a Set&lt;String&gt; previously written
-   * with {@link DataOutput#writeSetOfStrings(Set)}. 
-   * @return An immutable set containing the written contents.
-   */
-  public Set<String> readSetOfStrings() throws IOException {
-    int count = readVInt();
-    if (count == 0) {
-      return Collections.emptySet();
-    } else if (count == 1) {
-      return Collections.singleton(readString());
-    } else {
-      Set<String> set = count > 10 ? new HashSet<>() : new TreeSet<>();
-      for (int i = 0; i < count; i++) {
-        set.add(readString());
-      }
-      return Collections.unmodifiableSet(set);
-    }
   }
 
   /**
@@ -340,4 +104,44 @@ public abstract class DataInput implements Cloneable {
     }
   }
 
+  /**
+   * Returns a clone of this stream.
+   *
+   * <p>Clones of a stream access the same data, and are positioned at the same
+   * point as the stream they were cloned from.
+   *
+   * <p>Expert: Subclasses must ensure that clones may be positioned at
+   * different points in the input from each other and from the stream they
+   * were cloned from.
+   */
+  @Override
+  public DataInput clone() {
+    try {
+      return (DataInput) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error("This cannot happen: Failing to clone DataInput");
+    }
+  }
+
+  public TypeReader<? extends DataInput> getTypeReader(ByteOrder byteOrder) {
+    // This is the "default" implementation of acquiring a byte-order-specific reader view.
+    // DataInput classes that have the possibility to optimize the defaults for a particular
+    // byte order (or both) should do so, see ByteArrayDataInput for an example.
+    //
+    // If this class already implements a TypeReader with the requested byte order,
+    // just return the same object (this should be typical case if the implementation
+    // and new codecs use the same byte order).
+    if (this instanceof TypeReader && ((TypeReader<?>) this).getByteOrder().equals(byteOrder)) {
+      @SuppressWarnings("unchecked")
+      TypeReader<DataInput> self = (TypeReader<DataInput>) this;
+      return self;
+    } else {
+      // Otherwise use the delegating wrapper. This should still optimize fairly well.
+      if (ByteOrder.BIG_ENDIAN.equals(byteOrder)) {
+        return new DelegatingTypeReaderBigEndian<>(this);
+      } else {
+        return new DelegatingTypeReaderLittleEndian<>(this);
+      }
+    }
+  }
 }
