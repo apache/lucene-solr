@@ -90,7 +90,6 @@ public class KnnGraphTester {
     topK = 100;
     warmCount = 1000;
     fanout = topK;
-    indexPath = Paths.get("knn_test_index");
   }
 
   public static void main(String... args) throws Exception {
@@ -186,6 +185,7 @@ public class KnnGraphTester {
     if (operation == null && reindex == false) {
       usage();
     }
+    indexPath = Paths.get(formatIndexPath(docVectorsPath));
     if (reindex) {
       if (docVectorsPath == null) {
         throw new IllegalArgumentException("-docs argument is required when indexing");
@@ -218,9 +218,10 @@ public class KnnGraphTester {
   }
 
   private String formatIndexPath(Path docsPath) {
-    // nocommit: specialize indexPath
-    // TODO: add more dimensions to the name to guarantee uniqueness?
-    return docsPath.getFileName() + ".index";
+    return docsPath.getFileName() +
+        "-" + HnswGraphBuilder.DEFAULT_MAX_CONN
+        + "-" + HnswGraphBuilder.DEFAULT_BEAM_WIDTH
+        + ".index";
   }
 
   @SuppressForbidden(reason="Prints stuff")
