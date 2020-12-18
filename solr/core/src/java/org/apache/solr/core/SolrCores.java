@@ -74,6 +74,7 @@ class SolrCores implements Closeable {
   }
 
   protected void removeCoreDescriptor(CoreDescriptor p) {
+    currentlyLoadingCores.remove(p.getName());
     if (p.isTransient()) {
       if (getTransientCacheHandler() != null) {
         getTransientCacheHandler().removeTransientDescriptor(p.getName());
@@ -93,7 +94,7 @@ class SolrCores implements Closeable {
     if (log.isDebugEnabled()) log.debug("Closing SolrCores");
     this.closed = true;
 
-    waitForLoadingCoresToFinish(15000);
+    currentlyLoadingCores.clear();
 
     Collection<SolrCore> coreList = new ArrayList<>();
 
@@ -266,7 +267,7 @@ class SolrCores implements Closeable {
     }
 
     if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
-
+    currentlyLoadingCores.remove(name);
     SolrCore ret = cores.remove(name);
     residentDesciptors.remove(name);
     // It could have been a newly-created core. It could have been a transient core. The newly-created cores
@@ -438,5 +439,6 @@ class SolrCores implements Closeable {
 
   public void closing() {
     this.closed = true;
+    currentlyLoadingCores.clear();
   }
 }
