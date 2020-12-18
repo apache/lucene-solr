@@ -46,7 +46,8 @@ allprojects { prj ->
             break
 
           case ":lucene:highlighter":
-            target "src/**/org/apache/lucene/search/matchhighlight/**"
+            target "src/**/org/apache/lucene/search/matchhighlight/**",
+                   "src/**/org/apache/lucene/search/highlight/**"
             targetExclude "**/resources/**"
             break
 
