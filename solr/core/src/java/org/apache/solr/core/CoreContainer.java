@@ -28,7 +28,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -502,7 +501,7 @@ public class CoreContainer implements Closeable {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void initializeAuthenticationPlugin(Map<String, Object> authenticationConfig) {
-    log.info("Initialize authenitcation plugin ..");
+    log.info("Initialize authentication plugin ..");
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
     String pluginClassName = null;
@@ -1033,30 +1032,19 @@ public class CoreContainer implements Closeable {
     }
   }
 
-  private ReentrantLock shutdownLock = new ReentrantLock();
+  private final ReentrantLock shutdownLock = new ReentrantLock();
 
   private volatile boolean isShutDown = false;
 
   public boolean isShutDown() {
-    shutdownLock.lock();
-    try {
-      return isShutDown;
-    } finally {
-      shutdownLock.unlock();
-    }
+    return isShutDown;
   }
 
   @Override
   public void close() throws IOException {
     if (closeTracker != null) closeTracker.close();
 
-    shutdownLock.lock();
-    try {
-      isShutDown = true;
-    } finally {
-      shutdownLock.unlock();
-    }
-
+    isShutDown = true;
 
     if (solrCores != null) {
       solrCores.closing();
@@ -1729,7 +1717,7 @@ public class CoreContainer implements Closeable {
         SolrCore oldCore = null;
         boolean success = false;
         try {
-         // solrCores.waitForLoadingCoreToFinish(name, 15000);
+
           ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
           log.info("Reloading SolrCore '{}' using configuration from {}", name, coreConfig.getName());
           DocCollection docCollection = null;
@@ -1883,7 +1871,7 @@ public class CoreContainer implements Closeable {
         if (isZooKeeperAware()) {
           getZkController().stopReplicationFromLeader(name);
 
-          if (cd != null && zkSys.zkController.getZkClient().isAlive()) {
+          if (cd != null) {
             try {
               zkSys.getZkController().unregister(name, cd);
             } catch (AlreadyClosedException e) {
@@ -2109,6 +2097,10 @@ public class CoreContainer implements Closeable {
 
   public ConfigSetsHandler getConfigSetsHandler() {
     return configSetsHandler;
+  }
+
+  public ConfigSetService getConfigSetService() {
+    return coreConfigService;
   }
 
   public String getHostName() {

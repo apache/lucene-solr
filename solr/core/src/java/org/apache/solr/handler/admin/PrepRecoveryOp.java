@@ -104,7 +104,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         // This core already see replica as RECOVERING
         // so it is guarantees that a live-fetch will be enough for this core to see max term published
         log.info("refresh shard terms for core {}", cname);
-        shardTerms.refreshTerms();
+        shardTerms.refreshTerms(false);
       }
     } catch (NullPointerException e) {
       if (log.isDebugEnabled()) log.debug("No shards found", e);

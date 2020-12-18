@@ -902,9 +902,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       }
     }
 
-    if (notifications != null) {
-      notifications.shutdown();
-    }
+//;
 
     stateWatchersMap.forEach((s, stateWatcher) -> IOUtils.closeQuietly(stateWatcher));
     stateWatchersMap.clear();
@@ -920,12 +918,12 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       } catch (NullPointerException e) {
         // okay
       }
-      if (notifications != null) {
-        notifications.shutdownNow();
-      }
+//      if (notifications != null) {
+//        notifications.shutdownNow();
+//      }
 
-      waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
-      waitLatches.clear();
+//      waitLatches.forEach(c -> { for (int i = 0; i < c.getCount(); i++) c.countDown(); });
+//      waitLatches.clear();
 
     } finally {
       assert ObjectReleaseTracker.release(this);
@@ -1483,7 +1481,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         if (docCollection != null) {
           // || (version > docCollection.getZNodeVersion() && clusterState.getZkClusterStateVersion() == -1)) {
           if (version < docCollection.getZNodeVersion()) {
-           log.info("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
+            if (log.isDebugEnabled()) log.debug("Will not apply state updates, they are for an older state.json {}, ours is now {}", version, docCollection.getZNodeVersion());
             return;
           }
           for (Entry<String,Object> entry : entrySet) {
@@ -1796,7 +1794,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   private DocCollection fetchCollectionState(String coll, Watcher watcher) throws KeeperException, InterruptedException {
     String collectionPath = getCollectionPath(coll);
     String collectionCSNPath = getCollectionSCNPath(coll);
-    log.info("Looking at fetching full clusterstate");
+    if (log.isDebugEnabled()) log.debug("Looking at fetching full clusterstate");
     Stat exists = zkClient.exists(collectionCSNPath, watcher, true);
     int version = 0;
     if (exists != null) {
@@ -1804,12 +1802,12 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Stat stateStat = zkClient.exists(collectionPath, null, true);
       if (stateStat != null) {
         version = stateStat.getVersion();
-        log.info("version for cs is {}", version);
+        if (log.isDebugEnabled()) log.debug("version for cs is {}", version);
         // version we would get
         DocCollection docCollection = watchedCollectionStates.get(coll);
         if (docCollection != null) {
           int localVersion = docCollection.getZNodeVersion();
-          log.info("found version {}, our local version is {}, has updates {}", version, localVersion, docCollection.hasStateUpdates());
+          if (log.isDebugEnabled()) log.debug("found version {}, our local version is {}, has updates {}", version, localVersion, docCollection.hasStateUpdates());
           if (docCollection.hasStateUpdates()) {
             if (localVersion > version) {
               return docCollection;
@@ -1821,7 +1819,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           }
         }
       }
-      log.info("getting latest state.json knowing it's at least {}", version);
+      if (log.isDebugEnabled()) log.debug("getting latest state.json knowing it's at least {}", version);
       Stat stat = new Stat();
       byte[] data = zkClient.getData(collectionPath, null, stat, true);
       if (data == null) return null;
@@ -1862,7 +1860,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    */
   public void registerCore(String collection) {
 
-    log.info("register core for collection {}", collection);
+    if (log.isDebugEnabled()) log.debug("register core for collection {}", collection);
     if (collection == null) {
       throw new IllegalArgumentException("Collection cannot be null");
     }

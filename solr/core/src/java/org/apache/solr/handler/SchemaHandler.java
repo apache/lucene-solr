@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager;
@@ -170,10 +169,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
               log.info("REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!"
                   , refreshIfBelowVersion, zkVersion);
-              ZkSolrResourceLoader zkSolrResourceLoader = (ZkSolrResourceLoader) req.getCore().getResourceLoader();
-              ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
-              zkIndexSchemaReader.updateSchema(null);
-              managed = zkIndexSchemaReader.getSchema();
+              ZkIndexSchemaReader zkIndexSchemaReader =  managed.getManagedIndexSchemaFactory().getZkIndexSchemaReader();
+              managed = (ManagedIndexSchema) zkIndexSchemaReader.updateSchema(null, -1);
               zkVersion = managed.getSchemaZkVersion();
             }
           }

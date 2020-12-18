@@ -21,6 +21,7 @@
 plugins {
   id 'base'
   id 'distribution'
+  id "org.beryx.runtime" version "1.11.7"
 }
 
 description = 'Solr packaging'
@@ -137,6 +138,19 @@ task dev(type: Copy) {
 
   from installDist.outputs
   into devDir
+}
+
+runtime {
+  javaHome = System.getProperty("java.home")
+  options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+  modules = ['java.base', 'jdk.management', 'java.naming', 'java.xml', 'java.instrument', 'java.desktop', 'java.sql']
+}
+
+tasks.runtime.doLast {
+  copy {
+    from installDist.outputs
+    into("$buildDir/image/bin")
+  }
 }
 
 assemble.dependsOn installDist

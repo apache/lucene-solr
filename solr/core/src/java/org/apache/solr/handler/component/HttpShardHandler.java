@@ -275,8 +275,6 @@ public class HttpShardHandler extends ShardHandler {
           return rsp; // if exception, return immediately
         }
 
-        log.info("should reutrn resp? {} {}", rsp.getShardRequest().responses.size(), rsp.getShardRequest().actualShards.length);
-
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }

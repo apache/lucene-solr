@@ -27,8 +27,6 @@ import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 @LuceneTestCase.Nightly
 public class HdfsBackupRepositoryTest extends SolrTestCase {
 

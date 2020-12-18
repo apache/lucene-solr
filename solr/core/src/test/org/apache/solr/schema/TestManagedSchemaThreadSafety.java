@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,15 +45,15 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit this mock needs updating since zkController and ZkSolrClient work slightly differently
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final class SuspendingZkClient extends SolrZkClient {
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
@@ -119,7 +120,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
     ExecutorService executor = getTestExecutor();
     
-    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000).start()) {
 
       ZkController zkController = createZkController(raceJudge);
 
@@ -140,8 +141,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class, 
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(Boolean.FALSE);  // Allow retry on session expiry
-    
-    
+
     ZkController zkController = mock(ZkController.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
 
@@ -181,6 +181,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
         factory.create("schema.xml", solrConfig);
       }
       catch (Exception e) {
+        log.error("", e);
         throw new RuntimeException(e);
       }
     };

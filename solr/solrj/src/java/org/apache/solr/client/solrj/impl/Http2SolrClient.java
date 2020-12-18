@@ -904,7 +904,7 @@ public class Http2SolrClient extends SolrClient {
       }
 
       if (httpStatus == 404) {
-        throw new RemoteSolrException(response.getRequest().getURI().toString(), httpStatus, "non ok status: " + httpStatus
+        throw new RemoteSolrException(response.getRequest().getURI().toString(), httpStatus, "not found: " + httpStatus
             + ", message:" + response.getReason(),
             null);
       }

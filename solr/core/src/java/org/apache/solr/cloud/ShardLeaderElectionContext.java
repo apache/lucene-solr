@@ -99,7 +99,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     String coreName = leaderProps.getName();
 
     log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard core={}", context.leaderProps.getSlice(), coreName);
-    cc.waitForLoadingCore(coreName, 15000);
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         log.error("No SolrCore found, cannot become leader {}", coreName);

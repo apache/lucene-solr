@@ -80,7 +80,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       }
     }
 
-    log.info("Allocating transient cache for {} transient cores", cacheSize);
+   if (log.isDebugEnabled()) log.debug("Allocating transient cache for {} transient cores", cacheSize);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
       cacheSize = NodeConfig.NodeConfigBuilder.DEFAULT_TRANSIENT_CACHE_SIZE;

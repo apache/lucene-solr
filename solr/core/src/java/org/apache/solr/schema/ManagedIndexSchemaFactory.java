@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -56,10 +55,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   private volatile boolean isMutable = true;
   private volatile String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
-  private volatile String coreName;
 
   private volatile String collection;
   private CoreContainer cc;
+
+  private volatile SolrCore core;
 
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
   private volatile SolrConfig config;
@@ -69,7 +69,6 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private volatile ManagedIndexSchema schema;
 
   private volatile ZkIndexSchemaReader zkIndexSchemaReader;
-
 
   private volatile String loadedResource;
   private volatile boolean shouldUpgrade = false;
@@ -182,23 +181,10 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
       InputSource inputSource = new InputSource(schemaInputStream);
       inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(loadedResource));
-      schema = new ManagedIndexSchema(collection, config, loadedResource, inputSource, isMutable, managedSchemaResourceName, schemaZkVersion, getSchemaUpdateLock());
+      schema = new ManagedIndexSchema(this, collection, config, loadedResource, inputSource, isMutable, managedSchemaResourceName, schemaZkVersion);
       if (shouldUpgrade) {
         // Persist the managed schema if it doesn't already exist
-        try {
-          schema.getSchemaUpdateLock().lockInterruptibly();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new AlreadyClosedException(e);
-        }
-        try {
-          upgradeToManagedSchema();
-          schema.setSchemaZkVersion(0);
-        } finally {
-          if (schema.getSchemaUpdateLock().isHeldByCurrentThread()) {
-            schema.getSchemaUpdateLock().unlock();
-          }
-        }
+        upgradeToManagedSchema();
       }
     } finally {
       org.apache.solr.common.util.IOUtils.closeQuietly(schemaInputStream);
@@ -372,7 +358,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           byte[] bytes = zkClient.getData(nonManagedSchemaPath, null, null);
           final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
           zkClient.mkdir(upgradedSchemaPath);
-          zkClient.setData(upgradedSchemaPath, bytes, true);
+          Stat stat = zkClient.setData(upgradedSchemaPath, bytes, true);
           // Then delete the non-managed schema znode
           if (zkClient.exists(nonManagedSchemaPath)) {
             try {
@@ -412,19 +398,17 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
   }
 
-  private ReentrantLock schemaUpdateLock = new ReentrantLock(true);
+  private ReentrantLock schemaUpdateLock = new ReentrantLock();
   public ReentrantLock getSchemaUpdateLock() { return schemaUpdateLock; }
 
   @Override
   public void inform(SolrCore core) {
-    this.coreName = core.getName();
+    this.core = core;
     this.collection = core.getCoreDescriptor().getCollectionName();
     this.cc = core.getCoreContainer();
-    if (loader instanceof ZkSolrResourceLoader) {
+    if (this.zkIndexSchemaReader == null && loader instanceof ZkSolrResourceLoader) {
       try {
         this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
-        zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
         core.setLatestSchema(getSchema());
       } catch (KeeperException.NoNodeException e) {
         // no managed schema file yet
@@ -445,12 +429,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   }
 
   public void setSchema(ManagedIndexSchema schema) {
-    try (SolrCore core = cc.getCore(coreName)) {
-      if (core != null) {
-        this.schema = schema;
-        core.setLatestSchema(schema);
-      }
-    }
+    this.schema = schema;
+    core.setLatestSchema(schema);
   }
   
   public boolean isMutable() {
@@ -459,5 +439,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   public SolrConfig getConfig() {
     return config;
+  }
+
+  public ZkIndexSchemaReader getZkIndexSchemaReader() {
+    return zkIndexSchemaReader;
   }
 }

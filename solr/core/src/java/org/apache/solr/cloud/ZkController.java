@@ -328,6 +328,9 @@ public class ZkController implements Closeable, Runnable {
         log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
       }
 
+      if (zkController.isDcCalled() || zkController.getCoreContainer().isShutDown()) {
+        return null;
+      }
       zkController.register(descriptor.getName(), descriptor, afterExpiration);
       return descriptor;
     }
@@ -1328,7 +1331,7 @@ public class ZkController implements Closeable, Runnable {
       throw new AlreadyClosedException();
     }
     MDCLoggingContext.setCoreDescriptor(cc, desc);
-    ZkShardTerms shardTerms;
+    ZkShardTerms shardTerms = null;
     try {
       final String baseUrl = getBaseUrl();
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
@@ -1336,8 +1339,9 @@ public class ZkController implements Closeable, Runnable {
       final String shardId = cloudDesc.getShardId();
 
       log.info("Register terms for replica {}", coreName);
-      createCollectionTerms(collection);
+      ZkCollectionTerms ct = createCollectionTerms(collection);
       shardTerms = getShardTerms(collection, cloudDesc.getShardId());
+
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       getZkStateReader().registerCore(cloudDesc.getCollectionName());
@@ -1347,7 +1351,7 @@ public class ZkController implements Closeable, Runnable {
       AtomicReference<Replica> replicaRef = new AtomicReference<>();
       try {
         log.info("Waiting to see our entry in state.json {}", desc.getName());
-        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 60000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
+        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 10000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
           if (c == null) {
             return false;
           }
@@ -1371,14 +1375,12 @@ public class ZkController implements Closeable, Runnable {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate \n" + zkStateReader.getClusterState().getCollectionOrNull(collection));
         }
       }
-      if (replica.getType() != Type.PULL) {
-        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
-      }
 
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
       if (isDcCalled() || isClosed) {
         throw new AlreadyClosedException();
       }
+
       LeaderElector leaderElector = leaderElectors.get(replica.getName());
       if (leaderElector == null) {
         ContextKey contextKey = new ContextKey(collection, coreName);
@@ -1392,6 +1394,7 @@ public class ZkController implements Closeable, Runnable {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         if (replica.getType() != Type.PULL) {
+          ct.register(cloudDesc.getShardId(), coreName);
           // nocommit review
           joinElection(desc, joinAtHead);
         }
@@ -1406,11 +1409,11 @@ public class ZkController implements Closeable, Runnable {
       Replica leader = null;
       for (int i = 0; i < 30; i++) {
         try {
-          if (getCoreContainer().isShutDown()) {
+          if (getCoreContainer().isShutDown() || isDcCalled() || isClosed()) {
             throw new AlreadyClosedException();
           }
 
-          leader = zkStateReader.getLeaderRetry(collection, shardId, 5000);
+          leader = zkStateReader.getLeaderRetry(collection, shardId, 500);
           break;
         } catch (TimeoutException timeoutException) {
 
@@ -1434,7 +1437,6 @@ public class ZkController implements Closeable, Runnable {
       // TODO: should this be moved to another thread? To recoveryStrat?
       // TODO: should this actually be done earlier, before (or as part of)
       // leader election perhaps?
-      cc.waitForLoadingCore(coreName, 15000);
       try (SolrCore core = cc.getCore(coreName)) {
         if (core == null || core.isClosing() || getCoreContainer().isShutDown()) {
           throw new AlreadyClosedException();
@@ -1480,9 +1482,6 @@ public class ZkController implements Closeable, Runnable {
           startReplicationFromLeader(coreName, false);
         }
 
-        //        if (!isLeader) {
-        //          publish(desc, Replica.State.ACTIVE, true);
-        //        }
 
         if (replica.getType() != Type.PULL && shardTerms != null) {
           // the watcher is added to a set so multiple calls of this method will left only one watcher
@@ -1669,13 +1668,11 @@ public class ZkController implements Closeable, Runnable {
 
     if (!isLeader) {
 
-      if (!core.getUpdateHandler().getSolrCoreState().isRecoverying()) {
-        if (log.isInfoEnabled()) {
-          log.info("Core needs to recover:{}", core.getName());
-        }
-        core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
-        return true;
+      if (log.isInfoEnabled()) {
+        log.info("Core needs to recover:{}", core.getName());
       }
+      core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
+      return true;
 
     } else {
       log.info("I am the leader, no recovery necessary");
@@ -1734,10 +1731,8 @@ public class ZkController implements Closeable, Runnable {
         props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
       }
       try (SolrCore core = cc.getCore(cd.getName())) {
-        if (core != null && state == Replica.State.ACTIVE) {
-          ensureRegisteredSearcher(core);
-        }
         if (core != null && core.getDirectoryFactory().isSharedStorage()) {
+          // nocommit
           if (core.getDirectoryFactory().isSharedStorage()) {
             props.put(ZkStateReader.SHARED_STORAGE_PROP, "true");
             props.put("dataDir", core.getDataDir());
@@ -1783,7 +1778,7 @@ public class ZkController implements Closeable, Runnable {
   public ZkShardTerms getShardTerms(String collection, String shardId) throws Exception {
     ZkCollectionTerms ct = getCollectionTerms(collection);
     if (ct == null) {
-      throw new AlreadyClosedException();
+      ct = createCollectionTerms(collection);
     }
     return ct.getShard(shardId);
   }
@@ -1805,6 +1800,9 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public ZkCollectionTerms createCollectionTerms(String collection) {
+//    if (isClosed || dcCalled) {
+//      throw new AlreadyClosedException();
+//    }
     ZkCollectionTerms ct = new ZkCollectionTerms(collection, zkClient);
     IOUtils.closeQuietly(collectionToTerms.put(collection, ct));
     return ct;
@@ -1826,12 +1824,14 @@ public class ZkController implements Closeable, Runnable {
 
       replicasMetTragicEvent.remove(collection + ":" + coreName);
 
-      if (statePublisher != null) {
-        statePublisher.clearStatCache(coreName);
-      }
-
     } finally {
-      zkStateReader.unregisterCore(collection);
+      try {
+        zkStateReader.unregisterCore(collection);
+      } finally {
+        if (statePublisher != null) {
+          statePublisher.clearStatCache(coreName);
+        }
+      }
     }
     //    if (Strings.isNullOrEmpty(collection)) {
     //      log.error("No collection was specified.");

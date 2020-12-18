@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,11 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Hold values of terms, this class is immutable. Create a new instance for every mutation
  */
 public class ShardTerms implements MapWriter {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String RECOVERING_TERM_SUFFIX = "_recovering";
   private final Map<String, Long> values;
   private final long maxTerm;
@@ -124,13 +128,15 @@ public class ShardTerms implements MapWriter {
    * @return null if highest terms are already larger than zero
    */
   public ShardTerms ensureHighestTermsAreNotZero() {
-    if (maxTerm > 0) return null;
+    if (maxTerm > 0 || values.size() == 0) return null;
     else {
-      Map<String, Long> newValues = new ConcurrentHashMap<>(values);
+      Map<String, Long> newValues =  new ConcurrentHashMap<String, Long>(32, 0.75F, 32);
       for (String replica : values.keySet()) {
         newValues.put(replica, 1L);
       }
-      return new ShardTerms(newValues, version);
+      ShardTerms terms = new ShardTerms(newValues, version);
+      if (log.isDebugEnabled()) log.debug("New terms for not at 0 " + terms);
+      return terms;
     }
   }
 

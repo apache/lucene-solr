@@ -113,7 +113,7 @@ public class TestInjection {
   public volatile static String nonExistentCoreExceptionAfterUnload = null;
 
   public volatile static String updateLogReplayRandomPause = null;
-  
+
   public volatile static String updateRandomPause = null;
 
   public volatile static String prepRecoveryOpPauseForever = null;

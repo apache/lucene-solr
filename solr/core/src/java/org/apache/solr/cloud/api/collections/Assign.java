@@ -108,17 +108,14 @@ public class Assign {
     int max = 0;
     Slice slice = collection.getSlice(shard);
     if (slice != null) {
-
       Collection<Replica> replicas = slice.getReplicas();
-
-
       if (replicas.size() > 0) {
         max = 1;
         for (Replica replica : replicas) {
-          log.info("compare names {} {}", namePrefix, replica.getName());
+          if (log.isDebugEnabled()) log.debug("compare names {} {}", namePrefix, replica.getName());
           Matcher matcher = pattern.matcher(replica.getName());
           if (matcher.matches()) {
-            log.info("names are a match {} {}", namePrefix, replica.getName());
+            if (log.isDebugEnabled()) log.debug("names are a match {} {}", namePrefix, replica.getName());
             int val = Integer.parseInt(matcher.group(1));
             max = Math.max(max, val);
           }
@@ -127,7 +124,7 @@ public class Assign {
     }
 
     String corename = String.format(Locale.ROOT, "%s%s", namePrefix, max + 1);
-    log.info("Built SolrCore name {}", corename);
+    log.info("Assigned SolrCore name {}", corename);
     return corename;
   }
 

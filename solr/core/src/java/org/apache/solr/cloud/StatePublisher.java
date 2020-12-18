@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -143,10 +145,12 @@ public class StatePublisher implements Closeable {
 
 
         String lastState = stateCache.get(core);
-        if (state.equals(lastState)) {
-          log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
-          return;
-        }
+        // nocommit
+//        if (state.equals(lastState) && !Replica.State.ACTIVE.toString().toLowerCase(Locale.ROOT).equals(state)) {
+//          log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+//          // nocommit
+//          return;
+//        }
         if (core == null || state == null) {
           log.error("Nulls in published state");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);

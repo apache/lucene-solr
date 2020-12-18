@@ -280,7 +280,7 @@ class SolrCores implements Closeable {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name) {
-
+    waitForLoadingCoreToFinish(name, 15000);
     CoreDescriptor cd = residentDesciptors.get(name);
 
     SolrCore core = cores.get(name);
@@ -336,6 +336,7 @@ class SolrCores implements Closeable {
   public CoreDescriptor getCoreDescriptor(String coreName) {
     if (coreName == null) return null;
 
+    waitForLoadingCoreToFinish(coreName, 15000);
 
     CoreDescriptor cd = residentDesciptors.get(coreName);
     if (cd != null) {
@@ -376,7 +377,6 @@ class SolrCores implements Closeable {
     synchronized (loadingSignal) {
       loadingSignal.notifyAll();
     }
-
   }
 
   // returns when no cores are marked as loading
@@ -388,7 +388,6 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(1000);
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
             return;
           }
         }
@@ -401,6 +400,7 @@ class SolrCores implements Closeable {
   
   // returns when core is finished loading, throws exception if no such core loading or loaded
   public void waitForLoadingCoreToFinish(String core, long timeoutMs) {
+    if (closed) return;
     long time = System.nanoTime();
     long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
 
@@ -409,7 +409,6 @@ class SolrCores implements Closeable {
           try {
             loadingSignal.wait(250);
           } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
             return;
           }
         }

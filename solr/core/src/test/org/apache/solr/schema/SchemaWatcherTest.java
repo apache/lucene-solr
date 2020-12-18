@@ -45,7 +45,7 @@ public class SchemaWatcherTest {
   @Test
   public void testProcess() throws Exception {
     schemaWatcher.process(new WatchedEvent(EventType.NodeDataChanged, KeeperState.SyncConnected, "/test"));
-    verify(mockSchemaReader).updateSchema(schemaWatcher);
+    verify(mockSchemaReader).updateSchema(schemaWatcher, -1);
   }
 
 }

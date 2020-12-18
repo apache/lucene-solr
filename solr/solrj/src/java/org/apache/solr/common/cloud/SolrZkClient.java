@@ -369,7 +369,10 @@ public class SolrZkClient implements Closeable {
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
-    if (retryOnConnLoss) {
+    if (retryOnConnLoss && zkCmdExecutor != null) {
+      if (keeper == null) {
+        throw new IllegalStateException();
+      }
       return zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
     } else {
       return keeper.getData(path, wrapWatcher(watcher), stat);

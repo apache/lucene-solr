@@ -140,11 +140,11 @@ public class LeaderElector implements Closeable {
     } catch (KeeperException.SessionExpiredException e) {
       log.error("ZooKeeper session has expired");
       state = OUT_OF_ELECTION;
-      throw e;
+      return false;
     } catch (KeeperException.NoNodeException e) {
       log.info("the election node disappeared, check if we are the leader again");
       state = OUT_OF_ELECTION;
-      return true;
+      return false;
     } catch (KeeperException e) {
       // we couldn't set our watch for some other reason, retry
       log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
@@ -241,15 +241,13 @@ public class LeaderElector implements Closeable {
           state = OUT_OF_ELECTION;
           // we couldn't set our watch for some other reason, retry
           log.error("Failed setting election watch {} {}", e.getClass().getName(), e.getMessage());
-
         }
-
       }
 
     } catch (KeeperException.SessionExpiredException e) {
       log.error("ZooKeeper session has expired");
       state = OUT_OF_ELECTION;
-      throw e;
+      return false;
     } catch (AlreadyClosedException e) {
       state = OUT_OF_ELECTION;
       return false;

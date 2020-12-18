@@ -87,7 +87,7 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
         IOUtils.closeQuietly(out);
       }
     } else {
-      response.sendError(404);
+      response.sendError(404,  request.getRequestURI());
     }
   }
 

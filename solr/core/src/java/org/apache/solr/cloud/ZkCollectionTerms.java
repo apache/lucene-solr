@@ -50,16 +50,15 @@ class ZkCollectionTerms implements AutoCloseable {
   ZkShardTerms getShard(String shardId) throws Exception {
     collectionToTermsLock.lock();
     try {
-      ZkShardTerms zkterms = null;
-      if (!terms.containsKey(shardId)) {
+      ZkShardTerms zkterms = terms.get(shardId);
+      if (zkterms == null) {
         if (closed) {
           throw new AlreadyClosedException();
         }
         zkterms = new ZkShardTerms(collection, shardId, zkClient);
         IOUtils.closeQuietly(terms.put(shardId, zkterms));
-        return zkterms;
       }
-      return terms.get(shardId);
+      return zkterms;
     } finally {
       collectionToTermsLock.unlock();
     }
@@ -76,6 +75,7 @@ class ZkCollectionTerms implements AutoCloseable {
   }
 
   public void register(String shardId, String coreNodeName) throws Exception {
+    if (closed) return;
     getShard(shardId).registerTerm(coreNodeName);
   }
 
@@ -85,7 +85,7 @@ class ZkCollectionTerms implements AutoCloseable {
       ZkShardTerms zterms = getShardOrNull(shardId);
       if (zterms != null) {
         if (zterms.removeTerm(coreDescriptor)) {
-          terms.remove(shardId).close();
+          IOUtils.closeQuietly(terms.remove(shardId));
         }
       }
     } finally {

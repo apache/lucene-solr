@@ -57,6 +57,8 @@ import static org.apache.lucene.search.BoostAttribute.DEFAULT_BOOST;
  * are provided so that the generated queries can be customized.
  */
 public class QueryBuilder {
+  public static final Term[] EMPTY_TERM = new Term[0];
+  public static final TermAndBoost[] EMPTY_TERM_AND_BOOST = new TermAndBoost[0];
   protected Analyzer analyzer;
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
@@ -295,9 +297,9 @@ public class QueryBuilder {
       PositionLengthAttribute posLenAtt = stream.addAttribute(PositionLengthAttribute.class);
 
       if (termAtt == null) {
-        return null; 
+        return null;
       }
-      
+
       // phase 1: read through the stream and assess the situation:
       // counting the number of tokens/positions and marking if we have any synonyms.
       
@@ -389,7 +391,7 @@ public class QueryBuilder {
       terms.add(new TermAndBoost(new Term(field, termAtt.getBytesRef()), boostAtt.getBoost()));
     }
     
-    return newSynonymQuery(terms.toArray(new TermAndBoost[0]));
+    return newSynonymQuery(terms.toArray(EMPTY_TERM_AND_BOOST));
   }
 
   protected void add(BooleanQuery.Builder q, List<TermAndBoost> current, BooleanClause.Occur operator) {
@@ -399,7 +401,7 @@ public class QueryBuilder {
     if (current.size() == 1) {
       q.add(newTermQuery(current.get(0).term, current.get(0).boost), operator);
     } else {
-      q.add(newSynonymQuery(current.toArray(new TermAndBoost[0])), operator);
+      q.add(newSynonymQuery(current.toArray(EMPTY_TERM_AND_BOOST)), operator);
     }
   }
 
@@ -475,9 +477,9 @@ public class QueryBuilder {
       
       if (positionIncrement > 0 && multiTerms.size() > 0) {
         if (enablePositionIncrements) {
-          mpqb.add(multiTerms.toArray(new Term[0]), position);
+          mpqb.add(multiTerms.toArray(EMPTY_TERM), position);
         } else {
-          mpqb.add(multiTerms.toArray(new Term[0]));
+          mpqb.add(multiTerms.toArray(EMPTY_TERM));
         }
         multiTerms.clear();
       }
@@ -486,9 +488,9 @@ public class QueryBuilder {
     }
     
     if (enablePositionIncrements) {
-      mpqb.add(multiTerms.toArray(new Term[0]), position);
+      mpqb.add(multiTerms.toArray(EMPTY_TERM), position);
     } else {
-      mpqb.add(multiTerms.toArray(new Term[0]));
+      mpqb.add(multiTerms.toArray(EMPTY_TERM));
     }
     return mpqb.build();
   }

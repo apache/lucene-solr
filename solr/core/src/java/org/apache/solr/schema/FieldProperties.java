@@ -63,7 +63,7 @@ public abstract class FieldProperties {
           "multiValued",
           "sortMissingFirst","sortMissingLast","required", "omitPositions",
           "storeOffsetsWithPositions", "docValues", "termPayloads", "useDocValuesAsStored", "large",
-          "uninvertible"
+          "uninvertible", "dynamicBase"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<>();

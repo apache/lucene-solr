@@ -834,7 +834,7 @@ public class Overseer implements SolrCloseable {
     protected void processQueueItems(List<String> items, boolean onStart) {
       ourLock.lock();
       try {
-        log.info("Found state update queue items {}", items);
+        if (log.isDebugEnabled()) log.debug("Found state update queue items {}", items);
         List<String> fullPaths = new ArrayList<>(items.size());
         for (String item : items) {
           fullPaths.add(path + "/" + item);

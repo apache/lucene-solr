@@ -1458,7 +1458,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (theLog != null) {
       if (writeCommit) {
         // record a commit
-        log.info("Recording current closed for {} log={}", uhandler.core, theLog);
+        if (log.isDebugEnabled()) log.debug("Recording current closed for {} log={}", uhandler.core, theLog);
         CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
         theLog.writeCommit(cmd);
       }
@@ -1550,7 +1550,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     Set<Long> bufferUpdates = new HashSet<>();
 
     public RecentUpdates(Deque<TransactionLog> logList, int numRecordsToKeep) {
-      log.info("RecentUpdates logList size={}, numRecordsToKeep={}", logList.size(), numRecordsToKeep);
+      if (log.isDebugEnabled()) log.debug("RecentUpdates logList size={}, numRecordsToKeep={}", logList.size(), numRecordsToKeep);
       this.logList = logList;
       this.numRecordsToKeep = numRecordsToKeep;
       boolean success = false;

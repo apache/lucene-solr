@@ -209,21 +209,21 @@ public class PeerSync implements SolrMetricProducer {
         log.info("{} DONE. We have no versions. sync failed.", msg());
 
         for (;;)  {
-          log.info("looping in check for versions on others");
+          if (log.isDebugEnabled()) log.debug("looping in check for versions on others");
           ShardResponse srsp = shardHandler.takeCompletedIncludingErrors();
           if (srsp == null) break;
           if (srsp.getException() == null)  {
-            log.info("checking if others have versions {} {}", srsp.getSolrResponse().getResponse());
+            if (log.isDebugEnabled()) log.debug("checking if others have versions {} {}", srsp.getSolrResponse().getResponse());
             List<Long> otherVersions = (List<Long>)srsp.getSolrResponse().getResponse().get("versions");
             if (otherVersions != null && !otherVersions.isEmpty())  {
               if (syncErrors != null) syncErrors.inc();
-              log.info("found another replica with versions");
+              if (log.isDebugEnabled()) log.debug("found another replica with versions");
               return PeerSyncResult.failure(true);
             }
           }
         }
         if (syncErrors != null) syncErrors.inc();
-        log.info("found no other replica with versions");
+        if (log.isDebugEnabled()) log.debug("found no other replica with versions");
         return PeerSyncResult.failure(false);
       }
 

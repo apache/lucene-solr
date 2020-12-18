@@ -29,7 +29,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
-import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -42,8 +41,6 @@ import org.slf4j.LoggerFactory;
 public class ZkSolrResourceLoader extends SolrResourceLoader implements ResourceLoader {
 
   private final String configSetZkPath;
-
-  private ZkIndexSchemaReader zkIndexSchemaReader;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
@@ -107,7 +104,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
     public ZkByteArrayInputStream(byte[] buf, Stat stat) {
       super(buf);
       this.stat = stat;
-
     }
 
     public Stat getStat(){
@@ -118,10 +114,4 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
   public String getConfigSetZkPath() {
     return configSetZkPath;
   }
-
-  public void setZkIndexSchemaReader(ZkIndexSchemaReader zkIndexSchemaReader) {
-    this.zkIndexSchemaReader = zkIndexSchemaReader;
-  }
-
-  public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
 }

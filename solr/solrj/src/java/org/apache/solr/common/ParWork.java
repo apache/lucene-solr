@@ -647,7 +647,7 @@ public class ParWork implements Closeable {
           log.info(t.getClass().getName() + " " + t.getMessage(), t);
         }
       } else {
-        log.warn("Solr ran into an unexpected exception", t);
+        log.error("Solr ran into an exception", t);
       }
     }
 

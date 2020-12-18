@@ -16,7 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.solr.client.solrj.cloud.DistributedLock;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -54,7 +53,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A utility class to manipulate schema using the bulk mode.
@@ -79,6 +77,7 @@ public class SchemaManager {
     if (timeout < 1) {
       timeout = 600;
     }
+    managedIndexSchema = (ManagedIndexSchema) req.getSchema();
   }
 
   /**
@@ -109,70 +108,59 @@ public class SchemaManager {
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
-    ReentrantLock schemaUpdateLock = req.getSchema().getSchemaUpdateLock();
-    schemaUpdateLock.lockInterruptibly();
-    DistributedLock lock = null;
-    try {
 
-      while (!timeOut.hasTimedOut() && !req.getCore().getCoreContainer().isShutDown()) {
-        managedIndexSchema = getFreshManagedSchema(req.getCore());
-        for (CommandOperation op : operations) {
-          OpType opType = OpType.get(op.name);
-          if (opType != null) {
-            opType.perform(op, this);
-          } else {
-            op.addError("No such operation : " + op.name);
-          }
-        }
-        errors = CommandOperation.captureErrors(operations);
-        if (!errors.isEmpty()) break;
-        SolrResourceLoader loader = req.getCore().getResourceLoader();
-        if (loader instanceof ZkSolrResourceLoader) {
-          ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
-          StringWriter sw = new StringWriter();
-          try {
-            managedIndexSchema.persist(sw);
-          } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
-            //unlikely
-          }
-
-          try {
-            latestVersion = ZkController
-                .persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
-
-            if (isClosed.isClosed()) {
-              return Collections.singletonList("Already Closed");
-            }
-
-            req.getCore().getCoreContainer().reload(req.getCore().getName());
-            break;
-          } catch (ZkController.ResourceModifiedInZkException e) {
-            log.info("Schema was modified by another node. Retrying..");
-          }
+    while (!timeOut.hasTimedOut() && !req.getCore().getCoreContainer().isShutDown()) {
+      managedIndexSchema = getFreshManagedSchema(req.getCore());
+      for (CommandOperation op : operations) {
+        OpType opType = OpType.get(op.name);
+        if (opType != null) {
+          opType.perform(op, this);
         } else {
-          try {
-            //only for non cloud stuff
-            managedIndexSchema.persistManagedSchema(false);
-            core.setLatestSchema(managedIndexSchema);
-
-            if (isClosed.isClosed()) {
-              return Collections.singletonList("Already Closed");
-            }
-
-            core.getCoreContainer().reload(core.getName());
-          } catch (SolrException e) {
-            log.warn(errorMsg);
-            errors = singletonList(errorMsg + e.getMessage());
-          }
-          break;
+          op.addError("No such operation : " + op.name);
         }
       }
-    } finally {
-      if (schemaUpdateLock.isHeldByCurrentThread()) {
-        schemaUpdateLock.unlock();
+      errors = CommandOperation.captureErrors(operations);
+      if (!errors.isEmpty()) break;
+      SolrResourceLoader loader = req.getCore().getResourceLoader();
+      if (loader instanceof ZkSolrResourceLoader) {
+        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+        StringWriter sw = new StringWriter();
+        try {
+          managedIndexSchema.persist(sw);
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
+          //unlikely
+        }
+
+        try {
+          latestVersion = ZkController
+              .persistConfigResourceToZooKeeper(zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(), sw.toString().getBytes(StandardCharsets.UTF_8), true);
+
+          if (isClosed.isClosed()) {
+            return Collections.singletonList("Already Closed");
+          }
+
+          req.getCore().getCoreContainer().reload(req.getCore().getName());
+          break;
+        } catch (ZkController.ResourceModifiedInZkException e) {
+          log.info("Schema was modified by another node. Retrying..");
+        }
+      } else {
+        try {
+          //only for non cloud stuff
+          boolean success = managedIndexSchema.persistManagedSchema(false);
+          if (success) {
+            core.setLatestSchema(managedIndexSchema);
+            core.getCoreContainer().reload(core.getName());
+          }
+        } catch (SolrException e) {
+          log.warn(errorMsg);
+          errors = singletonList(errorMsg + e.getMessage());
+        }
+        break;
       }
     }
+
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
       // This reduces the likelihood of a (time-limited) distributed deadlock during concurrent schema updates.
@@ -274,7 +262,7 @@ public class SchemaManager {
         if (op.hasError())
           return false;
         try {
-          SchemaField field = mgr.managedIndexSchema.newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
+          SchemaField field = mgr.managedIndexSchema. newDynamicField(name, type, op.getValuesExcluding(NAME, TYPE));
           mgr.managedIndexSchema
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;
@@ -468,8 +456,7 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getCoreDescriptor().getCollectionName(), core.getSolrConfig(), name, new InputSource(in), true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(managedIndexSchema.getManagedIndexSchemaFactory(), core.getCoreDescriptor().getCollectionName(), core.getSolrConfig(), name, new InputSource(in), true, name, version);
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

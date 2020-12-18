@@ -379,9 +379,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (collName == null) collName = message.getStr(NAME);
 
       if (collName == null) {
-        log.error("Operation " + operation + " failed", e);
+        if (log.isDebugEnabled()) log.debug("Operation " + operation + " failed", e);
       } else {
-        log.error("Collection: " + collName + " operation: " + operation + " failed", e);
+        if (log.isDebugEnabled()) log.debug("Collection: " + collName + " operation: " + operation + " failed", e);
       }
 
       results.add("Operation " + operation + " caused exception:", e);

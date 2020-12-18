@@ -497,8 +497,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       // (typically shingles)
 
       assert maxIndexedPositionLength <= maxQueryPositionLength;
-      
-      final CharsRefBuilder buffer = new CharsRefBuilder();
+
       final FieldType ft = analysisField.getType();
       final Analyzer analyzer = ft.getQueryAnalyzer();
       final List<Phrase> results = new ArrayList<>(42);

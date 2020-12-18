@@ -91,8 +91,6 @@ public class SynonymGraphFilterFactory extends TokenFilterFactory implements Res
   private final Map<String, String> tokArgs = new HashMap<>();
 
   private SynonymMap map;
-
-  private volatile boolean informed;
   
   public SynonymGraphFilterFactory(Map<String,String> args) {
     super(args);
@@ -135,9 +133,6 @@ public class SynonymGraphFilterFactory extends TokenFilterFactory implements Res
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    if (informed) return;
-    informed = true;
-
     final TokenizerFactory factory = tokenizerFactory == null ? null : loadTokenizerFactory(loader, tokenizerFactory);
     Analyzer analyzer;
     

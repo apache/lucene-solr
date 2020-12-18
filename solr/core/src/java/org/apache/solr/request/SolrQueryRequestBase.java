@@ -139,8 +139,14 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   }
 
   @Override
+  public void updateSchemaToLatest(IndexSchema schema) {
+    this.schema = schema;
+    //this.core.setLatestSchema(schema);
+  }
+
+  @Override
   public void updateSchemaToLatest() {
-    schema = core.getLatestSchema();
+    this.schema = core.getLatestSchema();
   }
 
   /**

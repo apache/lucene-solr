@@ -28,7 +28,6 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -56,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import javax.xml.xpath.XPathConstants;
@@ -66,7 +64,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +131,7 @@ public class IndexSchema {
   public static final DynamicField[] TS = new DynamicField[0];
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPY_FIELDS = {};
   public static final DynamicCopy[] EMPTY_DYNAMIC_COPIES = {};
-  public static final DynamicField[] EMPTY_DYNAMIC_FIELDS1 = {};
+  public static final List<DynamicField> EMPTY_DYNAMIC_FIELDS1 = Collections.emptyList();
 
 
   protected volatile String resourceName;
@@ -145,20 +142,20 @@ public class IndexSchema {
   protected final Properties substitutableProperties;
 
   // some code will add fields after construction, needs to be thread safe (unless we get the schema lock fully correct)
-  protected volatile Map<String,SchemaField> fields = new ConcurrentHashMap<>(32);
+  protected final Map<String,SchemaField> fields = new ConcurrentHashMap<>(32, 0.75f, 16);
 
-  protected volatile Map<String,FieldType> fieldTypes = new ConcurrentHashMap<>(32);
+  protected volatile Map<String,FieldType> fieldTypes = new  ConcurrentHashMap<>(32, 0.75f, 16);
 
   protected volatile Set<SchemaField> fieldsWithDefaultValue = ConcurrentHashMap.newKeySet(32);
   protected volatile Collection<SchemaField> requiredFields = ConcurrentHashMap.newKeySet(32);
-  protected volatile DynamicField[] dynamicFields = EMPTY_DYNAMIC_FIELDS1;
+  protected final List<DynamicField> dynamicFields = Collections.synchronizedList(new ArrayList<>(32));
 
-  public DynamicField[] getDynamicFields() { return dynamicFields; }
+  public List<DynamicField> getDynamicFields() { return dynamicFields; }
 
   protected final Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,16, false,false, null);
 
-  private volatile Analyzer indexAnalyzer;
-  private volatile Analyzer queryAnalyzer;
+  protected volatile Analyzer indexAnalyzer;
+  protected volatile Analyzer queryAnalyzer;
 
   protected volatile Set<SchemaAware> schemaAware = ConcurrentHashMap.newKeySet(32);
 
@@ -168,13 +165,13 @@ public class IndexSchema {
   protected volatile DynamicCopy[] dynamicCopyFields = EMPTY_DYNAMIC_COPIES;
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
-  private final Map<FieldType, PayloadDecoder> decoders = new ConcurrentHashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
+  protected volatile Map<FieldType, PayloadDecoder> decoders = new ConcurrentHashMap<>(16, 0.75f, 16);  // cache to avoid scanning token filters repeatedly, unnecessarily
 
   /**
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
    */
-  protected volatile Map<SchemaField, Integer> copyFieldTargetCounts = new ConcurrentHashMap<>(16);
+  protected volatile Map<SchemaField, Integer> copyFieldTargetCounts = new ConcurrentHashMap<>(16, 0.75f, 16);
 
   /**
    * Constructs a schema using the specified resource name and stream.
@@ -194,7 +191,6 @@ public class IndexSchema {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
     this.substitutableProperties = substitutableProperties;
-
   }
 
   /**
@@ -380,9 +376,14 @@ public class IndexSchema {
    *
    * @since solr 1.3
    */
-  public void refreshAnalyzers() {
-    indexAnalyzer = new SolrIndexAnalyzer(fields.values(), dynamicFields);
-    queryAnalyzer = new SolrQueryAnalyzer(fields.values(), dynamicFields);
+  public synchronized void refreshAnalyzers() {
+    if (indexAnalyzer == null) {
+      indexAnalyzer = new SolrIndexAnalyzer(fields, dynamicFields);
+      queryAnalyzer = new SolrQueryAnalyzer(fields, dynamicFields);
+    } else {
+      ((SolrIndexAnalyzer) indexAnalyzer).setUpFields(fields, dynamicFields);
+      ((SolrQueryAnalyzer) queryAnalyzer).setUpFields(fields, dynamicFields);
+    }
   }
 
   /** @see UninvertingReader */
@@ -428,62 +429,93 @@ public class IndexSchema {
     return false;
   }
 
+  public IndexSchemaFactory getSchemaFactory() {
+    return null;
+  }
+
   private static class SolrIndexAnalyzer extends DelegatingAnalyzerWrapper {
-    protected final Map<String, Analyzer> analyzers;
-    protected final Collection<SchemaField> fields;
+    protected volatile Map<String, Analyzer> analyzers;
+    protected volatile Map<String,SchemaField> fields;
 
-    protected volatile DynamicField[] dynamicFields;
+    protected volatile List<DynamicField> dynamicFields;
 
-    SolrIndexAnalyzer(Collection<SchemaField> fields, DynamicField[] dynamicFields) {
+    SolrIndexAnalyzer(Map<String,SchemaField> fields, List<DynamicField> dynamicFields) {
       super(PER_FIELD_REUSE_STRATEGY);
+      setUpFields(fields, dynamicFields);
+    }
+
+    protected Map<String, Analyzer> analyzerCache() {
+      Map<String,Analyzer> cache = new ConcurrentHashMap<>();
+      fields.forEach((s, f) -> {
+        Analyzer analyzer = f.getType().getIndexAnalyzer();
+        cache.put(f.getName(), analyzer);
+
+      });
+      return cache;
+    }
+
+    public void setUpFields(Map<String,SchemaField> fields, List<DynamicField> dynamicFields) {
       this.fields = fields;
       this.dynamicFields = dynamicFields;
       analyzers = analyzerCache();
     }
 
-    protected Map<String, Analyzer> analyzerCache() {
-      Map<String, Analyzer> cache = new ConcurrentHashMap<>();
-      for (SchemaField f : fields) {
-        Analyzer analyzer = f.getType().getIndexAnalyzer();
-        cache.put(f.getName(), analyzer);
-      }
-      return cache;
-    }
-
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
       Analyzer analyzer = analyzers.get(fieldName);
-      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getIndexAnalyzer();
+      FieldType ft = getDynamicFieldType(fieldName);
+      if (ft != null) {
+        return analyzer != null ? analyzer : ft.getIndexAnalyzer();
+      }
+      SchemaField field = fields.get(fieldName);
+      if (field != null) {
+        ft = field.getType();
+        return ft.getIndexAnalyzer();
+      }
+      throw new SolrException(ErrorCode.BAD_REQUEST, "undefined field "+fieldName);
     }
 
     public FieldType getDynamicFieldType(String fieldName) {
-      for (DynamicField df : dynamicFields) {
-        if (df.matches(fieldName)) return df.prototype.getType();
+      FieldType[] fieldType = new FieldType[1];
+      dynamicFields.forEach(dynamicField -> {
+        if (dynamicField.matches(fieldName)) fieldType[0] = dynamicField.prototype.getType();
+      });
+      if (fieldType[0] != null) {
+        return fieldType[0];
       }
-      throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
+      return null;
     }
-
   }
 
   private static class SolrQueryAnalyzer extends SolrIndexAnalyzer {
-    SolrQueryAnalyzer(Collection<SchemaField> fields, DynamicField[] dynamicFields) {
+    SolrQueryAnalyzer(Map<String,SchemaField> fields, List<DynamicField> dynamicFields) {
       super(fields, dynamicFields);
     }
 
     @Override
     protected Map<String, Analyzer> analyzerCache() {
-      Map<String, Analyzer> cache = new ConcurrentHashMap<>();
-       for (SchemaField f : fields) {
-        Analyzer analyzer = f.getType().getQueryAnalyzer();
+      Map<String,Analyzer> cache = new ConcurrentHashMap<>();
+      fields.forEach((s, f) -> {
+        Analyzer analyzer = f.getType().getIndexAnalyzer();
         cache.put(f.getName(), analyzer);
-      }
+
+      });
       return cache;
     }
 
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
       Analyzer analyzer = analyzers.get(fieldName);
-      return analyzer != null ? analyzer : getDynamicFieldType(fieldName).getQueryAnalyzer();
+      FieldType ft = getDynamicFieldType(fieldName);
+      if (ft != null) {
+        return analyzer != null ? analyzer : ft.getQueryAnalyzer();
+      }
+      SchemaField field = fields.get(fieldName);
+      if (field != null) {
+        ft = field.getType();
+        return ft.getQueryAnalyzer();
+      }
+      throw new SolrException(ErrorCode.BAD_REQUEST, "undefined field "+fieldName);
     }
   }
 
@@ -633,6 +665,9 @@ public class IndexSchema {
       dynamicCopyFields = EMPTY_DYNAMIC_COPY_FIELDS;
       loadCopyFields(document);
 
+
+      // create the field analyzers
+      refreshAnalyzers();
       postReadInform();
 
     } catch (SolrException e) {
@@ -646,18 +681,13 @@ public class IndexSchema {
           "Can't load schema " + loader.resourceLocation(resourceName) + ": " + e.getMessage(), e);
     }
 
-    // create the field analyzers
-    refreshAnalyzers();
-
     log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
   }
 
-  protected void postReadInform() {
+  public void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
     for (SchemaAware aware : schemaAware) {
-      ParWork.getRootSharedExecutor().submit(() -> {
         aware.inform(this);
-      });
     }
   }
 
@@ -669,11 +699,8 @@ public class IndexSchema {
   protected Map<String,Boolean> loadFields(NodeInfo document) throws XPathExpressionException {
     // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
     Map<String,Boolean> explicitRequiredProp = new HashMap<>();
-    
-    ArrayList<DynamicField> dFields = new ArrayList<>();
 
     //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
-
 
     ArrayList<NodeInfo> nodes = (ArrayList) loader.xpathOrExp.evaluate(document, XPathConstants.NODESET);
 
@@ -683,7 +710,7 @@ public class IndexSchema {
       AttributeMap attrs = node.attributes();
 
       String name = DOMUtil.getAttr(node, NAME, "field definition");
-      log.trace("reading field def {}", name);
+      if (log.isTraceEnabled()) log.trace("reading field def {}", name);
       String type = DOMUtil.getAttr(node, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
@@ -718,8 +745,8 @@ public class IndexSchema {
           requiredFields.add(f);
         }
       } else if (nodeValue.equals(DYNAMIC_FIELD)) {
-        if (isValidDynamicField(dFields, f)) {
-          addDynamicFieldNoDupCheck(dFields, f);
+        if (isValidDynamicField(dynamicFields, f)) {
+          addDynamicFieldNoDupCheck(dynamicFields, f);
         }
       } else {
         // we should never get here
@@ -732,26 +759,9 @@ public class IndexSchema {
     // in DocumentBuilder.getDoc()
     requiredFields.addAll(fieldsWithDefaultValue);
 
-    dynamicFields = dynamicFieldListToSortedArray(dFields);
-                                                                   
+
+    Collections.sort(dynamicFields);
     return explicitRequiredProp;
-  }
-  
-  /**
-   * Sort the dynamic fields and stuff them in a normal array for faster access.
-   */
-  protected static DynamicField[] dynamicFieldListToSortedArray(List<DynamicField> dynamicFieldList) {
-    // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
-    // rather than Collections.sort() then converting to an array, since Collections.sort()
-    // copies to an array first, then sets each collection member from the array. 
-    DynamicField[] dFields = dynamicFieldList.toArray(TS);
-    Arrays.sort(dFields);
-
-    if (log.isTraceEnabled()) {
-      log.trace("Dynamic Field Ordering: {}", Arrays.toString(dFields));
-    }
-
-    return dFields; 
   }
 
   /**
@@ -843,10 +853,10 @@ public class IndexSchema {
    * Register one or more new Dynamic Fields with the Schema.
    * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
-  public synchronized void registerDynamicFields(SchemaField... fields) {
-    List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
+  public void registerDynamicFields(SchemaField... fields) {
+    List<DynamicField> dynFields = new ArrayList<>(fields.length);
     for (SchemaField field : fields) {
-      if (isDuplicateDynField(dynFields, field)) { new ArrayList<>(asList(dynamicFields));
+      if (isDuplicateDynField(dynamicFields, field)) {
         if (log.isDebugEnabled()) {
           log.debug("dynamic field already exists: dynamic field: [{}]", field.getName());
         }
@@ -857,7 +867,7 @@ public class IndexSchema {
         addDynamicFieldNoDupCheck(dynFields, field);
       }
     }
-    dynamicFields = dynamicFieldListToSortedArray(dynFields);
+    dynamicFields.addAll(dynFields);
   }
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
@@ -867,7 +877,9 @@ public class IndexSchema {
 
   protected boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
     for (DynamicField df : dFields) {
-      if (df.getRegex().equals(f.name)) return true;
+      if (df.getRegex().equals(f.name)) {
+        return true;
+      }
     }
     return false;
   }
@@ -1173,10 +1185,11 @@ public class IndexSchema {
   }
 
   public SchemaField[] getDynamicFieldPrototypes() {
-    SchemaField[] df = new SchemaField[dynamicFields.length];
-    for (int i=0;i<dynamicFields.length;i++) {
-      df[i] = dynamicFields[i].prototype;
-    }
+    SchemaField[] df = new SchemaField[dynamicFields.size()];
+    int[] cnt = new int[]{0};
+    dynamicFields.forEach(dynamicField -> {
+        df[cnt[0]] = dynamicFields.get(cnt[0]++).prototype;
+    });
     return df;
   }
 
@@ -1184,7 +1197,7 @@ public class IndexSchema {
    for (DynamicField df : dynamicFields) {
      if (df.matches(fieldName)) return df.getRegex();
    }
-   return  null; 
+   return  null;
   }
   
   /**
@@ -1448,7 +1461,7 @@ public class IndexSchema {
         }
         return result;
       }),
-      DYNAMIC_FIELDS(IndexSchema.DYNAMIC_FIELDS, sp -> Stream.of(sp.schema.dynamicFields)
+      DYNAMIC_FIELDS(IndexSchema.DYNAMIC_FIELDS, sp -> Stream.of(sp.schema.dynamicFields.toArray(new DynamicField[0]))
           .filter(it -> !it.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX))
           .filter(it -> sp.requestedFields == null || sp.requestedFields.contains(it.getPrototype().getName()))
           .map(it -> sp.getProperties(it.getPrototype()))
@@ -1512,6 +1525,7 @@ public class IndexSchema {
         String dynamicBase = schema.getDynamicPattern(sf.getName());
         // Add dynamicBase property if it's different from the field name.
         if (!sf.getName().equals(dynamicBase)) {
+          result.remove("dynamicBase");
           result.add("dynamicBase", dynamicBase);
         }
       }

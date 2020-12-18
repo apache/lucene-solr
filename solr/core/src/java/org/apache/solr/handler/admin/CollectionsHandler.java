@@ -326,7 +326,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       rsp.getValues().addAll(overseerResponse.getResponse());
       Exception exp = overseerResponse.getException();
       if (exp != null) {
-        log.error("Exception", exp);
+        if (log.isDebugEnabled()) log.debug("Exception", exp);
         rsp.setException(exp);
       }
       if (log.isDebugEnabled()) log.debug("Overseer is done, response={}", rsp.getValues());

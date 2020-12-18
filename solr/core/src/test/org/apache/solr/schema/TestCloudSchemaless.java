@@ -39,9 +39,6 @@ import java.util.TreeMap;
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
-
-// schemaless is a bit flakey I think - if fields are added and we try to persist, first we have to pull the schema again and
-// we can lose the field(s) added in the meantime?
 public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";
@@ -58,6 +55,8 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
     sliceCount = 2;
     numJettys = 2;
     extraServlets = getExtraServlets();
+    System.setProperty("managed.schema.mutable", "true");
+    System.setProperty("enable.update.log", "true");
   }
 
   public SortedMap<ServletHolder,String> getExtraServlets() {
@@ -118,8 +117,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
           String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
           log.error(msg);
 
-          // nocommit - this test is flakey, we can end up missing an expected field type randomly/rarley
-         // fail(msg);
+          fail(msg);
         }
       } catch (Exception ex) {
         fail("Caught exception: " + ex);

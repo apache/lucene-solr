@@ -741,7 +741,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
         @Override
         public void sendError(int sc, String msg) throws IOException {
-          log.error(msg);
+          if (sc != 404) {
+            log.error(sc + ":" + msg);
+          }
           response.setStatus(sc);
           PrintWriter writer = new PrintWriter(getOutputStream());
           writer.write(msg);

@@ -96,7 +96,7 @@ public class IndexFingerprint implements MapSerializable {
     try {
       IndexFingerprint f = newestSearcher.get().getIndexFingerprint(maxVersion);
       final double duration = timer.stop();
-      log.info("IndexFingerprint millis:{} result:{}",duration, f);
+      if (log.isDebugEnabled()) log.debug("IndexFingerprint millis:{} result:{}",duration, f);
       return f;
     } finally {
       if (newestSearcher != null) {

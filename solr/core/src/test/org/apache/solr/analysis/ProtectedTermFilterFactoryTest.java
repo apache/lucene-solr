@@ -47,6 +47,8 @@ public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
 
       TokenStream ts = factory.create(whitespaceMockTokenizer(text));
       BaseTokenStreamTestCase.assertTokenStreamContents(ts, new String[] {"wuthering", "FooBar", "distant", "goldeN", "abc", "compote"});
+      ts.end();
+      ts.close();
     }
   }
 

@@ -173,8 +173,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -193,6 +193,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
   private static final Logger slowLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".SlowRequest");
   private final CoreDescriptor coreDescriptor;
+  private final Future[] initSearcherFuture;
   private volatile String name;
 
   private String logid; // used to show what name is set
@@ -358,7 +359,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // replacement via SolrCloud) then we need to explicitly inform() the similarity because
     // we can't rely on the normal SolrResourceLoader lifecycle because the sim was instantiated
     // after the SolrCore was already live (see: SOLR-8311 + SOLR-8280)
-
+    if (this.schema == replacementSchema) {
+      return;
+    }
     this.schema = replacementSchema;
 
     final SimilarityFactory similarityFactory = replacementSchema.getSimilarityFactory();
@@ -1135,7 +1138,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) this.updateHandler);
       infoRegistry.put("updateHandler", this.updateHandler);
 
-      initSearcher(prev);
+      initSearcherFuture = initSearcher(prev);
 
       infoRegistry.put("core", this);
 
@@ -1221,6 +1224,17 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       throw e;
     } finally {
       searcherReadyLatch.countDown();
+
+      // nocommit - wait before publish active
+//      if (!getSolrConfig().useColdSearcher) {
+//        try {
+//          initSearcherFuture[0].get();
+//        } catch (InterruptedException e) {
+//          log.error("", e);
+//        } catch (ExecutionException e) {
+//          log.error("", e);
+//        }
+//      }
     }
 
 
@@ -1266,7 +1280,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private void initSearcher(SolrCore prev) throws IOException {
+  private Future[] initSearcher(SolrCore prev) throws IOException {
     // use the (old) writer to open the first searcher
     RefCounted<IndexWriter> iwRef = null;
     if (prev != null) {
@@ -1277,7 +1291,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         newReaderCreator = () -> indexReaderFactory.newReader(iw, core);
       }
     }
-
+    Future[] waitSearcher = new Future[1];
     try {
       getSearcher(false, false, null, true);
     } finally {
@@ -1286,6 +1300,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         iwRef.decref();
       }
     }
+    return waitSearcher;
   }
 
   /**
@@ -2664,7 +2679,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
                   listener.newSearcher(newSearcher, null);
                 });
               }
-              work.addCollect();
             }
             return null;
           });

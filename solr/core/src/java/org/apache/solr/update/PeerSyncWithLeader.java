@@ -382,10 +382,10 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     try {
       IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
       int cmp = IndexFingerprint.compare(leaderFingerprint, ourFingerprint);
-      log.info("Fingerprint comparison result: {}" , cmp);
-     // if (cmp != 0) {
-        log.info("Leader fingerprint: {}, Our fingerprint: {}", leaderFingerprint , ourFingerprint);
-     // }
+      if (log.isDebugEnabled()) log.debug("Fingerprint comparison result: {}" , cmp);
+      if (cmp != 0) {
+        if (log.isDebugEnabled()) log.debug("Leader fingerprint: {}, Our fingerprint: {}", leaderFingerprint , ourFingerprint);
+      }
       return cmp == 0;  // currently, we only check for equality...
     } catch (IOException e) {
       log.warn("Could not confirm if we are already in sync. Continue with PeerSync");

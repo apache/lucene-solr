@@ -101,7 +101,7 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         if (createNewReqInfo) SolrRequestInfo.clearRequestInfo();
       }
     }
-    log.info("QuerySenderListener done.");
+    if (log.isDebugEnabled()) log.debug("QuerySenderListener done.");
   }
 
 

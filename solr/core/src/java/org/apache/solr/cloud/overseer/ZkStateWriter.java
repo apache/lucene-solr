@@ -75,7 +75,7 @@ public class ZkStateWriter {
   protected final ReentrantLock ourLock = new ReentrantLock(true);
   protected final ReentrantLock writeLock = new ReentrantLock(true);
 
-  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 100), new TimeSource.NanoTimeSource(){
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 10), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
       ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
     }
@@ -238,7 +238,7 @@ public class ZkStateWriter {
               } else {
                 String core = entry.getKey();
                 String collectionAndStateString = (String) entry.getValue();
-                log.info("collectionAndState={}", collectionAndStateString);
+                if (log.isDebugEnabled()) log.debug("collectionAndState={}", collectionAndStateString);
                 String[] collectionAndState = collectionAndStateString.split(",");
                 String collection = collectionAndState[0];
                 String setState = collectionAndState[1];
@@ -412,7 +412,7 @@ public class ZkStateWriter {
                 reader.getZkClient().setData(path, data, version, true);
                 trackVersions.put(collection.getName(), version + 1);
                 if (dirtyStructure.contains(collection.getName())) {
-                  log.info("structure change in {}", collection.getName());
+                  if (log.isDebugEnabled()) log.debug("structure change in {}", collection.getName());
                   dirtyStructure.remove(collection.getName());
                   reader.getZkClient().setData(pathSCN, null, -1, true);
 

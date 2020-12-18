@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Ignore
 public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   private static final String COLLECTION = "managed_coll";
   private static final String CONFIG = "cloud-managed";
