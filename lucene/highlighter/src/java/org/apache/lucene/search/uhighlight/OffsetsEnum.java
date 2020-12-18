@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.function.Supplier;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchesIterator;
@@ -35,9 +34,9 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * An enumeration/iterator of a term and its offsets for use by {@link FieldHighlighter}.
- * It is advanced and is placed in a priority queue by
- * {@link FieldHighlighter#highlightOffsetsEnums(OffsetsEnum)} based on the start offset.
+ * An enumeration/iterator of a term and its offsets for use by {@link FieldHighlighter}. It is
+ * advanced and is placed in a priority queue by {@link
+ * FieldHighlighter#highlightOffsetsEnums(OffsetsEnum)} based on the start offset.
  *
  * @lucene.internal
  */
@@ -75,8 +74,8 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   }
 
   /**
-   * Advances to the next position and returns true, or if can't then returns false.
-   * Note that the initial state of this class is not positioned.
+   * Advances to the next position and returns true, or if can't then returns false. Note that the
+   * initial state of this class is not positioned.
    */
   public abstract boolean nextPosition() throws IOException;
 
@@ -84,8 +83,8 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public abstract int freq() throws IOException;
 
   /**
-   * The term at this position.
-   * This BytesRef is safe to continue to refer to, even after we move to the next position.
+   * The term at this position. This BytesRef is safe to continue to refer to, even after we move to
+   * the next position.
    *
    * @see Passage#getMatchTerms()
    */
@@ -96,8 +95,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
   public abstract int endOffset() throws IOException;
 
   @Override
-  public void close() throws IOException {
-  }
+  public void close() throws IOException {}
 
   @Override
   public String toString() {
@@ -106,7 +104,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     try {
       offset = ",[" + startOffset() + "-" + endOffset() + "]";
     } catch (Exception e) {
-      //ignore; for debugging only
+      // ignore; for debugging only
     }
     try {
       return name + "(term:" + getTerm().utf8ToString() + offset + ")";
@@ -115,9 +113,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
   }
 
-  /**
-   * Based on a {@link PostingsEnum} -- the typical/standard OE impl.
-   */
+  /** Based on a {@link PostingsEnum} -- the typical/standard OE impl. */
   public static class OfPostings extends OffsetsEnum {
     private final BytesRef term;
     private final PostingsEnum postingsEnum; // with offsets
@@ -174,12 +170,13 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
 
   /** Based on a {@link MatchesIterator} with submatches. */
   public static class OfMatchesIteratorWithSubs extends OffsetsEnum {
-    //Either CachedOE impls (which are the submatches) or OfMatchesIterator impls
+    // Either CachedOE impls (which are the submatches) or OfMatchesIterator impls
     private final PriorityQueue<OffsetsEnum> pendingQueue = new PriorityQueue<>();
-    private final HashMap<Query,BytesRef> queryToTermMap = new HashMap<>();
+    private final HashMap<Query, BytesRef> queryToTermMap = new HashMap<>();
 
     public OfMatchesIteratorWithSubs(MatchesIterator matchesIterator) {
-      pendingQueue.add(new OfMatchesIterator(matchesIterator, () -> queryToTerm(matchesIterator.getQuery())));
+      pendingQueue.add(
+          new OfMatchesIterator(matchesIterator, () -> queryToTerm(matchesIterator.getQuery())));
     }
 
     @Override
@@ -191,9 +188,9 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
         OffsetsEnum newHeadOE = pendingQueue.peek();
         if (newHeadOE instanceof OfMatchesIterator) {
           // We found the matchesIterator.  Requires processing.
-          nextWhenMatchesIterator((OfMatchesIterator) newHeadOE);  // May or may not remove or re-queue itself
+          // May or may not remove or re-queue itself
+          nextWhenMatchesIterator((OfMatchesIterator) newHeadOE);
         } // else new head is a CacheOE or no more.  Nothing to do with it.
-
       } else { // formerHeadOE is OfMatchesIterator; advance it
         OfMatchesIterator miOE = (OfMatchesIterator) formerHeadOE;
         if (miOE.nextPosition()) {
@@ -233,38 +230,48 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
         while (thisMI.next()) {
           if (false == enqueueCachedMatches(thisMI.getSubMatches())) { // recursion
             // if no sub-matches then add ourselves
-            pendingQueue.add(new CachedOE(queryToTerm(thisMI.getQuery()), thisMI.startOffset(), thisMI.endOffset()));
+            pendingQueue.add(
+                new CachedOE(
+                    queryToTerm(thisMI.getQuery()), thisMI.startOffset(), thisMI.endOffset()));
           }
         }
         return true;
       }
     }
 
-    /** Maps a Query from {@link MatchesIterator#getQuery()} to {@link OffsetsEnum#getTerm()}.
-     * See {@link Passage#getMatchTerms()}. */
+    /**
+     * Maps a Query from {@link MatchesIterator#getQuery()} to {@link OffsetsEnum#getTerm()}. See
+     * {@link Passage#getMatchTerms()}.
+     */
     private BytesRef queryToTerm(Query query) {
-      // compute an approximate BytesRef term of a Query.  We cache this since we're likely to see the same query again.
-      // Our approach is to visit each matching term in order, concatenating them with an adjoining space.
-      //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the toString() of the query.
-      return queryToTermMap.computeIfAbsent(query, (Query q) -> {
-        BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
-        q.visit(new QueryVisitor() {
-          @Override
-          public void consumeTerms(Query query, Term... terms) {
-            for (Term term : terms) {
-              if (bytesRefBuilder.length() > 0) {
-                bytesRefBuilder.append((byte) ' ');
-              }
-              bytesRefBuilder.append(term.bytes());
+      // compute an approximate BytesRef term of a Query.  We cache this since we're likely to see
+      // the same query again.
+      // Our approach is to visit each matching term in order, concatenating them with an adjoining
+      // space.
+      //  If we don't have any (perhaps due to an MTQ like a wildcard) then we fall back on the
+      // toString() of the query.
+      return queryToTermMap.computeIfAbsent(
+          query,
+          (Query q) -> {
+            BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
+            q.visit(
+                new QueryVisitor() {
+                  @Override
+                  public void consumeTerms(Query query, Term... terms) {
+                    for (Term term : terms) {
+                      if (bytesRefBuilder.length() > 0) {
+                        bytesRefBuilder.append((byte) ' ');
+                      }
+                      bytesRefBuilder.append(term.bytes());
+                    }
+                  }
+                });
+            if (bytesRefBuilder.length() > 0) {
+              return bytesRefBuilder.get();
             }
-          }
-        });
-        if (bytesRefBuilder.length() > 0) {
-          return bytesRefBuilder.get();
-        }
-        // fallback:  (likely a MultiTermQuery)
-        return new BytesRef(q.toString());
-      });
+            // fallback:  (likely a MultiTermQuery)
+            return new BytesRef(q.toString());
+          });
     }
 
     @Override
@@ -361,41 +368,38 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     }
   }
 
-  /**
-   * Empty enumeration
-   */
-  public static final OffsetsEnum EMPTY = new OffsetsEnum() {
-    @Override
-    public boolean nextPosition() throws IOException {
-      return false;
-    }
+  /** Empty enumeration */
+  public static final OffsetsEnum EMPTY =
+      new OffsetsEnum() {
+        @Override
+        public boolean nextPosition() throws IOException {
+          return false;
+        }
 
-    @Override
-    public BytesRef getTerm() throws IOException {
-      throw new UnsupportedOperationException();
-    }
+        @Override
+        public BytesRef getTerm() throws IOException {
+          throw new UnsupportedOperationException();
+        }
 
-    @Override
-    public int startOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
+        @Override
+        public int startOffset() throws IOException {
+          throw new UnsupportedOperationException();
+        }
 
-    @Override
-    public int endOffset() throws IOException {
-      throw new UnsupportedOperationException();
-    }
+        @Override
+        public int endOffset() throws IOException {
+          throw new UnsupportedOperationException();
+        }
 
-    @Override
-    public int freq() throws IOException {
-      return 0;
-    }
+        @Override
+        public int freq() throws IOException {
+          return 0;
+        }
+      };
 
-  };
-
-  /**
-   * A view over several OffsetsEnum instances, merging them in-place
-   */
-  //If OffsetsEnum and MatchesIterator ever truly merge then this could go away in lieu of DisjunctionMatchesIterator
+  /** A view over several OffsetsEnum instances, merging them in-place */
+  // If OffsetsEnum and MatchesIterator ever truly merge then this could go away in lieu of
+  // DisjunctionMatchesIterator
   public static class MultiOffsetsEnum extends OffsetsEnum {
 
     private final PriorityQueue<OffsetsEnum> queue;
@@ -404,8 +408,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
     public MultiOffsetsEnum(List<OffsetsEnum> inner) throws IOException {
       this.queue = new PriorityQueue<>();
       for (OffsetsEnum oe : inner) {
-        if (oe.nextPosition())
-          this.queue.add(oe);
+        if (oe.nextPosition()) this.queue.add(oe);
       }
     }
 
@@ -420,8 +423,7 @@ public abstract class OffsetsEnum implements Comparable<OffsetsEnum>, Closeable 
         if (top.nextPosition()) {
           this.queue.add(top);
           return true;
-        }
-        else {
+        } else {
           top.close();
         }
         return this.queue.size() > 0;

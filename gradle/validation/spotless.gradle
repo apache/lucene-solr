@@ -47,8 +47,9 @@ allprojects { prj ->
 
           case ":lucene:highlighter":
             target "src/**/org/apache/lucene/search/matchhighlight/**",
-                   "src/**/org/apache/lucene/search/highlight/**"
-            targetExclude "**/resources/**"
+                   "src/**/org/apache/lucene/search/highlight/**",
+                   "src/**/org/apache/lucene/search/uhighlight/**"
+            targetExclude "**/resources/**", "**/CambridgeMA.utf8"
             break
 
           // Disable for everything else for now.

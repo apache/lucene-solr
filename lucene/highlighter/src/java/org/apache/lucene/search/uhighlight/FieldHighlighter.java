@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 
@@ -42,9 +41,14 @@ public class FieldHighlighter {
   protected final int maxNoHighlightPassages;
   protected final PassageFormatter passageFormatter;
 
-  public FieldHighlighter(String field, FieldOffsetStrategy fieldOffsetStrategy, BreakIterator breakIterator,
-                          PassageScorer passageScorer, int maxPassages, int maxNoHighlightPassages,
-                          PassageFormatter passageFormatter) {
+  public FieldHighlighter(
+      String field,
+      FieldOffsetStrategy fieldOffsetStrategy,
+      BreakIterator breakIterator,
+      PassageScorer passageScorer,
+      int maxPassages,
+      int maxNoHighlightPassages,
+      PassageFormatter passageFormatter) {
     this.field = field;
     this.fieldOffsetStrategy = fieldOffsetStrategy;
     this.breakIterator = breakIterator;
@@ -62,11 +66,11 @@ public class FieldHighlighter {
     return fieldOffsetStrategy.getOffsetSource();
   }
 
-  /**
-   * The primary method -- highlight this doc, assuming a specific field and given this content.
-   */
-  public Object highlightFieldForDoc(LeafReader reader, int docId, String content) throws IOException {
-    // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl for it.
+  /** The primary method -- highlight this doc, assuming a specific field and given this content. */
+  public Object highlightFieldForDoc(LeafReader reader, int docId, String content)
+      throws IOException {
+    // note: it'd be nice to accept a CharSequence for content, but we need a CharacterIterator impl
+    // for it.
     if (content.length() == 0) {
       return null; // nothing to do
     }
@@ -76,12 +80,14 @@ public class FieldHighlighter {
     try (OffsetsEnum offsetsEnums = fieldOffsetStrategy.getOffsetsEnum(reader, docId, content)) {
 
       // Highlight the offsetsEnum list against the content to produce Passages.
-      Passage[] passages = highlightOffsetsEnums(offsetsEnums);// and breakIterator & scorer
+      Passage[] passages = highlightOffsetsEnums(offsetsEnums); // and breakIterator & scorer
 
       // Format the resulting Passages.
       if (passages.length == 0) {
         // no passages were returned, so ask for a default summary
-        passages = getSummaryPassagesNoHighlight(maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages);
+        passages =
+            getSummaryPassagesNoHighlight(
+                maxNoHighlightPassages == -1 ? maxPassages : maxNoHighlightPassages);
       }
 
       if (passages.length > 0) {
@@ -93,10 +99,9 @@ public class FieldHighlighter {
   }
 
   /**
-   * Called to summarize a document when no highlights were found.
-   * By default this just returns the first
-   * {@link #maxPassages} sentences; subclasses can override to customize.
-   * The state of {@link #breakIterator} should be at the beginning.
+   * Called to summarize a document when no highlights were found. By default this just returns the
+   * first {@link #maxPassages} sentences; subclasses can override to customize. The state of {@link
+   * #breakIterator} should be at the beginning.
    */
   protected Passage[] getSummaryPassagesNoHighlight(int maxPassages) {
     assert breakIterator.current() == breakIterator.first();
@@ -122,8 +127,7 @@ public class FieldHighlighter {
   // algorithm: treat sentence snippets as miniature documents
   // we can intersect these with the postings lists via BreakIterator.preceding(offset),s
   // score each sentence as norm(sentenceStartOffset) * sum(weight * tf(freq))
-  protected Passage[] highlightOffsetsEnums(OffsetsEnum off)
-      throws IOException {
+  protected Passage[] highlightOffsetsEnums(OffsetsEnum off) throws IOException {
 
     final int contentLength = this.breakIterator.getText().getEndIndex();
 
@@ -131,22 +135,27 @@ public class FieldHighlighter {
       return new Passage[0];
     }
 
-    PriorityQueue<Passage> passageQueue = new PriorityQueue<>(Math.min(64, maxPassages + 1), (left, right) -> {
-      if (left.getScore() < right.getScore()) {
-        return -1;
-      } else if (left.getScore() > right.getScore()) {
-        return 1;
-      } else {
-        return left.getStartOffset() - right.getStartOffset();
-      }
-    });
-    Passage passage = new Passage(); // the current passage in-progress.  Will either get reset or added to queue.
+    PriorityQueue<Passage> passageQueue =
+        new PriorityQueue<>(
+            Math.min(64, maxPassages + 1),
+            (left, right) -> {
+              if (left.getScore() < right.getScore()) {
+                return -1;
+              } else if (left.getScore() > right.getScore()) {
+                return 1;
+              } else {
+                return left.getStartOffset() - right.getStartOffset();
+              }
+            });
+    Passage passage =
+        new Passage(); // the current passage in-progress.  Will either get reset or added to queue.
     int lastPassageEnd = 0;
 
     do {
       int start = off.startOffset();
       if (start == -1) {
-        throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
+        throw new IllegalArgumentException(
+            "field '" + field + "' was indexed without offsets, cannot highlight");
       }
       int end = off.endOffset();
       if (start < contentLength && end > contentLength) {
@@ -159,15 +168,23 @@ public class FieldHighlighter {
         if (start >= contentLength) {
           break;
         }
-        // find fragment from the middle of the match, so the result's length may be closer to fragsize
+        // find fragment from the middle of the match, so the result's length may be closer to
+        // fragsize
         final int center = start + (end - start) / 2;
         // advance breakIterator
-        passage.setStartOffset(Math.min(start, Math.max(this.breakIterator.preceding(Math.max(start + 1, center)), lastPassageEnd)));
-        lastPassageEnd = Math.max(end, Math.min(this.breakIterator.following(Math.min(end - 1, center)), contentLength));
+        passage.setStartOffset(
+            Math.min(
+                start,
+                Math.max(
+                    this.breakIterator.preceding(Math.max(start + 1, center)), lastPassageEnd)));
+        lastPassageEnd =
+            Math.max(
+                end,
+                Math.min(this.breakIterator.following(Math.min(end - 1, center)), contentLength));
         passage.setEndOffset(lastPassageEnd);
       }
       // Add this term to the passage.
-      BytesRef term = off.getTerm();// a reference; safe to refer to
+      BytesRef term = off.getTerm(); // a reference; safe to refer to
       assert term != null;
       passage.addMatch(start, end, term, off.freq());
     } while (off.nextPosition());
@@ -179,7 +196,11 @@ public class FieldHighlighter {
     return passages;
   }
 
-  private Passage maybeAddPassage(PriorityQueue<Passage> passageQueue, PassageScorer scorer, Passage passage, int contentLength) {
+  private Passage maybeAddPassage(
+      PriorityQueue<Passage> passageQueue,
+      PassageScorer scorer,
+      Passage passage,
+      int contentLength) {
     if (passage.getStartOffset() == -1) {
       // empty passage, we can ignore it
       return passage;
@@ -199,5 +220,4 @@ public class FieldHighlighter {
     }
     return passage;
   }
-
 }

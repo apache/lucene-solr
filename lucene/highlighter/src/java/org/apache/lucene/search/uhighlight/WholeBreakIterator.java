@@ -41,7 +41,8 @@ public final class WholeBreakIterator extends BreakIterator {
     if (pos < start || pos > end) {
       throw new IllegalArgumentException("offset out of bounds");
     } else if (pos == end) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       current = end;
       return DONE;
@@ -88,7 +89,8 @@ public final class WholeBreakIterator extends BreakIterator {
     if (pos < start || pos > end) {
       throw new IllegalArgumentException("offset out of bounds");
     } else if (pos == start) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       current = start;
       return DONE;

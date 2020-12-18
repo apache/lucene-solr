@@ -17,12 +17,12 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Terms;
 
 /**
- * Like {@link PostingsOffsetStrategy} but also uses term vectors (only terms needed) for multi-term queries.
+ * Like {@link PostingsOffsetStrategy} but also uses term vectors (only terms needed) for multi-term
+ * queries.
  *
  * @lucene.internal
  */
@@ -33,7 +33,8 @@ public class PostingsWithTermVectorsOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(LeafReader leafReader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader leafReader, int docId, String content)
+      throws IOException {
     Terms docTerms = leafReader.getTermVector(docId, getField());
     if (docTerms == null) {
       return OffsetsEnum.EMPTY;
