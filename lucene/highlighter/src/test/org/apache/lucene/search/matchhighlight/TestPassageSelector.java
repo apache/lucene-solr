@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.hamcrest.Matchers;
-import org.junit.Test;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+import org.apache.lucene.util.LuceneTestCase;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 public class TestPassageSelector extends LuceneTestCase {
   @Test
@@ -74,7 +73,7 @@ public class TestPassageSelector extends LuceneTestCase {
         15,
         2,
         new OffsetRange[0],
-        new OffsetRange[]{new OffsetRange(0, 4), new OffsetRange(4, 9)});
+        new OffsetRange[] {new OffsetRange(0, 4), new OffsetRange(4, 9)});
   }
 
   @Test

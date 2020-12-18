@@ -81,6 +81,12 @@ import org.apache.lucene.util.Version;
  */
 public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
 
+  /** File extension used to store {@link SegmentInfo}. */
+  public final static String SI_EXTENSION = "si";
+  static final String CODEC_NAME = "Lucene86SegmentInfo";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
+
   /** Sole constructor. */
   public Lucene86SegmentInfoFormat() {
   }
@@ -96,47 +102,9 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
             VERSION_START,
             VERSION_CURRENT,
             segmentID, "");
-        final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
-        byte hasMinVersion = input.readByte();
-        final Version minVersion;
-        switch (hasMinVersion) {
-          case 0:
-            minVersion = null;
-            break;
-          case 1:
-            minVersion = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
-            break;
-          default:
-            throw new CorruptIndexException("Illegal boolean value " + hasMinVersion, input);
-        }
-
-        final int docCount = input.readInt();
-        if (docCount < 0) {
-          throw new CorruptIndexException("invalid docCount: " + docCount, input);
-        }
-        final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
-
-        final Map<String,String> diagnostics = input.readMapOfStrings();
-        final Set<String> files = input.readSetOfStrings();
-        final Map<String,String> attributes = input.readMapOfStrings();
-
-        int numSortFields = input.readVInt();
-        Sort indexSort;
-        if (numSortFields > 0) {
-          SortField[] sortFields = new SortField[numSortFields];
-          for(int i=0;i<numSortFields;i++) {
-            String name = input.readString();
-            sortFields[i] = SortFieldProvider.forName(name).readSortField(input);
-          }
-          indexSort = new Sort(sortFields);
-        } else if (numSortFields < 0) {
-          throw new CorruptIndexException("invalid index sort field count: " + numSortFields, input);
-        } else {
-          indexSort = null;
-        }
-
-        si = new SegmentInfo(dir, version, minVersion, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, indexSort);
-        si.setFiles(files);
+        
+        si = parseSegmentInfo(dir, input, segment, segmentID);
+        
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -146,6 +114,51 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
     }
   }
 
+  private SegmentInfo parseSegmentInfo(Directory dir, DataInput input, String segment, byte[] segmentID) throws IOException {
+    final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+    byte hasMinVersion = input.readByte();
+    final Version minVersion;
+    switch (hasMinVersion) {
+      case 0:
+        minVersion = null;
+        break;
+      case 1:
+        minVersion = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
+        break;
+      default:
+        throw new CorruptIndexException("Illegal boolean value " + hasMinVersion, input);
+    }
+
+    final int docCount = input.readInt();
+    if (docCount < 0) {
+      throw new CorruptIndexException("invalid docCount: " + docCount, input);
+    }
+    final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
+
+    final Map<String,String> diagnostics = input.readMapOfStrings();
+    final Set<String> files = input.readSetOfStrings();
+    final Map<String,String> attributes = input.readMapOfStrings();
+
+    int numSortFields = input.readVInt();
+    Sort indexSort;
+    if (numSortFields > 0) {
+      SortField[] sortFields = new SortField[numSortFields];
+      for(int i=0;i<numSortFields;i++) {
+        String name = input.readString();
+        sortFields[i] = SortFieldProvider.forName(name).readSortField(input);
+      }
+      indexSort = new Sort(sortFields);
+    } else if (numSortFields < 0) {
+      throw new CorruptIndexException("invalid index sort field count: " + numSortFields, input);
+    } else {
+      indexSort = null;
+    }
+
+    SegmentInfo si = new SegmentInfo(dir, version, minVersion, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, indexSort);
+    si.setFiles(files);
+    return si;
+  }
+  
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", SI_EXTENSION);
@@ -153,65 +166,60 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       // Only add the file once we've successfully created it, else IFD assert can trip:
       si.addFile(fileName);
-      CodecUtil.writeIndexHeader(output,
-          CODEC_NAME,
-          VERSION_CURRENT,
-          si.getId(),
-          "");
-      Version version = si.getVersion();
-      if (version.major < 7) {
-        throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
-      }
-      // Write the Lucene version that created this segment, since 3.1
-      output.writeInt(version.major);
-      output.writeInt(version.minor);
-      output.writeInt(version.bugfix);
+      CodecUtil.writeIndexHeader(output, CODEC_NAME, VERSION_CURRENT, si.getId(), "");
 
-      // Write the min Lucene version that contributed docs to the segment, since 7.0
-      if (si.getMinVersion() != null) {
-        output.writeByte((byte) 1);
-        Version minVersion = si.getMinVersion();
-        output.writeInt(minVersion.major);
-        output.writeInt(minVersion.minor);
-        output.writeInt(minVersion.bugfix);
-      } else {
-        output.writeByte((byte) 0);
-      }
-
-      assert version.prerelease == 0;
-      output.writeInt(si.maxDoc());
-
-      output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
-      output.writeMapOfStrings(si.getDiagnostics());
-      Set<String> files = si.files();
-      for (String file : files) {
-        if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
-          throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
-        }
-      }
-      output.writeSetOfStrings(files);
-      output.writeMapOfStrings(si.getAttributes());
-
-      Sort indexSort = si.getIndexSort();
-      int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
-      output.writeVInt(numSortFields);
-      for (int i = 0; i < numSortFields; ++i) {
-        SortField sortField = indexSort.getSort()[i];
-        IndexSorter sorter = sortField.getIndexSorter();
-        if (sorter == null) {
-          throw new IllegalArgumentException("cannot serialize SortField " + sortField);
-        }
-        output.writeString(sorter.getProviderName());
-        SortFieldProvider.write(sortField, output);
-      }
+      writeSegmentInfo(output, si);
 
       CodecUtil.writeFooter(output);
     }
   }
 
-  /** File extension used to store {@link SegmentInfo}. */
-  public final static String SI_EXTENSION = "si";
-  static final String CODEC_NAME = "Lucene86SegmentInfo";
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+  private void writeSegmentInfo(DataOutput output, SegmentInfo si) throws IOException {
+    Version version = si.getVersion();
+    if (version.major < 7) {
+      throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
+    }
+    // Write the Lucene version that created this segment, since 3.1
+    output.writeInt(version.major);
+    output.writeInt(version.minor);
+    output.writeInt(version.bugfix);
+
+    // Write the min Lucene version that contributed docs to the segment, since 7.0
+    if (si.getMinVersion() != null) {
+      output.writeByte((byte) 1);
+      Version minVersion = si.getMinVersion();
+      output.writeInt(minVersion.major);
+      output.writeInt(minVersion.minor);
+      output.writeInt(minVersion.bugfix);
+    } else {
+      output.writeByte((byte) 0);
+    }
+
+    assert version.prerelease == 0;
+    output.writeInt(si.maxDoc());
+
+    output.writeByte((byte) (si.getUseCompoundFile() ? SegmentInfo.YES : SegmentInfo.NO));
+    output.writeMapOfStrings(si.getDiagnostics());
+    Set<String> files = si.files();
+    for (String file : files) {
+      if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
+        throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
+      }
+    }
+    output.writeSetOfStrings(files);
+    output.writeMapOfStrings(si.getAttributes());
+
+    Sort indexSort = si.getIndexSort();
+    int numSortFields = indexSort == null ? 0 : indexSort.getSort().length;
+    output.writeVInt(numSortFields);
+    for (int i = 0; i < numSortFields; ++i) {
+      SortField sortField = indexSort.getSort()[i];
+      IndexSorter sorter = sortField.getIndexSorter();
+      if (sorter == null) {
+        throw new IllegalArgumentException("cannot serialize SortField " + sortField);
+      }
+      output.writeString(sorter.getProviderName());
+      SortFieldProvider.write(sortField, output);
+    }
+  }
 }

@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Tessellator;
 
 /** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -37,25 +36,19 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     int n = random().nextInt(4) + 1;
     Polygon[] polygons = new Polygon[n];
     for (int i =0; i < n; i++) {
-      int  repetitions =0;
+      int repetitions = 0;
       while (true) {
-        // if we can't tessellate; then random polygon generator created a malformed shape
         Polygon p = (Polygon) getShapeType().nextShape();
-        try {
-          Tessellator.tessellate(p);
-          //polygons are disjoint so CONTAINS works. Note that if we intersect
-          //any shape then contains return false.
-          if (isDisjoint(polygons, p)) {
-            polygons[i] = p;
-            break;
-          }
-          repetitions++;
-          if (repetitions > 50) {
-            //try again
-            return nextShape();
-          }
-        } catch (IllegalArgumentException e) {
-          continue;
+        // polygons are disjoint so CONTAINS works. Note that if we intersect
+        // any shape then contains return false.
+        if (isDisjoint(polygons, p)) {
+          polygons[i] = p;
+          break;
+        }
+        repetitions++;
+        if (repetitions > 50) {
+          // try again
+          return nextShape();
         }
       }
     }
@@ -67,9 +60,9 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     for (Polygon polygon : polygons) {
       if (polygon != null) {
         if (getEncoder().quantizeY(polygon.minLat) > getEncoder().quantizeY(check.maxLat)
-            || getEncoder().quantizeY(polygon.maxLat) < getEncoder().quantizeY(check.minLat)
-            || getEncoder().quantizeX(polygon.minLon) > getEncoder().quantizeX(check.maxLon)
-            || getEncoder().quantizeX(polygon.maxLon) < getEncoder().quantizeX(check.minLon)) {
+                || getEncoder().quantizeY(polygon.maxLat) < getEncoder().quantizeY(check.minLat)
+                || getEncoder().quantizeX(polygon.minLon) > getEncoder().quantizeX(check.maxLon)
+                || getEncoder().quantizeX(polygon.maxLon) < getEncoder().quantizeX(check.minLon)) {
           continue;
         }
         return false;
@@ -77,7 +70,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     }
     return true;
   }
-
+  
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
     Polygon[] polygons = (Polygon[]) o;
@@ -109,24 +102,6 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
       super.setRelation(relation);
       POLYGONVALIDATOR.queryRelation = relation;
       return this;
-    }
-
-    @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Polygon[] polygons = (Polygon[]) shape;
-      for (Polygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
 
     @Override

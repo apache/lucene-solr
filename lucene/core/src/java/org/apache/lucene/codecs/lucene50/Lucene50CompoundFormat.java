@@ -62,6 +62,15 @@ import org.apache.lucene.store.IndexOutput;
  */
 public final class Lucene50CompoundFormat extends CompoundFormat {
 
+  /** Extension of compound file */
+  static final String DATA_EXTENSION = "cfs";
+  /** Extension of compound file entries */
+  static final String ENTRIES_EXTENSION = "cfe";
+  static final String DATA_CODEC = "Lucene50CompoundData";
+  static final String ENTRY_CODEC = "Lucene50CompoundEntries";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
+  
   /** Sole constructor. */
   public Lucene50CompoundFormat() {
   }
@@ -80,52 +89,46 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
          IndexOutput entries = dir.createOutput(entriesFile, context)) {
       CodecUtil.writeIndexHeader(data,    DATA_CODEC, VERSION_CURRENT, si.getId(), "");
       CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
-      
-      // write number of files
-      entries.writeVInt(si.files().size());
-      for (String file : si.files()) {
-        
-        // write bytes for file
-        long startOffset = data.getFilePointer();
-        try (ChecksumIndexInput in = dir.openChecksumInput(file, IOContext.READONCE)) {
 
-          // just copies the index header, verifying that its id matches what we expect
-          CodecUtil.verifyAndCopyIndexHeader(in, data, si.getId());
-          
-          // copy all bytes except the footer
-          long numBytesToCopy = in.length() - CodecUtil.footerLength() - in.getFilePointer();
-          data.copyBytes(in, numBytesToCopy);
-
-          // verify footer (checksum) matches for the incoming file we are copying
-          long checksum = CodecUtil.checkFooter(in);
-
-          // this is poached from CodecUtil.writeFooter, but we need to use our own checksum, not data.getChecksum(), but I think
-          // adding a public method to CodecUtil to do that is somewhat dangerous:
-          data.writeInt(CodecUtil.FOOTER_MAGIC);
-          data.writeInt(0);
-          data.writeLong(checksum);
-        }
-        long endOffset = data.getFilePointer();
-        
-        long length = endOffset - startOffset;
-        
-        // write entry for file
-        entries.writeString(IndexFileNames.stripSegmentName(file));
-        entries.writeLong(startOffset);
-        entries.writeLong(length);
-      }
+      writeCompoundFile(entries, data, dir, si);
       
       CodecUtil.writeFooter(data);
       CodecUtil.writeFooter(entries);
     }
   }
+  
+  private void writeCompoundFile(IndexOutput entries, IndexOutput data, Directory dir, SegmentInfo si) throws IOException {
+    // write number of files
+    entries.writeVInt(si.files().size());
+    for (String file : si.files()) {
+      // write bytes for file
+      long startOffset = data.getFilePointer();
+      try (ChecksumIndexInput in = dir.openChecksumInput(file, IOContext.READONCE)) {
 
-  /** Extension of compound file */
-  static final String DATA_EXTENSION = "cfs";
-  /** Extension of compound file entries */
-  static final String ENTRIES_EXTENSION = "cfe";
-  static final String DATA_CODEC = "Lucene50CompoundData";
-  static final String ENTRY_CODEC = "Lucene50CompoundEntries";
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
+        // just copies the index header, verifying that its id matches what we expect
+        CodecUtil.verifyAndCopyIndexHeader(in, data, si.getId());
+
+        // copy all bytes except the footer
+        long numBytesToCopy = in.length() - CodecUtil.footerLength() - in.getFilePointer();
+        data.copyBytes(in, numBytesToCopy);
+
+        // verify footer (checksum) matches for the incoming file we are copying
+        long checksum = CodecUtil.checkFooter(in);
+
+        // this is poached from CodecUtil.writeFooter, but we need to use our own checksum, not data.getChecksum(), but I think
+        // adding a public method to CodecUtil to do that is somewhat dangerous:
+        data.writeInt(CodecUtil.FOOTER_MAGIC);
+        data.writeInt(0);
+        data.writeLong(checksum);
+      }
+      long endOffset = data.getFilePointer();
+
+      long length = endOffset - startOffset;
+
+      // write entry for file
+      entries.writeString(IndexFileNames.stripSegmentName(file));
+      entries.writeLong(startOffset);
+      entries.writeLong(length);
+    }
+  }
 }

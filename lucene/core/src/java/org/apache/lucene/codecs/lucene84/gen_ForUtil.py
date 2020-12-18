@@ -21,6 +21,7 @@ from fractions import gcd
 
 MAX_SPECIALIZED_BITS_PER_VALUE = 24
 OUTPUT_FILE = "ForUtil.java"
+PRIMITIVE_SIZE = [8, 16, 32]
 HEADER = """// This file has been automatically generated, DO NOT EDIT
 
 /*
@@ -273,17 +274,17 @@ final class ForUtil {
     final int remainingBitsPerLong = shift + bitsPerValue;
     final long maskRemainingBitsPerLong;
     if (nextPrimitive == 8) {
-      maskRemainingBitsPerLong = mask8(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS8[remainingBitsPerLong];
     } else if (nextPrimitive == 16) {
-      maskRemainingBitsPerLong = mask16(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS16[remainingBitsPerLong];
     } else {
-      maskRemainingBitsPerLong = mask32(remainingBitsPerLong);
+      maskRemainingBitsPerLong = MASKS32[remainingBitsPerLong];
     }
 
     int tmpIdx = 0;
     int remainingBitsPerValue = bitsPerValue;
     while (idx < numLongs) {
-      if (remainingBitsPerValue > remainingBitsPerLong) {
+      if (remainingBitsPerValue >= remainingBitsPerLong) {
         remainingBitsPerValue -= remainingBitsPerLong;
         tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
         if (remainingBitsPerValue == 0) {
@@ -293,14 +294,14 @@ final class ForUtil {
       } else {
         final long mask1, mask2;
         if (nextPrimitive == 8) {
-          mask1 = mask8(remainingBitsPerValue);
-          mask2 = mask8(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS8[remainingBitsPerValue];
+          mask2 = MASKS8[remainingBitsPerLong - remainingBitsPerValue];
         } else if (nextPrimitive == 16) {
-          mask1 = mask16(remainingBitsPerValue);
-          mask2 = mask16(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS16[remainingBitsPerValue];
+          mask2 = MASKS16[remainingBitsPerLong - remainingBitsPerValue];
         } else {
-          mask1 = mask32(remainingBitsPerValue);
-          mask2 = mask32(remainingBitsPerLong - remainingBitsPerValue);
+          mask1 = MASKS32[remainingBitsPerValue];
+          mask2 = MASKS32[remainingBitsPerLong - remainingBitsPerValue];
         }
         tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
@@ -325,7 +326,7 @@ final class ForUtil {
   private static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
     final int numLongs = bitsPerValue << 1;
     in.readLELongs(tmp, 0, numLongs);
-    final long mask = mask32(bitsPerValue);
+    final long mask = MASKS32[bitsPerValue];
     int longsIdx = 0;
     int shift = 32 - bitsPerValue;
     for (; shift >= 0; shift -= bitsPerValue) {
@@ -333,18 +334,18 @@ final class ForUtil {
       longsIdx += numLongs;
     }
     final int remainingBitsPerLong = shift + bitsPerValue;
-    final long mask32RemainingBitsPerLong = mask32(remainingBitsPerLong);
+    final long mask32RemainingBitsPerLong = MASKS32[remainingBitsPerLong];
     int tmpIdx = 0;
     int remainingBits = remainingBitsPerLong;
     for (; longsIdx < BLOCK_SIZE / 2; ++longsIdx) {
       int b = bitsPerValue - remainingBits;
-      long l = (tmp[tmpIdx++] & mask32(remainingBits)) << b;
+      long l = (tmp[tmpIdx++] & MASKS32[remainingBits]) << b;
       while (b >= remainingBitsPerLong) {
         b -= remainingBitsPerLong;
         l |= (tmp[tmpIdx++] & mask32RemainingBitsPerLong) << b;
       }
       if (b > 0) {
-        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & mask32(b);
+        l |= (tmp[tmpIdx] >>> (remainingBitsPerLong-b)) & MASKS32[b];
         remainingBits = remainingBitsPerLong - b;
       } else {
         remainingBits = remainingBitsPerLong;
@@ -365,6 +366,30 @@ final class ForUtil {
   }
 
 """
+
+def writeRemainderWithSIMDOptimize(bpv, next_primitive, remaining_bits_per_long, o, num_values, f):
+  iteration = 1
+  num_longs = bpv * num_values / remaining_bits_per_long
+  while num_longs % 2 == 0 and num_values % 2 == 0:
+    num_longs /= 2
+    num_values /= 2
+    iteration *= 2
+
+
+  f.write('    shiftLongs(tmp, %d, tmp, 0, 0, MASK%d_%d);\n' % (iteration * num_longs, next_primitive, remaining_bits_per_long))
+  f.write('    for (int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
+  tmp_idx = 0
+  b = bpv
+  b -= remaining_bits_per_long
+  f.write('      long l0 = tmp[tmpIdx+%d] << %d;\n' %(tmp_idx, b))
+  tmp_idx += 1
+  while b >= remaining_bits_per_long:
+    b -= remaining_bits_per_long
+    f.write('      l0 |= tmp[tmpIdx+%d] << %d;\n' %(tmp_idx, b))
+    tmp_idx += 1
+  f.write('      longs[longsIdx+0] = l0;\n')
+  f.write('    }\n')
+  
 
 def writeRemainder(bpv, next_primitive, remaining_bits_per_long, o, num_values, f):
   iteration = 1
@@ -417,18 +442,31 @@ def writeDecode(bpv, f):
       o += bpv*2
       shift -= bpv
     if shift + bpv > 0:
-      writeRemainder(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
+      if bpv % (next_primitive % bpv) == 0:
+        writeRemainderWithSIMDOptimize(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
+      else:
+        writeRemainder(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
   f.write('  }\n')
   f.write('\n')
 
 if __name__ == '__main__':
   f = open(OUTPUT_FILE, 'w')
   f.write(HEADER)
-  for primitive_size in [8, 16, 32]:
+  for primitive_size in PRIMITIVE_SIZE:
+    f.write('  private static final long[] MASKS%d = new long[%d];\n' %(primitive_size, primitive_size))
+  f.write('  static {\n')
+  for primitive_size in PRIMITIVE_SIZE:
+    f.write('    for (int i = 0; i < %d; ++i) {\n' %primitive_size)
+    f.write('      MASKS%d[i] = mask%d(i);\n' %(primitive_size, primitive_size))
+    f.write('    }\n')
+  f.write('  }\n')
+  f.write('  //mark values in array as final longs to avoid the cost of reading array, arrays should only be used when the idx is a variable\n')
+  for primitive_size in PRIMITIVE_SIZE:
     for bpv in range(1, min(MAX_SPECIALIZED_BITS_PER_VALUE + 1, primitive_size)):
       if bpv * 2 != primitive_size or primitive_size == 8:
-        f.write('  private static final long MASK%d_%d = mask%d(%d);\n' %(primitive_size, bpv, primitive_size, bpv))
+        f.write('  private static final long MASK%d_%d = MASKS%d[%d];\n' %(primitive_size, bpv, primitive_size, bpv))
   f.write('\n')
+
   f.write("""
   /**
    * Decode 128 integers into {@code longs}.

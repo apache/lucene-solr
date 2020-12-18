@@ -16,17 +16,6 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -39,14 +28,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 
 /**
- * An example highlighter that combines several lower-level highlighting
- * utilities in this package into a fully featured, ready-to-use component.
- * <p>
- * Note that if you need to customize or tweak the details of highlighting,
- * it is better to assemble your own highlighter using those low-level
- * building blocks, rather than extend or modify this one.
+ * An example highlighter that combines several lower-level highlighting utilities in this package
+ * into a fully featured, ready-to-use component.
+ *
+ * <p>Note that if you need to customize or tweak the details of highlighting, it is better to
+ * assemble your own highlighter using those low-level building blocks, rather than extend or modify
+ * this one.
  */
 public class MatchHighlighter {
   private final IndexSearcher searcher;
@@ -57,10 +56,9 @@ public class MatchHighlighter {
   private final List<FieldValueHighlighter> fieldHighlighters = new ArrayList<>();
 
   /**
-   * Actual per-field highlighter. Field highlighters are probed whether they
-   * are applicable to a particular combination of (field, hasMatches) pair. If a highlighter
-   * declares it is applicable, its {@link #format} method is invoked and the result
-   * is returned as the field's value.
+   * Actual per-field highlighter. Field highlighters are probed whether they are applicable to a
+   * particular combination of (field, hasMatches) pair. If a highlighter declares it is applicable,
+   * its {@link #format} method is invoked and the result is returned as the field's value.
    *
    * @see FieldValueHighlighters
    */
@@ -73,24 +71,24 @@ public class MatchHighlighter {
      */
     boolean isApplicable(String field, boolean hasMatches);
 
-    /**
-     * Do format field values appropriately.
-     */
-    List<String> format(String field, String[] values, String contiguousValue,
-                        List<OffsetRange> valueRanges, List<QueryOffsetRange> matchOffsets);
+    /** Do format field values appropriately. */
+    List<String> format(
+        String field,
+        String[] values,
+        String contiguousValue,
+        List<OffsetRange> valueRanges,
+        List<QueryOffsetRange> matchOffsets);
 
     /**
-     * @return Returns a set of fields that must be fetched for each document, regardless
-     * of whether they had matches or not. This is useful to load and return certain fields
-     * that should always be included (identifiers, document titles, etc.).
+     * @return Returns a set of fields that must be fetched for each document, regardless of whether
+     *     they had matches or not. This is useful to load and return certain fields that should
+     *     always be included (identifiers, document titles, etc.).
      */
     default Collection<String> alwaysFetchedFields() {
       return Collections.emptyList();
     }
 
-    /**
-     * Returns a new field value highlighter that is a combination of this one and another one.
-     */
+    /** Returns a new field value highlighter that is a combination of this one and another one. */
     default FieldValueHighlighter or(FieldValueHighlighter other) {
       FieldValueHighlighter first = this;
       FieldValueHighlighter second = other;
@@ -102,15 +100,20 @@ public class MatchHighlighter {
       return new FieldValueHighlighter() {
         @Override
         public boolean isApplicable(String field, boolean hasMatches) {
-          return first.isApplicable(field, hasMatches)
-              || second.isApplicable(field, hasMatches);
+          return first.isApplicable(field, hasMatches) || second.isApplicable(field, hasMatches);
         }
 
         @Override
-        public List<String> format(String field, String[] values, String contiguousValue,
-                                   List<OffsetRange> valueRanges, List<QueryOffsetRange> matchOffsets) {
+        public List<String> format(
+            String field,
+            String[] values,
+            String contiguousValue,
+            List<OffsetRange> valueRanges,
+            List<QueryOffsetRange> matchOffsets) {
           FieldValueHighlighter delegate =
-              first.isApplicable(field, matchOffsets != null && !matchOffsets.isEmpty()) ? first : second;
+              first.isApplicable(field, matchOffsets != null && !matchOffsets.isEmpty())
+                  ? first
+                  : second;
           return delegate.format(field, values, contiguousValue, valueRanges, matchOffsets);
         }
 
@@ -123,8 +126,8 @@ public class MatchHighlighter {
   }
 
   /**
-   * Append a new highlighter to field highlighters chain. The order of field highlighters
-   * is important (first-matching wins).
+   * Append a new highlighter to field highlighters chain. The order of field highlighters is
+   * important (first-matching wins).
    */
   public MatchHighlighter appendFieldHighlighter(FieldValueHighlighter highlighter) {
     fieldHighlighters.add(highlighter);
@@ -132,18 +135,14 @@ public class MatchHighlighter {
     return this;
   }
 
-  /**
-   * Always fetch the given set of fields for all input documents.
-   */
+  /** Always fetch the given set of fields for all input documents. */
   public void alwaysFetchFields(String... fields) {
     for (String fld : fields) {
       fieldsAlwaysReturned.add(Objects.requireNonNull(fld));
     }
   }
 
-  /**
-   * Single document's highlights.
-   */
+  /** Single document's highlights. */
   public static class DocHighlights {
     public final int docId;
     public final Map<String, List<String>> fields = new LinkedHashMap<>();
@@ -153,9 +152,7 @@ public class MatchHighlighter {
     }
   }
 
-  /**
-   * An {@link OffsetRange} of a match, together with the source query that caused it.
-   */
+  /** An {@link OffsetRange} of a match, together with the source query that caused it. */
   public static class QueryOffsetRange extends OffsetRange {
     public final Query query;
 
@@ -163,14 +160,18 @@ public class MatchHighlighter {
       super(from, to);
       this.query = query;
     }
+
+    @Override
+    public QueryOffsetRange slice(int from, int to) {
+      return new QueryOffsetRange(query, from, to);
+    }
   }
 
   private static class DocHit {
     final int docId;
     private final LeafReader leafReader;
     private final int leafDocId;
-    private final LinkedHashMap<String, List<QueryOffsetRange>> matchRanges
-        = new LinkedHashMap<>();
+    private final LinkedHashMap<String, List<QueryOffsetRange>> matchRanges = new LinkedHashMap<>();
 
     DocHit(int docId, LeafReader leafReader, int leafDocId) {
       this.docId = docId;
@@ -179,21 +180,25 @@ public class MatchHighlighter {
     }
 
     void addMatches(Query query, Map<String, List<OffsetRange>> hits) {
-      hits.forEach((field, offsets) -> {
-        List<QueryOffsetRange> target = matchRanges.computeIfAbsent(field, (fld) -> new ArrayList<>());
-        offsets.forEach(o -> target.add(new QueryOffsetRange(query, o.from, o.to)));
-      });
+      hits.forEach(
+          (field, offsets) -> {
+            List<QueryOffsetRange> target =
+                matchRanges.computeIfAbsent(field, (fld) -> new ArrayList<>());
+            offsets.forEach(o -> target.add(new QueryOffsetRange(query, o.from, o.to)));
+          });
     }
 
     Document document(Predicate<String> needsField) throws IOException {
       // Only load the fields that have a chance to be highlighted.
-      DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor() {
-        @Override
-        public Status needsField(FieldInfo fieldInfo) {
-          return (matchRanges.containsKey(fieldInfo.name) ||
-              needsField.test(fieldInfo.name)) ? Status.YES : Status.NO;
-        }
-      };
+      DocumentStoredFieldVisitor visitor =
+          new DocumentStoredFieldVisitor() {
+            @Override
+            public Status needsField(FieldInfo fieldInfo) {
+              return (matchRanges.containsKey(fieldInfo.name) || needsField.test(fieldInfo.name))
+                  ? Status.YES
+                  : Status.NO;
+            }
+          };
 
       leafReader.document(leafDocId, visitor);
       return visitor.getDocument();
@@ -201,12 +206,16 @@ public class MatchHighlighter {
   }
 
   public MatchHighlighter(IndexSearcher searcher, Analyzer analyzer) {
-    this(searcher, analyzer, MatchRegionRetriever.computeOffsetRetrievalStrategies(searcher.getIndexReader(), analyzer));
+    this(
+        searcher,
+        analyzer,
+        MatchRegionRetriever.computeOffsetRetrievalStrategies(searcher.getIndexReader(), analyzer));
   }
 
-  public MatchHighlighter(IndexSearcher searcher,
-                          Analyzer analyzer,
-                          OffsetsRetrievalStrategySupplier offsetsRetrievalStrategies) {
+  public MatchHighlighter(
+      IndexSearcher searcher,
+      Analyzer analyzer,
+      OffsetsRetrievalStrategySupplier offsetsRetrievalStrategies) {
     this.searcher = searcher;
     this.offsetsRetrievalStrategies = offsetsRetrievalStrategies;
     this.analyzer = analyzer;
@@ -224,8 +233,12 @@ public class MatchHighlighter {
     for (Query q : queries) {
       MatchRegionRetriever highlighter =
           new MatchRegionRetriever(searcher, searcher.rewrite(q), offsetsRetrievalStrategies);
-      highlighter.highlightDocuments(topDocs,
-          (int docId, LeafReader leafReader, int leafDocId, Map<String, List<OffsetRange>> hits) -> {
+      highlighter.highlightDocuments(
+          topDocs,
+          (int docId,
+              LeafReader leafReader,
+              int leafDocId,
+              Map<String, List<OffsetRange>> hits) -> {
             DocHit docHit = docHits.get(docId);
             if (docHit == null) {
               docHit = new DocHit(docId, leafReader, leafDocId);
@@ -262,8 +275,9 @@ public class MatchHighlighter {
       List<OffsetRange> valueRanges = computeValueRanges(field, values);
       List<QueryOffsetRange> offsets = docHit.matchRanges.get(field);
 
-      List<String> formattedValues = fieldValueHighlighter(field, offsets != null)
-          .format(field, values, contiguousValue, valueRanges, offsets);
+      List<String> formattedValues =
+          fieldValueHighlighter(field, offsets != null)
+              .format(field, values, contiguousValue, valueRanges, offsets);
 
       if (formattedValues != null) {
         docHighlights.fields.put(field, formattedValues);

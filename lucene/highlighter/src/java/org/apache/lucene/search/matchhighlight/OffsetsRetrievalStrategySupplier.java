@@ -18,9 +18,7 @@ package org.apache.lucene.search.matchhighlight;
 
 import java.util.function.Function;
 
-/**
- * A per-field supplier of {@link OffsetsRetrievalStrategy}.
- */
+/** A per-field supplier of {@link OffsetsRetrievalStrategy}. */
 @FunctionalInterface
-public interface OffsetsRetrievalStrategySupplier extends Function<String, OffsetsRetrievalStrategy> {
-}
+public interface OffsetsRetrievalStrategySupplier
+    extends Function<String, OffsetsRetrievalStrategy> {}

@@ -16,6 +16,10 @@
  */
 package org.apache.solr.servlet;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ReadListener;
@@ -73,7 +77,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
@@ -184,10 +187,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           excludePatterns.add(Pattern.compile(element));
         }
       }
-      
-      String solrHome = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
-      final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
-      coresInit = createCoreContainer(solrHomePath, extraProperties);
+
+      coresInit = createCoreContainer(computeSolrHome(config), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       
@@ -290,6 +291,59 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST)) || (null != System.getProperty("zkRun"));
   }
 
+  /**
+   * Returns the effective Solr Home to use for this node, based on looking up the value in this order:
+   * <ol>
+   * <li>attribute in the FilterConfig</li>
+   * <li>JNDI: via java:comp/env/solr/home</li>
+   * <li>The system property solr.solr.home</li>
+   * <li>Look in the current working directory for a solr/ directory</li>
+   * </ol>
+   * <p>
+   *
+   * @return the Solr home, absolute and normalized.
+   * @see #SOLRHOME_ATTRIBUTE
+   */
+  private static Path computeSolrHome(FilterConfig config) {
+
+    // start with explicit check of servlet config...
+    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
+    String home = (String) config.getServletContext().getAttribute(SOLRHOME_ATTRIBUTE);
+
+    if (null == home) {
+      final String lookup = "java:comp/env/solr/home";
+      // Try JNDI
+      source = "JNDI: " + lookup;
+      try {
+        Context c = new InitialContext();
+        home = (String) c.lookup(lookup);
+      } catch (NoInitialContextException e) {
+        log.debug("JNDI not configured for solr (NoInitialContextEx)");
+      } catch (NamingException e) {
+        log.debug("No /solr/home in JNDI");
+      } catch (RuntimeException ex) {
+        log.warn("Odd RuntimeException while testing for JNDI: ", ex);
+      }
+    }
+
+    if (null == home) {
+      // Now try system property
+      final String prop = "solr.solr.home";
+      source = "system property: " + prop;
+      home = System.getProperty(prop);
+    }
+
+    if (null == home) {
+      // if all else fails, assume default dir
+      home = "solr/";
+      source = "defaulted to '" + home + "' ... could not find system property or JNDI";
+    }
+    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    log.info("Solr Home: {} (source: {})", solrHome, source);
+    
+    return solrHome;
+  }
+  
   /**
    * Override this to change CoreContainer initialization
    * @return a CoreContainer to hold this server's cores

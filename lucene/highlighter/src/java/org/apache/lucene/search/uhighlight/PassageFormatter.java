@@ -24,17 +24,15 @@ package org.apache.lucene.search.uhighlight;
 public abstract class PassageFormatter {
 
   /**
-   * Formats the top <code>passages</code> from <code>content</code>
-   * into a human-readable text snippet.
+   * Formats the top <code>passages</code> from <code>content</code> into a human-readable text
+   * snippet.
    *
-   * @param passages top-N passages for the field. Note these are sorted in
-   *                 the order that they appear in the document for convenience.
-   * @param content  content for the field.
-   * @return formatted highlight.  Note that for the
-   * non-expert APIs in {@link UnifiedHighlighter} that
-   * return String, the toString method on the Object
-   * returned by this method is used to compute the string.
+   * @param passages top-N passages for the field. Note these are sorted in the order that they
+   *     appear in the document for convenience.
+   * @param content content for the field.
+   * @return formatted highlight. Note that for the non-expert APIs in {@link UnifiedHighlighter}
+   *     that return String, the toString method on the Object returned by this method is used to
+   *     compute the string.
    */
   public abstract Object format(Passage passages[], String content);
-
 }

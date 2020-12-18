@@ -142,8 +142,22 @@ final class LatLonPointInGeometryQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-
     final Component2D tree = LatLonGeometry.create(geometries);
+    if (tree.getMinY() > tree.getMaxY()) {
+      // encodeLatitudeCeil may cause minY to be > maxY iff
+      // the delta between the longitude < the encoding resolution
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) {
+          return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+      };
+    }
     final GeoEncodingUtils.Component2DPredicate component2DPredicate = GeoEncodingUtils.createComponentPredicate(tree);
     // bounding box over all geometries, this can speed up tree intersection/cheaply improve approximation for complex multi-geometries
     final byte minLat[] = new byte[Integer.BYTES];

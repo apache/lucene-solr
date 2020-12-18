@@ -20,8 +20,8 @@ import java.text.BreakIterator;
 import java.util.Locale;
 
 /**
- * A {@link PassageAdjuster} that adjusts the {@link Passage} range to
- * word boundaries hinted by the given {@link BreakIterator}.
+ * A {@link PassageAdjuster} that adjusts the {@link Passage} range to word boundaries hinted by the
+ * given {@link BreakIterator}.
  */
 public class BreakIteratorShrinkingAdjuster implements PassageAdjuster {
   private final BreakIterator bi;

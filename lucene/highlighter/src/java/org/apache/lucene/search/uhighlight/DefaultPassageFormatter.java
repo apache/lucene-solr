@@ -16,12 +16,11 @@
  */
 package org.apache.lucene.search.uhighlight;
 
-
 /**
  * Creates a formatted snippet from the top passages.
- * <p>
- * The default implementation marks the query terms as bold, and places
- * ellipses between unconnected passages.
+ *
+ * <p>The default implementation marks the query terms as bold, and places ellipses between
+ * unconnected passages.
  */
 public class DefaultPassageFormatter extends PassageFormatter {
   /** text that will appear before highlighted terms */
@@ -33,9 +32,7 @@ public class DefaultPassageFormatter extends PassageFormatter {
   /** true if we should escape for html */
   protected final boolean escape;
 
-  /**
-   * Creates a new DefaultPassageFormatter with the default tags.
-   */
+  /** Creates a new DefaultPassageFormatter with the default tags. */
   public DefaultPassageFormatter() {
     this("<b>", "</b>", "... ", false);
   }
@@ -43,10 +40,10 @@ public class DefaultPassageFormatter extends PassageFormatter {
   /**
    * Creates a new DefaultPassageFormatter with custom tags.
    *
-   * @param preTag   text which should appear before a highlighted term.
-   * @param postTag  text which should appear after a highlighted term.
+   * @param preTag text which should appear before a highlighted term.
+   * @param postTag text which should appear after a highlighted term.
    * @param ellipsis text which should be used to connect two unconnected passages.
-   * @param escape   true if text should be html-escaped
+   * @param escape true if text should be html-escaped
    */
   public DefaultPassageFormatter(String preTag, String postTag, String ellipsis, boolean escape) {
     if (preTag == null || postTag == null || ellipsis == null) {
@@ -71,14 +68,14 @@ public class DefaultPassageFormatter extends PassageFormatter {
       for (int i = 0; i < passage.getNumMatches(); i++) {
         int start = passage.getMatchStarts()[i];
         assert start >= pos && start < passage.getEndOffset();
-        //append content before this start
+        // append content before this start
         append(sb, content, pos, start);
 
         int end = passage.getMatchEnds()[i];
         assert end > start;
         // its possible to have overlapping terms.
         //   Look ahead to expand 'end' past all overlapping:
-        while (i + 1 < passage.getNumMatches() && passage.getMatchStarts()[i+1] < end) {
+        while (i + 1 < passage.getNumMatches() && passage.getMatchStarts()[i + 1] < end) {
           end = passage.getMatchEnds()[++i];
         }
         end = Math.min(end, passage.getEndOffset()); // in case match straddles past passage
@@ -99,10 +96,10 @@ public class DefaultPassageFormatter extends PassageFormatter {
   /**
    * Appends original text to the response.
    *
-   * @param dest    resulting text, possibly transformed or encoded
+   * @param dest resulting text, possibly transformed or encoded
    * @param content original text content
-   * @param start   index of the first character in content
-   * @param end     index of the character following the last character in content
+   * @param start index of the first character in content
+   * @param end index of the character following the last character in content
    */
   protected void append(StringBuilder dest, String content, int start, int end) {
     if (escape) {

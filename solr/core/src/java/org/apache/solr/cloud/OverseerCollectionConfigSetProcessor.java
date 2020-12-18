@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * An {@link OverseerTaskProcessor} that handles:
@@ -37,7 +38,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
    public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
                                                final HttpShardHandler shardHandler,
                                                String adminPath, Stats stats, Overseer overseer,
-                                               OverseerNodePrioritizer overseerNodePrioritizer) {
+                                               OverseerNodePrioritizer overseerNodePrioritizer, SolrMetricsContext solrMetricsContext) {
     this(
         zkStateReader,
         myId,
@@ -49,7 +50,8 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
         Overseer.getRunningMap(zkStateReader.getZkClient()),
         Overseer.getCompletedMap(zkStateReader.getZkClient()),
-        Overseer.getFailureMap(zkStateReader.getZkClient())
+        Overseer.getFailureMap(zkStateReader.getZkClient()),
+        solrMetricsContext
     );
   }
 
@@ -62,7 +64,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
                                         OverseerTaskQueue workQueue,
                                         DistributedMap runningMap,
                                         DistributedMap completedMap,
-                                        DistributedMap failureMap) {
+                                        DistributedMap failureMap, SolrMetricsContext solrMetricsContext) {
     super(
         zkStateReader,
         myId,
@@ -73,7 +75,8 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
         workQueue,
         runningMap,
         completedMap,
-        failureMap);
+        failureMap,
+        solrMetricsContext);
   }
 
   private static OverseerMessageHandlerSelector getOverseerMessageHandlerSelector(

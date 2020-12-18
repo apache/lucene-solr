@@ -18,7 +18,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -28,8 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * Overlays a 2nd LeafReader for the terms of one field, otherwise the primary reader is
- * consulted.  The 2nd reader is assumed to have one document of 0 and we remap it to a target doc ID.
+ * Overlays a 2nd LeafReader for the terms of one field, otherwise the primary reader is consulted.
+ * The 2nd reader is assumed to have one document of 0 and we remap it to a target doc ID.
  *
  * @lucene.internal
  */
@@ -39,7 +38,8 @@ public class OverlaySingleDocTermsLeafReader extends FilterLeafReader {
   private final String in2Field;
   private final int in2TargetDocId;
 
-  public OverlaySingleDocTermsLeafReader(LeafReader in, LeafReader in2, String in2Field, int in2TargetDocId) {
+  public OverlaySingleDocTermsLeafReader(
+      LeafReader in, LeafReader in2, String in2Field, int in2TargetDocId) {
     super(in);
     this.in2 = in2;
     this.in2Field = in2Field;
@@ -68,7 +68,8 @@ public class OverlaySingleDocTermsLeafReader extends FilterLeafReader {
       }
 
       @Override
-      public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+      public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm)
+          throws IOException {
         return filterTermsEnum(super.intersect(compiled, startTerm));
       }
 
@@ -76,7 +77,7 @@ public class OverlaySingleDocTermsLeafReader extends FilterLeafReader {
         return new FilterTermsEnum(termsEnum) {
           @Override
           public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
-            //TODO 'reuse' will always fail to reuse unless we unwrap it
+            // TODO 'reuse' will always fail to reuse unless we unwrap it
             return new FilterPostingsEnum(super.postings(reuse, flags)) {
               @Override
               public int nextDoc() throws IOException {

@@ -16,7 +16,9 @@
  */
 
 /**
- * The UnifiedHighlighter -- a flexible highlighter that can get offsets from postings, term vectors, or analysis.
+ * The UnifiedHighlighter -- a flexible highlighter that can get offsets from postings, term
+ * vectors, or analysis.
+ *
  * @see org.apache.lucene.search.uhighlight.UnifiedHighlighter
  */
 package org.apache.lucene.search.uhighlight;
