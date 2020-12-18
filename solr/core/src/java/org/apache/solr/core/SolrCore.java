@@ -3153,7 +3153,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
             /*no problem this core is already closed*/
           } finally {
             configHandler.getReloadLock().unlock();
-            if(core.schema.isMutable()){
+            if (core.schema.isMutable()) {
             	core.schema.getSchemaUpdateLock().unlock();
             }
           }

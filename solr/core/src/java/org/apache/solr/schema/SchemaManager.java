@@ -104,7 +104,7 @@ public class SchemaManager {
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
-   Lock schemaChangeLock =  req.getSchema().getSchemaUpdateLock();
+   Lock schemaChangeLock = req.getSchema().getSchemaUpdateLock();
    try {
 	    schemaChangeLock.lock();
       while (!timeOut.hasTimedOut()) {
@@ -459,8 +459,8 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        Lock schemaLock =  (Lock) core.getLatestSchema().getSchemaUpdateLock();
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,schemaLock );
+        Lock schemaLock = (Lock) core.getLatestSchema().getSchemaUpdateLock();
+        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version, schemaLock );
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }
