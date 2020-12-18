@@ -16,22 +16,23 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Attribute;
 
 /**
- * This attribute can be used to pass different flags down the {@link Tokenizer} chain,
- * e.g. from one TokenFilter to another one. 
- * <p>
- * This is completely distinct from {@link TypeAttribute}, although they do share similar purposes.
- * The flags can be used to encode information about the token for use by other 
- * {@link org.apache.lucene.analysis.TokenFilter}s.
+ * This attribute can be used to pass different flags down the {@link Tokenizer} chain, e.g. from
+ * one TokenFilter to another one.
+ *
+ * <p>This is completely distinct from {@link TypeAttribute}, although they do share similar
+ * purposes. The flags can be used to encode information about the token for use by other {@link
+ * org.apache.lucene.analysis.TokenFilter}s.
+ *
  * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
  */
 public interface FlagsAttribute extends Attribute {
   /**
-   * Get the bitset for any bits that have been set.  
+   * Get the bitset for any bits that have been set.
+   *
    * @return The bits
    * @see #getFlags()
    */
@@ -39,7 +40,8 @@ public interface FlagsAttribute extends Attribute {
 
   /**
    * Set the flags to a new bitset.
+   *
    * @see #getFlags()
    */
-  public void setFlags(int flags);  
+  public void setFlags(int flags);
 }

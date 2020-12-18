@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.collation;
 
-
 import java.text.Collator;
 import java.util.Locale;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -37,42 +35,41 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * trivial test of CollationDocValuesField
- */
+/** trivial test of CollationDocValuesField */
 public class TestCollationDocValuesField extends LuceneTestCase {
-  
+
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     Field field = newField("field", "", StringField.TYPE_STORED);
-    CollationDocValuesField collationField = new CollationDocValuesField("collated", Collator.getInstance(Locale.ENGLISH));
+    CollationDocValuesField collationField =
+        new CollationDocValuesField("collated", Collator.getInstance(Locale.ENGLISH));
     doc.add(field);
     doc.add(collationField);
 
     field.setStringValue("ABC");
     collationField.setStringValue("ABC");
     iw.addDocument(doc);
-    
+
     field.setStringValue("abc");
     collationField.setStringValue("abc");
     iw.addDocument(doc);
-    
+
     IndexReader ir = iw.getReader();
     iw.close();
-    
+
     IndexSearcher is = newSearcher(ir);
-    
+
     SortField sortField = new SortField("collated", SortField.Type.STRING);
-    
+
     TopDocs td = is.search(new MatchAllDocsQuery(), 5, new Sort(sortField));
     assertEquals("abc", ir.document(td.scoreDocs[0].doc).get("field"));
     assertEquals("ABC", ir.document(td.scoreDocs[1].doc).get("field"));
     ir.close();
     dir.close();
   }
-  
+
   public void testRanges() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -85,7 +82,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
     CollationDocValuesField collationField = new CollationDocValuesField("collated", collator);
     doc.add(field);
     doc.add(collationField);
-    
+
     int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; i++) {
       String value = TestUtil.randomSimpleString(random());
@@ -93,13 +90,13 @@ public class TestCollationDocValuesField extends LuceneTestCase {
       collationField.setStringValue(value);
       iw.addDocument(doc);
     }
-    
+
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     int numChecks = atLeast(20);
-    
+
     try {
       for (int i = 0; i < numChecks; i++) {
         String start = TestUtil.randomSimpleString(random());
@@ -113,13 +110,21 @@ public class TestCollationDocValuesField extends LuceneTestCase {
       dir.close();
     }
   }
-  
-  private void doTestRanges(IndexSearcher is, String startPoint, String endPoint, BytesRef startBR, BytesRef endBR, Collator collator) throws Exception { 
+
+  private void doTestRanges(
+      IndexSearcher is,
+      String startPoint,
+      String endPoint,
+      BytesRef startBR,
+      BytesRef endBR,
+      Collator collator)
+      throws Exception {
     SortedDocValues dvs = MultiDocValues.getSortedValues(is.getIndexReader(), "collated");
-    for(int docID=0;docID<is.getIndexReader().maxDoc();docID++) {
+    for (int docID = 0; docID < is.getIndexReader().maxDoc(); docID++) {
       Document doc = is.doc(docID);
       String s = doc.getField("field").stringValue();
-      boolean collatorAccepts = collate(collator, s, startPoint) >= 0 && collate(collator, s, endPoint) <= 0;
+      boolean collatorAccepts =
+          collate(collator, s, startPoint) >= 0 && collate(collator, s, endPoint) <= 0;
       assertEquals(docID, dvs.nextDoc());
       BytesRef br = dvs.binaryValue();
       boolean luceneAccepts = br.compareTo(startBR) >= 0 && br.compareTo(endBR) <= 0;

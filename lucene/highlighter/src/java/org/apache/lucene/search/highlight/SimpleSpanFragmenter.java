@@ -16,19 +16,16 @@
  */
 package org.apache.lucene.search.highlight;
 
-
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.spans.Spans;
 
-
 /**
- * {@link Fragmenter} implementation which breaks text up into same-size
- * fragments but does not split up {@link Spans}. This is a simple sample class.
+ * {@link Fragmenter} implementation which breaks text up into same-size fragments but does not
+ * split up {@link Spans}. This is a simple sample class.
  */
 public class SimpleSpanFragmenter implements Fragmenter {
   private static final int DEFAULT_FRAGMENT_SIZE = 100;
@@ -42,9 +39,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private PositionIncrementAttribute posIncAtt;
   private OffsetAttribute offsetAtt;
 
-  /**
-   * @param queryScorer QueryScorer that was used to score hits
-   */
+  /** @param queryScorer QueryScorer that was used to score hits */
   public SimpleSpanFragmenter(QueryScorer queryScorer) {
     this(queryScorer, DEFAULT_FRAGMENT_SIZE);
   }
@@ -57,7 +52,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
     this.fragmentSize = fragmentSize;
     this.queryScorer = queryScorer;
   }
-  
+
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#isNewFragment()
    */
@@ -84,16 +79,16 @@ public class SimpleSpanFragmenter implements Fragmenter {
       }
     }
 
-    boolean isNewFrag = offsetAtt.endOffset() >= (fragmentSize * currentNumFrags)
-        && (textSize - offsetAtt.endOffset()) >= (fragmentSize >>> 1);
-    
+    boolean isNewFrag =
+        offsetAtt.endOffset() >= (fragmentSize * currentNumFrags)
+            && (textSize - offsetAtt.endOffset()) >= (fragmentSize >>> 1);
+
     if (isNewFrag) {
       currentNumFrags++;
     }
 
     return isNewFrag;
   }
-
 
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String, org.apache.lucene.analysis.TokenStream)

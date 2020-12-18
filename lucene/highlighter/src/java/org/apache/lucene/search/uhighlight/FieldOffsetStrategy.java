@@ -19,7 +19,6 @@ package org.apache.lucene.search.uhighlight;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -33,8 +32,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 
 /**
- * Ultimately returns an {@link OffsetsEnum} yielding potentially highlightable words in the text.  Needs
- * information about the query up front.
+ * Ultimately returns an {@link OffsetsEnum} yielding potentially highlightable words in the text.
+ * Needs information about the query up front.
  *
  * @lucene.internal
  */
@@ -55,11 +54,13 @@ public abstract class FieldOffsetStrategy {
   /**
    * The primary method -- return offsets for highlightable words in the specified document.
    *
-   * Callers are expected to close the returned OffsetsEnum when it has been finished with
+   * <p>Callers are expected to close the returned OffsetsEnum when it has been finished with
    */
-  public abstract OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException;
+  public abstract OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content)
+      throws IOException;
 
-  protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc) throws IOException {
+  protected OffsetsEnum createOffsetsEnumFromReader(LeafReader leafReader, int doc)
+      throws IOException {
     final Terms termsIndex = leafReader.terms(getField());
     if (termsIndex == null) {
       return OffsetsEnum.EMPTY;
@@ -80,7 +81,8 @@ public abstract class FieldOffsetStrategy {
       final BytesRef[] terms = components.getTerms();
       if (phraseHelper.hasPositionSensitivity()) {
         insensitiveTerms = phraseHelper.getAllPositionInsensitiveTerms();
-        assert insensitiveTerms.length <= terms.length : "insensitive terms should be smaller set of all terms";
+        assert insensitiveTerms.length <= terms.length
+            : "insensitive terms should be smaller set of all terms";
       } else {
         insensitiveTerms = terms;
       }
@@ -100,41 +102,49 @@ public abstract class FieldOffsetStrategy {
     }
 
     switch (offsetsEnums.size()) {
-      case 0: return OffsetsEnum.EMPTY;
-      case 1: return offsetsEnums.get(0);
-      default: return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
+      case 0:
+        return OffsetsEnum.EMPTY;
+      case 1:
+        return offsetsEnums.get(0);
+      default:
+        return new OffsetsEnum.MultiOffsetsEnum(offsetsEnums);
     }
   }
 
-  protected void createOffsetsEnumsWeightMatcher(LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+  protected void createOffsetsEnumsWeightMatcher(
+      LeafReader _leafReader, int docId, List<OffsetsEnum> results) throws IOException {
     // remap fieldMatcher/requireFieldMatch fields to the field we are highlighting
-    LeafReader leafReader = new FilterLeafReader(_leafReader) {
-      @Override
-      public Terms terms(String field) throws IOException {
-        if (components.getFieldMatcher().test(field)) {
-          return super.terms(components.getField());
-        } else {
-          return super.terms(field);
-        }
-      }
+    LeafReader leafReader =
+        new FilterLeafReader(_leafReader) {
+          @Override
+          public Terms terms(String field) throws IOException {
+            if (components.getFieldMatcher().test(field)) {
+              return super.terms(components.getField());
+            } else {
+              return super.terms(field);
+            }
+          }
 
-      //  So many subclasses do this!
-      //these ought to be a default or added via some intermediary like "FilterTransientLeafReader" (exception on close).
-      @Override
-      public CacheHelper getCoreCacheHelper() {
-        return null;
-      }
+          //  So many subclasses do this!
+          // these ought to be a default or added via some intermediary like
+          // "FilterTransientLeafReader" (exception on close).
+          @Override
+          public CacheHelper getCoreCacheHelper() {
+            return null;
+          }
 
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return null;
-      }
-    };
+          @Override
+          public CacheHelper getReaderCacheHelper() {
+            return null;
+          }
+        };
     IndexSearcher indexSearcher = new IndexSearcher(leafReader);
     indexSearcher.setQueryCache(null);
-    Matches matches = indexSearcher.rewrite(components.getQuery())
-        .createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f)
-        .matches(leafReader.getContext(), docId);
+    Matches matches =
+        indexSearcher
+            .rewrite(components.getQuery())
+            .createWeight(indexSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f)
+            .matches(leafReader.getContext(), docId);
     if (matches == null) {
       return; // doc doesn't match
     }
@@ -147,17 +157,19 @@ public abstract class FieldOffsetStrategy {
         results.add(new OffsetsEnum.OfMatchesIteratorWithSubs(iterator));
       }
     }
-
   }
 
-  protected void createOffsetsEnumsForTerms(BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
-    TermsEnum termsEnum = termsIndex.iterator();//does not return null
+  protected void createOffsetsEnumsForTerms(
+      BytesRef[] sourceTerms, Terms termsIndex, int doc, List<OffsetsEnum> results)
+      throws IOException {
+    TermsEnum termsEnum = termsIndex.iterator(); // does not return null
     for (BytesRef term : sourceTerms) {
       if (termsEnum.seekExact(term)) {
         PostingsEnum postingsEnum = termsEnum.postings(null, PostingsEnum.OFFSETS);
         if (postingsEnum == null) {
           // no offsets or positions available
-          throw new IllegalArgumentException("field '" + getField() + "' was indexed without offsets, cannot highlight");
+          throw new IllegalArgumentException(
+              "field '" + getField() + "' was indexed without offsets, cannot highlight");
         }
         if (doc == postingsEnum.advance(doc)) { // now it's positioned, although may be exhausted
           results.add(new OffsetsEnum.OfPostings(term, postingsEnum));
@@ -166,7 +178,8 @@ public abstract class FieldOffsetStrategy {
     }
   }
 
-  protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
+  protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results)
+      throws IOException {
     final LabelledCharArrayMatcher[] automata = components.getAutomata();
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
@@ -206,7 +219,5 @@ public abstract class FieldOffsetStrategy {
         results.add(new OffsetsEnum.OfPostings(wildcardTerm, sumFreq, postingsEnum));
       }
     }
-
   }
-
 }

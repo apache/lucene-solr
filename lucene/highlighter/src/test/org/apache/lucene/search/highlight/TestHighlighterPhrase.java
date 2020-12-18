@@ -17,7 +17,6 @@
 package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -56,8 +55,10 @@ public class TestHighlighterPhrase extends LuceneTestCase {
   public void testConcurrentPhrase() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    final IndexWriter indexWriter =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -76,14 +77,15 @@ public class TestHighlighterPhrase extends LuceneTestCase {
       final PhraseQuery phraseQuery = new PhraseQuery(FIELD, "fox", "jumped");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
 
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
-          TEXT), highlighter.getBestFragment(tokenStream, TEXT));
+      assertEquals(
+          highlighter.getBestFragment(new TokenStreamConcurrent(), TEXT),
+          highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -93,8 +95,10 @@ public class TestHighlighterPhrase extends LuceneTestCase {
   public void testConcurrentSpan() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    final IndexWriter indexWriter =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -111,45 +115,55 @@ public class TestHighlighterPhrase extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-          new SpanTermQuery(new Term(FIELD, "fox")),
-          new SpanTermQuery(new Term(FIELD, "jumped")) }, 0, true);
+      final Query phraseQuery =
+          new SpanNearQuery(
+              new SpanQuery[] {
+                new SpanTermQuery(new Term(FIELD, "fox")),
+                new SpanTermQuery(new Term(FIELD, "jumped"))
+              },
+              0,
+              true);
       final FixedBitSet bitset = new FixedBitSet(indexReader.maxDoc());
-      indexSearcher.search(phraseQuery, new SimpleCollector() {
-        private int baseDoc;
+      indexSearcher.search(
+          phraseQuery,
+          new SimpleCollector() {
+            private int baseDoc;
 
-        @Override
-        public void collect(int i) {
-          bitset.set(this.baseDoc + i);
-        }
+            @Override
+            public void collect(int i) {
+              bitset.set(this.baseDoc + i);
+            }
 
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          this.baseDoc = context.docBase;
-        }
+            @Override
+            protected void doSetNextReader(LeafReaderContext context) throws IOException {
+              this.baseDoc = context.docBase;
+            }
 
-        @Override
-        public void setScorer(Scorable scorer) {
-          // Do Nothing
-        }
+            @Override
+            public void setScorer(Scorable scorer) {
+              // Do Nothing
+            }
 
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-      });
+            @Override
+            public ScoreMode scoreMode() {
+              return ScoreMode.COMPLETE_NO_SCORES;
+            }
+          });
       assertEquals(1, bitset.cardinality());
       final int maxDoc = indexReader.maxDoc();
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
-      for (int position = bitset.nextSetBit(0); position < maxDoc-1; position = bitset
-          .nextSetBit(position + 1)) {
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
+      for (int position = bitset.nextSetBit(0);
+          position < maxDoc - 1;
+          position = bitset.nextSetBit(position + 1)) {
         assertEquals(0, position);
         final TokenStream tokenStream =
-            TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(position), -1);
-        assertEquals(highlighter.getBestFragment(new TokenStreamConcurrent(),
-            TEXT), highlighter.getBestFragment(tokenStream, TEXT));
+            TokenSources.getTermVectorTokenStreamOrNull(
+                FIELD, indexReader.getTermVectors(position), -1);
+        assertEquals(
+            highlighter.getBestFragment(new TokenStreamConcurrent(), TEXT),
+            highlighter.getBestFragment(tokenStream, TEXT));
       }
     } finally {
       indexReader.close();
@@ -160,8 +174,10 @@ public class TestHighlighterPhrase extends LuceneTestCase {
   public void testSparsePhrase() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    final IndexWriter indexWriter =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -181,9 +197,9 @@ public class TestHighlighterPhrase extends LuceneTestCase {
       final PhraseQuery phraseQuery = new PhraseQuery(FIELD, "did", "jump");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(0, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals(
@@ -198,8 +214,10 @@ public class TestHighlighterPhrase extends LuceneTestCase {
   public void testSparsePhraseWithNoPositions() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    final IndexWriter indexWriter =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
 
@@ -218,13 +236,13 @@ public class TestHighlighterPhrase extends LuceneTestCase {
       final PhraseQuery phraseQuery = new PhraseQuery(1, FIELD, "did", "jump");
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals("the fox <B>did</B> not <B>jump</B>", highlighter
-          .getBestFragment(tokenStream, TEXT));
+      assertEquals(
+          "the fox <B>did</B> not <B>jump</B>", highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -234,8 +252,10 @@ public class TestHighlighterPhrase extends LuceneTestCase {
   public void testSparseSpan() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
+    final IndexWriter indexWriter =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -251,15 +271,20 @@ public class TestHighlighterPhrase extends LuceneTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-          new SpanTermQuery(new Term(FIELD, "did")),
-          new SpanTermQuery(new Term(FIELD, "jump")) }, 0, true);
+      final Query phraseQuery =
+          new SpanNearQuery(
+              new SpanQuery[] {
+                new SpanTermQuery(new Term(FIELD, "did")),
+                new SpanTermQuery(new Term(FIELD, "jump"))
+              },
+              0,
+              true);
 
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(0, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertEquals(
@@ -271,14 +296,13 @@ public class TestHighlighterPhrase extends LuceneTestCase {
     }
   }
 
-  //shows the need to sum the increments in WeightedSpanTermExtractor
+  // shows the need to sum the increments in WeightedSpanTermExtractor
   public void testStopWords() throws IOException, InvalidTokenOffsetsException {
-    MockAnalyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true,
-        MockTokenFilter.ENGLISH_STOPSET);    
+    MockAnalyzer stopAnalyzer =
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     final String TEXT = "the ab the the cd the the the ef the";
     final Directory directory = newDirectory();
-    try (IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(stopAnalyzer))) {
+    try (IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(stopAnalyzer))) {
       final Document document = new Document();
       document.add(newTextField(FIELD, TEXT, Store.YES));
       indexWriter.addDocument(document);
@@ -286,32 +310,33 @@ public class TestHighlighterPhrase extends LuceneTestCase {
     try (IndexReader indexReader = DirectoryReader.open(directory)) {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      //equivalent of "ab the the cd the the the ef"
-      final PhraseQuery phraseQuery = new PhraseQuery.Builder()
-          .add(new Term(FIELD, "ab"), 0)
-          .add(new Term(FIELD, "cd"), 3)
-          .add(new Term(FIELD, "ef"), 7).build();
+      // equivalent of "ab the the cd the the the ef"
+      final PhraseQuery phraseQuery =
+          new PhraseQuery.Builder()
+              .add(new Term(FIELD, "ab"), 0)
+              .add(new Term(FIELD, "cd"), 3)
+              .add(new Term(FIELD, "ef"), 7)
+              .build();
 
       TopDocs hits = indexSearcher.search(phraseQuery, 100);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       assertEquals(1, highlighter.getBestFragments(stopAnalyzer, FIELD, TEXT, 10).length);
     } finally {
       directory.close();
     }
   }
-  
-  //shows the need to require inOrder if getSlop() == 0, not if final slop == 0 
-  //in WeightedSpanTermExtractor
+
+  // shows the need to require inOrder if getSlop() == 0, not if final slop == 0
+  // in WeightedSpanTermExtractor
   public void testInOrderWithStopWords() throws IOException, InvalidTokenOffsetsException {
-    MockAnalyzer stopAnalyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true,
-        MockTokenFilter.ENGLISH_STOPSET);        
+    MockAnalyzer stopAnalyzer =
+        new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
     final String TEXT = "the cd the ab the the the the the the the ab the cd the";
     final Directory directory = newDirectory();
-    try (IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(stopAnalyzer))) {
+    try (IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(stopAnalyzer))) {
       final Document document = new Document();
       document.add(newTextField(FIELD, TEXT, Store.YES));
       indexWriter.addDocument(document);
@@ -319,22 +344,25 @@ public class TestHighlighterPhrase extends LuceneTestCase {
     try (IndexReader indexReader = DirectoryReader.open(directory)) {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      //equivalent of "ab the cd"
-      final PhraseQuery phraseQuery = new PhraseQuery.Builder()
-          .add(new Term(FIELD, "ab"), 0)
-          .add(new Term(FIELD, "cd"), 2).build();
+      // equivalent of "ab the cd"
+      final PhraseQuery phraseQuery =
+          new PhraseQuery.Builder()
+              .add(new Term(FIELD, "ab"), 0)
+              .add(new Term(FIELD, "cd"), 2)
+              .build();
 
       TopDocs hits = indexSearcher.search(phraseQuery, 100);
       assertEquals(1, hits.totalHits.value);
 
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       String[] frags = highlighter.getBestFragments(stopAnalyzer, FIELD, TEXT, 10);
       assertEquals(1, frags.length);
-      assertTrue("contains <B>ab</B> the <B>cd</B>",
-          (frags[0].contains("<B>ab</B> the <B>cd</B>")));
-      assertTrue("does not contain <B>cd</B> the <B>ab</B>",
+      assertTrue(
+          "contains <B>ab</B> the <B>cd</B>", (frags[0].contains("<B>ab</B> the <B>cd</B>")));
+      assertTrue(
+          "does not contain <B>cd</B> the <B>ab</B>",
           (!frags[0].contains("<B>cd</B> the <B>ab</B>")));
     } finally {
       directory.close();
@@ -348,7 +376,8 @@ public class TestHighlighterPhrase extends LuceneTestCase {
 
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-    private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute positionIncrementAttribute =
+        addAttribute(PositionIncrementAttribute.class);
 
     public TokenStreamSparse() {
       reset();
@@ -362,21 +391,21 @@ public class TestHighlighterPhrase extends LuceneTestCase {
       }
       clearAttributes();
       termAttribute.setEmpty().append(this.tokens[i]);
-      offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]
-          .endOffset());
-      positionIncrementAttribute.setPositionIncrement(this.tokens[i]
-          .getPositionIncrement());
+      offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i].endOffset());
+      positionIncrementAttribute.setPositionIncrement(this.tokens[i].getPositionIncrement());
       return true;
     }
 
     @Override
     public void reset() {
       this.i = -1;
-      this.tokens = new Token[] {
-          new Token("the", 0, 3),
-          new Token("fox", 4, 7),
-          new Token("did", 8, 11),
-          new Token("jump", 16, 20) };
+      this.tokens =
+          new Token[] {
+            new Token("the", 0, 3),
+            new Token("fox", 4, 7),
+            new Token("did", 8, 11),
+            new Token("jump", 16, 20)
+          };
       this.tokens[3].setPositionIncrement(2);
     }
   }
@@ -388,7 +417,8 @@ public class TestHighlighterPhrase extends LuceneTestCase {
 
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-    private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute positionIncrementAttribute =
+        addAttribute(PositionIncrementAttribute.class);
 
     public TokenStreamConcurrent() {
       reset();
@@ -402,23 +432,22 @@ public class TestHighlighterPhrase extends LuceneTestCase {
       }
       clearAttributes();
       termAttribute.setEmpty().append(this.tokens[i]);
-      offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]
-          .endOffset());
-      positionIncrementAttribute.setPositionIncrement(this.tokens[i]
-          .getPositionIncrement());
+      offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i].endOffset());
+      positionIncrementAttribute.setPositionIncrement(this.tokens[i].getPositionIncrement());
       return true;
     }
 
     @Override
     public void reset() {
       this.i = -1;
-      this.tokens = new Token[] {
-          new Token("the", 0, 3),
-          new Token("fox", 4, 7),
-          new Token("jump", 8, 14),
-          new Token("jumped", 8, 14) };
+      this.tokens =
+          new Token[] {
+            new Token("the", 0, 3),
+            new Token("fox", 4, 7),
+            new Token("jump", 8, 14),
+            new Token("jumped", 8, 14)
+          };
       this.tokens[3].setPositionIncrement(0);
     }
   }
-
 }

@@ -16,24 +16,23 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link TypeAttribute}. */
 public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable {
   private String type;
-  
+
   /** Initialize this attribute with {@link TypeAttribute#DEFAULT_TYPE} */
   public TypeAttributeImpl() {
-    this(DEFAULT_TYPE); 
+    this(DEFAULT_TYPE);
   }
-  
+
   /** Initialize this attribute with <code>type</code> */
   public TypeAttributeImpl(String type) {
     this.type = type;
   }
-  
+
   @Override
   public String type() {
     return type;
@@ -46,7 +45,7 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
 
   @Override
   public void clear() {
-    type = DEFAULT_TYPE;    
+    type = DEFAULT_TYPE;
   }
 
   @Override
@@ -54,12 +53,12 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
     if (other == this) {
       return true;
     }
-    
+
     if (other instanceof TypeAttributeImpl) {
       final TypeAttributeImpl o = (TypeAttributeImpl) other;
       return (this.type == null ? o.type == null : this.type.equals(o.type));
     }
-    
+
     return false;
   }
 
@@ -67,7 +66,7 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
   public int hashCode() {
     return (type == null) ? 0 : type.hashCode();
   }
-  
+
   @Override
   public void copyTo(AttributeImpl target) {
     TypeAttribute t = (TypeAttribute) target;

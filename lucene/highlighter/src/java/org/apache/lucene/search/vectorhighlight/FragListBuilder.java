@@ -17,17 +17,17 @@
 package org.apache.lucene.search.vectorhighlight;
 
 /**
- * FragListBuilder is an interface for FieldFragList builder classes.
- * A FragListBuilder class can be plugged in to Highlighter.
+ * FragListBuilder is an interface for FieldFragList builder classes. A FragListBuilder class can be
+ * plugged in to Highlighter.
  */
 public interface FragListBuilder {
 
   /**
    * create a FieldFragList.
-   * 
+   *
    * @param fieldPhraseList FieldPhraseList object
    * @param fragCharSize the length (number of chars) of a fragment
    * @return the created FieldFragList object
    */
-  public FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, int fragCharSize );
+  public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList, int fragCharSize);
 }
