@@ -15,49 +15,33 @@
  * limitations under the License.
  */
 package org.apache.lucene.search.highlight;
-/** Lightweight class to hold term and a weight value used for scoring this term
- */
-public class WeightedTerm
-{
+/** Lightweight class to hold term and a weight value used for scoring this term */
+public class WeightedTerm {
   float weight; // multiplier
-  String term; //stemmed form
-  public WeightedTerm (float weight,String term)
-  {
-    this.weight=weight;
-    this.term=term;
-  }
+  String term; // stemmed form
 
-
-  /**
-   * @return the term value (stemmed)
-   */
-  public String getTerm()
-  {
-    return term;
-  }
-
-  /**
-   * @return the weight associated with this term
-   */
-  public float getWeight()
-  {
-    return weight;
-  }
-
-  /**
-   * @param term the term value (stemmed)
-   */
-  public void setTerm(String term)
-  {
+  public WeightedTerm(float weight, String term) {
+    this.weight = weight;
     this.term = term;
   }
 
-  /**
-   * @param weight the weight associated with this term
-   */
-  public void setWeight(float weight)
-  {
-    this.weight = weight;
+  /** @return the term value (stemmed) */
+  public String getTerm() {
+    return term;
   }
 
+  /** @return the weight associated with this term */
+  public float getWeight() {
+    return weight;
+  }
+
+  /** @param term the term value (stemmed) */
+  public void setTerm(String term) {
+    this.term = term;
+  }
+
+  /** @param weight the weight associated with this term */
+  public void setWeight(float weight) {
+    this.weight = weight;
+  }
 }

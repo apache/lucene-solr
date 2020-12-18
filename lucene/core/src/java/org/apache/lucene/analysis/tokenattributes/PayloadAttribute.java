@@ -16,31 +16,32 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * The payload of a Token.
- * <p>
- * The payload is stored in the index at each position, and can
- * be used to influence scoring when using Payload-based queries.
- * <p>
- * NOTE: because the payload will be stored at each position, it's usually
- * best to use the minimum number of bytes necessary. Some codec implementations
- * may optimize payload storage when all payloads have the same length.
- * 
+ *
+ * <p>The payload is stored in the index at each position, and can be used to influence scoring when
+ * using Payload-based queries.
+ *
+ * <p>NOTE: because the payload will be stored at each position, it's usually best to use the
+ * minimum number of bytes necessary. Some codec implementations may optimize payload storage when
+ * all payloads have the same length.
+ *
  * @see org.apache.lucene.index.PostingsEnum
  */
 public interface PayloadAttribute extends Attribute {
   /**
    * Returns this Token's payload.
+   *
    * @see #setPayload(BytesRef)
-   */ 
+   */
   public BytesRef getPayload();
 
-  /** 
+  /**
    * Sets this Token's payload.
+   *
    * @see #getPayload()
    */
   public void setPayload(BytesRef payload);

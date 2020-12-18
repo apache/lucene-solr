@@ -33,7 +33,26 @@ allprojects { prj ->
         googleJavaFormat('1.9')
 
         switch (project.path) {
-          // Disable for everything else for now.
+          // These modules are complete - all sources scanned.
+          case ":lucene:highlighter":
+            target "src/**"
+            targetExclude "**/resources/**", "**/CambridgeMA.utf8", "**/overview.html"
+            break
+
+          // Partially complete.
+          case ":lucene:core":
+            target "src/**/org/apache/lucene/analysis/standard/**",
+                   "src/**/org/apache/lucene/analysis/tokenattributes/**"
+            targetExclude "**/resources/**", "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            break
+
+          case ":lucene:analysis:common":
+            target "src/**/org/apache/lucene/analysis/ar/**",
+                   "src/**/org/apache/lucene/collation/**"
+            targetExclude "**/resources/**"
+            break
+
+          // All others - disable reformatting/ checks for now.
           default:
             target 'non-existing/**'
             break
