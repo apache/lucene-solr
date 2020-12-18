@@ -170,7 +170,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       log.info("Retrieved schema version {} from Zookeeper, existing={}", existsVersion, v);
 
       if (v >= existsVersion) {
-        log.info("Old schema version {} is > found version {}", v, existsVersion);
+        log.info("Old schema version {} is >= found version {}", v, existsVersion);
         exists = zkClient.exists(managedSchemaPath, this.schemaWatcher, true);
         if (v >= exists.getVersion()) {
           return null;

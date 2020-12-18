@@ -199,7 +199,6 @@ public final class ManagedIndexSchema extends IndexSchema {
 
           Stat managedSchemaStat = zkClient.setData(managedSchemaPath, data, ver, true);
           log.info("Persisted managed schema version {} at {}", managedSchemaStat.getVersion(), managedSchemaPath);
-          schemaZkVersion = managedSchemaStat.getVersion();
         } catch (KeeperException.BadVersionException e) {
           // try again with latest schemaZkVersion value
           Stat stat = zkClient.exists(managedSchemaPath, null, true);
