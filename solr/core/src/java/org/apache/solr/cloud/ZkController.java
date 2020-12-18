@@ -1778,6 +1778,9 @@ public class ZkController implements Closeable, Runnable {
   public ZkShardTerms getShardTerms(String collection, String shardId) throws Exception {
     ZkCollectionTerms ct = getCollectionTerms(collection);
     if (ct == null) {
+      if (getCoreContainer().isShutDown()) {
+        throw new AlreadyClosedException();
+      }
       ct = createCollectionTerms(collection);
     }
     return ct.getShard(shardId);

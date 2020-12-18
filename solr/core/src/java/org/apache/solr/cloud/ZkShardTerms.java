@@ -327,23 +327,25 @@ public class ZkShardTerms implements Closeable {
   private boolean saveTerms(ShardTerms newTerms) throws KeeperException, InterruptedException {
     byte[] znodeData = Utils.toJSON(newTerms);
     ShardTerms terms = this.terms.get();
+    int version = 0;
     try {
-
+      version = newTerms.getVersion();
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
-      setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
+      ShardTerms newShardTerms = new ShardTerms(newTerms, stat.getVersion());
+      setNewTerms(newShardTerms);
       if (log.isDebugEnabled()) log.debug("Successful update of terms at {} to {}", znodePath, newTerms);
       return true;
     } catch (KeeperException.BadVersionException e) {
       log.info("Failed to save terms, version is not a match, retrying version={}", newTerms.getVersion());
-      while (this.terms.get() == null || this.terms.get() == terms) {
-        if (isClosed.get()) {
-          throw new AlreadyClosedException();
-        }
-        synchronized (termUpdate) {
-          termUpdate.wait(250);
-        }
+
+      if (isClosed.get()) {
+        throw new AlreadyClosedException();
       }
-      // refreshTerms(false);
+      synchronized (termUpdate) {
+        termUpdate.wait(250);
+      }
+
+      refreshTerms(false);
     }
     return false;
   }
