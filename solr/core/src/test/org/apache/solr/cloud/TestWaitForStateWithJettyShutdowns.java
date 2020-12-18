@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 
@@ -69,7 +70,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
 
   public void testWaitForStateBeforeShutDown() throws Exception {
     final String col_name = "test_col";
-    final ExecutorService executor = getTestExecutor();
+    final ExecutorService executor = ParWork.getRootSharedExecutor();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
       (1, createTempDir(), buildJettyConfig("/solr"));
     try {

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.ShardTerms;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -335,6 +336,9 @@ public class ZkShardTerms implements Closeable {
     } catch (KeeperException.BadVersionException e) {
       log.info("Failed to save terms, version is not a match, retrying version={}", newTerms.getVersion());
       while (this.terms.get() == null || this.terms.get() == terms) {
+        if (isClosed.get()) {
+          throw new AlreadyClosedException();
+        }
         synchronized (termUpdate) {
           termUpdate.wait(250);
         }
