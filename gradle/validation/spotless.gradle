@@ -48,7 +48,8 @@ allprojects { prj ->
           case ":lucene:highlighter":
             target "src/**/org/apache/lucene/search/matchhighlight/**",
                    "src/**/org/apache/lucene/search/highlight/**",
-                   "src/**/org/apache/lucene/search/uhighlight/**"
+                   "src/**/org/apache/lucene/search/uhighlight/**",
+                   "src/**/org/apache/lucene/search/vectorhighlight/**"
             targetExclude "**/resources/**", "**/CambridgeMA.utf8"
             break
 

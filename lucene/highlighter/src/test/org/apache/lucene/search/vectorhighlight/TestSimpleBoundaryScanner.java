@@ -20,22 +20,22 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSimpleBoundaryScanner extends LuceneTestCase {
   static final String TEXT =
-    "Apache Lucene(TM) is a high-performance, full-featured\ntext search engine library written entirely in Java.";
+      "Apache Lucene(TM) is a high-performance, full-featured\ntext search engine library written entirely in Java.";
 
   public void testFindStartOffset() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
     BoundaryScanner scanner = new SimpleBoundaryScanner();
-    
+
     // test out of range
     int start = TEXT.length() + 1;
     assertEquals(start, scanner.findStartOffset(text, start));
     start = 0;
     assertEquals(start, scanner.findStartOffset(text, start));
-    
+
     start = TEXT.indexOf("formance");
     int expected = TEXT.indexOf("high-performance");
     assertEquals(expected, scanner.findStartOffset(text, start));
-    
+
     start = TEXT.indexOf("che");
     expected = TEXT.indexOf("Apache");
     assertEquals(expected, scanner.findStartOffset(text, start));
@@ -44,13 +44,13 @@ public class TestSimpleBoundaryScanner extends LuceneTestCase {
   public void testFindEndOffset() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
     BoundaryScanner scanner = new SimpleBoundaryScanner();
-    
+
     // test out of range
     int start = TEXT.length() + 1;
     assertEquals(start, scanner.findEndOffset(text, start));
     start = -1;
     assertEquals(start, scanner.findEndOffset(text, start));
-    
+
     start = TEXT.indexOf("full-");
     int expected = TEXT.indexOf("\ntext");
     assertEquals(expected, scanner.findEndOffset(text, start));
