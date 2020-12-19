@@ -271,10 +271,6 @@ abstract class SpatialQuery extends Query {
     }
 
     protected Scorer getScorer(final LeafReader reader, final Weight weight, final float boost, final ScoreMode scoreMode) throws IOException {
-      if (values.getDocCount() == values.size()) {
-        // single value points
-        return getSparseScorer(reader, weight, boost, scoreMode);
-      }
       switch (queryRelation) {
         case INTERSECTS:
           return getSparseScorer(reader, weight, boost, scoreMode);
@@ -282,7 +278,8 @@ abstract class SpatialQuery extends Query {
           return getContainsDenseScorer(reader, weight, boost, scoreMode);
         case WITHIN:
         case DISJOINT:
-          return getDenseScorer(reader, weight, boost, scoreMode);
+          return values.getDocCount() == values.size() ?  
+                  getSparseScorer(reader, weight, boost, scoreMode) : getDenseScorer(reader, weight, boost, scoreMode);
         default:
           throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
       }
@@ -292,7 +289,20 @@ abstract class SpatialQuery extends Query {
      * Scorer used for INTERSECTS and single value points
      **/
     private Scorer getSparseScorer(final LeafReader reader, final Weight weight, final float boost, final ScoreMode scoreMode) throws IOException {
-      if (values.getDocCount() < (values.size() >>> 2)) {
+      if (queryRelation == QueryRelation.DISJOINT
+              && values.getDocCount() == reader.maxDoc()
+              && values.getDocCount() == values.size()
+              && cost() > reader.maxDoc() / 2) {
+        // If all docs have exactly one value and the cost is greater
+        // than half the leaf size then maybe we can make things faster
+        // by computing the set of documents that do NOT match the query
+        final FixedBitSet result = new FixedBitSet(reader.maxDoc());
+        result.set(0, reader.maxDoc());
+        final long[] cost = new long[]{reader.maxDoc()};
+        values.intersect(getInverseDenseVisitor(spatialVisitor, queryRelation, result, cost));
+        final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
+        return new ConstantScoreScorer(weight, boost, scoreMode, iterator);
+      } else if (values.getDocCount() < (values.size() >>> 2)) {
         // we use a dense structure so we can skip already visited documents
         final FixedBitSet result = new FixedBitSet(reader.maxDoc());
         final long[] cost = new long[]{0};
