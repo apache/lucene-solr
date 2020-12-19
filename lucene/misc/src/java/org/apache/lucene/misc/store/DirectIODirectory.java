@@ -81,6 +81,7 @@ public class DirectIODirectory extends FilterDirectory {
   private final long minBytesDirect;
   private final Directory delegate;
   private final Path path;
+  private static OpenOption directOpenOption;
 
   /** Create a new DirectIODirectory for the named location.
    * 
@@ -150,6 +151,10 @@ public class DirectIODirectory extends FilterDirectory {
    */
   @SuppressWarnings("rawtypes")
   private static OpenOption getDirectOpenOption() throws IOException {
+    if (directOpenOption != null) {
+      return directOpenOption;
+    }
+
     try {
       Class clazz = Class.forName("com.sun.nio.file.ExtendedOpenOption");
       Object directEnum = Arrays.stream(clazz.getEnumConstants())
@@ -157,7 +162,8 @@ public class DirectIODirectory extends FilterDirectory {
                                 .findFirst()
                                 .orElse(null);
       if (directEnum != null) {
-        return (OpenOption) directEnum;
+        directOpenOption = (OpenOption) directEnum;
+        return directOpenOption;
       } else {
         throw new IOException("com.sun.nio.file.ExtendedOpenOption.DIRECT is not available in the current jdk version");
       }
