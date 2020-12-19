@@ -47,10 +47,8 @@ import org.apache.lucene.util.IOUtils;
  * and Windows; other systems should work but have not been
  * tested! Use at your own risk.
  *
- * <p>@throws UnsupportedOperationException if the operating system or
- * file system does not support Direct I/O or a sufficient equivalent.
- *
- * <p>@throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
+ * <p>@throws UnsupportedOperationException if the operating system, file system or JDK
+ * does not support Direct I/O or a sufficient equivalent.
  *
  * @lucene.experimental
  */
@@ -180,9 +178,8 @@ public class DirectIODirectory extends FilterDirectory {
 
     /**
      * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO bypassing OS buffer
-     * @throws UnsupportedOperationException if the operating system or
-     * file system does not support Direct I/O or a sufficient equivalent.
-     * @throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
+     * @throws UnsupportedOperationException if the operating system, file system or JDK
+     * does not support Direct I/O or a sufficient equivalent.
      */
     public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
@@ -223,12 +220,6 @@ public class DirectIODirectory extends FilterDirectory {
       }
     }
 
-    //@Override
-    //public void setLength() throws IOException {
-    //   TODO -- how to impl this?  neither FOS nor
-    //   FileChannel provides an API?
-    //}
-
     private void dump() throws IOException {
       buffer.flip();
       final long limit = filePos + buffer.limit();
@@ -263,7 +254,7 @@ public class DirectIODirectory extends FilterDirectory {
     }
 
     @Override
-    public long getChecksum() throws IOException {
+    public long getChecksum() {
       throw new UnsupportedOperationException("this directory currently does not work at all!");
     }
 
@@ -299,9 +290,8 @@ public class DirectIODirectory extends FilterDirectory {
 
     /**
      * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing OS buffer
-     * @throws UnsupportedOperationException if the operating system or
-     * file system does not support Direct I/O or a sufficient equivalent.
-     * @throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
+     * @throws UnsupportedOperationException if the operating system, file system or JDK
+     * does not support Direct I/O or a sufficient equivalent.
      */
     public DirectIOIndexInput(Path path, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
@@ -435,7 +425,7 @@ public class DirectIODirectory extends FilterDirectory {
     }
 
     @Override
-    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+    public IndexInput slice(String sliceDescription, long offset, long length) {
       // TODO: is this the right thing to do?
       return BufferedIndexInput.wrap(sliceDescription, this, offset, length);
     }
