@@ -115,6 +115,109 @@ public class TestFieldSortOptimizationSkipping extends LuceneTestCase {
     dir.close();
   }
 
+  public void testSortOptWithBooleanQueriesAndConstantScoreQuery() throws IOException {
+    try (
+      Directory dir = newDirectory();
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig());
+    ) {
+      final int numDocs = atLeast(10000);
+      for (int i = 0; i < numDocs; ++i) {
+        final Document doc = new Document();
+        doc.add(new NumericDocValuesField("field1", i));
+        doc.add(new IntPoint("field1", i));
+        doc.add(new StringField("field2", random().nextBoolean() ? "value1" : "value2", Field.Store.NO));
+        writer.addDocument(doc);
+        if (i == 7000) writer.flush(); // two segments
+      }
+
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        IndexSearcher searcher = new IndexSearcher(reader);
+        searcher.setQueryCache(null);
+        final SortField sortField = new SortField("field1", SortField.Type.INT);
+        final Sort sort = new Sort(sortField);
+        final int numHits = 3;
+        final int totalHitsThreshold = 3;
+
+        { // test that sort optimization is enabled in a boolean query FILTER
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
+          bq.add(IntPoint.newRangeQuery("field1", 10, Integer.MAX_VALUE), BooleanClause.Occur.FILTER);
+          bq.add(new TermQuery(new Term("field2", "value1")), BooleanClause.Occur.FILTER);
+          Query query = bq.build();
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+
+        { // test that sort optimization is enabled in a boolean query MUST
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
+          bq.add(IntPoint.newRangeQuery("field1", 10, Integer.MAX_VALUE), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term("field2", "value1")), BooleanClause.Occur.MUST);
+          Query query = bq.build();
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+
+        { // test that sort optimization is enabled in a boolean query SHOULD
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
+          bq.add(IntPoint.newRangeQuery("field1", 10, Integer.MAX_VALUE), BooleanClause.Occur.SHOULD);
+          bq.add(new TermQuery(new Term("field2", "value1")), BooleanClause.Occur.SHOULD);
+          Query query = bq.build();
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+
+        { // test that sort optimization is enabled in a boolean query with MUST_NOT
+          BooleanQuery.Builder bq = new BooleanQuery.Builder();
+          bq.add(IntPoint.newRangeQuery("field1", 20, Integer.MAX_VALUE), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term("field2", "value1")), BooleanClause.Occur.MUST_NOT);
+          Query query = bq.build();
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+
+        { // test that sort optimization is enabled in a ConstantScoreQuery
+          Query query = new ConstantScoreQuery(IntPoint.newRangeQuery("field1", 20, Integer.MAX_VALUE));
+          TotalHitCountCollector countCollector = new TotalHitCountCollector();
+          searcher.search(query, countCollector);
+          final int totalHitsCount = countCollector.getTotalHits();
+
+          TopFieldCollector topCollector = TopFieldCollector.create(sort, numHits, null, totalHitsThreshold);
+          searcher.search(query, topCollector);
+          TopDocs topDocs = topCollector.topDocs();
+          assertTrue(topCollector.isEarlyTerminated());
+          assertTrue(topDocs.totalHits.value < totalHitsCount);
+        }
+      }
+    }
+  }
+
   
   /**
    * test that even if a field is not indexed with points, optimized sort still works as expected,

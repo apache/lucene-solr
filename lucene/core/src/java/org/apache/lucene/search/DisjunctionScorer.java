@@ -46,7 +46,7 @@ abstract class DisjunctionScorer extends Scorer {
       final DisiWrapper w = new DisiWrapper(scorer);
       this.subScorers.add(w);
     }
-    this.needsScores = scoreMode != ScoreMode.COMPLETE_NO_SCORES;
+    this.needsScores = scoreMode.needsScores();
     if (scoreMode == ScoreMode.TOP_SCORES) {
       for (Scorer scorer : subScorers) {
         scorer.advanceShallow(0);

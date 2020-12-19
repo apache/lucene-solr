@@ -24,32 +24,66 @@ public enum ScoreMode {
   /**
    * Produced scorers will allow visiting all matches and get their score.
    */
-  COMPLETE(true, true),
+  COMPLETE(true, true) {
+    @Override
+    public ScoreMode withNoScores() {
+      return COMPLETE_NO_SCORES;
+    }
+  },
 
   /**
    * Produced scorers will allow visiting all matches but scores won't be
    * available.
    */
-  COMPLETE_NO_SCORES(true, false),
+  COMPLETE_NO_SCORES(true, false) {
+    @Override
+    public ScoreMode withNoScores() {
+      return COMPLETE_NO_SCORES;
+    }
+  },
 
   /**
    * Produced scorers will optionally allow skipping over non-competitive
    * hits using the {@link Scorer#setMinCompetitiveScore(float)} API.
    */
-  TOP_SCORES(false, true),
+  TOP_SCORES(false, true) {
+    @Override
+    public ScoreMode withNoScores() {
+      return COMPLETE_NO_SCORES;
+    }
+  },
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs
+   * ScoreMode for top field collectors that can provide their own iterators
+   * capable of skipping over non-competitive hits through
+   * {@link LeafCollector#competitiveIterator()} API.
+   * To make use of the skipping functionality a {@link BulkScorer} must intersect
+   * {@link Scorer#iterator()} with {@link LeafCollector#competitiveIterator()}
+   * to obtain a final documents' iterator for scoring and collection.
    */
-  TOP_DOCS(false, false),
+  TOP_DOCS(false, false) {
+    @Override
+    public ScoreMode withNoScores() {
+      return TOP_DOCS;
+    }
+  },
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs.
+   * ScoreMode for top field collectors that can provide their own iterators
+   * capable of skipping over non-competitive hits through
+   * {@link LeafCollector#competitiveIterator()} API.
+   * To make use of the skipping functionality a {@link BulkScorer} must intersect
+   * {@link Scorer#iterator()} with {@link LeafCollector#competitiveIterator()}
+   * to obtain a final documents' iterator for scoring and collection.
+   *
    * This mode is used when there is a secondary sort by _score.
    */
-  TOP_DOCS_WITH_SCORES(false, true);
+  TOP_DOCS_WITH_SCORES(false, true) {
+    @Override
+    public ScoreMode withNoScores() {
+      return TOP_DOCS;
+    }
+  };
 
   private final boolean needsScores;
   private final boolean isExhaustive;
@@ -58,6 +92,11 @@ public enum ScoreMode {
     this.isExhaustive = isExhaustive;
     this.needsScores = needsScores;
   }
+
+  /**
+   * Converts this scoreMode to a corresponding scoreMode that doesn't need scores.
+   */
+  public abstract ScoreMode withNoScores();
 
   /**
    * Whether this {@link ScoreMode} needs to compute scores.
@@ -73,4 +112,5 @@ public enum ScoreMode {
   public boolean isExhaustive() {
     return isExhaustive;
   }
+
 }

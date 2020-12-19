@@ -58,7 +58,7 @@ final class BooleanWeight extends Weight {
     this.similarity = searcher.getSimilarity();
     weightedClauses = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
+      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : scoreMode.withNoScores(), boost);
       weightedClauses.add(new WeightedBooleanClause(c, w));
     }
   }
@@ -313,7 +313,7 @@ final class BooleanWeight extends Weight {
 
   @Override
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
-    if (scoreMode == ScoreMode.TOP_SCORES) {
+    if (scoreMode.isExhaustive() == false) {
       // If only the top docs are requested, use the default bulk scorer
       // so that we can dynamically prune non-competitive hits.
       return super.bulkScorer(context);
