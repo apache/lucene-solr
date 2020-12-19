@@ -164,7 +164,6 @@ public class DirectIODirectory extends FilterDirectory {
     private final FileChannel channel;
 
     private long filePos;
-    private long fileLength;
     private boolean isOpen;
 
     /**
@@ -208,13 +207,6 @@ public class DirectIODirectory extends FilterDirectory {
 
     private void dump() throws IOException {
       buffer.flip();
-      final long limit = filePos + buffer.limit();
-      if (limit > fileLength) {
-        // this dump extends the file
-        fileLength = limit;
-      } else {
-        // we had seek'd back & wrote some changes
-      }
 
       //System.out.println(Thread.currentThread().getName() + ": dump to " + filePos + " limit=" + buffer.limit() + " fos=" + fos);
       channel.write(buffer, filePos);
@@ -243,7 +235,7 @@ public class DirectIODirectory extends FilterDirectory {
         } finally {
           try {
             //System.out.println("direct close set len=" + fileLength + " vs " + channel.size() + " path=" + path);
-            channel.truncate(fileLength);
+            channel.truncate(getFilePointer());
             //System.out.println("  now: " + channel.size());
           } finally {
             channel.close();
@@ -287,7 +279,7 @@ public class DirectIODirectory extends FilterDirectory {
       this.channel = other.channel;
       this.blockSize = other.blockSize;
       
-      final int bufferSize = other.buffer.limit();
+      final int bufferSize = other.buffer.capacity();
       this.buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
       
       filePos = -bufferSize;
@@ -314,7 +306,7 @@ public class DirectIODirectory extends FilterDirectory {
     public void seek(long pos) throws IOException {
       if (pos != getFilePointer()) {
         final long alignedPos = pos - (pos % blockSize);
-        filePos = alignedPos-buffer.limit();
+        filePos = alignedPos-buffer.capacity();
         
         final int delta = (int) (pos - alignedPos);
         if (delta != 0) {
@@ -348,9 +340,10 @@ public class DirectIODirectory extends FilterDirectory {
     }
 
     private void refill() throws IOException {
-      buffer.clear();
-      filePos += buffer.limit();
+      filePos += buffer.capacity();
       //System.out.println("X refill filePos=" + filePos);
+      
+      buffer.clear();
       int n;
       try {
         n = channel.read(buffer, filePos);
@@ -360,7 +353,7 @@ public class DirectIODirectory extends FilterDirectory {
       if (n < 0) {
         throw new EOFException("read past EOF: " + this);
       }
-      buffer.rewind();
+      buffer.flip();
     }
 
     @Override
