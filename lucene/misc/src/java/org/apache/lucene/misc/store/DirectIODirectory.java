@@ -21,13 +21,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.SuppressForbidden;
 
 // TODO
 //   - newer Linux kernel versions (after 2.6.29) have
@@ -55,6 +56,8 @@ import org.apache.lucene.util.SuppressForbidden;
  *
  * <p>@throws UnsupportedOperationException if the operating system or
  * file system does not support Direct I/O or a sufficient equivalent.
+ *
+ * <p>@throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
  *
  * @lucene.experimental
  */
@@ -101,7 +104,7 @@ public class DirectIODirectory extends FilterDirectory {
     this.delegate = delegate;
     this.path = path.toRealPath();
   }
-  
+
   /** Create a new DirectIODirectory for the named location.
    * 
    * @param path the path of the directory
@@ -138,6 +141,31 @@ public class DirectIODirectory extends FilterDirectory {
     super.close();
   }
 
+  /** Get com.sun.nio.file.ExtendedOpenOption.DIRECT through reflective class and enum lookup.
+   * There are two reasons for using this instead of directly referencing ExtendedOpenOption.DIRECT:
+   * 1. ExtendedOpenOption.DIRECT is OpenJDK's internal proprietary API. This API causes un-suppressible(?) warning to be emitted
+   *  when compiling with --release flag and value N, where N is smaller than the the version of javac used for compilation.
+   * 2. It is possible that Lucene is run using JDK that does not support ExtendedOpenOption.DIRECT. In such a
+   *  case, dynamic lookup allows us to bail out with IOException with meaningful error message.
+   */
+  @SuppressWarnings("rawtypes")
+  private static OpenOption getDirectOpenOption() throws IOException {
+    try {
+      Class clazz = Class.forName("com.sun.nio.file.ExtendedOpenOption");
+      Object directEnum = Arrays.stream(clazz.getEnumConstants())
+                                .filter(e -> e.toString().equalsIgnoreCase("DIRECT"))
+                                .findFirst()
+                                .orElse(null);
+      if (directEnum != null) {
+        return (OpenOption) directEnum;
+      } else {
+        throw new IOException("com.sun.nio.file.ExtendedOpenOption.DIRECT is not available in the current jdk version");
+      }
+    } catch (ClassNotFoundException e) {
+      throw new IOException("com.sun.nio.file.ExtendedOpenOption is not available in the current jdk version", e);
+    }
+  }
+
   private final static class DirectIOIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
@@ -154,13 +182,12 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO bypassing OS buffer
      * @throws UnsupportedOperationException if the operating system or
      * file system does not support Direct I/O or a sufficient equivalent.
+     * @throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
      */
-    @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
     public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
-      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
-                                  com.sun.nio.file.ExtendedOpenOption.DIRECT);
+      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE, getDirectOpenOption());
       int blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
       this.bufferSize = bufferSize;
       buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
@@ -274,12 +301,12 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing OS buffer
      * @throws UnsupportedOperationException if the operating system or
      * file system does not support Direct I/O or a sufficient equivalent.
+     * @throws IOException if the jdk used does not support option com.sun.nio.file.ExtendedOpenOption.DIRECT
      */
-    @SuppressForbidden(reason = "com.sun.nio.file.ExtendedOpenOption: Direct I/O with FileChannel requires the use of internal proprietary API ExtendedOpenOption.DIRECT")
     public DirectIOIndexInput(Path path, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
 
-      channel = FileChannel.open(path, StandardOpenOption.READ, com.sun.nio.file.ExtendedOpenOption.DIRECT);
+      channel = FileChannel.open(path, StandardOpenOption.READ, getDirectOpenOption());
       blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
       this.bufferSize = bufferSize;
       buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
