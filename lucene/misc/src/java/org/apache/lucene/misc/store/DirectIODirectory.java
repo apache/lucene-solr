@@ -18,6 +18,7 @@ package org.apache.lucene.misc.store;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -54,10 +55,6 @@ import org.apache.lucene.util.IOUtils;
  */
 public class DirectIODirectory extends FilterDirectory {
 
-  // TODO: this is OS dependent, but likely 512 is the LCD
-  private final static long ALIGN = 512;
-  private final static long ALIGN_NOT_MASK = ~(ALIGN-1);
-
   /** Default buffer size before writing to disk (256 KB);
    *  larger means less IO load but more RAM and direct
    *  buffer storage space consumed during merging. */
@@ -68,7 +65,7 @@ public class DirectIODirectory extends FilterDirectory {
    *  used (10 MB): */
   public final static long DEFAULT_MIN_BYTES_DIRECT = 10*1024*1024;
 
-  private final int mergeBufferSize;
+  private final int blockSize, mergeBufferSize;
   private final long minBytesDirect;
   private final Directory delegate;
   private final Path path;
@@ -102,7 +99,7 @@ public class DirectIODirectory extends FilterDirectory {
    * 
    * @param path the path of the directory
    * @param mergeBufferSize Size of buffer to use for
-   *    merging.  See {@link #DEFAULT_MERGE_BUFFER_SIZE}.
+   *    merging.
    * @param minBytesDirect Merges, or files to be opened for
    *   reading, smaller than this will
    *   not use direct IO.  See {@link
@@ -112,9 +109,7 @@ public class DirectIODirectory extends FilterDirectory {
    */
   public DirectIODirectory(Path path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
     super(delegate);
-    if ((mergeBufferSize & ALIGN) != 0) {
-      throw new IllegalArgumentException("mergeBufferSize must be 0 mod " + ALIGN + " (got: " + mergeBufferSize + ")");
-    }
+    this.blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
     this.mergeBufferSize = mergeBufferSize;
     this.minBytesDirect = minBytesDirect;
     this.delegate = delegate;
@@ -129,7 +124,7 @@ public class DirectIODirectory extends FilterDirectory {
    */
   public DirectIODirectory(Path path, Directory delegate) throws IOException {
     this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
-  }  
+  }
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
@@ -137,7 +132,7 @@ public class DirectIODirectory extends FilterDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect || fileLength(name) < minBytesDirect) {
       return delegate.openInput(name, context);
     } else {
-      return new DirectIOIndexInput(path.resolve(name), mergeBufferSize);
+      return new DirectIOIndexInput(path.resolve(name), blockSize, mergeBufferSize);
     }
   }
 
@@ -147,7 +142,7 @@ public class DirectIODirectory extends FilterDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect) {
       return delegate.createOutput(name, context);
     } else {
-      return new DirectIOIndexOutput(path.resolve(name), name, mergeBufferSize);
+      return new DirectIOIndexOutput(path.resolve(name), name, blockSize, mergeBufferSize);
     }
   }
 
@@ -167,11 +162,7 @@ public class DirectIODirectory extends FilterDirectory {
   private final static class DirectIOIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
-    private final int bufferSize;
 
-    //private final File path;
-
-    private int bufferPos;
     private long filePos;
     private long fileLength;
     private boolean isOpen;
@@ -181,22 +172,19 @@ public class DirectIODirectory extends FilterDirectory {
      * @throws UnsupportedOperationException if the operating system, file system or JDK
      * does not support Direct I/O or a sufficient equivalent.
      */
-    public DirectIOIndexOutput(Path path, String name, int bufferSize) throws IOException {
+    public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
       channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE, getDirectOpenOption());
-      int blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
-      this.bufferSize = bufferSize;
-      buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
+      buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
 
       isOpen = true;
     }
 
     @Override
     public void writeByte(byte b) throws IOException {
-      assert bufferPos == buffer.position(): "bufferPos=" + bufferPos + " vs buffer.position()=" + buffer.position();
       buffer.put(b);
-      if (++bufferPos == bufferSize) {
+      if (!buffer.hasRemaining()) {
         dump();
       }
     }
@@ -205,16 +193,14 @@ public class DirectIODirectory extends FilterDirectory {
     public void writeBytes(byte[] src, int offset, int len) throws IOException {
       int toWrite = len;
       while(true) {
-        final int left = bufferSize - bufferPos;
+        final int left = buffer.remaining();
         if (left <= toWrite) {
           buffer.put(src, offset, left);
           toWrite -= left;
           offset += left;
-          bufferPos = bufferSize;
           dump();
         } else {
           buffer.put(src, offset, toWrite);
-          bufferPos += toWrite;
           break;
         }
       }
@@ -230,27 +216,17 @@ public class DirectIODirectory extends FilterDirectory {
         // we had seek'd back & wrote some changes
       }
 
-      // must always round to next block
-      buffer.limit((int) ((buffer.limit() + ALIGN - 1) & ALIGN_NOT_MASK));
-
-      assert (buffer.limit() & ALIGN_NOT_MASK) == buffer.limit() : "limit=" + buffer.limit() + " vs " + (buffer.limit() & ALIGN_NOT_MASK);
-      assert (filePos & ALIGN_NOT_MASK) == filePos;
       //System.out.println(Thread.currentThread().getName() + ": dump to " + filePos + " limit=" + buffer.limit() + " fos=" + fos);
       channel.write(buffer, filePos);
-      filePos += bufferPos;
-      bufferPos = 0;
+      filePos += buffer.position();
+
       buffer.clear();
       //System.out.println("dump: done");
-
-      // TODO: the case where we'd seek'd back, wrote an
-      // entire buffer, we must here read the next buffer;
-      // likely Lucene won't trip on this since we only
-      // write smallish amounts on seeking back
     }
 
     @Override
     public long getFilePointer() {
-      return filePos + bufferPos;
+      return filePos + buffer.position();
     }
 
     @Override
@@ -281,42 +257,41 @@ public class DirectIODirectory extends FilterDirectory {
     private final ByteBuffer buffer;
     private final FileChannel channel;
     private final int blockSize;
-    private final int bufferSize;
 
     private boolean isOpen;
     private boolean isClone;
     private long filePos;
-    private int bufferPos;
 
     /**
      * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing OS buffer
      * @throws UnsupportedOperationException if the operating system, file system or JDK
      * does not support Direct I/O or a sufficient equivalent.
      */
-    public DirectIOIndexInput(Path path, int bufferSize) throws IOException {
+    public DirectIOIndexInput(Path path, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
+      this.blockSize = blockSize;
 
-      channel = FileChannel.open(path, StandardOpenOption.READ, getDirectOpenOption());
-      blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
-      this.bufferSize = bufferSize;
-      buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
+      this.channel = FileChannel.open(path, StandardOpenOption.READ, getDirectOpenOption());
+      this.buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
 
       isOpen = true;
       isClone = false;
       filePos = -bufferSize;
-      bufferPos = bufferSize;
+      buffer.position(bufferSize);
       //System.out.println("D open " + path + " this=" + this);
     }
 
     // for clone
-    public DirectIOIndexInput(DirectIOIndexInput other) throws IOException {
+    private DirectIOIndexInput(DirectIOIndexInput other) throws IOException {
       super(other.toString());
-      channel = other.channel;
-      this.bufferSize = other.bufferSize;
+      this.channel = other.channel;
       this.blockSize = other.blockSize;
-      buffer = ByteBuffer.allocateDirect(bufferSize).alignedSlice(blockSize);
+      
+      final int bufferSize = other.buffer.limit();
+      this.buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
+      
       filePos = -bufferSize;
-      bufferPos = bufferSize;
+      buffer.position(bufferSize);
       isOpen = true;
       isClone = true;
       //System.out.println("D clone this=" + this);
@@ -332,23 +307,22 @@ public class DirectIODirectory extends FilterDirectory {
 
     @Override
     public long getFilePointer() {
-      return filePos + bufferPos;
+      return filePos + buffer.position();
     }
 
     @Override
     public void seek(long pos) throws IOException {
       if (pos != getFilePointer()) {
-        final long alignedPos = pos & ALIGN_NOT_MASK;
-        filePos = alignedPos-bufferSize;
+        final long alignedPos = pos - (pos % blockSize);
+        filePos = alignedPos-buffer.limit();
         
         final int delta = (int) (pos - alignedPos);
         if (delta != 0) {
           refill();
           buffer.position(delta);
-          bufferPos = delta;
         } else {
           // force refill on next read
-          bufferPos = bufferSize;
+          buffer.position(buffer.limit());
         }
       }
     }
@@ -358,7 +332,7 @@ public class DirectIODirectory extends FilterDirectory {
       try {
         return channel.size();
       } catch (IOException ioe) {
-        throw new RuntimeException("IOException during length(): " + this, ioe);
+        throw new UncheckedIOException(ioe);
       }
     }
 
@@ -367,19 +341,15 @@ public class DirectIODirectory extends FilterDirectory {
       // NOTE: we don't guard against EOF here... ie the
       // "final" buffer will typically be filled to less
       // than bufferSize
-      if (bufferPos == bufferSize) {
+      if (buffer.hasRemaining()) {
         refill();
       }
-      assert bufferPos == buffer.position() : "bufferPos=" + bufferPos + " vs buffer.position()=" + buffer.position();
-      bufferPos++;
       return buffer.get();
     }
 
     private void refill() throws IOException {
       buffer.clear();
-      filePos += bufferSize;
-      bufferPos = 0;
-      assert (filePos & ALIGN_NOT_MASK) == filePos : "filePos=" + filePos + " anded=" + (filePos & ALIGN_NOT_MASK);
+      filePos += buffer.limit();
       //System.out.println("X refill filePos=" + filePos);
       int n;
       try {
@@ -398,7 +368,7 @@ public class DirectIODirectory extends FilterDirectory {
       int toRead = len;
       //System.out.println("\nX readBytes len=" + len + " fp=" + getFilePointer() + " size=" + length() + " this=" + this);
       while(true) {
-        final int left = bufferSize - bufferPos;
+        final int left = buffer.remaining();
         if (left < toRead) {
           //System.out.println("  copy " + left);
           buffer.get(dst, offset, left);
@@ -408,7 +378,6 @@ public class DirectIODirectory extends FilterDirectory {
         } else {
           //System.out.println("  copy " + toRead);
           buffer.get(dst, offset, toRead);
-          bufferPos += toRead;
           //System.out.println("  readBytes done");
           break;
         }
@@ -420,7 +389,7 @@ public class DirectIODirectory extends FilterDirectory {
       try {
         return new DirectIOIndexInput(this);
       } catch (IOException ioe) {
-        throw new RuntimeException("IOException during clone: " + this, ioe);
+        throw new UncheckedIOException(ioe);
       }
     }
 

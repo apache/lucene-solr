@@ -31,9 +31,6 @@ import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.LifecycleScope;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
   
   @BeforeClass
@@ -43,8 +40,9 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
   }
   
   public void testWriteReadWithDirectIO() throws IOException {
-    try(Directory dir = getDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST))) {
-      final long blockSize = Files.getFileStore(createTempFile()).getBlockSize();
+    final Path path = createTempDir("testWriteReadWithDirectIO");
+    final long blockSize = Files.getFileStore(path).getBlockSize();
+    try(DirectIODirectory dir = getDirectory(path)) {
       final long minBytesDirect = Double.valueOf(Math.ceil(DEFAULT_MIN_BYTES_DIRECT / blockSize)).longValue() *
                                     blockSize;
       // Need to worry about overflows here?
@@ -65,7 +63,7 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
   }
 
   @Override
-  protected Directory getDirectory(Path path) throws IOException {
+  protected DirectIODirectory getDirectory(Path path) throws IOException {
     Directory delegate = LuceneTestCase.newFSDirectory(path);
     return new DirectIODirectory(path, delegate);
   }
