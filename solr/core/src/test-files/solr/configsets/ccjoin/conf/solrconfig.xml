@@ -26,24 +26,20 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
 
   <query>
-    <filterCache class="solr.CaffeineCache"
-      size="512"
+    <filterCache size="512"
       initialSize="512"
       autowarmCount="0" />
 
-    <queryResultCache class="solr.CaffeineCache"
-      size="512"
+    <queryResultCache size="512"
       initialSize="512"
       autowarmCount="0" />
 
-    <documentCache class="solr.CaffeineCache"
-      size="512"
+    <documentCache size="512"
       initialSize="512"
       autowarmCount="0" />
   </query>
 
   <cache name="hash_product_id_s"
-         class="solr.CaffeineCache"
          size="128"
          initialSize="0"
          regenerator="solr.NoOpRegenerator"/>
