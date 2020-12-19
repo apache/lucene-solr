@@ -16,18 +16,32 @@
  */
 package org.apache.lucene.misc.store;
 
-import com.carrotsearch.randomizedtesting.LifecycleScope;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import org.apache.lucene.store.*;
-import org.apache.lucene.util.LuceneTestCase;
+import static org.apache.lucene.misc.store.DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.apache.lucene.misc.store.DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT;
+import org.apache.lucene.store.BaseDirectoryTestCase;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.BeforeClass;
+
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
+  
+  @BeforeClass
+  public static void checkSupported() {
+    assumeTrue("This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
+        DirectIODirectory.ExtendedOpenOption_DIRECT != null);
+  }
+  
   public void testWriteReadWithDirectIO() throws IOException {
     try(Directory dir = getDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST))) {
       final long blockSize = Files.getFileStore(createTempFile()).getBlockSize();
