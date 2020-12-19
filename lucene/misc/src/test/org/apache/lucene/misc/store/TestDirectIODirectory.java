@@ -16,19 +16,12 @@
  */
 package org.apache.lucene.misc.store;
 
-import static org.apache.lucene.misc.store.DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT;
-
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.store.BaseDirectoryTestCase;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
@@ -39,32 +32,14 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
         DirectIODirectory.ExtendedOpenOption_DIRECT != null);
   }
   
-  public void testWriteReadWithDirectIO() throws IOException {
-    final Path path = createTempDir("testWriteReadWithDirectIO");
-    final long blockSize = Files.getFileStore(path).getBlockSize();
-    try(DirectIODirectory dir = getDirectory(path)) {
-      final long minBytesDirect = Double.valueOf(Math.ceil(DEFAULT_MIN_BYTES_DIRECT / blockSize)).longValue() *
-                                    blockSize;
-      // Need to worry about overflows here?
-      final int writtenByteLength = Math.toIntExact(minBytesDirect);
-
-      MergeInfo mergeInfo = new MergeInfo(1000, Integer.MAX_VALUE, true, 1);
-      final IOContext context = new IOContext(mergeInfo);
-
-      IndexOutput indexOutput = dir.createOutput("test", context);
-      indexOutput.writeBytes(new byte[writtenByteLength], 0, writtenByteLength);
-      IndexInput indexInput = dir.openInput("test", context);
-
-      assertEquals("The length of bytes read should equal to written", writtenByteLength, indexInput.length());
-
-      indexOutput.close();
-      indexInput.close();
-    }
-  }
-
   @Override
   protected DirectIODirectory getDirectory(Path path) throws IOException {
-    Directory delegate = LuceneTestCase.newFSDirectory(path);
-    return new DirectIODirectory(path, delegate);
+    final FSDirectory delegate = FSDirectory.open(path);
+    return new DirectIODirectory(path, DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L, delegate) {
+      @Override
+      protected boolean useDirectIO(IOContext context) {
+        return true;
+      }
+    };
   }
 }
