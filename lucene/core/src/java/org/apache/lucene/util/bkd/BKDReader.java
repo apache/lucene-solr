@@ -119,10 +119,6 @@ public final class BKDReader extends PointValues {
     private final int[] rightNodePositions;
     // holds the splitDim for each level:
     private final int[] splitDims;
-    // true if the per-dim delta we read for the node at this level is a negative offset vs. the last split on this dim; this is a packed
-    // 2D array, i.e. to access array[level][dim] you read from negativeDeltas[level*numDims+dim].  this will be true if the last time we
-    // split on this dimension, we next pushed to the left sub-tree:
-    private final boolean[] negativeDeltas;
     // holds the packed per-level split values; the intersect method uses this to save the cell min/max as it recurses:
     private final byte[][] splitValuesStack;
     // scratch value to return from getPackedValue:
@@ -144,7 +140,6 @@ public final class BKDReader extends PointValues {
       rightNodePositions = new int[treeDepth+1];
       splitValuesStack = new byte[treeDepth+1][];
       splitDims = new int[treeDepth+1];
-      negativeDeltas = new boolean[config.numIndexDims*(treeDepth+1)];
       this.in = in;
       splitValuesStack[0] = new byte[config.packedIndexBytesLength];
       scratch = new BytesRef();
@@ -166,7 +161,6 @@ public final class BKDReader extends PointValues {
       index.leafBlockFPStack[level] = leafBlockFPStack[level];
       index.rightNodePositions[level] = rightNodePositions[level];
       index.splitValuesStack[index.level] = splitValuesStack[index.level].clone();
-      System.arraycopy(negativeDeltas, level*config.numIndexDims, index.negativeDeltas, level*config.numIndexDims, config.numIndexDims);
       index.splitDims[level] = splitDims[level];
       return index;
     }
@@ -268,9 +262,7 @@ public final class BKDReader extends PointValues {
       if (splitPackedValueStack[level] == null) {
         splitPackedValueStack[level] = new byte[config.packedIndexBytesLength];
       }
-      System.arraycopy(negativeDeltas, (level-1)*config.numIndexDims, negativeDeltas, level*config.numIndexDims, config.numIndexDims);
       assert splitDim != -1;
-      negativeDeltas[level*config.numIndexDims+splitDim] = isLeft;
 
       try {
         leafBlockFPStack[level] = leafBlockFPStack[level - 1];
@@ -298,7 +290,7 @@ public final class BKDReader extends PointValues {
           System.arraycopy(splitValuesStack[level - 1], 0, splitValuesStack[level], 0, config.packedIndexBytesLength);
           if (suffix > 0) {
             int firstDiffByteDelta = code / (1 + config.bytesPerDim);
-            if (negativeDeltas[level * config.numIndexDims + splitDim]) {
+            if (isLeft) {
               firstDiffByteDelta = -firstDiffByteDelta;
             }
             int oldByte = splitValuesStack[level][splitDim * config.bytesPerDim + prefix] & 0xFF;
