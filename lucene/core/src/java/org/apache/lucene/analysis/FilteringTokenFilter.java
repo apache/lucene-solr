@@ -16,31 +16,33 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * Abstract base class for TokenFilters that may remove tokens.
- * You have to implement {@link #accept} and return a boolean if the current
- * token should be preserved. {@link #incrementToken} uses this method
- * to decide if a token should be passed to the caller.
+ * Abstract base class for TokenFilters that may remove tokens. You have to implement {@link
+ * #accept} and return a boolean if the current token should be preserved. {@link #incrementToken}
+ * uses this method to decide if a token should be passed to the caller.
  */
 public abstract class FilteringTokenFilter extends TokenFilter {
 
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private int skippedPositions;
 
   /**
    * Create a new {@link FilteringTokenFilter}.
-   * @param in      the {@link TokenStream} to consume
+   *
+   * @param in the {@link TokenStream} to consume
    */
   public FilteringTokenFilter(TokenStream in) {
     super(in);
   }
 
-  /** Override this method and return if the current input token should be returned by {@link #incrementToken}. */
+  /**
+   * Override this method and return if the current input token should be returned by {@link
+   * #incrementToken}.
+   */
   protected abstract boolean accept() throws IOException;
 
   @Override

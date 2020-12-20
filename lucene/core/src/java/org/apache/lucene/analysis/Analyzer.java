@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
@@ -24,7 +23,6 @@ import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -35,14 +33,15 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.Version;
 
 /**
- * An Analyzer builds TokenStreams, which analyze text.  It thus represents a
- * policy for extracting index terms from text.
- * <p>
- * In order to define what analysis is done, subclasses must define their
- * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String)}.
- * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
- * <p>
- * Simple example:
+ * An Analyzer builds TokenStreams, which analyze text. It thus represents a policy for extracting
+ * index terms from text.
+ *
+ * <p>In order to define what analysis is done, subclasses must define their {@link
+ * TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String)}. The components
+ * are then reused in each call to {@link #tokenStream(String, Reader)}.
+ *
+ * <p>Simple example:
+ *
  * <pre class="prettyprint">
  * Analyzer analyzer = new Analyzer() {
  *  {@literal @Override}
@@ -60,24 +59,26 @@ import org.apache.lucene.util.Version;
  *   }
  * };
  * </pre>
+ *
  * For more examples, see the {@link org.apache.lucene.analysis Analysis package documentation}.
- * <p>
- * For some concrete implementations bundled with Lucene, look in the analysis modules:
+ *
+ * <p>For some concrete implementations bundled with Lucene, look in the analysis modules:
+ *
  * <ul>
- *   <li><a href="{@docRoot}/../analysis/common/overview-summary.html">Common</a>:
- *       Analyzers for indexing content in different languages and domains.
- *   <li><a href="{@docRoot}/../analysis/icu/overview-summary.html">ICU</a>:
- *       Exposes functionality from ICU to Apache Lucene. 
- *   <li><a href="{@docRoot}/../analysis/kuromoji/overview-summary.html">Kuromoji</a>:
- *       Morphological analyzer for Japanese text.
+ *   <li><a href="{@docRoot}/../analysis/common/overview-summary.html">Common</a>: Analyzers for
+ *       indexing content in different languages and domains.
+ *   <li><a href="{@docRoot}/../analysis/icu/overview-summary.html">ICU</a>: Exposes functionality
+ *       from ICU to Apache Lucene.
+ *   <li><a href="{@docRoot}/../analysis/kuromoji/overview-summary.html">Kuromoji</a>: Morphological
+ *       analyzer for Japanese text.
  *   <li><a href="{@docRoot}/../analysis/morfologik/overview-summary.html">Morfologik</a>:
  *       Dictionary-driven lemmatization for the Polish language.
- *   <li><a href="{@docRoot}/../analysis/phonetic/overview-summary.html">Phonetic</a>:
- *       Analysis for indexing phonetic signatures (for sounds-alike search).
- *   <li><a href="{@docRoot}/../analysis/smartcn/overview-summary.html">Smart Chinese</a>:
- *       Analyzer for Simplified Chinese, which indexes words.
- *   <li><a href="{@docRoot}/../analysis/stempel/overview-summary.html">Stempel</a>:
- *       Algorithmic Stemmer for the Polish Language.
+ *   <li><a href="{@docRoot}/../analysis/phonetic/overview-summary.html">Phonetic</a>: Analysis for
+ *       indexing phonetic signatures (for sounds-alike search).
+ *   <li><a href="{@docRoot}/../analysis/smartcn/overview-summary.html">Smart Chinese</a>: Analyzer
+ *       for Simplified Chinese, which indexes words.
+ *   <li><a href="{@docRoot}/../analysis/stempel/overview-summary.html">Stempel</a>: Algorithmic
+ *       Stemmer for the Polish Language.
  * </ul>
  *
  * @since 3.1
@@ -87,12 +88,13 @@ public abstract class Analyzer implements Closeable {
   private final ReuseStrategy reuseStrategy;
   private Version version = Version.LATEST;
 
-  // non final as it gets nulled if closed; pkg private for access by ReuseStrategy's final helper methods:
+  // non final as it gets nulled if closed; pkg private for access by ReuseStrategy's final helper
+  // methods:
   CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<>();
 
   /**
-   * Create a new Analyzer, reusing the same set of components per-thread
-   * across calls to {@link #tokenStream(String, Reader)}. 
+   * Create a new Analyzer, reusing the same set of components per-thread across calls to {@link
+   * #tokenStream(String, Reader)}.
    */
   protected Analyzer() {
     this(GLOBAL_REUSE_STRATEGY);
@@ -100,10 +102,10 @@ public abstract class Analyzer implements Closeable {
 
   /**
    * Expert: create a new Analyzer with a custom {@link ReuseStrategy}.
-   * <p>
-   * NOTE: if you just want to reuse on a per-field basis, it's easier to
-   * use a subclass of {@link AnalyzerWrapper} such as 
-   * <a href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
+   *
+   * <p>NOTE: if you just want to reuse on a per-field basis, it's easier to use a subclass of
+   * {@link AnalyzerWrapper} such as <a
+   * href="{@docRoot}/../analysis/common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
    * PerFieldAnalyzerWrapper</a> instead.
    */
   protected Analyzer(ReuseStrategy reuseStrategy) {
@@ -112,51 +114,45 @@ public abstract class Analyzer implements Closeable {
 
   /**
    * Creates a new {@link TokenStreamComponents} instance for this analyzer.
-   * 
-   * @param fieldName
-   *          the name of the fields content passed to the
-   *          {@link TokenStreamComponents} sink as a reader
-
+   *
+   * @param fieldName the name of the fields content passed to the {@link TokenStreamComponents}
+   *     sink as a reader
    * @return the {@link TokenStreamComponents} for this analyzer.
    */
   protected abstract TokenStreamComponents createComponents(String fieldName);
 
   /**
-   * Wrap the given {@link TokenStream} in order to apply normalization filters.
-   * The default implementation returns the {@link TokenStream} as-is. This is
-   * used by {@link #normalize(String, String)}.
+   * Wrap the given {@link TokenStream} in order to apply normalization filters. The default
+   * implementation returns the {@link TokenStream} as-is. This is used by {@link #normalize(String,
+   * String)}.
    */
   protected TokenStream normalize(String fieldName, TokenStream in) {
     return in;
   }
 
   /**
-   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
-   * the contents of <code>reader</code>.
-   * <p>
-   * This method uses {@link #createComponents(String)} to obtain an
-   * instance of {@link TokenStreamComponents}. It returns the sink of the
-   * components and stores the components internally. Subsequent calls to this
-   * method will reuse the previously stored components after resetting them
-   * through {@link TokenStreamComponents#setReader(Reader)}.
-   * <p>
-   * <b>NOTE:</b> After calling this method, the consumer must follow the 
-   * workflow described in {@link TokenStream} to properly consume its contents.
-   * See the {@link org.apache.lucene.analysis Analysis package documentation} for
-   * some examples demonstrating this.
-   * 
-   * <b>NOTE:</b> If your data is available as a {@code String}, use
-   * {@link #tokenStream(String, String)} which reuses a {@code StringReader}-like
-   * instance internally.
-   * 
+   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing the contents of <code>
+   * reader</code>.
+   *
+   * <p>This method uses {@link #createComponents(String)} to obtain an instance of {@link
+   * TokenStreamComponents}. It returns the sink of the components and stores the components
+   * internally. Subsequent calls to this method will reuse the previously stored components after
+   * resetting them through {@link TokenStreamComponents#setReader(Reader)}.
+   *
+   * <p><b>NOTE:</b> After calling this method, the consumer must follow the workflow described in
+   * {@link TokenStream} to properly consume its contents. See the {@link org.apache.lucene.analysis
+   * Analysis package documentation} for some examples demonstrating this.
+   *
+   * <p><b>NOTE:</b> If your data is available as a {@code String}, use {@link #tokenStream(String,
+   * String)} which reuses a {@code StringReader}-like instance internally.
+   *
    * @param fieldName the name of the field the created TokenStream is used for
    * @param reader the reader the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
    * @throws AlreadyClosedException if the Analyzer is closed.
    * @see #tokenStream(String, String)
    */
-  public final TokenStream tokenStream(final String fieldName,
-                                       final Reader reader) {
+  public final TokenStream tokenStream(final String fieldName, final Reader reader) {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
     final Reader r = initReader(fieldName, reader);
     if (components == null) {
@@ -166,22 +162,20 @@ public abstract class Analyzer implements Closeable {
     components.setReader(r);
     return components.getTokenStream();
   }
-  
+
   /**
-   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
-   * the contents of <code>text</code>.
-   * <p>
-   * This method uses {@link #createComponents(String)} to obtain an
-   * instance of {@link TokenStreamComponents}. It returns the sink of the
-   * components and stores the components internally. Subsequent calls to this
-   * method will reuse the previously stored components after resetting them
-   * through {@link TokenStreamComponents#setReader(Reader)}.
-   * <p>
-   * <b>NOTE:</b> After calling this method, the consumer must follow the 
-   * workflow described in {@link TokenStream} to properly consume its contents.
-   * See the {@link org.apache.lucene.analysis Analysis package documentation} for
-   * some examples demonstrating this.
-   * 
+   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing the contents of <code>
+   * text</code>.
+   *
+   * <p>This method uses {@link #createComponents(String)} to obtain an instance of {@link
+   * TokenStreamComponents}. It returns the sink of the components and stores the components
+   * internally. Subsequent calls to this method will reuse the previously stored components after
+   * resetting them through {@link TokenStreamComponents#setReader(Reader)}.
+   *
+   * <p><b>NOTE:</b> After calling this method, the consumer must follow the workflow described in
+   * {@link TokenStream} to properly consume its contents. See the {@link org.apache.lucene.analysis
+   * Analysis package documentation} for some examples demonstrating this.
+   *
    * @param fieldName the name of the field the created TokenStream is used for
    * @param text the String the streams source reads from
    * @return TokenStream for iterating the analyzed content of <code>reader</code>
@@ -190,9 +184,11 @@ public abstract class Analyzer implements Closeable {
    */
   public final TokenStream tokenStream(final String fieldName, final String text) {
     TokenStreamComponents components = reuseStrategy.getReusableComponents(this, fieldName);
-    @SuppressWarnings("resource") final ReusableStringReader strReader = 
-        (components == null || components.reusableStringReader == null) ?
-        new ReusableStringReader() : components.reusableStringReader;
+    @SuppressWarnings("resource")
+    final ReusableStringReader strReader =
+        (components == null || components.reusableStringReader == null)
+            ? new ReusableStringReader()
+            : components.reusableStringReader;
     strReader.setValue(text);
     final Reader r = initReader(fieldName, strReader);
     if (components == null) {
@@ -206,18 +202,15 @@ public abstract class Analyzer implements Closeable {
   }
 
   /**
-   * Normalize a string down to the representation that it would have in the
-   * index.
-   * <p>
-   * This is typically used by query parsers in order to generate a query on
-   * a given term, without tokenizing or stemming, which are undesirable if
-   * the string to analyze is a partial word (eg. in case of a wildcard or
-   * fuzzy query).
-   * <p>
-   * This method uses {@link #initReaderForNormalization(String, Reader)} in
-   * order to apply necessary character-level normalization and then
-   * {@link #normalize(String, TokenStream)} in order to apply the normalizing
-   * token filters.
+   * Normalize a string down to the representation that it would have in the index.
+   *
+   * <p>This is typically used by query parsers in order to generate a query on a given term,
+   * without tokenizing or stemming, which are undesirable if the string to analyze is a partial
+   * word (eg. in case of a wildcard or fuzzy query).
+   *
+   * <p>This method uses {@link #initReaderForNormalization(String, Reader)} in order to apply
+   * necessary character-level normalization and then {@link #normalize(String, TokenStream)} in
+   * order to apply the normalizing token filters.
    */
   public final BytesRef normalize(final String fieldName, final String text) {
     try {
@@ -227,7 +220,7 @@ public abstract class Analyzer implements Closeable {
         Reader filterReader = initReaderForNormalization(fieldName, reader);
         char[] buffer = new char[64];
         StringBuilder builder = new StringBuilder();
-        for (;;) {
+        for (; ; ) {
           final int read = filterReader.read(buffer, 0, buffer.length);
           if (read == -1) {
             break;
@@ -240,20 +233,29 @@ public abstract class Analyzer implements Closeable {
       }
 
       final AttributeFactory attributeFactory = attributeFactory(fieldName);
-      try (TokenStream ts = normalize(fieldName,
-          new StringTokenStream(attributeFactory, filteredText, text.length()))) {
+      try (TokenStream ts =
+          normalize(
+              fieldName, new StringTokenStream(attributeFactory, filteredText, text.length()))) {
         final TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
         ts.reset();
         if (ts.incrementToken() == false) {
-          throw new IllegalStateException("The normalization token stream is "
-              + "expected to produce exactly 1 token, but got 0 for analyzer "
-              + this + " and input \"" + text + "\"");
+          throw new IllegalStateException(
+              "The normalization token stream is "
+                  + "expected to produce exactly 1 token, but got 0 for analyzer "
+                  + this
+                  + " and input \""
+                  + text
+                  + "\"");
         }
         final BytesRef term = BytesRef.deepCopyOf(termAtt.getBytesRef());
         if (ts.incrementToken()) {
-          throw new IllegalStateException("The normalization token stream is "
-              + "expected to produce exactly 1 token, but got 2+ for analyzer "
-              + this + " and input \"" + text + "\"");
+          throw new IllegalStateException(
+              "The normalization token stream is "
+                  + "expected to produce exactly 1 token, but got 2+ for analyzer "
+                  + this
+                  + " and input \""
+                  + text
+                  + "\"");
         }
         ts.end();
         return term;
@@ -265,10 +267,9 @@ public abstract class Analyzer implements Closeable {
 
   /**
    * Override this if you want to add a CharFilter chain.
-   * <p>
-   * The default implementation returns <code>reader</code>
-   * unchanged.
-   * 
+   *
+   * <p>The default implementation returns <code>reader</code> unchanged.
+   *
    * @param fieldName IndexableField name being indexed
    * @param reader original Reader
    * @return reader, optionally decorated with CharFilter(s)
@@ -277,72 +278,63 @@ public abstract class Analyzer implements Closeable {
     return reader;
   }
 
-  /** Wrap the given {@link Reader} with {@link CharFilter}s that make sense
-   *  for normalization. This is typically a subset of the {@link CharFilter}s
-   *  that are applied in {@link #initReader(String, Reader)}. This is used by
-   *  {@link #normalize(String, String)}. */
+  /**
+   * Wrap the given {@link Reader} with {@link CharFilter}s that make sense for normalization. This
+   * is typically a subset of the {@link CharFilter}s that are applied in {@link #initReader(String,
+   * Reader)}. This is used by {@link #normalize(String, String)}.
+   */
   protected Reader initReaderForNormalization(String fieldName, Reader reader) {
     return reader;
   }
 
-  /** Return the {@link AttributeFactory} to be used for
-   *  {@link #tokenStream analysis} and
-   *  {@link #normalize(String, String) normalization} on the given
-   *  {@code FieldName}. The default implementation returns
-   *  {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY}. */
+  /**
+   * Return the {@link AttributeFactory} to be used for {@link #tokenStream analysis} and {@link
+   * #normalize(String, String) normalization} on the given {@code FieldName}. The default
+   * implementation returns {@link TokenStream#DEFAULT_TOKEN_ATTRIBUTE_FACTORY}.
+   */
   protected AttributeFactory attributeFactory(String fieldName) {
     return TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
   }
 
   /**
-   * Invoked before indexing a IndexableField instance if
-   * terms have already been added to that field.  This allows custom
-   * analyzers to place an automatic position increment gap between
-   * IndexbleField instances using the same field name.  The default value
-   * position increment gap is 0.  With a 0 position increment gap and
-   * the typical default token position increment of 1, all terms in a field,
-   * including across IndexableField instances, are in successive positions, allowing
-   * exact PhraseQuery matches, for instance, across IndexableField instance boundaries.
+   * Invoked before indexing a IndexableField instance if terms have already been added to that
+   * field. This allows custom analyzers to place an automatic position increment gap between
+   * IndexbleField instances using the same field name. The default value position increment gap is
+   * 0. With a 0 position increment gap and the typical default token position increment of 1, all
+   * terms in a field, including across IndexableField instances, are in successive positions,
+   * allowing exact PhraseQuery matches, for instance, across IndexableField instance boundaries.
    *
    * @param fieldName IndexableField name being indexed.
-   * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}.
-   *         This value must be {@code >= 0}.
+   * @return position increment gap, added to the next token emitted from {@link
+   *     #tokenStream(String,Reader)}. This value must be {@code >= 0}.
    */
   public int getPositionIncrementGap(String fieldName) {
     return 0;
   }
 
   /**
-   * Just like {@link #getPositionIncrementGap}, except for
-   * Token offsets instead.  By default this returns 1.
-   * This method is only called if the field
-   * produced at least one token for indexing.
+   * Just like {@link #getPositionIncrementGap}, except for Token offsets instead. By default this
+   * returns 1. This method is only called if the field produced at least one token for indexing.
    *
    * @param fieldName the field just indexed
    * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}.
-   *         This value must be {@code >= 0}.
+   *     This value must be {@code >= 0}.
    */
   public int getOffsetGap(String fieldName) {
     return 1;
   }
 
-  /**
-   * Returns the used {@link ReuseStrategy}.
-   */
+  /** Returns the used {@link ReuseStrategy}. */
   public final ReuseStrategy getReuseStrategy() {
     return reuseStrategy;
   }
 
-  /**
-   * Set the version of Lucene this analyzer should mimic the behavior for for analysis.
-   */
+  /** Set the version of Lucene this analyzer should mimic the behavior for for analysis. */
   public void setVersion(Version v) {
     version = v; // TODO: make write once?
   }
 
-  /**
-   * Return the version of Lucene this analyzer will mimic the behavior of for analysis.
-   */
+  /** Return the version of Lucene this analyzer will mimic the behavior of for analysis. */
   public Version getVersion() {
     return version;
   }
@@ -357,62 +349,54 @@ public abstract class Analyzer implements Closeable {
   }
 
   /**
-   * This class encapsulates the outer components of a token stream. It provides
-   * access to the source (a {@link Reader} {@link Consumer} and the outer end (sink), an
-   * instance of {@link TokenFilter} which also serves as the
-   * {@link TokenStream} returned by
-   * {@link Analyzer#tokenStream(String, Reader)}.
+   * This class encapsulates the outer components of a token stream. It provides access to the
+   * source (a {@link Reader} {@link Consumer} and the outer end (sink), an instance of {@link
+   * TokenFilter} which also serves as the {@link TokenStream} returned by {@link
+   * Analyzer#tokenStream(String, Reader)}.
    */
   public static final class TokenStreamComponents {
-    /**
-     * Original source of the tokens.
-     */
+    /** Original source of the tokens. */
     protected final Consumer<Reader> source;
     /**
-     * Sink tokenstream, such as the outer tokenfilter decorating
-     * the chain. This can be the source if there are no filters.
+     * Sink tokenstream, such as the outer tokenfilter decorating the chain. This can be the source
+     * if there are no filters.
      */
     protected final TokenStream sink;
-    
+
     /** Internal cache only used by {@link Analyzer#tokenStream(String, String)}. */
     transient ReusableStringReader reusableStringReader;
 
     /**
      * Creates a new {@link TokenStreamComponents} instance.
-     * 
-     * @param source
-     *          the source to set the reader on
-     * @param result
-     *          the analyzer's resulting token stream
+     *
+     * @param source the source to set the reader on
+     * @param result the analyzer's resulting token stream
      */
-    public TokenStreamComponents(final Consumer<Reader> source,
-        final TokenStream result) {
+    public TokenStreamComponents(final Consumer<Reader> source, final TokenStream result) {
       this.source = source;
       this.sink = result;
     }
 
     /**
      * Creates a new {@link TokenStreamComponents} instance
+     *
      * @param tokenizer the analyzer's Tokenizer
-     * @param result    the analyzer's resulting token stream
+     * @param result the analyzer's resulting token stream
      */
     public TokenStreamComponents(final Tokenizer tokenizer, final TokenStream result) {
       this(tokenizer::setReader, result);
     }
 
-    /**
-     * Creates a new {@link TokenStreamComponents} from a Tokenizer
-     */
+    /** Creates a new {@link TokenStreamComponents} from a Tokenizer */
     public TokenStreamComponents(final Tokenizer tokenizer) {
       this(tokenizer::setReader, tokenizer);
     }
 
     /**
-     * Resets the encapsulated components with the given reader. If the components
-     * cannot be reset, an Exception should be thrown.
-     * 
-     * @param reader
-     *          a reader to reset the source component
+     * Resets the encapsulated components with the given reader. If the components cannot be reset,
+     * an Exception should be thrown.
+     *
+     * @param reader a reader to reset the source component
      */
     private void setReader(final Reader reader) {
       source.accept(reader);
@@ -420,26 +404,24 @@ public abstract class Analyzer implements Closeable {
 
     /**
      * Returns the sink {@link TokenStream}
-     * 
+     *
      * @return the sink {@link TokenStream}
      */
     public TokenStream getTokenStream() {
       return sink;
     }
 
-    /**
-     * Returns the component's source
-     */
+    /** Returns the component's source */
     public Consumer<Reader> getSource() {
       return source;
     }
   }
 
   /**
-   * Strategy defining how TokenStreamComponents are reused per call to
-   * {@link Analyzer#tokenStream(String, java.io.Reader)}.
+   * Strategy defining how TokenStreamComponents are reused per call to {@link
+   * Analyzer#tokenStream(String, java.io.Reader)}.
    */
-  public static abstract class ReuseStrategy {
+  public abstract static class ReuseStrategy {
     /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
     // Explicitly declared so that we have non-empty javadoc
     protected ReuseStrategy() {}
@@ -447,24 +429,25 @@ public abstract class Analyzer implements Closeable {
     /**
      * Gets the reusable TokenStreamComponents for the field with the given name.
      *
-     * @param analyzer Analyzer from which to get the reused components. Use
-     *        {@link #getStoredValue(Analyzer)} and {@link #setStoredValue(Analyzer, Object)}
-     *        to access the data on the Analyzer.
-     * @param fieldName Name of the field whose reusable TokenStreamComponents
-     *        are to be retrieved
-     * @return Reusable TokenStreamComponents for the field, or {@code null}
-     *         if there was no previous components for the field
+     * @param analyzer Analyzer from which to get the reused components. Use {@link
+     *     #getStoredValue(Analyzer)} and {@link #setStoredValue(Analyzer, Object)} to access the
+     *     data on the Analyzer.
+     * @param fieldName Name of the field whose reusable TokenStreamComponents are to be retrieved
+     * @return Reusable TokenStreamComponents for the field, or {@code null} if there was no
+     *     previous components for the field
      */
-    public abstract TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName);
+    public abstract TokenStreamComponents getReusableComponents(
+        Analyzer analyzer, String fieldName);
 
     /**
-     * Stores the given TokenStreamComponents as the reusable components for the
-     * field with the give name.
+     * Stores the given TokenStreamComponents as the reusable components for the field with the give
+     * name.
      *
      * @param fieldName Name of the field whose TokenStreamComponents are being set
      * @param components TokenStreamComponents which are to be reused for the field
      */
-    public abstract void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components);
+    public abstract void setReusableComponents(
+        Analyzer analyzer, String fieldName, TokenStreamComponents components);
 
     /**
      * Returns the currently stored value.
@@ -491,50 +474,52 @@ public abstract class Analyzer implements Closeable {
       }
       analyzer.storedValue.set(storedValue);
     }
-
   }
 
+  /** A predefined {@link ReuseStrategy} that reuses the same components for every field. */
+  public static final ReuseStrategy GLOBAL_REUSE_STRATEGY =
+      new ReuseStrategy() {
+
+        @Override
+        public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
+          return (TokenStreamComponents) getStoredValue(analyzer);
+        }
+
+        @Override
+        public void setReusableComponents(
+            Analyzer analyzer, String fieldName, TokenStreamComponents components) {
+          setStoredValue(analyzer, components);
+        }
+      };
+
   /**
-   * A predefined {@link ReuseStrategy}  that reuses the same components for
-   * every field.
+   * A predefined {@link ReuseStrategy} that reuses components per-field by maintaining a Map of
+   * TokenStreamComponent per field name.
    */
-  public static final ReuseStrategy GLOBAL_REUSE_STRATEGY = new ReuseStrategy() {
+  public static final ReuseStrategy PER_FIELD_REUSE_STRATEGY =
+      new ReuseStrategy() {
 
-    @Override
-    public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
-      return (TokenStreamComponents) getStoredValue(analyzer);
-    }
+        @SuppressWarnings("unchecked")
+        @Override
+        public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
+          Map<String, TokenStreamComponents> componentsPerField =
+              (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
+          return componentsPerField != null ? componentsPerField.get(fieldName) : null;
+        }
 
-    @Override
-    public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
-      setStoredValue(analyzer, components);
-    }
-  };
-
-  /**
-   * A predefined {@link ReuseStrategy} that reuses components per-field by
-   * maintaining a Map of TokenStreamComponent per field name.
-   */
-  public static final ReuseStrategy PER_FIELD_REUSE_STRATEGY = new ReuseStrategy() {
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public TokenStreamComponents getReusableComponents(Analyzer analyzer, String fieldName) {
-      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
-      return componentsPerField != null ? componentsPerField.get(fieldName) : null;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void setReusableComponents(Analyzer analyzer, String fieldName, TokenStreamComponents components) {
-      Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
-      if (componentsPerField == null) {
-        componentsPerField = new HashMap<>();
-        setStoredValue(analyzer, componentsPerField);
-      }
-      componentsPerField.put(fieldName, components);
-    }
-  };
+        @SuppressWarnings("unchecked")
+        @Override
+        public void setReusableComponents(
+            Analyzer analyzer, String fieldName, TokenStreamComponents components) {
+          Map<String, TokenStreamComponents> componentsPerField =
+              (Map<String, TokenStreamComponents>) getStoredValue(analyzer);
+          if (componentsPerField == null) {
+            componentsPerField = new HashMap<>();
+            setStoredValue(analyzer, componentsPerField);
+          }
+          componentsPerField.put(fieldName, components);
+        }
+      };
 
   private static final class StringTokenStream extends TokenStream {
 

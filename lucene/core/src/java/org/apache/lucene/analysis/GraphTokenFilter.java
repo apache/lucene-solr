@@ -22,7 +22,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -31,28 +30,23 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * An abstract TokenFilter that exposes its input stream as a graph
  *
- * Call {@link #incrementBaseToken()} to move the root of the graph to the next
- * position in the TokenStream, {@link #incrementGraphToken()} to move along
- * the current graph, and {@link #incrementGraph()} to reset to the next graph
- * based at the current root.
+ * <p>Call {@link #incrementBaseToken()} to move the root of the graph to the next position in the
+ * TokenStream, {@link #incrementGraphToken()} to move along the current graph, and {@link
+ * #incrementGraph()} to reset to the next graph based at the current root.
  *
- * For example, given the stream 'a b/c:2 d e`, then with the base token at
- * 'a', incrementGraphToken() will produce the stream 'a b d e', and then
- * after calling incrementGraph() will produce the stream 'a c e'.
+ * <p>For example, given the stream 'a b/c:2 d e`, then with the base token at 'a',
+ * incrementGraphToken() will produce the stream 'a b d e', and then after calling incrementGraph()
+ * will produce the stream 'a c e'.
  */
 public abstract class GraphTokenFilter extends TokenFilter {
 
   private final Deque<Token> tokenPool = new ArrayDeque<>();
   private final List<Token> currentGraph = new ArrayList<>();
 
-  /**
-   * The maximum permitted number of routes through a graph
-   */
+  /** The maximum permitted number of routes through a graph */
   public static final int MAX_GRAPH_STACK_SIZE = 1000;
 
-  /**
-   * The maximum permitted read-ahead in the token stream
-   */
+  /** The maximum permitted read-ahead in the token stream */
   public static final int MAX_TOKEN_CACHE_SIZE = 100;
 
   private Token baseToken;
@@ -67,9 +61,7 @@ public abstract class GraphTokenFilter extends TokenFilter {
   private final PositionIncrementAttribute posIncAtt;
   private final OffsetAttribute offsetAtt;
 
-  /**
-   * Create a new GraphTokenFilter
-   */
+  /** Create a new GraphTokenFilter */
   public GraphTokenFilter(TokenStream input) {
     super(input);
     this.posIncAtt = input.addAttribute(PositionIncrementAttribute.class);
@@ -149,7 +141,8 @@ public abstract class GraphTokenFilter extends TokenFilter {
   /**
    * Return the number of trailing positions at the end of the graph
    *
-   * NB this should only be called after {@link #incrementGraphToken()} has returned {@code false}
+   * <p>NB this should only be called after {@link #incrementGraphToken()} has returned {@code
+   * false}
    */
   public int getTrailingPositions() {
     return trailingPositions;
@@ -161,8 +154,7 @@ public abstract class GraphTokenFilter extends TokenFilter {
       input.end();
       trailingPositions = posIncAtt.getPositionIncrement();
       finalOffsets = offsetAtt.endOffset();
-    }
-    else {
+    } else {
       endAttributes();
       this.posIncAtt.setPositionIncrement(trailingPositions);
       this.offsetAtt.setOffset(finalOffsets, finalOffsets);
@@ -200,8 +192,7 @@ public abstract class GraphTokenFilter extends TokenFilter {
   }
 
   private void recycleToken(Token token) {
-    if (token == null)
-      return;
+    if (token == null) return;
     token.nextToken = null;
     tokenPool.add(token);
   }
@@ -280,5 +271,4 @@ public abstract class GraphTokenFilter extends TokenFilter {
       return attSource.toString();
     }
   }
-
 }

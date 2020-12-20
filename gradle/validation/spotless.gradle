@@ -42,7 +42,8 @@ allprojects { prj ->
           // Partially complete.
           case ":lucene:core":
             target "src/**/org/apache/lucene/analysis/standard/**",
-                   "src/**/org/apache/lucene/analysis/tokenattributes/**"
+                   "src/**/org/apache/lucene/analysis/tokenattributes/**",
+                   "src/**/org/apache/lucene/analysis/**"
             targetExclude "**/resources/**", "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
             break
 
