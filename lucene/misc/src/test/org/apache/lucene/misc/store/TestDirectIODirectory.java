@@ -34,8 +34,7 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
   
   @Override
   protected DirectIODirectory getDirectory(Path path) throws IOException {
-    final FSDirectory delegate = FSDirectory.open(path);
-    return new DirectIODirectory(path, DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L, delegate) {
+    return new DirectIODirectory(FSDirectory.open(path), DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L) {
       @Override
       protected boolean useDirectIO(IOContext context) {
         return true;

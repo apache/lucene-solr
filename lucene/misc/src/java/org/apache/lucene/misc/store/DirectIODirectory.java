@@ -66,7 +66,6 @@ public class DirectIODirectory extends FilterDirectory {
 
   private final int blockSize, mergeBufferSize;
   private final long minBytesDirect;
-  private final Path path;
   
   volatile boolean isOpen = true;
 
@@ -97,32 +96,31 @@ public class DirectIODirectory extends FilterDirectory {
 
   /** Create a new DirectIODirectory for the named location.
    * 
-   * @param path the path of the directory
+   * @param delegate Directory for non-merges, also used
+   *    as reference to file system path.
    * @param mergeBufferSize Size of buffer to use for
    *    merging.
    * @param minBytesDirect Merges, or files to be opened for
    *   reading, smaller than this will
    *   not use direct IO.  See {@link
    *   #DEFAULT_MIN_BYTES_DIRECT}
-   * @param delegate fallback Directory for non-merges
    * @throws IOException If there is a low-level I/O error
    */
-  public DirectIODirectory(Path path, int mergeBufferSize, long minBytesDirect, FSDirectory delegate) throws IOException {
+  public DirectIODirectory(FSDirectory delegate, int mergeBufferSize, long minBytesDirect) throws IOException {
     super(delegate);
-    this.blockSize = Math.toIntExact(Files.getFileStore(path).getBlockSize());
+    this.blockSize = Math.toIntExact(Files.getFileStore(delegate.getDirectory()).getBlockSize());
     this.mergeBufferSize = mergeBufferSize;
     this.minBytesDirect = minBytesDirect;
-    this.path = path.toRealPath();
   }
 
   /** Create a new DirectIODirectory for the named location.
    * 
-   * @param path the path of the directory
-   * @param delegate fallback Directory for non-merges
+   * @param delegate Directory for non-merges, also used
+   *    as reference to file system path.
    * @throws IOException If there is a low-level I/O error
    */
-  public DirectIODirectory(Path path, FSDirectory delegate) throws IOException {
-    this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
+  public DirectIODirectory(FSDirectory delegate) throws IOException {
+    this(delegate, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT);
   }
   
   @Override
@@ -140,7 +138,8 @@ public class DirectIODirectory extends FilterDirectory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     if (useDirectIO(context) && fileLength(name) >= minBytesDirect) {
-      return new DirectIOIndexInput(path.resolve(name), blockSize, mergeBufferSize);
+      final Path dir = ((FSDirectory) in).getDirectory();
+      return new DirectIOIndexInput(dir.resolve(name), blockSize, mergeBufferSize);
     } else {
       return in.openInput(name, context);
     }
@@ -150,7 +149,8 @@ public class DirectIODirectory extends FilterDirectory {
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     if (useDirectIO(context)) {
-      return new DirectIOIndexOutput(path.resolve(name), name, blockSize, mergeBufferSize);
+      final Path dir = ((FSDirectory) in).getDirectory();
+      return new DirectIOIndexOutput(dir.resolve(name), name, blockSize, mergeBufferSize);
     } else {
       return in.createOutput(name, context);
     }
