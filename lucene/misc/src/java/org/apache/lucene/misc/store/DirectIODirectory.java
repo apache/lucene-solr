@@ -123,6 +123,11 @@ public class DirectIODirectory extends FilterDirectory {
     this(delegate, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT);
   }
   
+  /** @return the underlying file system directory */
+  public Path getDirectory() {
+    return ((FSDirectory) in).getDirectory();
+  }
+
   @Override
   protected void ensureOpen() throws AlreadyClosedException {
     if (!isOpen) {
@@ -138,8 +143,7 @@ public class DirectIODirectory extends FilterDirectory {
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
     if (useDirectIO(context) && fileLength(name) >= minBytesDirect) {
-      final Path dir = ((FSDirectory) in).getDirectory();
-      return new DirectIOIndexInput(dir.resolve(name), blockSize, mergeBufferSize);
+      return new DirectIOIndexInput(getDirectory().resolve(name), blockSize, mergeBufferSize);
     } else {
       return in.openInput(name, context);
     }
@@ -149,8 +153,7 @@ public class DirectIODirectory extends FilterDirectory {
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     if (useDirectIO(context)) {
-      final Path dir = ((FSDirectory) in).getDirectory();
-      return new DirectIOIndexOutput(dir.resolve(name), name, blockSize, mergeBufferSize);
+      return new DirectIOIndexOutput(getDirectory().resolve(name), name, blockSize, mergeBufferSize);
     } else {
       return in.createOutput(name, context);
     }
