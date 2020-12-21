@@ -458,4 +458,51 @@ public class TestCustomTermFreq extends LuceneTestCase {
 
     IOUtils.close(w, dir);
   }
+
+  // LUCENE-8947: Indexing fails with "too many tokens for field" when using large enough custom term frequencies
+  //              to overflow int on accumulation
+  public void testFieldLengthAccumulation() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    // when norms is disabled, skip field length accumulation
+    Document doc = new Document();
+    FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+    fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    fieldType.setOmitNorms(true);
+    Field field = new Field("field",
+            new CannedTermFreqs(new String[] {"foo", "bar"},
+                    new int[] {1073741824, 1073741824}),
+            fieldType);
+    doc.add(field);
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    PostingsEnum postings = MultiTerms.getTermPostingsEnum(r, "field", new BytesRef("bar"), (int) PostingsEnum.FREQS);
+    assertNotNull(postings);
+    assertEquals(0, postings.nextDoc());
+    assertEquals(1073741824, postings.freq());
+    assertEquals(NO_MORE_DOCS, postings.nextDoc());
+
+    postings = MultiTerms.getTermPostingsEnum(r, "field", new BytesRef("foo"), (int) PostingsEnum.FREQS);
+    assertNotNull(postings);
+    assertEquals(0, postings.nextDoc());
+    assertEquals(1073741824, postings.freq());
+    assertEquals(NO_MORE_DOCS, postings.nextDoc());
+
+    // when norms is enabled, field length accumulation will throw exception due to integer overflow
+    doc.clear();
+    fieldType.setOmitNorms(false);
+    field = new Field("field",
+            new CannedTermFreqs(new String[] {"foo", "bar"},
+                    new int[] {1073741824, 1073741824}),
+            fieldType);
+    doc.add(field);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc);
+    });
+    assertTrue(expected.getMessage().contains("too many tokens for field \"field\""));
+
+    IOUtils.close(r, w, dir);
+  }
 }

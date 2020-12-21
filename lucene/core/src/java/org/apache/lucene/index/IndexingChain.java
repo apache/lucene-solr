@@ -1027,7 +1027,9 @@ final class IndexingChain implements Accountable {
           invertState.lastStartOffset = startOffset;
 
           try {
-            invertState.length = Math.addExact(invertState.length, invertState.termFreqAttribute.getTermFrequency());
+            if (fieldInfo.omitsNorms() == false) {
+              invertState.length = Math.addExact(invertState.length, invertState.termFreqAttribute.getTermFrequency());
+            }
           } catch (ArithmeticException ae) {
             throw new IllegalArgumentException("too many tokens for field \"" + field.name() + "\"");
           }
