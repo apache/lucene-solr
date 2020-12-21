@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
-import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
