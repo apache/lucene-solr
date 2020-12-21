@@ -29,6 +29,7 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.TestUtil;
 
 import java.util.Arrays;
@@ -216,5 +217,88 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
     }
 
     public abstract Object nextShape();
+  }
+
+  public void testBoxQueryEqualsAndHashcode() {
+    Rectangle rectangle = GeoTestUtil.nextBox();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    Query q2 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newRectQuery("bar", queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newRectQuery(fieldName, newQueryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Rectangle newRectangle = GeoTestUtil.nextBox();
+    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minLon, newRectangle.maxLon, newRectangle.minLat, newRectangle.maxLat);
+    if (rectangle.equals(newRectangle)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
+  public void testLineQueryEqualsAndHashcode() {
+    Line line = nextLine();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    String fieldName = "foo";
+    Query q1 = newLineQuery(fieldName, queryRelation, line);
+    Query q2 = newLineQuery(fieldName, queryRelation, line);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newLineQuery("bar", queryRelation, line);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
+    Query q4 = newLineQuery(fieldName, newQueryRelation, line);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Line newLine = nextLine();
+    Query q5 = newLineQuery(fieldName, queryRelation, newLine);
+    if (line.equals(newLine)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
+  }
+
+  public void testPolygonQueryEqualsAndHashcode() {
+    Polygon polygon = GeoTestUtil.nextPolygon();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    String fieldName = "foo";
+    Query q1 = newPolygonQuery(fieldName, queryRelation, polygon);
+    Query q2 = newPolygonQuery(fieldName, queryRelation, polygon);
+    QueryUtils.checkEqual(q1, q2);
+    //different field name
+    Query q3 = newPolygonQuery("bar", queryRelation, polygon);
+    QueryUtils.checkUnequal(q1, q3);
+    //different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+    Query q4 = newPolygonQuery(fieldName, newQueryRelation, polygon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    //different shape
+    Polygon newPolygon = GeoTestUtil.nextPolygon();;
+    Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
+    if (polygon.equals(newPolygon)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
   }
 }
