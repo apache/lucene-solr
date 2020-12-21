@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.util.automaton;
 
-
-/** Holds one transition from an {@link Automaton}.  This is typically
- *  used temporarily when iterating through transitions by invoking
- *  {@link Automaton#initTransition} and {@link Automaton#getNextTransition}. */
-
+/**
+ * Holds one transition from an {@link Automaton}. This is typically used temporarily when iterating
+ * through transitions by invoking {@link Automaton#initTransition} and {@link
+ * Automaton#getNextTransition}.
+ */
 public class Transition {
 
   /** Sole constructor. */
-  public Transition() {
-  }
+  public Transition() {}
 
   /** Source state. */
   public int source;
@@ -39,8 +38,10 @@ public class Transition {
   /** Maximum accepted label (inclusive). */
   public int max;
 
-  /** Remembers where we are in the iteration; init to -1 to provoke
-   *  exception if nextTransition is called without first initTransition. */
+  /**
+   * Remembers where we are in the iteration; init to -1 to provoke exception if nextTransition is
+   * called without first initTransition.
+   */
   int transitionUpto = -1;
 
   @Override
@@ -48,4 +49,3 @@ public class Transition {
     return source + " --> " + dest + " " + (char) min + "-" + (char) max;
   }
 }
-

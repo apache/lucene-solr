@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util.automaton;
 
-
 import java.util.BitSet;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -30,48 +28,32 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>If the {@link Automaton} has cycles then this iterator may throw an {@code
  * IllegalArgumentException}, but this is not guaranteed!
  *
- * <p>Be aware that the iteration order is implementation dependent
- * and may change across releases.
+ * <p>Be aware that the iteration order is implementation dependent and may change across releases.
  *
- * <p>If the automaton is not determinized then it's possible this iterator
- * will return duplicates.
+ * <p>If the automaton is not determinized then it's possible this iterator will return duplicates.
  *
  * @lucene.experimental
  */
 public class FiniteStringsIterator {
-  /**
-   * Empty string.
-   */
+  /** Empty string. */
   private static final IntsRef EMPTY = new IntsRef();
 
-  /**
-   * Automaton to create finite string from.
-   */
+  /** Automaton to create finite string from. */
   private final Automaton a;
 
-  /**
-   * The state where each path should stop or -1 if only accepted states should be final.
-   */
+  /** The state where each path should stop or -1 if only accepted states should be final. */
   private final int endState;
 
-  /**
-   * Tracks which states are in the current path, for cycle detection.
-   */
+  /** Tracks which states are in the current path, for cycle detection. */
   private final BitSet pathStates;
 
-  /**
-   * Builder for current finite string.
-   */
+  /** Builder for current finite string. */
   private final IntsRefBuilder string;
 
-  /**
-   * Stack to hold our current state in the recursion/iteration.
-   */
+  /** Stack to hold our current state in the recursion/iteration. */
   private PathNode[] nodes;
 
-  /**
-   * Emit empty string?.
-   */
+  /** Emit empty string?. */
   private boolean emitEmptyString;
 
   /**
@@ -83,13 +65,13 @@ public class FiniteStringsIterator {
     this(a, 0, -1);
   }
 
-
   /**
    * Constructor.
    *
    * @param a Automaton to create finite string from.
    * @param startState The starting state for each path.
-   * @param endState The state where each path should stop or -1 if only accepted states should be final.
+   * @param endState The state where each path should stop or -1 if only accepted states should be
+   *     final.
    */
   public FiniteStringsIterator(Automaton a, int startState, int endState) {
     this.a = a;
@@ -112,8 +94,7 @@ public class FiniteStringsIterator {
   }
 
   /**
-   * Generate next finite string.
-   * The return value is just valid until the next call of this method!
+   * Generate next finite string. The return value is just valid until the next call of this method!
    *
    * @return Finite string or null, if no more finite strings are available.
    */
@@ -124,8 +105,8 @@ public class FiniteStringsIterator {
       return EMPTY;
     }
 
-    for (int depth = string.length(); depth > 0;) {
-      PathNode node = nodes[depth-1];
+    for (int depth = string.length(); depth > 0; ) {
+      PathNode node = nodes[depth - 1];
 
       // Get next label leaving the current node:
       int label = node.nextLabel(a);
@@ -169,12 +150,12 @@ public class FiniteStringsIterator {
     return null;
   }
 
-  /**
-   * Grow path stack, if required.
-   */
+  /** Grow path stack, if required. */
   private void growStack(int depth) {
     if (nodes.length == depth) {
-      PathNode[] newNodes = new PathNode[ArrayUtil.oversize(nodes.length + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      PathNode[] newNodes =
+          new PathNode
+              [ArrayUtil.oversize(nodes.length + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(nodes, 0, newNodes, 0, nodes.length);
       for (int i = depth, end = newNodes.length; i < end; i++) {
         newNodes[i] = new PathNode();
@@ -183,13 +164,10 @@ public class FiniteStringsIterator {
     }
   }
 
-  /**
-   * Nodes for path stack.
-   */
+  /** Nodes for path stack. */
   private static class PathNode {
 
-    /** Which state the path node ends on, whose
-     *  transitions we are enumerating. */
+    /** Which state the path node ends on, whose transitions we are enumerating. */
     public int state;
 
     /** Which state the current transition leads to. */
@@ -198,8 +176,7 @@ public class FiniteStringsIterator {
     /** Which transition we are on. */
     public int transition;
 
-    /** Which label we are on, in the min-max range of the
-     *  current Transition */
+    /** Which label we are on, in the min-max range of the current Transition */
     public int label;
 
     private final Transition t = new Transition();
@@ -213,10 +190,10 @@ public class FiniteStringsIterator {
       to = t.dest;
     }
 
-    /** Returns next label of current transition, or
-     *  advances to next transition and returns its first
-     *  label, if current one is exhausted.  If there are
-     *  no more transitions, returns -1. */
+    /**
+     * Returns next label of current transition, or advances to next transition and returns its
+     * first label, if current one is exhausted. If there are no more transitions, returns -1.
+     */
     public int nextLabel(Automaton a) {
       if (label > t.max) {
         // We've exhaused the current transition's labels;
