@@ -103,7 +103,9 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     });
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm" +
+        "longtermlongtermlongtermlongtermlongtermlongtermlong" +
+        "termlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new NumericDocValuesField("dv1", 5));
