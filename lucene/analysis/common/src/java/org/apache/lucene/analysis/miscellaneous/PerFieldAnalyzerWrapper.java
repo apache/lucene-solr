@@ -90,4 +90,11 @@ public final class PerFieldAnalyzerWrapper extends DelegatingAnalyzerWrapper {
   public String toString() {
     return "PerFieldAnalyzerWrapper(" + fieldAnalyzers + ", default=" + defaultAnalyzer + ")";
   }
+
+  @Override
+  public void close() {
+    defaultAnalyzer.close();
+    fieldAnalyzers.values().forEach(Analyzer::close);
+    super.close();
+  }
 }
