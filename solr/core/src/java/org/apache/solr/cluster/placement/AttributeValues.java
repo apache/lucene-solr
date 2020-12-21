@@ -74,7 +74,7 @@ public interface AttributeValues {
   Optional<Object> getNodeMetric(Node node, String metricKey);
 
   /**
-   *
+   * Get collection metrics.
    */
   Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
 }

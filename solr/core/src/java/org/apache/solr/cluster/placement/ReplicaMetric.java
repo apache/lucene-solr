@@ -28,7 +28,7 @@ public class ReplicaMetric<T> {
 
   private static final double GB = 1024 * 1024 * 1024;
   @SuppressWarnings("unchecked")
-  private final Function<Object, T> NO_CONVERTER = v -> {
+  private final Function<Object, T> IDENTITY_CONVERTER = v -> {
     try {
       return (T) v;
     } catch (ClassCastException cce) {
@@ -71,7 +71,7 @@ public class ReplicaMetric<T> {
     this.name = name;
     this.internalName = internalName;
     if (converter == null) {
-      this.converter = NO_CONVERTER;
+      this.converter = IDENTITY_CONVERTER;
     } else {
       this.converter = converter;
     }
