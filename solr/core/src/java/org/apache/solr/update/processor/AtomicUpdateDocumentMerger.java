@@ -84,7 +84,52 @@ public class AtomicUpdateDocumentMerger {
     
     return false;
   }
-  
+
+  /**
+   * Merges the fromDoc into the toDoc using the atomic update syntax.
+   * This method will look for a nested document (possibly {@code toDoc} itself) with an
+   * equal ID, and merge into that one.
+   * @param sdoc the doc containing update instructions
+   * @param toDoc the target doc (possibly nested) before the update (will be modified in-place)
+   * @return toDoc with modifications; never null
+   */
+  public SolrInputDocument merge(SolrInputDocument sdoc, SolrInputDocument toDoc) {
+    if (mergeChildDocRecursive(sdoc, getRequiredId(sdoc), toDoc)) {
+      return toDoc;
+    }
+    throw new IllegalStateException("Did not find child ID " + getRequiredId(sdoc) +
+        " in parent ID " + getRequiredId(toDoc));
+  }
+
+  private boolean mergeChildDocRecursive(SolrInputDocument sdoc, Object sdocId, SolrInputDocument docWithChildren) {
+    if (sdocId.equals(getRequiredId(docWithChildren))) {
+      mergeDocHavingSameId(sdoc, docWithChildren);
+      return true;
+    }
+    for (SolrInputField inputField : docWithChildren) {
+      final Collection<Object> values = inputField.getValues();
+      if (values == null) {
+        continue;
+      }
+      for (Object value : values) {
+        if (isChildDoc(value)) {
+          if (mergeChildDocRecursive(sdoc, sdocId, (SolrInputDocument) value)) {
+            return true;
+          } // else continue the search
+        }
+      }
+    }
+    return false;
+  }
+
+  private String getRequiredId(SolrInputDocument sdoc) {
+    String id = schema.printableUniqueKey(sdoc);
+    if (id == null) {
+      throw new IllegalStateException("partial updates require that docs have an ID");
+    }
+    return id;
+  }
+
   /**
    * Merges the fromDoc into the toDoc using the atomic update syntax.
    * 
@@ -93,7 +138,7 @@ public class AtomicUpdateDocumentMerger {
    * @return toDoc with mutated values
    */
   @SuppressWarnings({"unchecked"})
-  public SolrInputDocument merge(final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
+  private SolrInputDocument mergeDocHavingSameId(final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
      Object val = sif.getValue();
       if (val instanceof Map) {
@@ -182,6 +227,7 @@ public class AtomicUpdateDocumentMerger {
     for (String fieldName : sdoc.getFieldNames()) {
       Object fieldValue = sdoc.getField(fieldName).getValue();
       if (fieldName.equals(uniqueKeyFieldName)
+          || fieldName.equals(IndexSchema.ROOT_FIELD_NAME)
           || fieldName.equals(CommonParams.VERSION_FIELD)
           || fieldName.equals(routeFieldOrNull)) {
         if (fieldValue instanceof Map) {
@@ -326,15 +372,15 @@ public class AtomicUpdateDocumentMerger {
    */
   public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();
-    BytesRef idBytes = cmd.getIndexedId();
+    BytesRef rootIdBytes = cmd.getIndexedId();
+    BytesRef idBytes = schema.indexableUniqueKey(cmd.getChildDocIdStr());
 
     updatedFields.add(CommonParams.VERSION_FIELD); // add the version field so that it is fetched too
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
-      (cmd.getReq().getCore(), idBytes,
-       null, // don't want the version to be returned
-       updatedFields,
-       RealTimeGetComponent.Resolution.DOC);
-                                              
+      (cmd.getReq().getCore(), idBytes, rootIdBytes,
+          null, // don't want the version to be returned
+          updatedFields, RealTimeGetComponent.Resolution.DOC);
+
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
       return false;
@@ -372,8 +418,8 @@ public class AtomicUpdateDocumentMerger {
         partialDoc.addField(fieldName, oldDocument.getFieldValue(fieldName));
       }
     }
-    
-    merge(inputDoc, partialDoc);
+
+    mergeDocHavingSameId(inputDoc, partialDoc);
 
     // Populate the id field if not already populated (this can happen since stored fields were avoided during fetch from RTGC)
     if (!partialDoc.containsKey(schema.getUniqueKeyField().getName())) {
@@ -384,51 +430,6 @@ public class AtomicUpdateDocumentMerger {
     cmd.prevVersion = oldVersion;
     cmd.solrDoc = partialDoc;
     return true;
-  }
-
-  /**
-   *
-   * Merges an Atomic Update inside a document hierarchy
-   * @param sdoc the doc containing update instructions
-   * @param oldDocWithChildren the doc (children included) before the update
-   * @param sdocWithChildren the updated doc prior to the update (children included)
-   * @return root doc (children included) after update
-   */
-  public SolrInputDocument mergeChildDoc(SolrInputDocument sdoc, SolrInputDocument oldDocWithChildren,
-                                         SolrInputDocument sdocWithChildren) {
-    // get path of document to be updated
-    String updatedDocPath = (String) sdocWithChildren.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
-    // get the SolrInputField containing the document which the AddUpdateCommand updates
-    SolrInputField sifToReplace = getFieldFromHierarchy(oldDocWithChildren, updatedDocPath);
-    // update SolrInputField, either appending or replacing the updated document
-    updateDocInSif(sifToReplace, sdocWithChildren, sdoc);
-    return oldDocWithChildren;
-  }
-
-  /**
-   *
-   * @param updateSif the SolrInputField to update its values
-   * @param cmdDocWChildren the doc to insert/set inside updateSif
-   * @param updateDoc the document that was sent as part of the Add Update Command
-   * @return updated SolrInputDocument
-   */
-  @SuppressWarnings({"unchecked"})
-  public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
-    @SuppressWarnings({"rawtypes"})
-    List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getValue() instanceof Collection;
-    int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
-    SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
-    if(index == -1) {
-      sifToReplaceValues.add(updatedDoc);
-    } else {
-      sifToReplaceValues.set(index, updatedDoc);
-    }
-    // in the case where value was a List prior to the update and post update there is no more then one value
-    // it should be kept as a List.
-    final boolean singleVal = !wasList && sifToReplaceValues.size() <= 1;
-    updateSif.setValue(singleVal? sifToReplaceValues.get(0): sifToReplaceValues);
-    return cmdDocWChildren;
   }
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -659,21 +660,6 @@ public class AtomicUpdateDocumentMerger {
     } else {
       return Optional.empty();
     }
-  }
-
-  /**
-   *
-   * @param doc document to search for
-   * @param col collection of solrInputDocument
-   * @return index of doc in col, returns -1 if not found.
-   */
-  private static int getDocIndexFromCollection(SolrInputDocument doc, List<SolrInputDocument> col) {
-    for(int i = 0; i < col.size(); ++i) {
-      if(isDerivedFromDoc(col.get(i), doc)) {
-        return i;
-      }
-    }
-    return -1;
   }
 
   private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {
