@@ -157,10 +157,20 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (writer != null) writer.close();
+    if (writer != null) {
+      try {
+        writer.close();
+      } catch (Throwable t) {
+        //We're going to sit on this.
+      }
+    }
     if (respWriter != null) {
-      respWriter.flush();
-      respWriter.close();
+      try {
+        respWriter.flush();
+        respWriter.close();
+      } catch (Throwable t) {
+
+      }
     }
 
   }

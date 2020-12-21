@@ -26,6 +26,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.BrokenBarrierException;
 
 import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReaderContext;
@@ -133,7 +134,13 @@ class ExportBuffers {
         buffer = getFillBuffer();
         // log.debug("--- filler final got buffer {}", buffer);
       } catch (Throwable e) {
-        log.error("filler", e);
+        if(!(e instanceof InterruptedException) && !(e instanceof BrokenBarrierException)) {
+          /*
+          Don't log the interrupt or BrokenBarrierException as it creates noise during early client disconnects and
+          doesn't log anything particularly useful in other situations.
+           */
+          log.error("filler", e);
+        }
         error(e);
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
@@ -235,7 +242,23 @@ class ExportBuffers {
 //        allDone.join();
       log.debug("-- finished.");
     } catch (Exception e) {
-      log.error("Exception running filler / writer", e);
+      Throwable ex = e;
+      boolean ignore = false;
+      while (ex != null) {
+        String m = ex.getMessage();
+        if (m != null && m.contains("Broken pipe")) {
+          ignore = true;
+          break;
+        }
+        ex = ex.getCause();
+      }
+      if(!ignore) {
+        /*
+         Ignore Broken pipes. Broken pipes occur normally when using the export handler for
+         merge joins when the join is complete before both sides of the join are fully read.
+         */
+        log.error("Exception running filler / writer", e);
+      }
       error(e);
       //
     } finally {
