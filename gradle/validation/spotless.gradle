@@ -27,7 +27,10 @@ allprojects { prj ->
 
     spotless {
       java {
-        licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+        // TODO: work out how to have multiple different header files (we have
+        // classes in the codebase that have original headers).
+
+        // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
@@ -42,9 +45,13 @@ allprojects { prj ->
           // Partially complete.
           case ":lucene:core":
             target "src/**/org/apache/lucene/*.java",
-                   //"src/**/org/apache/lucene/util/**",
+                   //"src/**/org/apache/lucene/util/automaton/**",
                    "src/**/org/apache/lucene/analysis/**"
-            targetExclude "**/resources/**", "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            targetExclude "**/resources/**",
+                "**/StandardTokenizerImpl.jflex",
+                "**/StandardTokenizerImpl.java",
+                "**/createLevAutomata.py",
+                "**/UTF32ToUTF8.py"
             break
 
           case ":lucene:analysis:common":
