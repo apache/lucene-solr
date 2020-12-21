@@ -69,19 +69,20 @@ public interface AttributeFetcher {
   AttributeFetcher requestNodeEnvironmentVariable(String name);
 
   /**
-   * Request a node metric from each node. To get the value use {@link AttributeValues#getMetric(Node, String, NodeMetricRegistry)}
-   * @param metricName name of the metric (within the registry)
-   * @param registry one of the node-level metric registries
+   * Request a node metric from each node. To get the value use {@link AttributeValues#getNodeMetric(Node, NodeMetric)}
+   * @param metric metric to retrieve (see {@link NodeMetric})
    */
-  AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry);
+  AttributeFetcher requestNodeMetric(NodeMetric<?> metric);
 
   /**
-   * Requests any metric from any metric registry on each node, using a fully-qualified metric key,
+   * Rfrom any metric registry on each node, using a fully-qualified metric key,
    * for example <code>solr.jvm:system.properties:user.name</code>.
    * To get the value use {@link AttributeValues#getNodeMetric(Node, String)}
    * @param metricKey fully-qualified metric key
    */
-  AttributeFetcher requestNodeMetric(String metricKey);
+  default AttributeFetcher requestNodeMetric(String metricKey) {
+    return requestNodeMetric(new NodeMetric<>(metricKey));
+  }
 
   /**
    * Request collection-level metrics. To get the values use {@link AttributeValues#getCollectionMetrics(String)}.
@@ -123,9 +124,5 @@ public interface AttributeFetcher {
      * corresponds to solr.jetty
      */
     SOLR_JETTY
-  }
-
-  enum DiskHardwareType {
-    SSD, ROTATIONAL
   }
 }

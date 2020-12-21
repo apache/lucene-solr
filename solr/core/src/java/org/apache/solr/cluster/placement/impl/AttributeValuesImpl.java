@@ -17,17 +17,16 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.placement.CollectionMetrics;
+import org.apache.solr.cluster.placement.NodeMetric;
 
 import java.util.Map;
 import java.util.Optional;
 
 public class AttributeValuesImpl implements AttributeValues {
   final Map<Node, Integer> nodeToCoreCount;
-  final Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType;
   final Map<Node, Double> nodeToFreeDisk;
   final Map<Node, Double> nodeToTotalDisk;
   final Map<Node, Double> nodeToHeapUsage;
@@ -35,21 +34,19 @@ public class AttributeValuesImpl implements AttributeValues {
   // sysprop (or sysenv) name / node -> value
   final Map<String, Map<Node, String>> systemSnitchToNodeToValue;
   // metricName / node -> value
-  final Map<String, Map<Node, Object>> metricSnitchToNodeToValue;
+  final Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue;
   // collection / shard / replica / metricName -> value
   final Map<String, CollectionMetrics> collectionMetrics;
 
   public AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
-                             Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType,
                              Map<Node, Double> nodeToFreeDisk,
                              Map<Node, Double> nodeToTotalDisk,
                              Map<Node, Double> nodeToHeapUsage,
                              Map<Node, Double> nodeToSystemLoadAverage,
                              Map<String, Map<Node, String>> systemSnitchToNodeToValue,
-                             Map<String, Map<Node, Object>> metricSnitchToNodeToValue,
+                             Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue,
                              Map<String, CollectionMetrics> collectionMetrics) {
     this.nodeToCoreCount = nodeToCoreCount;
-    this.nodeToDiskType = nodeToDiskType;
     this.nodeToFreeDisk = nodeToFreeDisk;
     this.nodeToTotalDisk = nodeToTotalDisk;
     this.nodeToHeapUsage = nodeToHeapUsage;
@@ -62,11 +59,6 @@ public class AttributeValuesImpl implements AttributeValues {
   @Override
   public Optional<Integer> getCoresCount(Node node) {
     return Optional.ofNullable(nodeToCoreCount.get(node));
-  }
-
-  @Override
-  public Optional<AttributeFetcher.DiskHardwareType> getDiskType(Node node) {
-    return Optional.ofNullable(nodeToDiskType.get(node));
   }
 
   @Override
@@ -108,17 +100,18 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  public Optional<Object> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry) {
-    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricSnitchTag(metricName, registry));
+  @SuppressWarnings("unchecked")
+  public <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric) {
+    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(metric);
     if (nodeToValue == null) {
       return Optional.empty();
     }
-    return Optional.ofNullable(nodeToValue.get(node));
+    return Optional.ofNullable((T) nodeToValue.get(node));
   }
 
   @Override
   public Optional<Object> getNodeMetric(Node node, String metricKey) {
-    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(AttributeFetcherImpl.getMetricKeySnitchTag(metricKey));
+    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(new NodeMetric<>(metricKey));
     if (nodeToValue == null) {
       return Optional.empty();
     }

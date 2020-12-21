@@ -24,6 +24,7 @@ import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.placement.CollectionMetrics;
+import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
@@ -47,7 +48,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   boolean requestedNodeHeapUsage;
   boolean requestedNodeSystemLoadAverage;
   Set<String> requestedNodeSystemSnitchTags = new HashSet<>();
-  Set<String> requestedNodeMetricSnitchTags = new HashSet<>();
+  Set<NodeMetric<?>> requestedNodeMetricSnitchTags = new HashSet<>();
   Map<SolrCollection, Set<ReplicaMetric<?>>> requestedCollectionMetrics = new HashMap<>();
 
   Set<Node> nodes = Collections.emptySet();
@@ -106,20 +107,22 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
-    requestedNodeMetricSnitchTags.add(getMetricSnitchTag(metricName, registry));
+  public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
+    requestedNodeMetricSnitchTags.add(metric);
     return this;
   }
 
   @Override
   public AttributeFetcher requestNodeMetric(String metricKey) {
-    requestedNodeMetricSnitchTags.add(getMetricKeySnitchTag(metricKey));
+    requestedNodeMetricSnitchTags.add(new NodeMetric<>(metricKey));
     return this;
   }
 
   @Override
-  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames) {
-    requestedCollectionMetrics.put(solrCollection, Set.copyOf(metricNames));
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metrics) {
+    if (!metrics.isEmpty()) {
+      requestedCollectionMetrics.put(solrCollection, Set.copyOf(metrics));
+    }
     return this;
   }
 
@@ -137,13 +140,12 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
     // Maps in which attribute values will be added
     Map<Node, Integer> nodeToCoreCount = new HashMap<>();
-    Map<Node, DiskHardwareType> nodeToDiskType = new HashMap<>();
     Map<Node, Double> nodeToFreeDisk = new HashMap<>();
     Map<Node, Double> nodeToTotalDisk = new HashMap<>();
     Map<Node, Double> nodeToHeapUsage = new HashMap<>();
     Map<Node, Double> nodeToSystemLoadAverage = new HashMap<>();
     Map<String, Map<Node, String>> systemSnitchToNodeToValue = new HashMap<>();
-    Map<String, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
+    Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
     Map<String, CollectionMetricsBuilder> collectionMetricsBuilders = new HashMap<>();
     Map<Node, Set<String>> nodeToReplicaInternalTags = new HashMap<>();
     Map<String, Set<ReplicaMetric<?>>> requestedCollectionNamesMetrics = requestedCollectionMetrics.entrySet().stream()
@@ -181,10 +183,11 @@ public class AttributeFetcherImpl implements AttributeFetcher {
       systemSnitchToNodeToValue.put(sysPropSnitch, sysPropMap);
       allSnitchTagsToInsertion.put(sysPropSnitch, (node, value) -> sysPropMap.put(node, (String) value));
     }
-    for (String metricSnitch : requestedNodeMetricSnitchTags) {
+    for (NodeMetric<?> metric : requestedNodeMetricSnitchTags) {
       final Map<Node, Object> metricMap = new HashMap<>();
-      metricSnitchToNodeToValue.put(metricSnitch, metricMap);
-      allSnitchTagsToInsertion.put(metricSnitch, (node, value) -> metricMap.put(node, value));
+      metricSnitchToNodeToValue.put(metric, metricMap);
+      String metricSnitch = getMetricSnitchTag(metric);
+      allSnitchTagsToInsertion.put(metricSnitch, (node, value) -> metricMap.put(node, metric.convert(value)));
     }
     requestedCollectionMetrics.forEach((collection, tags) -> {
       Set<String> collectionTags = tags.stream().map(tag -> tag.getInternalName()).collect(Collectors.toSet());
@@ -192,9 +195,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
           shard.replicas().forEach(replica -> {
             Set<String> perNodeInternalTags = nodeToReplicaInternalTags
                 .computeIfAbsent(replica.getNode(), n -> new HashSet<>());
-            if (perNodeInternalTags.isEmpty()) {
-              perNodeInternalTags.add(ReplicaMetric.INDEX_SIZE_GB.getInternalName());
-            }
             perNodeInternalTags.addAll(collectionTags);
           }));
     });
@@ -240,15 +240,8 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                 if (requestedMetrics == null) {
                   throw new RuntimeException("impossible error");
                 }
-                Double sizeGB = ReplicaMetric.INDEX_SIZE_GB.convert(replica.get(ReplicaMetric.INDEX_SIZE_GB.getInternalName()));
-                if (sizeGB != null) {
-                  replicaMetricsBuilder.setSizeGB(sizeGB);
-                }
                 requestedMetrics.forEach(metric -> {
-                  Object value = metric.convert(replica.get(metric.getInternalName()));
-                  if (value != null) {
-                    replicaMetricsBuilder.addMetric(metric.getName(), value);
-                  }
+                  replicaMetricsBuilder.addMetric(metric, replica.get(metric.getInternalName()));
                 });
               });
             });
@@ -260,7 +253,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     collectionMetricsBuilders.forEach((name, builder) -> collectionMetrics.put(name, builder.build()));
 
     return new AttributeValuesImpl(nodeToCoreCount,
-        nodeToDiskType,
         nodeToFreeDisk,
         nodeToTotalDisk,
         nodeToHeapUsage,
@@ -280,12 +272,13 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     }
   }
 
-  public static String getMetricSnitchTag(String metricName, NodeMetricRegistry registry) {
-    return SolrClientNodeStateProvider.METRICS_PREFIX + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(registry), metricName);
-  }
-
-  public static String getMetricKeySnitchTag(String metricKey) {
-    return SolrClientNodeStateProvider.METRICS_PREFIX + metricKey;
+  public static String getMetricSnitchTag(NodeMetric<?> metric) {
+    if (metric.getRegistry() != null) {
+      return SolrClientNodeStateProvider.METRICS_PREFIX +
+          SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry())) + ":" + metric.getInternalName();
+    } else {
+      return SolrClientNodeStateProvider.METRICS_PREFIX + metric.getInternalName();
+    }
   }
 
   public static String getSystemPropertySnitchTag(String name) {

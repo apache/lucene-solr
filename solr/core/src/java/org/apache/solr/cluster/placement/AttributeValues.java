@@ -28,11 +28,6 @@ public interface AttributeValues {
   Optional<Integer> getCoresCount(Node node);
 
   /**
-   * For the given node: Hardware type of the disk partition where cores are stored
-   */
-  Optional<AttributeFetcher.DiskHardwareType> getDiskType(Node node);
-
-  /**
    * For the given node: Free disk size in Gigabytes of the partition on which cores are stored
    */
   Optional<Double> getFreeDisk(Node node);
@@ -65,7 +60,7 @@ public interface AttributeValues {
   /**
    * For the given node: metric of specific name and registry
    */
-  Optional<Object> getMetric(Node node, String metricName, AttributeFetcher.NodeMetricRegistry registry);
+  <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
 
 
   /**

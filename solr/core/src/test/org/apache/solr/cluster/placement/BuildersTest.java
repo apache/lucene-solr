@@ -83,13 +83,11 @@ public class BuildersTest extends SolrTestCaseJ4 {
         .requestNodeDiskType()
         .requestNodeFreeDisk()
         .requestNodeTotalDisk()
-        .requestCollectionMetrics(collection, Set.of());
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetric.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     for (Node node : cluster.getLiveNodes()) {
       Optional<Integer> coreCount = attributeValues.getCoresCount(node);
       assertTrue("coreCount present", coreCount.isPresent());
-      Optional<AttributeFetcher.DiskHardwareType> diskType = attributeValues.getDiskType(node);
-      assertTrue("diskType present", diskType.isPresent());
       Optional<Double> diskOpt = attributeValues.getFreeDisk(node);
       assertTrue("freeDisk", diskOpt.isPresent());
       diskOpt = attributeValues.getTotalDisk(node);
@@ -105,20 +103,24 @@ public class BuildersTest extends SolrTestCaseJ4 {
       Optional<ReplicaMetrics> replicaMetricsOpt = shardMetrics.getLeaderMetrics();
       assertTrue("leader metrics", replicaMetricsOpt.isPresent());
       ReplicaMetrics leaderMetrics = replicaMetricsOpt.get();
+      Optional<Double> sizeOpt = leaderMetrics.getReplicaMetric(ReplicaMetric.INDEX_SIZE_GB);
+      assertTrue("missing size", sizeOpt.isPresent());
       if (shardName.endsWith("1")) {
-        assertEquals("size", Double.valueOf(10), leaderMetrics.getReplicaSizeGB());
+        assertEquals("size", 10, ((Number) sizeOpt.get()).intValue());
       } else {
-        assertEquals("size", Double.valueOf(20), leaderMetrics.getReplicaSizeGB());
+        assertEquals("size", 20, ((Number) sizeOpt.get()).intValue());
       }
       Shard shard = collection.getShard(shardName);
       shard.iterator().forEachRemaining(r -> {
         Optional<ReplicaMetrics> metricsOpt = shardMetrics.getReplicaMetrics(r.getReplicaName());
         assertTrue("replica metrics", metricsOpt.isPresent());
         ReplicaMetrics metrics = metricsOpt.get();
+        Optional<Double> replicaSizeOpt = metrics.getReplicaMetric(ReplicaMetric.INDEX_SIZE_GB);
+        assertTrue("missing size", replicaSizeOpt.isPresent());
         if (shardName.endsWith("1")) {
-          assertEquals("size", Double.valueOf(10), metrics.getReplicaSizeGB());
+          assertEquals("size", 10, ((Number) replicaSizeOpt.get()).intValue());
         } else {
-          assertEquals("size", Double.valueOf(20), metrics.getReplicaSizeGB());
+          assertEquals("size", 20, ((Number) replicaSizeOpt.get()).intValue());
         }
       });
     }

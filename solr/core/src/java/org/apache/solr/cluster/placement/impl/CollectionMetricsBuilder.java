@@ -17,6 +17,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import org.apache.solr.cluster.placement.CollectionMetrics;
+import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ShardMetrics;
 
@@ -44,31 +45,37 @@ public class CollectionMetricsBuilder {
 
   public static class ShardMetricsBuilder {
     final Map<String, ReplicaMetricsBuilder> replicaMetricsBuilders = new HashMap<>();
+    ReplicaMetricsBuilder leaderMetricsBuilder;
 
     public Map<String, ReplicaMetricsBuilder> getReplicaMetricsBuilders() {
       return replicaMetricsBuilders;
     }
 
     public ShardMetricsBuilder setLeaderMetrics(ReplicaMetricsBuilder replicaMetricsBuilder) {
-      replicaMetricsBuilders.put(LEADER, replicaMetricsBuilder);
+      leaderMetricsBuilder = replicaMetricsBuilder;
       return this;
     }
-
-    static final String LEADER = "__leader__";
 
     public ShardMetrics build() {
       final Map<String, ReplicaMetrics> metricsMap = new HashMap<>();
       replicaMetricsBuilders.forEach((name, replicaBuilder) -> {
         ReplicaMetrics metrics = replicaBuilder.build();
         metricsMap.put(name, metrics);
+        // skip leader from map
         if (replicaBuilder.leader) {
-          metricsMap.put(LEADER, metrics);
+          if (leaderMetricsBuilder == null) {
+            leaderMetricsBuilder = replicaBuilder;
+          }
+          if (replicaBuilder != leaderMetricsBuilder) {
+            throw new RuntimeException("inconsistent data for leader metrics: found " + replicaBuilder + " but expected " + leaderMetricsBuilder);
+          }
         }
       });
+      final ReplicaMetrics finalLeaderMetrics = leaderMetricsBuilder != null ? leaderMetricsBuilder.build() : null;
       return new ShardMetrics() {
         @Override
         public Optional<ReplicaMetrics> getLeaderMetrics() {
-          return Optional.ofNullable(metricsMap.get(LEADER));
+          return Optional.ofNullable(finalLeaderMetrics);
         }
 
         @Override
@@ -80,35 +87,33 @@ public class CollectionMetricsBuilder {
   }
 
   public static class ReplicaMetricsBuilder {
-    final Map<String, Object> metrics = new HashMap<>();
-    Double sizeGB;
+    final Map<ReplicaMetric<?>, Object> metrics = new HashMap<>();
     boolean leader;
-
-    public ReplicaMetricsBuilder setSizeGB(double size) {
-      this.sizeGB = size;
-      return this;
-    }
 
     public ReplicaMetricsBuilder setLeader(boolean leader) {
       this.leader = leader;
       return this;
     }
 
-    public ReplicaMetricsBuilder addMetric(String metricName, Object value) {
-      metrics.put(metricName, value);
+    /** Add unconverted (raw) values here, this method internally calls
+     * {@link ReplicaMetric#convert(Object)}.
+     * @param metric metric to add
+     * @param value raw (unconverted) metric value
+     */
+    public ReplicaMetricsBuilder addMetric(ReplicaMetric<?> metric, Object value) {
+      value = metric.convert(value);
+      if (value != null) {
+        metrics.put(metric, value);
+      }
       return this;
     }
 
     public ReplicaMetrics build() {
       return new ReplicaMetrics() {
         @Override
-        public Double getReplicaSizeGB() {
-          return sizeGB;
-        }
-
-        @Override
-        public Optional<Object> getReplicaMetric(String metricName) {
-          return Optional.ofNullable(metrics.get(metricName));
+        @SuppressWarnings("unchecked")
+        public <T> Optional<T> getReplicaMetric(ReplicaMetric<T> metric) {
+          return Optional.ofNullable((T) metrics.get(metric));
         }
       };
     }

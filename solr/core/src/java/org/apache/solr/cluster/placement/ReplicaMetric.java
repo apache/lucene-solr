@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cluster.placement;
 
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -24,17 +23,7 @@ import java.util.function.Function;
  * internal metric name (as reported in <code>solr.core.[collection].[replica]</code> registry)
  * and the desired format/unit conversion.
  */
-public class ReplicaMetric<T> {
-
-  private static final double GB = 1024 * 1024 * 1024;
-  @SuppressWarnings("unchecked")
-  private final Function<Object, T> IDENTITY_CONVERTER = v -> {
-    try {
-      return (T) v;
-    } catch (ClassCastException cce) {
-      return null;
-    }
-  };
+public class ReplicaMetric<T> extends MetricAttribute<T> {
 
   public static final ReplicaMetric<Double> INDEX_SIZE_GB = new ReplicaMetric<>("sizeGB", "INDEX.sizeInBytes",
       v -> {
@@ -57,57 +46,11 @@ public class ReplicaMetric<T> {
   public static final ReplicaMetric<Double> QUERY_RATE_1MIN = new ReplicaMetric<>("queryRate", "QUERY./select.requestTimes:1minRate");
   public static final ReplicaMetric<Double> UPDATE_RATE_1MIN = new ReplicaMetric<>("updateRate", "UPDATE./update.requestTimes:1minRate");
 
-  private final String name;
-  private final String internalName;
-  private final Function<Object, T> converter;
-
   public ReplicaMetric(String name, String internalName) {
-    this(name, internalName, null);
+    super(name, internalName);
   }
 
   public ReplicaMetric(String name, String internalName, Function<Object, T> converter) {
-    Objects.requireNonNull(name);
-    Objects.requireNonNull(internalName);
-    this.name = name;
-    this.internalName = internalName;
-    if (converter == null) {
-      this.converter = IDENTITY_CONVERTER;
-    } else {
-      this.converter = converter;
-    }
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getInternalName() {
-    return internalName;
-  }
-
-  public T convert(Object value) {
-    return converter.apply(value);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    ReplicaMetric<?> that = (ReplicaMetric<?>) o;
-    return name.equals(that.name) && internalName.equals(that.internalName) && converter.equals(that.converter);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, internalName, converter);
-  }
-
-  @Override
-  public String toString() {
-    return name + "(" + internalName + ")";
+    super(name, internalName, converter);
   }
 }

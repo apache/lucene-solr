@@ -71,7 +71,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
+  public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
     throw new UnsupportedOperationException("Not yet implemented...");
   }
 

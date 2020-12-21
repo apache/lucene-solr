@@ -273,7 +273,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           }
           if (requestedTags.contains(SYSLOADAVG)) {
             Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
-            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
+            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue());
           }
           if (requestedTags.contains(HEAPUSAGE)) {
             Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");

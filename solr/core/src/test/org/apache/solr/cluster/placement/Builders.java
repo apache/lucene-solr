@@ -52,7 +52,6 @@ public class Builders {
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
         nodeBuilder.setTotalDiskGB(10000.0);
         nodeBuilder.setFreeDiskGB(5000.0);
-        nodeBuilder.setDiskType(AttributeFetcher.DiskHardwareType.SSD);
         nodeBuilders.add(nodeBuilder);
       }
       return this;
@@ -93,11 +92,10 @@ public class Builders {
 
     public AttributeFetcher buildAttributeFetcher() {
       Map<Node, Integer> nodeToCoreCount = new HashMap<>();
-      Map<Node, AttributeFetcher.DiskHardwareType> nodeToDiskType = new HashMap<>();
       Map<Node, Double> nodeToFreeDisk = new HashMap<>();
       Map<Node, Double> nodeToTotalDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
-      Map<String, Map<Node, Object>> metrics = new HashMap<>();
+      Map<NodeMetric<?>, Map<Node, Object>> metrics = new HashMap<>();
       Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
 
       // TODO And a few more missing and will be added...
@@ -106,10 +104,6 @@ public class Builders {
       // of many) to reuse the nodes computed in build() or build the AttributeFetcher at the same time.
       for (NodeBuilder nodeBuilder : nodeBuilders) {
         Node node = nodeBuilder.build();
-
-        if (nodeBuilder.getDiskType() != null) {
-          nodeToDiskType.put(node, nodeBuilder.getDiskType());
-        }
 
         if (nodeBuilder.getCoreCount() != null) {
           nodeToCoreCount.put(node, nodeBuilder.getCoreCount());
@@ -144,7 +138,7 @@ public class Builders {
             }));
       });
 
-      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, nodeToDiskType, nodeToFreeDisk,
+      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, nodeToFreeDisk,
           nodeToTotalDisk, Map.of(), Map.of(), sysprops, metrics, collectionMetrics);
       return new AttributeFetcherForTest(attributeValues);
     }
@@ -320,7 +314,7 @@ public class Builders {
             CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder();
             shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
-              replicaMetricsBuilder.setSizeGB(initialSizeGBPerShard.get(shardNumber - 1));
+              replicaMetricsBuilder.addMetric(ReplicaMetric.INDEX_SIZE_GB, initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetric.GB);
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {
               leader = replicaBuilder;
@@ -420,6 +414,7 @@ public class Builders {
     private Replica.ReplicaType replicaType;
     private Replica.ReplicaState replicaState;
     private NodeBuilder replicaNode;
+    private Map<ReplicaMetric<?>, Object> metrics;
 
     public ReplicaBuilder setReplicaName(String replicaName) {
       this.replicaName = replicaName;
@@ -450,6 +445,14 @@ public class Builders {
       return this;
     }
 
+    public ReplicaBuilder setReplicaMetric(ReplicaMetric<?> metric, Object value) {
+      if (metrics == null) {
+        metrics = new HashMap<>();
+      }
+      metrics.put(metric, metric.convert(value));
+      return this;
+    }
+
     public Replica build(Shard shard) {
       return new ClusterAbstractionsForTest.ReplicaImpl(replicaName, coreName, shard, replicaType, replicaState, replicaNode.build());
     }
@@ -460,9 +463,8 @@ public class Builders {
     private Integer coreCount = null;
     private Double freeDiskGB = null;
     private Double totalDiskGB = null;
-    private AttributeFetcher.DiskHardwareType diskType;
     private Map<String, String> sysprops = null;
-    private Map<String, Double> metrics = null;
+    private Map<NodeMetric<?>, Object> metrics = null;
 
     public NodeBuilder setNodeName(String nodeName) {
       this.nodeName = nodeName;
@@ -493,17 +495,11 @@ public class Builders {
       return this;
     }
 
-    public NodeBuilder setDiskType(AttributeFetcher.DiskHardwareType diskType) {
-      this.diskType = diskType;
-      return this;
-    }
-
-    public NodeBuilder setMetric(AttributeFetcher.NodeMetricRegistry registry, String key, Double value) {
+    public NodeBuilder setMetric(NodeMetric<?> metric, Object value) {
       if (metrics == null) {
         metrics = new HashMap<>();
       }
-      String name = AttributeFetcherImpl.getMetricSnitchTag(key, registry);
-      metrics.put(name, value);
+      metrics.put(metric, metric.convert(value));
       return this;
     }
 
@@ -519,15 +515,11 @@ public class Builders {
       return totalDiskGB;
     }
 
-    public AttributeFetcher.DiskHardwareType getDiskType() {
-      return diskType;
-    }
-
     public Map<String, String> getSysprops() {
       return sysprops;
     }
 
-    public Map<String, Double> getMetrics() {
+    public Map<NodeMetric<?>, Object> getMetrics() {
       return metrics;
     }
 
