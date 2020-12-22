@@ -40,6 +40,7 @@ public final class LegacyBM25Similarity extends Similarity {
    * <ul>
    *   <li>{@code k1 = 1.2}
    *   <li>{@code b = 0.75}
+   *   <li>{@code discountOverlaps = true}
    * </ul>
    */
   public LegacyBM25Similarity() {
@@ -56,6 +57,20 @@ public final class LegacyBM25Similarity extends Similarity {
    */
   public LegacyBM25Similarity(float k1, float b) {
     this.bm25Similarity = new BM25Similarity(k1, b);
+  }
+
+  /**
+   * BM25 with the supplied parameter values.
+   *
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero) are
+   * discounted from the document's length.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   *         not within the range {@code [0..1]}
+   */
+  public LegacyBM25Similarity(float k1, float b, boolean discountOverlaps) {
+    this.bm25Similarity = new BM25Similarity(k1, b, discountOverlaps);
   }
 
   @Override
@@ -88,17 +103,9 @@ public final class LegacyBM25Similarity extends Similarity {
   }
 
   /**
-   * Sets whether overlap tokens (Tokens with 0 position increment) are ignored when computing norm.
-   * By default this is true, meaning overlap tokens do not count when computing norms.
-   */
-  public void setDiscountOverlaps(boolean v) {
-    bm25Similarity.setDiscountOverlaps(v);
-  }
-
-  /**
    * Returns true if overlap tokens are discounted from the document's length.
    *
-   * @see #setDiscountOverlaps
+   * @see #LegacyBM25Similarity(float, float, boolean)
    */
   public boolean getDiscountOverlaps() {
     return bm25Similarity.getDiscountOverlaps();
