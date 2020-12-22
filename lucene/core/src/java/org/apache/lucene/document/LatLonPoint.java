@@ -17,8 +17,8 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
@@ -290,13 +290,8 @@ public class LatLonPoint extends Field {
   private static Query makeContainsGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
     for (LatLonGeometry geometry : latLonGeometries) {
-      if ((geometry instanceof Rectangle)) {
-        Rectangle rect = (Rectangle) geometry;
-        if (rect.crossesDateline()) {
-          builder.add(new LatLonPointQuery(field, ShapeField.QueryRelation.CONTAINS, new Rectangle(rect.minLat, rect.maxLat, rect.minLon, GeoUtils.MAX_LON_INCL)), BooleanClause.Occur.MUST);
-          builder.add(new LatLonPointQuery(field, ShapeField.QueryRelation.CONTAINS, new Rectangle(rect.minLat, rect.maxLat, GeoUtils.MIN_LON_INCL, rect.maxLon)), BooleanClause.Occur.MUST);
-          continue;
-        } 
+      if ((geometry instanceof Point) == false) {
+        return new MatchNoDocsQuery("Contains LatLonPoint.newGeometryQuery with non-point geometries");
       }
       builder.add(new LatLonPointQuery(field, ShapeField.QueryRelation.CONTAINS, geometry), BooleanClause.Occur.MUST);
     }

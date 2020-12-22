@@ -23,6 +23,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.DocValuesType;
@@ -218,6 +219,13 @@ public class LatLonDocValuesField extends Field {
       LatLonGeometry geometry = latLonGeometries[0];
       Rectangle rect = (Rectangle) geometry;
       return newSlowBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    }
+    if (queryRelation == ShapeField.QueryRelation.CONTAINS) {
+      for (LatLonGeometry geometry : latLonGeometries) {
+        if ((geometry instanceof Point) == false) {
+          return new MatchNoDocsQuery("Contains LatLonDocValuesField.newSlowGeometryQuery with non-point geometries");
+        }
+      }
     }
     return new LatLonDocValuesQuery(field, queryRelation, latLonGeometries);
   }

@@ -21,6 +21,7 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
@@ -54,6 +55,13 @@ final class LatLonPointQuery extends SpatialQuery {
         if (geometry instanceof Line) {
           // TODO: line queries do not support within relations
           throw new IllegalArgumentException("LatLonPointQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
+        }
+      }
+    }
+    if (queryRelation == ShapeField.QueryRelation.CONTAINS) {
+      for (LatLonGeometry geometry : geometries) {
+        if ((geometry instanceof Point) == false) {
+          throw new IllegalArgumentException("LatLonPointQuery does not support " + ShapeField.QueryRelation.CONTAINS + " queries with non-points geometries");
         }
       }
     }

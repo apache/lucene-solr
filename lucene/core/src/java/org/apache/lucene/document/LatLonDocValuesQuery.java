@@ -70,6 +70,13 @@ class LatLonDocValuesQuery extends Query {
         }
       }
     }
+    if (queryRelation == ShapeField.QueryRelation.CONTAINS) {
+      for (LatLonGeometry geometry : geometries) {
+        if ((geometry instanceof Point) == false) {
+          throw new IllegalArgumentException("LatLonDocValuesPointQuery does not support " + ShapeField.QueryRelation.CONTAINS + " queries with non-points geometries");
+        }
+      }
+    }
     this.field = field;
     this.geometries = geometries;
     this.queryRelation = queryRelation;
@@ -144,7 +151,7 @@ class LatLonDocValuesQuery extends Query {
           default:
             throw new IllegalArgumentException("Invalid query relationship:[" + queryRelation + "]");
         }
-        return iterator == null ? null : new ConstantScoreScorer(this, boost, scoreMode, iterator);
+        return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
       @Override
@@ -221,14 +228,9 @@ class LatLonDocValuesQuery extends Query {
   }
 
   private TwoPhaseIterator contains(SortedNumericDocValues values, LatLonGeometry[] geometries) {
-    final List<Component2D> component2Ds = new ArrayList<>();
+    final List<Component2D> component2Ds = new ArrayList<>(geometries.length);
     for (int i = 0; i < geometries.length; i++) {
-      LatLonGeometry geometry = geometries[i];
-      if ((geometry instanceof Point) == false) {
-       return null;
-      } else {
-        component2Ds.add(LatLonGeometry.create(geometry));
-      }
+      component2Ds.add(LatLonGeometry.create(geometries[i]));
     }
     return new TwoPhaseIterator(values) {
       @Override

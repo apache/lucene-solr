@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoTestUtil;
@@ -27,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 
@@ -90,5 +92,33 @@ public abstract class BaseLatLonPointTestCase extends BaseLatLonSpatialTestCase 
     assertEquals(searcher.count(q1), searcher.count(q2));
 
     IOUtils.close(w, reader, dir);
+  }
+
+  public void testQueryEqualsAndHashcode() {
+    Polygon polygon = GeoTestUtil.nextPolygon();
+    QueryRelation queryRelation = RandomPicks.randomFrom(random(), new QueryRelation[] {QueryRelation.INTERSECTS, QueryRelation.DISJOINT});
+    String fieldName = "foo";
+    Query q1 = newPolygonQuery(fieldName, queryRelation, polygon);
+    Query q2 = newPolygonQuery(fieldName, queryRelation, polygon);
+    QueryUtils.checkEqual(q1, q2);
+    // different field name
+    Query q3 = newPolygonQuery("bar", queryRelation, polygon);
+    QueryUtils.checkUnequal(q1, q3);
+    // different query relation
+    QueryRelation newQueryRelation = RandomPicks.randomFrom(random() , new QueryRelation[] {QueryRelation.INTERSECTS, QueryRelation.DISJOINT});
+    Query q4 = newPolygonQuery(fieldName, newQueryRelation, polygon);
+    if (queryRelation == newQueryRelation) {
+      QueryUtils.checkEqual(q1, q4);
+    } else {
+      QueryUtils.checkUnequal(q1, q4);
+    }
+    // different shape
+    Polygon newPolygon = GeoTestUtil.nextPolygon();;
+    Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
+    if (polygon.equals(newPolygon)) {
+      QueryUtils.checkEqual(q1, q5);
+    } else {
+      QueryUtils.checkUnequal(q1, q5);
+    }
   }
 }
