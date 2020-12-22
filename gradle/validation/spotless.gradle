@@ -57,7 +57,7 @@ allprojects { prj ->
                    "src/**/org/apache/lucene/util/bkd/**",
                    "src/**/org/apache/lucene/util/compress/**",
                    "src/**/org/apache/lucene/util/fst/**",
-                   //"src/**/org/apache/lucene/util/graph/**",
+                   "src/**/org/apache/lucene/util/graph/**",
                    //"src/**/org/apache/lucene/util/hnsw/**",
                    "src/**/org/apache/lucene/util/mutable/**"
                    //"src/**/org/apache/lucene/util/packed/**",
