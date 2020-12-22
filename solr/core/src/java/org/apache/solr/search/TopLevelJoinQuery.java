@@ -162,7 +162,7 @@ public class TopLevelJoinQuery extends JoinQuery {
     return fromOrdBitSet;
   }
 
-  private BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues,
+  protected BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues,
                                                       LongBitSet toOrdBitSet, SortedSetDocValues toDocValues) throws IOException {
     long fromOrdinal = 0;
     long firstToOrd = BitsetBounds.NO_MATCHES;
@@ -208,7 +208,7 @@ public class TopLevelJoinQuery extends JoinQuery {
     return -(low + 1);  // key not found.
   }
 
-  private static class BitsetBounds {
+  protected static class BitsetBounds {
     public static final long NO_MATCHES = -1L;
     public final long lower;
     public final long upper;
@@ -218,4 +218,28 @@ public class TopLevelJoinQuery extends JoinQuery {
       this.upper = upper;
     }
   }
+
+  /**
+   * A {@link TopLevelJoinQuery} implementation optimized for when 'from' and 'to' cores and fields match and no ordinal-
+   * conversion is necessary.
+   */
+  static class SelfJoin extends TopLevelJoinQuery {
+    public SelfJoin(String joinField, Query subQuery) {
+      super(joinField, joinField, null, subQuery);
+    }
+
+    protected BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, SortedSetDocValues fromDocValues,
+                                                          LongBitSet toOrdBitSet, SortedSetDocValues toDocValues) throws IOException {
+
+      // 'from' and 'to' ordinals are identical for self-joins.
+      toOrdBitSet.or(fromOrdBitSet);
+
+      // Calculate boundary ords used for other optimizations
+      final long firstToOrd = toOrdBitSet.nextSetBit(0);
+      final long lastToOrd = toOrdBitSet.prevSetBit(toOrdBitSet.length() - 1);
+      return new BitsetBounds(firstToOrd, lastToOrd);
+    }
+  }
 }
+
+
