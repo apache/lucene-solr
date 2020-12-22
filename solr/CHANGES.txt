@@ -230,6 +230,8 @@ Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
 
+* SOLR-15049: Optimize same-core, same-field joins in TopLevelJoinQuery (Jason Gerlowski)
+
 Bug Fixes
 ---------------------
 * SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used
