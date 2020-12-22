@@ -46,7 +46,8 @@ allprojects { prj ->
           case ":lucene:core":
             target "src/**/org/apache/lucene/*.java",
                    "src/**/org/apache/lucene/util/automaton/**",
-                   "src/**/org/apache/lucene/analysis/**"
+                   "src/**/org/apache/lucene/analysis/**",
+                   "src/**/org/apache/lucene/geo/**"
             targetExclude "**/resources/**",
                 "**/StandardTokenizerImpl.jflex",
                 "**/StandardTokenizerImpl.java",
