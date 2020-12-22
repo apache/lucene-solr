@@ -19,11 +19,12 @@ package org.apache.lucene.util.packed;
 import org.apache.lucene.util.packed.PackedInts.Mutable;
 
 /**
- * A {@link PagedGrowableWriter}. This class slices data into fixed-size blocks
- * which have independent numbers of bits per value and grow on-demand.
- * <p>You should use this class instead of the {@link PackedLongValues} related ones only when
- * you need random write-access. Otherwise this class will likely be slower and
- * less memory-efficient.
+ * A {@link PagedGrowableWriter}. This class slices data into fixed-size blocks which have
+ * independent numbers of bits per value and grow on-demand.
+ *
+ * <p>You should use this class instead of the {@link PackedLongValues} related ones only when you
+ * need random write-access. Otherwise this class will likely be slower and less memory-efficient.
+ *
  * @lucene.internal
  */
 public final class PagedGrowableWriter extends AbstractPagedMutable<PagedGrowableWriter> {
@@ -38,12 +39,17 @@ public final class PagedGrowableWriter extends AbstractPagedMutable<PagedGrowabl
    * @param startBitsPerValue the initial number of bits per value
    * @param acceptableOverheadRatio an acceptable overhead ratio
    */
-  public PagedGrowableWriter(long size, int pageSize,
-      int startBitsPerValue, float acceptableOverheadRatio) {
+  public PagedGrowableWriter(
+      long size, int pageSize, int startBitsPerValue, float acceptableOverheadRatio) {
     this(size, pageSize, startBitsPerValue, acceptableOverheadRatio, true);
   }
 
-  PagedGrowableWriter(long size, int pageSize,int startBitsPerValue, float acceptableOverheadRatio, boolean fillPages) {
+  PagedGrowableWriter(
+      long size,
+      int pageSize,
+      int startBitsPerValue,
+      float acceptableOverheadRatio,
+      boolean fillPages) {
     super(startBitsPerValue, size, pageSize);
     this.acceptableOverheadRatio = acceptableOverheadRatio;
     if (fillPages) {
@@ -58,12 +64,12 @@ public final class PagedGrowableWriter extends AbstractPagedMutable<PagedGrowabl
 
   @Override
   protected PagedGrowableWriter newUnfilledCopy(long newSize) {
-    return new PagedGrowableWriter(newSize, pageSize(), bitsPerValue, acceptableOverheadRatio, false);
+    return new PagedGrowableWriter(
+        newSize, pageSize(), bitsPerValue, acceptableOverheadRatio, false);
   }
 
   @Override
   protected long baseRamBytesUsed() {
     return super.baseRamBytesUsed() + Float.BYTES;
   }
-
 }

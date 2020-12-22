@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.IndexInput;
 
 final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
@@ -29,8 +27,7 @@ final class DirectPacked64SingleBlockReader extends PackedInts.ReaderImpl {
   private final int valuesPerBlock;
   private final long mask;
 
-  DirectPacked64SingleBlockReader(int bitsPerValue, int valueCount,
-      IndexInput in) {
+  DirectPacked64SingleBlockReader(int bitsPerValue, int valueCount, IndexInput in) {
     super(valueCount);
     this.in = in;
     this.bitsPerValue = bitsPerValue;
