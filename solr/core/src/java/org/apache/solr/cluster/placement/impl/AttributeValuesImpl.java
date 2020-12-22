@@ -26,11 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public class AttributeValuesImpl implements AttributeValues {
-  final Map<Node, Integer> nodeToCoreCount;
-  final Map<Node, Double> nodeToFreeDisk;
-  final Map<Node, Double> nodeToTotalDisk;
-  final Map<Node, Double> nodeToHeapUsage;
-  final Map<Node, Double> nodeToSystemLoadAverage;
   // sysprop (or sysenv) name / node -> value
   final Map<String, Map<Node, String>> systemSnitchToNodeToValue;
   // metricName / node -> value
@@ -38,47 +33,12 @@ public class AttributeValuesImpl implements AttributeValues {
   // collection / shard / replica / metricName -> value
   final Map<String, CollectionMetrics> collectionMetrics;
 
-  public AttributeValuesImpl(Map<Node, Integer> nodeToCoreCount,
-                             Map<Node, Double> nodeToFreeDisk,
-                             Map<Node, Double> nodeToTotalDisk,
-                             Map<Node, Double> nodeToHeapUsage,
-                             Map<Node, Double> nodeToSystemLoadAverage,
-                             Map<String, Map<Node, String>> systemSnitchToNodeToValue,
+  public AttributeValuesImpl(Map<String, Map<Node, String>> systemSnitchToNodeToValue,
                              Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue,
                              Map<String, CollectionMetrics> collectionMetrics) {
-    this.nodeToCoreCount = nodeToCoreCount;
-    this.nodeToFreeDisk = nodeToFreeDisk;
-    this.nodeToTotalDisk = nodeToTotalDisk;
-    this.nodeToHeapUsage = nodeToHeapUsage;
-    this.nodeToSystemLoadAverage = nodeToSystemLoadAverage;
     this.systemSnitchToNodeToValue = systemSnitchToNodeToValue;
     this.metricSnitchToNodeToValue = metricSnitchToNodeToValue;
     this.collectionMetrics = collectionMetrics;
-  }
-
-  @Override
-  public Optional<Integer> getCoresCount(Node node) {
-    return Optional.ofNullable(nodeToCoreCount.get(node));
-  }
-
-  @Override
-  public Optional<Double> getFreeDisk(Node node) {
-    return Optional.ofNullable(nodeToFreeDisk.get(node));
-  }
-
-  @Override
-  public Optional<Double> getTotalDisk(Node node) {
-    return Optional.ofNullable(nodeToTotalDisk.get(node));
-  }
-
-  @Override
-  public Optional<Double> getHeapUsage(Node node) {
-    return Optional.ofNullable(nodeToHeapUsage.get(node));
-  }
-
-  @Override
-  public Optional<Double> getSystemLoadAverage(Node node) {
-    return Optional.ofNullable(nodeToSystemLoadAverage.get(node));
   }
 
   @Override

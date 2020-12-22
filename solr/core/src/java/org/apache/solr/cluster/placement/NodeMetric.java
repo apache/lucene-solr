@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -34,7 +36,9 @@ public class NodeMetric<T> extends MetricAttribute<T> {
   public static final NodeMetric<Double> FREE_DISK_GB = new NodeMetric<>("freeDisk",
       AttributeFetcher.NodeMetricRegistry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
 
-  // public static final NodeMetric<Integer> NUM_CORES = new NodeMetric<>(ImplicitSnitch.CORES);
+  /** Number of all cores. */
+  public static final NodeMetric<Integer> NUM_CORES = new NodeMetric<>(ImplicitSnitch.CORES);
+  public static final NodeMetric<Double> HEAP_USAGE = new NodeMetric<>(ImplicitSnitch.HEAPUSAGE);
 
   /** System load average. */
   public static final NodeMetric<Double> SYSLOAD_AVG =

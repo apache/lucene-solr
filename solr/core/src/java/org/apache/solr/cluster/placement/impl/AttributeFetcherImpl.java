@@ -60,41 +60,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeCoresCount() {
-    requestedNodeCoreCount = true;
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeDiskType() {
-    throw new UnsupportedOperationException("Not yet implemented...");
-  }
-
-  @Override
-  public AttributeFetcher requestNodeFreeDisk() {
-    requestedNodeFreeDisk = true;
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeTotalDisk() {
-    requestedNodeTotalDisk = true;
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeHeapUsage() {
-    requestedNodeHeapUsage = true;
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeSystemLoadAverage() {
-    requestedNodeSystemLoadAverage = true;
-    return this;
-  }
-
-  @Override
   public AttributeFetcher requestNodeSystemProperty(String name) {
     requestedNodeSystemSnitchTags.add(getSystemPropertySnitchTag(name));
     return this;
@@ -109,12 +74,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   @Override
   public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
     requestedNodeMetricSnitchTags.add(metric);
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeMetric(String metricKey) {
-    requestedNodeMetricSnitchTags.add(new NodeMetric<>(metricKey));
     return this;
   }
 
@@ -139,11 +98,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     // TODO Code here only supports node related attributes for now
 
     // Maps in which attribute values will be added
-    Map<Node, Integer> nodeToCoreCount = new HashMap<>();
-    Map<Node, Double> nodeToFreeDisk = new HashMap<>();
-    Map<Node, Double> nodeToTotalDisk = new HashMap<>();
-    Map<Node, Double> nodeToHeapUsage = new HashMap<>();
-    Map<Node, Double> nodeToSystemLoadAverage = new HashMap<>();
     Map<String, Map<Node, String>> systemSnitchToNodeToValue = new HashMap<>();
     Map<NodeMetric<?>, Map<Node, Object>> metricSnitchToNodeToValue = new HashMap<>();
     Map<String, CollectionMetricsBuilder> collectionMetricsBuilders = new HashMap<>();
@@ -157,27 +111,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     // that will cast the value into the appropriate type for the snitch tag and insert it into the appropriate map
     // with the node as the key.
     Map<String, BiConsumer<Node, Object>> allSnitchTagsToInsertion = new HashMap<>();
-    if (requestedNodeCoreCount) {
-      allSnitchTagsToInsertion.put(ImplicitSnitch.CORES, (node, value) -> nodeToCoreCount.put(node, ((Number) value).intValue()));
-    }
-    if (requestedNodeFreeDisk) {
-      allSnitchTagsToInsertion.put(SolrClientNodeStateProvider.Variable.FREEDISK.tagName,
-          // Convert from bytes to GB
-          (node, value) -> nodeToFreeDisk.put(node, ((Number) value).doubleValue() / GB));
-    }
-    if (requestedNodeTotalDisk) {
-      allSnitchTagsToInsertion.put(SolrClientNodeStateProvider.Variable.TOTALDISK.tagName,
-          // Convert from bytes to GB
-          (node, value) -> nodeToTotalDisk.put(node, ((Number) value).doubleValue() / GB));
-    }
-    if (requestedNodeHeapUsage) {
-      allSnitchTagsToInsertion.put(ImplicitSnitch.HEAPUSAGE,
-          (node, value) -> nodeToHeapUsage.put(node, ((Number) value).doubleValue()));
-    }
-    if (requestedNodeSystemLoadAverage) {
-      allSnitchTagsToInsertion.put(ImplicitSnitch.SYSLOADAVG,
-          (node, value) -> nodeToSystemLoadAverage.put(node, ((Number) value).doubleValue()));
-    }
     for (String sysPropSnitch : requestedNodeSystemSnitchTags) {
       final Map<Node, String> sysPropMap = new HashMap<>();
       systemSnitchToNodeToValue.put(sysPropSnitch, sysPropMap);
@@ -252,12 +185,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
     collectionMetricsBuilders.forEach((name, builder) -> collectionMetrics.put(name, builder.build()));
 
-    return new AttributeValuesImpl(nodeToCoreCount,
-        nodeToFreeDisk,
-        nodeToTotalDisk,
-        nodeToHeapUsage,
-        nodeToSystemLoadAverage,
-        systemSnitchToNodeToValue,
+    return new AttributeValuesImpl(systemSnitchToNodeToValue,
         metricSnitchToNodeToValue, collectionMetrics);
   }
 

@@ -36,11 +36,6 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeDiskType() {
-    return this;
-  }
-
-  @Override
   public AttributeFetcher requestNodeFreeDisk() {
     return this;
   }

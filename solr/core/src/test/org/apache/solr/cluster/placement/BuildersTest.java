@@ -80,7 +80,6 @@ public class BuildersTest extends SolrTestCaseJ4 {
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
         .requestNodeCoresCount()
-        .requestNodeDiskType()
         .requestNodeFreeDisk()
         .requestNodeTotalDisk()
         .requestCollectionMetrics(collection, Set.of(ReplicaMetric.INDEX_SIZE_GB));

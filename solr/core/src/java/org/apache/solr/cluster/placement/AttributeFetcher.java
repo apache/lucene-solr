@@ -29,32 +29,37 @@ public interface AttributeFetcher {
   /**
    * Request the number of cores on each node. To get the value use {@link AttributeValues#getCoresCount(Node)}
    */
-  AttributeFetcher requestNodeCoresCount();
-
-  /**
-   * Request the disk hardware type on each node. To get the value use {@link AttributeValues#getDiskType(Node)}
-   */
-  AttributeFetcher requestNodeDiskType();
+  default AttributeFetcher requestNodeCoresCount() {
+    return requestNodeMetric(NodeMetric.NUM_CORES);
+  }
 
   /**
    * Request the free disk size on each node. To get the value use {@link AttributeValues#getFreeDisk(Node)}
    */
-  AttributeFetcher requestNodeFreeDisk();
+  default AttributeFetcher requestNodeFreeDisk() {
+    return requestNodeMetric(NodeMetric.FREE_DISK_GB);
+  }
 
   /**
    * Request the total disk size on each node. To get the value use {@link AttributeValues#getTotalDisk(Node)}
    */
-  AttributeFetcher requestNodeTotalDisk();
+  default AttributeFetcher requestNodeTotalDisk() {
+    return requestNodeMetric(NodeMetric.TOTAL_DISK_GB);
+  }
 
   /**
    * Request the heap usage on each node. To get the value use {@link AttributeValues#getHeapUsage(Node)}
    */
-  AttributeFetcher requestNodeHeapUsage();
+  default AttributeFetcher requestNodeHeapUsage() {
+    return requestNodeMetric(NodeMetric.HEAP_USAGE);
+  }
 
   /**
    * Request the system load average on each node. To get the value use {@link AttributeValues#getSystemLoadAverage(Node)}
    */
-  AttributeFetcher requestNodeSystemLoadAverage();
+  default AttributeFetcher requestNodeSystemLoadAverage() {
+    return requestNodeMetric(NodeMetric.SYSLOAD_AVG);
+  }
 
   /**
    * Request a given system property on each node. To get the value use {@link AttributeValues#getSystemProperty(Node, String)}

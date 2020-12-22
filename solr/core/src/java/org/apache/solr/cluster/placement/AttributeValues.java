@@ -25,27 +25,37 @@ public interface AttributeValues {
   /**
    * For the given node: number of cores
    */
-  Optional<Integer> getCoresCount(Node node);
+  default Optional<Integer> getCoresCount(Node node) {
+    return getNodeMetric(node, NodeMetric.NUM_CORES);
+  }
 
   /**
    * For the given node: Free disk size in Gigabytes of the partition on which cores are stored
    */
-  Optional<Double> getFreeDisk(Node node);
+  default Optional<Double> getFreeDisk(Node node) {
+    return getNodeMetric(node, NodeMetric.FREE_DISK_GB);
+  }
 
   /**
    * For the given node: Total disk size in Gigabytes of the partition on which cores are stored
    */
-  Optional<Double> getTotalDisk(Node node);
+  default Optional<Double> getTotalDisk(Node node) {
+    return getNodeMetric(node, NodeMetric.TOTAL_DISK_GB);
+  }
 
   /**
    * For the given node: Percentage between 0 and 100 of used heap over max heap
    */
-  Optional<Double> getHeapUsage(Node node);
+  default Optional<Double> getHeapUsage(Node node) {
+    return getNodeMetric(node, NodeMetric.HEAP_USAGE);
+  }
 
   /**
    * For the given node: matches {@link java.lang.management.OperatingSystemMXBean#getSystemLoadAverage()}
    */
-  Optional<Double> getSystemLoadAverage(Node node);
+  default Optional<Double> getSystemLoadAverage(Node node) {
+    return getNodeMetric(node, NodeMetric.HEAP_USAGE);
+  }
 
   /**
    * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
@@ -66,7 +76,9 @@ public interface AttributeValues {
   /**
    * Get any metric using a fully-qualified metric key.
    */
-  Optional<Object> getNodeMetric(Node node, String metricKey);
+  default Optional<Object> getNodeMetric(Node node, String metricKey) {
+    return getNodeMetric(node, new NodeMetric<>(metricKey));
+  }
 
   /**
    * Get collection metrics.

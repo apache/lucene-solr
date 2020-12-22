@@ -91,9 +91,6 @@ public class Builders {
     }
 
     public AttributeFetcher buildAttributeFetcher() {
-      Map<Node, Integer> nodeToCoreCount = new HashMap<>();
-      Map<Node, Double> nodeToFreeDisk = new HashMap<>();
-      Map<Node, Double> nodeToTotalDisk = new HashMap<>();
       Map<String, Map<Node, String>> sysprops = new HashMap<>();
       Map<NodeMetric<?>, Map<Node, Object>> metrics = new HashMap<>();
       Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
@@ -106,13 +103,16 @@ public class Builders {
         Node node = nodeBuilder.build();
 
         if (nodeBuilder.getCoreCount() != null) {
-          nodeToCoreCount.put(node, nodeBuilder.getCoreCount());
+          metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>())
+              .put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
-          nodeToFreeDisk.put(node, nodeBuilder.getFreeDiskGB());
+          metrics.computeIfAbsent(NodeMetric.FREE_DISK_GB, n -> new HashMap<>())
+              .put(node, nodeBuilder.getFreeDiskGB());
         }
         if (nodeBuilder.getTotalDiskGB() != null) {
-          nodeToTotalDisk.put(node, nodeBuilder.getTotalDiskGB());
+          metrics.computeIfAbsent(NodeMetric.TOTAL_DISK_GB, n -> new HashMap<>())
+              .put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
           nodeBuilder.getSysprops().forEach((name, value) -> {
@@ -128,18 +128,20 @@ public class Builders {
         }
       }
 
-      collectionBuilders.forEach(builder -> {
-        collectionMetrics.put(builder.collectionName, builder.collectionMetricsBuilder.build());
-        SolrCollection collection = builder.build();
-        collection.iterator().forEachRemaining(shard ->
-            shard.iterator().forEachRemaining(replica -> {
+      if (!collectionBuilders.isEmpty()) {
+        Map<Node, Object> nodeToCoreCount = metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>());
+        collectionBuilders.forEach(builder -> {
+          collectionMetrics.put(builder.collectionName, builder.collectionMetricsBuilder.build());
+          SolrCollection collection = builder.build();
+          collection.iterator().forEachRemaining(shard ->
+              shard.iterator().forEachRemaining(replica -> {
                 nodeToCoreCount.compute(replica.getNode(), (node, count) ->
-                    (count == null) ? 1 : count + 1);
-            }));
-      });
+                    (count == null) ? 1 : ((Number) count).intValue() + 1);
+              }));
+        });
+      }
 
-      AttributeValues attributeValues = new AttributeValuesImpl(nodeToCoreCount, nodeToFreeDisk,
-          nodeToTotalDisk, Map.of(), Map.of(), sysprops, metrics, collectionMetrics);
+      AttributeValues attributeValues = new AttributeValuesImpl(sysprops, metrics, collectionMetrics);
       return new AttributeFetcherForTest(attributeValues);
     }
   }
