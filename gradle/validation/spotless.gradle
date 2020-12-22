@@ -52,15 +52,7 @@ allprojects { prj ->
                    // "src/**/org/apache/lucene/index/**",
                    // "src/**/org/apache/lucene/search/**",
                    // "src/**/org/apache/lucene/store/**",
-                   // "src/**/org/apache/lucene/util/*.java",
-                   "src/**/org/apache/lucene/util/automaton/**",
-                   "src/**/org/apache/lucene/util/bkd/**",
-                   "src/**/org/apache/lucene/util/compress/**",
-                   "src/**/org/apache/lucene/util/fst/**",
-                   "src/**/org/apache/lucene/util/graph/**",
-                   "src/**/org/apache/lucene/util/hnsw/**",
-                   "src/**/org/apache/lucene/util/mutable/**",
-                   "src/**/org/apache/lucene/util/packed/**"
+                   "src/**/org/apache/lucene/util/**"
 
             targetExclude "**/resources/**",
                 "**/StandardTokenizerImpl.jflex",
@@ -68,7 +60,8 @@ allprojects { prj ->
                 "**/createLevAutomata.py",
                 "**/UTF32ToUTF8.py",
                 "**/gen_BulkOperation.py",
-                "**/gen_Packed64SingleBlock.py"
+                "**/gen_Packed64SingleBlock.py",
+                "**/makeEuroparlLineFile.py"
             break
 
           case ":lucene:analysis:common":

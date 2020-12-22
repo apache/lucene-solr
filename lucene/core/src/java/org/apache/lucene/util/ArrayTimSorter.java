@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Comparator;
 
 /**
  * A {@link TimSorter} for object arrays.
+ *
  * @lucene.internal
  */
 final class ArrayTimSorter<T> extends TimSorter {
@@ -72,5 +72,4 @@ final class ArrayTimSorter<T> extends TimSorter {
   protected int compareSaved(int i, int j) {
     return comparator.compare(tmp[i], arr[j]);
   }
-
 }

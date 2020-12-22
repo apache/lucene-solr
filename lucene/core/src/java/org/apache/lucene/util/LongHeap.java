@@ -24,7 +24,7 @@ package org.apache.lucene.util;
  * The heap may be either a min heap, in which case the least element is the smallest integer, or a
  * max heap, when it is the largest, depending on the Order parameter.
  *
- * <b>NOTE</b>: Iteration order is not specified.
+ * <p><b>NOTE</b>: Iteration order is not specified.
  *
  * @lucene.internal
  */
@@ -37,7 +37,8 @@ public abstract class LongHeap {
    * the minimum <code>maxSize</code> elements.
    */
   public enum Order {
-    MIN, MAX
+    MIN,
+    MAX
   };
 
   private static final int UNBOUNDED = -1;
@@ -48,7 +49,9 @@ public abstract class LongHeap {
 
   /**
    * Create an empty priority queue of the configured size.
-   * @param maxSize the maximum size of the heap, or if negative, the initial size of an unbounded heap
+   *
+   * @param maxSize the maximum size of the heap, or if negative, the initial size of an unbounded
+   *     heap
    */
   LongHeap(int maxSize) {
     final int heapSize;
@@ -59,7 +62,11 @@ public abstract class LongHeap {
     } else {
       if ((maxSize < 1) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
         // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must be UNBOUNDED(-1) or > 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
+        throw new IllegalArgumentException(
+            "maxSize must be UNBOUNDED(-1) or > 0 and < "
+                + (ArrayUtil.MAX_ARRAY_LENGTH)
+                + "; got: "
+                + maxSize);
       }
       // NOTE: we add +1 because all access to heap is 1-based not 0-based.  heap[0] is unused.
       heapSize = maxSize + 1;
@@ -87,9 +94,11 @@ public abstract class LongHeap {
     }
   }
 
-  /** Determines the ordering of objects in this priority queue. Subclasses must define this one
-   *  method.
-   *  @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
+  /**
+   * Determines the ordering of objects in this priority queue. Subclasses must define this one
+   * method.
+   *
+   * @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
    */
   public abstract boolean lessThan(long a, long b);
 
@@ -112,7 +121,9 @@ public abstract class LongHeap {
   /**
    * Adds a value to an IntHeap in log(size) time. if the number of values would exceed the heap's
    * maxSize, the least value is discarded.
-   * @return whether the value was added (unless the heap is full, or the new value is less than the top value)
+   *
+   * @return whether the value was added (unless the heap is full, or the new value is less than the
+   *     top value)
    */
   public boolean insertWithOverflow(long value) {
     if (size < maxSize || maxSize == UNBOUNDED) {
@@ -125,7 +136,8 @@ public abstract class LongHeap {
     return false;
   }
 
-  /** Returns the least element of the IntHeap in constant time. It is up to the caller to verify
+  /**
+   * Returns the least element of the IntHeap in constant time. It is up to the caller to verify
    * that the heap is not empty; no checking is done, and if no elements have been added, 0 is
    * returned.
    */
@@ -133,15 +145,17 @@ public abstract class LongHeap {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size) time.
+  /**
+   * Removes and returns the least element of the PriorityQueue in log(size) time.
+   *
    * @throws IllegalStateException if the IntHeap is empty.
-  */
+   */
   public final long pop() {
     if (size > 0) {
-      long result = heap[1];     // save first value
-      heap[1] = heap[size];     // move last to first
+      long result = heap[1]; // save first value
+      heap[1] = heap[size]; // move last to first
       size--;
-      downHeap(1);              // adjust heap
+      downHeap(1); // adjust heap
       return result;
     } else {
       throw new IllegalStateException("The heap is empty");
@@ -149,8 +163,8 @@ public abstract class LongHeap {
   }
 
   /**
-   * Replace the top of the pq with {@code newTop}. Should be called when the top value
-   * changes. Still log(n) worst case, but it's at least twice as fast to
+   * Replace the top of the pq with {@code newTop}. Should be called when the top value changes.
+   * Still log(n) worst case, but it's at least twice as fast to
    *
    * <pre class="prettyprint">
    * pq.updateTop(value);
@@ -186,25 +200,25 @@ public abstract class LongHeap {
 
   private final void upHeap(int origPos) {
     int i = origPos;
-    long value = heap[i];         // save bottom value
+    long value = heap[i]; // save bottom value
     int j = i >>> 1;
     while (j > 0 && lessThan(value, heap[j])) {
-      heap[i] = heap[j];       // shift parents down
+      heap[i] = heap[j]; // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = value;            // install saved value
+    heap[i] = value; // install saved value
   }
 
   private final void downHeap(int i) {
-    long value = heap[i];          // save top value
-    int j = i << 1;            // find smaller child
+    long value = heap[i]; // save top value
+    int j = i << 1; // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
     while (j <= size && lessThan(heap[j], value)) {
-      heap[i] = heap[j];       // shift up child
+      heap[i] = heap[j]; // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -212,16 +226,14 @@ public abstract class LongHeap {
         j = k;
       }
     }
-    heap[i] = value;            // install saved value
+    heap[i] = value; // install saved value
   }
 
   public LongIterator iterator() {
     return new LongIterator();
   }
 
-  /**
-   * Iterator over the contents of the heap, returning successive ints.
-   */
+  /** Iterator over the contents of the heap, returning successive ints. */
   public class LongIterator {
     int i = 1;
 
@@ -237,11 +249,12 @@ public abstract class LongHeap {
     }
   }
 
-  /** This method returns the internal heap array.
+  /**
+   * This method returns the internal heap array.
+   *
    * @lucene.internal
    */
   protected final long[] getHeapArray() {
     return heap;
   }
-
 }

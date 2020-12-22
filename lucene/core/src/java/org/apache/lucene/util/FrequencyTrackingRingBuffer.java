@@ -16,33 +16,32 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A ring buffer that tracks the frequency of the integers that it contains.
- * This is typically useful to track the hash codes of popular recently-used
- * items.
+ * A ring buffer that tracks the frequency of the integers that it contains. This is typically
+ * useful to track the hash codes of popular recently-used items.
  *
- * This data-structure requires 22 bytes per entry on average (between 16 and
- * 28).
+ * <p>This data-structure requires 22 bytes per entry on average (between 16 and 28).
  *
  * @lucene.internal
  */
 public final class FrequencyTrackingRingBuffer implements Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FrequencyTrackingRingBuffer.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(FrequencyTrackingRingBuffer.class);
 
   private final int maxSize;
   private final int[] buffer;
   private int position;
   private final IntBag frequencies;
 
-  /** Create a new ring buffer that will contain at most <code>maxSize</code> items.
-   *  This buffer will initially contain <code>maxSize</code> times the
-   *  <code>sentinel</code> value. */
+  /**
+   * Create a new ring buffer that will contain at most <code>maxSize</code> items. This buffer will
+   * initially contain <code>maxSize</code> times the <code>sentinel</code> value.
+   */
   public FrequencyTrackingRingBuffer(int maxSize, int sentinel) {
     if (maxSize < 2) {
       throw new IllegalArgumentException("maxSize must be at least 2");
@@ -61,14 +60,12 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED
-        + frequencies.ramBytesUsed()
-        + RamUsageEstimator.sizeOf(buffer);
+    return BASE_RAM_BYTES_USED + frequencies.ramBytesUsed() + RamUsageEstimator.sizeOf(buffer);
   }
 
   /**
-   * Add a new item to this ring buffer, potentially removing the oldest
-   * entry from this buffer if it is already full.
+   * Add a new item to this ring buffer, potentially removing the oldest entry from this buffer if
+   * it is already full.
    */
   public void add(int i) {
     // remove the previous value
@@ -85,9 +82,7 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
     }
   }
 
-  /**
-   * Returns the frequency of the provided key in the ring buffer.
-   */
+  /** Returns the frequency of the provided key in the ring buffer. */
   public int frequency(int key) {
     return frequencies.frequency(key);
   }
@@ -98,13 +93,13 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
   }
 
   /**
-   * A bag of integers.
-   * Since in the context of the ring buffer the maximum size is known up-front
+   * A bag of integers. Since in the context of the ring buffer the maximum size is known up-front
    * there is no need to worry about resizing the underlying storage.
    */
   private static class IntBag implements Accountable {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(IntBag.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(IntBag.class);
 
     private final int[] keys;
     private final int[] freqs;
@@ -123,9 +118,7 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return BASE_RAM_BYTES_USED
-          + RamUsageEstimator.sizeOf(keys)
-          + RamUsageEstimator.sizeOf(freqs);
+      return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(keys) + RamUsageEstimator.sizeOf(freqs);
     }
 
     /** Return the frequency of the give key in the bag. */
@@ -151,9 +144,10 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
       }
     }
 
-    /** Decrement the frequency of the given key by one, or do nothing if the
-     *  key is not present in the bag. Returns true iff the key was contained
-     *  in the bag. */
+    /**
+     * Decrement the frequency of the given key by one, or do nothing if the key is not present in
+     * the bag. Returns true iff the key was contained in the bag.
+     */
     boolean remove(int key) {
       for (int slot = key & mask; ; slot = (slot + 1) & mask) {
         if (freqs[slot] == 0) {
@@ -191,9 +185,10 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
       }
     }
 
-    /** Given a chain of occupied slots between <code>chainStart</code>
-     *  and <code>chainEnd</code>, return whether <code>slot</code> is
-     *  between the start and end of the chain. */
+    /**
+     * Given a chain of occupied slots between <code>chainStart</code> and <code>chainEnd</code>,
+     * return whether <code>slot</code> is between the start and end of the chain.
+     */
     private static boolean between(int chainStart, int chainEnd, int slot) {
       if (chainStart <= chainEnd) {
         return chainStart <= slot && slot <= chainEnd;
@@ -212,7 +207,5 @@ public final class FrequencyTrackingRingBuffer implements Accountable {
       }
       return map;
     }
-
   }
-
 }

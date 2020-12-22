@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.util;
 
+import static org.apache.lucene.util.LongHeap.Order.MAX;
+import static org.apache.lucene.util.LongHeap.Order.MIN;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import static org.apache.lucene.util.LongHeap.Order.MAX;
-import static org.apache.lucene.util.LongHeap.Order.MIN;
 
 public class TestLongHeap extends LuceneTestCase {
 
@@ -123,7 +122,7 @@ public class TestLongHeap extends LuceneTestCase {
     assertEquals(1, pq.top());
     pq.updateTop(3);
     assertEquals(3, pq.size());
-    assertArrayEquals(new long[]{0, 2, 3, 3}, pq.getHeapArray());
+    assertArrayEquals(new long[] {0, 2, 3, 3}, pq.getHeapArray());
   }
 
   public void testInsertions() {
@@ -140,8 +139,7 @@ public class TestLongHeap extends LuceneTestCase {
       pq.insertWithOverflow(newEntry);
       pq.checkValidity();
       long newLeast = pq.top();
-      if ((lastLeast != null) && (newLeast != newEntry)
-          && (newLeast != lastLeast)) {
+      if ((lastLeast != null) && (newLeast != newEntry) && (newLeast != lastLeast)) {
         // If there has been a change of least entry and it wasn't our new
         // addition we expect the scores to increase
         assertTrue(newLeast <= newEntry);
@@ -155,9 +153,11 @@ public class TestLongHeap extends LuceneTestCase {
     LongHeap queue = LongHeap.create(MIN, 3);
     LongHeap.LongIterator it = queue.iterator();
     assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorOne() {
@@ -168,9 +168,11 @@ public class TestLongHeap extends LuceneTestCase {
     assertTrue(it.hasNext());
     assertEquals(1, it.next());
     assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorTwo() {
@@ -184,9 +186,11 @@ public class TestLongHeap extends LuceneTestCase {
     assertTrue(it.hasNext());
     assertEquals(2, it.next());
     assertFalse(it.hasNext());
-    expectThrows(IllegalStateException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorRandom() {
@@ -238,11 +242,10 @@ public class TestLongHeap extends LuceneTestCase {
     int count = 0;
     while (pq.size() > 0) {
       long next = pq.pop();
-      ++ count;
+      ++count;
       assertTrue(next <= last);
       last = next;
     }
     assertEquals(num, count);
   }
-
 }

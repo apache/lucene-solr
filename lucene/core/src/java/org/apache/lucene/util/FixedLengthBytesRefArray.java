@@ -20,9 +20,9 @@ import java.util.Comparator;
 
 /**
  * Just like {@link BytesRefArray} except all values have the same length.
- * 
- * <b>Note: This class is not Thread-Safe!</b>
- * 
+ *
+ * <p><b>Note: This class is not Thread-Safe!</b>
+ *
  * @lucene.internal
  * @lucene.experimental
  */
@@ -35,25 +35,22 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
 
   /** How many blocks are used */
   private int currentBlock = -1;
+
   private int nextEntry;
-  
+
   private byte[][] blocks;
 
-  /**
-   * Creates a new {@link BytesRefArray} with a counter to track allocated bytes
-   */
+  /** Creates a new {@link BytesRefArray} with a counter to track allocated bytes */
   public FixedLengthBytesRefArray(int valueLength) {
     this.valueLength = valueLength;
 
     // ~32K per page, unless each value is > 32K:
-    valuesPerBlock = Math.max(1, 32768/valueLength);
+    valuesPerBlock = Math.max(1, 32768 / valueLength);
     nextEntry = valuesPerBlock;
     blocks = new byte[0][];
   }
- 
-  /**
-   * Clears this {@link BytesRefArray}
-   */
+
+  /** Clears this {@link BytesRefArray} */
   @Override
   public void clear() {
     size = 0;
@@ -61,21 +58,23 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
     currentBlock = -1;
     nextEntry = valuesPerBlock;
   }
-  
+
   /**
    * Appends a copy of the given {@link BytesRef} to this {@link BytesRefArray}.
+   *
    * @param bytes the bytes to append
    * @return the index of the appended bytes
    */
   @Override
   public int append(BytesRef bytes) {
     if (bytes.length != valueLength) {
-      throw new IllegalArgumentException("value length is " + bytes.length + " but is supposed to always be " + valueLength);
+      throw new IllegalArgumentException(
+          "value length is " + bytes.length + " but is supposed to always be " + valueLength);
     }
     if (nextEntry == valuesPerBlock) {
       currentBlock++;
       if (currentBlock == blocks.length) {
-        int size = ArrayUtil.oversize(currentBlock+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+        int size = ArrayUtil.oversize(currentBlock + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
         byte[][] next = new byte[size][];
         System.arraycopy(blocks, 0, next, 0, blocks.length);
         blocks = next;
@@ -84,21 +83,23 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
       nextEntry = 0;
     }
 
-    System.arraycopy(bytes.bytes, bytes.offset, blocks[currentBlock], nextEntry*valueLength, valueLength);
+    System.arraycopy(
+        bytes.bytes, bytes.offset, blocks[currentBlock], nextEntry * valueLength, valueLength);
     nextEntry++;
-    
+
     return size++;
   }
-  
+
   /**
    * Returns the current size of this {@link FixedLengthBytesRefArray}
+   *
    * @return the current size of this {@link FixedLengthBytesRefArray}
    */
   @Override
   public int size() {
     return size;
   }
-  
+
   private int[] sort(final Comparator<BytesRef> comp) {
     final int[] orderedEntries = new int[size()];
     for (int i = 0; i < orderedEntries.length; i++) {
@@ -149,7 +150,7 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
         orderedEntries[i] = orderedEntries[j];
         orderedEntries[j] = o;
       }
-      
+
       @Override
       protected int compare(int i, int j) {
         int index1 = orderedEntries[i];
@@ -162,14 +163,14 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
 
         return comp.compare(scratch1, scratch2);
       }
-      
+
       @Override
       protected void setPivot(int i) {
         int index = orderedEntries[i];
         pivot.bytes = blocks[index / valuesPerBlock];
         pivot.offset = (index % valuesPerBlock) * valueLength;
       }
-      
+
       @Override
       protected int comparePivot(int j) {
         final int index = orderedEntries[j];
@@ -180,18 +181,14 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
     }.sort(0, size());
     return orderedEntries;
   }
-  
+
   /**
-   * <p>
-   * Returns a {@link BytesRefIterator} with point in time semantics. The
-   * iterator provides access to all so far appended {@link BytesRef} instances.
-   * </p>
-   * <p>
-   * The iterator will iterate the byte values in the order specified by the comparator.
-   * </p>
-   * <p>
-   * This is a non-destructive operation.
-   * </p>
+   * Returns a {@link BytesRefIterator} with point in time semantics. The iterator provides access
+   * to all so far appended {@link BytesRef} instances.
+   *
+   * <p>The iterator will iterate the byte values in the order specified by the comparator.
+   *
+   * <p>This is a non-destructive operation.
    */
   @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
@@ -201,7 +198,7 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
     final int[] indices = sort(comp);
     return new BytesRefIterator() {
       int pos = 0;
-      
+
       @Override
       public BytesRef next() {
         if (pos < size) {
