@@ -174,7 +174,7 @@ public class TestSmallFloat extends LuceneTestCase {
   public void testAllFloats() {
     for (int i = Integer.MIN_VALUE; ; i++) {
       float f = Float.intBitsToFloat(i);
-      if (f == f) { // skip non-numbers
+      if (!Float.isNaN(f)) {
         byte b1 = orig_floatToByte(f);
         byte b2 = SmallFloat.floatToByte315(f);
         if (b1 != b2 || b2 == 0 && f > 0) {
