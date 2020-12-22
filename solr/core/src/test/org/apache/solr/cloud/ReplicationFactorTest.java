@@ -451,18 +451,12 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     up.add(doc);
-    return runAndGetAchievedRf(up, minRf);
+    return runAndGetAchievedRf(up);
   }
   
-  private int runAndGetAchievedRf(UpdateRequest up, int minRf) throws SolrServerException, IOException {
+  private int runAndGetAchievedRf(UpdateRequest up) throws SolrServerException, IOException {
     NamedList<Object> response = cloudClient.request(up);
     return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
-  }
-
-  private void assertMinRfInResponse(int minRf, NamedList<Object> response) {
-    Object minRfFromResponse = response.findRecursive("responseHeader");
-    assertNotNull("Expected min_rf header in the response", minRfFromResponse);
-    assertEquals("Unexpected min_rf in response", ((Integer)minRfFromResponse).intValue(), minRf);
   }
 
   protected void assertRf(int expected, String explain, int actual) throws Exception {

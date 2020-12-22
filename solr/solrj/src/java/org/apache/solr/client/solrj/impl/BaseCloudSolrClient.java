@@ -693,7 +693,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     T condensed = supplier.get();
     int status = 0;
     Integer rf = null;
-    Integer minRf = null;
 
     // TolerantUpdateProcessor
     List<SimpleOrderedMap<String>> toleratedErrors = null;
