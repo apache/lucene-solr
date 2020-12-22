@@ -27,7 +27,14 @@ abstract class BoundsChecker {
     abstract void update(float sample);
 
     /**
-     * Return whether the sample exceeds (is worse than) the bound
+     * Update the bound unconditionally
+     */
+    void set(float sample) {
+        bound = sample;
+    }
+
+    /**
+     * @return whether the sample exceeds (is worse than) the bound
      */
     abstract boolean check(float sample);
 

@@ -56,7 +56,7 @@ public class TestKnnGraph extends LuceneTestCase {
     randSeed = random().nextLong();
     if (random().nextBoolean()) {
       maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
-      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(1000) + 1;
+      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(256) + 1;
     }
   }
 
@@ -148,8 +148,7 @@ public class TestKnnGraph extends LuceneTestCase {
    */
   public void testSearch() throws Exception {
     try (Directory dir = newDirectory();
-         // don't allow random merges; they mess up the docid tie-breaking assertion
-         IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig().setCodec(Codec.forName("Lucene90")))) {
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
       // Add a document for every cartesian point  in an NxN square so we can
       // easily know which are the nearest neighbors to every point. Insert by iterating
       // using a prime number that is not a divisor of N*N so that we will hit each point once,
@@ -294,7 +293,8 @@ public class TestKnnGraph extends LuceneTestCase {
         }
         if (HnswGraphBuilder.DEFAULT_MAX_CONN > graphSize) {
           // assert that the graph in each leaf is connected and undirected (ie links are reciprocated)
-          assertReciprocal(graph);
+          // We cannot assert this when diversity criterion is applied
+          // assertReciprocal(graph);
           assertConnected(graph);
         } else {
           // assert that max-connections was respected
