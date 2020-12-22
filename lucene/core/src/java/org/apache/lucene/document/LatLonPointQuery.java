@@ -63,11 +63,6 @@ final class LatLonPointQuery extends SpatialQuery {
   
   @Override
   protected SpatialVisitor getSpatialVisitor() {
-    if (component2D.getMinY() > component2D.getMaxY()) {
-      // encodeLatitudeCeil may cause minY to be > maxY iff
-      // the delta between the longitude < the encoding resolution
-      return EMPTYVISITOR;
-    }
     final GeoEncodingUtils.Component2DPredicate component2DPredicate = GeoEncodingUtils.createComponentPredicate(component2D);
     // bounding box over all geometries, this can speed up tree intersection/cheaply improve approximation for complex multi-geometries
     final byte[] minLat = new byte[Integer.BYTES];
@@ -149,26 +144,4 @@ final class LatLonPointQuery extends SpatialQuery {
     hash = 31 * hash + Arrays.hashCode(geometries);
     return hash;
   }
-  
-  final private static SpatialVisitor EMPTYVISITOR = new SpatialVisitor() {
-    @Override
-    protected Relation relate(byte[] minTriangle, byte[] maxTriangle) {
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-
-    @Override
-    protected Predicate<byte[]> intersects() {
-      return bytes -> false;
-    }
-
-    @Override
-    protected Predicate<byte[]> within() {
-      return bytes -> false;
-    }
-
-    @Override
-    protected Function<byte[], Component2D.WithinRelation> contains() {
-      return bytes -> Component2D.WithinRelation.NOTWITHIN;
-    }
-  };
 }

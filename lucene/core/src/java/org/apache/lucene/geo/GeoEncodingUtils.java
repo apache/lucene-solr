@@ -168,7 +168,7 @@ public final class GeoEncodingUtils {
     final double distanceSortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
     final Function<Rectangle, Relation> boxToRelation = box -> GeoUtils.relate(
         box.minLat, box.maxLat, box.minLon, box.maxLon, lat, lon, distanceSortKey, axisLat);
-    final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
+    final Grid subBoxes = createSubBoxes(boundingBox.minLat, boundingBox.maxLat, boundingBox.minLon, boundingBox.maxLon, boxToRelation);
 
     return new DistancePredicate(
         subBoxes.latShift, subBoxes.lonShift,
@@ -182,10 +182,9 @@ public final class GeoEncodingUtils {
    *  It works the same way as {@link #createDistancePredicate}.
    *  @lucene.internal */
   public static Component2DPredicate createComponentPredicate(Component2D tree) {
-    final Rectangle boundingBox = new Rectangle(tree.getMinY(), tree.getMaxY(), tree.getMinX(), tree.getMaxX());
     final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
         box.minLon, box.maxLon, box.minLat, box.maxLat);
-    final Grid subBoxes = createSubBoxes(boundingBox, boxToRelation);
+    final Grid subBoxes = createSubBoxes(tree.getMinY(), tree.getMaxY(), tree.getMinX(), tree.getMaxX(), boxToRelation);
 
     return new Component2DPredicate(
         subBoxes.latShift, subBoxes.lonShift,
@@ -195,13 +194,14 @@ public final class GeoEncodingUtils {
         tree);
   }
 
-  private static Grid createSubBoxes(Rectangle boundingBox, Function<Rectangle, Relation> boxToRelation) {
-    final int minLat = encodeLatitudeCeil(boundingBox.minLat);
-    final int maxLat = encodeLatitude(boundingBox.maxLat);
-    final int minLon = encodeLongitudeCeil(boundingBox.minLon);
-    final int maxLon = encodeLongitude(boundingBox.maxLon);
+  private static Grid createSubBoxes(double shapeMinlat, double  shapeMaxLat, double shapeMinLon, double shapeMaxLon, 
+                                     Function<Rectangle, Relation> boxToRelation) {
+    final int minLat = encodeLatitudeCeil(shapeMinlat);
+    final int maxLat = encodeLatitude(shapeMaxLat);
+    final int minLon = encodeLongitudeCeil(shapeMinLon);
+    final int maxLon = encodeLongitude(shapeMaxLon);
 
-    if (maxLat < minLat || (boundingBox.crossesDateline() == false && maxLon < minLon)) {
+    if (maxLat < minLat || (shapeMaxLon >= shapeMinLon && maxLon < minLon)) {
       // the box cannot match any quantized point
       return new Grid(1, 1, 0, 0, 0, 0, new byte[0]);
     }
@@ -220,7 +220,7 @@ public final class GeoEncodingUtils {
     {
       long minLon2 = (long) minLon - Integer.MIN_VALUE;
       long maxLon2 = (long) maxLon - Integer.MIN_VALUE;
-      if (boundingBox.crossesDateline()) {
+      if (shapeMaxLon < shapeMinLon) { //crosses dateline
         maxLon2 += 1L << 32; // wrap
       }
       lonShift = computeShift(minLon2, maxLon2);
