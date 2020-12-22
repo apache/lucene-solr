@@ -46,6 +46,7 @@ dependencies {
 
   [":solr:contrib:analysis-extras",
    ":solr:contrib:analytics",
+   ":solr:contrib:blob-directory",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
    ":solr:contrib:jaegertracer-configurator",

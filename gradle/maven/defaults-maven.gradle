@@ -61,6 +61,7 @@ configure(rootProject) {
         ":solr:solrj",
         ":solr:contrib:analysis-extras",
         ":solr:contrib:analytics",
+        ":solr:contrib:blob-directory",
         ":solr:contrib:clustering",
         ":solr:contrib:extraction",
         ":solr:contrib:langid",
