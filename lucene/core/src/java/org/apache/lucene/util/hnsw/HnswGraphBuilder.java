@@ -17,10 +17,11 @@
 
 package org.apache.lucene.util.hnsw;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Random;
-
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.RandomAccessVectorValuesProducer;
@@ -28,10 +29,9 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
- * Builder for HNSW graph. See {@link HnswGraph} for a gloss on the algorithm and the meaning of the hyperparameters.
+ * Builder for HNSW graph. See {@link HnswGraph} for a gloss on the algorithm and the meaning of the
+ * hyperparameters.
  */
 public final class HnswGraphBuilder {
 
@@ -42,7 +42,8 @@ public final class HnswGraphBuilder {
   // expose for testing.
   public static long randSeed = DEFAULT_RAND_SEED;
 
-  // These "default" hyperparameter settings are exposed (and nonfinal) to enable performance testing
+  // These "default" hyperparameter settings are exposed (and nonfinal) to enable performance
+  // testing
   // since the indexing API doesn't provide any control over them.
 
   // default max connections per node
@@ -64,8 +65,9 @@ public final class HnswGraphBuilder {
   private final Random random;
 
   /**
-   * Reads all the vectors from a VectorValues, builds a graph connecting them by their dense ordinals, using default
-   * hyperparameter settings, and returns the resulting graph.
+   * Reads all the vectors from a VectorValues, builds a graph connecting them by their dense
+   * ordinals, using default hyperparameter settings, and returns the resulting graph.
+   *
    * @param vectorValues the vectors whose relations are represented by the graph
    */
   public static HnswGraph build(RandomAccessVectorValuesProducer vectorValues) throws IOException {
@@ -74,26 +76,35 @@ public final class HnswGraphBuilder {
   }
 
   /**
-   * Reads all the vectors from a VectorValues, builds a graph connecting them by their dense ordinals, using the given
-   * hyperparameter settings, and returns the resulting graph.
+   * Reads all the vectors from a VectorValues, builds a graph connecting them by their dense
+   * ordinals, using the given hyperparameter settings, and returns the resulting graph.
+   *
    * @param vectorValues the vectors whose relations are represented by the graph
-   * @param maxConn the number of connections to make when adding a new graph node; roughly speaking the graph fanout.
+   * @param maxConn the number of connections to make when adding a new graph node; roughly speaking
+   *     the graph fanout.
    * @param beamWidth the size of the beam search to use when finding nearest neighbors.
-   * @param seed the seed for a random number generator used during graph construction. Provide this to ensure repeatable construction.
+   * @param seed the seed for a random number generator used during graph construction. Provide this
+   *     to ensure repeatable construction.
    */
-  public static HnswGraph build(RandomAccessVectorValuesProducer vectorValues, int maxConn, int beamWidth, long seed) throws IOException {
+  public static HnswGraph build(
+      RandomAccessVectorValuesProducer vectorValues, int maxConn, int beamWidth, long seed)
+      throws IOException {
     HnswGraphBuilder builder = new HnswGraphBuilder(vectorValues, maxConn, beamWidth, seed);
     return builder.build(vectorValues.randomAccess());
   }
 
   /**
-   * Reads all the vectors from two copies of a random access VectorValues. Providing two copies enables efficient retrieval
-   * without extra data copying, while avoiding collision of the returned values.
-   * @param vectors the vectors for which to build a nearest neighbors graph. Must be an independet accessor for the vectors
+   * Reads all the vectors from two copies of a random access VectorValues. Providing two copies
+   * enables efficient retrieval without extra data copying, while avoiding collision of the
+   * returned values.
+   *
+   * @param vectors the vectors for which to build a nearest neighbors graph. Must be an independet
+   *     accessor for the vectors
    */
   HnswGraph build(RandomAccessVectorValues vectors) throws IOException {
     if (vectors == boundedVectors.raDelegate) {
-      throw new IllegalArgumentException("Vectors to build must be independent of the source of vectors provided to HnswGraphBuilder()");
+      throw new IllegalArgumentException(
+          "Vectors to build must be independent of the source of vectors provided to HnswGraphBuilder()");
     }
     long start = System.nanoTime(), t = start;
     for (int node = 1; node < vectors.size(); node++) {
@@ -101,8 +112,14 @@ public final class HnswGraphBuilder {
       if (node % 10000 == 0) {
         if (infoStream.isEnabled(HNSW_COMPONENT)) {
           long now = System.nanoTime();
-          infoStream.message(HNSW_COMPONENT,
-              String.format(Locale.ROOT, "HNSW built %d in %d/%d ms", node, ((now - t) / 1_000_000), ((now - start) / 1_000_000)));
+          infoStream.message(
+              HNSW_COMPONENT,
+              String.format(
+                  Locale.ROOT,
+                  "HNSW built %d in %d/%d ms",
+                  node,
+                  ((now - t) / 1_000_000),
+                  ((now - start) / 1_000_000)));
           t = now;
         }
       }
@@ -116,7 +133,8 @@ public final class HnswGraphBuilder {
   }
 
   /** Full constructor */
-  HnswGraphBuilder(RandomAccessVectorValuesProducer vectors, int maxConn, int beamWidth, long seed) {
+  HnswGraphBuilder(
+      RandomAccessVectorValuesProducer vectors, int maxConn, int beamWidth, long seed) {
     RandomAccessVectorValues vectorValues = vectors.randomAccess();
     searchStrategy = vectorValues.searchStrategy();
     if (searchStrategy == VectorValues.SearchStrategy.NONE) {
@@ -145,7 +163,8 @@ public final class HnswGraphBuilder {
 
   private void addGraphNode(float[] value) throws IOException {
     KnnGraphValues graphValues = hnsw.getGraphValues();
-    Neighbors candidates = HnswGraph.search(value, beamWidth, 2 * beamWidth, boundedVectors, graphValues, random);
+    Neighbors candidates =
+        HnswGraph.search(value, beamWidth, 2 * beamWidth, boundedVectors, graphValues, random);
 
     int node = hnsw.addNode();
 
@@ -154,7 +173,8 @@ public final class HnswGraphBuilder {
   }
 
   private void addNearestNeighbors(int newNode, Neighbors neighbors) {
-    // connect the nearest neighbors, relying on the graph's Neighbors' priority queues to drop off distant neighbors
+    // connect the nearest neighbors, relying on the graph's Neighbors' priority queues to drop off
+    // distant neighbors
     Neighbors.NeighborIterator it = neighbors.iterator();
     for (int node = it.next(); node != NO_MORE_DOCS; node = it.next()) {
       float score = it.score();
@@ -165,8 +185,8 @@ public final class HnswGraphBuilder {
   }
 
   /**
-   * Provides a random access VectorValues view over a delegate VectorValues, bounding the maximum ord.
-   * TODO: get rid of this, all it does is track a counter
+   * Provides a random access VectorValues view over a delegate VectorValues, bounding the maximum
+   * ord. TODO: get rid of this, all it does is track a counter
    */
   private static class BoundedVectorValues implements RandomAccessVectorValues {
 
@@ -183,7 +203,7 @@ public final class HnswGraphBuilder {
     }
 
     void inc() {
-        ++size;
+      ++size;
     }
 
     @Override
@@ -192,7 +212,9 @@ public final class HnswGraphBuilder {
     }
 
     @Override
-    public int dimension() { return raDelegate.dimension(); }
+    public int dimension() {
+      return raDelegate.dimension();
+    }
 
     @Override
     public VectorValues.SearchStrategy searchStrategy() {
@@ -209,6 +231,4 @@ public final class HnswGraphBuilder {
       throw new UnsupportedOperationException();
     }
   }
-
-
 }

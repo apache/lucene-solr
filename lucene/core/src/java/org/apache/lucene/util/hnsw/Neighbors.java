@@ -17,11 +17,11 @@
 
 package org.apache.lucene.util.hnsw;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.LongHeap;
 import org.apache.lucene.util.NumericUtils;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 /** Neighbors encodes the neighbors of a node in the HNSW graph. */
 public class Neighbors {
@@ -118,5 +118,4 @@ public class Neighbors {
   public String toString() {
     return "Neighbors[" + heap.size() + "]";
   }
-
 }
