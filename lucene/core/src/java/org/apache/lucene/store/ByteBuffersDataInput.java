@@ -24,15 +24,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A {@link DataInput} implementing {@link RandomAccessInput} and reading data from a
- * list of {@link ByteBuffer}s.
+ * A {@link DataInput} implementing {@link RandomAccessInput} and reading data from a list of {@link
+ * ByteBuffer}s.
  */
-public final class ByteBuffersDataInput extends DataInput implements Accountable, RandomAccessInput {
+public final class ByteBuffersDataInput extends DataInput
+    implements Accountable, RandomAccessInput {
   private final ByteBuffer[] blocks;
   private final int blockBits;
   private final int blockMask;
@@ -42,9 +42,9 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
   private long pos;
 
   /**
-   * Read data from a set of contiguous buffers. All data buffers except for the last one 
-   * must have an identical remaining number of bytes in the buffer (that is a power of two). The last
-   * buffer can be of an arbitrary remaining length.
+   * Read data from a set of contiguous buffers. All data buffers except for the last one must have
+   * an identical remaining number of bytes in the buffer (that is a power of two). The last buffer
+   * can be of an arbitrary remaining length.
    */
   public ByteBuffersDataInput(List<ByteBuffer> buffers) {
     ensureAssumptions(buffers);
@@ -75,8 +75,8 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
   public long ramBytesUsed() {
     // Return a rough estimation for allocated blocks. Note that we do not make
     // any special distinction for what the type of buffer is (direct vs. heap-based).
-    return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.length + 
-           Arrays.stream(blocks).mapToLong(buf -> buf.capacity()).sum();
+    return RamUsageEstimator.NUM_BYTES_OBJECT_REF * blocks.length
+        + Arrays.stream(blocks).mapToLong(buf -> buf.capacity()).sum();
   }
 
   @Override
@@ -96,11 +96,10 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
   }
 
   /**
-   * Reads exactly {@code len} bytes into the given buffer. The buffer must have
-   * enough remaining limit.
-   * 
-   * If there are fewer than {@code len} bytes in the input, {@link EOFException} 
-   * is thrown. 
+   * Reads exactly {@code len} bytes into the given buffer. The buffer must have enough remaining
+   * limit.
+   *
+   * <p>If there are fewer than {@code len} bytes in the input, {@link EOFException} is thrown.
    */
   public void readBytes(ByteBuffer buffer, int len) throws EOFException {
     try {
@@ -169,8 +168,7 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Short.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getShort(blockOffset);
     } else {
-      return (short) ((readByte(pos    ) & 0xFF) << 8 | 
-                      (readByte(pos + 1) & 0xFF));
+      return (short) ((readByte(pos) & 0xFF) << 8 | (readByte(pos + 1) & 0xFF));
     }
   }
 
@@ -181,10 +179,10 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     if (blockOffset + Integer.BYTES <= blockMask) {
       return blocks[blockIndex(absPos)].getInt(blockOffset);
     } else {
-      return ((readByte(pos    )       ) << 24 |
-              (readByte(pos + 1) & 0xFF) << 16 |
-              (readByte(pos + 2) & 0xFF) << 8  |
-              (readByte(pos + 3) & 0xFF));
+      return ((readByte(pos)) << 24
+          | (readByte(pos + 1) & 0xFF) << 16
+          | (readByte(pos + 2) & 0xFF) << 8
+          | (readByte(pos + 3) & 0xFF));
     }
   }
 
@@ -210,12 +208,16 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
       throw new EOFException();
     }
   }
-  
+
   public ByteBuffersDataInput slice(long offset, long length) {
     if (offset < 0 || length < 0 || offset + length > this.size) {
-      throw new IllegalArgumentException(String.format(Locale.ROOT,
-          "slice(offset=%s, length=%s) is out of bounds: %s",
-          offset, length, this));
+      throw new IllegalArgumentException(
+          String.format(
+              Locale.ROOT,
+              "slice(offset=%s, length=%s) is out of bounds: %s",
+              offset,
+              length,
+              this));
     }
 
     return new ByteBuffersDataInput(sliceBufferList(Arrays.asList(this.blocks), offset, length));
@@ -223,7 +225,8 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
 
   @Override
   public String toString() {
-    return String.format(Locale.ROOT,
+    return String.format(
+        Locale.ROOT,
         "%,d bytes, block size: %,d, blocks: %,d, position: %,d%s",
         size(),
         blockSize(),
@@ -234,12 +237,12 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
 
   private final int blockIndex(long pos) {
     return Math.toIntExact(pos >> blockBits);
-  }  
+  }
 
   private final int blockOffset(long pos) {
     return (int) pos & blockMask;
-  }  
-  
+  }
+
   private int blockSize() {
     return 1 << blockBits;
   }
@@ -257,22 +260,25 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
       // Special case of just a single buffer, conditions don't apply.
     } else {
       final int blockPage = determineBlockPage(buffers);
-      
+
       // First buffer decides on block page length.
       if (!isPowerOfTwo(blockPage)) {
-        throw new IllegalArgumentException("The first buffer must have power-of-two position() + remaining(): 0x"
-            + Integer.toHexString(blockPage));
+        throw new IllegalArgumentException(
+            "The first buffer must have power-of-two position() + remaining(): 0x"
+                + Integer.toHexString(blockPage));
       }
 
       // Any block from 2..last-1 should have the same page size.
       for (int i = 1, last = buffers.size() - 1; i < last; i++) {
         ByteBuffer buffer = buffers.get(i);
         if (buffer.position() != 0) {
-          throw new IllegalArgumentException("All buffers except for the first one must have position() == 0: " + buffer);
+          throw new IllegalArgumentException(
+              "All buffers except for the first one must have position() == 0: " + buffer);
         }
         if (i != last && buffer.remaining() != blockPage) {
-          throw new IllegalArgumentException("Intermediate buffers must share an identical remaining() power-of-two block size: 0x" 
-              + Integer.toHexString(blockPage));
+          throw new IllegalArgumentException(
+              "Intermediate buffers must share an identical remaining() power-of-two block size: 0x"
+                  + Integer.toHexString(blockPage));
         }
       }
     }
@@ -284,7 +290,8 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
     return blockPage;
   }
 
-  private static List<ByteBuffer> sliceBufferList(List<ByteBuffer> buffers, long offset, long length) {
+  private static List<ByteBuffer> sliceBufferList(
+      List<ByteBuffer> buffers, long offset, long length) {
     ensureAssumptions(buffers);
 
     if (buffers.size() == 1) {
@@ -302,12 +309,14 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
 
       int endOffset = Math.toIntExact(absEnd & blockMask);
 
-      ArrayList<ByteBuffer> cloned = 
-        buffers.subList(Math.toIntExact(absStart / blockBytes), 
-                        Math.toIntExact(absEnd / blockBytes + (endOffset == 0 ? 0 : 1)))
-          .stream()
-          .map(buf -> buf.asReadOnlyBuffer())
-          .collect(Collectors.toCollection(ArrayList::new));
+      ArrayList<ByteBuffer> cloned =
+          buffers
+              .subList(
+                  Math.toIntExact(absStart / blockBytes),
+                  Math.toIntExact(absEnd / blockBytes + (endOffset == 0 ? 0 : 1)))
+              .stream()
+              .map(buf -> buf.asReadOnlyBuffer())
+              .collect(Collectors.toCollection(ArrayList::new));
 
       if (endOffset == 0) {
         cloned.add(ByteBuffer.allocate(0));
@@ -317,5 +326,5 @@ public final class ByteBuffersDataInput extends DataInput implements Accountable
       cloned.get(cloned.size() - 1).limit(endOffset);
       return cloned;
     }
-  }  
+  }
 }

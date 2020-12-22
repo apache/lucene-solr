@@ -51,7 +51,7 @@ allprojects { prj ->
                    "src/**/org/apache/lucene/geo/**",
                    // "src/**/org/apache/lucene/index/**",
                    // "src/**/org/apache/lucene/search/**",
-                   // "src/**/org/apache/lucene/store/**",
+                   "src/**/org/apache/lucene/store/**",
                    "src/**/org/apache/lucene/util/**"
 
             targetExclude "**/resources/**",
