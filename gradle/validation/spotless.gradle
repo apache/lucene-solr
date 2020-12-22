@@ -47,6 +47,7 @@ allprojects { prj ->
             target "src/**/org/apache/lucene/*.java",
                    "src/**/org/apache/lucene/util/automaton/**",
                    "src/**/org/apache/lucene/util/bkd/**",
+                   "src/**/org/apache/lucene/util/compress/**",
                    "src/**/org/apache/lucene/analysis/**",
                    "src/**/org/apache/lucene/geo/**"
             targetExclude "**/resources/**",
