@@ -45,11 +45,23 @@ allprojects { prj ->
           // Partially complete.
           case ":lucene:core":
             target "src/**/org/apache/lucene/*.java",
+                   "src/**/org/apache/lucene/analysis/**",
+                   // "src/**/org/apache/lucene/codecs/**",
+                   // "src/**/org/apache/lucene/document/**",
+                   "src/**/org/apache/lucene/geo/**",
+                   // "src/**/org/apache/lucene/index/**",
+                   // "src/**/org/apache/lucene/search/**",
+                   // "src/**/org/apache/lucene/store/**",
+                   //"src/**/org/apache/lucene/util/*.java",
                    "src/**/org/apache/lucene/util/automaton/**",
                    "src/**/org/apache/lucene/util/bkd/**",
                    "src/**/org/apache/lucene/util/compress/**",
-                   "src/**/org/apache/lucene/analysis/**",
-                   "src/**/org/apache/lucene/geo/**"
+                   "src/**/org/apache/lucene/util/fst/**"
+                   //"src/**/org/apache/lucene/util/graph/**",
+                   //"src/**/org/apache/lucene/util/hnsw/**",
+                   //"src/**/org/apache/lucene/util/mutable/**",
+                   //"src/**/org/apache/lucene/util/packed/**",
+
             targetExclude "**/resources/**",
                 "**/StandardTokenizerImpl.jflex",
                 "**/StandardTokenizerImpl.java",
