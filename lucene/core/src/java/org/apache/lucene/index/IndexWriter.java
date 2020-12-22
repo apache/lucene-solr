@@ -4984,30 +4984,24 @@ public class IndexWriter
           double segmentMB = (merge.info.sizeInBytes() / 1024. / 1024.);
           infoStream.message(
               "IW",
-              "merge codec="
-                  + codec
-                  + " maxDoc="
-                  + merge.info.info.maxDoc()
-                  + "; merged segment has "
-                  + (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors")
-                  + "; "
-                  + (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms")
-                  + "; "
-                  + (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues")
-                  + "; "
-                  + (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox")
-                  + "; "
-                  + (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs")
-                  + "; "
-                  + (mergeState.mergeFieldInfos.hasPointValues() ? "points" : "no points")
-                  + "; "
-                  + String.format(
-                      Locale.ROOT,
-                      "%.1f sec%s to merge segment [%.2f MB, %.2f MB/sec]",
-                      sec,
-                      pauseInfo,
-                      segmentMB,
-                      segmentMB / sec));
+              ("merge codec=" + codec)
+                  + (" maxDoc=" + merge.info.info.maxDoc())
+                  + ("; merged segment has "
+                      + (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors"))
+                  + ("; " + (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms"))
+                  + ("; "
+                      + (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues"))
+                  + ("; " + (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox"))
+                  + ("; " + (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs"))
+                  + ("; " + (mergeState.mergeFieldInfos.hasPointValues() ? "points" : "no points"))
+                  + ("; "
+                      + String.format(
+                          Locale.ROOT,
+                          "%.1f sec%s to merge segment [%.2f MB, %.2f MB/sec]",
+                          sec,
+                          pauseInfo,
+                          segmentMB,
+                          segmentMB / sec)));
         } else {
           infoStream.message("IW", "skip merging fully deleted segments");
         }
