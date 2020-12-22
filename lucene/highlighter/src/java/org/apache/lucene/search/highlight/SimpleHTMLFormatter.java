@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.search.highlight;
 
-/**
- * Simple {@link Formatter} implementation to highlight terms with a pre and
- * post tag.
- */
+/** Simple {@link Formatter} implementation to highlight terms with a pre and post tag. */
 public class SimpleHTMLFormatter implements Formatter {
-  
+
   private static final String DEFAULT_PRE_TAG = "<B>";
   private static final String DEFAULT_POST_TAG = "</B>";
-  
+
   private String preTag;
   private String postTag;
 
@@ -49,11 +46,11 @@ public class SimpleHTMLFormatter implements Formatter {
 
     // Allocate StringBuilder with the right number of characters from the
     // beginning, to avoid char[] allocations in the middle of appends.
-    StringBuilder returnBuffer = new StringBuilder(preTag.length() + originalText.length() + postTag.length());
+    StringBuilder returnBuffer =
+        new StringBuilder(preTag.length() + originalText.length() + postTag.length());
     returnBuffer.append(preTag);
     returnBuffer.append(originalText);
     returnBuffer.append(postTag);
     return returnBuffer.toString();
   }
-
 }

@@ -16,15 +16,15 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * This attribute is requested by TermsHashPerField to index the contents.
- * This attribute can be used to customize the final byte[] encoding of terms.
- * <p>
- * Consumers of this attribute call {@link #getBytesRef()} for each term. Example:
+ * This attribute is requested by TermsHashPerField to index the contents. This attribute can be
+ * used to customize the final byte[] encoding of terms.
+ *
+ * <p>Consumers of this attribute call {@link #getBytesRef()} for each term. Example:
+ *
  * <pre class="prettyprint">
  *   final TermToBytesRefAttribute termAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
  *
@@ -32,7 +32,7 @@ import org.apache.lucene.util.BytesRef;
  *     final BytesRef bytes = termAtt.getBytesRef();
  *
  *     if (isInteresting(bytes)) {
- *     
+ *
  *       // because the bytes are reused by the attribute (like CharTermAttribute's char[] buffer),
  *       // you should make a copy if you need persistent access to the bytes, otherwise they will
  *       // be rewritten across calls to incrementToken()
@@ -42,15 +42,17 @@ import org.apache.lucene.util.BytesRef;
  *   }
  *   ...
  * </pre>
- * @lucene.internal This is a very expert and internal API, please use
- * {@link CharTermAttribute} and its implementation for UTF-8 terms; to
- * index binary terms, use {@link BytesTermAttribute} and its implementation.
+ *
+ * @lucene.internal This is a very expert and internal API, please use {@link CharTermAttribute} and
+ *     its implementation for UTF-8 terms; to index binary terms, use {@link BytesTermAttribute} and
+ *     its implementation.
  */
 public interface TermToBytesRefAttribute extends Attribute {
-  
+
   /**
-   * Retrieve this attribute's BytesRef. The bytes are updated from the current term.
-   * The implementation may return a new instance or keep the previous one.
+   * Retrieve this attribute's BytesRef. The bytes are updated from the current term. The
+   * implementation may return a new instance or keep the previous one.
+   *
    * @return a BytesRef to be indexed (only stays valid until token stream gets incremented)
    */
   public BytesRef getBytesRef();

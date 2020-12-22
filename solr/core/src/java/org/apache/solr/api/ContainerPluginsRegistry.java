@@ -24,16 +24,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -73,7 +69,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper()
-      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+          .disable(MapperFeature.AUTO_DETECT_FIELDS);
 
   private final List<PluginRegistryListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -390,9 +387,11 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       }
       if (instance instanceof ConfigurablePlugin) {
         Class<? extends MapWriter> c = getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
-        if (c != null && holder.meta.config != null) {
-          MapWriter initVal = mapper.readValue(Utils.toJSON(holder.meta.config), c);
-          ((ConfigurablePlugin) instance).configure(initVal);
+        if (c != null) {
+          Map<String, Object> original = (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+          holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
+          ((ConfigurablePlugin) instance).configure(holder.meta.config);
+
         }
       }
       if (instance instanceof ResourceLoaderAware) {
@@ -436,10 +435,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   public ApiInfo createInfo(Map<String,Object> info, List<String> errs) throws IOException {
     return new ApiInfo(new PluginMetaHolder(info), errs);
-
-  }
-  public ApiInfo createInfo(PluginMetaHolder info, List<String> errs) {
-    return new ApiInfo(info, errs);
 
   }
 

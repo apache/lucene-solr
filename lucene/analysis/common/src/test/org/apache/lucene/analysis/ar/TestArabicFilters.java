@@ -16,32 +16,24 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the Arabic filter Factories are working.
- */
+/** Simple tests to ensure the Arabic filter Factories are working. */
 public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
-  
-  /**
-   * Test ArabicNormalizationFilterFactory
-   */
+
+  /** Test ArabicNormalizationFilterFactory */
   public void testNormalizer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
     Tokenizer tokenizer = whitespaceMockTokenizer(reader);
     TokenStream stream = tokenFilterFactory("ArabicNormalization").create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"الذين", "ملكت", "ايمانكم"});
   }
-  
-  /**
-   * Test ArabicStemFilterFactory
-   */
+
+  /** Test ArabicStemFilterFactory */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("الذين مَلكت أيمانكم");
     Tokenizer tokenizer = whitespaceMockTokenizer(reader);
@@ -49,31 +41,38 @@ public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
     stream = tokenFilterFactory("ArabicStem").create(stream);
     assertTokenStreamContents(stream, new String[] {"ذين", "ملكت", "ايمانكم"});
   }
-  
-  /**
-   * Test PersianCharFilterFactory
-   */
+
+  /** Test PersianCharFilterFactory */
   public void testPersianCharFilter() throws Exception {
     Reader reader = charFilterFactory("Persian").create(new StringReader("می‌خورد"));
     Tokenizer tokenizer = whitespaceMockTokenizer(reader);
-    assertTokenStreamContents(tokenizer, new String[] { "می", "خورد" });
+    assertTokenStreamContents(tokenizer, new String[] {"می", "خورد"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
-      tokenFilterFactory("ArabicNormalization", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("ArabicNormalization", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {      
-      tokenFilterFactory("Arabicstem", "bogusArg", "bogusValue");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Arabicstem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {      
-      charFilterFactory("Persian", "bogusArg", "bogusValue");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              charFilterFactory("Persian", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -26,18 +31,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 /**
- * This strategy works for fields where we know the match occurred but there are
- * no known positions or offsets.
- * <p>
- * We re-analyze field values and return offset ranges for returned tokens that
- * are also returned by the query's term collector.
+ * This strategy works for fields where we know the match occurred but there are no known positions
+ * or offsets.
+ *
+ * <p>We re-analyze field values and return offset ranges for returned tokens that are also returned
+ * by the query's term collector.
  */
 public final class OffsetsFromTokens implements OffsetsRetrievalStrategy {
   private final String field;
@@ -49,22 +48,25 @@ public final class OffsetsFromTokens implements OffsetsRetrievalStrategy {
   }
 
   @Override
-  public List<OffsetRange> get(MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc) throws IOException {
+  public List<OffsetRange> get(
+      MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
+      throws IOException {
     List<CharSequence> values = doc.getValues(field);
 
     Set<BytesRef> matchTerms = new HashSet<>();
     while (matchesIterator.next()) {
       Query q = matchesIterator.getQuery();
-      q.visit(new QueryVisitor() {
-        @Override
-        public void consumeTerms(Query query, Term... terms) {
-          for (Term t : terms) {
-            if (field.equals(t.field())) {
-              matchTerms.add(t.bytes());
+      q.visit(
+          new QueryVisitor() {
+            @Override
+            public void consumeTerms(Query query, Term... terms) {
+              for (Term t : terms) {
+                if (field.equals(t.field())) {
+                  matchTerms.add(t.bytes());
+                }
+              }
             }
-          }
-        }
-      });
+          });
     }
 
     ArrayList<OffsetRange> ranges = new ArrayList<>();

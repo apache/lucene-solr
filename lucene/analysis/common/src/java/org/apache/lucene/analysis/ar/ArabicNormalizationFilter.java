@@ -16,22 +16,16 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-/**
- * A {@link TokenFilter} that applies {@link ArabicNormalizer} to normalize the orthography.
- * 
- */
-
+/** A {@link TokenFilter} that applies {@link ArabicNormalizer} to normalize the orthography. */
 public final class ArabicNormalizationFilter extends TokenFilter {
   private final ArabicNormalizer normalizer = new ArabicNormalizer();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+
   public ArabicNormalizationFilter(TokenStream input) {
     super(input);
   }

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.common.SolrException;
@@ -73,7 +74,7 @@ public class ZkShardTerms implements AutoCloseable{
   private final Set<CoreTermWatcher> listeners = new HashSet<>();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-  private AtomicReference<ShardTerms> terms = new AtomicReference<>();
+  private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
 
   /**
    * Listener of a core for shard's term change events
@@ -106,17 +107,15 @@ public class ZkShardTerms implements AutoCloseable{
   }
 
   /**
-   * Ensure that leader's term is higher than some replica's terms
+   * Ensure that terms are higher than some replica's terms. If the current leader is attempting to give up
+   * leadership and included in replicasNeedingRecovery, then other replicas that are in sync will have higher
+   * terms, while the leader will stay where it is.
    * @param leader coreNodeName of leader
    * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
    */
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
     if (replicasNeedingRecovery.isEmpty()) return;
-
-    ShardTerms newTerms;
-    while( (newTerms = terms.get().increaseTerms(leader, replicasNeedingRecovery)) != null) {
-      if (forceSaveTerms(newTerms)) return;
-    }
+    mutate(terms -> terms.increaseTerms(leader, replicasNeedingRecovery));
   }
 
   public ShardTerms getShardTerms() {
@@ -192,7 +191,7 @@ public class ZkShardTerms implements AutoCloseable{
     ShardTerms newTerms;
     while ( (newTerms = terms.get().removeTerm(coreNodeName)) != null) {
       try {
-        if (saveTerms(newTerms)) return false;
+        if (saveTerms(newTerms, "removeTerm")) return false;
       } catch (KeeperException.NoNodeException e) {
         return true;
       }
@@ -206,10 +205,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @param coreNodeName of the replica
    */
   void registerTerm(String coreNodeName) {
-    ShardTerms newTerms;
-    while ( (newTerms = terms.get().registerTerm(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
-    }
+    mutate(terms -> terms.registerTerm(coreNodeName));
   }
 
   /**
@@ -218,37 +214,29 @@ public class ZkShardTerms implements AutoCloseable{
    * @param coreNodeName of the replica
    */
   public void setTermEqualsToLeader(String coreNodeName) {
-    ShardTerms newTerms;
-    while ( (newTerms = terms.get().setTermEqualsToLeader(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
-    }
+    mutate(terms -> terms.setTermEqualsToLeader(coreNodeName));
   }
 
+  /**
+   * Set a replica's term to 0. If the term does not exist, create it.
+   * @param coreNodeName of the replica
+   */
   public void setTermToZero(String coreNodeName) {
-    ShardTerms newTerms;
-    while ( (newTerms = terms.get().setTermToZero(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
-    }
+    mutate(terms -> terms.setTermToZero(coreNodeName));
   }
 
   /**
    * Mark {@code coreNodeName} as recovering
    */
   public void startRecovering(String coreNodeName) {
-    ShardTerms newTerms;
-    while ( (newTerms = terms.get().startRecovering(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
-    }
+    mutate(terms -> terms.startRecovering(coreNodeName));
   }
 
   /**
    * Mark {@code coreNodeName} as finished recovering
    */
   public void doneRecovering(String coreNodeName) {
-    ShardTerms newTerms;
-    while ( (newTerms = terms.get().doneRecovering(coreNodeName)) != null) {
-      if (forceSaveTerms(newTerms)) break;
-    }
+    mutate(terms -> terms.doneRecovering(coreNodeName));
   }
 
   public boolean isRecovering(String name) {
@@ -260,9 +248,20 @@ public class ZkShardTerms implements AutoCloseable{
    * so we must switch from term 0 (registered) to 1 (have some data)
    */
   public void ensureHighestTermsAreNotZero() {
+    mutate(ShardTerms::ensureHighestTermsAreNotZero);
+  }
+
+  /**
+   * Attempt to apply an action and save the results, retrying as necessary.
+   * If action returns null, then we are done and will not make additional retires.
+   * @param action The mutation to apply to current shard terms before saving
+   */
+  private void mutate(Function<ShardTerms, ShardTerms> action) {
     ShardTerms newTerms;
-    while ( (newTerms = terms.get().ensureHighestTermsAreNotZero()) != null) {
-      if (forceSaveTerms(newTerms)) break;
+    String caller = StackWalker.getInstance().walk(s ->
+            s.skip(1).findFirst().map(StackWalker.StackFrame::getMethodName).orElse("(unknown)"));
+    while ((newTerms = action.apply(terms.get())) != null) {
+      if (forceSaveTerms(newTerms, caller)) break;
     }
   }
 
@@ -288,9 +287,9 @@ public class ZkShardTerms implements AutoCloseable{
    * @param newTerms to be set
    * @return true if terms is saved successfully to ZK, false if otherwise
    */
-  private boolean forceSaveTerms(ShardTerms newTerms) {
+  private boolean forceSaveTerms(ShardTerms newTerms, String action) {
     try {
-      return saveTerms(newTerms);
+      return saveTerms(newTerms, action);
     } catch (KeeperException.NoNodeException e) {
       ensureTermNodeExist();
       return false;
@@ -300,22 +299,24 @@ public class ZkShardTerms implements AutoCloseable{
   /**
    * Set new terms to ZK, the version of new terms must match the current ZK term node
    * @param newTerms to be set
+   * @param action reason we are updating terms, for logging
    * @return true if terms is saved successfully to ZK, false if otherwise
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
-  private boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
+  private boolean saveTerms(ShardTerms newTerms, String action) throws KeeperException.NoNodeException {
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
       setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
-      log.info("Successful update of terms at {} to {}", znodePath, newTerms);
+      log.info("Successful update of terms at {} to {} for {}", znodePath, newTerms, action);
       return true;
     } catch (KeeperException.BadVersionException e) {
       log.info("Failed to save terms, version is not a match, retrying");
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (RuntimeException | KeeperException | InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error while saving shard term for collection: " + collection, e);
     }
     return false;
@@ -336,13 +337,10 @@ public class ZkShardTerms implements AutoCloseable{
         // it's okay if another beats us creating the node
       }
 
-    } catch (InterruptedException e) {
-      Thread.interrupted();
+    } catch (KeeperException | InterruptedException e) {
+      Throwable cause = SolrZkClient.checkInterrupted(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error creating shard term node in Zookeeper for collection: " + collection, e);
-    } catch (KeeperException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error creating shard term node in Zookeeper for collection: " + collection, e);
+          "Error creating shard term node in Zookeeper for collection: " + collection, cause);
     }
   }
 
@@ -356,11 +354,10 @@ public class ZkShardTerms implements AutoCloseable{
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, null, stat, true);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
-    } catch (KeeperException e) {
-      Thread.interrupted();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
-    } catch (InterruptedException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
+    } catch (KeeperException | InterruptedException e) {
+      Throwable cause = SolrZkClient.checkInterrupted(e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error updating shard term for collection: " + collection, cause);
     }
 
     setNewTerms(newTerms);
@@ -408,7 +405,7 @@ public class ZkShardTerms implements AutoCloseable{
       // exists operation is faster than getData operation
       zkClient.exists(znodePath, watcher, true);
     } catch (InterruptedException e) {
-      Thread.interrupted();
+      Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error watching shard term for collection: " + collection, e);
     }
   }

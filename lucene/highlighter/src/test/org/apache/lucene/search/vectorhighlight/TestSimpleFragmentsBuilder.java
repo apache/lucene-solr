@@ -16,6 +16,12 @@
  */
 package org.apache.lucene.search.vectorhighlight;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,185 +42,187 @@ import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 public class TestSimpleFragmentsBuilder extends AbstractTestCase {
-  
+
   public void test1TermIndex() throws Exception {
-    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a" );
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a");
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "<b>a</b>", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals("<b>a</b>", sfb.createFragment(reader, 0, F, ffl));
 
     // change tags
-    sfb = new SimpleFragmentsBuilder( new String[]{ "[" }, new String[]{ "]" } );
-    assertEquals( "[a]", sfb.createFragment( reader, 0, F, ffl ) );
+    sfb = new SimpleFragmentsBuilder(new String[] {"["}, new String[] {"]"});
+    assertEquals("[a]", sfb.createFragment(reader, 0, F, ffl));
   }
-  
+
   public void test2Frags() throws Exception {
-    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b a b a b" );
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b a b a b");
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
+    String[] f = sfb.createFragments(reader, 0, F, ffl, 3);
     // 3 snippets requested, but should be 2
-    assertEquals( 2, f.length );
-    assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
-    assertEquals( "b b <b>a</b> b <b>a</b> b", f[1] );
+    assertEquals(2, f.length);
+    assertEquals("<b>a</b> b b b b b b b b b b", f[0]);
+    assertEquals("b b <b>a</b> b <b>a</b> b", f[1]);
   }
-  
+
   public void test3Frags() throws Exception {
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     booleanQuery.add(new TermQuery(new Term(F, "a")), BooleanClause.Occur.SHOULD);
     booleanQuery.add(new TermQuery(new Term(F, "c")), BooleanClause.Occur.SHOULD);
-    
-    FieldFragList ffl = ffl(booleanQuery.build(), "a b b b b b b b b b b b a b a b b b b b c a a b b" );
+
+    FieldFragList ffl =
+        ffl(booleanQuery.build(), "a b b b b b b b b b b b a b a b b b b b c a a b b");
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    String[] f = sfb.createFragments( reader, 0, F, ffl, 3 );
-    assertEquals( 3, f.length );
-    assertEquals( "<b>a</b> b b b b b b b b b b", f[0] );
-    assertEquals( "b b <b>a</b> b <b>a</b> b b b b b c", f[1] );
-    assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b", f[2] );
-  }
-  
-  public void testTagsAndEncoder() throws Exception {
-    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "<h1> a </h1>" );
-    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    String[] preTags = { "[" };
-    String[] postTags = { "]" };
-    assertEquals( "&lt;h1&gt; [a] &lt;&#x2F;h1&gt;",
-        sfb.createFragment( reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder() ) );
+    String[] f = sfb.createFragments(reader, 0, F, ffl, 3);
+    assertEquals(3, f.length);
+    assertEquals("<b>a</b> b b b b b b b b b b", f[0]);
+    assertEquals("b b <b>a</b> b <b>a</b> b b b b b c", f[1]);
+    assertEquals("<b>c</b> <b>a</b> <b>a</b> b b", f[2]);
   }
 
-  private FieldFragList ffl(Query query, String indexValue ) throws Exception {
-    make1d1fIndex( indexValue );
-    FieldQuery fq = new FieldQuery( query, true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
-    return new SimpleFragListBuilder().createFieldFragList( fpl, 20 );
+  public void testTagsAndEncoder() throws Exception {
+    FieldFragList ffl = ffl(new TermQuery(new Term(F, "a")), "<h1> a </h1>");
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    String[] preTags = {"["};
+    String[] postTags = {"]"};
+    assertEquals(
+        "&lt;h1&gt; [a] &lt;&#x2F;h1&gt;",
+        sfb.createFragment(reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder()));
   }
-  
+
+  private FieldFragList ffl(Query query, String indexValue) throws Exception {
+    make1d1fIndex(indexValue);
+    FieldQuery fq = new FieldQuery(query, true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
+    return new SimpleFragListBuilder().createFieldFragList(fpl, 20);
+  }
+
   public void test1PhraseShortMV() throws Exception {
     makeIndexShortMV();
 
-    FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(tq("d"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     // Should we probably be trimming?
-    assertEquals( "  a b c  <b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals("  a b c  <b>d</b> e", sfb.createFragment(reader, 0, F, ffl));
   }
-  
+
   public void test1PhraseLongMV() throws Exception {
     makeIndexLongMV();
 
-    FieldQuery fq = new FieldQuery( pqF( "search", "engines" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(pqF("search", "engines"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "customization: The most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can",
-        sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals(
+        "customization: The most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can",
+        sfb.createFragment(reader, 0, F, ffl));
   }
 
   public void test1PhraseLongMVB() throws Exception {
     makeIndexLongMVB();
 
-    FieldQuery fq = new FieldQuery( pqF( "sp", "pe", "ee", "ed" ), true, true ); // "speed" -(2gram)-> "sp","pe","ee","ed"
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq =
+        new FieldQuery(
+            pqF("sp", "pe", "ee", "ed"), true, true); // "speed" -(2gram)-> "sp","pe","ee","ed"
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "additional hardware. \nWhen you talk about processing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals(
+        "additional hardware. \nWhen you talk about processing <b>speed</b>, the",
+        sfb.createFragment(reader, 0, F, ffl));
   }
-  
+
   public void testUnstoredField() throws Exception {
     makeUnstoredIndex();
 
-    FieldQuery fq = new FieldQuery( tq( "aaa" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(tq("aaa"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertNull( sfb.createFragment( reader, 0, F, ffl ) );
+    assertNull(sfb.createFragment(reader, 0, F, ffl));
   }
-  
+
   protected void makeUnstoredIndex() throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerW).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer =
+        new IndexWriter(dir, new IndexWriterConfig(analyzerW).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
-    doc.add( new Field( F, "aaa", customType) );
-    //doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
-    writer.addDocument( doc );
+    doc.add(new Field(F, "aaa", customType));
+    // doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS )
+    // );
+    writer.addDocument(doc);
     writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
-  
+
   public void test1StrMV() throws Exception {
     makeIndexStrMV();
 
-    FieldQuery fq = new FieldQuery( tq( "defg" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(tq("defg"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    sfb.setMultiValuedSeparator( '/' );
-    assertEquals( "abc/<b>defg</b>/hijkl", sfb.createFragment( reader, 0, F, ffl ) );
+    sfb.setMultiValuedSeparator('/');
+    assertEquals("abc/<b>defg</b>/hijkl", sfb.createFragment(reader, 0, F, ffl));
   }
-  
+
   public void testMVSeparator() throws Exception {
     makeIndexShortMV();
 
-    FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(tq("d"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    sfb.setMultiValuedSeparator( '/' );
-    assertEquals( "//a b c//<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+    sfb.setMultiValuedSeparator('/');
+    assertEquals("//a b c//<b>d</b> e", sfb.createFragment(reader, 0, F, ffl));
   }
 
   public void testDiscreteMultiValueHighlighting() throws Exception {
     makeIndexShortMV();
 
-    FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(tq("d"), true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    FieldFragList ffl = sflb.createFieldFragList(fpl, 100);
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     sfb.setDiscreteMultiValueHighlighting(true);
-    assertEquals( "<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals("<b>d</b> e", sfb.createFragment(reader, 0, F, ffl));
 
     make1dmfIndex("some text to highlight", "highlight other text");
-    fq = new FieldQuery( tq( "text" ), true, true );
-    stack = new FieldTermStack( reader, 0, F, fq );
-    fpl = new FieldPhraseList( stack, fq );
+    fq = new FieldQuery(tq("text"), true, true);
+    stack = new FieldTermStack(reader, 0, F, fq);
+    fpl = new FieldPhraseList(stack, fq);
     sflb = new SimpleFragListBuilder();
-    ffl = sflb.createFieldFragList( fpl, 32 );
+    ffl = sflb.createFieldFragList(fpl, 32);
     String[] result = sfb.createFragments(reader, 0, F, ffl, 3);
     assertEquals(2, result.length);
     assertEquals("some <b>text</b> to highlight", result[0]);
     assertEquals("highlight other <b>text</b>", result[1]);
 
-    fq = new FieldQuery( tq( "highlight" ), true, true );
-    stack = new FieldTermStack( reader, 0, F, fq );
-    fpl = new FieldPhraseList( stack, fq );
+    fq = new FieldQuery(tq("highlight"), true, true);
+    stack = new FieldTermStack(reader, 0, F, fq);
+    fpl = new FieldPhraseList(stack, fq);
     sflb = new SimpleFragListBuilder();
-    ffl = sflb.createFieldFragList( fpl, 32 );
+    ffl = sflb.createFieldFragList(fpl, 32);
     result = sfb.createFragments(reader, 0, F, ffl, 3);
     assertEquals(2, result.length);
     assertEquals("text to <b>highlight</b>", result[0]);
@@ -232,10 +240,11 @@ public class TestSimpleFragmentsBuilder extends AbstractTestCase {
     }
 
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(
-        random(),
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -315,7 +324,8 @@ public class TestSimpleFragmentsBuilder extends AbstractTestCase {
     }
   }
 
-  private String getRandomValue(String[] randomValues, Map<String, Set<Integer>> valueToDocId, int docId) {
+  private String getRandomValue(
+      String[] randomValues, Map<String, Set<Integer>> valueToDocId, int docId) {
     String value = randomValues[random().nextInt(randomValues.length)];
     if (!valueToDocId.containsKey(value)) {
       valueToDocId.put(value, new HashSet<Integer>());
@@ -332,5 +342,4 @@ public class TestSimpleFragmentsBuilder extends AbstractTestCase {
       this.fieldValues = fieldValues;
     }
   }
-
 }

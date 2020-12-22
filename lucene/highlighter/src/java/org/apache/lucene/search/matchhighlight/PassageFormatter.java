@@ -26,12 +26,11 @@ import java.util.RandomAccess;
 import java.util.function.Function;
 
 /**
- * Formats a collection of {@linkplain Passage passages} over a given string, cleaning up
- * and resolving restrictions concerning overlaps, allowed sub-ranges over the
- * input string and length restrictions.
+ * Formats a collection of {@linkplain Passage passages} over a given string, cleaning up and
+ * resolving restrictions concerning overlaps, allowed sub-ranges over the input string and length
+ * restrictions.
  *
- * Passages are demarcated with constructor-provided ellipsis and start/end marker
- * sequences.
+ * <p>Passages are demarcated with constructor-provided ellipsis and start/end marker sequences.
  */
 public class PassageFormatter {
   private final String ellipsis;
@@ -94,13 +93,17 @@ public class PassageFormatter {
   }
 
   private boolean withinRange(OffsetRange limits, List<? extends OffsetRange> contained) {
-    contained.forEach(r -> {
-      if (r.from < limits.from || r.to > limits.to) {
-        throw new AssertionError(String.format(Locale.ROOT,
-            "Range outside of the permitted limit (limit = %s): %s",
-            limits, r));
-      }
-    });
+    contained.forEach(
+        r -> {
+          if (r.from < limits.from || r.to > limits.to) {
+            throw new AssertionError(
+                String.format(
+                    Locale.ROOT,
+                    "Range outside of the permitted limit (limit = %s): %s",
+                    limits,
+                    r));
+          }
+        });
     return true;
   }
 
@@ -131,9 +134,7 @@ public class PassageFormatter {
     return buf;
   }
 
-  /**
-   * Handle multiple markers, possibly overlapping or nested.
-   */
+  /** Handle multiple markers, possibly overlapping or nested. */
   private void multipleMarkers(
       CharSequence value, final Passage p, StringBuilder b, ArrayList<OffsetRange> markerStack) {
     int at = p.from;
