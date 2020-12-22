@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -40,7 +38,7 @@ public class TestParallelLeafReader extends LuceneTestCase {
   public void testQueries() throws Exception {
     single = single(random());
     parallel = parallel(random());
-    
+
     queryTest(new TermQuery(new Term("f1", "v1")));
     queryTest(new TermQuery(new Term("f1", "v2")));
     queryTest(new TermQuery(new Term("f2", "v1")));
@@ -54,19 +52,26 @@ public class TestParallelLeafReader extends LuceneTestCase {
     bq1.add(new TermQuery(new Term("f1", "v1")), Occur.MUST);
     bq1.add(new TermQuery(new Term("f4", "v1")), Occur.MUST);
     queryTest(bq1.build());
-    
-    single.getIndexReader().close(); single = null;
-    parallel.getIndexReader().close(); parallel = null;
-    dir.close(); dir = null;
-    dir1.close(); dir1 = null;
-    dir2.close(); dir2 = null;
+
+    single.getIndexReader().close();
+    single = null;
+    parallel.getIndexReader().close();
+    parallel = null;
+    dir.close();
+    dir = null;
+    dir1.close();
+    dir1 = null;
+    dir2.close();
+    dir2 = null;
   }
 
   public void testFieldNames() throws Exception {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
-    ParallelLeafReader pr = new ParallelLeafReader(getOnlyLeafReader(DirectoryReader.open(dir1)),
-                                                   getOnlyLeafReader(DirectoryReader.open(dir2)));
+    ParallelLeafReader pr =
+        new ParallelLeafReader(
+            getOnlyLeafReader(DirectoryReader.open(dir1)),
+            getOnlyLeafReader(DirectoryReader.open(dir2)));
     FieldInfos fieldInfos = pr.getFieldInfos();
     assertEquals(4, fieldInfos.size());
     assertNotNull(fieldInfos.fieldInfo("f1"));
@@ -77,15 +82,17 @@ public class TestParallelLeafReader extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-  
+
   public void testRefCounts1() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
     LeafReader ir1, ir2;
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
-    ParallelLeafReader pr = new ParallelLeafReader(ir1 = getOnlyLeafReader(DirectoryReader.open(dir1)),
-                                                   ir2 = getOnlyLeafReader(DirectoryReader.open(dir2)));
-                                                       
+    ParallelLeafReader pr =
+        new ParallelLeafReader(
+            ir1 = getOnlyLeafReader(DirectoryReader.open(dir1)),
+            ir2 = getOnlyLeafReader(DirectoryReader.open(dir2)));
+
     // check RefCounts
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
@@ -93,9 +100,9 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertEquals(0, ir1.getRefCount());
     assertEquals(0, ir2.getRefCount());
     dir1.close();
-    dir2.close();    
+    dir2.close();
   }
-  
+
   public void testRefCounts2() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
@@ -114,25 +121,26 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertEquals(0, ir1.getRefCount());
     assertEquals(0, ir2.getRefCount());
     dir1.close();
-    dir2.close();    
+    dir2.close();
   }
-  
+
   public void testCloseInnerReader() throws Exception {
     Directory dir1 = getDir1(random());
     LeafReader ir1 = getOnlyLeafReader(DirectoryReader.open(dir1));
-    
+
     // with overlapping
-    ParallelLeafReader pr = new ParallelLeafReader(true,
-     new LeafReader[] {ir1},
-     new LeafReader[] {ir1});
+    ParallelLeafReader pr =
+        new ParallelLeafReader(true, new LeafReader[] {ir1}, new LeafReader[] {ir1});
 
     ir1.close();
-    
+
     // should already be closed because inner reader is closed!
-    expectThrows(AlreadyClosedException.class, () -> {
-      pr.document(0);
-    });
-    
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          pr.document(0);
+        });
+
     // noop:
     pr.close();
     dir1.close();
@@ -150,20 +158,23 @@ public class TestParallelLeafReader extends LuceneTestCase {
     d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
     w2.close();
-    
+
     LeafReader ir1 = getOnlyLeafReader(DirectoryReader.open(dir1));
     LeafReader ir2 = getOnlyLeafReader(DirectoryReader.open(dir2));
 
     // indexes don't have the same number of documents
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelLeafReader(ir1, ir2);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelLeafReader(ir1, ir2);
+        });
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelLeafReader(random().nextBoolean(),
-                               new LeafReader[] {ir1, ir2},
-                               new LeafReader[] {ir1, ir2});
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelLeafReader(
+              random().nextBoolean(), new LeafReader[] {ir1, ir2}, new LeafReader[] {ir1, ir2});
+        });
 
     // check RefCounts
     assertEquals(1, ir1.getRefCount());
@@ -179,11 +190,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
     Directory dir2 = getDir2(random());
     LeafReader ir1 = getOnlyLeafReader(DirectoryReader.open(dir1));
     LeafReader ir2 = getOnlyLeafReader(DirectoryReader.open(dir2));
-    
+
     // with overlapping
-    ParallelLeafReader pr = new ParallelLeafReader(false,
-        new LeafReader[] {ir1, ir2},
-        new LeafReader[] {ir1});
+    ParallelLeafReader pr =
+        new ParallelLeafReader(false, new LeafReader[] {ir1, ir2}, new LeafReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -194,11 +204,9 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNotNull(pr.terms("f3"));
     assertNotNull(pr.terms("f4"));
     pr.close();
-    
+
     // no stored fields at all
-    pr = new ParallelLeafReader(false,
-        new LeafReader[] {ir2},
-        new LeafReader[0]);
+    pr = new ParallelLeafReader(false, new LeafReader[] {ir2}, new LeafReader[0]);
     assertNull(pr.document(0).get("f1"));
     assertNull(pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -209,11 +217,9 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNotNull(pr.terms("f3"));
     assertNotNull(pr.terms("f4"));
     pr.close();
-    
+
     // without overlapping
-    pr = new ParallelLeafReader(true,
-        new LeafReader[] {ir2},
-        new LeafReader[] {ir1});
+    pr = new ParallelLeafReader(true, new LeafReader[] {ir2}, new LeafReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -224,14 +230,14 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertNotNull(pr.terms("f3"));
     assertNotNull(pr.terms("f4"));
     pr.close();
-    
+
     // no main readers
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelLeafReader(true,
-        new LeafReader[0],
-        new LeafReader[] {ir1});
-    });
-    
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelLeafReader(true, new LeafReader[0], new LeafReader[] {ir1});
+        });
+
     dir1.close();
     dir2.close();
   }
@@ -240,7 +246,7 @@ public class TestParallelLeafReader extends LuceneTestCase {
     ScoreDoc[] parallelHits = parallel.search(query, 1000).scoreDocs;
     ScoreDoc[] singleHits = single.search(query, 1000).scoreDocs;
     assertEquals(parallelHits.length, singleHits.length);
-    for(int i = 0; i < parallelHits.length; i++) {
+    for (int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
       Document docParallel = parallel.doc(parallelHits[i].doc);
       Document docSingle = single.doc(singleHits[i].doc);
@@ -277,9 +283,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
   private IndexSearcher parallel(Random random) throws IOException {
     dir1 = getDir1(random);
     dir2 = getDir2(random);
-    ParallelLeafReader pr = new ParallelLeafReader(
-        getOnlyLeafReader(DirectoryReader.open(dir1)),
-        getOnlyLeafReader(DirectoryReader.open(dir2)));
+    ParallelLeafReader pr =
+        new ParallelLeafReader(
+            getOnlyLeafReader(DirectoryReader.open(dir1)),
+            getOnlyLeafReader(DirectoryReader.open(dir2)));
     TestUtil.checkReader(pr);
     return newSearcher(pr);
   }
@@ -340,10 +347,16 @@ public class TestParallelLeafReader extends LuceneTestCase {
     w2.close();
     IndexReader r2 = DirectoryReader.open(dir2);
 
-    String message = expectThrows(IllegalArgumentException.class, () -> {
-        new ParallelLeafReader(getOnlyLeafReader(r1), getOnlyLeafReader(r2));
-      }).getMessage();
-    assertEquals("cannot combine LeafReaders that have different index sorts: saw both sort=<int: \"foo\"> and <int: \"bar\">", message);
+    String message =
+        expectThrows(
+                IllegalArgumentException.class,
+                () -> {
+                  new ParallelLeafReader(getOnlyLeafReader(r1), getOnlyLeafReader(r2));
+                })
+            .getMessage();
+    assertEquals(
+        "cannot combine LeafReaders that have different index sorts: saw both sort=<int: \"foo\"> and <int: \"bar\">",
+        message);
     IOUtils.close(r1, dir1, r2, dir2);
   }
 
@@ -395,6 +408,5 @@ public class TestParallelLeafReader extends LuceneTestCase {
     assertEquals(1, lr.getFieldInfos().fieldInfo("age").getDocValuesGen());
 
     IOUtils.close(lr, r1, dir1);
-
   }
 }

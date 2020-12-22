@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
@@ -35,25 +34,24 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestFieldInvertState extends LuceneTestCase {
-  /**
-   * Similarity holds onto the FieldInvertState for subsequent verification.
-   */
+  /** Similarity holds onto the FieldInvertState for subsequent verification. */
   private static class NeverForgetsSimilarity extends Similarity {
     public FieldInvertState lastState;
-    private final static NeverForgetsSimilarity INSTANCE = new NeverForgetsSimilarity();
+    private static final NeverForgetsSimilarity INSTANCE = new NeverForgetsSimilarity();
 
     private NeverForgetsSimilarity() {
       // no
     }
-    
+
     @Override
     public long computeNorm(FieldInvertState state) {
       this.lastState = state;
       return 1;
     }
-    
+
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   }
@@ -64,11 +62,11 @@ public class TestFieldInvertState extends LuceneTestCase {
     iwc.setSimilarity(NeverForgetsSimilarity.INSTANCE);
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    Field field = new Field("field",
-                            new CannedTokenStream(new Token("a", 0, 1),
-                                                  new Token("b", 2, 3),
-                                                  new Token("c", 4, 5)),
-                            TextField.TYPE_NOT_STORED);
+    Field field =
+        new Field(
+            "field",
+            new CannedTokenStream(new Token("a", 0, 1), new Token("b", 2, 3), new Token("c", 4, 5)),
+            TextField.TYPE_NOT_STORED);
     doc.add(field);
     w.addDocument(doc);
     FieldInvertState fis = NeverForgetsSimilarity.INSTANCE.lastState;
@@ -89,11 +87,11 @@ public class TestFieldInvertState extends LuceneTestCase {
 
     int numTokens = atLeast(10000);
     Token[] tokens = new Token[numTokens];
-    Map<Character,Integer> counts = new HashMap<>();
+    Map<Character, Integer> counts = new HashMap<>();
     int numStacked = 0;
     int maxTermFreq = 0;
     int pos = -1;
-    for (int i=0;i<numTokens;i++) {
+    for (int i = 0; i < numTokens; i++) {
       char tokenChar = (char) ('a' + random().nextInt(numUniqueTokens));
       Integer oldCount = counts.get(tokenChar);
       int newCount;
@@ -104,9 +102,9 @@ public class TestFieldInvertState extends LuceneTestCase {
       }
       counts.put(tokenChar, newCount);
       maxTermFreq = Math.max(maxTermFreq, newCount);
-      
-      Token token = new Token(Character.toString(tokenChar), 2*i, 2*i+1);
-      
+
+      Token token = new Token(Character.toString(tokenChar), 2 * i, 2 * i + 1);
+
       if (i > 0 && random().nextInt(7) == 3) {
         token.setPositionIncrement(0);
         numStacked++;
@@ -116,9 +114,7 @@ public class TestFieldInvertState extends LuceneTestCase {
       tokens[i] = token;
     }
 
-    Field field = new Field("field",
-                            new CannedTokenStream(tokens),
-                            TextField.TYPE_NOT_STORED);
+    Field field = new Field("field", new CannedTokenStream(tokens), TextField.TYPE_NOT_STORED);
     doc.add(field);
     w.addDocument(doc);
     FieldInvertState fis = NeverForgetsSimilarity.INSTANCE.lastState;
@@ -127,7 +123,7 @@ public class TestFieldInvertState extends LuceneTestCase {
     assertEquals(numStacked, fis.getNumOverlap());
     assertEquals(numTokens, fis.getLength());
     assertEquals(pos, fis.getPosition());
-    
+
     IOUtils.close(w, dir);
   }
 }

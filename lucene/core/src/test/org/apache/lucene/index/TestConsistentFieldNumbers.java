@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,8 +34,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
   public void testSameFieldNumbersAcrossSegments() throws Exception {
     for (int i = 0; i < 2; i++) {
       Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                   .setMergePolicy(NoMergePolicy.INSTANCE));
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMergePolicy(NoMergePolicy.INSTANCE));
 
       Document d1 = new Document();
       d1.add(new TextField("f1", "first field", Field.Store.YES));
@@ -46,8 +47,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
       if (i == 1) {
         writer.close();
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                         .setMergePolicy(NoMergePolicy.INSTANCE));
+        writer =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMergePolicy(NoMergePolicy.INSTANCE));
       } else {
         writer.commit();
       }
@@ -90,7 +94,6 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       assertEquals("f3", fis3.fieldInfo(2).name);
       assertEquals("f4", fis3.fieldInfo(3).name);
 
-
       dir.close();
     }
   }
@@ -99,8 +102,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
   public void testAddIndexes() throws Exception {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
-    IndexWriter writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                 .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter writer =
+        new IndexWriter(
+            dir1,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
 
     Document d1 = new Document();
     d1.add(new TextField("f1", "first field", Field.Store.YES));
@@ -108,8 +114,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     writer.addDocument(d1);
 
     writer.close();
-    writer = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random()))
-                                     .setMergePolicy(NoMergePolicy.INSTANCE));
+    writer =
+        new IndexWriter(
+            dir2,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
 
     Document d2 = new Document();
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
@@ -122,8 +131,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     writer.close();
 
-    writer = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random()))
-                                     .setMergePolicy(NoMergePolicy.INSTANCE));
+    writer =
+        new IndexWriter(
+            dir1,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
     writer.addIndexes(dir2);
     writer.close();
 
@@ -144,14 +156,17 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-  
+
   public void testFieldNumberGaps() throws IOException {
     int numIters = atLeast(13);
     for (int i = 0; i < numIters; i++) {
       Directory dir = newDirectory();
       {
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
+        IndexWriter writer =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMergePolicy(NoMergePolicy.INSTANCE));
         Document d = new Document();
         d.add(new TextField("f1", "d1 first field", Field.Store.YES));
         d.add(new TextField("f2", "d1 second field", Field.Store.YES));
@@ -163,14 +178,16 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         assertEquals("f1", fis1.fieldInfo(0).name);
         assertEquals("f2", fis1.fieldInfo(1).name);
       }
-      
 
       {
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
+        IndexWriter writer =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMergePolicy(NoMergePolicy.INSTANCE));
         Document d = new Document();
         d.add(new TextField("f1", "d2 first field", Field.Store.YES));
-        d.add(new StoredField("f3", new byte[] { 1, 2, 3 }));
+        d.add(new StoredField("f3", new byte[] {1, 2, 3}));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -185,12 +202,15 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       }
 
       {
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
+        IndexWriter writer =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMergePolicy(NoMergePolicy.INSTANCE));
         Document d = new Document();
         d.add(new TextField("f1", "d3 first field", Field.Store.YES));
         d.add(new TextField("f2", "d3 second field", Field.Store.YES));
-        d.add(new StoredField("f3", new byte[] { 1, 2, 3, 4, 5 }));
+        d.add(new StoredField("f3", new byte[] {1, 2, 3, 4, 5}));
         writer.addDocument(d);
         writer.close();
         SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -209,8 +229,11 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
       }
 
       {
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                    .setMergePolicy(NoMergePolicy.INSTANCE));
+        IndexWriter writer =
+            new IndexWriter(
+                dir,
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMergePolicy(NoMergePolicy.INSTANCE));
         writer.deleteDocuments(new Term("f1", "d1"));
         // nuke the first segment entirely so that the segment with gaps is
         // loaded first!
@@ -218,9 +241,12 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
         writer.close();
       }
 
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                  .setMergePolicy(new LogByteSizeMergePolicy())
-                                                  .setInfoStream(new FailOnNonBulkMergesInfoStream()));
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMergePolicy(new LogByteSizeMergePolicy())
+                  .setInfoStream(new FailOnNonBulkMergesInfoStream()));
       writer.forceMerge(1);
       writer.close();
 
@@ -241,7 +267,7 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
 
     int[][] docs = new int[NUM_DOCS][4];
     for (int i = 0; i < docs.length; i++) {
-      for (int j = 0; j < docs[i].length;j++) {
+      for (int j = 0; j < docs[i].length; j++) {
         docs[i][j] = random().nextInt(MAX_FIELDS);
       }
     }
@@ -279,18 +305,18 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     int mode = number % 16;
     String fieldName = "" + number;
     FieldType customType = new FieldType(TextField.TYPE_STORED);
-    
+
     FieldType customType2 = new FieldType(TextField.TYPE_STORED);
     customType2.setTokenized(false);
-    
+
     FieldType customType3 = new FieldType(TextField.TYPE_NOT_STORED);
     customType3.setTokenized(false);
-    
+
     FieldType customType4 = new FieldType(TextField.TYPE_NOT_STORED);
     customType4.setTokenized(false);
     customType4.setStoreTermVectors(true);
     customType4.setStoreTermVectorOffsets(true);
-    
+
     FieldType customType5 = new FieldType(TextField.TYPE_NOT_STORED);
     customType5.setStoreTermVectors(true);
     customType5.setStoreTermVectorOffsets(true);
@@ -345,25 +371,42 @@ public class TestConsistentFieldNumbers extends LuceneTestCase {
     customType15.setStoreTermVectors(true);
     customType15.setStoreTermVectorOffsets(true);
     customType15.setStoreTermVectorPositions(true);
-    
+
     switch (mode) {
-      case 0: return new Field(fieldName, "some text", customType);
-      case 1: return new TextField(fieldName, "some text", Field.Store.NO);
-      case 2: return new Field(fieldName, "some text", customType2);
-      case 3: return new Field(fieldName, "some text", customType3);
-      case 4: return new Field(fieldName, "some text", customType4);
-      case 5: return new Field(fieldName, "some text", customType5);
-      case 6: return new Field(fieldName, "some text", customType6);
-      case 7: return new Field(fieldName, "some text", customType7);
-      case 8: return new Field(fieldName, "some text", customType8);
-      case 9: return new Field(fieldName, "some text", customType9);
-      case 10: return new Field(fieldName, "some text", customType10);
-      case 11: return new Field(fieldName, "some text", customType11);
-      case 12: return new Field(fieldName, "some text", customType12);
-      case 13: return new Field(fieldName, "some text", customType13);
-      case 14: return new Field(fieldName, "some text", customType14);
-      case 15: return new Field(fieldName, "some text", customType15);
-      default: return null;
+      case 0:
+        return new Field(fieldName, "some text", customType);
+      case 1:
+        return new TextField(fieldName, "some text", Field.Store.NO);
+      case 2:
+        return new Field(fieldName, "some text", customType2);
+      case 3:
+        return new Field(fieldName, "some text", customType3);
+      case 4:
+        return new Field(fieldName, "some text", customType4);
+      case 5:
+        return new Field(fieldName, "some text", customType5);
+      case 6:
+        return new Field(fieldName, "some text", customType6);
+      case 7:
+        return new Field(fieldName, "some text", customType7);
+      case 8:
+        return new Field(fieldName, "some text", customType8);
+      case 9:
+        return new Field(fieldName, "some text", customType9);
+      case 10:
+        return new Field(fieldName, "some text", customType10);
+      case 11:
+        return new Field(fieldName, "some text", customType11);
+      case 12:
+        return new Field(fieldName, "some text", customType12);
+      case 13:
+        return new Field(fieldName, "some text", customType13);
+      case 14:
+        return new Field(fieldName, "some text", customType14);
+      case 15:
+        return new Field(fieldName, "some text", customType15);
+      default:
+        return null;
     }
   }
 }

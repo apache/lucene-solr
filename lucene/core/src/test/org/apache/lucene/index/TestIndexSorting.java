@@ -17,6 +17,9 @@
 
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -85,9 +87,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-import static org.hamcrest.core.StringContains.containsString;
-
 public class TestIndexSorting extends LuceneTestCase {
   static class AssertingNeedsIndexSortCodec extends FilterCodec {
     boolean needsIndexSort;
@@ -111,7 +110,7 @@ public class TestIndexSorting extends LuceneTestCase {
               if (mergeState.docMaps.length > 1) {
                 assertEquals(needsIndexSort, mergeState.needsIndexSort);
               }
-              ++ numCalls;
+              ++numCalls;
               writer.merge(mergeState);
             }
 
@@ -140,13 +139,16 @@ public class TestIndexSorting extends LuceneTestCase {
     }
   }
 
-  private static void assertNeedsIndexSortMerge(SortField sortField, Consumer<Document> defaultValueConsumer, Consumer<Document> randomValueConsumer) throws Exception {
+  private static void assertNeedsIndexSortMerge(
+      SortField sortField,
+      Consumer<Document> defaultValueConsumer,
+      Consumer<Document> randomValueConsumer)
+      throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     AssertingNeedsIndexSortCodec codec = new AssertingNeedsIndexSortCodec();
     iwc.setCodec(codec);
-    Sort indexSort = new Sort(sortField,
-        new SortField("id", SortField.Type.INT));
+    Sort indexSort = new Sort(sortField, new SortField("id", SortField.Type.INT));
     iwc.setIndexSort(indexSort);
     LogMergePolicy policy = newLogMergePolicy();
     // make sure that merge factor is always > 2
@@ -173,7 +175,7 @@ public class TestIndexSorting extends LuceneTestCase {
         w.commit();
       }
     }
-    Set<Integer> deletedDocs = new HashSet<> ();
+    Set<Integer> deletedDocs = new HashSet<>();
     int num = random().nextInt(20);
     for (int i = 0; i < num; i++) {
       int nextDoc = random().nextInt(100);
@@ -184,7 +186,6 @@ public class TestIndexSorting extends LuceneTestCase {
     w.waitForMerges();
     w.forceMerge(1);
     assertTrue(codec.numCalls > 0);
-
 
     // merge sort is needed
     codec.numCalls = 0;
@@ -229,19 +230,22 @@ public class TestIndexSorting extends LuceneTestCase {
   }
 
   public void testNumericAlreadySorted() throws Exception {
-    assertNeedsIndexSortMerge(new SortField("foo", SortField.Type.INT),
+    assertNeedsIndexSortMerge(
+        new SortField("foo", SortField.Type.INT),
         (doc) -> doc.add(new NumericDocValuesField("foo", 0)),
         (doc) -> doc.add(new NumericDocValuesField("foo", random().nextInt())));
   }
 
   public void testStringAlreadySorted() throws Exception {
-    assertNeedsIndexSortMerge(new SortField("foo", SortField.Type.STRING),
+    assertNeedsIndexSortMerge(
+        new SortField("foo", SortField.Type.STRING),
         (doc) -> doc.add(new SortedDocValuesField("foo", new BytesRef("default"))),
         (doc) -> doc.add(new SortedDocValuesField("foo", TestUtil.randomBinaryTerm(random()))));
   }
 
   public void testMultiValuedNumericAlreadySorted() throws Exception {
-    assertNeedsIndexSortMerge(new SortedNumericSortField("foo", SortField.Type.INT),
+    assertNeedsIndexSortMerge(
+        new SortedNumericSortField("foo", SortField.Type.INT),
         (doc) -> {
           doc.add(new SortedNumericDocValuesField("foo", Integer.MIN_VALUE));
           int num = random().nextInt(5);
@@ -258,7 +262,8 @@ public class TestIndexSorting extends LuceneTestCase {
   }
 
   public void testMultiValuedStringAlreadySorted() throws Exception {
-    assertNeedsIndexSortMerge(new SortedSetSortField("foo", false),
+    assertNeedsIndexSortMerge(
+        new SortedSetSortField("foo", false),
         (doc) -> {
           doc.add(new SortedSetDocValuesField("foo", new BytesRef("")));
           int num = random().nextInt(5);
@@ -269,7 +274,7 @@ public class TestIndexSorting extends LuceneTestCase {
         (doc) -> {
           int num = random().nextInt(5);
           for (int j = 0; j < num; j++) {
-            doc.add(new SortedSetDocValuesField("foo",  TestUtil.randomBinaryTerm(random())));
+            doc.add(new SortedSetDocValuesField("foo", TestUtil.randomBinaryTerm(random())));
           }
         });
   }
@@ -283,7 +288,8 @@ public class TestIndexSorting extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new SortedDocValuesField("foo", new BytesRef("zzz")));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -321,7 +327,8 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new NumericDocValuesField("id", 3));
     doc.add(new SortedSetDocValuesField("foo", new BytesRef("zzz")));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -366,7 +373,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new SortedDocValuesField("foo", new BytesRef("zzz")));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -415,7 +423,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedSetDocValuesField("foo", new BytesRef("zzza")));
       doc.add(new SortedSetDocValuesField("foo", new BytesRef("zzzd")));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -468,7 +477,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new SortedDocValuesField("foo", new BytesRef("zzz")));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -516,7 +526,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedSetDocValuesField("foo", new BytesRef("zzz")));
       doc.add(new SortedSetDocValuesField("foo", new BytesRef("zzzd")));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -566,7 +577,8 @@ public class TestIndexSorting extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("foo", 18));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -605,7 +617,8 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField("foo", 18));
     doc.add(new SortedNumericDocValuesField("foo", 35));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -648,7 +661,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("foo", 18));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -696,7 +710,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", 18));
       doc.add(new SortedNumericDocValuesField("foo", 27));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -749,7 +764,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("foo", 18));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -798,7 +814,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", 18));
       doc.add(new SortedNumericDocValuesField("foo", 65));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -849,7 +866,8 @@ public class TestIndexSorting extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("foo", 18));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -888,7 +906,8 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField("foo", 18));
     doc.add(new SortedNumericDocValuesField("foo", 34));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -933,7 +952,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("foo", 18));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -980,7 +1000,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", 18));
       doc.add(new SortedNumericDocValuesField("foo", 187667));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1033,7 +1054,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("foo", 18));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1082,7 +1104,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", 18));
       doc.add(new SortedNumericDocValuesField("foo", 6372));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1132,7 +1155,8 @@ public class TestIndexSorting extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new DoubleDocValuesField("foo", 18.0));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -1171,7 +1195,8 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(7.54)));
     doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(27.0)));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -1215,7 +1240,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new DoubleDocValuesField("foo", 18.0));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1262,7 +1288,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(18.0)));
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(18.76)));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1315,7 +1342,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new DoubleDocValuesField("foo", 18.0));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1363,7 +1391,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(18.0)));
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.doubleToSortableLong(8262.0)));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1413,7 +1442,8 @@ public class TestIndexSorting extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new FloatDocValuesField("foo", 18.0f));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -1452,7 +1482,8 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(18.0f)));
     doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(29.0f)));
     w.addDocument(doc);
-    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a
+    // sorted segment by merging:
     w.commit();
 
     doc = new Document();
@@ -1495,7 +1526,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new FloatDocValuesField("foo", 18.0f));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1542,7 +1574,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(18.0f)));
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(726.0f)));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1595,7 +1628,8 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new FloatDocValuesField("foo", 18.0f));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1643,7 +1677,8 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(726.0f)));
       doc.add(new SortedNumericDocValuesField("foo", NumericUtils.floatToSortableInt(18.0f)));
       w.addDocument(doc);
-      // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+      // so we get more than one segment, so that forceMerge actually does merge, since we only get
+      // a sorted segment by merging:
       w.commit();
 
       // missing
@@ -1816,7 +1851,13 @@ public class TestIndexSorting extends LuceneTestCase {
     private final Map<Integer, Long> values;
     private final CountDownLatch latch;
 
-    UpdateRunnable(int numDocs, Random random, CountDownLatch latch, AtomicInteger updateCount, IndexWriter w, Map<Integer, Long> values) {
+    UpdateRunnable(
+        int numDocs,
+        Random random,
+        CountDownLatch latch,
+        AtomicInteger updateCount,
+        IndexWriter w,
+        Map<Integer, Long> values) {
       this.numDocs = numDocs;
       this.random = random;
       this.latch = latch;
@@ -1856,7 +1897,6 @@ public class TestIndexSorting extends LuceneTestCase {
         throw new RuntimeException(e);
       }
     }
-
   }
 
   // There is tricky logic to resolve deletes that happened while merging
@@ -1888,7 +1928,8 @@ public class TestIndexSorting extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(w);
     IndexSearcher searcher = newSearcher(reader);
     for (int i = 0; i < numDocs; ++i) {
-      final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
+      final TopDocs topDocs =
+          searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
       if (values.containsKey(i) == false) {
         assertEquals(0, topDocs.totalHits.value);
       } else {
@@ -1916,12 +1957,20 @@ public class TestIndexSorting extends LuceneTestCase {
     doc.add(new NumericDocValuesField("foo", random().nextInt()));
     w.addDocument(doc);
     w.commit();
-    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class,
-        () -> w.updateDocValues(new Term("id", "0"), new NumericDocValuesField("foo", -1)));
-    assertEquals(exc.getMessage(), "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
-    exc = expectThrows(IllegalArgumentException.class,
-        () -> w.updateNumericDocValue(new Term("id", "0"), "foo", -1));
-    assertEquals(exc.getMessage(), "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
+    IllegalArgumentException exc =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> w.updateDocValues(new Term("id", "0"), new NumericDocValuesField("foo", -1)));
+    assertEquals(
+        exc.getMessage(),
+        "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
+    exc =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> w.updateNumericDocValue(new Term("id", "0"), "foo", -1));
+    assertEquals(
+        exc.getMessage(),
+        "cannot update docvalues field involved in the index sort, field=foo, sort=<long: \"foo\">");
     w.close();
     dir.close();
   }
@@ -1935,7 +1984,13 @@ public class TestIndexSorting extends LuceneTestCase {
     private final Map<Integer, Long> values;
     private final CountDownLatch latch;
 
-    DVUpdateRunnable(int numDocs, Random random, CountDownLatch latch, AtomicInteger updateCount, IndexWriter w, Map<Integer, Long> values) {
+    DVUpdateRunnable(
+        int numDocs,
+        Random random,
+        CountDownLatch latch,
+        AtomicInteger updateCount,
+        IndexWriter w,
+        Map<Integer, Long> values) {
       this.numDocs = numDocs;
       this.random = random;
       this.latch = latch;
@@ -1953,7 +2008,8 @@ public class TestIndexSorting extends LuceneTestCase {
           final long value = random.nextInt(20);
 
           synchronized (values) {
-            w.updateDocValues(new Term("id", Integer.toString(id)), new NumericDocValuesField("bar", value));
+            w.updateDocValues(
+                new Term("id", Integer.toString(id)), new NumericDocValuesField("bar", value));
             values.put(id, value);
           }
 
@@ -1972,7 +2028,6 @@ public class TestIndexSorting extends LuceneTestCase {
         throw new RuntimeException(e);
       }
     }
-
   }
 
   // There is tricky logic to resolve dv updates that happened while merging
@@ -2011,7 +2066,8 @@ public class TestIndexSorting extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(w);
     IndexSearcher searcher = newSearcher(reader);
     for (int i = 0; i < numDocs; ++i) {
-      final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
+      final TopDocs topDocs =
+          searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
       assertEquals(1, topDocs.totalHits.value);
       NumericDocValues dvs = MultiDocValues.getNumericValues(reader, "bar");
       int hitDoc = topDocs.scoreDocs[0].doc;
@@ -2030,7 +2086,8 @@ public class TestIndexSorting extends LuceneTestCase {
     iwc1.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc1);
     w.addDocument(new Document());
-    List<Sort> indexSorts = Arrays.asList(null, new Sort(new SortField("bar", SortField.Type.LONG)));
+    List<Sort> indexSorts =
+        Arrays.asList(null, new Sort(new SortField("bar", SortField.Type.LONG)));
     for (Sort sort : indexSorts) {
       Directory dir2 = newDirectory();
       IndexWriterConfig iwc2 = newIndexWriterConfig();
@@ -2041,7 +2098,8 @@ public class TestIndexSorting extends LuceneTestCase {
       w2.addDocument(new Document());
       final IndexReader reader = w2.getReader();
       w2.close();
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> w.addIndexes(dir2));
+      IllegalArgumentException expected =
+          expectThrows(IllegalArgumentException.class, () -> w.addIndexes(dir2));
       assertThat(expected.getMessage(), containsString("cannot change index sort"));
       CodecReader[] codecReaders = new CodecReader[reader.leaves().size()];
       for (int i = 0; i < codecReaders.length; ++i) {
@@ -2060,7 +2118,9 @@ public class TestIndexSorting extends LuceneTestCase {
   public void testAddIndexes(boolean withDeletes, boolean useReaders) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc1 = newIndexWriterConfig();
-    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG), new SortField("bar", SortField.Type.LONG));
+    Sort indexSort =
+        new Sort(
+            new SortField("foo", SortField.Type.LONG), new SortField("bar", SortField.Type.LONG));
     iwc1.setIndexSort(indexSort);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc1);
     final int numDocs = atLeast(100);
@@ -2143,9 +2203,12 @@ public class TestIndexSorting extends LuceneTestCase {
 
   public void testBadSort() throws Exception {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      iwc.setIndexSort(Sort.RELEVANCE);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              iwc.setIndexSort(Sort.RELEVANCE);
+            });
     assertEquals("Cannot sort index with sort field <score>", expected.getMessage());
   }
 
@@ -2163,9 +2226,12 @@ public class TestIndexSorting extends LuceneTestCase {
 
     final IndexWriterConfig iwc2 = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc2.setIndexSort(new Sort(new SortField("bar", SortField.Type.LONG)));
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-        new IndexWriter(dir, iwc2);
-    });
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new IndexWriter(dir, iwc2);
+            });
     String message = e.getMessage();
     assertTrue(message.contains("cannot change previous indexSort=<long: \"foo\">"));
     assertTrue(message.contains("to new indexSort=<long: \"bar\">"));
@@ -2190,10 +2256,10 @@ public class TestIndexSorting extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return in.scorer(boost, collectionStats, termStats);
     }
-
   }
 
   static final class PositionsTokenStream extends TokenStream {
@@ -2242,16 +2308,17 @@ public class TestIndexSorting extends LuceneTestCase {
     TERM_VECTORS_TYPE.setStoreTermVectors(true);
     TERM_VECTORS_TYPE.freeze();
 
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer();
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer();
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
 
     List<Document> docs = new ArrayList<>();
-    for (int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       int id = i * 10;
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(id), Store.YES));
@@ -2260,13 +2327,19 @@ public class TestIndexSorting extends LuceneTestCase {
       positions.setId(id);
       doc.add(new Field("positions", positions, POSITIONS_TYPE));
       doc.add(new NumericDocValuesField("numeric", id));
-      String value = IntStream.range(0, id).mapToObj(k -> Integer.toString(id)).collect(Collectors.joining(" "));
+      String value =
+          IntStream.range(0, id)
+              .mapToObj(k -> Integer.toString(id))
+              .collect(Collectors.joining(" "));
       TextField norms = new TextField("norms", value, Store.NO);
       doc.add(norms);
       doc.add(new BinaryDocValuesField("binary", new BytesRef(Integer.toString(id))));
       doc.add(new SortedDocValuesField("sorted", new BytesRef(Integer.toString(id))));
-      doc.add(new SortedSetDocValuesField("multi_valued_string", new BytesRef(Integer.toString(id))));
-      doc.add(new SortedSetDocValuesField("multi_valued_string", new BytesRef(Integer.toString(id + 1))));
+      doc.add(
+          new SortedSetDocValuesField("multi_valued_string", new BytesRef(Integer.toString(id))));
+      doc.add(
+          new SortedSetDocValuesField(
+              "multi_valued_string", new BytesRef(Integer.toString(id + 1))));
       doc.add(new SortedNumericDocValuesField("multi_valued_numeric", id));
       doc.add(new SortedNumericDocValuesField("multi_valued_numeric", id + 1));
       doc.add(new Field("term_vectors", Integer.toString(id), TERM_VECTORS_TYPE));
@@ -2291,8 +2364,9 @@ public class TestIndexSorting extends LuceneTestCase {
       System.out.println("TEST: now index pre-sorted");
     }
     RandomIndexWriter w1 = new RandomIndexWriter(random1, dir1, iwc1);
-    for(Document doc : docs) {
-      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue()).setId(Integer.parseInt(doc.get("id")));
+    for (Document doc : docs) {
+      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue())
+          .setId(Integer.parseInt(doc.get("id")));
       w1.addDocument(doc);
     }
 
@@ -2312,9 +2386,10 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     RandomIndexWriter w2 = new RandomIndexWriter(random2, dir2, iwc2);
     int count = 0;
-    int commitAtCount = TestUtil.nextInt(random(), 1, numDocs-1);
-    for(Document doc : docs) {
-      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue()).setId(Integer.parseInt(doc.get("id")));
+    int commitAtCount = TestUtil.nextInt(random(), 1, numDocs - 1);
+    for (Document doc : docs) {
+      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue())
+          .setId(Integer.parseInt(doc.get("id")));
       if (count++ == commitAtCount) {
         // Ensure forceMerge really does merge
         w2.commit();
@@ -2349,7 +2424,6 @@ public class TestIndexSorting extends LuceneTestCase {
     public final byte[] bytesValue;
     public final byte[][] bytesValues;
 
-
     public RandomDoc(int id) {
       this.id = id;
       intValue = random().nextInt();
@@ -2379,7 +2453,7 @@ public class TestIndexSorting extends LuceneTestCase {
   private static SortField randomIndexSortField() {
     boolean reversed = random().nextBoolean();
     SortField sortField;
-    switch(random().nextInt(10)) {
+    switch (random().nextInt(10)) {
       case 0:
         sortField = new SortField("int", SortField.Type.INT, reversed);
         if (random().nextBoolean()) {
@@ -2411,7 +2485,8 @@ public class TestIndexSorting extends LuceneTestCase {
         }
         break;
       case 5:
-        sortField = new SortedNumericSortField("multi_valued_float", SortField.Type.FLOAT, reversed);
+        sortField =
+            new SortedNumericSortField("multi_valued_float", SortField.Type.FLOAT, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextFloat());
         }
@@ -2423,7 +2498,8 @@ public class TestIndexSorting extends LuceneTestCase {
         }
         break;
       case 7:
-        sortField = new SortedNumericSortField("multi_valued_double", SortField.Type.DOUBLE, reversed);
+        sortField =
+            new SortedNumericSortField("multi_valued_double", SortField.Type.DOUBLE, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextDouble());
         }
@@ -2447,18 +2523,17 @@ public class TestIndexSorting extends LuceneTestCase {
     return sortField;
   }
 
-
   private static Sort randomSort() {
     // at least 2
     int numFields = TestUtil.nextInt(random(), 2, 4);
     SortField[] sortFields = new SortField[numFields];
-    for(int i=0;i<numFields-1;i++) {
+    for (int i = 0; i < numFields - 1; i++) {
       SortField sortField = randomIndexSortField();
       sortFields[i] = sortField;
     }
 
     // tie-break by id:
-    sortFields[numFields-1] = new SortField("id", SortField.Type.INT);
+    sortFields[numFields - 1] = new SortField("id", SortField.Type.INT);
 
     return new Sort(sortFields);
   }
@@ -2488,7 +2563,7 @@ public class TestIndexSorting extends LuceneTestCase {
 
     double deleteChance = random().nextDouble();
 
-    for(int id=0;id<numDocs;id++) {
+    for (int id = 0; id < numDocs; id++) {
       RandomDoc docValues = new RandomDoc(id);
       docs.add(docValues);
       if (VERBOSE) {
@@ -2519,11 +2594,15 @@ public class TestIndexSorting extends LuceneTestCase {
       }
 
       for (float value : docValues.floatValues) {
-        doc.add(new SortedNumericDocValuesField("multi_valued_float", NumericUtils.floatToSortableInt(value)));
+        doc.add(
+            new SortedNumericDocValuesField(
+                "multi_valued_float", NumericUtils.floatToSortableInt(value)));
       }
 
       for (double value : docValues.doubleValues) {
-        doc.add(new SortedNumericDocValuesField("multi_valued_double", NumericUtils.doubleToSortableLong(value)));
+        doc.add(
+            new SortedNumericDocValuesField(
+                "multi_valued_double", NumericUtils.doubleToSortableLong(value)));
       }
 
       for (byte[] value : docValues.bytesValues) {
@@ -2536,7 +2615,7 @@ public class TestIndexSorting extends LuceneTestCase {
         toDelete.add(id);
       }
     }
-    for(int id : toDelete) {
+    for (int id : toDelete) {
       w1.deleteDocuments(new Term("id", Integer.toString(id)));
       w2.deleteDocuments(new Term("id", Integer.toString(id)));
     }
@@ -2562,7 +2641,7 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     */
 
-    for(int iter=0;iter<100;iter++) {
+    for (int iter = 0; iter < 100; iter++) {
       int numHits = TestUtil.nextInt(random(), 1, numDocs);
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
@@ -2579,17 +2658,17 @@ public class TestIndexSorting extends LuceneTestCase {
 
       if (VERBOSE) {
         System.out.println("  topDocs query-time sort: totalHits=" + hits1.totalHits.value);
-        for(ScoreDoc scoreDoc : hits1.scoreDocs) {
+        for (ScoreDoc scoreDoc : hits1.scoreDocs) {
           System.out.println("    " + scoreDoc.doc);
         }
         System.out.println("  topDocs index-time sort: totalHits=" + hits2.totalHits.value);
-        for(ScoreDoc scoreDoc : hits2.scoreDocs) {
+        for (ScoreDoc scoreDoc : hits2.scoreDocs) {
           System.out.println("    " + scoreDoc.doc);
         }
       }
 
       assertEquals(hits2.scoreDocs.length, hits1.scoreDocs.length);
-      for(int i=0;i<hits2.scoreDocs.length;i++) {
+      for (int i = 0; i < hits2.scoreDocs.length; i++) {
         ScoreDoc hit1 = hits1.scoreDocs[i];
         ScoreDoc hit2 = hits2.scoreDocs[i];
         assertEquals(r1.document(hit1.doc).get("id"), r2.document(hit2.doc).get("id"));
@@ -2606,7 +2685,7 @@ public class TestIndexSorting extends LuceneTestCase {
     iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.STRING)));
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int id=0;id<1000;id++) {
+    for (int id = 0; id < 1000; id++) {
       Document doc = new Document();
       doc.add(new StoredField("id", id));
       String value;
@@ -2623,7 +2702,7 @@ public class TestIndexSorting extends LuceneTestCase {
     }
     w.forceMerge(1);
     DirectoryReader r = DirectoryReader.open(w);
-    for(int docID=0;docID<1000;docID++) {
+    for (int docID = 0; docID < 1000; docID++) {
       int expectedID;
       if (docID < 500) {
         expectedID = 500 + docID;
@@ -2664,17 +2743,17 @@ public class TestIndexSorting extends LuceneTestCase {
     NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse_int");
     BinaryDocValues sparseBinaryValues = leafReader.getBinaryDocValues("sparse_binary");
     NumericDocValues normsValues = leafReader.getNormValues("sparse_text");
-    for(int docID = 0; docID < 128; docID++) {
+    for (int docID = 0; docID < 128; docID++) {
       assertTrue(denseValues.advanceExact(docID));
-      assertEquals(127-docID, (int) denseValues.longValue());
+      assertEquals(127 - docID, (int) denseValues.longValue());
       if (docID >= 64) {
         assertTrue(denseValues.advanceExact(docID));
         assertTrue(sparseValues.advanceExact(docID));
         assertTrue(sparseBinaryValues.advanceExact(docID));
         assertTrue(normsValues.advanceExact(docID));
         assertEquals(1, normsValues.longValue());
-        assertEquals(127-docID, (int) sparseValues.longValue());
-        assertEquals(new BytesRef(Integer.toString(127-docID)), sparseBinaryValues.binaryValue());
+        assertEquals(127 - docID, (int) sparseValues.longValue());
+        assertEquals(new BytesRef(Integer.toString(127 - docID)), sparseBinaryValues.binaryValue());
       } else {
         assertFalse(sparseBinaryValues.advanceExact(docID));
         assertFalse(sparseValues.advanceExact(docID));
@@ -2705,10 +2784,10 @@ public class TestIndexSorting extends LuceneTestCase {
     assertEquals(1, r.leaves().size());
     LeafReader leafReader = r.leaves().get(0).reader();
     NumericDocValues sparseValues = leafReader.getNumericDocValues("sparse");
-    for(int docID = 0; docID < 128; docID++) {
+    for (int docID = 0; docID < 128; docID++) {
       if (docID >= 64) {
         assertTrue(sparseValues.advanceExact(docID));
-        assertEquals(docID-64, (int) sparseValues.longValue());
+        assertEquals(docID - 64, (int) sparseValues.longValue());
       } else {
         assertFalse(sparseValues.advanceExact(docID));
       }
@@ -2741,7 +2820,8 @@ public class TestIndexSorting extends LuceneTestCase {
         IndexWriter w = new IndexWriter(dir, iwc);
         Document doc = new Document();
         doc.add(dvs.get(j));
-        IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
+        IllegalArgumentException exc =
+            expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
         assertThat(exc.getMessage(), containsString("expected field [field] to be "));
         doc.clear();
         doc.add(dvs.get(i));
@@ -2803,10 +2883,11 @@ public class TestIndexSorting extends LuceneTestCase {
           if (values.advanceExact(id) == false) {
             continue;
           }
-          int globalId = Integer.parseInt(leafCtx.reader().document(id).getField("id").stringValue());
+          int globalId =
+              Integer.parseInt(leafCtx.reader().document(id).getField("id").stringValue());
           assertTrue(values.advanceExact(id));
           assertEquals(expectedValues[globalId], values.longValue());
-          docCount ++;
+          docCount++;
         }
       }
       assertEquals(docCount, numDocs);

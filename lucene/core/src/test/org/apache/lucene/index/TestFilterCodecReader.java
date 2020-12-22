@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,11 +32,12 @@ public class TestFilterCodecReader extends LuceneTestCase {
 
   public void testGetDelegate() throws IOException {
     try (Directory dir = newDirectory();
-         IndexWriter w = new IndexWriter(dir,newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
       w.addDocument(new Document());
       try (DirectoryReader reader = w.getReader()) {
-        FilterCodecReader r = FilterCodecReader.wrapLiveDocs((CodecReader) reader.getSequentialSubReaders().get(0),
-            null, 1);
+        FilterCodecReader r =
+            FilterCodecReader.wrapLiveDocs(
+                (CodecReader) reader.getSequentialSubReaders().get(0), null, 1);
 
         assertSame(FilterCodecReader.unwrap(r), reader.getSequentialSubReaders().get(0));
         assertSame(r.getDelegate(), reader.getSequentialSubReaders().get(0));
@@ -45,17 +45,19 @@ public class TestFilterCodecReader extends LuceneTestCase {
     }
   }
 
-  private void implTestDeclaredMethodsOverridden(Class<?> superClass, Class<?> subClass) throws Exception {
+  private void implTestDeclaredMethodsOverridden(Class<?> superClass, Class<?> subClass)
+      throws Exception {
     for (final Method superClassMethod : superClass.getDeclaredMethods()) {
       final int modifiers = superClassMethod.getModifiers();
       if (Modifier.isPrivate(modifiers)) continue;
       if (Modifier.isFinal(modifiers)) continue;
       if (Modifier.isStatic(modifiers)) continue;
       try {
-        final Method subClassMethod = subClass.getDeclaredMethod(
-            superClassMethod.getName(),
-            superClassMethod.getParameterTypes());
-        assertEquals("getReturnType() difference",
+        final Method subClassMethod =
+            subClass.getDeclaredMethod(
+                superClassMethod.getName(), superClassMethod.getParameterTypes());
+        assertEquals(
+            "getReturnType() difference",
             superClassMethod.getReturnType(),
             subClassMethod.getReturnType());
       } catch (NoSuchMethodException e) {
@@ -63,5 +65,4 @@ public class TestFilterCodecReader extends LuceneTestCase {
       }
     }
   }
-
 }

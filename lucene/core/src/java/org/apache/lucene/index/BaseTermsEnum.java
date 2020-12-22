@@ -18,28 +18,27 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * A base TermsEnum that adds default implementations for
+ *
  * <ul>
- *   <li>{@link #attributes()}</li>
- *   <li>{@link #termState()}</li>
- *   <li>{@link #seekExact(BytesRef)}</li>
- *   <li>{@link #seekExact(BytesRef, TermState)}</li>
+ *   <li>{@link #attributes()}
+ *   <li>{@link #termState()}
+ *   <li>{@link #seekExact(BytesRef)}
+ *   <li>{@link #seekExact(BytesRef, TermState)}
  * </ul>
  *
- * In some cases, the default implementation may be slow and consume huge memory, so subclass SHOULD have its own
- * implementation if possible.
+ * In some cases, the default implementation may be slow and consume huge memory, so subclass SHOULD
+ * have its own implementation if possible.
  */
 public abstract class BaseTermsEnum extends TermsEnum {
 
   private AttributeSource atts = null;
-  
-  /** Sole constructor. (For invocation by subclass
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected BaseTermsEnum() {
     super();
   }

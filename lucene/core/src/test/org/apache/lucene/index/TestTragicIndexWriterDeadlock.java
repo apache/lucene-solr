@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -32,59 +31,62 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     if (iwc.getMergeScheduler() instanceof ConcurrentMergeScheduler) {
-      iwc.setMergeScheduler(new SuppressingConcurrentMergeScheduler() {
-          @Override
-          protected boolean isOK(Throwable th) {
-            return true;
-          }
-        });
+      iwc.setMergeScheduler(
+          new SuppressingConcurrentMergeScheduler() {
+            @Override
+            protected boolean isOK(Throwable th) {
+              return true;
+            }
+          });
     }
     final IndexWriter w = new IndexWriter(dir, iwc);
     final CountDownLatch startingGun = new CountDownLatch(1);
     final AtomicBoolean done = new AtomicBoolean();
-    Thread commitThread = new Thread() {
-        @Override
-        public void run() {
-          try {
-            startingGun.await();
-            while (done.get() == false) {
-              w.addDocument(new Document());
-              w.commit();
-            }
-          } catch (Throwable t) {
-            done.set(true);
-            //System.out.println("commit exc:");
-            //t.printStackTrace(System.out);
-          }
-        }
-      };
-    commitThread.start();
-    final DirectoryReader r0 = DirectoryReader.open(w);
-    Thread nrtThread = new Thread() {
-        @Override
-        public void run() {
-          DirectoryReader r = r0;
-          try {
+    Thread commitThread =
+        new Thread() {
+          @Override
+          public void run() {
             try {
               startingGun.await();
               while (done.get() == false) {
-                DirectoryReader oldReader = r;                  
-                DirectoryReader r2 = DirectoryReader.openIfChanged(oldReader);
-                if (r2 != null) {
-                  r = r2;
-                  oldReader.decRef();       
-                }
+                w.addDocument(new Document());
+                w.commit();
               }
-            } finally {
-              r.close();
+            } catch (Throwable t) {
+              done.set(true);
+              // System.out.println("commit exc:");
+              // t.printStackTrace(System.out);
             }
-          } catch (Throwable t) {
-            done.set(true);
-            //System.out.println("nrt exc:");
-            //t.printStackTrace(System.out);
           }
-        }
-      };
+        };
+    commitThread.start();
+    final DirectoryReader r0 = DirectoryReader.open(w);
+    Thread nrtThread =
+        new Thread() {
+          @Override
+          public void run() {
+            DirectoryReader r = r0;
+            try {
+              try {
+                startingGun.await();
+                while (done.get() == false) {
+                  DirectoryReader oldReader = r;
+                  DirectoryReader r2 = DirectoryReader.openIfChanged(oldReader);
+                  if (r2 != null) {
+                    r = r2;
+                    oldReader.decRef();
+                  }
+                }
+              } finally {
+                r.close();
+              }
+            } catch (Throwable t) {
+              done.set(true);
+              // System.out.println("nrt exc:");
+              // t.printStackTrace(System.out);
+            }
+          }
+        };
     nrtThread.start();
     dir.setRandomIOExceptionRate(.1);
     startingGun.countDown();
@@ -105,29 +107,30 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
     mp.setMergeFactor(2);
     iwc.setMergePolicy(mp);
     CountDownLatch done = new CountDownLatch(1);
-    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
-        @Override
-        protected void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
-          // let merge takes forever, until commit thread is stalled
-          try {
-            done.await();
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(ie);
+    ConcurrentMergeScheduler cms =
+        new ConcurrentMergeScheduler() {
+          @Override
+          protected void doMerge(MergeSource mergeSource, MergePolicy.OneMerge merge)
+              throws IOException {
+            // let merge takes forever, until commit thread is stalled
+            try {
+              done.await();
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
+            }
+            super.doMerge(mergeSource, merge);
           }
-          super.doMerge(mergeSource, merge);
-        }
 
-        @Override
-        protected synchronized void doStall() {
-          done.countDown();
-          super.doStall();
-        }
+          @Override
+          protected synchronized void doStall() {
+            done.countDown();
+            super.doStall();
+          }
 
-        @Override
-        protected void handleMergeException(Throwable exc) {
-        }
-      };
+          @Override
+          protected void handleMergeException(Throwable exc) {}
+        };
 
     // so we stall once the 2nd merge wants to run:
     cms.setMaxMergesAndThreads(1, 1);
@@ -136,13 +139,14 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
     // so we write a segment every 2 indexed docs:
     iwc.setMaxBufferedDocs(2);
 
-    final IndexWriter w = new IndexWriter(dir, iwc) {
-      @Override
-      protected void mergeSuccess(MergePolicy.OneMerge merge) {
-        // tragedy strikes!
-        throw new OutOfMemoryError();
-      }
-      };
+    final IndexWriter w =
+        new IndexWriter(dir, iwc) {
+          @Override
+          protected void mergeSuccess(MergePolicy.OneMerge merge) {
+            // tragedy strikes!
+            throw new OutOfMemoryError();
+          }
+        };
 
     w.addDocument(new Document());
     w.addDocument(new Document());

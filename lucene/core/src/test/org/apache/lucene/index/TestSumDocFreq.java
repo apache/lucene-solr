@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Collection;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -27,16 +25,17 @@ import org.apache.lucene.util.TestUtil;
 
 /**
  * Tests {@link Terms#getSumDocFreq()}
+ *
  * @lucene.experimental
  */
 public class TestSumDocFreq extends LuceneTestCase {
-  
+
   public void testSumDocFreq() throws Exception {
     final int numDocs = atLeast(500);
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    
+
     Document doc = new Document();
     Field id = newStringField("id", "", Field.Store.NO);
     Field field1 = newTextField("foo", "", Field.Store.NO);
@@ -54,25 +53,25 @@ public class TestSumDocFreq extends LuceneTestCase {
       field2.setStringValue("" + ch1 + " " + ch2);
       writer.addDocument(doc);
     }
-    
+
     IndexReader ir = writer.getReader();
-    
-    assertSumDocFreq(ir);    
+
+    assertSumDocFreq(ir);
     ir.close();
-    
+
     int numDeletions = atLeast(20);
     for (int i = 0; i < numDeletions; i++) {
       writer.deleteDocuments(new Term("id", "" + random().nextInt(numDocs)));
     }
     writer.forceMerge(1);
     writer.close();
-    
+
     ir = DirectoryReader.open(dir);
     assertSumDocFreq(ir);
     ir.close();
     dir.close();
   }
-  
+
   private void assertSumDocFreq(IndexReader ir) throws Exception {
     // compute sumDocFreq across all fields
     final Collection<String> fields = FieldInfos.getIndexedFields(ir);
@@ -85,7 +84,7 @@ public class TestSumDocFreq extends LuceneTestCase {
         }
         continue;
       }
-      
+
       long computedSumDocFreq = 0;
       TermsEnum termsEnum = terms.iterator();
       while (termsEnum.next() != null) {

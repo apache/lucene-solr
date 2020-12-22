@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
@@ -42,42 +41,45 @@ import org.apache.lucene.util.IOUtils;
 
 final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
 
-  static final CompressionMode NO_COMPRESSION = new CompressionMode() {
-    @Override
-    public Compressor newCompressor() {
-      return new Compressor() {
+  static final CompressionMode NO_COMPRESSION =
+      new CompressionMode() {
         @Override
-        public void close() throws IOException {}
+        public Compressor newCompressor() {
+          return new Compressor() {
+            @Override
+            public void close() throws IOException {}
+
+            @Override
+            public void compress(byte[] bytes, int off, int len, DataOutput out)
+                throws IOException {
+              out.writeBytes(bytes, off, len);
+            }
+          };
+        }
 
         @Override
-        public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
-          out.writeBytes(bytes, off, len);
+        public Decompressor newDecompressor() {
+          return new Decompressor() {
+            @Override
+            public void decompress(
+                DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+                throws IOException {
+              bytes.bytes = ArrayUtil.grow(bytes.bytes, length);
+              in.skipBytes(offset);
+              in.readBytes(bytes.bytes, 0, length);
+              bytes.offset = 0;
+              bytes.length = length;
+            }
+
+            @Override
+            public Decompressor clone() {
+              return this;
+            }
+          };
         }
       };
-    }
-
-    @Override
-    public Decompressor newDecompressor() {
-      return new Decompressor() {
-        @Override
-        public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes)
-            throws IOException {
-          bytes.bytes = ArrayUtil.grow(bytes.bytes, length);
-          in.skipBytes(offset);
-          in.readBytes(bytes.bytes, 0, length);
-          bytes.offset = 0;
-          bytes.length = length;
-        }
-
-        @Override
-        public Decompressor clone() {
-          return this;
-        }
-      };
-    }
-  };
-  private static final StoredFieldsFormat TEMP_STORED_FIELDS_FORMAT = new CompressingStoredFieldsFormat(
-      "TempStoredFields", NO_COMPRESSION, 128*1024, 1, 10);
+  private static final StoredFieldsFormat TEMP_STORED_FIELDS_FORMAT =
+      new CompressingStoredFieldsFormat("TempStoredFields", NO_COMPRESSION, 128 * 1024, 1, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
   SortingStoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
@@ -95,12 +97,15 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
   @Override
   void flush(SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
     super.flush(state, sortMap);
-    StoredFieldsReader reader = TEMP_STORED_FIELDS_FORMAT
-        .fieldsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
+    StoredFieldsReader reader =
+        TEMP_STORED_FIELDS_FORMAT.fieldsReader(
+            tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
     // Don't pull a merge instance, since merge instances optimize for
     // sequential access while we consume stored fields in random order here.
-    StoredFieldsWriter sortWriter = codec.storedFieldsFormat()
-        .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
+    StoredFieldsWriter sortWriter =
+        codec
+            .storedFieldsFormat()
+            .fieldsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
     try {
       reader.checkIntegrity();
       CopyVisitor visitor = new CopyVisitor(sortWriter);
@@ -112,8 +117,7 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
       sortWriter.finish(state.fieldInfos, state.segmentInfo.maxDoc());
     } finally {
       IOUtils.close(reader, sortWriter);
-      IOUtils.deleteFiles(tmpDirectory,
-          tmpDirectory.getTemporaryFiles().values());
+      IOUtils.deleteFiles(tmpDirectory, tmpDirectory.getTemporaryFiles().values());
     }
   }
 
@@ -123,22 +127,19 @@ final class SortingStoredFieldsConsumer extends StoredFieldsConsumer {
       super.abort();
     } finally {
       if (tmpDirectory != null) {
-        IOUtils.deleteFilesIgnoringExceptions(tmpDirectory,
-            tmpDirectory.getTemporaryFiles().values());
+        IOUtils.deleteFilesIgnoringExceptions(
+            tmpDirectory, tmpDirectory.getTemporaryFiles().values());
       }
     }
   }
 
-  /**
-   * A visitor that copies every field it sees in the provided {@link StoredFieldsWriter}.
-   */
+  /** A visitor that copies every field it sees in the provided {@link StoredFieldsWriter}. */
   private static class CopyVisitor extends StoredFieldVisitor implements IndexableField {
     final StoredFieldsWriter writer;
     BytesRef binaryValue;
     String stringValue;
     Number numericValue;
     FieldInfo currentField;
-
 
     CopyVisitor(StoredFieldsWriter writer) {
       this.writer = writer;

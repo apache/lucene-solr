@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -27,7 +26,10 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Bits;
 
-/** This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge instances when you ask for the codec readers. */
+/**
+ * This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge
+ * instances when you ask for the codec readers.
+ */
 class MergeReaderWrapper extends LeafReader {
   final CodecReader in;
   final FieldsProducer fields;
@@ -35,34 +37,34 @@ class MergeReaderWrapper extends LeafReader {
   final DocValuesProducer docValues;
   final StoredFieldsReader store;
   final TermVectorsReader vectors;
-  
+
   MergeReaderWrapper(CodecReader in) throws IOException {
     this.in = in;
-    
+
     FieldsProducer fields = in.getPostingsReader();
     if (fields != null) {
       fields = fields.getMergeInstance();
     }
     this.fields = fields;
-    
+
     NormsProducer norms = in.getNormsReader();
     if (norms != null) {
       norms = norms.getMergeInstance();
     }
     this.norms = norms;
-    
+
     DocValuesProducer docValues = in.getDocValuesReader();
     if (docValues != null) {
       docValues = docValues.getMergeInstance();
     }
     this.docValues = docValues;
-    
+
     StoredFieldsReader store = in.getFieldsReader();
     if (store != null) {
       store = store.getMergeInstance();
     }
     this.store = store;
-    
+
     TermVectorsReader vectors = in.getTermVectorsReader();
     if (vectors != null) {
       vectors = vectors.getMergeInstance();
@@ -74,7 +76,8 @@ class MergeReaderWrapper extends LeafReader {
   public Terms terms(String field) throws IOException {
     ensureOpen();
     // We could check the FieldInfo IndexOptions but there's no point since
-    //   PostingsReader will simply return null for fields that don't exist or that have no terms index.
+    //   PostingsReader will simply return null for fields that don't exist or that have no terms
+    // index.
     return fields.terms(field);
   }
 

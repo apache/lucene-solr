@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.store.ByteBuffersDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.Accountable;
@@ -29,9 +28,9 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 
 /**
- * Prefix codes term instances (prefixes are shared). This is expected to be
- * faster to build than a FST and might also be more compact if there are no
- * common suffixes.
+ * Prefix codes term instances (prefixes are shared). This is expected to be faster to build than a
+ * FST and might also be more compact if there are no common suffixes.
+ *
  * @lucene.internal
  */
 public class PrefixCodedTerms implements Accountable {
@@ -47,14 +46,14 @@ public class PrefixCodedTerms implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return content.stream().mapToLong(buf -> buf.capacity()).sum() + 2 * Long.BYTES; 
+    return content.stream().mapToLong(buf -> buf.capacity()).sum() + 2 * Long.BYTES;
   }
 
   /** Records del gen for this packet. */
   public void setDelGen(long delGen) {
     this.delGen = delGen;
   }
-  
+
   /** Builds a PrefixCodedTerms: call add repeatedly, then finish. */
   public static class Builder {
     private ByteBuffersDataOutput output = new ByteBuffersDataOutput();
@@ -70,7 +69,7 @@ public class PrefixCodedTerms implements Accountable {
       add(term.field(), term.bytes());
     }
 
-    /** add a term.  This fully consumes in the incoming {@link BytesRef}. */
+    /** add a term. This fully consumes in the incoming {@link BytesRef}. */
     public void add(String field, BytesRef bytes) {
       assert lastTerm.equals(new Term("")) || new Term(field, bytes).compareTo(lastTerm) > 0;
 
@@ -98,7 +97,7 @@ public class PrefixCodedTerms implements Accountable {
         throw new RuntimeException(e);
       }
     }
-    
+
     /** return finalized form */
     public PrefixCodedTerms finish() {
       return new PrefixCodedTerms(output.toBufferList(), size);
@@ -150,9 +149,10 @@ public class PrefixCodedTerms implements Accountable {
     }
 
     // Copied from parent-class because javadoc doesn't do it for some reason
-    /** Returns current field.  This method should not be called
-     *  after iteration is done.  Note that you may use == to
-     *  detect a change in field. */
+    /**
+     * Returns current field. This method should not be called after iteration is done. Note that
+     * you may use == to detect a change in field.
+     */
     @Override
     public String field() {
       return field;
@@ -195,12 +195,11 @@ public class PrefixCodedTerms implements Accountable {
       return true;
     }
 
-    if (obj == null || getClass() != obj.getClass()) { 
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
     PrefixCodedTerms other = (PrefixCodedTerms) obj;
-    return delGen == other.delGen &&
-           this.content.equals(other.content);
+    return delGen == other.delGen && this.content.equals(other.content);
   }
 }

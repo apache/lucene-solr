@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -36,8 +35,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     volatile boolean stop = false;
   }
 
-  public void testIsCurrentWithThreads() throws
-      IOException, InterruptedException {
+  public void testIsCurrentWithThreads() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -45,8 +43,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     int numReaderThreads = TEST_NIGHTLY ? TestUtil.nextInt(random(), 2, 5) : 2;
     ReaderThread[] threads = new ReaderThread[numReaderThreads];
     final CountDownLatch latch = new CountDownLatch(1);
-    WriterThread writerThread = new WriterThread(holder, writer,
-        atLeast(500), random(), latch);
+    WriterThread writerThread = new WriterThread(holder, writer, atLeast(500), random(), latch);
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new ReaderThread(holder, latch);
       threads[i].start();
@@ -55,8 +52,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
 
     writerThread.join();
     boolean failed = writerThread.failed != null;
-    if (failed)
-      writerThread.failed.printStackTrace();
+    if (failed) writerThread.failed.printStackTrace();
     for (int i = 0; i < threads.length; i++) {
       threads[i].join();
       if (threads[i].failed != null) {
@@ -67,7 +63,6 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     assertFalse(failed);
     writer.close();
     dir.close();
-
   }
 
   public static class WriterThread extends Thread {
@@ -78,8 +73,8 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
     private final CountDownLatch latch;
     Throwable failed;
 
-    WriterThread(ReaderHolder holder, IndexWriter writer, int numOps,
-        Random random, CountDownLatch latch) {
+    WriterThread(
+        ReaderHolder holder, IndexWriter writer, int numOps, Random random, CountDownLatch latch) {
       super();
       this.holder = holder;
       this.writer = writer;
@@ -117,9 +112,8 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
           }
           if (random.nextBoolean()) {
             writer.commit();
-            final DirectoryReader newReader = DirectoryReader
-                .openIfChanged(currentReader);
-            if (newReader != null) { 
+            final DirectoryReader newReader = DirectoryReader.openIfChanged(currentReader);
+            if (newReader != null) {
               currentReader.decRef();
               currentReader = newReader;
             }
@@ -146,7 +140,6 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
         System.out.println("writer stopped - forced by reader: " + holder.stop);
       }
     }
-    
   }
 
   public static final class ReaderThread extends Thread {
@@ -174,13 +167,24 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
           try {
             boolean current = reader.isCurrent();
             if (VERBOSE) {
-              System.out.println("Thread: " + Thread.currentThread() + " Reader: " + reader + " isCurrent:" + current);
+              System.out.println(
+                  "Thread: "
+                      + Thread.currentThread()
+                      + " Reader: "
+                      + reader
+                      + " isCurrent:"
+                      + current);
             }
 
             assertFalse(current);
           } catch (Throwable e) {
             if (VERBOSE) {
-              System.out.println("FAILED Thread: " + Thread.currentThread() + " Reader: " + reader + " isCurrent: false");
+              System.out.println(
+                  "FAILED Thread: "
+                      + Thread.currentThread()
+                      + " Reader: "
+                      + reader
+                      + " isCurrent: false");
             }
             failed = e;
             holder.stop = true;

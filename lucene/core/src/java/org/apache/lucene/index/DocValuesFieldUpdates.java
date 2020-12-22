@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BitSet;
@@ -28,26 +30,24 @@ import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedMutable;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
  * Holds updates of a single DocValues field, for a set of documents within one segment.
- * 
+ *
  * @lucene.experimental
  */
 abstract class DocValuesFieldUpdates implements Accountable {
-  
+
   protected static final int PAGE_SIZE = 1024;
   private static final long HAS_VALUE_MASK = 1;
   private static final long HAS_NO_VALUE_MASK = 0;
-  private static final int SHIFT = 1; // we use the first bit of each value to mark if the doc has a value or not
+  // we use the first bit of each value to mark if the doc has a value or not
+  private static final int SHIFT = 1;
 
   /**
-   * An iterator over documents and their updated values. Only documents with
-   * updates are returned by this iterator, and the documents are returned in
-   * increasing order.
+   * An iterator over documents and their updated values. Only documents with updates are returned
+   * by this iterator, and the documents are returned in increasing order.
    */
-  static abstract class Iterator extends DocValuesIterator {
+  abstract static class Iterator extends DocValuesIterator {
 
     @Override
     public final boolean advanceExact(int target) {
@@ -58,6 +58,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     public final int advance(int target) {
       throw new UnsupportedOperationException();
     }
+
     @Override
     public final long cost() {
       throw new UnsupportedOperationException();
@@ -66,9 +67,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     @Override
     public abstract int nextDoc(); // no IOException
 
-    /**
-     * Returns a long value for the current document if this iterator is a long iterator.
-     */
+    /** Returns a long value for the current document if this iterator is a long iterator. */
     abstract long longValue();
 
     /**
@@ -79,67 +78,71 @@ abstract class DocValuesFieldUpdates implements Accountable {
     /** Returns delGen for this packet. */
     abstract long delGen();
 
-    /**
-     * Returns true if this doc has a value
-     */
+    /** Returns true if this doc has a value */
     abstract boolean hasValue();
 
-    /**
-     * Wraps the given iterator as a BinaryDocValues instance.
-     */
+    /** Wraps the given iterator as a BinaryDocValues instance. */
     static BinaryDocValues asBinaryDocValues(Iterator iterator) {
       return new BinaryDocValues() {
         @Override
         public int docID() {
           return iterator.docID();
         }
+
         @Override
         public BytesRef binaryValue() {
           return iterator.binaryValue();
         }
+
         @Override
         public boolean advanceExact(int target) {
           return iterator.advanceExact(target);
         }
+
         @Override
         public int nextDoc() {
           return iterator.nextDoc();
         }
+
         @Override
         public int advance(int target) {
           return iterator.advance(target);
         }
+
         @Override
         public long cost() {
           return iterator.cost();
         }
       };
     }
-    /**
-     * Wraps the given iterator as a NumericDocValues instance.
-     */
+    /** Wraps the given iterator as a NumericDocValues instance. */
     static NumericDocValues asNumericDocValues(Iterator iterator) {
       return new NumericDocValues() {
         @Override
         public long longValue() {
           return iterator.longValue();
         }
+
         @Override
         public boolean advanceExact(int target) {
           throw new UnsupportedOperationException();
         }
+
         @Override
         public int docID() {
           return iterator.docID();
         }
+
         @Override
         public int nextDoc() {
           return iterator.nextDoc();
         }
+
         @Override
         public int advance(int target) {
           return iterator.advance(target);
         }
+
         @Override
         public long cost() {
           return iterator.cost();
@@ -148,31 +151,33 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
   }
 
-
-
-  /** Merge-sorts multiple iterators, one per delGen, favoring the largest delGen that has updates for a given docID. */
+  /**
+   * Merge-sorts multiple iterators, one per delGen, favoring the largest delGen that has updates
+   * for a given docID.
+   */
   public static Iterator mergedIterator(Iterator[] subs) {
 
     if (subs.length == 1) {
       return subs[0];
     }
 
-    PriorityQueue<Iterator> queue = new PriorityQueue<Iterator>(subs.length) {
-        @Override
-        protected boolean lessThan(Iterator a, Iterator b) {
-          // sort by smaller docID
-          int cmp = Integer.compare(a.docID(), b.docID());
-          if (cmp == 0) {
-            // then by larger delGen
-            cmp = Long.compare(b.delGen(), a.delGen());
+    PriorityQueue<Iterator> queue =
+        new PriorityQueue<Iterator>(subs.length) {
+          @Override
+          protected boolean lessThan(Iterator a, Iterator b) {
+            // sort by smaller docID
+            int cmp = Integer.compare(a.docID(), b.docID());
+            if (cmp == 0) {
+              // then by larger delGen
+              cmp = Long.compare(b.delGen(), a.delGen());
 
-            // delGens are unique across our subs:
-            assert cmp != 0;
+              // delGens are unique across our subs:
+              assert cmp != 0;
+            }
+
+            return cmp < 0;
           }
-
-          return cmp < 0;
-        }
-      };
+        };
 
     for (Iterator sub : subs) {
       if (sub.nextDoc() != NO_MORE_DOCS) {
@@ -186,26 +191,27 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     return new Iterator() {
       private int doc = -1;
+
       @Override
       public int nextDoc() {
-          // Advance all sub iterators past current doc
-          while (true) {
-            if (queue.size() == 0) {
-              doc = NO_MORE_DOCS;
-              break;
-            }
-            int newDoc = queue.top().docID();
-            if (newDoc != doc) {
-              assert newDoc > doc: "doc=" + doc + " newDoc=" + newDoc;
-              doc = newDoc;
-              break;
-            }
-            if (queue.top().nextDoc() == NO_MORE_DOCS) {
-              queue.pop();
-            } else {
-              queue.updateTop();
-            }
+        // Advance all sub iterators past current doc
+        while (true) {
+          if (queue.size() == 0) {
+            doc = NO_MORE_DOCS;
+            break;
           }
+          int newDoc = queue.top().docID();
+          if (newDoc != doc) {
+            assert newDoc > doc : "doc=" + doc + " newDoc=" + newDoc;
+            doc = newDoc;
+            break;
+          }
+          if (queue.top().nextDoc() == NO_MORE_DOCS) {
+            queue.pop();
+          } else {
+            queue.updateTop();
+          }
+        }
         return doc;
       }
 
@@ -260,22 +266,19 @@ abstract class DocValuesFieldUpdates implements Accountable {
   final boolean getFinished() {
     return finished;
   }
-  
+
   abstract void add(int doc, long value);
 
   abstract void add(int doc, BytesRef value);
 
   /**
-   * Adds the value for the given docID.
-   * This method prevents conditional calls to {@link Iterator#longValue()} or {@link Iterator#binaryValue()}
-   * since the implementation knows if it's a long value iterator or binary value
+   * Adds the value for the given docID. This method prevents conditional calls to {@link
+   * Iterator#longValue()} or {@link Iterator#binaryValue()} since the implementation knows if it's
+   * a long value iterator or binary value
    */
   abstract void add(int docId, Iterator iterator);
 
-  /**
-   * Returns an {@link Iterator} over the updated documents and their
-   * values.
-   */
+  /** Returns an {@link Iterator} over the updated documents and their values. */
   // TODO: also use this for merging, instead of having to write through to disk first
   abstract Iterator iterator();
 
@@ -295,7 +298,8 @@ abstract class DocValuesFieldUpdates implements Accountable {
       // Another option would be TimSorter, but it needs additional API (copy to
       // temp storage, compare with item in temp storage, etc.) so we instead
       // use quicksort and record ords of each update to guarantee stability.
-      final PackedInts.Mutable ords = PackedInts.getMutable(size, PackedInts.bitsRequired(size - 1), PackedInts.DEFAULT);
+      final PackedInts.Mutable ords =
+          PackedInts.getMutable(size, PackedInts.bitsRequired(size - 1), PackedInts.DEFAULT);
       for (int i = 0; i < size; ++i) {
         ords.set(i, i);
       }
@@ -312,9 +316,10 @@ abstract class DocValuesFieldUpdates implements Accountable {
         @Override
         protected int compare(int i, int j) {
           // increasing docID order:
-          // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
+          // NOTE: we can have ties here, when the same docID was updated in the same segment, in
+          // which case we rely on sort being
           // stable and preserving original order so the last update to that docID wins
-          int cmp = Long.compare(docs.get(i)>>>1, docs.get(j)>>>1);
+          int cmp = Long.compare(docs.get(i) >>> 1, docs.get(j) >>> 1);
           if (cmp == 0) {
             cmp = (int) (ords.get(i) - ords.get(j));
           }
@@ -347,17 +352,19 @@ abstract class DocValuesFieldUpdates implements Accountable {
     return size > 0;
   }
 
-  synchronized final int size() {
+  final synchronized int size() {
     return size;
   }
 
   /**
    * Adds an update that resets the documents value.
+   *
    * @param doc the doc to update
    */
   synchronized void reset(int doc) {
     addInternal(doc, HAS_NO_VALUE_MASK);
   }
+
   final synchronized int add(int doc) {
     return addInternal(doc, HAS_VALUE_MASK);
   }
@@ -370,15 +377,16 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     // TODO: if the Sorter interface changes to take long indexes, we can remove that limitation
     if (size == Integer.MAX_VALUE) {
-      throw new IllegalStateException("cannot support more than Integer.MAX_VALUE doc/value entries");
+      throw new IllegalStateException(
+          "cannot support more than Integer.MAX_VALUE doc/value entries");
     }
     // grow the structures to have room for more elements
     if (docs.size() == size) {
-      grow(size+1);
+      grow(size + 1);
     }
-    docs.set(size, (((long)doc) << SHIFT) | hasValueMask);
+    docs.set(size, (((long) doc) << SHIFT) | hasValueMask);
     ++size;
-    return size-1;
+    return size - 1;
   }
 
   protected void swap(int i, int j) {
@@ -400,12 +408,14 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new IllegalStateException("call finish first");
     }
   }
+
   @Override
   public long ramBytesUsed() {
     return docs.ramBytesUsed()
         + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + 2 * Integer.BYTES
-        + 2 + Long.BYTES
+        + 2
+        + Long.BYTES
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF;
   }
 
@@ -439,16 +449,17 @@ abstract class DocValuesFieldUpdates implements Accountable {
         }
         longDoc = nextLongDoc;
       }
-      hasValue = (longDoc & HAS_VALUE_MASK) >  0;
+      hasValue = (longDoc & HAS_VALUE_MASK) > 0;
       if (hasValue) {
         set(idx - 1);
       }
-      doc = (int)(longDoc >> SHIFT);
+      doc = (int) (longDoc >> SHIFT);
       return doc;
     }
 
     /**
      * Called when the iterator moved to the next document
+     *
      * @param idx the internal index to set the value to
      */
     protected abstract void set(long idx);
@@ -469,11 +480,13 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
   }
 
-  static abstract class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
+  abstract static class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
     private final BitSet bitSet;
     private BitSet hasNoValue;
     private boolean hasAtLeastOneValue;
-    protected SingleValueDocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
+
+    protected SingleValueDocValuesFieldUpdates(
+        int maxDoc, long delGen, String field, DocValuesType type) {
       super(maxDoc, delGen, field, type);
       this.bitSet = new SparseFixedBitSet(maxDoc);
     }
@@ -514,7 +527,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     }
 
     protected abstract BytesRef binaryValue();
-    
+
     protected abstract long longValue();
 
     @Override
@@ -524,7 +537,9 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return super.ramBytesUsed() + bitSet.ramBytesUsed() + (hasNoValue == null ? 0 : hasNoValue.ramBytesUsed());
+      return super.ramBytesUsed()
+          + bitSet.ramBytesUsed()
+          + (hasNoValue == null ? 0 : hasNoValue.ramBytesUsed());
     }
 
     @Override
