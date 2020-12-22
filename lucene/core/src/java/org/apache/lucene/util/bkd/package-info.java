@@ -16,8 +16,7 @@
  */
 
 /**
- * Block KD-tree, implementing the generic spatial data structure described in
- * <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>.
+ * Block KD-tree, implementing the generic spatial data structure described in <a
+ * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a>.
  */
-
 package org.apache.lucene.util.bkd;

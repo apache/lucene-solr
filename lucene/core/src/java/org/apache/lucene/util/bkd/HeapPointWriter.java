@@ -17,14 +17,13 @@
 package org.apache.lucene.util.bkd;
 
 import java.util.Arrays;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Utility class to write new points into in-heap arrays.
  *
- *  @lucene.internal
- *  */
+ * @lucene.internal
+ */
 public final class HeapPointWriter implements PointWriter {
   public final byte[] block;
   final int size;
@@ -35,7 +34,6 @@ public final class HeapPointWriter implements PointWriter {
 
   private HeapPointReader.HeapPointValue pointValue;
 
-
   public HeapPointWriter(BKDConfig config, int size) {
     this.config = config;
     this.block = new byte[config.bytesPerDoc * size];
@@ -45,7 +43,7 @@ public final class HeapPointWriter implements PointWriter {
       pointValue = new HeapPointReader.HeapPointValue(config, block);
     } else {
       // no values
-      pointValue =  null;
+      pointValue = null;
     }
   }
 
@@ -59,9 +57,15 @@ public final class HeapPointWriter implements PointWriter {
   @Override
   public void append(byte[] packedValue, int docID) {
     assert closed == false : "point writer is already closed";
-    assert packedValue.length == config.packedBytesLength : "[packedValue] must have length [" + config.packedBytesLength + "] but was [" + packedValue.length + "]";
+    assert packedValue.length == config.packedBytesLength
+        : "[packedValue] must have length ["
+            + config.packedBytesLength
+            + "] but was ["
+            + packedValue.length
+            + "]";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
-    System.arraycopy(packedValue, 0, block, nextWrite * config.bytesPerDoc, config.packedBytesLength);
+    System.arraycopy(
+        packedValue, 0, block, nextWrite * config.bytesPerDoc, config.packedBytesLength);
     int position = nextWrite * config.bytesPerDoc + config.packedBytesLength;
     block[position] = (byte) (docID >> 24);
     block[++position] = (byte) (docID >> 16);
@@ -75,8 +79,18 @@ public final class HeapPointWriter implements PointWriter {
     assert closed == false : "point writer is already closed";
     assert nextWrite < size : "nextWrite=" + (nextWrite + 1) + " vs size=" + size;
     BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
-    assert packedValueDocID.length == config.bytesPerDoc : "[packedValue] must have length [" + (config.bytesPerDoc) + "] but was [" + packedValueDocID.length + "]";
-    System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset, block, nextWrite * config.bytesPerDoc, config.bytesPerDoc);
+    assert packedValueDocID.length == config.bytesPerDoc
+        : "[packedValue] must have length ["
+            + (config.bytesPerDoc)
+            + "] but was ["
+            + packedValueDocID.length
+            + "]";
+    System.arraycopy(
+        packedValueDocID.bytes,
+        packedValueDocID.offset,
+        block,
+        nextWrite * config.bytesPerDoc,
+        config.bytesPerDoc);
     nextWrite++;
   }
 
@@ -99,8 +113,14 @@ public final class HeapPointWriter implements PointWriter {
       for (int dim = 0; dim < config.numDims; dim++) {
         final int start = dim * config.bytesPerDim + commonPrefixLengths[dim];
         final int end = dim * config.bytesPerDim + config.bytesPerDim;
-        if (Arrays.mismatch(block, i * config.bytesPerDoc + start, i * config.bytesPerDoc + end,
-            block, (i - 1) * config.bytesPerDoc  + start, (i - 1) * config.bytesPerDoc + end) != -1) {
+        if (Arrays.mismatch(
+                block,
+                i * config.bytesPerDoc + start,
+                i * config.bytesPerDoc + end,
+                block,
+                (i - 1) * config.bytesPerDoc + start,
+                (i - 1) * config.bytesPerDoc + end)
+            != -1) {
           leafCardinality++;
           break;
         }
@@ -117,9 +137,11 @@ public final class HeapPointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start, long length) {
     assert closed : "point writer is still open and trying to get a reader";
-    assert start + length <= size: "start=" + start + " length=" + length + " docIDs.length=" + size;
-    assert start + length <= nextWrite: "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
-    return new HeapPointReader(config, block, (int) start, Math.toIntExact(start+length));
+    assert start + length <= size
+        : "start=" + start + " length=" + length + " docIDs.length=" + size;
+    assert start + length <= nextWrite
+        : "start=" + start + " length=" + length + " nextWrite=" + nextWrite;
+    return new HeapPointReader(config, block, (int) start, Math.toIntExact(start + length));
   }
 
   @Override
@@ -128,8 +150,7 @@ public final class HeapPointWriter implements PointWriter {
   }
 
   @Override
-  public void destroy() {
-  }
+  public void destroy() {}
 
   @Override
   public String toString() {
