@@ -25,6 +25,9 @@ import org.apache.solr.cluster.placement.NodeMetric;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Implementation of {@link AttributeValues} used by {@link AttributeFetcherImpl}.
+ */
 public class AttributeValuesImpl implements AttributeValues {
   // sysprop (or sysenv) name / node -> value
   final Map<String, Map<Node, String>> systemSnitchToNodeToValue;
@@ -67,15 +70,6 @@ public class AttributeValuesImpl implements AttributeValues {
       return Optional.empty();
     }
     return Optional.ofNullable((T) nodeToValue.get(node));
-  }
-
-  @Override
-  public Optional<Object> getNodeMetric(Node node, String metricKey) {
-    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(new NodeMetric<>(metricKey));
-    if (nodeToValue == null) {
-      return Optional.empty();
-    }
-    return Optional.ofNullable(nodeToValue.get(node));
   }
 
   @Override

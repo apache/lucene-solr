@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- *
+ * Builder class for constructing instances of {@link CollectionMetrics}.
  */
 public class CollectionMetricsBuilder {
 

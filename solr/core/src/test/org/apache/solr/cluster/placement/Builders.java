@@ -21,6 +21,8 @@ import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.Pair;
 import org.junit.Assert;
 
@@ -103,15 +105,15 @@ public class Builders {
         Node node = nodeBuilder.build();
 
         if (nodeBuilder.getCoreCount() != null) {
-          metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>())
+          metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>())
               .put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
-          metrics.computeIfAbsent(NodeMetric.FREE_DISK_GB, n -> new HashMap<>())
+          metrics.computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getFreeDiskGB());
         }
         if (nodeBuilder.getTotalDiskGB() != null) {
-          metrics.computeIfAbsent(NodeMetric.TOTAL_DISK_GB, n -> new HashMap<>())
+          metrics.computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
@@ -129,7 +131,7 @@ public class Builders {
       }
 
       if (!collectionBuilders.isEmpty()) {
-        Map<Node, Object> nodeToCoreCount = metrics.computeIfAbsent(NodeMetric.NUM_CORES, n -> new HashMap<>());
+        Map<Node, Object> nodeToCoreCount = metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>());
         collectionBuilders.forEach(builder -> {
           collectionMetrics.put(builder.collectionName, builder.collectionMetricsBuilder.build());
           SolrCollection collection = builder.build();
@@ -316,7 +318,7 @@ public class Builders {
             CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder();
             shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
-              replicaMetricsBuilder.addMetric(ReplicaMetric.INDEX_SIZE_GB, initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetric.GB);
+              replicaMetricsBuilder.addMetric(ReplicaMetricImpl.INDEX_SIZE_GB, initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {
               leader = replicaBuilder;

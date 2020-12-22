@@ -27,41 +27,6 @@ import java.util.Set;
  */
 public interface AttributeFetcher {
   /**
-   * Request the number of cores on each node. To get the value use {@link AttributeValues#getCoresCount(Node)}
-   */
-  default AttributeFetcher requestNodeCoresCount() {
-    return requestNodeMetric(NodeMetric.NUM_CORES);
-  }
-
-  /**
-   * Request the free disk size on each node. To get the value use {@link AttributeValues#getFreeDisk(Node)}
-   */
-  default AttributeFetcher requestNodeFreeDisk() {
-    return requestNodeMetric(NodeMetric.FREE_DISK_GB);
-  }
-
-  /**
-   * Request the total disk size on each node. To get the value use {@link AttributeValues#getTotalDisk(Node)}
-   */
-  default AttributeFetcher requestNodeTotalDisk() {
-    return requestNodeMetric(NodeMetric.TOTAL_DISK_GB);
-  }
-
-  /**
-   * Request the heap usage on each node. To get the value use {@link AttributeValues#getHeapUsage(Node)}
-   */
-  default AttributeFetcher requestNodeHeapUsage() {
-    return requestNodeMetric(NodeMetric.HEAP_USAGE);
-  }
-
-  /**
-   * Request the system load average on each node. To get the value use {@link AttributeValues#getSystemLoadAverage(Node)}
-   */
-  default AttributeFetcher requestNodeSystemLoadAverage() {
-    return requestNodeMetric(NodeMetric.SYSLOAD_AVG);
-  }
-
-  /**
    * Request a given system property on each node. To get the value use {@link AttributeValues#getSystemProperty(Node, String)}
    * @param name system property name
    */
@@ -78,16 +43,6 @@ public interface AttributeFetcher {
    * @param metric metric to retrieve (see {@link NodeMetric})
    */
   AttributeFetcher requestNodeMetric(NodeMetric<?> metric);
-
-  /**
-   * Rfrom any metric registry on each node, using a fully-qualified metric key,
-   * for example <code>solr.jvm:system.properties:user.name</code>.
-   * To get the value use {@link AttributeValues#getNodeMetric(Node, String)}
-   * @param metricKey fully-qualified metric key
-   */
-  default AttributeFetcher requestNodeMetric(String metricKey) {
-    return requestNodeMetric(new NodeMetric<>(metricKey));
-  }
 
   /**
    * Request collection-level metrics. To get the values use {@link AttributeValues#getCollectionMetrics(String)}.
@@ -107,27 +62,9 @@ public interface AttributeFetcher {
 
   /**
    * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non node attributes
-   * (those requested for example using {@link #requestNodeMetric(String)}.
+   * (those requested for example using {@link #requestNodeMetric(NodeMetric)}.
    *
    * @return An instance allowing retrieval of all attributed that could be fetched.
    */
   AttributeValues fetchAttributes();
-
-  /**
-   * Registry options for {@link Node} metrics.
-   */
-  enum NodeMetricRegistry {
-    /**
-     * corresponds to solr.node
-     */
-    SOLR_NODE,
-    /**
-     * corresponds to solr.jvm
-     */
-    SOLR_JVM,
-    /**
-     * corresponds to solr.jetty
-     */
-    SOLR_JETTY
-  }
 }

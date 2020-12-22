@@ -17,93 +17,35 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-
-import java.util.Objects;
-import java.util.function.Function;
-
 /**
  * Node metric identifier, corresponding
  * to a node-level metric registry and the internal metric name.
+ * Alternatively this identified may use a fully-qualified metric key,
+ * in which case the registry is set to null.
  */
-public class NodeMetric<T> extends MetricAttribute<T> {
+public interface NodeMetric<T> extends MetricAttribute<T> {
 
-  /** Total disk space in GB. */
-  public static final NodeMetric<Double> TOTAL_DISK_GB = new NodeMetric<>("totalDisk",
-      AttributeFetcher.NodeMetricRegistry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
+  /**
+   * Metric registry. If this metric identifier uses a fully-qualified
+   * metric key instead, then this method will return null.
+   */
+  Registry getRegistry();
 
-  /** Free (usable) disk space in GB. */
-  public static final NodeMetric<Double> FREE_DISK_GB = new NodeMetric<>("freeDisk",
-      AttributeFetcher.NodeMetricRegistry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
-
-  /** Number of all cores. */
-  public static final NodeMetric<Integer> NUM_CORES = new NodeMetric<>(ImplicitSnitch.CORES);
-  public static final NodeMetric<Double> HEAP_USAGE = new NodeMetric<>(ImplicitSnitch.HEAPUSAGE);
-
-  /** System load average. */
-  public static final NodeMetric<Double> SYSLOAD_AVG =
-      new NodeMetric<>("sysLoadAvg", AttributeFetcher.NodeMetricRegistry.SOLR_JVM, "os.systemLoadAverage");
-
-  /** Number of available processors. */
-  public static final NodeMetric<Integer> AVAILABLE_PROCESSORS =
-      new NodeMetric<>("availableProcessors", AttributeFetcher.NodeMetricRegistry.SOLR_JVM, "os.availableProcessors");
-
-  private final AttributeFetcher.NodeMetricRegistry registry;
-
-  public NodeMetric(String name, AttributeFetcher.NodeMetricRegistry registry, String internalName) {
-    this(name, registry, internalName, null);
-  }
-
-  public NodeMetric(String name, AttributeFetcher.NodeMetricRegistry registry, String internalName, Function<Object, T> converter) {
-    super(name, internalName, converter);
-    Objects.requireNonNull(registry);
-    this.registry = registry;
-  }
-
-  public NodeMetric(String key) {
-    this(key, null);
-  }
-
-  public NodeMetric(String key, Function<Object, T> converter) {
-    super(key, key, converter);
-    this.registry = null;
-  }
-
-  public AttributeFetcher.NodeMetricRegistry getRegistry() {
-    return registry;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    NodeMetric<?> that = (NodeMetric<?>) o;
-    return registry == that.registry;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), registry);
-  }
-
-  @Override
-  public String toString() {
-    if (registry != null) {
-      return "NodeMetric{" +
-          "name='" + name + '\'' +
-          ", internalName='" + internalName + '\'' +
-          ", converter=" + converter +
-          ", registry=" + registry +
-          '}';
-    } else {
-      return "NodeMetric{key=" + internalName + "}";
-    }
+  /**
+   * Registry options for node metrics.
+   */
+  enum Registry {
+    /**
+     * corresponds to solr.node
+     */
+    SOLR_NODE,
+    /**
+     * corresponds to solr.jvm
+     */
+    SOLR_JVM,
+    /**
+     * corresponds to solr.jetty
+     */
+    SOLR_JETTY
   }
 }

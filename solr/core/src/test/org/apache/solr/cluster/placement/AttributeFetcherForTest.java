@@ -31,31 +31,6 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeCoresCount() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeFreeDisk() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeTotalDisk() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeHeapUsage() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeSystemLoadAverage() {
-    return this;
-  }
-
-  @Override
   public AttributeFetcher requestNodeSystemProperty(String name) {
     return this;
   }
@@ -67,7 +42,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
 
   @Override
   public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
-    throw new UnsupportedOperationException("Not yet implemented...");
+    return this;
   }
 
   @Override
@@ -78,11 +53,6 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   @Override
   public AttributeFetcher fetchFrom(Set<Node> nodes) {
     return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeMetric(String metricKey) {
-    throw new UnsupportedOperationException("Not yet implemented...");
   }
 
   @Override

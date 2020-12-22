@@ -39,14 +39,13 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link AttributeFetcher} that uses {@link SolrCloudManager}
+ * to access Solr cluster details.
+ */
 public class AttributeFetcherImpl implements AttributeFetcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  boolean requestedNodeCoreCount;
-  boolean requestedNodeFreeDisk;
-  boolean requestedNodeTotalDisk;
-  boolean requestedNodeHeapUsage;
-  boolean requestedNodeSystemLoadAverage;
   Set<String> requestedNodeSystemSnitchTags = new HashSet<>();
   Set<NodeMetric<?>> requestedNodeMetricSnitchTags = new HashSet<>();
   Map<SolrCollection, Set<ReplicaMetric<?>>> requestedCollectionMetrics = new HashMap<>();
@@ -189,12 +188,14 @@ public class AttributeFetcherImpl implements AttributeFetcher {
         metricSnitchToNodeToValue, collectionMetrics);
   }
 
-  private static SolrInfoBean.Group getGroupFromMetricRegistry(NodeMetricRegistry registry) {
+  private static SolrInfoBean.Group getGroupFromMetricRegistry(NodeMetric.Registry registry) {
     switch (registry) {
       case SOLR_JVM:
         return SolrInfoBean.Group.jvm;
       case SOLR_NODE:
         return SolrInfoBean.Group.node;
+      case SOLR_JETTY:
+        return SolrInfoBean.Group.jetty;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unsupported registry value " + registry);
     }
