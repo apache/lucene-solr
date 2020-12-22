@@ -249,6 +249,11 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .requestNodeHeapUsage()
         .requestNodeSystemLoadAverage()
         .requestNodeMetric(someMetricKey)
+        .requestNodeMetric(NodeMetric.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetric.TOTAL_DISK_GB)
+        // XXX this doesn't work yet, it overwrites
+        // the inserter in AttributeFetcherImpl for nodeCoresCount
+        // .requestNodeMetric(NodeMetric.NUM_CORES)
         .requestNodeMetric(NodeMetric.SYSLOAD_AVG)
         .requestNodeMetric(NodeMetric.AVAILABLE_PROCESSORS)
         .requestNodeSystemProperty(sysprop)
@@ -263,9 +268,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
       assertTrue("heap usage", attributeValues.getHeapUsage(node).isPresent());
-      assertTrue("total disk", attributeValues.getTotalDisk(node).isPresent());
-      assertTrue("free disk", attributeValues.getFreeDisk(node).isPresent());
-      assertTrue("cores count", attributeValues.getCoresCount(node).isPresent());
+      assertTrue("total disk 1", attributeValues.getTotalDisk(node).isPresent());
+      Optional<Double> spaceOpt = attributeValues.getNodeMetric(node, NodeMetric.TOTAL_DISK_GB);
+      assertTrue("total disk 2", spaceOpt.isPresent());
+      assertEquals("total disk 1 vs 2", attributeValues.getTotalDisk(node).get(), spaceOpt.get(), 0.0);
+      assertTrue("free disk 1", attributeValues.getFreeDisk(node).isPresent());
+      spaceOpt = attributeValues.getNodeMetric(node, NodeMetric.FREE_DISK_GB);
+      assertTrue("free disk 2", spaceOpt.isPresent());
+      assertEquals("free disk 1 vs 2", attributeValues.getFreeDisk(node).get(), spaceOpt.get(), 0.0);
+      assertTrue("cores count 1", attributeValues.getCoresCount(node).isPresent());
+//      Optional<Integer> coresOpt = attributeValues.getNodeMetric(node, NodeMetric.NUM_CORES);
+//      assertTrue("cores 2", coresOpt.isPresent());
+//      assertEquals("cores 1 vs 2", attributeValues.getCoresCount(node).get(), coresOpt.get());
       assertTrue("systemLoadAverage 1", attributeValues.getSystemLoadAverage(node).isPresent());
       assertTrue("systemLoadAverage 2", attributeValues.getNodeMetric(node, NodeMetric.SYSLOAD_AVG).isPresent());
       assertTrue("availableProcessors", attributeValues.getNodeMetric(node, NodeMetric.AVAILABLE_PROCESSORS).isPresent());

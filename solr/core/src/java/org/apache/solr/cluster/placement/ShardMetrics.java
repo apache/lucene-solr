@@ -19,7 +19,9 @@ package org.apache.solr.cluster.placement;
 import java.util.Optional;
 
 /**
- *
+ * Shard-level metrics. Currently this is just a container for
+ * replica-level metrics but future versions may add other
+ * primitive shard-level metrics.
  */
 public interface ShardMetrics {
   Optional<ReplicaMetrics> getLeaderMetrics();

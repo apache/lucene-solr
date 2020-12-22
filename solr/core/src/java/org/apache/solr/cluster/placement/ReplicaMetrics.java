@@ -20,7 +20,7 @@ package org.apache.solr.cluster.placement;
 import java.util.Optional;
 
 /**
- *
+ * Strongly-typed replica-level metrics.
  */
 public interface ReplicaMetrics {
 

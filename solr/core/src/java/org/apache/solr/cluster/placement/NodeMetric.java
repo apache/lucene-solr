@@ -21,16 +21,26 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Node metric wrapper that defines a short symbolic name of the metric, the corresponding
- * metric registry and the internal metric name, as well as the desired format/unit conversion.
+ * Node metric identifier, corresponding
+ * to a node-level metric registry and the internal metric name.
  */
 public class NodeMetric<T> extends MetricAttribute<T> {
 
-  /** System load average metric. */
+  /** Total disk space in GB. */
+  public static final NodeMetric<Double> TOTAL_DISK_GB = new NodeMetric<>("totalDisk",
+      AttributeFetcher.NodeMetricRegistry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
+
+  /** Free (usable) disk space in GB. */
+  public static final NodeMetric<Double> FREE_DISK_GB = new NodeMetric<>("freeDisk",
+      AttributeFetcher.NodeMetricRegistry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
+
+  // public static final NodeMetric<Integer> NUM_CORES = new NodeMetric<>(ImplicitSnitch.CORES);
+
+  /** System load average. */
   public static final NodeMetric<Double> SYSLOAD_AVG =
       new NodeMetric<>("sysLoadAvg", AttributeFetcher.NodeMetricRegistry.SOLR_JVM, "os.systemLoadAverage");
 
-  /** Available processors metric. */
+  /** Number of available processors. */
   public static final NodeMetric<Integer> AVAILABLE_PROCESSORS =
       new NodeMetric<>("availableProcessors", AttributeFetcher.NodeMetricRegistry.SOLR_JVM, "os.availableProcessors");
 

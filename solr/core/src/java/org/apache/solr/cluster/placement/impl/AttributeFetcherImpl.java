@@ -274,9 +274,14 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
   public static String getMetricSnitchTag(NodeMetric<?> metric) {
     if (metric.getRegistry() != null) {
+      // regular registry + metricName
       return SolrClientNodeStateProvider.METRICS_PREFIX +
           SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry())) + ":" + metric.getInternalName();
+    } else if (ImplicitSnitch.tags.contains(metric.getInternalName())) {
+      // "special" well-known tag
+      return metric.getInternalName();
     } else {
+      // a fully-qualified metric key
       return SolrClientNodeStateProvider.METRICS_PREFIX + metric.getInternalName();
     }
   }
