@@ -32,6 +32,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
+import org.apache.lucene.util.hnsw.NeighborArray;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
@@ -41,12 +42,14 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
  */
 public final class Lucene90VectorWriter extends VectorWriter {
 
+  private final SegmentWriteState segmentWriteState;
   private final IndexOutput meta, vectorData, vectorIndex;
 
   private boolean finished;
 
   Lucene90VectorWriter(SegmentWriteState state) throws IOException {
     assert state.fieldInfos.hasVectorValues();
+    segmentWriteState = state;
 
     String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.META_EXTENSION);
     meta = state.directory.createOutput(metaFileName, state.context);
@@ -138,18 +141,28 @@ public final class Lucene90VectorWriter extends VectorWriter {
   }
 
   private void writeGraph(IndexOutput graphData, RandomAccessVectorValuesProducer vectorValues, long graphDataOffset, long[] offsets, int count) throws IOException {
-    HnswGraph graph = HnswGraphBuilder.build(vectorValues);
+    HnswGraphBuilder hnswGraphBuilder = new HnswGraphBuilder(vectorValues);
+    hnswGraphBuilder.setInfoStream(segmentWriteState.infoStream);
+    HnswGraph graph = hnswGraphBuilder.build(vectorValues.randomAccess());
+
     for (int ord = 0; ord < count; ord++) {
       // write graph
       offsets[ord] = graphData.getFilePointer() - graphDataOffset;
-      int[] arcs = graph.getNeighborNodes(ord);
-      Arrays.sort(arcs);
-      graphData.writeInt(arcs.length);
-      int lastArc = -1;         // to make the assertion work?
-      for (int arc : arcs) {
-        assert arc > lastArc : "arcs out of order: " + lastArc + "," + arc;
-        graphData.writeVInt(arc - lastArc);
-        lastArc = arc;
+
+      NeighborArray neighbors = graph.getNeighbors(ord);
+      int size = neighbors.size();
+
+      // Destructively modify; it's ok we are discarding it after this
+      int[] nodes = neighbors.node();
+      Arrays.sort(nodes, 0, size);
+      graphData.writeInt(size);
+
+      int lastNode = -1;         // to make the assertion work?
+      for (int i = 0; i < size; i++) {
+        int node = nodes[i];
+        assert node > lastNode : "nodes out of order: " + lastNode + "," + node;
+        graphData.writeVInt(node - lastNode);
+        lastNode = node;
       }
     }
   }

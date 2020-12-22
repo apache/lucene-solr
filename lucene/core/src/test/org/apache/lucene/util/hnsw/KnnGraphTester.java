@@ -19,6 +19,7 @@ package org.apache.lucene.util.hnsw;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
@@ -46,11 +47,15 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.SuppressForbidden;
 
@@ -70,6 +75,7 @@ public class KnnGraphTester {
   private int numDocs;
   private int dim;
   private int topK;
+  private int warmCount;
   private int numIters;
   private int fanout;
   private Path indexPath;
@@ -84,8 +90,8 @@ public class KnnGraphTester {
     numIters = 1000;
     dim = 256;
     topK = 100;
+    warmCount = 1000;
     fanout = topK;
-    indexPath = Paths.get("knn_test_index");
   }
 
   public static void main(String... args) throws Exception {
@@ -93,26 +99,26 @@ public class KnnGraphTester {
   }
 
   private void run(String... args) throws Exception {
-    String operation = null, docVectorsPath = null, queryPath = null;
+    String operation = null;
+    Path docVectorsPath = null, queryPath = null, outputPath = null;
     for (int iarg = 0; iarg < args.length; iarg++) {
       String arg = args[iarg];
       switch (arg) {
-        case "-generate":
         case "-search":
         case "-check":
         case "-stats":
+        case "-dump":
           if (operation != null) {
             throw new IllegalArgumentException(
                 "Specify only one operation, not both " + arg + " and " + operation);
           }
-          if (iarg == args.length - 1) {
-            throw new IllegalArgumentException(
-                "Operation " + arg + " requires a following pathname");
-          }
           operation = arg;
-          docVectorsPath = args[++iarg];
           if (operation.equals("-search")) {
-            queryPath = args[++iarg];
+            if (iarg == args.length - 1) {
+              throw new IllegalArgumentException(
+                  "Operation " + arg + " requires a following pathname");
+            }
+            queryPath = Paths.get(args[++iarg]);
           }
           break;
         case "-fanout":
@@ -154,6 +160,21 @@ public class KnnGraphTester {
         case "-reindex":
           reindex = true;
           break;
+        case "-topK":
+          if (iarg == args.length - 1) {
+            throw new IllegalArgumentException("-topK requires a following number");
+          }
+          topK = Integer.parseInt(args[++iarg]);
+          break;
+        case "-out":
+          outputPath = Paths.get(args[++iarg]);
+          break;
+        case "-warm":
+          warmCount = Integer.parseInt(args[++iarg]);
+          break;
+        case "-docs":
+          docVectorsPath = Paths.get(args[++iarg]);
+          break;
         case "-forceMerge":
           operation = "-forceMerge";
           break;
@@ -165,32 +186,48 @@ public class KnnGraphTester {
           // usage();
       }
     }
-    if (operation == null) {
+    if (operation == null && reindex == false) {
       usage();
     }
+    indexPath = Paths.get(formatIndexPath(docVectorsPath));
     if (reindex) {
       if (docVectorsPath == null) {
         throw new IllegalArgumentException("-docs argument is required when indexing");
       }
-      reindexTimeMsec = createIndex(Paths.get(docVectorsPath), indexPath);
+      reindexTimeMsec = createIndex(docVectorsPath, indexPath);
     }
-    switch (operation) {
-      case "-search":
-        if (docVectorsPath == null) {
-          throw new IllegalArgumentException("-docs argument is required when searching");
-        }
-        testSearch(
-            indexPath,
-            Paths.get(queryPath),
-            getNN(Paths.get(docVectorsPath), Paths.get(queryPath)));
-        break;
-      case "-forceMerge":
-        forceMerge();
-        break;
-      case "-stats":
-        printFanoutHist(indexPath);
-        break;
+    if (operation != null) {
+      switch (operation) {
+        case "-search":
+          if (docVectorsPath == null) {
+            throw new IllegalArgumentException("missing -docs arg");
+          }
+          if (outputPath != null) {
+            testSearch(indexPath, queryPath, outputPath, null);
+          } else {
+            testSearch(indexPath, queryPath, null, getNN(docVectorsPath, queryPath));
+          }
+          break;
+        case "-forceMerge":
+          forceMerge();
+          break;
+        case "-dump":
+          dumpGraph(docVectorsPath);
+          break;
+        case "-stats":
+          printFanoutHist(indexPath);
+          break;
+      }
     }
+  }
+
+  private String formatIndexPath(Path docsPath) {
+    return docsPath.getFileName()
+        + "-"
+        + HnswGraphBuilder.DEFAULT_MAX_CONN
+        + "-"
+        + HnswGraphBuilder.DEFAULT_BEAM_WIDTH
+        + ".index";
   }
 
   @SuppressForbidden(reason = "Prints stuff")
@@ -206,6 +243,39 @@ public class KnnGraphTester {
         System.out.printf("Leaf %d has %d documents\n", context.ord, leafReader.maxDoc());
         printGraphFanout(knnValues, leafReader.maxDoc());
       }
+    }
+  }
+
+  private void dumpGraph(Path docsPath) throws IOException {
+    try (BinaryFileVectors vectors = new BinaryFileVectors(docsPath)) {
+      RandomAccessVectorValues values = vectors.randomAccess();
+      HnswGraphBuilder builder =
+          new HnswGraphBuilder(
+              vectors, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH, 0);
+      // start at node 1
+      for (int i = 1; i < numDocs; i++) {
+        builder.addGraphNode(values.vectorValue(i));
+        System.out.println("\nITERATION " + i);
+        dumpGraph(builder.hnsw);
+      }
+    }
+  }
+
+  private void dumpGraph(HnswGraph hnsw) {
+    for (int i = 0; i < hnsw.size(); i++) {
+      NeighborArray neighbors = hnsw.getNeighbors(i);
+      System.out.printf(Locale.ROOT, "%5d", i);
+      NeighborArray sorted = new NeighborArray(neighbors.size());
+      for (int j = 0; j < neighbors.size(); j++) {
+        int node = neighbors.node[j];
+        float score = neighbors.score[j];
+        sorted.add(node, score);
+      }
+      new NeighborArraySorter(sorted).sort(0, sorted.size());
+      for (int j = 0; j < sorted.size(); j++) {
+        System.out.printf(Locale.ROOT, " [%d, %.4f]", sorted.node[j], sorted.score[j]);
+      }
+      System.out.println();
     }
   }
 
@@ -263,7 +333,8 @@ public class KnnGraphTester {
   }
 
   @SuppressForbidden(reason = "Prints stuff")
-  private void testSearch(Path indexPath, Path queryPath, int[][] nn) throws IOException {
+  private void testSearch(Path indexPath, Path queryPath, Path outputPath, int[][] nn)
+      throws IOException {
     TopDocs[] results = new TopDocs[numIters];
     long elapsed, totalCpuTime, totalVisited = 0;
     try (FileChannel q = FileChannel.open(queryPath)) {
@@ -280,8 +351,8 @@ public class KnnGraphTester {
       long cpuTimeStartNs;
       try (Directory dir = FSDirectory.open(indexPath);
           DirectoryReader reader = DirectoryReader.open(dir)) {
-
-        for (int i = 0; i < 1000; i++) {
+        numDocs = reader.maxDoc();
+        for (int i = 0; i < warmCount; i++) {
           // warm up
           targets.get(target);
           results[i] = doKnnSearch(reader, KNN_FIELD, target, topK, fanout);
@@ -316,23 +387,37 @@ public class KnnGraphTester {
                 + "ms");
       }
     }
-    if (quiet == false) {
-      System.out.println("checking results");
-    }
-    float recall = checkResults(results, nn);
-    totalVisited /= numIters;
-    if (quiet) {
-      System.out.printf(
-          Locale.ROOT,
-          "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n",
-          recall,
-          totalCpuTime / (float) numIters,
-          numDocs,
-          fanout,
-          HnswGraphBuilder.DEFAULT_MAX_CONN,
-          HnswGraphBuilder.DEFAULT_BEAM_WIDTH,
-          totalVisited,
-          reindexTimeMsec);
+    if (outputPath != null) {
+      ByteBuffer buf = ByteBuffer.allocate(4);
+      IntBuffer ibuf = buf.order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
+      try (OutputStream out = Files.newOutputStream(outputPath)) {
+        for (int i = 0; i < numIters; i++) {
+          for (ScoreDoc doc : results[i].scoreDocs) {
+            ibuf.position(0);
+            ibuf.put(doc.doc);
+            out.write(buf.array());
+          }
+        }
+      }
+    } else {
+      if (quiet == false) {
+        System.out.println("checking results");
+      }
+      float recall = checkResults(results, nn);
+      totalVisited /= numIters;
+      if (quiet) {
+        System.out.printf(
+            Locale.ROOT,
+            "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n",
+            recall,
+            totalCpuTime / (float) numIters,
+            numDocs,
+            fanout,
+            HnswGraphBuilder.DEFAULT_MAX_CONN,
+            HnswGraphBuilder.DEFAULT_BEAM_WIDTH,
+            totalVisited,
+            reindexTimeMsec);
+      }
     }
   }
 
@@ -467,7 +552,7 @@ public class KnnGraphTester {
                   .order(ByteOrder.LITTLE_ENDIAN)
                   .asFloatBuffer();
           offset += blockSize;
-          Neighbors queue = Neighbors.create(topK, SEARCH_STRATEGY);
+          NeighborQueue queue = new NeighborQueue(topK, SEARCH_STRATEGY.reversed);
           for (; j < numDocs && vectors.hasRemaining(); j++) {
             vectors.get(vector);
             float d = SEARCH_STRATEGY.compare(query, vector);
@@ -536,8 +621,106 @@ public class KnnGraphTester {
   }
 
   private static void usage() {
-    String error = "Usage: TestKnnGraph -generate|-search|-stats|-check {datafile} [-beamWidth N]";
+    String error =
+        "Usage: TestKnnGraph [-reindex] [-search {queryfile}|-stats|-check] [-docs {datafile}] [-niter N] [-fanout N] [-maxConn N] [-beamWidth N]";
     System.err.println(error);
     System.exit(1);
+  }
+
+  class BinaryFileVectors implements RandomAccessVectorValuesProducer, Closeable {
+
+    private final int size;
+    private final FileChannel in;
+    private final FloatBuffer mmap;
+
+    BinaryFileVectors(Path filePath) throws IOException {
+      in = FileChannel.open(filePath);
+      long totalBytes = (long) numDocs * dim * Float.BYTES;
+      if (totalBytes > Integer.MAX_VALUE) {
+        throw new IllegalArgumentException("input over 2GB not supported");
+      }
+      int vectorByteSize = dim * Float.BYTES;
+      size = (int) (totalBytes / vectorByteSize);
+      mmap =
+          in.map(FileChannel.MapMode.READ_ONLY, 0, totalBytes)
+              .order(ByteOrder.LITTLE_ENDIAN)
+              .asFloatBuffer();
+    }
+
+    @Override
+    public void close() throws IOException {
+      in.close();
+    }
+
+    @Override
+    public RandomAccessVectorValues randomAccess() {
+      return new Values();
+    }
+
+    class Values implements RandomAccessVectorValues {
+
+      float[] vector = new float[dim];
+      FloatBuffer source = mmap.slice();
+
+      @Override
+      public int size() {
+        return size;
+      }
+
+      @Override
+      public int dimension() {
+        return dim;
+      }
+
+      @Override
+      public VectorValues.SearchStrategy searchStrategy() {
+        return SEARCH_STRATEGY;
+      }
+
+      @Override
+      public float[] vectorValue(int targetOrd) {
+        int pos = targetOrd * dim;
+        source.position(pos);
+        source.get(vector);
+        return vector;
+      }
+
+      @Override
+      public BytesRef binaryValue(int targetOrd) {
+        throw new UnsupportedOperationException();
+      }
+    }
+  }
+
+  static class NeighborArraySorter extends IntroSorter {
+    private final int[] node;
+    private final float[] score;
+
+    NeighborArraySorter(NeighborArray neighbors) {
+      node = neighbors.node;
+      score = neighbors.score;
+    }
+
+    int pivot;
+
+    @Override
+    protected void swap(int i, int j) {
+      int tmpNode = node[i];
+      float tmpScore = score[i];
+      node[i] = node[j];
+      score[i] = score[j];
+      node[j] = tmpNode;
+      score[j] = tmpScore;
+    }
+
+    @Override
+    protected void setPivot(int i) {
+      pivot = i;
+    }
+
+    @Override
+    protected int comparePivot(int j) {
+      return Float.compare(score[pivot], score[j]);
+    }
   }
 }
