@@ -18,16 +18,20 @@ package org.apache.lucene.util.mutable;
 
 /**
  * Base class for all mutable values.
- *  
- * @lucene.internal 
+ *
+ * @lucene.internal
  */
 public abstract class MutableValue implements Comparable<MutableValue> {
   public boolean exists = true;
 
   public abstract void copy(MutableValue source);
+
   public abstract MutableValue duplicate();
+
   public abstract boolean equalsSameType(Object other);
+
   public abstract int compareSameType(Object other);
+
   public abstract Object toObject();
 
   public boolean exists() {
@@ -61,5 +65,3 @@ public abstract class MutableValue implements Comparable<MutableValue> {
     return exists() ? toObject().toString() : "(null)";
   }
 }
-
-
