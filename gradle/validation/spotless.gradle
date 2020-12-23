@@ -38,15 +38,14 @@ allprojects { prj ->
         switch (project.path) {
           // These modules are complete - all sources scanned.
           case ":lucene:highlighter":
-            target "src/**"
-            targetExclude "**/resources/**", "**/overview.html", "**/CambridgeMA.utf8"
+            target "src/java/**", "src/test/**"
+            targetExclude "**/overview.html", "**/CambridgeMA.utf8"
             break
 
           // Partially complete.
           case ":lucene:core":
             target "src/java/**", "src/test/**"
-            targetExclude "**/resources/**",
-                "**/overview.html",
+            targetExclude "**/overview.html",
                 "**/META-INF/**",
                 "**/StandardTokenizerImpl.jflex",
                 "**/StandardTokenizerImpl.java",
