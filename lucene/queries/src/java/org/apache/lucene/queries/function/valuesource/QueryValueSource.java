@@ -42,6 +42,10 @@ public class QueryValueSource extends ValueSource {
   final float defVal;
 
   public QueryValueSource(Query q, float defVal) {
+    super();
+    if (q == null) {
+      throw new IllegalArgumentException("query cannot be null");
+    }
     this.q = q;
     this.defVal = defVal;
   }
