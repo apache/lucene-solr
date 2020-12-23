@@ -16,7 +16,7 @@
  */
 package org.apache.lucene;
 
-/** Lucene's package information, including version. * */
+/** Lucene's package information, including version. */
 public final class LucenePackage {
 
   private LucenePackage() {} // can't construct
