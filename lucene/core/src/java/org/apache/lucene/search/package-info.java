@@ -185,10 +185,9 @@
  * <p>Lucene scoring is the heart of why we all love Lucene. It is blazingly fast and it hides
  * almost all of the complexity from the user. In a nutshell, it works. At least, that is, until it
  * doesn't work, or doesn't work as one would expect it to work. Then we are left digging into
- * Lucene internals or asking for help on <a
- * href="mailto:java-user@lucene.apache.org">java-user@lucene.apache.org</a> to figure out why a
- * document with five of our query terms scores lower than a different document with only one of the
- * query terms.
+ * Lucene internals or asking for help on <code>java-user@lucene.apache.org</code> to figure out why
+ * a document with five of our query terms scores lower than a different document with only one of
+ * the query terms.
  *
  * <p>While this document won't answer your specific scoring issues, it will, hopefully, point you
  * to the places that can help you figure out the <i>what</i> and <i>why</i> of Lucene scoring.
