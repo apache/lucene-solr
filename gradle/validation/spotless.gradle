@@ -25,6 +25,8 @@ allprojects { prj ->
   plugins.withType(JavaPlugin) {
     prj.apply plugin: 'com.diffplug.spotless'
 
+    println "case \"" + prj.path + '"'
+
     spotless {
       java {
         // TODO: work out how to have multiple different header files (we have
@@ -73,6 +75,36 @@ allprojects { prj ->
             break
 
           // All others - disable reformatting/ checks for now.
+          case ":lucene:analysis:icu":
+          case ":lucene:analysis:kuromoji":
+          case ":lucene:analysis:morfologik":
+          case ":lucene:analysis:nori":
+          case ":lucene:analysis:opennlp":
+          case ":lucene:analysis:phonetic":
+          case ":lucene:analysis:smartcn":
+          case ":lucene:analysis:stempel":
+          case ":lucene:backward-codecs":
+          case ":lucene:benchmark":
+          case ":lucene:classification":
+          case ":lucene:codecs":
+          case ":lucene:demo":
+          case ":lucene:expressions":
+          case ":lucene:facet":
+          case ":lucene:grouping":
+          case ":lucene:join":
+          case ":lucene:luke":
+          case ":lucene:memory":
+          case ":lucene:misc":
+          case ":lucene:monitor":
+          case ":lucene:queries":
+          case ":lucene:queryparser":
+          case ":lucene:replicator":
+          case ":lucene:sandbox":
+          case ":lucene:spatial3d":
+          case ":lucene:spatial-extras":
+          case ":lucene:suggest":
+          case ":lucene:test-framework":
+
           default:
             target 'non-existing/**'
             break
