@@ -16,10 +16,12 @@
  */
 package org.apache.lucene.codecs.lucene80;
 
+import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_START;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.CorruptIndexException;
@@ -34,15 +36,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_START;
-
-/**
- * Reader for {@link Lucene80NormsFormat}
- */
+/** Reader for {@link Lucene80NormsFormat} */
 final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   // metadata maps (just file pointers and minimal stuff)
-  private final Map<Integer,NormsEntry> norms = new HashMap<>();
+  private final Map<Integer, NormsEntry> norms = new HashMap<>();
   private final int maxDoc;
   private IndexInput data;
   private boolean merging;
@@ -50,16 +47,30 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   private Map<Integer, RandomAccessInput> disiJumpTables;
   private Map<Integer, RandomAccessInput> dataInputs;
 
-  Lucene80NormsProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene80NormsProducer(
+      SegmentReadState state,
+      String dataCodec,
+      String dataExtension,
+      String metaCodec,
+      String metaExtension)
+      throws IOException {
     maxDoc = state.segmentInfo.maxDoc();
-    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
+    String metaName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     int version = -1;
 
     // read in the entries from the metadata file.
     try (ChecksumIndexInput in = state.directory.openChecksumInput(metaName, state.context)) {
       Throwable priorE = null;
       try {
-        version = CodecUtil.checkIndexHeader(in, metaCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        version =
+            CodecUtil.checkIndexHeader(
+                in,
+                metaCodec,
+                VERSION_START,
+                VERSION_CURRENT,
+                state.segmentInfo.getId(),
+                state.segmentSuffix);
         readFields(in, state.fieldInfos);
       } catch (Throwable exception) {
         priorE = exception;
@@ -68,13 +79,22 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       }
     }
 
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+    String dataName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
     data = state.directory.openInput(dataName, state.context);
     boolean success = false;
     try {
-      final int version2 = CodecUtil.checkIndexHeader(data, dataCodec, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      final int version2 =
+          CodecUtil.checkIndexHeader(
+              data,
+              dataCodec,
+              VERSION_START,
+              VERSION_CURRENT,
+              state.segmentInfo.getId(),
+              state.segmentSuffix);
       if (version != version2) {
-        throw new CorruptIndexException("Format versions mismatch: meta=" + version + ",data=" + version2, data);
+        throw new CorruptIndexException(
+            "Format versions mismatch: meta=" + version + ",data=" + version2, data);
       }
 
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
@@ -118,7 +138,7 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
     long normsOffset;
   }
 
-  static abstract class DenseNormsIterator extends NumericDocValues {
+  abstract static class DenseNormsIterator extends NumericDocValues {
 
     final int maxDoc;
     int doc = -1;
@@ -155,10 +175,9 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
     public long cost() {
       return maxDoc;
     }
-
   }
 
-  static abstract class SparseNormsIterator extends NumericDocValues {
+  abstract static class SparseNormsIterator extends NumericDocValues {
 
     final IndexedDISI disi;
 
@@ -208,10 +227,15 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       entry.numDocsWithField = meta.readInt();
       entry.bytesPerNorm = meta.readByte();
       switch (entry.bytesPerNorm) {
-        case 0: case 1: case 2: case 4: case 8:
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 8:
           break;
         default:
-          throw new CorruptIndexException("Invalid bytesPerValue: " + entry.bytesPerNorm + ", field: " + info.name, meta);
+          throw new CorruptIndexException(
+              "Invalid bytesPerValue: " + entry.bytesPerNorm + ", field: " + info.name, meta);
       }
       entry.normsOffset = meta.readLong();
       norms.put(info.number, entry);
@@ -224,7 +248,9 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       slice = dataInputs.get(field.number);
     }
     if (slice == null) {
-      slice = data.randomAccessSlice(entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
+      slice =
+          data.randomAccessSlice(
+              entry.normsOffset, entry.numDocsWithField * (long) entry.bytesPerNorm);
       if (merging) {
         dataInputs.put(field.number, slice);
       }
@@ -235,13 +261,22 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
   private IndexInput getDisiInput(FieldInfo field, NormsEntry entry) throws IOException {
     if (merging == false) {
       return IndexedDISI.createBlockSlice(
-          data, "docs", entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount);
+          data,
+          "docs",
+          entry.docsWithFieldOffset,
+          entry.docsWithFieldLength,
+          entry.jumpTableEntryCount);
     }
 
     IndexInput in = disiInputs.get(field.number);
     if (in == null) {
-      in = IndexedDISI.createBlockSlice(
-          data, "docs", entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount);
+      in =
+          IndexedDISI.createBlockSlice(
+              data,
+              "docs",
+              entry.docsWithFieldOffset,
+              entry.docsWithFieldLength,
+              entry.jumpTableEntryCount);
       disiInputs.put(field.number, in);
     }
 
@@ -268,7 +303,8 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       }
 
       @Override
-      public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      public IndexInput slice(String sliceDescription, long offset, long length)
+          throws IOException {
         throw new UnsupportedOperationException("Unused by IndexedDISI");
       }
 
@@ -314,15 +350,18 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       jumpTable = disiJumpTables.get(field.number);
     }
     if (jumpTable == null) {
-      jumpTable = IndexedDISI.createJumpTable(
-          data, entry.docsWithFieldOffset, entry.docsWithFieldLength, entry.jumpTableEntryCount);
+      jumpTable =
+          IndexedDISI.createJumpTable(
+              data,
+              entry.docsWithFieldOffset,
+              entry.docsWithFieldLength,
+              entry.jumpTableEntryCount);
       if (merging) {
         disiJumpTables.put(field.number, jumpTable);
       }
     }
     return jumpTable;
- }
-
+  }
 
   @Override
   public NumericDocValues getNorms(FieldInfo field) throws IOException {
@@ -378,7 +417,13 @@ final class Lucene80NormsProducer extends NormsProducer implements Cloneable {
       // sparse
       final IndexInput disiInput = getDisiInput(field, entry);
       final RandomAccessInput disiJumpTable = getDisiJumpTable(field, entry);
-      final IndexedDISI disi = new IndexedDISI(disiInput, disiJumpTable, entry.jumpTableEntryCount, entry.denseRankPower, entry.numDocsWithField);
+      final IndexedDISI disi =
+          new IndexedDISI(
+              disiInput,
+              disiJumpTable,
+              entry.jumpTableEntryCount,
+              entry.denseRankPower,
+              entry.numDocsWithField);
 
       if (entry.bytesPerNorm == 0) {
         return new SparseNormsIterator(disi) {

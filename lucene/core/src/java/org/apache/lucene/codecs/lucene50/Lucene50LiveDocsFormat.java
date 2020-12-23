@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.CorruptIndexException;
@@ -34,16 +32,18 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
-/** 
- * Lucene 5.0 live docs format 
- * <p>The .liv file is optional, and only exists when a segment contains
- * deletions.
- * <p>Although per-segment, this file is maintained exterior to compound segment
- * files.
+/**
+ * Lucene 5.0 live docs format
+ *
+ * <p>The .liv file is optional, and only exists when a segment contains deletions.
+ *
+ * <p>Although per-segment, this file is maintained exterior to compound segment files.
+ *
  * <p>Deletions (.liv) --&gt; IndexHeader,Generation,Bits
+ *
  * <ul>
- *   <li>SegmentHeader --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup></li>
+ *   <li>SegmentHeader --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}
+ *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup>
  * </ul>
  */
 public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
@@ -56,28 +56,38 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
 
   /** supported version range */
   private static final int VERSION_START = 0;
+
   private static final int VERSION_CURRENT = VERSION_START;
-  
+
   /** Sole constructor. */
-  public Lucene50LiveDocsFormat() {
-  }
-  
+  public Lucene50LiveDocsFormat() {}
+
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context)
+      throws IOException {
     long gen = info.getDelGen();
     String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
     final int length = info.info.maxDoc();
     try (ChecksumIndexInput input = dir.openChecksumInput(name, context)) {
       Throwable priorE = null;
       try {
-        CodecUtil.checkIndexHeader(input, CODEC_NAME, VERSION_START, VERSION_CURRENT, 
-                                     info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-        
+        CodecUtil.checkIndexHeader(
+            input,
+            CODEC_NAME,
+            VERSION_START,
+            VERSION_CURRENT,
+            info.info.getId(),
+            Long.toString(gen, Character.MAX_RADIX));
+
         FixedBitSet fbs = readFixedBitSet(input, length);
-        
+
         if (fbs.length() - fbs.cardinality() != info.getDelCount()) {
-          throw new CorruptIndexException("bits.deleted=" + (fbs.length() - fbs.cardinality()) + 
-                                          " info.delcount=" + info.getDelCount(), input);
+          throw new CorruptIndexException(
+              "bits.deleted="
+                  + (fbs.length() - fbs.cardinality())
+                  + " info.delcount="
+                  + info.getDelCount(),
+              input);
         }
         return fbs.asReadOnlyBits();
       } catch (Throwable exception) {
@@ -88,7 +98,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
     }
     throw new AssertionError();
   }
-  
+
   private FixedBitSet readFixedBitSet(IndexInput input, int length) throws IOException {
     long data[] = new long[FixedBitSet.bits2words(length)];
     for (int i = 0; i < data.length; i++) {
@@ -98,21 +108,34 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(
+      Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context)
+      throws IOException {
     long gen = info.getNextDelGen();
     String name = IndexFileNames.fileNameFromGeneration(info.info.name, EXTENSION, gen);
     int delCount;
     try (IndexOutput output = dir.createOutput(name, context)) {
-      
-      CodecUtil.writeIndexHeader(output, CODEC_NAME, VERSION_CURRENT, info.info.getId(), Long.toString(gen, Character.MAX_RADIX));
-      
+
+      CodecUtil.writeIndexHeader(
+          output,
+          CODEC_NAME,
+          VERSION_CURRENT,
+          info.info.getId(),
+          Long.toString(gen, Character.MAX_RADIX));
+
       delCount = writeBits(output, bits);
-      
+
       CodecUtil.writeFooter(output);
     }
     if (delCount != info.getDelCount() + newDelCount) {
-      throw new CorruptIndexException("bits.deleted=" + delCount + 
-          " info.delcount=" + info.getDelCount() + " newdelcount=" + newDelCount, name);
+      throw new CorruptIndexException(
+          "bits.deleted="
+              + delCount
+              + " info.delcount="
+              + info.getDelCount()
+              + " newdelcount="
+              + newDelCount,
+          name);
     }
   }
 

@@ -16,28 +16,26 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 
 /**
- * A {@link Query} wrapper that allows to give a boost to the wrapped query.
- * Boost values that are less than one will give less importance to this
- * query compared to other ones while values that are greater than one will
- * give more importance to the scores returned by this query.
+ * A {@link Query} wrapper that allows to give a boost to the wrapped query. Boost values that are
+ * less than one will give less importance to this query compared to other ones while values that
+ * are greater than one will give more importance to the scores returned by this query.
  *
- * More complex boosts can be applied by using FunctionScoreQuery in the
- * lucene-queries module
+ * <p>More complex boosts can be applied by using FunctionScoreQuery in the lucene-queries module
  */
 public final class BoostQuery extends Query {
 
   private final Query query;
   private final float boost;
 
-  /** Sole constructor: wrap {@code query} in such a way that the produced
-   *  scores will be boosted by {@code boost}. */
+  /**
+   * Sole constructor: wrap {@code query} in such a way that the produced scores will be boosted by
+   * {@code boost}.
+   */
   public BoostQuery(Query query, float boost) {
     this.query = Objects.requireNonNull(query);
     if (Float.isFinite(boost) == false || Float.compare(boost, 0f) < 0) {
@@ -46,29 +44,24 @@ public final class BoostQuery extends Query {
     this.boost = boost;
   }
 
-  /**
-   * Return the wrapped {@link Query}.
-   */
+  /** Return the wrapped {@link Query}. */
   public Query getQuery() {
     return query;
   }
 
-  /**
-   * Return the applied boost.
-   */
+  /** Return the applied boost. */
   public float getBoost() {
     return boost;
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(BoostQuery other) {
-    return query.equals(other.query) && 
-           Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
+    return query.equals(other.query)
+        && Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
   }
 
   @Override
@@ -121,8 +114,8 @@ public final class BoostQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return query.createWeight(searcher, scoreMode, BoostQuery.this.boost * boost);
   }
-
 }

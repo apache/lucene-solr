@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.TimeUnits;
 
 @SuppressCodecs({"SimpleText", "Direct"})
 @TimeoutSuite(millis = 8 * TimeUnits.HOUR)
@@ -38,27 +36,29 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 @Monster("takes ~ 2 hours if the heap is 5gb")
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")
 public class Test2BNumericDocValues extends LuceneTestCase {
-  
+
   // indexes IndexWriter.MAX_DOCS docs with an increasing dv field
   public void testNumerics() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BNumerics"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    
-    IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-        .setCodec(TestUtil.getDefaultCodec()));
+
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setRAMBufferSizeMB(256.0)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     NumericDocValuesField dvField = new NumericDocValuesField("dv", 0);
     doc.add(dvField);
-    
+
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       dvField.setLongValue(i);
       w.addDocument(doc);
@@ -67,13 +67,13 @@ public class Test2BNumericDocValues extends LuceneTestCase {
         System.out.flush();
       }
     }
-    
+
     w.forceMerge(1);
     w.close();
-    
+
     System.out.println("verifying...");
     System.out.flush();
-    
+
     DirectoryReader r = DirectoryReader.open(dir);
     long expectedValue = 0;
     for (LeafReaderContext context : r.leaves()) {
@@ -85,7 +85,7 @@ public class Test2BNumericDocValues extends LuceneTestCase {
         expectedValue++;
       }
     }
-    
+
     r.close();
     dir.close();
   }

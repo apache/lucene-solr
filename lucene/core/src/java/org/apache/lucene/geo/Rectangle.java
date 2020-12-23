@@ -19,15 +19,15 @@ package org.apache.lucene.geo;
 import static java.lang.Math.PI;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.apache.lucene.geo.GeoUtils.checkLatitude;
-import static org.apache.lucene.geo.GeoUtils.checkLongitude;
+import static org.apache.lucene.geo.GeoUtils.EARTH_MEAN_RADIUS_METERS;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_RADIANS;
 import static org.apache.lucene.geo.GeoUtils.MAX_LON_RADIANS;
+import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LAT_RADIANS;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_RADIANS;
-import static org.apache.lucene.geo.GeoUtils.EARTH_MEAN_RADIUS_METERS;
+import static org.apache.lucene.geo.GeoUtils.checkLatitude;
+import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 import static org.apache.lucene.geo.GeoUtils.sloppySin;
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
@@ -89,15 +89,23 @@ public class Rectangle extends LatLonGeometry {
     return maxLon < minLon;
   }
 
-  /** returns true if rectangle (defined by minLat, maxLat, minLon, maxLon) contains the lat lon point */
-  public static boolean containsPoint(final double lat, final double lon,
-                                      final double minLat, final double maxLat,
-                                      final double minLon, final double maxLon) {
+  /**
+   * returns true if rectangle (defined by minLat, maxLat, minLon, maxLon) contains the lat lon
+   * point
+   */
+  public static boolean containsPoint(
+      final double lat,
+      final double lon,
+      final double minLat,
+      final double maxLat,
+      final double minLon,
+      final double maxLon) {
     return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
   }
 
   /** Compute Bounding Box for a circle using WGS-84 parameters */
-  public static Rectangle fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
+  public static Rectangle fromPointDistance(
+      final double centerLat, final double centerLon, final double radiusMeters) {
     checkLatitude(centerLat);
     checkLongitude(centerLon);
     final double radLat = Math.toRadians(centerLat);
@@ -127,7 +135,11 @@ public class Rectangle extends LatLonGeometry {
       maxLon = MAX_LON_RADIANS;
     }
 
-    return new Rectangle(Math.toDegrees(minLat), Math.toDegrees(maxLat), Math.toDegrees(minLon), Math.toDegrees(maxLon));
+    return new Rectangle(
+        Math.toDegrees(minLat),
+        Math.toDegrees(maxLat),
+        Math.toDegrees(minLon),
+        Math.toDegrees(maxLon));
   }
 
   /** maximum error from {@link #axisLat(double, double)}. logic must be prepared to handle this */
@@ -135,8 +147,9 @@ public class Rectangle extends LatLonGeometry {
 
   /**
    * Calculate the latitude of a circle's intersections with its bbox meridians.
-   * <p>
-   * <b>NOTE:</b> the returned value will be +/- {@link #AXISLAT_ERROR} of the actual value.
+   *
+   * <p><b>NOTE:</b> the returned value will be +/- {@link #AXISLAT_ERROR} of the actual value.
+   *
    * @param centerLat The latitude of the circle center
    * @param radiusMeters The radius of the circle in meters
    * @return A latitude
@@ -186,7 +199,7 @@ public class Rectangle extends LatLonGeometry {
     double minLon = Double.POSITIVE_INFINITY;
     double maxLon = Double.NEGATIVE_INFINITY;
 
-    for (int i = 0;i < polygons.length; i++) {
+    for (int i = 0; i < polygons.length; i++) {
       minLat = Math.min(polygons[i].minLat, minLat);
       maxLat = Math.max(polygons[i].maxLat, maxLat);
       minLon = Math.min(polygons[i].minLon, minLon);
@@ -207,7 +220,6 @@ public class Rectangle extends LatLonGeometry {
     if (Double.compare(rectangle.minLon, minLon) != 0) return false;
     if (Double.compare(rectangle.maxLat, maxLat) != 0) return false;
     return Double.compare(rectangle.maxLon, maxLon) == 0;
-
   }
 
   @Override

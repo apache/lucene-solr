@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -40,45 +38,47 @@ import org.apache.lucene.util.TimeUnits;
 @Monster("Takes ~30min")
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")
 public class Test2BDocs extends LuceneTestCase {
-  
+
   // indexes Integer.MAX_VALUE docs with indexed field(s)
   public void test2BDocs() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BDocs"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    
-    IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-        .setCodec(TestUtil.getDefaultCodec()));
+
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setRAMBufferSizeMB(256.0)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     Field field = new Field("f1", "a", StringField.TYPE_NOT_STORED);
     doc.add(field);
-    
+
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       w.addDocument(doc);
-      if (i % (10*1000*1000) == 0) {
+      if (i % (10 * 1000 * 1000) == 0) {
         System.out.println("indexed: " + i);
         System.out.flush();
       }
     }
-    
+
     w.forceMerge(1);
     w.close();
-    
+
     System.out.println("verifying...");
     System.out.flush();
-    
+
     DirectoryReader r = DirectoryReader.open(dir);
 
     BytesRef term = new BytesRef(1);
-    term.bytes[0] = (byte)'a';
+    term.bytes[0] = (byte) 'a';
     term.length = 1;
 
     long skips = 0;
@@ -92,14 +92,13 @@ public class Test2BDocs extends LuceneTestCase {
       int lim = context.reader().maxDoc();
 
       Terms terms = reader.terms("f1");
-      for (int i=0; i<10000; i++) {
+      for (int i = 0; i < 10000; i++) {
         TermsEnum te = terms.iterator();
-        assertTrue( te.seekExact(term) );
+        assertTrue(te.seekExact(term));
         PostingsEnum docs = te.postings(null);
 
         // skip randomly through the term
-        for (int target = -1;;)
-        {
+        for (int target = -1; ; ) {
           int maxSkipSize = lim - target + 1;
           // do a smaller skip half of the time
           if (rnd.nextBoolean()) {
@@ -107,29 +106,29 @@ public class Test2BDocs extends LuceneTestCase {
           }
           int newTarget = target + rnd.nextInt(maxSkipSize) + 1;
           if (newTarget >= lim) {
-            if (target+1 >= lim) break; // we already skipped to end, so break.
-            newTarget = lim-1;  // skip to end
+            if (target + 1 >= lim) break; // we already skipped to end, so break.
+            newTarget = lim - 1; // skip to end
           }
           target = newTarget;
 
           int res = docs.advance(target);
           if (res == PostingsEnum.NO_MORE_DOCS) break;
 
-          assertTrue( res >= target );
+          assertTrue(res >= target);
 
           skips++;
           target = res;
         }
       }
     }
-    
+
     r.close();
     dir.close();
 
     long end = System.nanoTime();
 
-    System.out.println("Skip count=" + skips + " seconds=" + TimeUnit.NANOSECONDS.toSeconds(end-start));
+    System.out.println(
+        "Skip count=" + skips + " seconds=" + TimeUnit.NANOSECONDS.toSeconds(end - start));
     assert skips > 0;
   }
-  
 }

@@ -16,31 +16,28 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection; // for javadocs
 import java.util.Set;
-
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A {@code Directory} provides an abstraction layer for storing a
- * list of files. A directory contains only files (no sub-folder hierarchy).
+ * A {@code Directory} provides an abstraction layer for storing a list of files. A directory
+ * contains only files (no sub-folder hierarchy).
  *
- * Implementing classes must comply with the following:
+ * <p>Implementing classes must comply with the following:
  *
  * <ul>
- *   <li>A file in a directory can be created ({@link #createOutput}), appended
- *   to, then closed.</li>
- *   <li>A file open for writing may not be available
- *   for read access until the corresponding {@link IndexOutput} is closed.</li>
- *   <li>Once a file is created it must only be opened for input ({@link #openInput}), or
- *   deleted ({@link #deleteFile}). Calling {@link #createOutput} on an existing file
- *   must throw {@link java.nio.file.FileAlreadyExistsException}.</li>
+ *   <li>A file in a directory can be created ({@link #createOutput}), appended to, then closed.
+ *   <li>A file open for writing may not be available for read access until the corresponding {@link
+ *       IndexOutput} is closed.
+ *   <li>Once a file is created it must only be opened for input ({@link #openInput}), or deleted
+ *       ({@link #deleteFile}). Calling {@link #createOutput} on an existing file must throw {@link
+ *       java.nio.file.FileAlreadyExistsException}.
  * </ul>
  *
  * @see FSDirectory
@@ -49,9 +46,9 @@ import org.apache.lucene.util.IOUtils;
  */
 public abstract class Directory implements Closeable {
   /**
-   * Returns names of all files stored in this directory.
-   * The output must be in sorted (UTF-16, java's {@link String#compareTo}) order.
-   * 
+   * Returns names of all files stored in this directory. The output must be in sorted (UTF-16,
+   * java's {@link String#compareTo}) order.
+   *
    * @throws IOException in case of I/O error
    */
   public abstract String[] listAll() throws IOException;
@@ -59,7 +56,7 @@ public abstract class Directory implements Closeable {
   /**
    * Removes an existing file in the directory.
    *
-   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * <p>This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
    * if {@code name} points to a non-existing file.
    *
    * @param name the name of an existing file.
@@ -70,7 +67,7 @@ public abstract class Directory implements Closeable {
   /**
    * Returns the byte length of a file in the directory.
    *
-   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * <p>This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
    * if {@code name} points to a non-existing file.
    *
    * @param name the name of an existing file.
@@ -79,11 +76,11 @@ public abstract class Directory implements Closeable {
   public abstract long fileLength(String name) throws IOException;
 
   /**
-   * Creates a new, empty file in the directory and returns an {@link IndexOutput}
-   * instance for appending data to this file.
+   * Creates a new, empty file in the directory and returns an {@link IndexOutput} instance for
+   * appending data to this file.
    *
-   * This method must throw {@link java.nio.file.FileAlreadyExistsException} if the file
-   * already exists.
+   * <p>This method must throw {@link java.nio.file.FileAlreadyExistsException} if the file already
+   * exists.
    *
    * @param name the name of the file to create.
    * @throws IOException in case of I/O error
@@ -94,60 +91,58 @@ public abstract class Directory implements Closeable {
    * Creates a new, empty, temporary file in the directory and returns an {@link IndexOutput}
    * instance for appending data to this file.
    *
-   * The temporary file name (accessible via {@link IndexOutput#getName()}) will start with
+   * <p>The temporary file name (accessible via {@link IndexOutput#getName()}) will start with
    * {@code prefix}, end with {@code suffix} and have a reserved file extension {@code .tmp}.
    */
-  public abstract IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException;
+  public abstract IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException;
 
   /**
-   * Ensures that any writes to these files are moved to
-   * stable storage (made durable).
+   * Ensures that any writes to these files are moved to stable storage (made durable).
    *
-   * Lucene uses this to properly commit changes to the index, to prevent a machine/OS crash
-   * from corrupting the index.
+   * <p>Lucene uses this to properly commit changes to the index, to prevent a machine/OS crash from
+   * corrupting the index.
    *
    * @see #syncMetaData()
    */
   public abstract void sync(Collection<String> names) throws IOException;
 
   /**
-   * Ensures that directory metadata, such as recent file renames, are moved to stable
-   * storage.
+   * Ensures that directory metadata, such as recent file renames, are moved to stable storage.
    *
    * @see #sync(Collection)
    */
   public abstract void syncMetaData() throws IOException;
 
   /**
-   * Renames {@code source} file to {@code dest} file where
-   * {@code dest} must not already exist in the directory.
+   * Renames {@code source} file to {@code dest} file where {@code dest} must not already exist in
+   * the directory.
    *
-   * It is permitted for this operation to not be truly atomic, for example
-   * both {@code source} and {@code dest} can be visible temporarily in {@link #listAll()}.
-   * However, the implementation of this method must ensure the content of
-   * {@code dest} appears as the entire {@code source} atomically. So once
-   * {@code dest} is visible for readers, the entire content of previous {@code source}
-   * is visible.
+   * <p>It is permitted for this operation to not be truly atomic, for example both {@code source}
+   * and {@code dest} can be visible temporarily in {@link #listAll()}. However, the implementation
+   * of this method must ensure the content of {@code dest} appears as the entire {@code source}
+   * atomically. So once {@code dest} is visible for readers, the entire content of previous {@code
+   * source} is visible.
    *
-   * This method is used by IndexWriter to publish commits.
+   * <p>This method is used by IndexWriter to publish commits.
    */
   public abstract void rename(String source, String dest) throws IOException;
 
   /**
    * Opens a stream for reading an existing file.
    *
-   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * <p>This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
    * if {@code name} points to a non-existing file.
    *
    * @param name the name of an existing file.
    * @throws IOException in case of I/O error
    */
   public abstract IndexInput openInput(String name, IOContext context) throws IOException;
-  
+
   /**
    * Opens a checksum-computing stream for reading an existing file.
    *
-   * This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
+   * <p>This method must throw either {@link NoSuchFileException} or {@link FileNotFoundException}
    * if {@code name} points to a non-existing file.
    *
    * @param name the name of an existing file.
@@ -156,31 +151,30 @@ public abstract class Directory implements Closeable {
   public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
     return new BufferedChecksumIndexInput(openInput(name, context));
   }
-  
-  /** 
+
+  /**
    * Acquires and returns a {@link Lock} for a file with the given name.
    *
    * @param name the name of the lock file
-   * @throws LockObtainFailedException (optional specific exception) if the lock could
-   *         not be obtained because it is currently held elsewhere.
+   * @throws LockObtainFailedException (optional specific exception) if the lock could not be
+   *     obtained because it is currently held elsewhere.
    * @throws IOException if any i/o error occurs attempting to gain the lock
    */
   public abstract Lock obtainLock(String name) throws IOException;
 
-  /**
-   * Closes the directory.
-   */
+  /** Closes the directory. */
   @Override
   public abstract void close() throws IOException;
 
   /**
-   * Copies an existing {@code src} file from directory {@code from}
-   * to a non-existent file {@code dest} in this directory.
+   * Copies an existing {@code src} file from directory {@code from} to a non-existent file {@code
+   * dest} in this directory.
    */
-  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+  public void copyFrom(Directory from, String src, String dest, IOContext context)
+      throws IOException {
     boolean success = false;
     try (IndexInput is = from.openInput(src, context);
-         IndexOutput os = createOutput(dest, context)) {
+        IndexOutput os = createOutput(dest, context)) {
       os.copyBytes(is, is.length());
       success = true;
     } finally {
@@ -210,11 +204,13 @@ public abstract class Directory implements Closeable {
   public abstract Set<String> getPendingDeletions() throws IOException;
 
   /**
-   * Creates a file name for a temporary file. The name will start with
-   * {@code prefix}, end with {@code suffix} and have a reserved file extension {@code .tmp}.
+   * Creates a file name for a temporary file. The name will start with {@code prefix}, end with
+   * {@code suffix} and have a reserved file extension {@code .tmp}.
+   *
    * @see #createTempOutput(String, String, IOContext)
    */
   protected static String getTempFileName(String prefix, String suffix, long counter) {
-    return IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(counter, Character.MAX_RADIX), "tmp");
+    return IndexFileNames.segmentFileName(
+        prefix, suffix + "_" + Long.toString(counter, Character.MAX_RADIX), "tmp");
   }
 }

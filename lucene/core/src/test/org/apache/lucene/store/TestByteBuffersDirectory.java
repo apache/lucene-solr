@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Supplier;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,16 +31,13 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.English;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-
 public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
   private Supplier<ByteBuffersDirectory> implSupplier;
 
   public TestByteBuffersDirectory(Supplier<ByteBuffersDirectory> implSupplier, String name) {
     this.implSupplier = implSupplier;
   }
-  
+
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     return implSupplier.get();
@@ -49,8 +46,10 @@ public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
   @Test
   public void testBuildIndex() throws IOException {
     try (Directory dir = getDirectory(null);
-         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-            new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE))) {
+        IndexWriter writer =
+            new IndexWriter(
+                dir,
+                new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE))) {
       int docs = RandomizedTest.randomIntBetween(0, 10);
       for (int i = docs; i > 0; i--) {
         Document doc = new Document();
@@ -61,26 +60,47 @@ public class TestByteBuffersDirectory extends BaseDirectoryTestCase {
       assertEquals(docs, writer.getDocStats().numDocs);
     }
   }
-  
+
   @ParametersFactory(argumentFormatting = "impl=%2$s")
   public static Iterable<Object[]> parametersWithCustomName() {
-    return Arrays.asList(new Object [][] {
-      {(Supplier<ByteBuffersDirectory>) () -> new ByteBuffersDirectory(
-          new SingleInstanceLockFactory(), 
-          ByteBuffersDataOutput::new,
-          ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS), "many buffers (heap)"},
-      {(Supplier<ByteBuffersDirectory>) () -> new ByteBuffersDirectory(
-          new SingleInstanceLockFactory(), 
-          ByteBuffersDataOutput::new,
-          ByteBuffersDirectory.OUTPUT_AS_ONE_BUFFER), "one buffer (heap)"},
-      {(Supplier<ByteBuffersDirectory>) () -> new ByteBuffersDirectory(
-          new SingleInstanceLockFactory(), 
-          ByteBuffersDataOutput::new,
-          ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE), "lucene's buffers (heap)"},
-      {(Supplier<ByteBuffersDirectory>) () -> new ByteBuffersDirectory(
-          new SingleInstanceLockFactory(), 
-          ByteBuffersDataOutput::new,
-          ByteBuffersDirectory.OUTPUT_AS_BYTE_ARRAY), "byte array (heap)"},
-    });
+    return Arrays.asList(
+        new Object[][] {
+          {
+            (Supplier<ByteBuffersDirectory>)
+                () ->
+                    new ByteBuffersDirectory(
+                        new SingleInstanceLockFactory(),
+                        ByteBuffersDataOutput::new,
+                        ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS),
+            "many buffers (heap)"
+          },
+          {
+            (Supplier<ByteBuffersDirectory>)
+                () ->
+                    new ByteBuffersDirectory(
+                        new SingleInstanceLockFactory(),
+                        ByteBuffersDataOutput::new,
+                        ByteBuffersDirectory.OUTPUT_AS_ONE_BUFFER),
+            "one buffer (heap)"
+          },
+          {
+            (Supplier<ByteBuffersDirectory>)
+                () ->
+                    new ByteBuffersDirectory(
+                        new SingleInstanceLockFactory(),
+                        ByteBuffersDataOutput::new,
+                        ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE),
+            "lucene's buffers (heap)"
+          },
+          {
+            (Supplier<ByteBuffersDirectory>)
+                () ->
+                    new ByteBuffersDirectory(
+                        new SingleInstanceLockFactory(),
+                        ByteBuffersDataOutput::new,
+                        ByteBuffersDirectory.OUTPUT_AS_BYTE_ARRAY),
+            "byte array (heap)"
+          },
+        });
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
@@ -46,20 +44,17 @@ import org.apache.lucene.util.PriorityQueue;
 
 /**
  * A query that treats multiple terms as synonyms.
- * <p>
- * For scoring purposes, this query tries to score the terms as if you
- * had indexed them as one term: it will match any of the terms but
- * only invoke the similarity a single time, scoring the sum of all
- * term frequencies for the document.
+ *
+ * <p>For scoring purposes, this query tries to score the terms as if you had indexed them as one
+ * term: it will match any of the terms but only invoke the similarity a single time, scoring the
+ * sum of all term frequencies for the document.
  */
 public final class SynonymQuery extends Query {
 
   private final TermAndBoost terms[];
   private final String field;
 
-  /**
-   * A builder for {@link SynonymQuery}.
-   */
+  /** A builder for {@link SynonymQuery}. */
   public static class Builder {
     private final String field;
     private final List<TermAndBoost> terms = new ArrayList<>();
@@ -73,23 +68,22 @@ public final class SynonymQuery extends Query {
       this.field = field;
     }
 
-    /**
-     * Adds the provided {@code term} as a synonym.
-     */
+    /** Adds the provided {@code term} as a synonym. */
     public Builder addTerm(Term term) {
       return addTerm(term, 1f);
     }
 
     /**
-     * Adds the provided {@code term} as a synonym, document frequencies of this term
-     * will be boosted by {@code boost}.
+     * Adds the provided {@code term} as a synonym, document frequencies of this term will be
+     * boosted by {@code boost}.
      */
     public Builder addTerm(Term term, float boost) {
       if (field.equals(term.field()) == false) {
         throw new IllegalArgumentException("Synonyms must be across the same field");
       }
       if (Float.isNaN(boost) || Float.compare(boost, 0f) <= 0 || Float.compare(boost, 1f) > 0) {
-        throw new IllegalArgumentException("boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
+        throw new IllegalArgumentException(
+            "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
       }
       terms.add(new TermAndBoost(term, boost));
       if (terms.size() > IndexSearcher.getMaxClauseCount()) {
@@ -98,19 +92,17 @@ public final class SynonymQuery extends Query {
       return this;
     }
 
-    /**
-     * Builds the {@link SynonymQuery}.
-     */
+    /** Builds the {@link SynonymQuery}. */
     public SynonymQuery build() {
       Collections.sort(terms, Comparator.comparing(a -> a.term));
       return new SynonymQuery(terms.toArray(new TermAndBoost[0]), field);
     }
   }
-  
+
   /**
    * Creates a new SynonymQuery, matching any of the supplied terms.
-   * <p>
-   * The terms must all have the same field.
+   *
+   * <p>The terms must all have the same field.
    */
   private SynonymQuery(TermAndBoost[] terms, String field) {
     this.terms = Objects.requireNonNull(terms);
@@ -119,12 +111,9 @@ public final class SynonymQuery extends Query {
 
   public List<Term> getTerms() {
     return Collections.unmodifiableList(
-        Arrays.stream(terms)
-            .map(TermAndBoost::getTerm)
-            .collect(Collectors.toList())
-    );
+        Arrays.stream(terms).map(TermAndBoost::getTerm).collect(Collectors.toList()));
   }
-  
+
   @Override
   public String toString(String field) {
     StringBuilder builder = new StringBuilder("Synonym(");
@@ -150,8 +139,7 @@ public final class SynonymQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other)
-        && Arrays.equals(terms, ((SynonymQuery) other).terms);
+    return sameClassAs(other) && Arrays.equals(terms, ((SynonymQuery) other).terms);
   }
 
   @Override
@@ -161,7 +149,9 @@ public final class SynonymQuery extends Query {
       return new BooleanQuery.Builder().build();
     }
     if (terms.length == 1) {
-      return terms[0].boost == 1f ? new TermQuery(terms[0].term) : new BoostQuery(new TermQuery(terms[0].term), terms[0].boost);
+      return terms[0].boost == 1f
+          ? new TermQuery(terms[0].term)
+          : new BoostQuery(new TermQuery(terms[0].term), terms[0].boost);
     }
     return this;
   }
@@ -177,7 +167,8 @@ public final class SynonymQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     if (scoreMode.needsScores()) {
       return new SynonymWeight(this, searcher, scoreMode, boost);
     } else {
@@ -186,17 +177,20 @@ public final class SynonymQuery extends Query {
       for (TermAndBoost term : terms) {
         bq.add(new TermQuery(term.term), BooleanClause.Occur.SHOULD);
       }
-      return searcher.rewrite(bq.build()).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+      return searcher
+          .rewrite(bq.build())
+          .createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
   }
-  
+
   class SynonymWeight extends Weight {
     private final TermStates termStates[];
     private final Similarity similarity;
     private final Similarity.SimScorer simWeight;
     private final ScoreMode scoreMode;
 
-    SynonymWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    SynonymWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       super(query);
       assert scoreMode.needsScores();
       this.scoreMode = scoreMode;
@@ -205,17 +199,19 @@ public final class SynonymQuery extends Query {
       long totalTermFreq = 0;
       termStates = new TermStates[terms.length];
       for (int i = 0; i < termStates.length; i++) {
-        TermStates ts =  TermStates.build(searcher.getTopReaderContext(), terms[i].term, true);
+        TermStates ts = TermStates.build(searcher.getTopReaderContext(), terms[i].term, true);
         termStates[i] = ts;
         if (ts.docFreq() > 0) {
-          TermStatistics termStats = searcher.termStatistics(terms[i].term, ts.docFreq(), ts.totalTermFreq());
+          TermStatistics termStats =
+              searcher.termStatistics(terms[i].term, ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += termStats.totalTermFreq();
         }
       }
       this.similarity = searcher.getSimilarity();
       if (docFreq > 0) {
-        TermStatistics pseudoStats = new TermStatistics(new BytesRef("synonym pseudo-term"), docFreq, totalTermFreq);
+        TermStatistics pseudoStats =
+            new TermStatistics(new BytesRef("synonym pseudo-term"), docFreq, totalTermFreq);
         this.simWeight = similarity.scorer(boost, collectionStats, pseudoStats);
       } else {
         this.simWeight = null; // no terms exist at all, we won't use similarity
@@ -229,10 +225,11 @@ public final class SynonymQuery extends Query {
       if (indexTerms == null) {
         return super.matches(context, doc);
       }
-      List<Term> termList = Arrays.stream(terms)
-          .map(TermAndBoost::getTerm)
-          .collect(Collectors.toList());
-      return MatchesUtils.forField(field, () -> DisjunctionMatchesIterator.fromTerms(context, doc, getQuery(), field, termList));
+      List<Term> termList =
+          Arrays.stream(terms).map(TermAndBoost::getTerm).collect(Collectors.toList());
+      return MatchesUtils.forField(
+          field,
+          () -> DisjunctionMatchesIterator.fromTerms(context, doc, getQuery(), field, termList));
     }
 
     @Override
@@ -250,13 +247,19 @@ public final class SynonymQuery extends Query {
             assert scorer instanceof TermScorer;
             freq = ((TermScorer) scorer).freq();
           }
-          LeafSimScorer docScorer = new LeafSimScorer(simWeight, context.reader(), terms[0].term.field(), true);
+          LeafSimScorer docScorer =
+              new LeafSimScorer(simWeight, context.reader(), terms[0].term.field(), true);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
               scoreExplanation.getValue(),
-              "weight(" + getQuery() + " in " + doc + ") ["
-                  + similarity.getClass().getSimpleName() + "], result of:",
+              "weight("
+                  + getQuery()
+                  + " in "
+                  + doc
+                  + ") ["
+                  + similarity.getClass().getSimpleName()
+                  + "], result of:",
               scoreExplanation);
         }
       }
@@ -267,7 +270,7 @@ public final class SynonymQuery extends Query {
     public Scorer scorer(LeafReaderContext context) throws IOException {
       List<PostingsEnum> iterators = new ArrayList<>();
       List<ImpactsEnum> impacts = new ArrayList<>();
-      List<Float> termBoosts = new ArrayList<> ();
+      List<Float> termBoosts = new ArrayList<>();
       for (int i = 0; i < terms.length; i++) {
         TermState state = termStates[i].get(context);
         if (state != null) {
@@ -290,7 +293,8 @@ public final class SynonymQuery extends Query {
         return null;
       }
 
-      LeafSimScorer simScorer = new LeafSimScorer(simWeight, context.reader(), terms[0].term.field(), true);
+      LeafSimScorer simScorer =
+          new LeafSimScorer(simWeight, context.reader(), terms[0].term.field(), true);
 
       // we must optimize this case (term not in segment), disjunctions require >= 2 subs
       if (iterators.size() == 1) {
@@ -301,7 +305,9 @@ public final class SynonymQuery extends Query {
           scorer = new TermScorer(this, iterators.get(0), simScorer);
         }
         float boost = termBoosts.get(0);
-        return scoreMode == ScoreMode.COMPLETE_NO_SCORES || boost == 1f ? scorer : new FreqBoostTermScorer(boost, scorer, simScorer);
+        return scoreMode == ScoreMode.COMPLETE_NO_SCORES || boost == 1f
+            ? scorer
+            : new FreqBoostTermScorer(boost, scorer, simScorer);
       }
 
       // we use termscorers + disjunction as an impl detail
@@ -337,9 +343,7 @@ public final class SynonymQuery extends Query {
     }
   }
 
-  /**
-   * Merge impacts for multiple synonyms.
-   */
+  /** Merge impacts for multiple synonyms. */
   static ImpactsSource mergeImpacts(ImpactsEnum[] impactsEnums, float[] boosts) {
     assert impactsEnums.length == boosts.length;
     return new ImpactsSource() {
@@ -362,7 +366,6 @@ public final class SynonymQuery extends Query {
             current = iterator.next();
           }
         }
-
       }
 
       @Override
@@ -393,8 +396,8 @@ public final class SynonymQuery extends Query {
           }
 
           /**
-           * Return the minimum level whose impacts are valid up to {@code docIdUpTo},
-           * or {@code -1} if there is no such level.
+           * Return the minimum level whose impacts are valid up to {@code docIdUpTo}, or {@code -1}
+           * if there is no such level.
            */
           private int getLevel(Impacts impacts, int docIdUpTo) {
             for (int level = 0, numLevels = impacts.numLevels(); level < numLevels; ++level) {
@@ -422,35 +425,39 @@ public final class SynonymQuery extends Query {
                 final List<Impact> impactList;
                 if (boosts[i] != 1f) {
                   float boost = boosts[i];
-                  impactList = impacts[i].getImpacts(impactsLevel)
-                      .stream()
-                      .map(impact -> new Impact((int) Math.ceil(impact.freq * boost), impact.norm))
-                      .collect(Collectors.toList());
+                  impactList =
+                      impacts[i].getImpacts(impactsLevel).stream()
+                          .map(
+                              impact ->
+                                  new Impact((int) Math.ceil(impact.freq * boost), impact.norm))
+                          .collect(Collectors.toList());
                 } else {
                   impactList = impacts[i].getImpacts(impactsLevel);
                 }
                 toMerge.add(impactList);
               }
             }
-            assert toMerge.size() > 0; // otherwise it would mean the docID is > docIdUpTo, which is wrong
+            assert toMerge.size()
+                > 0; // otherwise it would mean the docID is > docIdUpTo, which is wrong
 
             if (toMerge.size() == 1) {
               // common if one synonym is common and the other one is rare
               return toMerge.get(0);
             }
 
-            PriorityQueue<SubIterator> pq = new PriorityQueue<SubIterator>(impacts.length) {
-              @Override
-              protected boolean lessThan(SubIterator a, SubIterator b) {
-                if (a.current == null) { // means iteration is finished
-                  return false;
-                }
-                if (b.current == null) {
-                  return true;
-                }
-                return Long.compareUnsigned(a.current.norm, b.current.norm) < 0;
-              }
-            };
+            PriorityQueue<SubIterator> pq =
+                new PriorityQueue<SubIterator>(impacts.length) {
+                  @Override
+                  protected boolean lessThan(SubIterator a, SubIterator b) {
+                    if (a.current == null) { // means iteration is finished
+                      return false;
+                    }
+                    if (b.current == null) {
+                      return true;
+                    }
+                    return Long.compareUnsigned(a.current.norm, b.current.norm) < 0;
+                  }
+                };
             for (List<Impact> impacts : toMerge) {
               pq.add(new SubIterator(impacts.iterator()));
             }
@@ -511,8 +518,12 @@ public final class SynonymQuery extends Query {
     private final ImpactsDISI impactsDisi;
     private final LeafSimScorer simScorer;
 
-    SynonymScorer(Weight weight, DisiPriorityQueue queue, DocIdSetIterator iterator,
-        ImpactsDISI impactsDisi, LeafSimScorer simScorer) {
+    SynonymScorer(
+        Weight weight,
+        DisiPriorityQueue queue,
+        DocIdSetIterator iterator,
+        ImpactsDISI impactsDisi,
+        LeafSimScorer simScorer) {
       super(weight);
       this.queue = queue;
       this.iterator = iterator;
@@ -583,7 +594,8 @@ public final class SynonymQuery extends Query {
     public FreqBoostTermScorer(float boost, TermScorer in, LeafSimScorer docScorer) {
       super(in);
       if (Float.isNaN(boost) || Float.compare(boost, 0f) < 0 || Float.compare(boost, 1f) > 0) {
-        throw new IllegalArgumentException("boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
+        throw new IllegalArgumentException(
+            "boost must be a positive float between 0 (exclusive) and 1 (inclusive)");
       }
       this.boost = boost;
       this.in = in;
@@ -634,8 +646,7 @@ public final class SynonymQuery extends Query {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       TermAndBoost that = (TermAndBoost) o;
-      return Float.compare(that.boost, boost) == 0 &&
-          Objects.equals(term, that.term);
+      return Float.compare(that.boost, boost) == 0 && Objects.equals(term, that.term);
     }
 
     @Override

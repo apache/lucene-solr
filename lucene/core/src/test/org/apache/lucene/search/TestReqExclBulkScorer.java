@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -52,56 +50,65 @@ public class TestReqExclBulkScorer extends LuceneTestCase {
     final DocIdSet req = reqBuilder.build();
     final DocIdSet excl = exclBuilder.build();
 
-    final BulkScorer reqBulkScorer = new BulkScorer() {
-      final DocIdSetIterator iterator = req.iterator();
+    final BulkScorer reqBulkScorer =
+        new BulkScorer() {
+          final DocIdSetIterator iterator = req.iterator();
 
-      @Override
-      public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
-        int doc = iterator.docID();
-        if (iterator.docID() < min) {
-          doc = iterator.advance(min);
-        }
-        while (doc < max) {
-          if (acceptDocs == null || acceptDocs.get(doc)) {
-            collector.collect(doc);
+          @Override
+          public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+              throws IOException {
+            int doc = iterator.docID();
+            if (iterator.docID() < min) {
+              doc = iterator.advance(min);
+            }
+            while (doc < max) {
+              if (acceptDocs == null || acceptDocs.get(doc)) {
+                collector.collect(doc);
+              }
+              doc = iterator.nextDoc();
+            }
+            return doc;
           }
-          doc = iterator.nextDoc();
-        }
-        return doc;
-      }
 
-      @Override
-      public long cost() {
-        return iterator.cost();
-      }
-    };
+          @Override
+          public long cost() {
+            return iterator.cost();
+          }
+        };
 
     ReqExclBulkScorer reqExcl = new ReqExclBulkScorer(reqBulkScorer, excl.iterator());
     final FixedBitSet actualMatches = new FixedBitSet(maxDoc);
     if (random().nextBoolean()) {
-      reqExcl.score(new LeafCollector() {
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {}
-        
-        @Override
-        public void collect(int doc) throws IOException {
-          actualMatches.set(doc);
-        }
-      }, null);
+      reqExcl.score(
+          new LeafCollector() {
+            @Override
+            public void setScorer(Scorable scorer) throws IOException {}
+
+            @Override
+            public void collect(int doc) throws IOException {
+              actualMatches.set(doc);
+            }
+          },
+          null);
     } else {
       int next = 0;
       while (next < maxDoc) {
         final int min = next;
         final int max = min + random().nextInt(10);
-        next = reqExcl.score(new LeafCollector() {
-          @Override
-          public void setScorer(Scorable scorer) throws IOException {}
-          
-          @Override
-          public void collect(int doc) throws IOException {
-            actualMatches.set(doc);
-          }
-        }, null, min, max);
+        next =
+            reqExcl.score(
+                new LeafCollector() {
+                  @Override
+                  public void setScorer(Scorable scorer) throws IOException {}
+
+                  @Override
+                  public void collect(int doc) throws IOException {
+                    actualMatches.set(doc);
+                  }
+                },
+                null,
+                min,
+                max);
         assertTrue(next >= max);
       }
     }
@@ -114,5 +121,4 @@ public class TestReqExclBulkScorer extends LuceneTestCase {
 
     assertArrayEquals(expectedMatches.getBits(), actualMatches.getBits());
   }
-
 }

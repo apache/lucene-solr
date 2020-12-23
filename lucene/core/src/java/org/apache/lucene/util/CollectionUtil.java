@@ -16,25 +16,22 @@
  */
 package org.apache.lucene.util;
 
-
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.RandomAccess;
 
 /**
- * Methods for manipulating (sorting) collections.
- * Sort methods work directly on the supplied lists and don't copy to/from arrays
- * before/after. For medium size collections as used in the Lucene indexer that is
- * much more efficient.
+ * Methods for manipulating (sorting) collections. Sort methods work directly on the supplied lists
+ * and don't copy to/from arrays before/after. For medium size collections as used in the Lucene
+ * indexer that is much more efficient.
  *
  * @lucene.internal
  */
-
 public final class CollectionUtil {
 
   private CollectionUtil() {} // no instance
+
   private static final class ListIntroSorter<T> extends IntroSorter {
 
     T pivot;
@@ -44,7 +41,8 @@ public final class CollectionUtil {
     ListIntroSorter(List<T> list, Comparator<? super T> comp) {
       super();
       if (!(list instanceof RandomAccess))
-        throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
+        throw new IllegalArgumentException(
+            "CollectionUtil can only sort random access lists in-place.");
       this.list = list;
       this.comp = comp;
     }
@@ -68,7 +66,6 @@ public final class CollectionUtil {
     protected int comparePivot(int j) {
       return comp.compare(pivot, list.get(j));
     }
-
   }
 
   private static final class ListTimSorter<T> extends TimSorter {
@@ -81,7 +78,8 @@ public final class CollectionUtil {
     ListTimSorter(List<T> list, Comparator<? super T> comp, int maxTempSlots) {
       super(maxTempSlots);
       if (!(list instanceof RandomAccess))
-        throw new IllegalArgumentException("CollectionUtil can only sort random access lists in-place.");
+        throw new IllegalArgumentException(
+            "CollectionUtil can only sort random access lists in-place.");
       this.list = list;
       this.comp = comp;
       if (maxTempSlots > 0) {
@@ -122,13 +120,13 @@ public final class CollectionUtil {
     protected int compareSaved(int i, int j) {
       return comp.compare(tmp[i], list.get(j));
     }
-
   }
 
   /**
-   * Sorts the given random access {@link List} using the {@link Comparator}.
-   * The list must implement {@link RandomAccess}. This method uses the intro sort
-   * algorithm, but falls back to insertion sort for small lists.
+   * Sorts the given random access {@link List} using the {@link Comparator}. The list must
+   * implement {@link RandomAccess}. This method uses the intro sort algorithm, but falls back to
+   * insertion sort for small lists.
+   *
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void introSort(List<T> list, Comparator<? super T> comp) {
@@ -136,11 +134,12 @@ public final class CollectionUtil {
     if (size <= 1) return;
     new ListIntroSorter<>(list, comp).sort(0, size);
   }
-  
+
   /**
-   * Sorts the given random access {@link List} in natural order.
-   * The list must implement {@link RandomAccess}. This method uses the intro sort
-   * algorithm, but falls back to insertion sort for small lists.
+   * Sorts the given random access {@link List} in natural order. The list must implement {@link
+   * RandomAccess}. This method uses the intro sort algorithm, but falls back to insertion sort for
+   * small lists.
+   *
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void introSort(List<T> list) {
@@ -150,11 +149,12 @@ public final class CollectionUtil {
   }
 
   // Tim sorts:
-  
+
   /**
-   * Sorts the given random access {@link List} using the {@link Comparator}.
-   * The list must implement {@link RandomAccess}. This method uses the Tim sort
-   * algorithm, but falls back to binary sort for small lists.
+   * Sorts the given random access {@link List} using the {@link Comparator}. The list must
+   * implement {@link RandomAccess}. This method uses the Tim sort algorithm, but falls back to
+   * binary sort for small lists.
+   *
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T> void timSort(List<T> list, Comparator<? super T> comp) {
@@ -162,11 +162,12 @@ public final class CollectionUtil {
     if (size <= 1) return;
     new ListTimSorter<>(list, comp, list.size() / 64).sort(0, size);
   }
-  
+
   /**
-   * Sorts the given random access {@link List} in natural order.
-   * The list must implement {@link RandomAccess}. This method uses the Tim sort
-   * algorithm, but falls back to binary sort for small lists.
+   * Sorts the given random access {@link List} in natural order. The list must implement {@link
+   * RandomAccess}. This method uses the Tim sort algorithm, but falls back to binary sort for small
+   * lists.
+   *
    * @throws IllegalArgumentException if list is e.g. a linked list without random access.
    */
   public static <T extends Comparable<? super T>> void timSort(List<T> list) {
@@ -174,5 +175,4 @@ public final class CollectionUtil {
     if (size <= 1) return;
     timSort(list, Comparator.naturalOrder());
   }
-
 }

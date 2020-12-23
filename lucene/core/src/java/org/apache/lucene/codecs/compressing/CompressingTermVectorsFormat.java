@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -30,8 +28,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
 /**
- * A {@link TermVectorsFormat} that compresses chunks of documents together in
- * order to improve the compression ratio.
+ * A {@link TermVectorsFormat} that compresses chunks of documents together in order to improve the
+ * compression ratio.
+ *
  * @lucene.experimental
  */
 public class CompressingTermVectorsFormat extends TermVectorsFormat {
@@ -44,23 +43,19 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
 
   /**
    * Create a new {@link CompressingTermVectorsFormat}.
-   * <p>
-   * <code>formatName</code> is the name of the format. This name will be used
-   * in the file formats to perform
-   * {@link CodecUtil#checkIndexHeader codec header checks}.
-   * <p>
-   * The <code>compressionMode</code> parameter allows you to choose between
-   * compression algorithms that have various compression and decompression
-   * speeds so that you can pick the one that best fits your indexing and
-   * searching throughput. You should never instantiate two
-   * {@link CompressingTermVectorsFormat}s that have the same name but
-   * different {@link CompressionMode}s.
-   * <p>
-   * <code>chunkSize</code> is the minimum byte size of a chunk of documents.
-   * Higher values of <code>chunkSize</code> should improve the compression
-   * ratio but will require more memory at indexing time and might make document
-   * loading a little slower (depending on the size of your OS cache compared
-   * to the size of your index).
+   *
+   * <p><code>formatName</code> is the name of the format. This name will be used in the file
+   * formats to perform {@link CodecUtil#checkIndexHeader codec header checks}.
+   *
+   * <p>The <code>compressionMode</code> parameter allows you to choose between compression
+   * algorithms that have various compression and decompression speeds so that you can pick the one
+   * that best fits your indexing and searching throughput. You should never instantiate two {@link
+   * CompressingTermVectorsFormat}s that have the same name but different {@link CompressionMode}s.
+   *
+   * <p><code>chunkSize</code> is the minimum byte size of a chunk of documents. Higher values of
+   * <code>chunkSize</code> should improve the compression ratio but will require more memory at
+   * indexing time and might make document loading a little slower (depending on the size of your OS
+   * cache compared to the size of your index).
    *
    * @param formatName the name of the {@link StoredFieldsFormat}
    * @param segmentSuffix a suffix to append to files created by this format
@@ -69,8 +64,12 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * @param blockSize the number of chunks to store in an index block.
    * @see CompressionMode
    */
-  public CompressingTermVectorsFormat(String formatName, String segmentSuffix,
-      CompressionMode compressionMode, int chunkSize, int blockSize) {
+  public CompressingTermVectorsFormat(
+      String formatName,
+      String segmentSuffix,
+      CompressionMode compressionMode,
+      int chunkSize,
+      int blockSize) {
     this.formatName = formatName;
     this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
@@ -85,24 +84,36 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public final TermVectorsReader vectorsReader(Directory directory,
-      SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
+  public final TermVectorsReader vectorsReader(
+      Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
       throws IOException {
-    return new CompressingTermVectorsReader(directory, segmentInfo, segmentSuffix,
-        fieldInfos, context, formatName, compressionMode);
+    return new CompressingTermVectorsReader(
+        directory, segmentInfo, segmentSuffix, fieldInfos, context, formatName, compressionMode);
   }
 
   @Override
-  public final TermVectorsWriter vectorsWriter(Directory directory,
-      SegmentInfo segmentInfo, IOContext context) throws IOException {
-    return new CompressingTermVectorsWriter(directory, segmentInfo, segmentSuffix,
-        context, formatName, compressionMode, chunkSize, blockSize);
+  public final TermVectorsWriter vectorsWriter(
+      Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+    return new CompressingTermVectorsWriter(
+        directory,
+        segmentInfo,
+        segmentSuffix,
+        context,
+        formatName,
+        compressionMode,
+        chunkSize,
+        blockSize);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ", blockSize=" + blockSize + ")";
+    return getClass().getSimpleName()
+        + "(compressionMode="
+        + compressionMode
+        + ", chunkSize="
+        + chunkSize
+        + ", blockSize="
+        + blockSize
+        + ")";
   }
-
 }

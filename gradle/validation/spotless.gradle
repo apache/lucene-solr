@@ -27,7 +27,10 @@ allprojects { prj ->
 
     spotless {
       java {
-        licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+        // TODO: work out how to have multiple different header files (we have
+        // classes in the codebase that have original headers).
+
+        // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
@@ -35,15 +38,25 @@ allprojects { prj ->
         switch (project.path) {
           // These modules are complete - all sources scanned.
           case ":lucene:highlighter":
-            target "src/**"
-            targetExclude "**/resources/**", "**/CambridgeMA.utf8", "**/overview.html"
+            target "src/java/**", "src/test/**"
+            targetExclude "**/overview.html", "**/CambridgeMA.utf8"
             break
 
           // Partially complete.
           case ":lucene:core":
-            target "src/**/org/apache/lucene/analysis/standard/**",
-                   "src/**/org/apache/lucene/analysis/tokenattributes/**"
-            targetExclude "**/resources/**", "**/StandardTokenizerImpl.jflex", "**/StandardTokenizerImpl.java"
+            target "src/java/**", "src/test/**"
+            targetExclude "**/overview.html",
+                "**/META-INF/**",
+                "**/StandardTokenizerImpl.jflex",
+                "**/StandardTokenizerImpl.java",
+                "**/createLevAutomata.py",
+                "**/UTF32ToUTF8.py",
+                "**/gen_BulkOperation.py",
+                "**/gen_Packed64SingleBlock.py",
+                "**/makeEuroparlLineFile.py",
+                "**/wordliststopwords.txt",
+                "**/wordliststopwords_nocomment.txt",
+                "**/gen_ForUtil.py"
             break
 
           case ":lucene:analysis:common":
@@ -53,6 +66,36 @@ allprojects { prj ->
             break
 
           // All others - disable reformatting/ checks for now.
+          case ":lucene:analysis:icu":
+          case ":lucene:analysis:kuromoji":
+          case ":lucene:analysis:morfologik":
+          case ":lucene:analysis:nori":
+          case ":lucene:analysis:opennlp":
+          case ":lucene:analysis:phonetic":
+          case ":lucene:analysis:smartcn":
+          case ":lucene:analysis:stempel":
+          case ":lucene:backward-codecs":
+          case ":lucene:benchmark":
+          case ":lucene:classification":
+          case ":lucene:codecs":
+          case ":lucene:demo":
+          case ":lucene:expressions":
+          case ":lucene:facet":
+          case ":lucene:grouping":
+          case ":lucene:join":
+          case ":lucene:luke":
+          case ":lucene:memory":
+          case ":lucene:misc":
+          case ":lucene:monitor":
+          case ":lucene:queries":
+          case ":lucene:queryparser":
+          case ":lucene:replicator":
+          case ":lucene:sandbox":
+          case ":lucene:spatial3d":
+          case ":lucene:spatial-extras":
+          case ":lucene:suggest":
+          case ":lucene:test-framework":
+
           default:
             target 'non-existing/**'
             break

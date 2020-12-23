@@ -41,7 +41,6 @@ public class XYDocValuesPointInGeometryQuery extends Query {
   private final String field;
   private final XYGeometry[] geometries;
 
-
   XYDocValuesPointInGeometryQuery(String field, XYGeometry... geometries) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
@@ -78,8 +77,7 @@ public class XYDocValuesPointInGeometryQuery extends Query {
       return false;
     }
     XYDocValuesPointInGeometryQuery other = (XYDocValuesPointInGeometryQuery) obj;
-    return field.equals(other.field) &&
-           Arrays.equals(geometries, other.geometries);
+    return field.equals(other.field) && Arrays.equals(geometries, other.geometries);
   }
 
   @Override
@@ -98,7 +96,8 @@ public class XYDocValuesPointInGeometryQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -111,26 +110,27 @@ public class XYDocValuesPointInGeometryQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator iterator = new TwoPhaseIterator(values) {
+        final TwoPhaseIterator iterator =
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-              final long value = values.nextValue();
-              final double x = XYEncodingUtils.decode((int) (value >>> 32));
-              final double y = XYEncodingUtils.decode((int) (value & 0xFFFFFFFF));
-              if (component2D.contains(x, y)) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                  final long value = values.nextValue();
+                  final double x = XYEncodingUtils.decode((int) (value >>> 32));
+                  final double y = XYEncodingUtils.decode((int) (value & 0xFFFFFFFF));
+                  if (component2D.contains(x, y)) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 1000f; // TODO: what should it be?
-          }
-        };
+              @Override
+              public float matchCost() {
+                return 1000f; // TODO: what should it be?
+              }
+            };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 

@@ -18,13 +18,15 @@
 package org.apache.lucene.geo;
 
 /**
- * Represents a point on the earth's surface.  You can construct the point directly with {@code double}
- * coordinates.
- * <p>
- * NOTES:
+ * Represents a point on the earth's surface. You can construct the point directly with {@code
+ * double} coordinates.
+ *
+ * <p>NOTES:
+ *
  * <ol>
  *   <li>latitude/longitude values must be in decimal degrees.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras}
+ *       module
  * </ol>
  */
 public final class Point extends LatLonGeometry {
@@ -34,9 +36,7 @@ public final class Point extends LatLonGeometry {
   /** longitude coordinate */
   private final double lon;
 
-  /**
-   * Creates a new Point from the supplied latitude/longitude.
-   */
+  /** Creates a new Point from the supplied latitude/longitude. */
   public Point(double lat, double lon) {
     GeoUtils.checkLatitude(lat);
     GeoUtils.checkLongitude(lon);

@@ -16,7 +16,7 @@
  */
 
 /**
- * Navigable Small-World graph, nominally Hierarchical but currently only has a single
- * layer. Provides efficient approximate nearest neighbor search for high dimensional vectors.
+ * Navigable Small-World graph, nominally Hierarchical but currently only has a single layer.
+ * Provides efficient approximate nearest neighbor search for high dimensional vectors.
  */
 package org.apache.lucene.util.hnsw;

@@ -19,10 +19,10 @@ package org.apache.lucene.util;
 /**
  * A heap that stores longs; a primitive priority queue that like all priority queues maintains a
  * partial ordering of its elements such that the least element can always be found in constant
- * time. Put()'s and pop()'s require log(size). This heap provides unbounded growth via {@link #push(long)},
- * and bounded-size insertion based on its nominal maxSize via {@link #insertWithOverflow(long)}.
- * The heap may be either a min heap, in which case the least element is the smallest integer, or a
- * max heap, when it is the largest, depending on the Order parameter.
+ * time. Put()'s and pop()'s require log(size). This heap provides unbounded growth via {@link
+ * #push(long)}, and bounded-size insertion based on its nominal maxSize via {@link
+ * #insertWithOverflow(long)}. The heap may be either a min heap, in which case the least element is
+ * the smallest integer, or a max heap, when it is the largest, depending on the Order parameter.
  *
  * @lucene.internal
  */
@@ -35,7 +35,8 @@ public abstract class LongHeap {
    * the minimum <code>maxSize</code> elements.
    */
   public enum Order {
-    MIN, MAX
+    MIN,
+    MAX
   }
 
   private final int maxSize;
@@ -45,13 +46,16 @@ public abstract class LongHeap {
 
   /**
    * Create an empty priority queue of the configured initial size.
-   * @param maxSize the maximum size of the heap, or if negative, the initial size of an unbounded heap
+   *
+   * @param maxSize the maximum size of the heap, or if negative, the initial size of an unbounded
+   *     heap
    */
   LongHeap(int maxSize) {
     final int heapSize;
     if (maxSize < 1 || maxSize >= ArrayUtil.MAX_ARRAY_LENGTH) {
       // Throw exception to prevent confusing OOME:
-      throw new IllegalArgumentException("maxSize must be > 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH - 1) + "; got: " + maxSize);
+      throw new IllegalArgumentException(
+          "maxSize must be > 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH - 1) + "; got: " + maxSize);
     }
     // NOTE: we add +1 because all access to heap is 1-based not 0-based.  heap[0] is unused.
     heapSize = maxSize + 1;
@@ -78,9 +82,11 @@ public abstract class LongHeap {
     }
   }
 
-  /** Determines the ordering of objects in this priority queue. Subclasses must define this one
-   *  method.
-   *  @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
+  /**
+   * Determines the ordering of objects in this priority queue. Subclasses must define this one
+   * method.
+   *
+   * @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
    */
   public abstract boolean lessThan(long a, long b);
 
@@ -102,7 +108,9 @@ public abstract class LongHeap {
   /**
    * Adds a value to an LongHeap in log(size) time. If the number of values would exceed the heap's
    * maxSize, the least value is discarded.
-   * @return whether the value was added (unless the heap is full, or the new value is less than the top value)
+   *
+   * @return whether the value was added (unless the heap is full, or the new value is less than the
+   *     top value)
    */
   public boolean insertWithOverflow(long value) {
     if (size >= maxSize) {
@@ -116,7 +124,8 @@ public abstract class LongHeap {
     return true;
   }
 
-  /** Returns the least element of the LongHeap in constant time. It is up to the caller to verify
+  /**
+   * Returns the least element of the LongHeap in constant time. It is up to the caller to verify
    * that the heap is not empty; no checking is done, and if no elements have been added, 0 is
    * returned.
    */
@@ -124,15 +133,17 @@ public abstract class LongHeap {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size) time.
+  /**
+   * Removes and returns the least element of the PriorityQueue in log(size) time.
+   *
    * @throws IllegalStateException if the LongHeap is empty.
-  */
+   */
   public final long pop() {
     if (size > 0) {
-      long result = heap[1];     // save first value
-      heap[1] = heap[size];     // move last to first
+      long result = heap[1]; // save first value
+      heap[1] = heap[size]; // move last to first
       size--;
-      downHeap(1);              // adjust heap
+      downHeap(1); // adjust heap
       return result;
     } else {
       throw new IllegalStateException("The heap is empty");
@@ -140,8 +151,8 @@ public abstract class LongHeap {
   }
 
   /**
-   * Replace the top of the pq with {@code newTop}. Should be called when the top value
-   * changes. Still log(n) worst case, but it's at least twice as fast to
+   * Replace the top of the pq with {@code newTop}. Should be called when the top value changes.
+   * Still log(n) worst case, but it's at least twice as fast to
    *
    * <pre class="prettyprint">
    * pq.updateTop(value);
@@ -177,25 +188,25 @@ public abstract class LongHeap {
 
   private void upHeap(int origPos) {
     int i = origPos;
-    long value = heap[i];         // save bottom value
+    long value = heap[i]; // save bottom value
     int j = i >>> 1;
     while (j > 0 && lessThan(value, heap[j])) {
-      heap[i] = heap[j];       // shift parents down
+      heap[i] = heap[j]; // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = value;            // install saved value
+    heap[i] = value; // install saved value
   }
 
   private void downHeap(int i) {
-    long value = heap[i];          // save top value
-    int j = i << 1;            // find smaller child
+    long value = heap[i]; // save top value
+    int j = i << 1; // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
     while (j <= size && lessThan(heap[j], value)) {
-      heap[i] = heap[j];       // shift up child
+      heap[i] = heap[j]; // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -203,7 +214,7 @@ public abstract class LongHeap {
         j = k;
       }
     }
-    heap[i] = value;            // install saved value
+    heap[i] = value; // install saved value
   }
 
   public void pushAll(LongHeap other) {
@@ -212,18 +223,20 @@ public abstract class LongHeap {
     }
   }
 
-  /** Return the element at the ith location in the heap array. Use for iterating over elements when the order doesn't matter.
-   * Note that the valid arguments range from [1, size].
+  /**
+   * Return the element at the ith location in the heap array. Use for iterating over elements when
+   * the order doesn't matter. Note that the valid arguments range from [1, size].
    */
   public long get(int i) {
     return heap[i];
   }
 
-  /** This method returns the internal heap array.
+  /**
+   * This method returns the internal heap array.
+   *
    * @lucene.internal
    */
   protected final long[] getHeapArray() {
     return heap;
   }
-
 }

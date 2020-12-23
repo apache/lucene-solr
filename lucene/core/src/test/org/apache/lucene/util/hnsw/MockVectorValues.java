@@ -24,7 +24,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-class MockVectorValues extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
+class MockVectorValues extends VectorValues
+    implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
   private final float[] scratch;
 
   protected final int dimension;
@@ -76,7 +77,8 @@ class MockVectorValues extends VectorValues implements RandomAccessVectorValues,
       return values[pos];
     } else {
       // Sometimes use the same scratch array repeatedly, mimicing what the codec will do.
-      // This should help us catch cases of aliasing where the same VectorValues source is used twice in a
+      // This should help us catch cases of aliasing where the same VectorValues source is used
+      // twice in a
       // single computation.
       System.arraycopy(values[pos], 0, scratch, 0, dimension);
       return scratch;

@@ -22,5 +22,4 @@ public class TestDistributionSPL extends DistributionTestCase {
   protected Distribution getDistribution() {
     return new DistributionSPL();
   }
-
 }

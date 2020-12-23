@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,7 +37,7 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
     assumeFalse("this test can't run on Windows", Constants.WINDOWS);
 
     MockDirectoryWrapper dir = newMockDirectory();
-    
+
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMergeFactor(2);
@@ -57,7 +55,7 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
     w.close();
 
     // Blow away index and make a new writer:
-    for(String name : dir.listAll()) {
+    for (String name : dir.listAll()) {
       dir.deleteFile(name);
     }
 

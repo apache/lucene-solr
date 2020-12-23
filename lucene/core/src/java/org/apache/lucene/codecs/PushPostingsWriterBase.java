@@ -16,23 +16,20 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
- * Extension of {@link PostingsWriterBase}, adding a push
- * API for writing each element of the postings.  This API
- * is somewhat analogous to an XML SAX API, while {@link
- * PostingsWriterBase} is more like an XML DOM API.
- * 
+ * Extension of {@link PostingsWriterBase}, adding a push API for writing each element of the
+ * postings. This API is somewhat analogous to an XML SAX API, while {@link PostingsWriterBase} is
+ * more like an XML DOM API.
+ *
  * @see PostingsReaderBase
  * @lucene.experimental
  */
@@ -48,8 +45,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   /** {@link FieldInfo} of current field being written. */
   protected FieldInfo fieldInfo;
 
-  /** {@link IndexOptions} of current field being
-      written */
+  /** {@link IndexOptions} of current field being written */
   protected IndexOptions indexOptions;
 
   /** True if the current field writes freqs. */
@@ -64,28 +60,28 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   /** True if the current field writes offsets. */
   protected boolean writeOffsets;
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected PushPostingsWriterBase() {
-  }
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected PushPostingsWriterBase() {}
 
   /** Return a newly created empty TermState */
   public abstract BlockTermState newTermState() throws IOException;
 
-  /** Start a new term.  Note that a matching call to {@link
-   *  #finishTerm(BlockTermState)} is done, only if the term has at least one
-   *  document. */
+  /**
+   * Start a new term. Note that a matching call to {@link #finishTerm(BlockTermState)} is done,
+   * only if the term has at least one document.
+   */
   public abstract void startTerm(NumericDocValues norms) throws IOException;
 
-  /** Finishes the current term.  The provided {@link
-   *  BlockTermState} contains the term's summary statistics, 
-   *  and will holds metadata from PBF when returned */
+  /**
+   * Finishes the current term. The provided {@link BlockTermState} contains the term's summary
+   * statistics, and will holds metadata from PBF when returned
+   */
   public abstract void finishTerm(BlockTermState state) throws IOException;
 
-  /** 
-   * Sets the current field for writing, and returns the
-   * fixed length of long[] metadata (which is fixed per
-   * field), called when the writing switches to another field. */
+  /**
+   * Sets the current field for writing, and returns the fixed length of long[] metadata (which is
+   * fixed per field), called when the writing switches to another field.
+   */
   @Override
   public void setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
@@ -93,7 +89,8 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
 
     writeFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     writePositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    writeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;        
+    writeOffsets =
+        indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     writePayloads = fieldInfo.hasPayloads();
 
     if (writeFreqs == false) {
@@ -116,7 +113,9 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
   }
 
   @Override
-  public final BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms) throws IOException {
+  public final BlockTermState writeTerm(
+      BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms)
+      throws IOException {
     NumericDocValues normValues;
     if (fieldInfo.hasNorms() == false) {
       normValues = null;
@@ -146,7 +145,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
       startDoc(docID, freq);
 
       if (writePositions) {
-        for(int i=0;i<freq;i++) {
+        for (int i = 0; i < freq; i++) {
           int pos = postingsEnum.nextPosition();
           BytesRef payload = writePayloads ? postingsEnum.getPayload() : null;
           int startOffset;
@@ -176,20 +175,21 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
     }
   }
 
-  /** Adds a new doc in this term. 
-   * <code>freq</code> will be -1 when term frequencies are omitted
-   * for the field. */
+  /**
+   * Adds a new doc in this term. <code>freq</code> will be -1 when term frequencies are omitted for
+   * the field.
+   */
   public abstract void startDoc(int docID, int freq) throws IOException;
 
-  /** Add a new position and payload, and start/end offset.  A
-   *  null payload means no payload; a non-null payload with
-   *  zero length also means no payload.  Caller may reuse
-   *  the {@link BytesRef} for the payload between calls
-   *  (method must fully consume the payload). <code>startOffset</code>
-   *  and <code>endOffset</code> will be -1 when offsets are not indexed. */
-  public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException;
+  /**
+   * Add a new position and payload, and start/end offset. A null payload means no payload; a
+   * non-null payload with zero length also means no payload. Caller may reuse the {@link BytesRef}
+   * for the payload between calls (method must fully consume the payload). <code>startOffset</code>
+   * and <code>endOffset</code> will be -1 when offsets are not indexed.
+   */
+  public abstract void addPosition(int position, BytesRef payload, int startOffset, int endOffset)
+      throws IOException;
 
-  /** Called when we are done adding positions and payloads
-   *  for each doc. */
+  /** Called when we are done adding positions and payloads for each doc. */
   public abstract void finishDoc() throws IOException;
 }

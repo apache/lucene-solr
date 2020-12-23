@@ -19,7 +19,10 @@ package org.apache.lucene.util.hnsw;
 
 import org.apache.lucene.util.ArrayUtil;
 
-/** NeighborArray encodes the neighbors of a node and their mutual scores in the HNSW graph as a pair of growable arrays.
+/**
+ * NeighborArray encodes the neighbors of a node and their mutual scores in the HNSW graph as a pair
+ * of growable arrays.
+ *
  * @lucene.internal
  */
 public class NeighborArray {
@@ -49,7 +52,9 @@ public class NeighborArray {
     return size;
   }
 
-  /** Direct access to the internal list of node ids; provided for efficient writing of the graph
+  /**
+   * Direct access to the internal list of node ids; provided for efficient writing of the graph
+   *
    * @lucene.internal
    */
   public int[] node() {
@@ -68,6 +73,4 @@ public class NeighborArray {
   public String toString() {
     return "NeighborArray[" + size + "]";
   }
-
 }
-

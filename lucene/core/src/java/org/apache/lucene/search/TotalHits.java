@@ -19,38 +19,29 @@ package org.apache.lucene.search;
 import java.util.Objects;
 
 /**
- * Description of the total number of hits of a query. The total hit count
- * can't generally be computed accurately without visiting all matches, which
- * is costly for queries that match lots of documents. Given that it is often
- * enough to have a lower bounds of the number of hits, such as
- * "there are more than 1000 hits", Lucene has options to stop counting as soon
- * as a threshold has been reached in order to improve query times.
+ * Description of the total number of hits of a query. The total hit count can't generally be
+ * computed accurately without visiting all matches, which is costly for queries that match lots of
+ * documents. Given that it is often enough to have a lower bounds of the number of hits, such as
+ * "there are more than 1000 hits", Lucene has options to stop counting as soon as a threshold has
+ * been reached in order to improve query times.
  */
 public final class TotalHits {
 
   /** How the {@link TotalHits#value} should be interpreted. */
   public enum Relation {
-    /**
-     * The total hit count is equal to {@link TotalHits#value}.
-     */
+    /** The total hit count is equal to {@link TotalHits#value}. */
     EQUAL_TO,
-    /**
-     * The total hit count is greater than or equal to {@link TotalHits#value}.
-     */
+    /** The total hit count is greater than or equal to {@link TotalHits#value}. */
     GREATER_THAN_OR_EQUAL_TO
   }
 
-  /**
-   * The value of the total hit count. Must be interpreted in the context of
-   * {@link #relation}.
-   */
+  /** The value of the total hit count. Must be interpreted in the context of {@link #relation}. */
   public final long value;
 
   /**
-   * Whether {@link #value} is the exact hit count, in which case
-   * {@link #relation} is equal to {@link Relation#EQUAL_TO}, or a lower bound
-   * of the total hit count, in which case {@link #relation} is equal to
-   * {@link Relation#GREATER_THAN_OR_EQUAL_TO}.
+   * Whether {@link #value} is the exact hit count, in which case {@link #relation} is equal to
+   * {@link Relation#EQUAL_TO}, or a lower bound of the total hit count, in which case {@link
+   * #relation} is equal to {@link Relation#GREATER_THAN_OR_EQUAL_TO}.
    */
   public final Relation relation;
 
@@ -84,5 +75,4 @@ public final class TotalHits {
   public String toString() {
     return value + (relation == Relation.EQUAL_TO ? "" : "+") + " hits";
   }
-
 }

@@ -17,25 +17,21 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Tests MatchAllDocsQuery.
- *
- */
+/** Tests MatchAllDocsQuery. */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -44,7 +40,12 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    IndexWriter iw =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy()));
     addDoc("one", iw);
     addDoc("two", iw);
     addDoc("three four", iw);
@@ -52,7 +53,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
-    
+
     hits = is.search(new MatchAllDocsQuery(), 1000).scoreDocs;
     assertEquals(3, hits.length);
     assertEquals("one", is.doc(hits[0].doc).get("key"));
@@ -60,7 +61,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals("three four", is.doc(hits[2].doc).get("key"));
 
     // some artificial queries to trigger the use of skipTo():
-    
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bq.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
@@ -77,7 +78,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     ir.close();
     ir = DirectoryReader.open(iw);
     is = newSearcher(ir);
-    
+
     hits = is.search(new MatchAllDocsQuery(), 1000).scoreDocs;
     assertEquals(2, hits.length);
 
@@ -91,7 +92,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     Query q2 = new MatchAllDocsQuery();
     assertTrue(q1.equals(q2));
   }
-  
+
   private void addDoc(String text, IndexWriter iw) throws IOException {
     Document doc = new Document();
     Field f = newTextField("key", text, Field.Store.YES);
@@ -102,7 +103,12 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   public void testEarlyTermination() throws IOException {
 
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    IndexWriter iw =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy()));
     final int numDocs = 500;
     for (int i = 0; i < numDocs; i++) {
       addDoc("doc" + i, iw);
@@ -115,7 +121,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     TopScoreDocCollector c = TopScoreDocCollector.create(10, null, totalHitsThreshold);
 
     is.search(new MatchAllDocsQuery(), c);
-    assertEquals(totalHitsThreshold+1, c.totalHits);
+    assertEquals(totalHitsThreshold + 1, c.totalHits);
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
 
     TopScoreDocCollector c1 = TopScoreDocCollector.create(10, null, numDocs);
@@ -127,7 +133,5 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     iw.close();
     ir.close();
     dir.close();
-
   }
-
 }

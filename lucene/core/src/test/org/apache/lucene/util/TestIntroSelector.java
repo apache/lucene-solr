@@ -46,25 +46,26 @@ public class TestIntroSelector extends LuceneTestCase {
     Arrays.sort(expected, from, to);
 
     Integer[] actual = arr.clone();
-    IntroSelector selector = new IntroSelector() {
+    IntroSelector selector =
+        new IntroSelector() {
 
-      Integer pivot;
+          Integer pivot;
 
-      @Override
-      protected void swap(int i, int j) {
-        ArrayUtil.swap(actual, i, j);
-      }
+          @Override
+          protected void swap(int i, int j) {
+            ArrayUtil.swap(actual, i, j);
+          }
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = actual[i];
-      }
+          @Override
+          protected void setPivot(int i) {
+            pivot = actual[i];
+          }
 
-      @Override
-      protected int comparePivot(int j) {
-        return pivot.compareTo(actual[j]);
-      }
-    };
+          @Override
+          protected int comparePivot(int j) {
+            return pivot.compareTo(actual[j]);
+          }
+        };
     if (slow) {
       selector.slowSelect(from, to, k);
     } else {
@@ -82,5 +83,4 @@ public class TestIntroSelector extends LuceneTestCase {
       }
     }
   }
-
 }

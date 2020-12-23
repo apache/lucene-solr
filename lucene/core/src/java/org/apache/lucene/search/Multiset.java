@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.AbstractCollection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 /**
- * A {@link Multiset} is a set that allows for duplicate elements. Two
- * {@link Multiset}s are equal if they contain the same unique elements and if
- * each unique element has as many occurrences in both multisets.
- * Iteration order is not specified.
+ * A {@link Multiset} is a set that allows for duplicate elements. Two {@link Multiset}s are equal
+ * if they contain the same unique elements and if each unique element has as many occurrences in
+ * both multisets. Iteration order is not specified.
+ *
  * @lucene.internal
  */
 public final class Multiset<T> extends AbstractCollection<T> {
@@ -118,5 +117,4 @@ public final class Multiset<T> extends AbstractCollection<T> {
   public int hashCode() {
     return 31 * getClass().hashCode() + map.hashCode();
   }
-
 }

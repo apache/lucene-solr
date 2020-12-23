@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -41,14 +39,16 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     this.little = Objects.requireNonNull(little);
     Objects.requireNonNull(big.getField());
     Objects.requireNonNull(little.getField());
-    if (! big.getField().equals(little.getField())) {
+    if (!big.getField().equals(little.getField())) {
       throw new IllegalArgumentException("big and little not same field");
     }
   }
 
   @Override
-  public String getField() { return big.getField(); }
-  
+  public String getField() {
+    return big.getField();
+  }
+
   public SpanQuery getBig() {
     return big;
   }
@@ -62,14 +62,20 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
     final SpanWeight bigWeight;
     final SpanWeight littleWeight;
 
-    public SpanContainWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
-                             SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {
+    public SpanContainWeight(
+        IndexSearcher searcher,
+        Map<Term, TermStates> terms,
+        SpanWeight bigWeight,
+        SpanWeight littleWeight,
+        float boost)
+        throws IOException {
       super(SpanContainQuery.this, searcher, terms, boost);
       this.bigWeight = bigWeight;
       this.littleWeight = littleWeight;
     }
 
-    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, Postings postings) throws IOException {
+    ArrayList<Spans> prepareConjunction(final LeafReaderContext context, Postings postings)
+        throws IOException {
       Spans bigSpans = bigWeight.getSpans(context, postings);
       if (bigSpans == null) {
         return null;
@@ -89,7 +95,6 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
       bigWeight.extractTermStates(contexts);
       littleWeight.extractTermStates(contexts);
     }
-
   }
 
   String toString(String field, String name) {
@@ -131,13 +136,11 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
-  } 
-  
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
+  }
+
   private boolean equalsTo(SpanContainQuery other) {
-    return big.equals(other.big) && 
-           little.equals(other.little);
+    return big.equals(other.big) && little.equals(other.little);
   }
 
   @Override

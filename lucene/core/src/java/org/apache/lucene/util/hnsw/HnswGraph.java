@@ -17,48 +17,52 @@
 
 package org.apache.lucene.util.hnsw;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.RandomAccessVectorValues;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.SparseFixedBitSet;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
- * Navigable Small-world graph. Provides efficient approximate nearest neighbor
- * search for high dimensional vectors.  See <a href="https://doi.org/10.1016/j.is.2013.10.006">Approximate nearest
+ * Navigable Small-world graph. Provides efficient approximate nearest neighbor search for high
+ * dimensional vectors. See <a href="https://doi.org/10.1016/j.is.2013.10.006">Approximate nearest
  * neighbor algorithm based on navigable small world graphs [2014]</a> and <a
  * href="https://arxiv.org/abs/1603.09320">this paper [2018]</a> for details.
  *
- * The nomenclature is a bit different here from what's used in those papers:
+ * <p>The nomenclature is a bit different here from what's used in those papers:
  *
  * <h2>Hyperparameters</h2>
+ *
  * <ul>
- *   <li><code>numSeed</code> is the equivalent of <code>m</code> in the 2012 paper; it controls the number of random entry points to sample.</li>
- *   <li><code>beamWidth</code> in {@link HnswGraphBuilder} has the same meaning as <code>efConst</code> in the 2016 paper. It is the number of
- *   nearest neighbor candidates to track while searching the graph for each newly inserted node.</li>
- *   <li><code>maxConn</code> has the same meaning as <code>M</code> in the later paper; it controls how many of the <code>efConst</code> neighbors are
- *   connected to the new node</li>
+ *   <li><code>numSeed</code> is the equivalent of <code>m</code> in the 2012 paper; it controls the
+ *       number of random entry points to sample.
+ *   <li><code>beamWidth</code> in {@link HnswGraphBuilder} has the same meaning as <code>efConst
+ *       </code> in the 2016 paper. It is the number of nearest neighbor candidates to track while
+ *       searching the graph for each newly inserted node.
+ *   <li><code>maxConn</code> has the same meaning as <code>M</code> in the later paper; it controls
+ *       how many of the <code>efConst</code> neighbors are connected to the new node
  *   <li><code>fanout</code> the fanout parameter of {@link VectorValues#search(float[], int, int)}
- *   is used to control the values of <code>numSeed</code> and <code>topK</code> that are passed to this API.
- *   Thus <code>fanout</code> is like a combination of <code>ef</code> (search beam width) from the 2016 paper and <code>m</code> from the 2014 paper.
- *   </li>
+ *       is used to control the values of <code>numSeed</code> and <code>topK</code> that are passed
+ *       to this API. Thus <code>fanout</code> is like a combination of <code>ef</code> (search beam
+ *       width) from the 2016 paper and <code>m</code> from the 2014 paper.
  * </ul>
  *
- * <p>Note: The graph may be searched by multiple threads concurrently, but updates are not thread-safe. Also note: there is no notion of
- * deletions. Document searching built on top of this must do its own deletion-filtering.</p>
+ * <p>Note: The graph may be searched by multiple threads concurrently, but updates are not
+ * thread-safe. Also note: there is no notion of deletions. Document searching built on top of this
+ * must do its own deletion-filtering.
  */
 public final class HnswGraph extends KnnGraphValues {
 
   private final int maxConn;
   private final VectorValues.SearchStrategy searchStrategy;
 
-  // Each entry lists the top maxConn neighbors of a node. The nodes correspond to vectors added to HnswBuilder, and the
+  // Each entry lists the top maxConn neighbors of a node. The nodes correspond to vectors added to
+  // HnswBuilder, and the
   // node values are the ordinals of those vectors.
   private final List<NeighborArray> graph;
 
@@ -77,16 +81,25 @@ public final class HnswGraph extends KnnGraphValues {
 
   /**
    * Searches for the nearest neighbors of a query vector.
+   *
    * @param query search query vector
    * @param topK the number of nodes to be returned
-   * @param numSeed the size of the queue maintained while searching, and controls the number of random entry points to sample
+   * @param numSeed the size of the queue maintained while searching, and controls the number of
+   *     random entry points to sample
    * @param vectors vector values
-   * @param graphValues the graph values. May represent the entire graph, or a level in a hierarchical graph.
+   * @param graphValues the graph values. May represent the entire graph, or a level in a
+   *     hierarchical graph.
    * @param random a source of randomness, used for generating entry points to the graph
    * @return a priority queue holding the closest neighbors found
    */
-  public static NeighborQueue search(float[] query, int topK, int numSeed, RandomAccessVectorValues vectors, KnnGraphValues graphValues,
-                                     Random random) throws IOException {
+  public static NeighborQueue search(
+      float[] query,
+      int topK,
+      int numSeed,
+      RandomAccessVectorValues vectors,
+      KnnGraphValues graphValues,
+      Random random)
+      throws IOException {
     VectorValues.SearchStrategy searchStrategy = vectors.searchStrategy();
     int size = graphValues.size();
 
@@ -109,7 +122,8 @@ public final class HnswGraph extends KnnGraphValues {
     // MAX heap, from which to pull the candidate nodes
     NeighborQueue candidates = results.copy(!searchStrategy.reversed);
 
-    // Set the bound to the worst current result and below reject any newly-generated candidates failing
+    // Set the bound to the worst current result and below reject any newly-generated candidates
+    // failing
     // to exceed this bound
     BoundsChecker bound = BoundsChecker.create(searchStrategy.reversed);
     bound.set(results.topScore());
@@ -145,6 +159,7 @@ public final class HnswGraph extends KnnGraphValues {
 
   /**
    * Returns the {@link NeighborQueue} connected to the given node.
+   *
    * @param node the node whose neighbors are returned
    */
   public NeighborArray getNeighbors(int node) {
@@ -174,5 +189,4 @@ public final class HnswGraph extends KnnGraphValues {
     }
     return NO_MORE_DOCS;
   }
-
 }

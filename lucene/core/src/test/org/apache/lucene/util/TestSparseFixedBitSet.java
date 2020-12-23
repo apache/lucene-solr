@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 public class TestSparseFixedBitSet extends BaseBitSetTestCase<SparseFixedBitSet> {
@@ -26,7 +24,9 @@ public class TestSparseFixedBitSet extends BaseBitSetTestCase<SparseFixedBitSet>
   @Override
   public SparseFixedBitSet copyOf(BitSet bs, int length) throws IOException {
     final SparseFixedBitSet set = new SparseFixedBitSet(length);
-    for (int doc = bs.nextSetBit(0); doc != DocIdSetIterator.NO_MORE_DOCS; doc = doc + 1 >= length ? DocIdSetIterator.NO_MORE_DOCS : bs.nextSetBit(doc + 1)) {
+    for (int doc = bs.nextSetBit(0);
+        doc != DocIdSetIterator.NO_MORE_DOCS;
+        doc = doc + 1 >= length ? DocIdSetIterator.NO_MORE_DOCS : bs.nextSetBit(doc + 1)) {
       set.set(doc);
     }
     return set;

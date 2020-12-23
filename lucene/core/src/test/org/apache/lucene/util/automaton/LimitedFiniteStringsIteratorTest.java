@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.util.automaton;
 
+import static org.apache.lucene.util.automaton.FiniteStringsIteratorTest.getFiniteStrings;
 
 import java.util.List;
-
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.util.automaton.FiniteStringsIteratorTest.getFiniteStrings;
-
-/**
- * Test for {@link FiniteStringsIterator}.
- */
+/** Test for {@link FiniteStringsIterator}. */
 public class LimitedFiniteStringsIteratorTest extends LuceneTestCase {
- public void testRandomFiniteStrings() {
+  public void testRandomFiniteStrings() {
     // Just makes sure we can run on any random finite
     // automaton:
     int iters = atLeast(100);
-    for(int i=0;i<iters;i++) {
+    for (int i = 0; i < iters; i++) {
       Automaton a = AutomatonTestUtil.randomAutomaton(random());
       try {
         // Must pass a limit because the random automaton
@@ -43,7 +39,7 @@ public class LimitedFiniteStringsIteratorTest extends LuceneTestCase {
         getFiniteStrings(new LimitedFiniteStringsIterator(a, TestUtil.nextInt(random(), 1, 1000)));
         // NOTE: cannot do this, because the method is not
         // guaranteed to detect cycles when you have a limit
-        //assertTrue(Operations.isFinite(a));
+        // assertTrue(Operations.isFinite(a));
       } catch (IllegalArgumentException iae) {
         assertFalse(Operations.isFinite(a));
       }
@@ -52,17 +48,21 @@ public class LimitedFiniteStringsIteratorTest extends LuceneTestCase {
 
   public void testInvalidLimitNegative() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
-    expectThrows(IllegalArgumentException.class, () -> {
-      new LimitedFiniteStringsIterator(a, -7);
-      fail("did not hit exception");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new LimitedFiniteStringsIterator(a, -7);
+          fail("did not hit exception");
+        });
   }
 
   public void testInvalidLimitNull() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
-    expectThrows(IllegalArgumentException.class, () -> {
-      new LimitedFiniteStringsIterator(a, 0);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new LimitedFiniteStringsIterator(a, 0);
+        });
   }
 
   public void testSingleton() {

@@ -16,18 +16,16 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
-  
-  private static final long TEST_FILE_LENGTH = 100*1024;
- 
+
+  private static final long TEST_FILE_LENGTH = 100 * 1024;
+
   // Call readByte() repeatedly, past the buffer boundary, and see that it
   // is working as expected.
   // Our input comes from a dynamically generated/ "file" - see
@@ -38,7 +36,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       assertEquals(input.readByte(), byten(i));
     }
   }
- 
+
   // Call readBytes() repeatedly, with various chunk sizes (from 1 byte to
   // larger than the buffer size), and see that it returns the bytes we expect.
   // Our input comes from a dynamically generated "file" -
@@ -47,9 +45,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     MyBufferedIndexInput input = new MyBufferedIndexInput();
     runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random());
   }
-  
-  private void runReadBytes(IndexInput input, int bufferSize, Random r)
-      throws IOException {
+
+  private void runReadBytes(IndexInput input, int bufferSize, Random r) throws IOException {
 
     int pos = 0;
     // gradually increasing size:
@@ -65,8 +62,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     // wildly fluctuating size:
     for (long i = 0; i < 100; i++) {
       final int size = r.nextInt(10000);
-      checkReadBytes(input, 1+size, pos);
-      pos += 1+size;
+      checkReadBytes(input, 1 + size, pos);
+      pos += 1 + size;
       if (pos >= TEST_FILE_LENGTH) {
         // wrap
         pos = 0;
@@ -86,12 +83,12 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   }
 
   private byte[] buffer = new byte[10];
-    
-  private void checkReadBytes(IndexInput input, int size, int pos) throws IOException{
+
+  private void checkReadBytes(IndexInput input, int size, int pos) throws IOException {
     // Just to see that "offset" is treated properly in readBytes(), we
     // add an arbitrary offset at the beginning of the array
     int offset = size % 10; // arbitrary
-    buffer = ArrayUtil.grow(buffer, offset+size);
+    buffer = ArrayUtil.grow(buffer, offset + size);
     assertEquals(pos, input.getFilePointer());
     long left = TEST_FILE_LENGTH - input.getFilePointer();
     if (left <= 0) {
@@ -100,88 +97,95 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       size = (int) left;
     }
     input.readBytes(buffer, offset, size);
-    assertEquals(pos+size, input.getFilePointer());
-    for(int i=0; i<size; i++) {
-      assertEquals("pos=" + i + " filepos=" + (pos+i), byten(pos+i), buffer[offset+i]);
+    assertEquals(pos + size, input.getFilePointer());
+    for (int i = 0; i < size; i++) {
+      assertEquals("pos=" + i + " filepos=" + (pos + i), byten(pos + i), buffer[offset + i]);
     }
   }
-   
+
   // This tests that attempts to readBytes() past an EOF will fail, while
   // reads up to the EOF will succeed. The EOF is determined by the
   // BufferedIndexInput's arbitrary length() value.
   public void testEOF() throws Exception {
-     MyBufferedIndexInput input = new MyBufferedIndexInput(1024);
-     // see that we can read all the bytes at one go:
-     checkReadBytes(input, (int)input.length(), 0);  
-     // go back and see that we can't read more than that, for small and
-     // large overflows:
-     int pos = (int)input.length()-10;
-     input.seek(pos);
-     checkReadBytes(input, 10, pos);  
-     input.seek(pos);
-     // block read past end of file
-     expectThrows(IOException.class, () -> {
-       checkReadBytes(input, 11, pos);
-     });
+    MyBufferedIndexInput input = new MyBufferedIndexInput(1024);
+    // see that we can read all the bytes at one go:
+    checkReadBytes(input, (int) input.length(), 0);
+    // go back and see that we can't read more than that, for small and
+    // large overflows:
+    int pos = (int) input.length() - 10;
+    input.seek(pos);
+    checkReadBytes(input, 10, pos);
+    input.seek(pos);
+    // block read past end of file
+    expectThrows(
+        IOException.class,
+        () -> {
+          checkReadBytes(input, 11, pos);
+        });
 
-     input.seek(pos);
+    input.seek(pos);
 
-     // block read past end of file
-     expectThrows(IOException.class, () -> {
-       checkReadBytes(input, 50, pos);
-     });
+    // block read past end of file
+    expectThrows(
+        IOException.class,
+        () -> {
+          checkReadBytes(input, 50, pos);
+        });
 
-     input.seek(pos);
+    input.seek(pos);
 
-     // block read past end of file
-     expectThrows(IOException.class, () -> {
-       checkReadBytes(input, 100000, pos);
-     });
+    // block read past end of file
+    expectThrows(
+        IOException.class,
+        () -> {
+          checkReadBytes(input, 100000, pos);
+        });
   }
 
-    // byten emulates a file - byten(n) returns the n'th byte in that file.
-    // MyBufferedIndexInput reads this "file".
-    private static byte byten(long n){
-      return (byte)(n*n%256);
+  // byten emulates a file - byten(n) returns the n'th byte in that file.
+  // MyBufferedIndexInput reads this "file".
+  private static byte byten(long n) {
+    return (byte) (n * n % 256);
+  }
+
+  private static class MyBufferedIndexInput extends BufferedIndexInput {
+    private long pos;
+    private long len;
+
+    public MyBufferedIndexInput(long len) {
+      super("MyBufferedIndexInput(len=" + len + ")", BufferedIndexInput.BUFFER_SIZE);
+      this.len = len;
+      this.pos = 0;
     }
-    
-    private static class MyBufferedIndexInput extends BufferedIndexInput {
-      private long pos;
-      private long len;
-      public MyBufferedIndexInput(long len){
-        super("MyBufferedIndexInput(len=" + len + ")", BufferedIndexInput.BUFFER_SIZE);
-        this.len = len;
-        this.pos = 0;
-      }
-      public MyBufferedIndexInput(){
-        // an infinite file
-        this(Long.MAX_VALUE);
-      }
-      @Override
-      protected void readInternal(ByteBuffer b) throws IOException {
-        while (b.hasRemaining()) {
-          b.put(byten(pos++));
-        }
-      }
 
-      @Override
-      protected void seekInternal(long pos) throws IOException {
-        this.pos = pos;
-      }
+    public MyBufferedIndexInput() {
+      // an infinite file
+      this(Long.MAX_VALUE);
+    }
 
-      @Override
-      public void close() throws IOException {
-      }
-
-      @Override
-      public long length() {
-        return len;
-      }
-      
-      @Override
-      public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
-        throw new UnsupportedOperationException();
+    @Override
+    protected void readInternal(ByteBuffer b) throws IOException {
+      while (b.hasRemaining()) {
+        b.put(byten(pos++));
       }
     }
 
+    @Override
+    protected void seekInternal(long pos) throws IOException {
+      this.pos = pos;
+    }
+
+    @Override
+    public void close() throws IOException {}
+
+    @Override
+    public long length() {
+      return len;
+    }
+
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  }
 }

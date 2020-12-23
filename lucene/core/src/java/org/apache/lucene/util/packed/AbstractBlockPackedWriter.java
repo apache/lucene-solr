@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataOutput;
 
 abstract class AbstractBlockPackedWriter {
@@ -35,7 +33,7 @@ abstract class AbstractBlockPackedWriter {
   static void writeVLong(DataOutput out, long i) throws IOException {
     int k = 0;
     while ((i & ~0x7FL) != 0L && k++ < 8) {
-      out.writeByte((byte)((i & 0x7FL) | 0x80L));
+      out.writeByte((byte) ((i & 0x7FL) | 0x80L));
       i >>>= 7;
     }
     out.writeByte((byte) i);
@@ -50,6 +48,7 @@ abstract class AbstractBlockPackedWriter {
 
   /**
    * Sole constructor.
+   *
    * @param blockSize the number of values of a single block, must be a multiple of <code>64</code>
    */
   protected AbstractBlockPackedWriter(DataOutput out, int blockSize) {
@@ -97,9 +96,10 @@ abstract class AbstractBlockPackedWriter {
     ord += values.length;
   }
 
-  /** Flush all buffered data to disk. This instance is not usable anymore
-   *  after this method has been called until {@link #reset(DataOutput)} has
-   *  been called. */
+  /**
+   * Flush all buffered data to disk. This instance is not usable anymore after this method has been
+   * called until {@link #reset(DataOutput)} has been called.
+   */
   public void finish() throws IOException {
     checkNotFinished();
     if (off > 0) {
@@ -116,7 +116,8 @@ abstract class AbstractBlockPackedWriter {
   protected abstract void flush() throws IOException;
 
   protected final void writeValues(int bitsRequired) throws IOException {
-    final PackedInts.Encoder encoder = PackedInts.getEncoder(PackedInts.Format.PACKED, PackedInts.VERSION_CURRENT, bitsRequired);
+    final PackedInts.Encoder encoder =
+        PackedInts.getEncoder(PackedInts.Format.PACKED, PackedInts.VERSION_CURRENT, bitsRequired);
     final int iterations = values.length / encoder.byteValueCount();
     final int blockSize = encoder.byteBlockCount() * iterations;
     if (blocks == null || blocks.length < blockSize) {
@@ -126,8 +127,8 @@ abstract class AbstractBlockPackedWriter {
       Arrays.fill(values, off, values.length, 0L);
     }
     encoder.encode(values, 0, blocks, 0, iterations);
-    final int blockCount = (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsRequired);
+    final int blockCount =
+        (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsRequired);
     out.writeBytes(blocks, blockCount);
   }
-
 }

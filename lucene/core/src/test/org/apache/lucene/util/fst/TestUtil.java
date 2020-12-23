@@ -19,7 +19,6 @@ package org.apache.lucene.util.fst;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +59,9 @@ public class TestUtil extends LuceneTestCase {
     verifyReadCeilArc(letters, false, false);
   }
 
-  private void verifyReadCeilArc(List<String> letters, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
+  private void verifyReadCeilArc(
+      List<String> letters, boolean allowArrayArcs, boolean allowDirectAddressing)
+      throws Exception {
     FST<Object> fst = buildFST(letters, allowArrayArcs, allowDirectAddressing);
     FST.Arc<Object> first = fst.getFirstArc(new FST.Arc<>());
     FST.Arc<Object> arc = new FST.Arc<>();
@@ -81,17 +82,20 @@ public class TestUtil extends LuceneTestCase {
     assertNull(Util.readCeilArc('Z', fst, arc, arc, in));
   }
 
-  private FST<Object> buildFST(List<String> words, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
+  private FST<Object> buildFST(
+      List<String> words, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final FSTCompiler.Builder<Object> builder = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs)
-        .allowFixedLengthArcs(allowArrayArcs);
+    final FSTCompiler.Builder<Object> builder =
+        new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs)
+            .allowFixedLengthArcs(allowArrayArcs);
     if (!allowDirectAddressing) {
       builder.directAddressingMaxOversizingFactor(-1f);
     }
     final FSTCompiler<Object> fstCompiler = builder.build();
 
     for (String word : words) {
-      fstCompiler.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
+      fstCompiler.add(
+          Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
     }
     return fstCompiler.compile();
   }
@@ -100,7 +104,8 @@ public class TestUtil extends LuceneTestCase {
     return createRandomDictionary(new ArrayList<>(), new StringBuilder(), width, depth);
   }
 
-  private List<String> createRandomDictionary(List<String> dict, StringBuilder buf, int width, int depth) {
+  private List<String> createRandomDictionary(
+      List<String> dict, StringBuilder buf, int width, int depth) {
     char c = (char) random().nextInt(128);
     assert width < Character.MIN_SURROGATE / 8 - 128; // avoid surrogate chars
     int len = buf.length();
@@ -116,5 +121,4 @@ public class TestUtil extends LuceneTestCase {
     }
     return dict;
   }
-
 }

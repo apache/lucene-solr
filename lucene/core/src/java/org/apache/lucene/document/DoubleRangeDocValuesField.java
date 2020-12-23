@@ -20,10 +20,10 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.Query;
 
 /**
- * DocValues field for DoubleRange. This is a single valued field i.e. can have only one
- * value per document due to being an extension of BinaryDocValuesField.
+ * DocValues field for DoubleRange. This is a single valued field i.e. can have only one value per
+ * document due to being an extension of BinaryDocValuesField.
  */
-public class DoubleRangeDocValuesField extends BinaryRangeDocValuesField{
+public class DoubleRangeDocValuesField extends BinaryRangeDocValuesField {
   final String field;
   final double[] min;
   final double[] max;
@@ -55,22 +55,23 @@ public class DoubleRangeDocValuesField extends BinaryRangeDocValuesField{
     return max[dimension];
   }
 
-  private static Query newSlowRangeQuery(String field, final double[] min, final double[] max,
-                                        RangeFieldQuery.QueryType queryType) {
+  private static Query newSlowRangeQuery(
+      String field, final double[] min, final double[] max, RangeFieldQuery.QueryType queryType) {
     checkArgs(min, max);
     return new DoubleRangeSlowRangeQuery(field, min, max, queryType);
   }
 
-  /** Create a new range query that finds all ranges that intersect using doc values.
-   *  NOTE: This doesn't leverage indexing and may be slow.
-   *  @see DoubleRange#newIntersectsQuery */
+  /**
+   * Create a new range query that finds all ranges that intersect using doc values. NOTE: This
+   * doesn't leverage indexing and may be slow.
+   *
+   * @see DoubleRange#newIntersectsQuery
+   */
   public static Query newSlowIntersectsQuery(String field, final double[] min, final double[] max) {
     return newSlowRangeQuery(field, min, max, RangeFieldQuery.QueryType.INTERSECTS);
   }
 
-  /**
-   * validate the arguments
-   */
+  /** validate the arguments */
   private static void checkArgs(final double[] min, final double[] max) {
     if (min == null || max == null || min.length == 0 || max.length == 0) {
       throw new IllegalArgumentException("min/max range values cannot be null or empty");

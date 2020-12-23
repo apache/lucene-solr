@@ -21,43 +21,43 @@ import org.apache.lucene.store.RandomAccessInput;
 
 /** Implements reverse read from a RandomAccessInput. */
 final class ReverseRandomAccessReader extends FST.BytesReader {
-    private final RandomAccessInput in;
-    private long pos;
+  private final RandomAccessInput in;
+  private long pos;
 
-    public ReverseRandomAccessReader(RandomAccessInput in) {
-        this.in = in;
-    }
+  public ReverseRandomAccessReader(RandomAccessInput in) {
+    this.in = in;
+  }
 
-    @Override
-    public byte readByte() throws IOException {
-        return in.readByte(pos--);
-    }
+  @Override
+  public byte readByte() throws IOException {
+    return in.readByte(pos--);
+  }
 
-    @Override
-    public void readBytes(byte[] b, int offset, int len) throws IOException {
-        int i = offset, end = offset + len;
-        while (i < end) {
-            b[i++] = in.readByte(pos--);
-        }
+  @Override
+  public void readBytes(byte[] b, int offset, int len) throws IOException {
+    int i = offset, end = offset + len;
+    while (i < end) {
+      b[i++] = in.readByte(pos--);
     }
+  }
 
-    @Override
-    public void skipBytes(long count) {
-        pos -= count;
-    }
+  @Override
+  public void skipBytes(long count) {
+    pos -= count;
+  }
 
-    @Override
-    public long getPosition() {
-        return pos;
-    }
+  @Override
+  public long getPosition() {
+    return pos;
+  }
 
-    @Override
-    public void setPosition(long pos) {
-        this.pos = pos;
-    }
+  @Override
+  public void setPosition(long pos) {
+    this.pos = pos;
+  }
 
-    @Override
-    public boolean reversed() {
-        return true;
-    }
+  @Override
+  public boolean reversed() {
+    return true;
+  }
 }

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -42,9 +40,9 @@ public class TestSearchWithThreads extends LuceneTestCase {
     final Field body = newTextField("body", "", Field.Store.NO);
     doc.add(body);
     final StringBuilder sb = new StringBuilder();
-    for(int docCount=0;docCount<numDocs;docCount++) {
+    for (int docCount = 0; docCount < numDocs; docCount++) {
       final int numTerms = random().nextInt(10);
-      for(int termCount=0;termCount<numTerms;termCount++) {
+      for (int termCount = 0; termCount < numTerms; termCount++) {
         sb.append(random().nextBoolean() ? "aaa" : "bbb");
         sb.append(' ');
       }
@@ -62,38 +60,40 @@ public class TestSearchWithThreads extends LuceneTestCase {
 
     Thread[] threads = new Thread[numThreads];
     for (int threadID = 0; threadID < numThreads; threadID++) {
-      threads[threadID] = new Thread() {
-        TotalHitCountCollector col = new TotalHitCountCollector();
-          @Override
-          public void run() {
-            try {
-              long totHits = 0;
-              long totSearch = 0;
-              for (; totSearch < numSearches & !failed.get(); totSearch++) {
-                s.search(new TermQuery(new Term("body", "aaa")), col);
-                totHits += col.getTotalHits();
-                s.search(new TermQuery(new Term("body", "bbb")), col);
-                totHits += col.getTotalHits();
+      threads[threadID] =
+          new Thread() {
+            TotalHitCountCollector col = new TotalHitCountCollector();
+
+            @Override
+            public void run() {
+              try {
+                long totHits = 0;
+                long totSearch = 0;
+                for (; totSearch < numSearches & !failed.get(); totSearch++) {
+                  s.search(new TermQuery(new Term("body", "aaa")), col);
+                  totHits += col.getTotalHits();
+                  s.search(new TermQuery(new Term("body", "bbb")), col);
+                  totHits += col.getTotalHits();
+                }
+                assertTrue(totSearch > 0 && totHits > 0);
+                netSearch.addAndGet(totSearch);
+              } catch (Exception exc) {
+                failed.set(true);
+                throw new RuntimeException(exc);
               }
-              assertTrue(totSearch > 0 && totHits > 0);
-              netSearch.addAndGet(totSearch);
-            } catch (Exception exc) {
-              failed.set(true);
-              throw new RuntimeException(exc);
             }
-          }
-        };
+          };
       threads[threadID].setDaemon(true);
     }
 
     for (Thread t : threads) {
       t.start();
     }
-    
+
     for (Thread t : threads) {
       t.join();
     }
-    
+
     if (VERBOSE) System.out.println(numThreads + " threads did " + netSearch.get() + " searches");
 
     r.close();

@@ -20,18 +20,15 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
-
 /**
- * A PriorityQueue maintains a partial ordering of its elements such that the
- * least element can always be found in constant time. Put()'s and pop()'s
- * require log(size) time but the remove() cost implemented here is linear.
+ * A PriorityQueue maintains a partial ordering of its elements such that the least element can
+ * always be found in constant time. Put()'s and pop()'s require log(size) time but the remove()
+ * cost implemented here is linear.
  *
- * <p>
- * <b>NOTE</b>: This class pre-allocates an array of length {@code maxSize+1}
- * and pre-fills it with elements if instantiated via the
- * {@link #PriorityQueue(int,Supplier)} constructor.
+ * <p><b>NOTE</b>: This class pre-allocates an array of length {@code maxSize+1} and pre-fills it
+ * with elements if instantiated via the {@link #PriorityQueue(int,Supplier)} constructor.
  *
- * <b>NOTE</b>: Iteration order is not specified.
+ * <p><b>NOTE</b>: Iteration order is not specified.
  *
  * @lucene.internal
  */
@@ -40,28 +37,24 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
   private final int maxSize;
   private final T[] heap;
 
-  /**
-   * Create an empty priority queue of the configured size.
-   */
+  /** Create an empty priority queue of the configured size. */
   public PriorityQueue(int maxSize) {
     this(maxSize, () -> null);
   }
 
   /**
-   * Create a priority queue that is pre-filled with sentinel objects, so that
-   * the code which uses that queue can always assume it's full and only change
-   * the top without attempting to insert any new object.<br>
+   * Create a priority queue that is pre-filled with sentinel objects, so that the code which uses
+   * that queue can always assume it's full and only change the top without attempting to insert any
+   * new object.
    *
-   * Those sentinel values should always compare worse than any non-sentinel
-   * value (i.e., {@link #lessThan} should always favor the
-   * non-sentinel values).<br>
+   * <p>Those sentinel values should always compare worse than any non-sentinel value (i.e., {@link
+   * #lessThan} should always favor the non-sentinel values).
    *
-   * By default, the supplier returns null, which means the queue will not be
-   * filled with sentinel values. Otherwise, the value returned will be used to
-   * pre-populate the queue.<br>
+   * <p>By default, the supplier returns null, which means the queue will not be filled with
+   * sentinel values. Otherwise, the value returned will be used to pre-populate the queue.
    *
-   * If this method is extended to return a non-null value, then the following
-   * usage pattern is recommended:
+   * <p>If this method is extended to return a non-null value, then the following usage pattern is
+   * recommended:
    *
    * <pre class="prettyprint">
    * PriorityQueue&lt;MyObject&gt; pq = new MyQueue&lt;MyObject&gt;(numHits);
@@ -74,11 +67,10 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
    * pqTop = pq.updateTop();
    * </pre>
    *
-   * <b>NOTE:</b> the given supplier will be called {@code maxSize} times,
-   * relying on a new object to be returned and will not check if it's null again.
-   * Therefore you should ensure any call to this method creates a new instance and
-   * behaves consistently, e.g., it cannot return null if it previously returned
-   * non-null and all returned instances must {@link #lessThan compare equal}.
+   * <b>NOTE:</b> the given supplier will be called {@code maxSize} times, relying on a new object
+   * to be returned and will not check if it's null again. Therefore you should ensure any call to
+   * this method creates a new instance and behaves consistently, e.g., it cannot return null if it
+   * previously returned non-null and all returned instances must {@link #lessThan compare equal}.
    */
   public PriorityQueue(int maxSize, Supplier<T> sentinelObjectSupplier) {
     final int heapSize;
@@ -89,7 +81,8 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
 
       if ((maxSize < 0) || (maxSize >= ArrayUtil.MAX_ARRAY_LENGTH)) {
         // Throw exception to prevent confusing OOME:
-        throw new IllegalArgumentException("maxSize must be >= 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
+        throw new IllegalArgumentException(
+            "maxSize must be >= 0 and < " + (ArrayUtil.MAX_ARRAY_LENGTH) + "; got: " + maxSize);
       }
 
       // NOTE: we add +1 because all access to heap is
@@ -97,7 +90,8 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
       heapSize = maxSize + 1;
     }
     // T is unbounded type, so this unchecked cast works always:
-    @SuppressWarnings("unchecked") final T[] h = (T[]) new Object[heapSize];
+    @SuppressWarnings("unchecked")
+    final T[] h = (T[]) new Object[heapSize];
     this.heap = h;
     this.maxSize = maxSize;
 
@@ -112,16 +106,17 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
     }
   }
 
-  /** Determines the ordering of objects in this priority queue.  Subclasses
-   *  must define this one method.
-   *  @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
+  /**
+   * Determines the ordering of objects in this priority queue. Subclasses must define this one
+   * method.
+   *
+   * @return <code>true</code> iff parameter <code>a</code> is less than parameter <code>b</code>.
    */
   protected abstract boolean lessThan(T a, T b);
 
   /**
-   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
-   * more objects than maxSize from initialize an
-   * {@link ArrayIndexOutOfBoundsException} is thrown.
+   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add more objects than
+   * maxSize from initialize an {@link ArrayIndexOutOfBoundsException} is thrown.
    *
    * @return the new 'top' element in the queue.
    */
@@ -133,14 +128,11 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
   }
 
   /**
-   * Adds an Object to a PriorityQueue in log(size) time.
-   * It returns the object (if any) that was
-   * dropped off the heap because it was full. This can be
-   * the given parameter (in case it is smaller than the
-   * full heap's minimum, and couldn't be added), or another
-   * object that was previously the smallest value in the
-   * heap and now has been replaced by a larger one, or null
-   * if the queue wasn't yet full with maxSize elements.
+   * Adds an Object to a PriorityQueue in log(size) time. It returns the object (if any) that was
+   * dropped off the heap because it was full. This can be the given parameter (in case it is
+   * smaller than the full heap's minimum, and couldn't be added), or another object that was
+   * previously the smallest value in the heap and now has been replaced by a larger one, or null if
+   * the queue wasn't yet full with maxSize elements.
    */
   public T insertWithOverflow(T element) {
     if (size < maxSize) {
@@ -164,15 +156,14 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
     return heap[1];
   }
 
-  /** Removes and returns the least element of the PriorityQueue in log(size)
-    time. */
+  /** Removes and returns the least element of the PriorityQueue in log(size) time. */
   public final T pop() {
     if (size > 0) {
-      T result = heap[1];       // save first value
-      heap[1] = heap[size];     // move last to first
-      heap[size] = null;        // permit GC of objects
+      T result = heap[1]; // save first value
+      heap[1] = heap[size]; // move last to first
+      heap[size] = null; // permit GC of objects
       size--;
-      downHeap(1);              // adjust heap
+      downHeap(1); // adjust heap
       return result;
     } else {
       return null;
@@ -180,8 +171,8 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
   }
 
   /**
-   * Should be called when the Object at top changes values. Still log(n) worst
-   * case, but it's at least twice as fast to
+   * Should be called when the Object at top changes values. Still log(n) worst case, but it's at
+   * least twice as fast to
    *
    * <pre class="prettyprint">
    * pq.top().change();
@@ -203,9 +194,7 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
     return heap[1];
   }
 
-  /**
-   * Replace the top of the pq with {@code newTop} and run {@link #updateTop()}.
-   */
+  /** Replace the top of the pq with {@code newTop} and run {@link #updateTop()}. */
   public final T updateTop(T newTop) {
     heap[1] = newTop;
     return updateTop();
@@ -225,10 +214,9 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
   }
 
   /**
-   * Removes an existing element currently stored in the PriorityQueue. Cost is
-   * linear with the size of the queue. (A specialization of PriorityQueue which
-   * tracks element positions would provide a constant remove time but the
-   * trade-off would be extra cost to all additions/insertions)
+   * Removes an existing element currently stored in the PriorityQueue. Cost is linear with the size
+   * of the queue. (A specialization of PriorityQueue which tracks element positions would provide a
+   * constant remove time but the trade-off would be extra cost to all additions/insertions)
    */
   public final boolean remove(T element) {
     for (int i = 1; i <= size; i++) {
@@ -249,26 +237,26 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
 
   private final boolean upHeap(int origPos) {
     int i = origPos;
-    T node = heap[i];          // save bottom node
+    T node = heap[i]; // save bottom node
     int j = i >>> 1;
     while (j > 0 && lessThan(node, heap[j])) {
-      heap[i] = heap[j];       // shift parents down
+      heap[i] = heap[j]; // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;            // install saved node
+    heap[i] = node; // install saved node
     return i != origPos;
   }
 
   private final void downHeap(int i) {
-    T node = heap[i];          // save top node
-    int j = i << 1;            // find smaller child
+    T node = heap[i]; // save top node
+    int j = i << 1; // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
     while (j <= size && lessThan(heap[j], node)) {
-      heap[i] = heap[j];       // shift up child
+      heap[i] = heap[j]; // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -276,10 +264,12 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
         j = k;
       }
     }
-    heap[i] = node;            // install saved node
+    heap[i] = node; // install saved node
   }
 
-  /** This method returns the internal heap array as Object[].
+  /**
+   * This method returns the internal heap array as Object[].
+   *
    * @lucene.internal
    */
   protected final Object[] getHeapArray() {
@@ -304,7 +294,6 @@ public abstract class PriorityQueue<T> implements Iterable<T> {
         }
         return heap[i++];
       }
-
     };
   }
 }

@@ -20,10 +20,12 @@ package org.apache.lucene.util.hnsw;
 import org.apache.lucene.util.LongHeap;
 import org.apache.lucene.util.NumericUtils;
 
-/** NeighborQueue uses a {@link LongHeap} to store lists of arcs in an HNSW graph, represented as a neighbor node
- * id with an associated score packed together as a sortable long, which is sorted primarily by score. The queue
- * provides both fixed-size and unbounded operations via {@link #insertWithOverflow(int, float)} and {@link #add(int, float)},
- * and provides MIN and MAX heap subclasses.
+/**
+ * NeighborQueue uses a {@link LongHeap} to store lists of arcs in an HNSW graph, represented as a
+ * neighbor node id with an associated score packed together as a sortable long, which is sorted
+ * primarily by score. The queue provides both fixed-size and unbounded operations via {@link
+ * #insertWithOverflow(int, float)} and {@link #add(int, float)}, and provides MIN and MAX heap
+ * subclasses.
  */
 public class NeighborQueue {
 
@@ -47,15 +49,14 @@ public class NeighborQueue {
     return copy;
   }
 
-  /**
-   * @return the number of elements in the heap
-   */
+  /** @return the number of elements in the heap */
   public int size() {
     return heap.size();
   }
 
   /**
    * Adds a new graph arc, extending the storage as needed.
+   *
    * @param newNode the neighbor node id
    * @param newScore the score of the neighbor, relative to some other node
    */
@@ -64,9 +65,11 @@ public class NeighborQueue {
   }
 
   /**
-   * If the heap is not full (size is less than the initialSize provided to the constructor), adds a new node-and-score element.
-   * If the heap is full, compares the score against the current top score, and replaces the top element if newScore is better than
-   * (greater than unless the heap is reversed), the current top score.
+   * If the heap is not full (size is less than the initialSize provided to the constructor), adds a
+   * new node-and-score element. If the heap is full, compares the score against the current top
+   * score, and replaces the top element if newScore is better than (greater than unless the heap is
+   * reversed), the current top score.
+   *
    * @param newNode the neighbor node id
    * @param newScore the score of the neighbor, relative to some other node
    */
@@ -78,9 +81,7 @@ public class NeighborQueue {
     return (((long) NumericUtils.floatToSortableInt(score)) << 32) | node;
   }
 
-  /**
-   * Removes the top element and returns its node id.
-   */
+  /** Removes the top element and returns its node id. */
   public int pop() {
     return (int) heap.pop();
   }
@@ -94,16 +95,12 @@ public class NeighborQueue {
     return nodes;
   }
 
-  /**
-   * Returns the top element's node id.
-   */
+  /** Returns the top element's node id. */
   public int topNode() {
     return (int) heap.top();
   }
 
-  /**
-   * Returns the top element's node score.
-   */
+  /** Returns the top element's node score. */
   public float topScore() {
     return NumericUtils.sortableIntToFloat((int) (heap.top() >> 32));
   }

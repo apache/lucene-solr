@@ -16,15 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.Random;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * random sloppy phrase query tests
- */
+/** random sloppy phrase query tests */
 public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   /** "A B"~N ⊆ "A B"~N+1 */
   public void testIncreasingSloppiness() throws Exception {
@@ -36,7 +32,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** same as the above with posincr */
   public void testIncreasingSloppinessWithHoles() throws Exception {
     Term t1 = randomTerm();
@@ -52,7 +48,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** "A B C"~N ⊆ "A B C"~N+1 */
   public void testIncreasingSloppiness3() throws Exception {
     Term t1 = randomTerm();
@@ -65,7 +61,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** same as the above with posincr */
   public void testIncreasingSloppiness3WithHoles() throws Exception {
     Term t1 = randomTerm();
@@ -85,7 +81,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** "A A"~N ⊆ "A A"~N+1 */
   public void testRepetitiveIncreasingSloppiness() throws Exception {
     Term t = randomTerm();
@@ -95,7 +91,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** same as the above with posincr */
   public void testRepetitiveIncreasingSloppinessWithHoles() throws Exception {
     Term t = randomTerm();
@@ -110,7 +106,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** "A A A"~N ⊆ "A A A"~N+1 */
   public void testRepetitiveIncreasingSloppiness3() throws Exception {
     Term t = randomTerm();
@@ -121,7 +117,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** same as the above with posincr */
   public void testRepetitiveIncreasingSloppiness3WithHoles() throws Exception {
     Term t = randomTerm();
@@ -140,7 +136,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   /** MultiPhraseQuery~N ⊆ MultiPhraseQuery~N+1 */
   public void testRandomIncreasingSloppiness() throws Exception {
     long seed = random().nextLong();
@@ -148,11 +144,11 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       MultiPhraseQuery q1 = randomPhraseQuery(seed);
       MultiPhraseQuery q2 = randomPhraseQuery(seed);
       q1 = new MultiPhraseQuery.Builder(q1).setSlop(i).build();
-      q2 = new MultiPhraseQuery.Builder(q2).setSlop(i+1).build();
+      q2 = new MultiPhraseQuery.Builder(q2).setSlop(i + 1).build();
       assertSubsetOf(q1, q2);
     }
   }
-  
+
   private MultiPhraseQuery randomPhraseQuery(long seed) {
     Random random = new Random(seed);
     int length = TestUtil.nextInt(random, 2, 5);
