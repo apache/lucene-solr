@@ -20,13 +20,14 @@ package org.apache.lucene.document;
 import org.apache.lucene.util.BytesRef;
 
 abstract class BinaryRangeDocValuesField extends BinaryDocValuesField {
-  
+
   final String field;
   final byte[] packedValue;
   final int numDims;
   final int numBytesPerDimension;
 
-  BinaryRangeDocValuesField(String field, byte[] packedValue, int numDims, int numBytesPerDimension) {
+  BinaryRangeDocValuesField(
+      String field, byte[] packedValue, int numDims, int numBytesPerDimension) {
     super(field, new BytesRef(packedValue));
     this.field = field;
     this.packedValue = packedValue;

@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -38,25 +36,39 @@ import org.apache.lucene.util.IntBlockPool;
 
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
-  private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT = new CompressingTermVectorsFormat(
-      "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8*1024, 10);
+  private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT =
+      new CompressingTermVectorsFormat(
+          "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8 * 1024, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 
-  SortingTermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
+  SortingTermVectorsConsumer(
+      final IntBlockPool.Allocator intBlockAllocator,
+      final ByteBlockPool.Allocator byteBlockAllocator,
+      Directory directory,
+      SegmentInfo info,
+      Codec codec) {
     super(intBlockAllocator, byteBlockAllocator, directory, info, codec);
   }
 
   @Override
-  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+  void flush(
+      Map<String, TermsHashPerField> fieldsToFlush,
+      final SegmentWriteState state,
+      Sorter.DocMap sortMap,
+      NormsProducer norms)
+      throws IOException {
     super.flush(fieldsToFlush, state, sortMap, norms);
     if (tmpDirectory != null) {
-      TermVectorsReader reader = TEMP_TERM_VECTORS_FORMAT
-          .vectorsReader(tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
+      TermVectorsReader reader =
+          TEMP_TERM_VECTORS_FORMAT.vectorsReader(
+              tmpDirectory, state.segmentInfo, state.fieldInfos, IOContext.DEFAULT);
       // Don't pull a merge instance, since merge instances optimize for
       // sequential access while term vectors will likely be accessed in random
       // order here.
-      TermVectorsWriter writer = codec.termVectorsFormat()
-          .vectorsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
+      TermVectorsWriter writer =
+          codec
+              .termVectorsFormat()
+              .vectorsWriter(state.directory, state.segmentInfo, IOContext.DEFAULT);
       try {
         reader.checkIntegrity();
         for (int docID = 0; docID < state.segmentInfo.maxDoc(); docID++) {
@@ -66,8 +78,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
         writer.finish(state.fieldInfos, state.segmentInfo.maxDoc());
       } finally {
         IOUtils.close(reader, writer);
-        IOUtils.deleteFiles(tmpDirectory,
-            tmpDirectory.getTemporaryFiles().values());
+        IOUtils.deleteFiles(tmpDirectory, tmpDirectory.getTemporaryFiles().values());
       }
     }
   }
@@ -88,14 +99,18 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
       super.abort();
     } finally {
       if (tmpDirectory != null) {
-        IOUtils.deleteFilesIgnoringExceptions(tmpDirectory,
-            tmpDirectory.getTemporaryFiles().values());
+        IOUtils.deleteFilesIgnoringExceptions(
+            tmpDirectory, tmpDirectory.getTemporaryFiles().values());
       }
     }
   }
 
-  /** Safe (but, slowish) default method to copy every vector field in the provided {@link TermVectorsWriter}. */
-  private static void writeTermVectors(TermVectorsWriter writer, Fields vectors, FieldInfos fieldInfos) throws IOException {
+  /**
+   * Safe (but, slowish) default method to copy every vector field in the provided {@link
+   * TermVectorsWriter}.
+   */
+  private static void writeTermVectors(
+      TermVectorsWriter writer, Fields vectors, FieldInfos fieldInfos) throws IOException {
     if (vectors == null) {
       writer.startDocument(0);
       writer.finishDocument();
@@ -119,11 +134,12 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
     PostingsEnum docsAndPositionsEnum = null;
 
     int fieldCount = 0;
-    for(String fieldName : vectors) {
+    for (String fieldName : vectors) {
       fieldCount++;
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
 
-      assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
+      assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0
+          : "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
       final Terms terms = vectors.terms(fieldName);
@@ -139,10 +155,11 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics
+        // function
         numTerms = 0;
         termsEnum = terms.iterator();
-        while(termsEnum.next() != null) {
+        while (termsEnum.next() != null) {
           numTerms++;
         }
       }
@@ -151,7 +168,7 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
       termsEnum = terms.iterator();
 
       int termCount = 0;
-      while(termsEnum.next() != null) {
+      while (termsEnum.next() != null) {
         termCount++;
 
         final int freq = (int) termsEnum.totalTermFreq();
@@ -159,21 +176,23 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
         writer.startTerm(termsEnum.term(), freq);
 
         if (hasPositions || hasOffsets) {
-          docsAndPositionsEnum = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
+          docsAndPositionsEnum =
+              termsEnum.postings(
+                  docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
           assert docsAndPositionsEnum != null;
 
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocIdSetIterator.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
 
-          for(int posUpto=0; posUpto<freq; posUpto++) {
+          for (int posUpto = 0; posUpto < freq; posUpto++) {
             final int pos = docsAndPositionsEnum.nextPosition();
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
 
             final BytesRef payload = docsAndPositionsEnum.getPayload();
 
-            assert !hasPositions || pos >= 0 ;
+            assert !hasPositions || pos >= 0;
             writer.addPosition(pos, startOffset, endOffset, payload);
           }
         }
@@ -185,6 +204,4 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
     assert fieldCount == numFields;
     writer.finishDocument();
   }
-
-
 }

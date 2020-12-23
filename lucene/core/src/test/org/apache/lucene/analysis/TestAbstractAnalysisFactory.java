@@ -32,7 +32,7 @@ public class TestAbstractAnalysisFactory extends LuceneTestCase {
     assertEquals("fake", CharFilterFactory.findSPIName(FakeCharFilterFactory.class));
   }
 
-  public void testLookupTokenFilterSPIName() throws NoSuchFieldException, IllegalAccessException{
+  public void testLookupTokenFilterSPIName() throws NoSuchFieldException, IllegalAccessException {
     assertEquals("fake", AnalysisSPILoader.lookupSPIName(FakeTokenFilterFactory.class));
     assertEquals("fake", TokenFilterFactory.findSPIName(FakeTokenFilterFactory.class));
   }

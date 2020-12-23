@@ -16,31 +16,29 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.IOException;
 import java.io.Reader;
-
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 
-/** A Tokenizer is a TokenStream whose input is a Reader.
-  <p>
-  This is an abstract class; subclasses must override {@link #incrementToken()}
-  <p>
-  NOTE: Subclasses overriding {@link #incrementToken()} must
-  call {@link AttributeSource#clearAttributes()} before
-  setting attributes.
+/**
+ * A Tokenizer is a TokenStream whose input is a Reader.
+ *
+ * <p>This is an abstract class; subclasses must override {@link #incrementToken()}
+ *
+ * <p>NOTE: Subclasses overriding {@link #incrementToken()} must call {@link
+ * AttributeSource#clearAttributes()} before setting attributes.
  */
-public abstract class Tokenizer extends TokenStream {  
+public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input = ILLEGAL_STATE_READER;
-  
+
   /** Pending reader: not actually assigned to input until reset() */
   private Reader inputPending = ILLEGAL_STATE_READER;
 
   /**
-   * Construct a tokenizer with no input, awaiting a call to {@link #setReader(java.io.Reader)}
-   * to provide input.
+   * Construct a tokenizer with no input, awaiting a call to {@link #setReader(java.io.Reader)} to
+   * provide input.
    */
   protected Tokenizer() {
     //
@@ -49,6 +47,7 @@ public abstract class Tokenizer extends TokenStream {
   /**
    * Construct a tokenizer with no input, awaiting a call to {@link #setReader(java.io.Reader)} to
    * provide input.
+   *
    * @param factory attribute factory.
    */
   protected Tokenizer(AttributeFactory factory) {
@@ -57,10 +56,9 @@ public abstract class Tokenizer extends TokenStream {
 
   /**
    * {@inheritDoc}
-   * <p>
-   * <b>NOTE:</b> 
-   * The default implementation closes the input Reader, so
-   * be sure to call <code>super.close()</code> when overriding this method.
+   *
+   * <p><b>NOTE:</b> The default implementation closes the input Reader, so be sure to call <code>
+   * super.close()</code> when overriding this method.
    */
   @Override
   public void close() throws IOException {
@@ -69,20 +67,25 @@ public abstract class Tokenizer extends TokenStream {
     // GC can reclaim
     inputPending = input = ILLEGAL_STATE_READER;
   }
-  
-  /** Return the corrected offset. If {@link #input} is a {@link CharFilter} subclass
-   * this method calls {@link CharFilter#correctOffset}, else returns <code>currentOff</code>.
+
+  /**
+   * Return the corrected offset. If {@link #input} is a {@link CharFilter} subclass this method
+   * calls {@link CharFilter#correctOffset}, else returns <code>currentOff</code>.
+   *
    * @param currentOff offset as seen in the output
    * @return corrected offset based on the input
    * @see CharFilter#correctOffset
    */
   protected final int correctOffset(int currentOff) {
-    return (input instanceof CharFilter) ? ((CharFilter) input).correctOffset(currentOff) : currentOff;
+    return (input instanceof CharFilter)
+        ? ((CharFilter) input).correctOffset(currentOff)
+        : currentOff;
   }
 
-  /** Expert: Set a new reader on the Tokenizer.  Typically, an
-   *  analyzer (in its tokenStream method) will use
-   *  this to re-use a previously created tokenizer. */
+  /**
+   * Expert: Set a new reader on the Tokenizer. Typically, an analyzer (in its tokenStream method)
+   * will use this to re-use a previously created tokenizer.
+   */
   public final void setReader(Reader input) {
     if (input == null) {
       throw new NullPointerException("input must not be null");
@@ -92,7 +95,7 @@ public abstract class Tokenizer extends TokenStream {
     this.inputPending = input;
     setReaderTestPoint();
   }
-  
+
   @Override
   public void reset() throws IOException {
     super.reset();
@@ -102,17 +105,18 @@ public abstract class Tokenizer extends TokenStream {
 
   // only used for testing
   void setReaderTestPoint() {}
-  
-  private static final Reader ILLEGAL_STATE_READER = new Reader() {
-    @Override
-    public int read(char[] cbuf, int off, int len) {
-      throw new IllegalStateException("TokenStream contract violation: reset()/close() call missing, " +
-          "reset() called multiple times, or subclass does not call super.reset(). " +
-          "Please see Javadocs of TokenStream class for more information about the correct consuming workflow.");
-    }
 
-    @Override
-    public void close() {} 
-  };
+  private static final Reader ILLEGAL_STATE_READER =
+      new Reader() {
+        @Override
+        public int read(char[] cbuf, int off, int len) {
+          throw new IllegalStateException(
+              "TokenStream contract violation: reset()/close() call missing, "
+                  + "reset() called multiple times, or subclass does not call super.reset(). "
+                  + "Please see Javadocs of TokenStream class for more information about the correct consuming workflow.");
+        }
+
+        @Override
+        public void close() {}
+      };
 }
-

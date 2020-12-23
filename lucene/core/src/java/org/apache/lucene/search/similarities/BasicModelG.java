@@ -16,19 +16,19 @@
  */
 package org.apache.lucene.search.similarities;
 
+import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 
 import org.apache.lucene.search.Explanation;
 
-import static org.apache.lucene.search.similarities.SimilarityBase.log2;
-
 /**
- * Geometric as limiting form of the Bose-Einstein model.  The formula used in Lucene differs
- * slightly from the one in the original paper: {@code F} is increased by {@code 1}
- * and {@code N} is increased by {@code F}.
+ * Geometric as limiting form of the Bose-Einstein model. The formula used in Lucene differs
+ * slightly from the one in the original paper: {@code F} is increased by {@code 1} and {@code N} is
+ * increased by {@code F}.
+ *
  * @lucene.experimental
  */
 public class BasicModelG extends BasicModel {
-  
+
   /** Sole constructor: parameter-free */
   public BasicModelG() {}
 
@@ -41,12 +41,12 @@ public class BasicModelG extends BasicModel {
     // -log(1 / (lambda + 1)) -> log(lambda + 1)
     double A = log2(lambda + 1);
     double B = log2((1 + lambda) / lambda);
-    
+
     // basic model G should return (A + B * tfn)
     // which we rewrite to B * (1 + tfn) - (B - A)
     // so that it can be combined with the after effect while still guaranteeing
     // that the result is non-decreasing with tfn since B >= A
-    
+
     return (B - (B - A) / (1 + tfn)) * aeTimes1pTfn;
   }
 
@@ -55,17 +55,19 @@ public class BasicModelG extends BasicModel {
     double F = stats.getTotalTermFreq() + 1;
     double N = stats.getNumberOfDocuments();
     double lambda = F / (N + F);
-    Explanation explLambda = Explanation.match((float) lambda,
-        "lambda, computed as F / (N + F) from:",
-        Explanation.match((float) F,
-            "F, total number of occurrences of term across all docs + 1"),
-        Explanation.match((float) N,
-            "N, total number of documents with field"));
+    Explanation explLambda =
+        Explanation.match(
+            (float) lambda,
+            "lambda, computed as F / (N + F) from:",
+            Explanation.match(
+                (float) F, "F, total number of occurrences of term across all docs + 1"),
+            Explanation.match((float) N, "N, total number of documents with field"));
 
     return Explanation.match(
         (float) (score(stats, tfn, aeTimes1pTfn) * (1 + tfn) / aeTimes1pTfn),
-        getClass().getSimpleName() + ", computed as " +
-            "log2(lambda + 1) + tfn * log2((1 + lambda) / lambda) from:",
+        getClass().getSimpleName()
+            + ", computed as "
+            + "log2(lambda + 1) + tfn * log2((1 + lambda) / lambda) from:",
         Explanation.match((float) tfn, "tfn, normalized term frequency"),
         explLambda);
   }

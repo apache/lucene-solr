@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-/** A delegating Directory that records which files were
- *  written to and deleted. */
+/** A delegating Directory that records which files were written to and deleted. */
 public final class TrackingDirectoryWrapper extends FilterDirectory {
 
   private final Set<String> createdFileNames = Collections.synchronizedSet(new HashSet<String>());
@@ -54,7 +52,8 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+  public void copyFrom(Directory from, String src, String dest, IOContext context)
+      throws IOException {
     in.copyFrom(from, src, dest, context);
     createdFileNames.add(dest);
   }

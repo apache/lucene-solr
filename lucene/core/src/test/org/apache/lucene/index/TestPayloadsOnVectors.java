@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -50,23 +48,23 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-    ((Tokenizer)ts).setReader(new StringReader("here we go"));
+    ((Tokenizer) ts).setReader(new StringReader("here we go"));
     field.setTokenStream(ts);
     doc.add(field);
     writer.addDocument(doc);
-    
+
     Token withPayload = new Token("withPayload", 0, 11);
     withPayload.setPayload(new BytesRef("test"));
     ts = new CannedTokenStream(withPayload);
     assertTrue(ts.hasAttribute(PayloadAttribute.class));
     field.setTokenStream(ts);
     writer.addDocument(doc);
-    
+
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-    ((Tokenizer)ts).setReader(new StringReader("another"));
+    ((Tokenizer) ts).setReader(new StringReader("another"));
     field.setTokenStream(ts);
     writer.addDocument(doc);
-    
+
     DirectoryReader reader = writer.getReader();
     Terms terms = reader.getTermVector(1, "field");
     assert terms != null;
@@ -80,7 +78,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   /** some field instances have payload att, some not */
   public void testMixupMultiValued() throws Exception {
     Directory dir = newDirectory();
@@ -93,7 +91,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     Field field = new Field("field", "", customType);
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-    ((Tokenizer)ts).setReader(new StringReader("here we go"));
+    ((Tokenizer) ts).setReader(new StringReader("here we go"));
     field.setTokenStream(ts);
     doc.add(field);
     Field field2 = new Field("field", "", customType);
@@ -105,7 +103,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     doc.add(field2);
     Field field3 = new Field("field", "", customType);
     ts = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-    ((Tokenizer)ts).setReader(new StringReader("nopayload"));
+    ((Tokenizer) ts).setReader(new StringReader("nopayload"));
     field3.setTokenStream(ts);
     doc.add(field3);
     writer.addDocument(doc);
@@ -122,7 +120,7 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   public void testPayloadsWithoutPositions() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -134,12 +132,13 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     doc.add(new Field("field", "foo", customType));
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      writer.addDocument(doc);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          writer.addDocument(doc);
+        });
 
     writer.close();
     dir.close();
   }
-
 }

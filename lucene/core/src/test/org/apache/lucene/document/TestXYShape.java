@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Random;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
@@ -42,6 +41,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestXYShape extends LuceneTestCase {
 
   protected static String FIELDNAME = "field";
+
   protected static void addPolygonsToDoc(String field, Document doc, XYPolygon polygon) {
     Field[] fields = XYShape.createIndexableFields(field, polygon);
     for (Field f : fields) {
@@ -60,7 +60,7 @@ public class TestXYShape extends LuceneTestCase {
     return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
   }
 
-  /** test we can search for a point with a standard number of vertices*/
+  /** test we can search for a point with a standard number of vertices */
   public void testBasicIntersects() throws Exception {
     int numVertices = TestUtil.nextInt(random(), 50, 100);
     Directory dir = newDirectory();
@@ -98,21 +98,25 @@ public class TestXYShape extends LuceneTestCase {
     assertEquals(2, searcher.count(q));
 
     // search a disjoint bbox
-    q = newRectQuery(FIELDNAME, p.minX-1f, p.minX + 1f, p.minY - 1f, p.minY + 1f);
+    q = newRectQuery(FIELDNAME, p.minX - 1f, p.minX + 1f, p.minY - 1f, p.minY + 1f);
     assertEquals(0, searcher.count(q));
 
     // search w/ an intersecting polygon
-    q = XYShape.newPolygonQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYPolygon(
-        new float[] {minX, minX, maxX, maxX, minX},
-        new float[] {minY, maxY, maxY, minY, minY}
-    ));
+    q =
+        XYShape.newPolygonQuery(
+            FIELDNAME,
+            QueryRelation.INTERSECTS,
+            new XYPolygon(
+                new float[] {minX, minX, maxX, maxX, minX},
+                new float[] {minY, maxY, maxY, minY, minY}));
     assertEquals(2, searcher.count(q));
 
     // search w/ an intersecting line
-    q = XYShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, new XYLine(
-       new float[] {minX, minX, maxX, maxX},
-       new float[] {minY, maxY, maxY, minY}
-    ));
+    q =
+        XYShape.newLineQuery(
+            FIELDNAME,
+            QueryRelation.INTERSECTS,
+            new XYLine(new float[] {minX, minX, maxX, maxX}, new float[] {minY, maxY, maxY, minY}));
     assertEquals(2, searcher.count(q));
 
     IOUtils.close(reader, dir);
@@ -123,7 +127,7 @@ public class TestXYShape extends LuceneTestCase {
     XYRectangle r1 = ShapeTestUtil.nextBox(random);
     XYRectangle r2 = ShapeTestUtil.nextBox(random);
     XYPolygon p;
-    //find two boxes so that r1 contains r2
+    // find two boxes so that r1 contains r2
     while (true) {
       // TODO: Should XYRectangle hold values as float?
       if (areBoxDisjoint(r1, r2)) {
@@ -184,7 +188,7 @@ public class TestXYShape extends LuceneTestCase {
     Component2D circle2D = XYGeometry.create(circle);
     int expected;
     int expectedDisjoint;
-    if (circle2D.contains(pX, py))  {
+    if (circle2D.contains(pX, py)) {
       expected = 1;
       expectedDisjoint = 0;
     } else {
@@ -221,7 +225,7 @@ public class TestXYShape extends LuceneTestCase {
     writer.close();
     IndexSearcher s = newSearcher(r);
 
-    XYGeometry[] geometries = new XYGeometry[] { new XYRectangle(0, 1, 0, 1), new XYPoint(4, 4) };
+    XYGeometry[] geometries = new XYGeometry[] {new XYRectangle(0, 1, 0, 1), new XYPoint(4, 4)};
     // geometries within the polygon
     Query q = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, geometries);
     TopDocs topDocs = s.search(q, 1);
@@ -233,7 +237,9 @@ public class TestXYShape extends LuceneTestCase {
   public void testContainsIndexedGeometryCollection() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    XYPolygon polygon = new XYPolygon(new float[] {-132, 132, 132, -132, -132}, new float[] {-64, -64, 64, 64, -64});
+    XYPolygon polygon =
+        new XYPolygon(
+            new float[] {-132, 132, 132, -132, -132}, new float[] {-64, -64, 64, 64, -64});
     Field[] polygonFields = XYShape.createIndexableFields(FIELDNAME, polygon);
     // POINT(5, 5) inside the indexed polygon
     Field[] pointFields = XYShape.createIndexableFields(FIELDNAME, 5, 5);
@@ -244,7 +250,7 @@ public class TestXYShape extends LuceneTestCase {
       for (Field f : polygonFields) {
         doc.add(f);
       }
-      for(int j = 0; j < 10; j++) {
+      for (int j = 0; j < 10; j++) {
         for (Field f : pointFields) {
           doc.add(f);
         }
@@ -257,10 +263,13 @@ public class TestXYShape extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     IndexSearcher searcher = newSearcher(reader);
-    // Contains is only true if the query geometry is inside a geometry and does not intersect with any other geometry 
-    // belonging to the same document. In this case the query geometry contains the indexed polygon but the point is 
+    // Contains is only true if the query geometry is inside a geometry and does not intersect with
+    // any other geometry
+    // belonging to the same document. In this case the query geometry contains the indexed polygon
+    // but the point is
     // inside the query as well, hence the result is 0.
-    XYPolygon polygonQuery = new XYPolygon(new float[] {4, 6, 6, 4, 4}, new float[] {4, 4, 6, 6, 4});
+    XYPolygon polygonQuery =
+        new XYPolygon(new float[] {4, 6, 6, 4, 4}, new float[] {4, 4, 6, 6, 4});
     Query query = XYShape.newGeometryQuery(FIELDNAME, QueryRelation.CONTAINS, polygonQuery);
     assertEquals(0, searcher.count(query));
 
@@ -276,11 +285,12 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
-    return ( r1.minX <=  r2.minX &&  r1.minY <= r2.minY && r1.maxX >= r2.maxX && r1.maxY >= r2.maxY);
+    return (r1.minX <= r2.minX && r1.minY <= r2.minY && r1.maxX >= r2.maxX && r1.maxY >= r2.maxY);
   }
 
   private static XYPolygon toPolygon(XYRectangle r) {
-    return new XYPolygon(new float[]{ r.minX, r.maxX, r.maxX, r.minX, r.minX},
-                         new float[]{ r.minY, r.minY, r.maxY, r.maxY, r.minY});
+    return new XYPolygon(
+        new float[] {r.minX, r.maxX, r.maxX, r.minX, r.minX},
+        new float[] {r.minY, r.minY, r.maxY, r.maxY, r.minY});
   }
 }

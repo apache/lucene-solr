@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -27,53 +26,60 @@ public class TestDelegatingAnalyzerWrapper extends LuceneTestCase {
 
   public void testDelegatesNormalization() {
     Analyzer analyzer1 = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
-    DelegatingAnalyzerWrapper w1 = new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
-      @Override
-      protected Analyzer getWrappedAnalyzer(String fieldName) {
-        return analyzer1;
-      }
-    };
+    DelegatingAnalyzerWrapper w1 =
+        new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return analyzer1;
+          }
+        };
     assertEquals(new BytesRef("Ab C"), w1.normalize("foo", "Ab C"));
 
     Analyzer analyzer2 = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true);
-    DelegatingAnalyzerWrapper w2 = new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
-      @Override
-      protected Analyzer getWrappedAnalyzer(String fieldName) {
-        return analyzer2;
-      }
-    };
+    DelegatingAnalyzerWrapper w2 =
+        new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return analyzer2;
+          }
+        };
     assertEquals(new BytesRef("ab c"), w2.normalize("foo", "Ab C"));
   }
 
   public void testDelegatesAttributeFactory() throws Exception {
     Analyzer analyzer1 = new MockBytesAnalyzer();
-    DelegatingAnalyzerWrapper w1 = new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
-      @Override
-      protected Analyzer getWrappedAnalyzer(String fieldName) {
-        return analyzer1;
-      }
-    };
-    assertEquals(new BytesRef("Ab C".getBytes(StandardCharsets.UTF_16LE)), w1.normalize("foo", "Ab C"));
+    DelegatingAnalyzerWrapper w1 =
+        new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return analyzer1;
+          }
+        };
+    assertEquals(
+        new BytesRef("Ab C".getBytes(StandardCharsets.UTF_16LE)), w1.normalize("foo", "Ab C"));
   }
 
   public void testDelegatesCharFilter() throws Exception {
-    Analyzer analyzer1 = new Analyzer() {
-      @Override
-      protected Reader initReaderForNormalization(String fieldName, Reader reader) {
-        return new DummyCharFilter(reader, 'b', 'z');
-      }
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(attributeFactory(fieldName));
-        return new TokenStreamComponents(tokenizer);
-      }
-    };
-    DelegatingAnalyzerWrapper w1 = new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
-      @Override
-      protected Analyzer getWrappedAnalyzer(String fieldName) {
-        return analyzer1;
-      }
-    };
+    Analyzer analyzer1 =
+        new Analyzer() {
+          @Override
+          protected Reader initReaderForNormalization(String fieldName, Reader reader) {
+            return new DummyCharFilter(reader, 'b', 'z');
+          }
+
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(attributeFactory(fieldName));
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
+    DelegatingAnalyzerWrapper w1 =
+        new DelegatingAnalyzerWrapper(Analyzer.GLOBAL_REUSE_STRATEGY) {
+          @Override
+          protected Analyzer getWrappedAnalyzer(String fieldName) {
+            return analyzer1;
+          }
+        };
     assertEquals(new BytesRef("az c"), w1.normalize("foo", "ab c"));
   }
 
@@ -96,12 +102,11 @@ public class TestDelegatingAnalyzerWrapper extends LuceneTestCase {
     public int read(char[] cbuf, int off, int len) throws IOException {
       final int read = input.read(cbuf, off, len);
       for (int i = 0; i < read; ++i) {
-        if (cbuf[off+i] == match) {
-          cbuf[off+i] = repl;
+        if (cbuf[off + i] == match) {
+          cbuf[off + i] = repl;
         }
       }
       return read;
     }
-    
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,7 +23,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -49,8 +47,11 @@ public class TestSubScorerFreqs extends LuceneTestCase {
   @BeforeClass
   public static void makeIndex() throws Exception {
     dir = new ByteBuffersDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(
-        random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     // make sure we have more than one segment occationally
     int num = atLeast(31);
     for (int i = 0; i < num; i++) {
@@ -90,7 +91,7 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       super(other);
       this.relationships = relationships;
     }
-    
+
     public void setSubScorers(Scorable scorer) throws IOException {
       scorer = AssertingScorable.unwrap(scorer);
       for (Scorable.ChildScorable child : scorer.getChildren()) {
@@ -98,14 +99,13 @@ public class TestSubScorerFreqs extends LuceneTestCase {
           setSubScorers(child.child);
         }
       }
-      subScorers.put(((Scorer)scorer).getWeight().getQuery(), scorer);
+      subScorers.put(((Scorer) scorer).getWeight().getQuery(), scorer);
     }
-    
-    public LeafCollector getLeafCollector(LeafReaderContext context)
-        throws IOException {
+
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
       return new FilterLeafCollector(super.getLeafCollector(context)) {
-        
+
         @Override
         public void collect(int doc) throws IOException {
           final Map<Query, Float> freqs = new HashMap<Query, Float>();
@@ -117,17 +117,15 @@ public class TestSubScorerFreqs extends LuceneTestCase {
           docCounts.put(doc + docBase, freqs);
           super.collect(doc);
         }
-        
+
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           subScorers.clear();
           setSubScorers(scorer);
         }
-        
       };
     }
-
   }
 
   private static final float FLOAT_TOLERANCE = 0.00001F;
@@ -165,17 +163,17 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     query.add(inner.build(), Occur.MUST);
     query.add(aQuery, Occur.MUST);
     query.add(dQuery, Occur.MUST);
-    
+
     // Only needed in Java6; Java7+ has a @SafeVarargs annotated Arrays#asList()!
     // see http://docs.oracle.com/javase/7/docs/api/java/lang/SafeVarargs.html
-    @SuppressWarnings("unchecked") final Iterable<Set<String>> occurList = Arrays.asList(
-        Collections.singleton("MUST"), 
-        new HashSet<>(Arrays.asList("MUST", "SHOULD"))
-    );
-    
+    @SuppressWarnings("unchecked")
+    final Iterable<Set<String>> occurList =
+        Arrays.asList(
+            Collections.singleton("MUST"), new HashSet<>(Arrays.asList("MUST", "SHOULD")));
+
     for (final Set<String> occur : occurList) {
-      CountingCollector c = new CountingCollector(TopScoreDocCollector.create(
-          10, Integer.MAX_VALUE), occur);
+      CountingCollector c =
+          new CountingCollector(TopScoreDocCollector.create(10, Integer.MAX_VALUE), occur);
       s.search(query.build(), c);
       final int maxDocs = s.getIndexReader().maxDoc();
       assertEquals(maxDocs, c.docCounts.size());
@@ -218,7 +216,6 @@ public class TestSubScorerFreqs extends LuceneTestCase {
       assertEquals(1, doc1.size());
       assertEquals(1.0F, doc1.get(q), FLOAT_TOLERANCE);
     }
-
   }
 
   // Similarity that just returns the frequency as the score
@@ -230,7 +227,8 @@ public class TestSubScorerFreqs extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimScorer() {
         @Override
         public float score(float freq, long norm) {

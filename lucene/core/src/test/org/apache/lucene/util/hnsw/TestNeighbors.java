@@ -107,7 +107,7 @@ public class TestNeighbors extends LuceneTestCase {
 
   public void testToString() {
     assertEquals("Neighbors[0]", new NeighborQueue(2, false).toString());
-    //assertEquals("NeighborArray[0]", new NeighborArray(2, VectorValues.SearchStrategy.NONE).toString());
+    // assertEquals("NeighborArray[0]", new NeighborArray(2,
+    // VectorValues.SearchStrategy.NONE).toString());
   }
-
 }

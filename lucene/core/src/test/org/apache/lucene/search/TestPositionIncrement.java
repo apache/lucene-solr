@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -40,56 +38,54 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Term position unit test.
- *
- *
- */
+/** Term position unit test. */
 public class TestPositionIncrement extends LuceneTestCase {
 
-  final static boolean VERBOSE = false;
+  static final boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new Tokenizer() {
-          // TODO: use CannedTokenStream
-          private final String[] TOKENS = {"1", "2", "3", "4", "5"};
-          private final int[] INCREMENTS = {1, 2, 1, 0, 1};
-          private int i = 0;
-
-          PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-          OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-          
+    Analyzer analyzer =
+        new Analyzer() {
           @Override
-          public boolean incrementToken() {
-            if (i == TOKENS.length)
-              return false;
-            clearAttributes();
-            termAtt.append(TOKENS[i]);
-            offsetAtt.setOffset(i,i);
-            posIncrAtt.setPositionIncrement(INCREMENTS[i]);
-            i++;
-            return true;
-          }
+          public TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(
+                new Tokenizer() {
+                  // TODO: use CannedTokenStream
+                  private final String[] TOKENS = {"1", "2", "3", "4", "5"};
+                  private final int[] INCREMENTS = {1, 2, 1, 0, 1};
+                  private int i = 0;
 
-          @Override
-          public void reset() throws IOException {
-            super.reset();
-            this.i = 0;
+                  PositionIncrementAttribute posIncrAtt =
+                      addAttribute(PositionIncrementAttribute.class);
+                  CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+                  OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
+                  @Override
+                  public boolean incrementToken() {
+                    if (i == TOKENS.length) return false;
+                    clearAttributes();
+                    termAtt.append(TOKENS[i]);
+                    offsetAtt.setOffset(i, i);
+                    posIncrAtt.setPositionIncrement(INCREMENTS[i]);
+                    i++;
+                    return true;
+                  }
+
+                  @Override
+                  public void reset() throws IOException {
+                    super.reset();
+                    this.i = 0;
+                  }
+                });
           }
-        });
-      }
-    };
+        };
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), store, analyzer);
     Document d = new Document();
@@ -97,24 +93,20 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
     writer.close();
-    
 
     IndexSearcher searcher = newSearcher(reader);
-    
-    PostingsEnum pos = MultiTerms.getTermPostingsEnum(searcher.getIndexReader(),
-                                                                "field",
-                                                                new BytesRef("1"));
+
+    PostingsEnum pos =
+        MultiTerms.getTermPostingsEnum(searcher.getIndexReader(), "field", new BytesRef("1"));
     pos.nextDoc();
     // first token should be at position 0
     assertEquals(0, pos.nextPosition());
-    
-    pos = MultiTerms.getTermPostingsEnum(searcher.getIndexReader(),
-                                           "field",
-                                           new BytesRef("2"));
+
+    pos = MultiTerms.getTermPostingsEnum(searcher.getIndexReader(), "field", new BytesRef("2"));
     pos.nextDoc();
     // second token should be at position 2
     assertEquals(2, pos.nextPosition());
-    
+
     PhraseQuery q;
     ScoreDoc[] hits;
 
@@ -154,7 +146,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    // phrase query would find it when correct positions are specified. 
+    // phrase query would find it when correct positions are specified.
     builder = new PhraseQuery.Builder();
     builder.add(new Term("field", "3"), 0);
     builder.add(new Term("field", "4"), 0);
@@ -162,8 +154,8 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(1, hits.length);
 
-    // phrase query should fail for non existing searched term 
-    // even if there exist another searched terms in the same searched position. 
+    // phrase query should fail for non existing searched term
+    // even if there exist another searched terms in the same searched position.
     builder = new PhraseQuery.Builder();
     builder.add(new Term("field", "3"), 0);
     builder.add(new Term("field", "9"), 0);
@@ -172,9 +164,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, hits.length);
 
     // multi-phrase query should succed for non existing searched term
-    // because there exist another searched terms in the same searched position. 
+    // because there exist another searched terms in the same searched position.
     MultiPhraseQuery.Builder mqb = new MultiPhraseQuery.Builder();
-    mqb.add(new Term[]{new Term("field", "3"),new Term("field", "9")},0);
+    mqb.add(new Term[] {new Term("field", "3"), new Term("field", "9")}, 0);
     hits = searcher.search(mqb.build(), 1000).scoreDocs;
     assertEquals(1, hits.length);
 
@@ -193,7 +185,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     q = new PhraseQuery("field", "2", "5");
     hits = searcher.search(q, 1000).scoreDocs;
     assertEquals(0, hits.length);
-    
+
     reader.close();
     store.close();
   }
@@ -204,8 +196,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
-      if (postings.getPayload() != null)
-        payloads.add(BytesRef.deepCopyOf(postings.getPayload()));
+      if (postings.getPayload() != null) payloads.add(BytesRef.deepCopyOf(postings.getPayload()));
     }
 
     @Override
@@ -218,15 +209,14 @@ public class TestPositionIncrement extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockPayloadAnalyzer());
     Document doc = new Document();
-    doc.add(new TextField("content", new StringReader(
-        "a a b c d e a f g h i j a b k k")));
+    doc.add(new TextField("content", new StringReader("a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();
     LeafReader r = getOnlyLeafReader(readerFromWriter);
 
     PostingsEnum tp = r.postings(new Term("content", "a"), PostingsEnum.ALL);
-    
+
     int count = 0;
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     // "a" occurs 4 times
@@ -240,10 +230,10 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, tp.nextDoc());
 
     IndexSearcher is = newSearcher(getOnlyLeafReader(readerFromWriter));
-  
+
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
-    SpanQuery[] sqs = { stq1, stq2 };
+    SpanQuery[] sqs = {stq1, stq2};
     SpanNearQuery snq = new SpanNearQuery(sqs, 30, false);
 
     count = 0;
@@ -252,12 +242,19 @@ public class TestPositionIncrement extends LuceneTestCase {
       System.out.println("\ngetPayloadSpans test");
     }
     PayloadSpanCollector collector = new PayloadSpanCollector();
-    Spans pspans = snq.createWeight(is, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
+    Spans pspans =
+        snq.createWeight(is, ScoreMode.COMPLETE_NO_SCORES, 1f)
+            .getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     while (pspans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (pspans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if (VERBOSE) {
-          System.out.println("doc " + pspans.docID() + ": span " + pspans.startPosition()
-              + " to " + pspans.endPosition());
+          System.out.println(
+              "doc "
+                  + pspans.docID()
+                  + ": span "
+                  + pspans.startPosition()
+                  + " to "
+                  + pspans.endPosition());
         }
         collector.reset();
         pspans.collect(collector);
@@ -274,7 +271,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(8, count);
 
     // System.out.println("\ngetSpans test");
-    Spans spans = snq.createWeight(is, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans =
+        snq.createWeight(is, ScoreMode.COMPLETE_NO_SCORES, 1f)
+            .getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     count = 0;
     sawZero = false;
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {

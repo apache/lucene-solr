@@ -20,10 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 /**
- * {@link DocIdSetIterator} that skips non-competitive docs by checking
- * the max score of the provided {@link Scorer} for the current block.
- * Call {@link #setMinCompetitiveScore(float)} in order to give this iterator the ability
- * to skip low-scoring documents.
+ * {@link DocIdSetIterator} that skips non-competitive docs by checking the max score of the
+ * provided {@link Scorer} for the current block. Call {@link #setMinCompetitiveScore(float)} in
+ * order to give this iterator the ability to skip low-scoring documents.
+ *
  * @lucene.internal
  */
 public class BlockMaxDISI extends DocIdSetIterator {
@@ -45,7 +45,7 @@ public class BlockMaxDISI extends DocIdSetIterator {
 
   @Override
   public int nextDoc() throws IOException {
-    return advance(docID()+1);
+    return advance(docID() + 1);
   }
 
   @Override

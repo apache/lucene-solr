@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util.fst;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -26,19 +24,16 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /**
- * An FST {@link Outputs} implementation where each output
- * is a sequence of bytes.
+ * An FST {@link Outputs} implementation where each output is a sequence of bytes.
  *
  * @lucene.experimental
  */
-
 public final class ByteSequenceOutputs extends Outputs<BytesRef> {
 
-  private final static BytesRef NO_OUTPUT = new BytesRef();
-  private final static ByteSequenceOutputs singleton = new ByteSequenceOutputs();
+  private static final BytesRef NO_OUTPUT = new BytesRef();
+  private static final ByteSequenceOutputs singleton = new ByteSequenceOutputs();
 
-  private ByteSequenceOutputs() {
-  }
+  private ByteSequenceOutputs() {}
 
   public static ByteSequenceOutputs getSingleton() {
     return singleton;
@@ -52,7 +47,7 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     int pos1 = output1.offset;
     int pos2 = output2.offset;
     int stopAt1 = pos1 + Math.min(output1.length, output2.length);
-    while(pos1 < stopAt1) {
+    while (pos1 < stopAt1) {
       if (output1.bytes[pos1] != output2.bytes[pos2]) {
         break;
       }
@@ -70,7 +65,7 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
       // output2 is a prefix of output1
       return output2;
     } else {
-      return new BytesRef(output1.bytes, output1.offset, pos1-output1.offset);
+      return new BytesRef(output1.bytes, output1.offset, pos1 - output1.offset);
     }
   }
 
@@ -87,9 +82,10 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
         // entire output removed
         return NO_OUTPUT;
       } else {
-        assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
+        assert inc.length < output.length
+            : "inc.length=" + inc.length + " vs output.length=" + output.length;
         assert inc.length > 0;
-        return new BytesRef(output.bytes, output.offset + inc.length, output.length-inc.length);
+        return new BytesRef(output.bytes, output.offset + inc.length, output.length - inc.length);
       }
     }
   }

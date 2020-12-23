@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -64,7 +62,8 @@ public class TestSortRandom extends LuceneTestCase {
     final Set<String> seen = new HashSet<>();
     final int maxLength = TestUtil.nextInt(random, 5, 100);
     if (VERBOSE) {
-      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
+      System.out.println(
+          "TEST: NUM_DOCS=" + NUM_DOCS + " maxLength=" + maxLength + " allowDups=" + allowDups);
     }
 
     int numDocs = 0;
@@ -122,10 +121,10 @@ public class TestSortRandom extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("  reader=" + r);
     }
-    
+
     final IndexSearcher s = newSearcher(r, false);
     final int ITERS = atLeast(100);
-    for(int iter=0;iter<ITERS;iter++) {
+    for (int iter = 0; iter < ITERS; iter++) {
       final boolean reverse = random.nextBoolean();
 
       final TopFieldDocs hits;
@@ -137,7 +136,7 @@ public class TestSortRandom extends LuceneTestCase {
       if (sortMissingLast) {
         sf.setMissingValue(SortField.STRING_LAST);
       }
-      
+
       final Sort sort;
       if (random.nextBoolean()) {
         sort = new Sort(sf);
@@ -149,33 +148,47 @@ public class TestSortRandom extends LuceneTestCase {
       hits = s.search(f, hitCount, sort, false);
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " " + hits.totalHits + " hits; topN=" + hitCount + "; reverse=" + reverse + "; sortMissingLast=" + sortMissingLast + " sort=" + sort);
+        System.out.println(
+            "\nTEST: iter="
+                + iter
+                + " "
+                + hits.totalHits
+                + " hits; topN="
+                + hitCount
+                + "; reverse="
+                + reverse
+                + "; sortMissingLast="
+                + sortMissingLast
+                + " sort="
+                + sort);
       }
 
       // Compute expected results:
-      Collections.sort(f.matchValues, new Comparator<BytesRef>() {
-          @Override
-          public int compare(BytesRef a, BytesRef b) {
-            if (a == null) {
-              if (b == null) {
-                return 0;
-              }
-              if (sortMissingLast) {
-                return 1;
+      Collections.sort(
+          f.matchValues,
+          new Comparator<BytesRef>() {
+            @Override
+            public int compare(BytesRef a, BytesRef b) {
+              if (a == null) {
+                if (b == null) {
+                  return 0;
+                }
+                if (sortMissingLast) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              } else if (b == null) {
+                if (sortMissingLast) {
+                  return -1;
+                } else {
+                  return 1;
+                }
               } else {
-                return -1;
+                return a.compareTo(b);
               }
-            } else if (b == null) {
-              if (sortMissingLast) {
-                return -1;
-              } else {
-                return 1;
-              }
-            } else {
-              return a.compareTo(b);
             }
-          }
-        });
+          });
 
       if (reverse) {
         Collections.reverse(f.matchValues);
@@ -183,30 +196,36 @@ public class TestSortRandom extends LuceneTestCase {
       final List<BytesRef> expected = f.matchValues;
       if (VERBOSE) {
         System.out.println("  expected:");
-        for(int idx=0;idx<expected.size();idx++) {
+        for (int idx = 0; idx < expected.size(); idx++) {
           BytesRef br = expected.get(idx);
           System.out.println("    " + idx + ": " + (br == null ? "<missing>" : br.utf8ToString()));
-          if (idx == hitCount-1) {
+          if (idx == hitCount - 1) {
             break;
           }
         }
       }
-      
+
       if (VERBOSE) {
         System.out.println("  actual:");
-        for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+        for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
           final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
           BytesRef br = (BytesRef) fd.fields[0];
 
-          System.out.println("    " + hitIDX + ": " + (br == null ? "<missing>" : br.utf8ToString()) + " id=" + s.doc(fd.doc).get("id"));
+          System.out.println(
+              "    "
+                  + hitIDX
+                  + ": "
+                  + (br == null ? "<missing>" : br.utf8ToString())
+                  + " id="
+                  + s.doc(fd.doc).get("id"));
         }
       }
-      for(int hitIDX=0;hitIDX<hits.scoreDocs.length;hitIDX++) {
+      for (int hitIDX = 0; hitIDX < hits.scoreDocs.length; hitIDX++) {
         final FieldDoc fd = (FieldDoc) hits.scoreDocs[hitIDX];
         BytesRef br = expected.get(hitIDX);
 
         BytesRef br2 = (BytesRef) fd.fields[0];
-        
+
         assertEquals(br, br2);
       }
     }
@@ -214,12 +233,13 @@ public class TestSortRandom extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
   private static class RandomQuery extends Query {
     private final long seed;
     private float density;
     private final List<BytesRef> docValues;
-    public final List<BytesRef> matchValues = Collections.synchronizedList(new ArrayList<BytesRef>());
+    public final List<BytesRef> matchValues =
+        Collections.synchronizedList(new ArrayList<BytesRef>());
 
     // density should be 0.0 ... 1.0
     public RandomQuery(long seed, float density, List<BytesRef> docValues) {
@@ -229,7 +249,8 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -238,16 +259,17 @@ public class TestSortRandom extends LuceneTestCase {
           final NumericDocValues idSource = DocValues.getNumeric(context.reader(), "id");
           assertNotNull(idSource);
           final FixedBitSet bits = new FixedBitSet(maxDoc);
-          for(int docID=0;docID<maxDoc;docID++) {
+          for (int docID = 0; docID < maxDoc; docID++) {
             assertEquals(docID, idSource.nextDoc());
             if (random.nextFloat() <= density) {
               bits.set(docID);
-              //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+              // System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
               matchValues.add(docValues.get((int) idSource.longValue()));
             }
           }
 
-          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(
+              this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -258,9 +280,7 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public String toString(String field) {
@@ -269,13 +289,11 @@ public class TestSortRandom extends LuceneTestCase {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
-    
+
     private boolean equalsTo(RandomQuery other) {
-      return seed == other.seed && 
-             docValues == other.docValues;
+      return seed == other.seed && docValues == other.docValues;
     }
 
     @Override

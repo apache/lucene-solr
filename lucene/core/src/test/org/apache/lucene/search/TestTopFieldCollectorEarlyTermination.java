@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.search;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -90,8 +89,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     }
     if (singleSortedSegment) {
       iw.forceMerge(1);
-    }
-    else if (random().nextBoolean()) {
+    } else if (random().nextBoolean()) {
       iw.forceMerge(FORCE_MERGE_MAX_SEGMENT_COUNT);
     }
     reader = iw.getReader();
@@ -101,7 +99,7 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       reader = iw.getReader();
     }
   }
-  
+
   private void closeIndex() throws IOException {
     reader.close();
     iw.close();
@@ -135,7 +133,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
         } else {
           after = null;
         }
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
+        final TopFieldCollector collector1 =
+            TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
         final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
 
         final Query query;
@@ -165,72 +164,92 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       closeIndex();
     }
   }
-  
+
   public void testCanEarlyTerminateOnDocId() {
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(SortField.FIELD_DOC),
-        new Sort(SortField.FIELD_DOC)));
-    
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(SortField.FIELD_DOC),
-        null));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(SortField.FIELD_DOC), new Sort(SortField.FIELD_DOC)));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG)),
-        null));
+    assertTrue(TopFieldCollector.canEarlyTerminate(new Sort(SortField.FIELD_DOC), null));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG)),
-        new Sort(new SortField("b", SortField.Type.LONG))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG)), null));
 
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(SortField.FIELD_DOC),
-        new Sort(new SortField("b", SortField.Type.LONG))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG)),
+            new Sort(new SortField("b", SortField.Type.LONG))));
 
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(SortField.FIELD_DOC),
-        new Sort(new SortField("b", SortField.Type.LONG), SortField.FIELD_DOC)));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(SortField.FIELD_DOC), new Sort(new SortField("b", SortField.Type.LONG))));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG)),
-        new Sort(SortField.FIELD_DOC)));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(SortField.FIELD_DOC),
+            new Sort(new SortField("b", SortField.Type.LONG), SortField.FIELD_DOC)));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG), SortField.FIELD_DOC),
-        new Sort(SortField.FIELD_DOC)));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG)), new Sort(SortField.FIELD_DOC)));
+
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG), SortField.FIELD_DOC),
+            new Sort(SortField.FIELD_DOC)));
   }
 
   public void testCanEarlyTerminateOnPrefix() {
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG)),
-        new Sort(new SortField("a", SortField.Type.LONG))));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG)),
+            new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(
+                new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+            new Sort(
+                new SortField("a", SortField.Type.LONG),
+                new SortField("b", SortField.Type.STRING))));
 
-    assertTrue(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG)),
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+    assertTrue(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG)),
+            new Sort(
+                new SortField("a", SortField.Type.LONG),
+                new SortField("b", SortField.Type.STRING))));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG, true)),
-        null));
-    
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG, true)),
-        new Sort(new SortField("a", SortField.Type.LONG, false))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG, true)), null));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
-        new Sort(new SortField("a", SortField.Type.LONG))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(new SortField("a", SortField.Type.LONG, true)),
+            new Sort(new SortField("a", SortField.Type.LONG, false))));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("c", SortField.Type.STRING))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(
+                new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+            new Sort(new SortField("a", SortField.Type.LONG))));
 
-    assertFalse(TopFieldCollector.canEarlyTerminate(
-        new Sort(new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
-        new Sort(new SortField("c", SortField.Type.LONG), new SortField("b", SortField.Type.STRING))));
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(
+                new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+            new Sort(
+                new SortField("a", SortField.Type.LONG),
+                new SortField("c", SortField.Type.STRING))));
+
+    assertFalse(
+        TopFieldCollector.canEarlyTerminate(
+            new Sort(
+                new SortField("a", SortField.Type.LONG), new SortField("b", SortField.Type.STRING)),
+            new Sort(
+                new SortField("c", SortField.Type.LONG),
+                new SortField("b", SortField.Type.STRING))));
   }
 }

@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract class for enumerating a subset of all terms. 
- * 
- * <p>Term enumerations are always ordered by
- * {@link BytesRef#compareTo}.  Each term in the enumeration is
- * greater than all that precede it.</p>
- * <p><em>Please note:</em> Consumers of this enum cannot
- * call {@code seek()}, it is forward only; it throws
- * {@link UnsupportedOperationException} when a seeking method
- * is called.
+ * Abstract class for enumerating a subset of all terms.
+ *
+ * <p>Term enumerations are always ordered by {@link BytesRef#compareTo}. Each term in the
+ * enumeration is greater than all that precede it.
+ *
+ * <p><em>Please note:</em> Consumers of this enum cannot call {@code seek()}, it is forward only;
+ * it throws {@link UnsupportedOperationException} when a seeking method is called.
  */
 public abstract class FilteredTermsEnum extends TermsEnum {
 
@@ -44,33 +40,38 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   /** The delegate {@link TermsEnum}. */
   protected final TermsEnum tenum;
 
-  /** Return value, if term should be accepted or the iteration should
-   * {@code END}. The {@code *_SEEK} values denote, that after handling the current term
-   * the enum should call {@link #nextSeekTerm} and step forward.
+  /**
+   * Return value, if term should be accepted or the iteration should {@code END}. The {@code
+   * *_SEEK} values denote, that after handling the current term the enum should call {@link
+   * #nextSeekTerm} and step forward.
+   *
    * @see #accept(BytesRef)
    */
   protected static enum AcceptStatus {
     /** Accept the term and position the enum at the next term. */
-    YES, 
-    /** Accept the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)})
-     * to the next term. */
-    YES_AND_SEEK, 
+    YES,
+    /**
+     * Accept the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)}) to the next
+     * term.
+     */
+    YES_AND_SEEK,
     /** Reject the term and position the enum at the next term. */
-    NO, 
-    /** Reject the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)})
-     * to the next term. */
-    NO_AND_SEEK, 
+    NO,
+    /**
+     * Reject the term and advance ({@link FilteredTermsEnum#nextSeekTerm(BytesRef)}) to the next
+     * term.
+     */
+    NO_AND_SEEK,
     /** Reject the term and stop enumerating. */
     END
   };
-  
-  /** Return if term is accepted, not accepted or the iteration should ended
-   * (and possibly seek).
-   */
+
+  /** Return if term is accepted, not accepted or the iteration should ended (and possibly seek). */
   protected abstract AcceptStatus accept(BytesRef term) throws IOException;
 
   /**
    * Creates a filtered {@link TermsEnum} on a terms enum.
+   *
    * @param tenum the terms enumeration to filter.
    */
   protected FilteredTermsEnum(final TermsEnum tenum) {
@@ -79,6 +80,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
 
   /**
    * Creates a filtered {@link TermsEnum} on a terms enum.
+   *
    * @param tenum the terms enumeration to filter.
    */
   protected FilteredTermsEnum(final TermsEnum tenum, final boolean startWithSeek) {
@@ -88,32 +90,30 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   /**
-   * Use this method to set the initial {@link BytesRef}
-   * to seek before iterating. This is a convenience method for
-   * subclasses that do not override {@link #nextSeekTerm}.
-   * If the initial seek term is {@code null} (default),
-   * the enum is empty.
-   * <P>You can only use this method, if you keep the default
-   * implementation of {@link #nextSeekTerm}.
+   * Use this method to set the initial {@link BytesRef} to seek before iterating. This is a
+   * convenience method for subclasses that do not override {@link #nextSeekTerm}. If the initial
+   * seek term is {@code null} (default), the enum is empty.
+   *
+   * <p>You can only use this method, if you keep the default implementation of {@link
+   * #nextSeekTerm}.
    */
   protected final void setInitialSeekTerm(BytesRef term) {
     this.initialSeekTerm = term;
   }
-  
-  /** On the first call to {@link #next} or if {@link #accept} returns
-   * {@link AcceptStatus#YES_AND_SEEK} or {@link AcceptStatus#NO_AND_SEEK},
-   * this method will be called to eventually seek the underlying TermsEnum
-   * to a new position.
-   * On the first call, {@code currentTerm} will be {@code null}, later
-   * calls will provide the term the underlying enum is positioned at.
-   * This method returns per default only one time the initial seek term
-   * and then {@code null}, so no repositioning is ever done.
-   * <p>Override this method, if you want a more sophisticated TermsEnum,
-   * that repositions the iterator during enumeration.
-   * If this method always returns {@code null} the enum is empty.
-   * <p><em>Please note:</em> This method should always provide a greater term
-   * than the last enumerated term, else the behaviour of this enum
-   * violates the contract for TermsEnums.
+
+  /**
+   * On the first call to {@link #next} or if {@link #accept} returns {@link
+   * AcceptStatus#YES_AND_SEEK} or {@link AcceptStatus#NO_AND_SEEK}, this method will be called to
+   * eventually seek the underlying TermsEnum to a new position. On the first call, {@code
+   * currentTerm} will be {@code null}, later calls will provide the term the underlying enum is
+   * positioned at. This method returns per default only one time the initial seek term and then
+   * {@code null}, so no repositioning is ever done.
+   *
+   * <p>Override this method, if you want a more sophisticated TermsEnum, that repositions the
+   * iterator during enumeration. If this method always returns {@code null} the enum is empty.
+   *
+   * <p><em>Please note:</em> This method should always provide a greater term than the last
+   * enumerated term, else the behaviour of this enum violates the contract for TermsEnums.
    */
   protected BytesRef nextSeekTerm(final BytesRef currentTerm) throws IOException {
     final BytesRef t = initialSeekTerm;
@@ -122,14 +122,14 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   /**
-   * Returns the related attributes, the returned {@link AttributeSource}
-   * is shared with the delegate {@code TermsEnum}.
+   * Returns the related attributes, the returned {@link AttributeSource} is shared with the
+   * delegate {@code TermsEnum}.
    */
   @Override
   public AttributeSource attributes() {
     return tenum.attributes();
   }
-  
+
   @Override
   public BytesRef term() throws IOException {
     return tenum.term();
@@ -145,31 +145,34 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     return tenum.totalTermFreq();
   }
 
-  /** This enum does not support seeking!
-   * @throws UnsupportedOperationException In general, subclasses do not
-   *         support seeking.
+  /**
+   * This enum does not support seeking!
+   *
+   * @throws UnsupportedOperationException In general, subclasses do not support seeking.
    */
   @Override
   public boolean seekExact(BytesRef term) throws IOException {
-    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
+    throw new UnsupportedOperationException(getClass().getName() + " does not support seeking");
   }
 
-  /** This enum does not support seeking!
-   * @throws UnsupportedOperationException In general, subclasses do not
-   *         support seeking.
+  /**
+   * This enum does not support seeking!
+   *
+   * @throws UnsupportedOperationException In general, subclasses do not support seeking.
    */
   @Override
   public SeekStatus seekCeil(BytesRef term) throws IOException {
-    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
+    throw new UnsupportedOperationException(getClass().getName() + " does not support seeking");
   }
 
-  /** This enum does not support seeking!
-   * @throws UnsupportedOperationException In general, subclasses do not
-   *         support seeking.
+  /**
+   * This enum does not support seeking!
+   *
+   * @throws UnsupportedOperationException In general, subclasses do not support seeking.
    */
   @Override
   public void seekExact(long ord) throws IOException {
-    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
+    throw new UnsupportedOperationException(getClass().getName() + " does not support seeking");
   }
 
   @Override
@@ -187,18 +190,17 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     return tenum.impacts(flags);
   }
 
-  /** This enum does not support seeking!
-   * @throws UnsupportedOperationException In general, subclasses do not
-   *         support seeking.
+  /**
+   * This enum does not support seeking!
+   *
+   * @throws UnsupportedOperationException In general, subclasses do not support seeking.
    */
   @Override
   public void seekExact(BytesRef term, TermState state) throws IOException {
-    throw new UnsupportedOperationException(getClass().getName()+" does not support seeking");
+    throw new UnsupportedOperationException(getClass().getName() + " does not support seeking");
   }
-  
-  /**
-   * Returns the filtered enums term state 
-   */
+
+  /** Returns the filtered enums term state */
   @Override
   public TermState termState() throws IOException {
     assert tenum != null;
@@ -208,23 +210,25 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   @SuppressWarnings("fallthrough")
   @Override
   public BytesRef next() throws IOException {
-    //System.out.println("FTE.next doSeek=" + doSeek);
-    //new Throwable().printStackTrace(System.out);
-    for (;;) {
+    // System.out.println("FTE.next doSeek=" + doSeek);
+    // new Throwable().printStackTrace(System.out);
+    for (; ; ) {
       // Seek or forward the iterator
       if (doSeek) {
         doSeek = false;
         final BytesRef t = nextSeekTerm(actualTerm);
-        //System.out.println("  seek to t=" + (t == null ? "null" : t.utf8ToString()) + " tenum=" + tenum);
+        // System.out.println("  seek to t=" + (t == null ? "null" : t.utf8ToString()) + " tenum=" +
+        // tenum);
         // Make sure we always seek forward:
-        assert actualTerm == null || t == null || t.compareTo(actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
+        assert actualTerm == null || t == null || t.compareTo(actualTerm) > 0
+            : "curTerm=" + actualTerm + " seekTerm=" + t;
         if (t == null || tenum.seekCeil(t) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
-          //System.out.println("  return null");
+          // System.out.println("  return null");
           return null;
         }
         actualTerm = tenum.term();
-        //System.out.println("  got term=" + actualTerm.utf8ToString());
+        // System.out.println("  got term=" + actualTerm.utf8ToString());
       } else {
         actualTerm = tenum.next();
         if (actualTerm == null) {
@@ -232,7 +236,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
           return null;
         }
       }
-      
+
       // check if term is accepted
       switch (accept(actualTerm)) {
         case YES_AND_SEEK:
@@ -254,5 +258,4 @@ public abstract class FilteredTermsEnum extends TermsEnum {
       }
     }
   }
-
 }

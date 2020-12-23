@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
@@ -27,9 +26,11 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Base implementation for {@link PagedMutable} and {@link PagedGrowableWriter}.
+ *
  * @lucene.internal
  */
-public abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues implements Accountable {
+public abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends LongValues
+    implements Accountable {
 
   static final int MIN_BLOCK_SIZE = 1 << 6;
   static final int MAX_BLOCK_SIZE = 1 << 30;
@@ -84,7 +85,7 @@ public abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> ex
 
   @Override
   public final long get(long index) {
-    assert index >= 0 && index < size: "index=" + index + " size=" + size;
+    assert index >= 0 && index < size : "index=" + index + " size=" + size;
     final int pageIndex = pageIndex(index);
     final int indexInPage = indexInPage(index);
     return subMutables[pageIndex].get(indexInPage);
@@ -117,9 +118,10 @@ public abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> ex
 
   protected abstract T newUnfilledCopy(long newSize);
 
-  /** Create a new copy of size <code>newSize</code> based on the content of
-   *  this buffer. This method is much more efficient than creating a new
-   *  instance and copying values one by one. */
+  /**
+   * Create a new copy of size <code>newSize</code> based on the content of this buffer. This method
+   * is much more efficient than creating a new instance and copying values one by one.
+   */
   public final T resize(long newSize) {
     final T copy = newUnfilledCopy(newSize);
     final int numCommonPages = Math.min(copy.subMutables.length, subMutables.length);

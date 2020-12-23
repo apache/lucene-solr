@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 
 public abstract class BaseSortTestCase extends LuceneTestCase {
@@ -35,7 +34,6 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
     public int compareTo(Entry other) {
       return value < other.value ? -1 : value == other.value ? 0 : 1;
     }
-
   }
 
   private final boolean stable;
@@ -83,43 +81,50 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
     ASCENDING {
       @Override
       public void set(Entry[] arr, int i) {
-        arr[i] = i == 0
-            ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value + random().nextInt(6), i);
+        arr[i] =
+            i == 0
+                ? new Entry(random().nextInt(6), 0)
+                : new Entry(arr[i - 1].value + random().nextInt(6), i);
       }
     },
     DESCENDING {
       @Override
       public void set(Entry[] arr, int i) {
-        arr[i] = i == 0
-            ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value - random().nextInt(6), i);
+        arr[i] =
+            i == 0
+                ? new Entry(random().nextInt(6), 0)
+                : new Entry(arr[i - 1].value - random().nextInt(6), i);
       }
     },
     STRICTLY_DESCENDING {
       @Override
       public void set(Entry[] arr, int i) {
-        arr[i] = i == 0
-            ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value - TestUtil.nextInt(random(), 1, 5), i);
+        arr[i] =
+            i == 0
+                ? new Entry(random().nextInt(6), 0)
+                : new Entry(arr[i - 1].value - TestUtil.nextInt(random(), 1, 5), i);
       }
     },
     ASCENDING_SEQUENCES {
       @Override
       public void set(Entry[] arr, int i) {
-        arr[i] = i == 0
-            ? new Entry(random().nextInt(6), 0)
-            : new Entry(rarely() ? random().nextInt(1000) : arr[i - 1].value + random().nextInt(6), i);
+        arr[i] =
+            i == 0
+                ? new Entry(random().nextInt(6), 0)
+                : new Entry(
+                    rarely() ? random().nextInt(1000) : arr[i - 1].value + random().nextInt(6), i);
       }
     },
     MOSTLY_ASCENDING {
       @Override
       public void set(Entry[] arr, int i) {
-        arr[i] = i == 0
-            ? new Entry(random().nextInt(6), 0)
-            : new Entry(arr[i - 1].value + TestUtil.nextInt(random(), -8, 10), i);
+        arr[i] =
+            i == 0
+                ? new Entry(random().nextInt(6), 0)
+                : new Entry(arr[i - 1].value + TestUtil.nextInt(random(), -8, 10), i);
       }
     };
+
     public abstract void set(Entry[] arr, int i);
   }
 

@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Locale;
-
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * BlockTree statistics for a single field 
- * returned by {@link FieldReader#getStats()}.
+ * BlockTree statistics for a single field returned by {@link FieldReader#getStats()}.
+ *
  * @lucene.internal
  */
 public class Stats {
@@ -45,23 +43,22 @@ public class Stats {
   /** The number of normal (non-floor) blocks in the terms file. */
   public int nonFloorBlockCount;
 
-  /** The number of floor blocks (meta-blocks larger than the
-   *  allowed {@code maxItemsPerBlock}) in the terms file. */
+  /**
+   * The number of floor blocks (meta-blocks larger than the allowed {@code maxItemsPerBlock}) in
+   * the terms file.
+   */
   public int floorBlockCount;
-    
+
   /** The number of sub-blocks within the floor blocks. */
   public int floorSubBlockCount;
 
-  /** The number of "internal" blocks (that have both
-   *  terms and sub-blocks). */
+  /** The number of "internal" blocks (that have both terms and sub-blocks). */
   public int mixedBlockCount;
 
-  /** The number of "leaf" blocks (blocks that have only
-   *  terms). */
+  /** The number of "leaf" blocks (blocks that have only terms). */
   public int termsOnlyBlockCount;
 
-  /** The number of "internal" blocks that do not contain
-   *  terms (have only sub-blocks). */
+  /** The number of "internal" blocks that do not contain terms (have only sub-blocks). */
   public int subBlocksOnlyBlockCount;
 
   /** Total number of blocks. */
@@ -69,6 +66,7 @@ public class Stats {
 
   /** Number of blocks at each prefix depth. */
   public int[] blockCountByPrefixLen = new int[10];
+
   private int startBlockCount;
   private int endBlockCount;
 
@@ -76,23 +74,24 @@ public class Stats {
   public long totalBlockSuffixBytes;
 
   /**
-   * Number of times each compression method has been used.
-   * 0 = uncompressed
-   * 1 = lowercase_ascii
-   * 2 = LZ4
+   * Number of times each compression method has been used. 0 = uncompressed 1 = lowercase_ascii 2 =
+   * LZ4
    */
   public final long[] compressionAlgorithms = new long[3];
 
   /** Total number of suffix bytes before compression. */
   public long totalUncompressedBlockSuffixBytes;
 
-  /** Total number of bytes used to store term stats (not
-   *  including what the {@link PostingsReaderBase}
-   *  stores. */
+  /**
+   * Total number of bytes used to store term stats (not including what the {@link
+   * PostingsReaderBase} stores.
+   */
   public long totalBlockStatsBytes;
 
-  /** Total bytes stored by the {@link PostingsReaderBase},
-   *  plus the other few vInts stored in the frame. */
+  /**
+   * Total bytes stored by the {@link PostingsReaderBase}, plus the other few vInts stored in the
+   * frame.
+   */
   public long totalBlockOtherBytes;
 
   /** Segment name. */
@@ -118,7 +117,7 @@ public class Stats {
     }
 
     if (blockCountByPrefixLen.length <= frame.prefix) {
-      blockCountByPrefixLen = ArrayUtil.grow(blockCountByPrefixLen, 1+frame.prefix);
+      blockCountByPrefixLen = ArrayUtil.grow(blockCountByPrefixLen, 1 + frame.prefix);
     }
     blockCountByPrefixLen[frame.prefix]++;
     startBlockCount++;
@@ -145,8 +144,10 @@ public class Stats {
       throw new IllegalStateException();
     }
     endBlockCount++;
-    final long otherBytes = frame.fpEnd - frame.fp - frame.totalSuffixBytes - frame.statsReader.length();
-    assert otherBytes > 0 : "otherBytes=" + otherBytes + " frame.fp=" + frame.fp + " frame.fpEnd=" + frame.fpEnd;
+    final long otherBytes =
+        frame.fpEnd - frame.fp - frame.totalSuffixBytes - frame.statsReader.length();
+    assert otherBytes > 0
+        : "otherBytes=" + otherBytes + " frame.fp=" + frame.fp + " frame.fpEnd=" + frame.fpEnd;
     totalBlockOtherBytes += otherBytes;
   }
 
@@ -155,9 +156,24 @@ public class Stats {
   }
 
   void finish() {
-    assert startBlockCount == endBlockCount: "startBlockCount=" + startBlockCount + " endBlockCount=" + endBlockCount;
-    assert totalBlockCount == floorSubBlockCount + nonFloorBlockCount: "floorSubBlockCount=" + floorSubBlockCount + " nonFloorBlockCount=" + nonFloorBlockCount + " totalBlockCount=" + totalBlockCount;
-    assert totalBlockCount == mixedBlockCount + termsOnlyBlockCount + subBlocksOnlyBlockCount: "totalBlockCount=" + totalBlockCount + " mixedBlockCount=" + mixedBlockCount + " subBlocksOnlyBlockCount=" + subBlocksOnlyBlockCount + " termsOnlyBlockCount=" + termsOnlyBlockCount;
+    assert startBlockCount == endBlockCount
+        : "startBlockCount=" + startBlockCount + " endBlockCount=" + endBlockCount;
+    assert totalBlockCount == floorSubBlockCount + nonFloorBlockCount
+        : "floorSubBlockCount="
+            + floorSubBlockCount
+            + " nonFloorBlockCount="
+            + nonFloorBlockCount
+            + " totalBlockCount="
+            + totalBlockCount;
+    assert totalBlockCount == mixedBlockCount + termsOnlyBlockCount + subBlocksOnlyBlockCount
+        : "totalBlockCount="
+            + totalBlockCount
+            + " mixedBlockCount="
+            + mixedBlockCount
+            + " subBlocksOnlyBlockCount="
+            + subBlocksOnlyBlockCount
+            + " termsOnlyBlockCount="
+            + termsOnlyBlockCount;
   }
 
   @Override
@@ -169,21 +185,38 @@ public class Stats {
     } catch (UnsupportedEncodingException bogus) {
       throw new RuntimeException(bogus);
     }
-      
+
     out.println("  index FST:");
     out.println("    " + indexNumBytes + " bytes");
     out.println("  terms:");
     out.println("    " + totalTermCount + " terms");
-    out.println("    " + totalTermBytes + " bytes" + (totalTermCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes)/totalTermCount) + " bytes/term)" : ""));
+    out.println(
+        "    "
+            + totalTermBytes
+            + " bytes"
+            + (totalTermCount != 0
+                ? " ("
+                    + String.format(Locale.ROOT, "%.1f", ((double) totalTermBytes) / totalTermCount)
+                    + " bytes/term)"
+                : ""));
     out.println("  blocks:");
     out.println("    " + totalBlockCount + " blocks");
     out.println("    " + termsOnlyBlockCount + " terms-only blocks");
     out.println("    " + subBlocksOnlyBlockCount + " sub-block-only blocks");
     out.println("    " + mixedBlockCount + " mixed blocks");
     out.println("    " + floorBlockCount + " floor blocks");
-    out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
+    out.println("    " + (totalBlockCount - floorSubBlockCount) + " non-floor blocks");
     out.println("    " + floorSubBlockCount + " floor sub-blocks");
-    out.println("    " + totalUncompressedBlockSuffixBytes + " term suffix bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+    out.println(
+        "    "
+            + totalUncompressedBlockSuffixBytes
+            + " term suffix bytes before compression"
+            + (totalBlockCount != 0
+                ? " ("
+                    + String.format(
+                        Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes) / totalBlockCount)
+                    + " suffix-bytes/block)"
+                : ""));
     StringBuilder compressionCounts = new StringBuilder();
     for (int code = 0; code < compressionAlgorithms.length; ++code) {
       if (compressionAlgorithms[code] == 0) {
@@ -196,14 +229,44 @@ public class Stats {
       compressionCounts.append(": ");
       compressionCounts.append(compressionAlgorithms[code]);
     }
-    out.println("    " + totalBlockSuffixBytes + " compressed term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.2f", ((double) totalBlockSuffixBytes)/totalUncompressedBlockSuffixBytes) +
-        " compression ratio - compression count by algorithm: " + compressionCounts : "") + ")");
-    out.println("    " + totalBlockStatsBytes + " term stats bytes " + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
-    out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
+    out.println(
+        "    "
+            + totalBlockSuffixBytes
+            + " compressed term suffix bytes"
+            + (totalBlockCount != 0
+                ? " ("
+                    + String.format(
+                        Locale.ROOT,
+                        "%.2f",
+                        ((double) totalBlockSuffixBytes) / totalUncompressedBlockSuffixBytes)
+                    + " compression ratio - compression count by algorithm: "
+                    + compressionCounts
+                : "")
+            + ")");
+    out.println(
+        "    "
+            + totalBlockStatsBytes
+            + " term stats bytes "
+            + (totalBlockCount != 0
+                ? " ("
+                    + String.format(
+                        Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes) / totalBlockCount)
+                    + " stats-bytes/block)"
+                : ""));
+    out.println(
+        "    "
+            + totalBlockOtherBytes
+            + " other bytes"
+            + (totalBlockCount != 0
+                ? " ("
+                    + String.format(
+                        Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes) / totalBlockCount)
+                    + " other-bytes/block)"
+                : ""));
     if (totalBlockCount != 0) {
       out.println("    by prefix length:");
       int total = 0;
-      for(int prefix=0;prefix<blockCountByPrefixLen.length;prefix++) {
+      for (int prefix = 0; prefix < blockCountByPrefixLen.length; prefix++) {
         final int blockCount = blockCountByPrefixLen[prefix];
         total += blockCount;
         if (blockCount != 0) {

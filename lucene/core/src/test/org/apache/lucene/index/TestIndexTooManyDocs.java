@@ -17,11 +17,9 @@
 
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -40,7 +38,8 @@ public class TestIndexTooManyDocs extends LuceneTestCase {
     Directory dir = newDirectory();
     int numMaxDoc = 25;
     IndexWriterConfig config = new IndexWriterConfig();
-    config.setRAMBufferSizeMB(0.000001); // force lots of small segments and logs of concurrent deletes
+    config.setRAMBufferSizeMB(
+        0.000001); // force lots of small segments and logs of concurrent deletes
     IndexWriter writer = new IndexWriter(dir, config);
     try {
       IndexWriter.setMaxDocs(numMaxDoc);
@@ -51,59 +50,65 @@ public class TestIndexTooManyDocs extends LuceneTestCase {
       AtomicBoolean done = new AtomicBoolean(false);
       for (int i = 0; i < numThreads; i++) {
         if (i >= 2) {
-          threads[i] = new Thread(() -> {
-            latch.countDown();
-            try {
-              try {
-                latch.await();
-              } catch (InterruptedException e) {
-                throw new AssertionError(e);
-              }
-              for (int d = 0; d < 100; d++) {
-                Document doc = new Document();
-                String id = Integer.toString(random().nextInt(numMaxDoc * 2));
-                doc.add(new StringField("id", id, Field.Store.NO));
-                try {
-                  Term t = new Term("id", id);
-                  if (random().nextInt(5) == 0) {
-                    writer.deleteDocuments(new TermQuery(t));
-                  }
-                  writer.updateDocument(t, doc);
-                } catch (IOException e) {
-                  throw new AssertionError(e);
-                } catch (IllegalArgumentException e) {
-                  assertEquals("number of documents in the index cannot exceed " + IndexWriter.getActualMaxDocs(), e.getMessage());
-                }
-              }
-            } finally {
-              indexingDone.countDown();
-            }
-          });
+          threads[i] =
+              new Thread(
+                  () -> {
+                    latch.countDown();
+                    try {
+                      try {
+                        latch.await();
+                      } catch (InterruptedException e) {
+                        throw new AssertionError(e);
+                      }
+                      for (int d = 0; d < 100; d++) {
+                        Document doc = new Document();
+                        String id = Integer.toString(random().nextInt(numMaxDoc * 2));
+                        doc.add(new StringField("id", id, Field.Store.NO));
+                        try {
+                          Term t = new Term("id", id);
+                          if (random().nextInt(5) == 0) {
+                            writer.deleteDocuments(new TermQuery(t));
+                          }
+                          writer.updateDocument(t, doc);
+                        } catch (IOException e) {
+                          throw new AssertionError(e);
+                        } catch (IllegalArgumentException e) {
+                          assertEquals(
+                              "number of documents in the index cannot exceed "
+                                  + IndexWriter.getActualMaxDocs(),
+                              e.getMessage());
+                        }
+                      }
+                    } finally {
+                      indexingDone.countDown();
+                    }
+                  });
         } else {
-          threads[i] = new Thread(() -> {
-            try {
-              latch.countDown();
-              latch.await();
-              DirectoryReader open = DirectoryReader.open(writer, true, true);
-              while (done.get() == false) {
-                DirectoryReader directoryReader = DirectoryReader.openIfChanged(open);
-                if (directoryReader != null) {
-                  open.close();
-                  open = directoryReader;
-                }
-              }
-              IOUtils.closeWhileHandlingException(open);
-            } catch (Exception e) {
-              throw new AssertionError(e);
-            }
-          });
+          threads[i] =
+              new Thread(
+                  () -> {
+                    try {
+                      latch.countDown();
+                      latch.await();
+                      DirectoryReader open = DirectoryReader.open(writer, true, true);
+                      while (done.get() == false) {
+                        DirectoryReader directoryReader = DirectoryReader.openIfChanged(open);
+                        if (directoryReader != null) {
+                          open.close();
+                          open = directoryReader;
+                        }
+                      }
+                      IOUtils.closeWhileHandlingException(open);
+                    } catch (Exception e) {
+                      throw new AssertionError(e);
+                    }
+                  });
         }
         threads[i].start();
       }
 
       indexingDone.await();
       done.set(true);
-
 
       for (int i = 0; i < numThreads; i++) {
         threads[i].join();

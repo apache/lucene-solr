@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.util.TestUtil;
 
 /** Simple tests for SleepingLockWrapper */
@@ -29,17 +27,18 @@ public class TestSleepingLockWrapper extends BaseLockFactoryTestCase {
   protected Directory getDirectory(Path path) throws IOException {
     long lockWaitTimeout = TestUtil.nextLong(random(), 20, 100);
     long pollInterval = TestUtil.nextLong(random(), 2, 10);
-    
+
     int which = random().nextInt(3);
     switch (which) {
       case 0:
-        return new SleepingLockWrapper(newDirectory(random(), new SingleInstanceLockFactory()), lockWaitTimeout, pollInterval);
+        return new SleepingLockWrapper(
+            newDirectory(random(), new SingleInstanceLockFactory()), lockWaitTimeout, pollInterval);
       case 1:
         return new SleepingLockWrapper(newFSDirectory(path), lockWaitTimeout, pollInterval);
       default:
         return new SleepingLockWrapper(newFSDirectory(path), lockWaitTimeout, pollInterval);
     }
   }
-  
+
   // TODO: specific tests to this impl
 }

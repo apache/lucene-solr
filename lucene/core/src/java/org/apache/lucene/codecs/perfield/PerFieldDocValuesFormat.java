@@ -25,7 +25,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.TreeMap;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -46,33 +45,31 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Enables per field docvalues support.
- * <p>
- * Note, when extending this class, the name ({@link #getName}) is 
- * written into the index. In order for the field to be read, the
- * name must resolve to your implementation via {@link #forName(String)}.
- * This method uses Java's 
- * {@link ServiceLoader Service Provider Interface} to resolve format names.
- * <p>
- * Files written by each docvalues format have an additional suffix containing the 
- * format name. For example, in a per-field configuration instead of <code>_1.dat</code> 
- * filenames would look like <code>_1_Lucene40_0.dat</code>.
+ *
+ * <p>Note, when extending this class, the name ({@link #getName}) is written into the index. In
+ * order for the field to be read, the name must resolve to your implementation via {@link
+ * #forName(String)}. This method uses Java's {@link ServiceLoader Service Provider Interface} to
+ * resolve format names.
+ *
+ * <p>Files written by each docvalues format have an additional suffix containing the format name.
+ * For example, in a per-field configuration instead of <code>_1.dat</code> filenames would look
+ * like <code>_1_Lucene40_0.dat</code>.
+ *
  * @see ServiceLoader
  * @lucene.experimental
  */
-
 public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
   /** Name of this {@link PostingsFormat}. */
   public static final String PER_FIELD_NAME = "PerFieldDV40";
 
-  /** {@link FieldInfo} attribute name used to store the
-   *  format name for each field. */
-  public static final String PER_FIELD_FORMAT_KEY = PerFieldDocValuesFormat.class.getSimpleName() + ".format";
+  /** {@link FieldInfo} attribute name used to store the format name for each field. */
+  public static final String PER_FIELD_FORMAT_KEY =
+      PerFieldDocValuesFormat.class.getSimpleName() + ".format";
 
-  /** {@link FieldInfo} attribute name used to store the
-   *  segment suffix name for each field. */
-  public static final String PER_FIELD_SUFFIX_KEY = PerFieldDocValuesFormat.class.getSimpleName() + ".suffix";
+  /** {@link FieldInfo} attribute name used to store the segment suffix name for each field. */
+  public static final String PER_FIELD_SUFFIX_KEY =
+      PerFieldDocValuesFormat.class.getSimpleName() + ".suffix";
 
-  
   /** Sole constructor. */
   protected PerFieldDocValuesFormat() {
     super(PER_FIELD_NAME);
@@ -86,46 +83,51 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
   static class ConsumerAndSuffix implements Closeable {
     DocValuesConsumer consumer;
     int suffix;
-    
+
     @Override
     public void close() throws IOException {
       consumer.close();
     }
   }
-    
+
   private class FieldsWriter extends DocValuesConsumer {
 
-    private final Map<DocValuesFormat,ConsumerAndSuffix> formats = new HashMap<>();
-    private final Map<String,Integer> suffixes = new HashMap<>();
-    
+    private final Map<DocValuesFormat, ConsumerAndSuffix> formats = new HashMap<>();
+    private final Map<String, Integer> suffixes = new HashMap<>();
+
     private final SegmentWriteState segmentWriteState;
-    
+
     public FieldsWriter(SegmentWriteState state) {
       segmentWriteState = state;
     }
-    
+
     @Override
-    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       getInstance(field).addNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       getInstance(field).addBinaryField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       getInstance(field).addSortedField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       getInstance(field).addSortedNumericField(field, valuesProducer);
     }
 
     @Override
-    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       getInstance(field).addSortedSetField(field, valuesProducer);
     }
 
@@ -165,12 +167,14 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
     /**
      * DocValuesConsumer for the given field.
+     *
      * @param field - FieldInfo object.
      * @param ignoreCurrentFormat - ignore the existing format attributes.
      * @return DocValuesConsumer for the field.
      * @throws IOException if there is a low-level IO error
      */
-    private DocValuesConsumer getInstance(FieldInfo field, boolean ignoreCurrentFormat) throws IOException {
+    private DocValuesConsumer getInstance(FieldInfo field, boolean ignoreCurrentFormat)
+        throws IOException {
       DocValuesFormat format = null;
       if (field.getDocValuesGen() != -1) {
         String formatName = null;
@@ -186,7 +190,8 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
         format = getDocValuesFormatForField(field.name);
       }
       if (format == null) {
-        throw new IllegalStateException("invalid null DocValuesFormat for field=\"" + field.name + "\"");
+        throw new IllegalStateException(
+            "invalid null DocValuesFormat for field=\"" + field.name + "\"");
       }
       final String formatName = format.getName();
 
@@ -221,10 +226,12 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
         }
         suffixes.put(formatName, suffix);
 
-        final String segmentSuffix = getFullSegmentSuffix(segmentWriteState.segmentSuffix,
-                                                          getSuffix(formatName, Integer.toString(suffix)));
+        final String segmentSuffix =
+            getFullSegmentSuffix(
+                segmentWriteState.segmentSuffix, getSuffix(formatName, Integer.toString(suffix)));
         consumer = new ConsumerAndSuffix();
-        consumer.consumer = format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix));
+        consumer.consumer =
+            format.fieldsConsumer(new SegmentWriteState(segmentWriteState, segmentSuffix));
         consumer.suffix = suffix;
         formats.put(format, consumer);
       } else {
@@ -245,7 +252,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       IOUtils.close(formats.values());
     }
   }
-  
+
   static String getSuffix(String formatName, String suffix) {
     return formatName + "_" + suffix;
   }
@@ -260,21 +267,21 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
 
   private class FieldsReader extends DocValuesProducer {
 
-    private final Map<String,DocValuesProducer> fields = new TreeMap<>();
-    private final Map<String,DocValuesProducer> formats = new HashMap<>();
-    
+    private final Map<String, DocValuesProducer> fields = new TreeMap<>();
+    private final Map<String, DocValuesProducer> formats = new HashMap<>();
+
     // clone for merge
     FieldsReader(FieldsReader other) {
-      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<>();
+      Map<DocValuesProducer, DocValuesProducer> oldToNew = new IdentityHashMap<>();
       // First clone all formats
-      for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
+      for (Map.Entry<String, DocValuesProducer> ent : other.formats.entrySet()) {
         DocValuesProducer values = ent.getValue().getMergeInstance();
         formats.put(ent.getKey(), values);
         oldToNew.put(ent.getValue(), values);
       }
 
       // Then rebuild fields:
-      for(Map.Entry<String,DocValuesProducer> ent : other.fields.entrySet()) {
+      for (Map.Entry<String, DocValuesProducer> ent : other.fields.entrySet()) {
         DocValuesProducer producer = oldToNew.get(ent.getValue());
         assert producer != null;
         fields.put(ent.getKey(), producer);
@@ -295,12 +302,16 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
               // null formatName means the field is in fieldInfos, but has no docvalues!
               final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
               if (suffix == null) {
-                throw new IllegalStateException("missing attribute: " + PER_FIELD_SUFFIX_KEY + " for field: " + fieldName);
+                throw new IllegalStateException(
+                    "missing attribute: " + PER_FIELD_SUFFIX_KEY + " for field: " + fieldName);
               }
               DocValuesFormat format = DocValuesFormat.forName(formatName);
-              String segmentSuffix = getFullSegmentSuffix(readState.segmentSuffix, getSuffix(formatName, suffix));
+              String segmentSuffix =
+                  getFullSegmentSuffix(readState.segmentSuffix, getSuffix(formatName, suffix));
               if (!formats.containsKey(segmentSuffix)) {
-                formats.put(segmentSuffix, format.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
+                formats.put(
+                    segmentSuffix,
+                    format.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
               }
               fields.put(fieldName, formats.get(segmentSuffix));
             }
@@ -343,7 +354,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
       DocValuesProducer producer = fields.get(field.name);
       return producer == null ? null : producer.getSortedSet(field);
     }
-    
+
     @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());
@@ -352,12 +363,12 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     @Override
     public long ramBytesUsed() {
       long size = 0;
-      for (Map.Entry<String,DocValuesProducer> entry : formats.entrySet()) {
+      for (Map.Entry<String, DocValuesProducer> entry : formats.entrySet()) {
         size += (entry.getKey().length() * Character.BYTES) + entry.getValue().ramBytesUsed();
       }
       return size;
     }
-    
+
     @Override
     public Collection<Accountable> getChildResources() {
       return Accountables.namedAccountables("format", formats);
@@ -369,7 +380,7 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
         format.checkIntegrity();
       }
     }
-    
+
     @Override
     public DocValuesProducer getMergeInstance() {
       return new FieldsReader(this);
@@ -386,11 +397,12 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     return new FieldsReader(state);
   }
 
-  /** 
-   * Returns the doc values format that should be used for writing 
-   * new segments of <code>field</code>.
-   * <p>
-   * The field to format mapping is written to the index, so
-   * this method is only invoked when writing, not when reading. */
+  /**
+   * Returns the doc values format that should be used for writing new segments of <code>field
+   * </code>.
+   *
+   * <p>The field to format mapping is written to the index, so this method is only invoked when
+   * writing, not when reading.
+   */
   public abstract DocValuesFormat getDocValuesFormatForField(String field);
 }

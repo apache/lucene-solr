@@ -16,11 +16,12 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-/** Implementation class for {@link BoostAttribute}.
+/**
+ * Implementation class for {@link BoostAttribute}.
+ *
  * @lucene.internal
  */
 public final class BoostAttributeImpl extends AttributeImpl implements BoostAttribute {
@@ -30,7 +31,7 @@ public final class BoostAttributeImpl extends AttributeImpl implements BoostAttr
   public void setBoost(float boost) {
     this.boost = boost;
   }
-  
+
   @Override
   public float getBoost() {
     return boost;
@@ -40,7 +41,7 @@ public final class BoostAttributeImpl extends AttributeImpl implements BoostAttr
   public void clear() {
     boost = 1.0f;
   }
-  
+
   @Override
   public void copyTo(AttributeImpl target) {
     ((BoostAttribute) target).setBoost(boost);

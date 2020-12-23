@@ -17,12 +17,11 @@
 package org.apache.lucene.util;
 
 /**
- * {@link Sorter} implementation based on a variant of the quicksort algorithm
- * called <a href="http://en.wikipedia.org/wiki/Introsort">introsort</a>: when
- * the recursion level exceeds the log of the length of the array to sort, it
- * falls back to heapsort. This prevents quicksort from running into its
- * worst-case quadratic runtime. Small arrays are sorted with
- * insertion sort.
+ * {@link Sorter} implementation based on a variant of the quicksort algorithm called <a
+ * href="http://en.wikipedia.org/wiki/Introsort">introsort</a>: when the recursion level exceeds the
+ * log of the length of the array to sort, it falls back to heapsort. This prevents quicksort from
+ * running into its worst-case quadratic runtime. Small arrays are sorted with insertion sort.
+ *
  * @lucene.internal
  */
 public abstract class IntroSorter extends Sorter {
@@ -62,7 +61,7 @@ public abstract class IntroSorter extends Sorter {
     int right = to - 2;
 
     setPivot(mid);
-    for (;;) {
+    for (; ; ) {
       while (comparePivot(right) < 0) {
         --right;
       }

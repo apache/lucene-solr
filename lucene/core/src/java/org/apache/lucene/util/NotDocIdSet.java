@@ -16,21 +16,20 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * This {@link DocIdSet} encodes the negation of another {@link DocIdSet}.
- * It is cacheable and supports random-access if the underlying set is
- * cacheable and supports random-access.
+ * This {@link DocIdSet} encodes the negation of another {@link DocIdSet}. It is cacheable and
+ * supports random-access if the underlying set is cacheable and supports random-access.
+ *
  * @lucene.internal
  */
 public final class NotDocIdSet extends DocIdSet {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(NotDocIdSet.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(NotDocIdSet.class);
 
   private final int maxDoc;
   private final DocIdSet in;
@@ -58,7 +57,6 @@ public final class NotDocIdSet extends DocIdSet {
       public int length() {
         return inBits.length();
       }
-
     };
   }
 
@@ -112,5 +110,4 @@ public final class NotDocIdSet extends DocIdSet {
       }
     };
   }
-
 }

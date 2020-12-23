@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.codecs.lucene86;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.codecs.PointsReader;
@@ -52,38 +50,49 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
   private boolean finished;
 
   /** Full constructor */
-  public Lucene86PointsWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
+  public Lucene86PointsWriter(
+      SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap)
+      throws IOException {
     assert writeState.fieldInfos.hasPointValues();
     this.writeState = writeState;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxMBSortInHeap = maxMBSortInHeap;
-    String dataFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-                                                         writeState.segmentSuffix,
-                                                         Lucene86PointsFormat.DATA_EXTENSION);
+    String dataFileName =
+        IndexFileNames.segmentFileName(
+            writeState.segmentInfo.name,
+            writeState.segmentSuffix,
+            Lucene86PointsFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
     boolean success = false;
     try {
-      CodecUtil.writeIndexHeader(dataOut,
-                                 Lucene86PointsFormat.DATA_CODEC_NAME,
-                                 Lucene86PointsFormat.VERSION_CURRENT,
-                                 writeState.segmentInfo.getId(),
-                                 writeState.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          dataOut,
+          Lucene86PointsFormat.DATA_CODEC_NAME,
+          Lucene86PointsFormat.VERSION_CURRENT,
+          writeState.segmentInfo.getId(),
+          writeState.segmentSuffix);
 
-      String metaFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-          writeState.segmentSuffix,
-          Lucene86PointsFormat.META_EXTENSION);
+      String metaFileName =
+          IndexFileNames.segmentFileName(
+              writeState.segmentInfo.name,
+              writeState.segmentSuffix,
+              Lucene86PointsFormat.META_EXTENSION);
       metaOut = writeState.directory.createOutput(metaFileName, writeState.context);
-      CodecUtil.writeIndexHeader(metaOut,
+      CodecUtil.writeIndexHeader(
+          metaOut,
           Lucene86PointsFormat.META_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
           writeState.segmentInfo.getId(),
           writeState.segmentSuffix);
 
-      String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-          writeState.segmentSuffix,
-          Lucene86PointsFormat.INDEX_EXTENSION);
+      String indexFileName =
+          IndexFileNames.segmentFileName(
+              writeState.segmentInfo.name,
+              writeState.segmentSuffix,
+              Lucene86PointsFormat.INDEX_EXTENSION);
       indexOut = writeState.directory.createOutput(indexFileName, writeState.context);
-      CodecUtil.writeIndexHeader(indexOut,
+      CodecUtil.writeIndexHeader(
+          indexOut,
           Lucene86PointsFormat.INDEX_CODEC_NAME,
           Lucene86PointsFormat.VERSION_CURRENT,
           writeState.segmentInfo.getId(),
@@ -97,9 +106,15 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
     }
   }
 
-  /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
+  /**
+   * Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap}
+   * (16.0)
+   */
   public Lucene86PointsWriter(SegmentWriteState writeState) throws IOException {
-    this(writeState, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+    this(
+        writeState,
+        BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
+        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
   @Override
@@ -107,20 +122,26 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
     PointValues values = reader.getValues(fieldInfo.name);
 
-    BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
-                                     fieldInfo.getPointIndexDimensionCount(),
-                                     fieldInfo.getPointNumBytes(),
-                                     maxPointsInLeafNode);
+    BKDConfig config =
+        new BKDConfig(
+            fieldInfo.getPointDimensionCount(),
+            fieldInfo.getPointIndexDimensionCount(),
+            fieldInfo.getPointNumBytes(),
+            maxPointsInLeafNode);
 
-    try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
-                                          writeState.directory,
-                                          writeState.segmentInfo.name,
-                                          config,
-                                          maxMBSortInHeap,
-                                          values.size())) {
+    try (BKDWriter writer =
+        new BKDWriter(
+            writeState.segmentInfo.maxDoc(),
+            writeState.directory,
+            writeState.segmentInfo.name,
+            config,
+            maxMBSortInHeap,
+            values.size())) {
 
       if (values instanceof MutablePointValues) {
-        Runnable finalizer = writer.writeField(metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
+        Runnable finalizer =
+            writer.writeField(
+                metaOut, indexOut, dataOut, fieldInfo.name, (MutablePointValues) values);
         if (finalizer != null) {
           metaOut.writeInt(fieldInfo.number);
           finalizer.run();
@@ -128,21 +149,22 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
         return;
       }
 
-      values.intersect(new IntersectVisitor() {
-          @Override
-          public void visit(int docID) {
-            throw new IllegalStateException();
-          }
+      values.intersect(
+          new IntersectVisitor() {
+            @Override
+            public void visit(int docID) {
+              throw new IllegalStateException();
+            }
 
-          public void visit(int docID, byte[] packedValue) throws IOException {
-            writer.add(packedValue, docID);
-          }
+            public void visit(int docID, byte[] packedValue) throws IOException {
+              writer.add(packedValue, docID);
+            }
 
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            return Relation.CELL_CROSSES_QUERY;
-          }
-        });
+            @Override
+            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+              return Relation.CELL_CROSSES_QUERY;
+            }
+          });
 
       // We could have 0 points on merge since all docs with dimensional fields may be deleted:
       Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
@@ -156,10 +178,11 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
   @Override
   public void merge(MergeState mergeState) throws IOException {
     /**
-     * If indexSort is activated and some of the leaves are not sorted the next test will catch that and the non-optimized merge will run.
-     * If the readers are all sorted then it's safe to perform a bulk merge of the points.
-     **/
-    for(PointsReader reader : mergeState.pointsReaders) {
+     * If indexSort is activated and some of the leaves are not sorted the next test will catch that
+     * and the non-optimized merge will run. If the readers are all sorted then it's safe to perform
+     * a bulk merge of the points.
+     */
+    for (PointsReader reader : mergeState.pointsReaders) {
       if (reader instanceof Lucene86PointsReader == false) {
         // We can only bulk merge when all to-be-merged segments use our format:
         super.merge(mergeState);
@@ -178,7 +201,7 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
 
           // Worst case total maximum size (if none of the points are deleted):
           long totMaxSize = 0;
-          for(int i=0;i<mergeState.pointsReaders.length;i++) {
+          for (int i = 0; i < mergeState.pointsReaders.length; i++) {
             PointsReader reader = mergeState.pointsReaders[i];
             if (reader != null) {
               FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
@@ -192,24 +215,28 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
             }
           }
 
-          BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
-                                           fieldInfo.getPointIndexDimensionCount(),
-                                           fieldInfo.getPointNumBytes(),
-                                           maxPointsInLeafNode);
+          BKDConfig config =
+              new BKDConfig(
+                  fieldInfo.getPointDimensionCount(),
+                  fieldInfo.getPointIndexDimensionCount(),
+                  fieldInfo.getPointNumBytes(),
+                  maxPointsInLeafNode);
 
-          //System.out.println("MERGE: field=" + fieldInfo.name);
+          // System.out.println("MERGE: field=" + fieldInfo.name);
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
           // we were simply reindexing them:
-          try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
-                                                writeState.directory,
-                                                writeState.segmentInfo.name,
-                                                config,
-                                                maxMBSortInHeap,
-                                                totMaxSize)) {
+          try (BKDWriter writer =
+              new BKDWriter(
+                  writeState.segmentInfo.maxDoc(),
+                  writeState.directory,
+                  writeState.segmentInfo.name,
+                  config,
+                  maxMBSortInHeap,
+                  totMaxSize)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
-            for(int i=0;i<mergeState.pointsReaders.length;i++) {
+            for (int i = 0; i < mergeState.pointsReaders.length; i++) {
               PointsReader reader = mergeState.pointsReaders[i];
 
               if (reader != null) {
@@ -218,7 +245,8 @@ public class Lucene86PointsWriter extends PointsWriter implements Closeable {
                 assert reader instanceof Lucene86PointsReader;
                 Lucene86PointsReader reader60 = (Lucene86PointsReader) reader;
 
-                // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
+                // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to
+                // this
                 // reader's FieldInfo as we do below) because field numbers can easily be different
                 // when addIndexes(Directory...) copies over segments from another index:
 

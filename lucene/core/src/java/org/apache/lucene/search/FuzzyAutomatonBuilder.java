@@ -23,9 +23,8 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /**
- * Builds a set of CompiledAutomaton for fuzzy matching on a given term,
- * with specified maximum edit distance, fixed prefix and whether or not
- * to allow transpositions.
+ * Builds a set of CompiledAutomaton for fuzzy matching on a given term, with specified maximum edit
+ * distance, fixed prefix and whether or not to allow transpositions.
  */
 class FuzzyAutomatonBuilder {
 
@@ -37,7 +36,11 @@ class FuzzyAutomatonBuilder {
 
   FuzzyAutomatonBuilder(String term, int maxEdits, int prefixLength, boolean transpositions) {
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
-      throw new IllegalArgumentException("max edits must be 0.." + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got: " + maxEdits);
+      throw new IllegalArgumentException(
+          "max edits must be 0.."
+              + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE
+              + ", inclusive; got: "
+              + maxEdits);
     }
     if (prefixLength < 0) {
       throw new IllegalArgumentException("prefixLength cannot be less than 0");
@@ -58,8 +61,7 @@ class FuzzyAutomatonBuilder {
     for (int i = 0; i <= maxEdits; i++) {
       try {
         compiled[i] = new CompiledAutomaton(levBuilder.toAutomaton(i, prefix), true, false);
-      }
-      catch (TooComplexToDeterminizeException e) {
+      } catch (TooComplexToDeterminizeException e) {
         throw new FuzzyTermsEnum.FuzzyTermsException(term, e);
       }
     }

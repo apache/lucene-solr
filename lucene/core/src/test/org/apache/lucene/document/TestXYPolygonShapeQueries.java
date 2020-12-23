@@ -20,7 +20,10 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYPolygon;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon}
+ * types
+ */
 public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
@@ -30,7 +33,7 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return XYShape.createIndexableFields(field, (XYPolygon)polygon);
+    return XYShape.createIndexableFields(field, (XYPolygon) polygon);
   }
 
   @Override
@@ -42,12 +45,13 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     protected PolygonValidator(Encoder encoder) {
       super(encoder);
     }
-    
+
     @Override
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon polygon = (XYPolygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", polygon));
     }
@@ -58,5 +62,4 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
   public void testRandomBig() throws Exception {
     doTestRandom(25000);
   }
-
 }

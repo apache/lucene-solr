@@ -44,16 +44,18 @@ import java.util.List;
    type: MultiPolygon (union of polygons) is also accepted.
 */
 
-/** Does minimal parsing of a GeoJSON object, to extract either Polygon or MultiPolygon, either directly as the top-level type, or if
- *  the top-level type is Feature, as the geometry of that feature. */
-
+/**
+ * Does minimal parsing of a GeoJSON object, to extract either Polygon or MultiPolygon, either
+ * directly as the top-level type, or if the top-level type is Feature, as the geometry of that
+ * feature.
+ */
 @SuppressWarnings("unchecked")
 class SimpleGeoJSONPolygonParser {
   final String input;
   private int upto;
   private String polyType;
   private List<Object> coordinates;
-    
+
   public SimpleGeoJSONPolygonParser(String input) {
     this.input = input;
   }
@@ -65,7 +67,8 @@ class SimpleGeoJSONPolygonParser {
     // make sure there's nothing left:
     readEnd();
 
-    // The order of JSON object keys (type, geometry, coordinates in our case) can be arbitrary, so we wait until we are done parsing to
+    // The order of JSON object keys (type, geometry, coordinates in our case) can be arbitrary, so
+    // we wait until we are done parsing to
     // put the pieces together here:
 
     if (coordinates == null) {
@@ -80,10 +83,11 @@ class SimpleGeoJSONPolygonParser {
       return new Polygon[] {parsePolygon(coordinates)};
     } else {
       List<Polygon> polygons = new ArrayList<>();
-      for(int i=0;i<coordinates.size();i++) {
+      for (int i = 0; i < coordinates.size(); i++) {
         Object o = coordinates.get(i);
         if (o instanceof List == false) {
-          throw newParseException("elements of coordinates array should be an array, but got: " + o.getClass());
+          throw newParseException(
+              "elements of coordinates array should be an array, but got: " + o.getClass());
         }
         polygons.add(parsePolygon((List<Object>) o));
       }
@@ -189,11 +193,14 @@ class SimpleGeoJSONPolygonParser {
           polyType = "Polygon";
         } else if (type.equals("MultiPolygon") && isValidGeometryPath(path)) {
           polyType = "MultiPolygon";
-        } else if ((type.equals("FeatureCollection") || type.equals("Feature")) && (path.equals("features.[]") || path.equals(""))) {
+        } else if ((type.equals("FeatureCollection") || type.equals("Feature"))
+            && (path.equals("features.[]") || path.equals(""))) {
           // OK, we recurse
         } else {
           upto = uptoStart;
-          throw newParseException("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MultiPolygon, but got " + type);
+          throw newParseException(
+              "can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MultiPolygon, but got "
+                  + type);
         }
       } else if (key.equals("coordinates") && isValidGeometryPath(path)) {
         if (o instanceof List == false) {
@@ -220,13 +227,17 @@ class SimpleGeoJSONPolygonParser {
     List<Polygon> holes = new ArrayList<>();
     Object o = coordinates.get(0);
     if (o instanceof List == false) {
-      throw newParseException("first element of polygon array must be an array [[lat, lon], [lat, lon] ...] but got: " + o);
+      throw newParseException(
+          "first element of polygon array must be an array [[lat, lon], [lat, lon] ...] but got: "
+              + o);
     }
     double[][] polyPoints = parsePoints((List<Object>) o);
-    for(int i=1;i<coordinates.size();i++) {
+    for (int i = 1; i < coordinates.size(); i++) {
       o = coordinates.get(i);
       if (o instanceof List == false) {
-        throw newParseException("elements of coordinates array must be an array [[lat, lon], [lat, lon] ...] but got: " + o);
+        throw newParseException(
+            "elements of coordinates array must be an array [[lat, lon], [lat, lon] ...] but got: "
+                + o);
       }
       double[][] holePoints = parsePoints((List<Object>) o);
       holes.add(new Polygon(holePoints[0], holePoints[1]));
@@ -238,20 +249,27 @@ class SimpleGeoJSONPolygonParser {
   private double[][] parsePoints(List<Object> o) throws ParseException {
     double[] lats = new double[o.size()];
     double[] lons = new double[o.size()];
-    for(int i=0;i<o.size();i++) {
+    for (int i = 0; i < o.size(); i++) {
       Object point = o.get(i);
       if (point instanceof List == false) {
-        throw newParseException("elements of coordinates array must [lat, lon] array, but got: " + point);
+        throw newParseException(
+            "elements of coordinates array must [lat, lon] array, but got: " + point);
       }
       List<Object> pointList = (List<Object>) point;
       if (pointList.size() != 2) {
-        throw newParseException("elements of coordinates array must [lat, lon] array, but got wrong element count: " + pointList);
+        throw newParseException(
+            "elements of coordinates array must [lat, lon] array, but got wrong element count: "
+                + pointList);
       }
       if (pointList.get(0) instanceof Double == false) {
-        throw newParseException("elements of coordinates array must [lat, lon] array, but first element is not a Double: " + pointList.get(0));
+        throw newParseException(
+            "elements of coordinates array must [lat, lon] array, but first element is not a Double: "
+                + pointList.get(0));
       }
       if (pointList.get(1) instanceof Double == false) {
-        throw newParseException("elements of coordinates array must [lat, lon] array, but second element is not a Double: " + pointList.get(1));
+        throw newParseException(
+            "elements of coordinates array must [lat, lon] array, but second element is not a Double: "
+                + pointList.get(1));
       }
 
       // lon, lat ordering in GeoJSON!
@@ -279,7 +297,7 @@ class SimpleGeoJSONPolygonParser {
 
         // skip the ,
         upto++;
-        
+
         if (upto == input.length()) {
           throw newParseException("hit EOF while parsing array");
         }
@@ -298,9 +316,10 @@ class SimpleGeoJSONPolygonParser {
       } else if (ch == '"') {
         o = parseString();
       } else {
-        throw newParseException("expected another array or number while parsing array, not '" + ch + "'");
+        throw newParseException(
+            "expected another array or number while parsing array, not '" + ch + "'");
       }
-      
+
       result.add(o);
     }
 
@@ -351,7 +370,7 @@ class SimpleGeoJSONPolygonParser {
           if (upto + 4 > input.length()) {
             throw newParseException("hit EOF inside string literal");
           }
-          b.append(Integer.parseInt(input.substring(upto, upto+4), 16));
+          b.append(Integer.parseInt(input.substring(upto, upto + 4), 16));
         } else if (ch == '\\') {
           b.append('\\');
           upto++;
@@ -381,7 +400,10 @@ class SimpleGeoJSONPolygonParser {
     throw newParseException("unexpected EOF");
   }
 
-  /** Scans across whitespace and consumes the expected character, or throws {@code ParseException} if the character is wrong */
+  /**
+   * Scans across whitespace and consumes the expected character, or throws {@code ParseException}
+   * if the character is wrong
+   */
   private void scan(char expected) throws ParseException {
     while (upto < input.length()) {
       char ch = input.charAt(upto);
@@ -413,7 +435,7 @@ class SimpleGeoJSONPolygonParser {
     if (upto + expected.length() > input.length()) {
       throw newParseException("expected \"" + expected + "\" but hit EOF");
     }
-    String subString = input.substring(upto, upto+expected.length());
+    String subString = input.substring(upto, upto + expected.length());
     if (subString.equals(expected) == false) {
       throw newParseException("expected \"" + expected + "\" but got \"" + subString + "\"");
     }
@@ -422,21 +444,20 @@ class SimpleGeoJSONPolygonParser {
 
   private static boolean isJSONWhitespace(char ch) {
     // JSON doesn't accept allow unicode whitespace?
-    return ch == 0x20 || // space
-      ch == 0x09 || // tab
-      ch == 0x0a || // line feed
-      ch == 0x0d;  // newline
+    return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
   }
 
   /** When calling this, upto should be at the position of the incorrect character! */
   private ParseException newParseException(String details) throws ParseException {
     String fragment;
-    int end = Math.min(input.length(), upto+1);
+    int end = Math.min(input.length(), upto + 1);
     if (upto < 50) {
       fragment = input.substring(0, end);
     } else {
-      fragment = "..." + input.substring(upto-50, end);
+      fragment = "..." + input.substring(upto - 50, end);
     }
-    return new ParseException(details + " at character offset " + upto + "; fragment leading to this:\n" + fragment, upto);
+    return new ParseException(
+        details + " at character offset " + upto + "; fragment leading to this:\n" + fragment,
+        upto);
   }
 }

@@ -16,27 +16,25 @@
  */
 package org.apache.lucene.index;
 
-
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.index.MergePolicy.OneMergeProgress;
+import org.apache.lucene.index.MergePolicy.OneMergeProgress.PauseReason;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.index.MergePolicy.OneMergeProgress;
-import org.apache.lucene.index.MergePolicy.OneMergeProgress.PauseReason;
-
-/** This is the {@link RateLimiter} that {@link IndexWriter} assigns to each running merge, to 
- *  give {@link MergeScheduler}s ionice like control.
+/**
+ * This is the {@link RateLimiter} that {@link IndexWriter} assigns to each running merge, to give
+ * {@link MergeScheduler}s ionice like control.
  *
- *  @lucene.internal */
-
+ * @lucene.internal
+ */
 public class MergeRateLimiter extends RateLimiter {
 
-  private final static int MIN_PAUSE_CHECK_MSEC = 25;
-  
-  private final static long MIN_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(2);
-  private final static long MAX_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(250);
+  private static final int MIN_PAUSE_CHECK_MSEC = 25;
+
+  private static final long MIN_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(2);
+  private static final long MAX_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(250);
 
   private volatile double mbPerSec;
   private volatile long minPauseCheckBytes;
@@ -56,16 +54,17 @@ public class MergeRateLimiter extends RateLimiter {
 
   @Override
   public void setMBPerSec(double mbPerSec) {
-    // Synchronized to make updates to mbPerSec and minPauseCheckBytes atomic. 
+    // Synchronized to make updates to mbPerSec and minPauseCheckBytes atomic.
     synchronized (this) {
       // 0.0 is allowed: it means the merge is paused
       if (mbPerSec < 0.0) {
         throw new IllegalArgumentException("mbPerSec must be positive; got: " + mbPerSec);
       }
       this.mbPerSec = mbPerSec;
-  
+
       // NOTE: Double.POSITIVE_INFINITY casts to Long.MAX_VALUE
-      this.minPauseCheckBytes = Math.min(1024*1024, (long) ((MIN_PAUSE_CHECK_MSEC / 1000.0) * mbPerSec * 1024 * 1024));
+      this.minPauseCheckBytes =
+          Math.min(1024 * 1024, (long) ((MIN_PAUSE_CHECK_MSEC / 1000.0) * mbPerSec * 1024 * 1024));
       assert minPauseCheckBytes >= 0;
     }
 
@@ -101,17 +100,17 @@ public class MergeRateLimiter extends RateLimiter {
   /** Total NS merge was stopped. */
   public long getTotalStoppedNS() {
     return mergeProgress.getPauseTimes().get(PauseReason.STOPPED);
-  } 
+  }
 
   /** Total NS merge was paused to rate limit IO. */
   public long getTotalPausedNS() {
     return mergeProgress.getPauseTimes().get(PauseReason.PAUSED);
-  } 
+  }
 
-  /** 
-   * Returns the number of nanoseconds spent in a paused state or <code>-1</code>
-   * if no pause was applied. If the thread needs pausing, this method delegates 
-   * to the linked {@link OneMergeProgress}. 
+  /**
+   * Returns the number of nanoseconds spent in a paused state or <code>-1</code> if no pause was
+   * applied. If the thread needs pausing, this method delegates to the linked {@link
+   * OneMergeProgress}.
    */
   private long maybePause(long bytes, long curNS) throws MergePolicy.MergeAbortedException {
     // Now is a good time to abort the merge:
@@ -120,7 +119,7 @@ public class MergeRateLimiter extends RateLimiter {
     }
 
     double rate = mbPerSec; // read from volatile rate once.
-    double secondsToPause = (bytes/1024./1024.) / rate;
+    double secondsToPause = (bytes / 1024. / 1024.) / rate;
 
     // Time we should sleep until; this is purely instantaneous
     // rate (just adds seconds onto the last time we had paused to);
@@ -146,7 +145,7 @@ public class MergeRateLimiter extends RateLimiter {
     long start = System.nanoTime();
     try {
       mergeProgress.pauseNanos(
-          curPauseNS, 
+          curPauseNS,
           rate == 0.0 ? PauseReason.STOPPED : PauseReason.PAUSED,
           () -> rate == mbPerSec);
     } catch (InterruptedException ie) {

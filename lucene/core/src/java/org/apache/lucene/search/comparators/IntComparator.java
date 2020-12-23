@@ -17,22 +17,22 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafFieldComparator;
 
-import java.io.IOException;
-
 /**
- * Comparator based on {@link Integer#compare} for {@code numHits}.
- * This comparator provides a skipping functionality – an iterator that can skip over non-competitive documents.
+ * Comparator based on {@link Integer#compare} for {@code numHits}. This comparator provides a
+ * skipping functionality – an iterator that can skip over non-competitive documents.
  */
 public class IntComparator extends NumericComparator<Integer> {
   private final int[] values;
   protected int topValue;
   protected int bottom;
 
-  public IntComparator(int numHits, String field, Integer missingValue, boolean reverse, int sortPos) {
+  public IntComparator(
+      int numHits, String field, Integer missingValue, boolean reverse, int sortPos) {
     super(field, missingValue != null ? missingValue : 0, reverse, sortPos, Integer.BYTES);
     values = new int[numHits];
   }
@@ -58,9 +58,7 @@ public class IntComparator extends NumericComparator<Integer> {
     return new IntLeafComparator(context);
   }
 
-  /**
-   * Leaf comparator for {@link IntComparator} that provides skipping functionality
-   */
+  /** Leaf comparator for {@link IntComparator} that provides skipping functionality */
   public class IntLeafComparator extends NumericLeafComparator {
 
     public IntLeafComparator(LeafReaderContext context) throws IOException {
@@ -115,5 +113,4 @@ public class IntComparator extends NumericComparator<Integer> {
       IntPoint.encodeDimension(topValue, packedValue, 0);
     }
   }
-
 }

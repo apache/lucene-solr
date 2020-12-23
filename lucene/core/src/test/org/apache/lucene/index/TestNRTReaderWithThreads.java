@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
@@ -32,32 +30,33 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
   public void testIndexing() throws Exception {
     Directory mainDir = newDirectory();
     if (mainDir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)mainDir).setAssertNoDeleteOpenFile(true);
+      ((MockDirectoryWrapper) mainDir).setAssertNoDeleteOpenFile(true);
     }
-    IndexWriter writer = new IndexWriter(
-        mainDir,
-        ensureSaneIWCOnNightly(newIndexWriterConfig(new MockAnalyzer(random()))
-           .setMaxBufferedDocs(10)
-           .setMergePolicy(newLogMergePolicy(false,2)))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            mainDir,
+            ensureSaneIWCOnNightly(
+                newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMaxBufferedDocs(10)
+                    .setMergePolicy(newLogMergePolicy(false, 2))));
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
     int numThreads = TEST_NIGHTLY ? 4 : 2;
     int numIterations = TEST_NIGHTLY ? 2000 : 50;
     RunThread[] indexThreads = new RunThread[numThreads];
-    for (int x=0; x < indexThreads.length; x++) {
+    for (int x = 0; x < indexThreads.length; x++) {
       indexThreads[x] = new RunThread(x % 2, writer, numIterations);
       indexThreads[x].setName("Thread " + x);
       indexThreads[x].start();
-    }    
-   
+    }
+
     for (RunThread thread : indexThreads) {
       thread.join();
     }
 
     writer.close();
     mainDir.close();
-    
+
     for (RunThread thread : indexThreads) {
       if (thread.failure != null) {
         throw new RuntimeException("hit exception from " + thread, thread.failure);
@@ -74,7 +73,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     int delCount = 0;
     int addCount = 0;
     final Random r = new Random(random().nextLong());
-    
+
     public RunThread(int type, IndexWriter writer, int numIterations) {
       this.type = type;
       this.writer = writer;
@@ -85,7 +84,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     public void run() {
       try {
         for (int iter = 0; iter < numIterations; iter++) {
-          //int n = random.nextInt(2);
+          // int n = random.nextInt(2);
           if (type == 0) {
             int i = seq.addAndGet(1);
             Document doc = DocHelper.createDocument(i, "index1", 10);

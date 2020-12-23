@@ -17,22 +17,22 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafFieldComparator;
 
-import java.io.IOException;
-
 /**
- * Comparator based on {@link Double#compare} for {@code numHits}.
- * This comparator provides a skipping functionality – an iterator that can skip over non-competitive documents.
+ * Comparator based on {@link Double#compare} for {@code numHits}. This comparator provides a
+ * skipping functionality - an iterator that can skip over non-competitive documents.
  */
 public class DoubleComparator extends NumericComparator<Double> {
   private final double[] values;
   protected double topValue;
   protected double bottom;
 
-  public DoubleComparator(int numHits, String field, Double missingValue, boolean reverse, int sortPos) {
+  public DoubleComparator(
+      int numHits, String field, Double missingValue, boolean reverse, int sortPos) {
     super(field, missingValue != null ? missingValue : 0.0, reverse, sortPos, Double.BYTES);
     values = new double[numHits];
   }
@@ -58,9 +58,7 @@ public class DoubleComparator extends NumericComparator<Double> {
     return new DoubleLeafComparator(context);
   }
 
-  /**
-   * Leaf comparator for {@link DoubleComparator} that provides skipping functionality
-   */
+  /** Leaf comparator for {@link DoubleComparator} that provides skipping functionality */
   public class DoubleLeafComparator extends NumericLeafComparator {
 
     public DoubleLeafComparator(LeafReaderContext context) throws IOException {
@@ -113,5 +111,4 @@ public class DoubleComparator extends NumericComparator<Double> {
       DoublePoint.encodeDimension(topValue, packedValue, 0);
     }
   }
-
 }

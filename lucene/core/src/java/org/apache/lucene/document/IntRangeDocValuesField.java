@@ -20,10 +20,10 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.Query;
 
 /**
- * DocValues field for IntRange. This is a single valued field per document
- * due to being an extension of BinaryDocValuesField.
+ * DocValues field for IntRange. This is a single valued field per document due to being an
+ * extension of BinaryDocValuesField.
  */
-public class IntRangeDocValuesField extends BinaryRangeDocValuesField{
+public class IntRangeDocValuesField extends BinaryRangeDocValuesField {
   final String field;
   final int[] min;
   final int[] max;
@@ -55,22 +55,23 @@ public class IntRangeDocValuesField extends BinaryRangeDocValuesField{
     return max[dimension];
   }
 
-  private static Query newSlowRangeQuery(String field, final int[] min, final int[] max,
-                                        RangeFieldQuery.QueryType queryType) {
+  private static Query newSlowRangeQuery(
+      String field, final int[] min, final int[] max, RangeFieldQuery.QueryType queryType) {
     checkArgs(min, max);
     return new IntRangeSlowRangeQuery(field, min, max, queryType);
   }
 
-  /** Create a new range query that finds all ranges that intersect using doc values.
-   *  NOTE: This doesn't leverage indexing and may be slow.
-   *  @see IntRange#newIntersectsQuery */
+  /**
+   * Create a new range query that finds all ranges that intersect using doc values. NOTE: This
+   * doesn't leverage indexing and may be slow.
+   *
+   * @see IntRange#newIntersectsQuery
+   */
   public static Query newSlowIntersectsQuery(String field, final int[] min, final int[] max) {
     return newSlowRangeQuery(field, min, max, RangeFieldQuery.QueryType.INTERSECTS);
   }
 
-  /**
-   * validate the arguments
-   */
+  /** validate the arguments */
   private static void checkArgs(final int[] min, final int[] max) {
     if (min == null || max == null || min.length == 0 || max.length == 0) {
       throw new IllegalArgumentException("min/max range values cannot be null or empty");
@@ -81,7 +82,8 @@ public class IntRangeDocValuesField extends BinaryRangeDocValuesField{
 
     for (int i = 0; i < min.length; i++) {
       if (min[i] > max[i]) {
-        throw new IllegalArgumentException("min should be less than max but min = " + min[i] + " and max = " + max[i]);
+        throw new IllegalArgumentException(
+            "min should be less than max but min = " + min[i] + " and max = " + max[i]);
       }
     }
   }

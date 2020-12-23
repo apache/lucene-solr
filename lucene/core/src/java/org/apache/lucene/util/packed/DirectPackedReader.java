@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.util.packed;
 
-
-import org.apache.lucene.store.IndexInput;
-
 import java.io.IOException;
+import org.apache.lucene.store.IndexInput;
 
 /* Reads directly from disk on each get */
 // just for back compat, use DirectReader/DirectWriter for more efficient impl
@@ -44,7 +42,7 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
 
   @Override
   public long get(int index) {
-    final long majorBitPos = (long)index * bitsPerValue;
+    final long majorBitPos = (long) index * bitsPerValue;
     final long elementPos = majorBitPos >>> 3;
     try {
       in.seek(startPointer + elementPos);
@@ -64,19 +62,22 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
           rawValue = in.readShort();
           break;
         case 3:
-          rawValue = ((long)in.readShort() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long) in.readShort() << 8) | (in.readByte() & 0xFFL);
           break;
         case 4:
           rawValue = in.readInt();
           break;
         case 5:
-          rawValue = ((long)in.readInt() << 8) | (in.readByte() & 0xFFL);
+          rawValue = ((long) in.readInt() << 8) | (in.readByte() & 0xFFL);
           break;
         case 6:
-          rawValue = ((long)in.readInt() << 16) | (in.readShort() & 0xFFFFL);
+          rawValue = ((long) in.readInt() << 16) | (in.readShort() & 0xFFFFL);
           break;
         case 7:
-          rawValue = ((long)in.readInt() << 24) | ((in.readShort() & 0xFFFFL) << 8) | (in.readByte() & 0xFFL);
+          rawValue =
+              ((long) in.readInt() << 24)
+                  | ((in.readShort() & 0xFFFFL) << 8)
+                  | (in.readByte() & 0xFFL);
           break;
         case 8:
           rawValue = in.readLong();
@@ -84,7 +85,9 @@ class DirectPackedReader extends PackedInts.ReaderImpl {
         case 9:
           // We must be very careful not to shift out relevant bits. So we account for right shift
           // we would normally do on return here, and reset it.
-          rawValue = (in.readLong() << (8 - shiftRightBits)) | ((in.readByte() & 0xFFL) >>> shiftRightBits);
+          rawValue =
+              (in.readLong() << (8 - shiftRightBits))
+                  | ((in.readByte() & 0xFFL) >>> shiftRightBits);
           shiftRightBits = 0;
           break;
         default:

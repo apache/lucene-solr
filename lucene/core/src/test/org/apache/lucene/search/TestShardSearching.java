@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.MultiReader;
@@ -41,7 +39,7 @@ import org.apache.lucene.util.TestUtil;
 //   - test pulling docs in 2nd round trip...
 //   - filter too
 
-@SuppressCodecs({ "SimpleText", "Direct" })
+@SuppressCodecs({"SimpleText", "Direct"})
 public class TestShardSearching extends ShardSearchingTestBase {
 
   private static class PreviousSearchState {
@@ -53,7 +51,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
     public final Query query;
     public final int numHitsPaged;
 
-    public PreviousSearchState(Query query, Sort sort, ScoreDoc searchAfterLocal, ScoreDoc searchAfterShard, long[] versions, int numHitsPaged) {
+    public PreviousSearchState(
+        Query query,
+        Sort sort,
+        ScoreDoc searchAfterLocal,
+        ScoreDoc searchAfterShard,
+        long[] versions,
+        int numHitsPaged) {
       this.versions = versions.clone();
       this.searchAfterLocal = searchAfterLocal;
       this.searchAfterShard = searchAfterShard;
@@ -74,13 +78,16 @@ public class TestShardSearching extends ShardSearchingTestBase {
     final int maxSearcherAgeSeconds = TestUtil.nextInt(random(), 1, 3);
 
     if (VERBOSE) {
-      System.out.println("TEST: numNodes=" + numNodes + " runTimeSec=" + runTimeSec + " maxSearcherAgeSeconds=" + maxSearcherAgeSeconds);
+      System.out.println(
+          "TEST: numNodes="
+              + numNodes
+              + " runTimeSec="
+              + runTimeSec
+              + " maxSearcherAgeSeconds="
+              + maxSearcherAgeSeconds);
     }
 
-    start(numNodes,
-          runTimeSec,
-          maxSearcherAgeSeconds
-          );
+    start(numNodes, runTimeSec, maxSearcherAgeSeconds);
 
     final List<PreviousSearchState> priorSearches = new ArrayList<>();
     List<BytesRef> terms = null;
@@ -100,7 +107,9 @@ public class TestShardSearching extends ShardSearchingTestBase {
         prevSearchState = priorSearches.get(random().nextInt(priorSearches.size()));
 
         if (VERBOSE) {
-          System.out.println("\nTEST: follow-on query age=" + ((System.nanoTime() - prevSearchState.searchTimeNanos)/1000000000.0));
+          System.out.println(
+              "\nTEST: follow-on query age="
+                  + ((System.nanoTime() - prevSearchState.searchTimeNanos) / 1000000000.0));
         }
 
         try {
@@ -138,12 +147,12 @@ public class TestShardSearching extends ShardSearchingTestBase {
         // are correct:
         int docCount = 0;
         try {
-          for(int nodeID=0;nodeID<numNodes;nodeID++) {
+          for (int nodeID = 0; nodeID < numNodes; nodeID++) {
             final long subVersion = localShardSearcher.nodeVersions[nodeID];
             final IndexSearcher sub = nodes[nodeID].searchers.acquire(subVersion);
             if (sub == null) {
               nodeID--;
-              while(nodeID >= 0) {
+              while (nodeID >= 0) {
                 subs[nodeID].decRef();
                 subs[nodeID] = null;
                 nodeID--;
@@ -176,7 +185,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
             // TODO: maybe also periodically reset the terms...?
             final TermsEnum termsEnum = MultiTerms.getTerms(mockReader, "body").iterator();
             terms = new ArrayList<>();
-            while(termsEnum.next() != null) {
+            while (termsEnum.next() != null) {
               terms.add(BytesRef.deepCopyOf(termsEnum.term()));
             }
             if (VERBOSE) {
@@ -204,7 +213,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
               }
               query = new PrefixQuery(new Term("body", prefix));
             }
-            
+
             if (random().nextBoolean()) {
               sort = null;
             } else {
@@ -215,13 +224,21 @@ public class TestShardSearching extends ShardSearchingTestBase {
               } else if (what == 1) {
                 // TODO: this sort doesn't merge
                 // correctly... it's tricky because you
-                // could have > 2.1B docs across all shards: 
-                //sort = new Sort(SortField.FIELD_DOC);
+                // could have > 2.1B docs across all shards:
+                // sort = new Sort(SortField.FIELD_DOC);
                 sort = null;
               } else if (what == 2) {
-                sort = new Sort(new SortField[] {new SortField("docid_intDV", SortField.Type.INT, random().nextBoolean())});
+                sort =
+                    new Sort(
+                        new SortField[] {
+                          new SortField("docid_intDV", SortField.Type.INT, random().nextBoolean())
+                        });
               } else {
-                sort = new Sort(new SortField[] {new SortField("titleDV", SortField.Type.STRING, random().nextBoolean())});
+                sort =
+                    new Sort(
+                        new SortField[] {
+                          new SortField("titleDV", SortField.Type.STRING, random().nextBoolean())
+                        });
               }
             }
           } else {
@@ -233,7 +250,8 @@ public class TestShardSearching extends ShardSearchingTestBase {
         if (query != null) {
 
           try {
-            searchState = assertSame(mockSearcher, localShardSearcher, query, sort, prevSearchState);
+            searchState =
+                assertSame(mockSearcher, localShardSearcher, query, sort, prevSearchState);
           } catch (SearcherExpiredException see) {
             // Expected; in a "real" app we would
             // either forward this error to the user ("too
@@ -255,7 +273,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
         }
       } finally {
         nodes[myNodeID].release(localShardSearcher);
-        for(IndexReader sub : subs) {
+        for (IndexReader sub : subs) {
           if (sub != null) {
             sub.decRef();
           }
@@ -274,7 +292,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
     finish();
   }
 
-  private PreviousSearchState assertSame(IndexSearcher mockSearcher, NodeState.ShardIndexSearcher shardSearcher, Query q, Sort sort, PreviousSearchState state) throws IOException {
+  private PreviousSearchState assertSame(
+      IndexSearcher mockSearcher,
+      NodeState.ShardIndexSearcher shardSearcher,
+      Query q,
+      Sort sort,
+      PreviousSearchState state)
+      throws IOException {
 
     int numHits = TestUtil.nextInt(random(), 1, 100);
     if (state != null && state.searchAfterLocal == null) {
@@ -285,7 +309,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
     if (VERBOSE) {
       System.out.println("TEST: query=" + q + " sort=" + sort + " numHits=" + numHits);
       if (state != null) {
-        System.out.println("  prev: searchAfterLocal=" + state.searchAfterLocal + " searchAfterShard=" + state.searchAfterShard + " numHitsPaged=" + state.numHitsPaged);
+        System.out.println(
+            "  prev: searchAfterLocal="
+                + state.searchAfterLocal
+                + " searchAfterShard="
+                + state.searchAfterShard
+                + " numHitsPaged="
+                + state.numHitsPaged);
       }
     }
 
@@ -318,7 +348,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
     final List<IndexReaderContext> subs = mockSearcher.getTopReaderContext().children();
     assertEquals(numNodes, subs.size());
 
-    for(int nodeID=0;nodeID<numNodes;nodeID++) {
+    for (int nodeID = 0; nodeID < numNodes; nodeID++) {
       base[nodeID] = subs.get(nodeID).docBaseInParent;
     }
 
@@ -329,20 +359,28 @@ public class TestShardSearching extends ShardSearchingTestBase {
       }
       */
       System.out.println("  single searcher: " + hits.totalHits.value);
-      for(int i=0;i<hits.scoreDocs.length;i++) {
+      for (int i = 0; i < hits.scoreDocs.length; i++) {
         final ScoreDoc sd = hits.scoreDocs[i];
         System.out.println("    doc=" + sd.doc + " score=" + sd.score);
       }
       System.out.println("  shard searcher: " + shardHits.totalHits.value);
-      for(int i=0;i<shardHits.scoreDocs.length;i++) {
+      for (int i = 0; i < shardHits.scoreDocs.length; i++) {
         final ScoreDoc sd = shardHits.scoreDocs[i];
-        System.out.println("    doc=" + sd.doc + " (rebased: " + (sd.doc + base[sd.shardIndex]) + ") score=" + sd.score + " shard=" + sd.shardIndex);
+        System.out.println(
+            "    doc="
+                + sd.doc
+                + " (rebased: "
+                + (sd.doc + base[sd.shardIndex])
+                + ") score="
+                + sd.score
+                + " shard="
+                + sd.shardIndex);
       }
     }
 
     int numHitsPaged;
     if (state != null && state.searchAfterLocal != null) {
-      numHitsPaged = hits.scoreDocs.length; 
+      numHitsPaged = hits.scoreDocs.length;
       if (state != null) {
         numHitsPaged += state.numHitsPaged;
       }
@@ -359,8 +397,8 @@ public class TestShardSearching extends ShardSearchingTestBase {
       // More hits to page through
       moreHits = true;
       if (sort == null) {
-        bottomHit = hits.scoreDocs[hits.scoreDocs.length-1];
-        final ScoreDoc sd = shardHits.scoreDocs[shardHits.scoreDocs.length-1];
+        bottomHit = hits.scoreDocs[hits.scoreDocs.length - 1];
+        final ScoreDoc sd = shardHits.scoreDocs[shardHits.scoreDocs.length - 1];
         // Must copy because below we rebase:
         bottomHitShards = new ScoreDoc(sd.doc, sd.score, sd.shardIndex);
         if (VERBOSE) {
@@ -379,7 +417,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
     }
 
     // Must rebase so assertEquals passes:
-    for(int hitID=0;hitID<shardHits.scoreDocs.length;hitID++) {
+    for (int hitID = 0; hitID < shardHits.scoreDocs.length; hitID++) {
       final ScoreDoc sd = shardHits.scoreDocs[hitID];
       sd.doc += base[sd.shardIndex];
     }
@@ -388,7 +426,8 @@ public class TestShardSearching extends ShardSearchingTestBase {
 
     if (moreHits) {
       // Return a continuation:
-      return new PreviousSearchState(q, sort, bottomHit, bottomHitShards, shardSearcher.nodeVersions, numHitsPaged);
+      return new PreviousSearchState(
+          q, sort, bottomHit, bottomHitShards, shardSearcher.nodeVersions, numHitsPaged);
     } else {
       return null;
     }

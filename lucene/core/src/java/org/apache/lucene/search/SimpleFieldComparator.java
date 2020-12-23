@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
@@ -26,7 +24,8 @@ import org.apache.lucene.index.LeafReaderContext;
  *
  * @lucene.experimental
  */
-public abstract class SimpleFieldComparator<T> extends FieldComparator<T> implements LeafFieldComparator {
+public abstract class SimpleFieldComparator<T> extends FieldComparator<T>
+    implements LeafFieldComparator {
 
   /** This method is called before collecting <code>context</code>. */
   protected abstract void doSetNextReader(LeafReaderContext context) throws IOException;

@@ -16,35 +16,34 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * IndexReader implementation over a single segment. 
- * <p>
- * Instances pointing to the same segment (but with different deletes, etc)
- * may share the same core data.
+ * IndexReader implementation over a single segment.
+ *
+ * <p>Instances pointing to the same segment (but with different deletes, etc) may share the same
+ * core data.
+ *
  * @lucene.experimental
  */
 public final class SegmentReader extends CodecReader {
-       
+
   private final SegmentCommitInfo si;
   // this is the original SI that IW uses internally but it's mutated behind the scenes
   // and we don't want this SI to be used for anything. Yet, IW needs this to do maintainance
@@ -62,40 +61,47 @@ public final class SegmentReader extends CodecReader {
   final SegmentCoreReaders core;
   final SegmentDocValues segDocValues;
 
-  /** True if we are holding RAM only liveDocs or DV updates, i.e. the SegmentCommitInfo delGen doesn't match our liveDocs. */
+  /**
+   * True if we are holding RAM only liveDocs or DV updates, i.e. the SegmentCommitInfo delGen
+   * doesn't match our liveDocs.
+   */
   final boolean isNRT;
-  
+
   final DocValuesProducer docValuesProducer;
   final FieldInfos fieldInfos;
 
   /**
    * Constructs a new SegmentReader with a new core.
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context) throws IOException {
+  SegmentReader(SegmentCommitInfo si, int createdVersionMajor, IOContext context)
+      throws IOException {
     this.si = si.clone();
     this.originalSi = si;
-    this.metaData = new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
+    this.metaData =
+        new LeafMetaData(createdVersionMajor, si.info.getMinVersion(), si.info.getIndexSort());
 
     // We pull liveDocs/DV updates from disk:
     this.isNRT = false;
-    
+
     core = new SegmentCoreReaders(si.info.dir, si, context);
     segDocValues = new SegmentDocValues();
-    
+
     boolean success = false;
     final Codec codec = si.info.getCodec();
     try {
       if (si.hasDeletions()) {
         // NOTE: the bitvector is stored using the regular directory, not cfs
-        hardLiveDocs = liveDocs = codec.liveDocsFormat().readLiveDocs(directory(), si, IOContext.READONCE);
+        hardLiveDocs =
+            liveDocs = codec.liveDocsFormat().readLiveDocs(directory(), si, IOContext.READONCE);
       } else {
         assert si.getDelCount() == 0;
         hardLiveDocs = liveDocs = null;
       }
       numDocs = si.info.maxDoc() - si.getDelCount();
-      
+
       fieldInfos = initFieldInfos();
       docValuesProducer = initDocValuesProducer();
       assert assertLiveDocs(isNRT, hardLiveDocs, liveDocs);
@@ -112,15 +118,24 @@ public final class SegmentReader extends CodecReader {
     }
   }
 
-  /** Create new SegmentReader sharing core from a previous
-   *  SegmentReader and using the provided liveDocs, and recording
-   *  whether those liveDocs were carried in ram (isNRT=true). */
-  SegmentReader(SegmentCommitInfo si, SegmentReader sr, Bits liveDocs, Bits hardLiveDocs, int numDocs, boolean isNRT) throws IOException {
+  /**
+   * Create new SegmentReader sharing core from a previous SegmentReader and using the provided
+   * liveDocs, and recording whether those liveDocs were carried in ram (isNRT=true).
+   */
+  SegmentReader(
+      SegmentCommitInfo si,
+      SegmentReader sr,
+      Bits liveDocs,
+      Bits hardLiveDocs,
+      int numDocs,
+      boolean isNRT)
+      throws IOException {
     if (numDocs > si.info.maxDoc()) {
       throw new IllegalArgumentException("numDocs=" + numDocs + " but maxDoc=" + si.info.maxDoc());
     }
     if (liveDocs != null && liveDocs.length() != si.info.maxDoc()) {
-      throw new IllegalArgumentException("maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
+      throw new IllegalArgumentException(
+          "maxDoc=" + si.info.maxDoc() + " but liveDocs.size()=" + liveDocs.length());
     }
     this.si = si.clone();
     this.originalSi = si;
@@ -148,16 +163,15 @@ public final class SegmentReader extends CodecReader {
 
   private static boolean assertLiveDocs(boolean isNRT, Bits hardLiveDocs, Bits liveDocs) {
     if (isNRT) {
-      assert hardLiveDocs == null || liveDocs != null : " liveDocs must be non null if hardLiveDocs are non null";
+      assert hardLiveDocs == null || liveDocs != null
+          : " liveDocs must be non null if hardLiveDocs are non null";
     } else {
       assert hardLiveDocs == liveDocs : "non-nrt case must have identical liveDocs";
     }
     return true;
   }
 
-  /**
-   * init most recent DocValues for the current commit
-   */
+  /** init most recent DocValues for the current commit */
   private DocValuesProducer initDocValuesProducer() throws IOException {
 
     if (fieldInfos.hasDocValues() == false) {
@@ -177,10 +191,8 @@ public final class SegmentReader extends CodecReader {
       }
     }
   }
-  
-  /**
-   * init most recent FieldInfos for the current commit
-   */
+
+  /** init most recent FieldInfos for the current commit */
   private FieldInfos initFieldInfos() throws IOException {
     if (!si.hasFieldUpdates()) {
       return core.coreFieldInfos;
@@ -191,7 +203,7 @@ public final class SegmentReader extends CodecReader {
       return fisFormat.read(si.info.dir, si.info, segmentSuffix, IOContext.READONCE);
     }
   }
-  
+
   @Override
   public Bits getLiveDocs() {
     ensureOpen();
@@ -200,12 +212,12 @@ public final class SegmentReader extends CodecReader {
 
   @Override
   protected void doClose() throws IOException {
-    //System.out.println("SR.close seg=" + si);
+    // System.out.println("SR.close seg=" + si);
     try {
       core.decRef();
     } finally {
       if (docValuesProducer instanceof SegmentDocValuesProducer) {
-        segDocValues.decRef(((SegmentDocValuesProducer)docValuesProducer).dvGens);
+        segDocValues.decRef(((SegmentDocValuesProducer) docValuesProducer).dvGens);
       } else if (docValuesProducer != null) {
         segDocValues.decRef(Collections.singletonList(-1L));
       }
@@ -241,7 +253,7 @@ public final class SegmentReader extends CodecReader {
     ensureOpen();
     return core.fieldsReaderLocal.get();
   }
-  
+
   @Override
   public PointsReader getPointsReader() {
     ensureOpen();
@@ -253,7 +265,7 @@ public final class SegmentReader extends CodecReader {
     ensureOpen();
     return core.normsProducer;
   }
-  
+
   @Override
   public DocValuesProducer getDocValuesReader() {
     ensureOpen();
@@ -277,17 +289,13 @@ public final class SegmentReader extends CodecReader {
     // *pending* deletions; so we reverse compute that here:
     return si.toString(si.info.maxDoc() - numDocs - si.getDelCount());
   }
-  
-  /**
-   * Return the name of the segment this reader is reading.
-   */
+
+  /** Return the name of the segment this reader is reading. */
   public String getSegmentName() {
     return si.info.name;
   }
-  
-  /**
-   * Return the SegmentInfoPerCommit of the segment this reader is reading.
-   */
+
+  /** Return the SegmentInfoPerCommit of the segment this reader is reading. */
   public SegmentCommitInfo getSegmentInfo() {
     return si;
   }
@@ -304,46 +312,50 @@ public final class SegmentReader extends CodecReader {
 
   @Override
   void notifyReaderClosedListeners() throws IOException {
-    synchronized(readerClosedListeners) {
+    synchronized (readerClosedListeners) {
       IOUtils.applyToAll(readerClosedListeners, l -> l.onClose(readerCacheHelper.getKey()));
     }
   }
 
-  private final IndexReader.CacheHelper readerCacheHelper = new IndexReader.CacheHelper() {
-    private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
+  private final IndexReader.CacheHelper readerCacheHelper =
+      new IndexReader.CacheHelper() {
+        private final IndexReader.CacheKey cacheKey = new IndexReader.CacheKey();
 
-    @Override
-    public CacheKey getKey() {
-      return cacheKey;
-    }
+        @Override
+        public CacheKey getKey() {
+          return cacheKey;
+        }
 
-    @Override
-    public void addClosedListener(ClosedListener listener) {
-      ensureOpen();
-      readerClosedListeners.add(listener);
-    }
-  };
+        @Override
+        public void addClosedListener(ClosedListener listener) {
+          ensureOpen();
+          readerClosedListeners.add(listener);
+        }
+      };
 
   @Override
   public CacheHelper getReaderCacheHelper() {
     return readerCacheHelper;
   }
 
-  /** Wrap the cache helper of the core to add ensureOpen() calls that make
-   *  sure users do not register closed listeners on closed indices. */
-  private final IndexReader.CacheHelper coreCacheHelper = new IndexReader.CacheHelper() {
+  /**
+   * Wrap the cache helper of the core to add ensureOpen() calls that make sure users do not
+   * register closed listeners on closed indices.
+   */
+  private final IndexReader.CacheHelper coreCacheHelper =
+      new IndexReader.CacheHelper() {
 
-    @Override
-    public CacheKey getKey() {
-      return core.getCacheHelper().getKey();
-    }
+        @Override
+        public CacheKey getKey() {
+          return core.getCacheHelper().getKey();
+        }
 
-    @Override
-    public void addClosedListener(ClosedListener listener) {
-      ensureOpen();
-      core.getCacheHelper().addClosedListener(listener);
-    }
-  };
+        @Override
+        public void addClosedListener(ClosedListener listener) {
+          ensureOpen();
+          core.getCacheHelper().addClosedListener(listener);
+        }
+      };
 
   @Override
   public CacheHelper getCoreCacheHelper() {
@@ -356,8 +368,8 @@ public final class SegmentReader extends CodecReader {
   }
 
   /**
-   * Returns the original SegmentInfo passed to the segment reader on creation time.
-   * {@link #getSegmentInfo()} returns a clone of this instance.
+   * Returns the original SegmentInfo passed to the segment reader on creation time. {@link
+   * #getSegmentInfo()} returns a clone of this instance.
    */
   SegmentCommitInfo getOriginalSegmentInfo() {
     return originalSi;
@@ -365,8 +377,9 @@ public final class SegmentReader extends CodecReader {
 
   /**
    * Returns the live docs that are not hard-deleted. This is an expert API to be used with
-   * soft-deletes to filter out document that hard deleted for instance due to aborted documents or to distinguish
-   * soft and hard deleted documents ie. a rolled back tombstone.
+   * soft-deletes to filter out document that hard deleted for instance due to aborted documents or
+   * to distinguish soft and hard deleted documents ie. a rolled back tombstone.
+   *
    * @lucene.experimental
    */
   public Bits getHardLiveDocs() {

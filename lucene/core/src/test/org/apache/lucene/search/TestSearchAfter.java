@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -40,9 +38,7 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests IndexSearcher's searchAfter() method
- */
+/** Tests IndexSearcher's searchAfter() method */
 public class TestSearchAfter extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
@@ -54,26 +50,29 @@ public class TestSearchAfter extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    allSortFields = new ArrayList<>(Arrays.asList(new SortField[] {
-          new SortField("int", SortField.Type.INT, false),
-          new SortField("long", SortField.Type.LONG, false),
-          new SortField("float", SortField.Type.FLOAT, false),
-          new SortField("double", SortField.Type.DOUBLE, false),
-          new SortField("bytes", SortField.Type.STRING, false),
-          new SortField("bytesval", SortField.Type.STRING_VAL, false),
-          new SortField("int", SortField.Type.INT, true),
-          new SortField("long", SortField.Type.LONG, true),
-          new SortField("float", SortField.Type.FLOAT, true),
-          new SortField("double", SortField.Type.DOUBLE, true),
-          new SortField("bytes", SortField.Type.STRING, true),
-          new SortField("bytesval", SortField.Type.STRING_VAL, true),
-          SortField.FIELD_SCORE,
-          SortField.FIELD_DOC,
-        }));
+    allSortFields =
+        new ArrayList<>(
+            Arrays.asList(
+                new SortField[] {
+                  new SortField("int", SortField.Type.INT, false),
+                  new SortField("long", SortField.Type.LONG, false),
+                  new SortField("float", SortField.Type.FLOAT, false),
+                  new SortField("double", SortField.Type.DOUBLE, false),
+                  new SortField("bytes", SortField.Type.STRING, false),
+                  new SortField("bytesval", SortField.Type.STRING_VAL, false),
+                  new SortField("int", SortField.Type.INT, true),
+                  new SortField("long", SortField.Type.LONG, true),
+                  new SortField("float", SortField.Type.FLOAT, true),
+                  new SortField("double", SortField.Type.DOUBLE, true),
+                  new SortField("bytes", SortField.Type.STRING, true),
+                  new SortField("bytesval", SortField.Type.STRING_VAL, true),
+                  SortField.FIELD_SCORE,
+                  SortField.FIELD_DOC,
+                }));
 
     // Also test missing first / last for the "string" sorts:
-    for(String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
-      for(int rev=0;rev<2;rev++) {
+    for (String field : new String[] {"bytes", "sortedbytesdocvalues"}) {
+      for (int rev = 0; rev < 2; rev++) {
         boolean reversed = rev == 0;
         SortField sf = new SortField(field, SortField.Type.STRING, reversed);
         sf.setMissingValue(SortField.STRING_FIRST);
@@ -86,8 +85,8 @@ public class TestSearchAfter extends LuceneTestCase {
     }
 
     // Also test missing first / last for the "string_val" sorts:
-    for(String field : new String[] {"sortedbytesdocvaluesval", "straightbytesdocvalues"}) {
-      for(int rev=0;rev<2;rev++) {
+    for (String field : new String[] {"sortedbytesdocvaluesval", "straightbytesdocvalues"}) {
+      for (int rev = 0; rev < 2; rev++) {
         boolean reversed = rev == 0;
         SortField sf = new SortField(field, SortField.Type.STRING_VAL, reversed);
         sf.setMissingValue(SortField.STRING_FIRST);
@@ -100,7 +99,7 @@ public class TestSearchAfter extends LuceneTestCase {
     }
 
     int limit = allSortFields.size();
-    for(int i=0;i<limit;i++) {
+    for (int i = 0; i < limit; i++) {
       SortField sf = allSortFields.get(i);
       if (sf.getType() == SortField.Type.INT) {
         SortField sf2 = new SortField(sf.getField(), SortField.Type.INT, sf.getReverse());
@@ -135,15 +134,19 @@ public class TestSearchAfter extends LuceneTestCase {
       fields.add(new NumericDocValuesField("long", r.nextLong()));
       fields.add(new FloatDocValuesField("float", r.nextFloat()));
       fields.add(new DoubleDocValuesField("double", r.nextDouble()));
-      fields.add(new SortedDocValuesField("bytes", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
-      fields.add(new BinaryDocValuesField("bytesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(
+          new SortedDocValuesField(
+              "bytes", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
+      fields.add(
+          new BinaryDocValuesField(
+              "bytesval", new BytesRef(TestUtil.randomRealisticUnicodeString(random()))));
 
       Document document = new Document();
-      document.add(new StoredField("id", ""+i));
+      document.add(new StoredField("id", "" + i));
       if (VERBOSE) {
         System.out.println("  add doc id=" + i);
       }
-      for(Field field : fields) {
+      for (Field field : fields) {
         // So we are sometimes missing that field:
         if (random().nextInt(5) != 4) {
           document.add(field);
@@ -173,7 +176,7 @@ public class TestSearchAfter extends LuceneTestCase {
     dir.close();
     super.tearDown();
   }
-  
+
   public void testQueries() throws Exception {
     // because the first page has a null 'after', we get a normal collector.
     // so we need to run the test a few times to ensure we will collect multiple
@@ -193,17 +196,17 @@ public class TestSearchAfter extends LuceneTestCase {
     assertQuery(query, null);
     assertQuery(query, Sort.RELEVANCE);
     assertQuery(query, Sort.INDEXORDER);
-    for(SortField sortField : allSortFields) {
+    for (SortField sortField : allSortFields) {
       assertQuery(query, new Sort(new SortField[] {sortField}));
     }
-    for(int i=0;i<20;i++) {
+    for (int i = 0; i < 20; i++) {
       assertQuery(query, getRandomSort());
     }
   }
 
   Sort getRandomSort() {
     SortField[] sortFields = new SortField[TestUtil.nextInt(random(), 2, 7)];
-    for(int i=0;i<sortFields.length;i++) {
+    for (int i = 0; i < sortFields.length; i++) {
       sortFields[i] = allSortFields.get(random().nextInt(allSortFields.size()));
     }
     return new Sort(sortFields);
@@ -214,7 +217,15 @@ public class TestSearchAfter extends LuceneTestCase {
     TopDocs all;
     int pageSize = TestUtil.nextInt(random(), 1, maxDoc * 2);
     if (VERBOSE) {
-      System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
+      System.out.println(
+          "\nassertQuery "
+              + (iter++)
+              + ": query="
+              + query
+              + " sort="
+              + sort
+              + " pageSize="
+              + pageSize);
     }
     final boolean doScores;
     final TopDocsCollector<?> allCollector;
@@ -237,8 +248,14 @@ public class TestSearchAfter extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("  all.totalHits.value=" + all.totalHits.value);
       int upto = 0;
-      for(ScoreDoc scoreDoc : all.scoreDocs) {
-        System.out.println("    hit " + (upto++) + ": id=" + searcher.doc(scoreDoc.doc).get("id") + " " + scoreDoc);
+      for (ScoreDoc scoreDoc : all.scoreDocs) {
+        System.out.println(
+            "    hit "
+                + (upto++)
+                + ": id="
+                + searcher.doc(scoreDoc.doc).get("id")
+                + " "
+                + scoreDoc);
       }
     }
     int pageStart = 0;
@@ -256,9 +273,11 @@ public class TestSearchAfter extends LuceneTestCase {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
+          pagedCollector =
+              TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
         } else {
-          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
+          pagedCollector =
+              TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
         }
       }
       searcher.search(query, pagedCollector);

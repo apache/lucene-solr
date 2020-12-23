@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utility classes for working with token streams as graphs.
- */
+/** Utility classes for working with token streams as graphs. */
 package org.apache.lucene.util.graph;

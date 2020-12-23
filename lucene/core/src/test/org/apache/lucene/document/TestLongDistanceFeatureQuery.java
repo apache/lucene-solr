@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -55,8 +54,11 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
   public void testBasics() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     LongPoint point = new LongPoint("foo", 0L);
     doc.add(point);
@@ -85,17 +87,18 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
     TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(1, (float) (3f * (5. / (5. + 2.)))),
-            new ScoreDoc(2, (float) (3f * (5. / (5. + 2.))))
+          new ScoreDoc(1, (float) (3f * (5. / (5. + 2.)))),
+          new ScoreDoc(2, (float) (3f * (5. / (5. + 2.))))
         },
         topHits.scoreDocs);
 
@@ -106,13 +109,14 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     assertEquals(2, topHits.scoreDocs.length);
     CheckHits.checkExplanations(q, "", searcher);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(4, (float) (3f * (5. / (5. + 0.)))),
-            new ScoreDoc(2, (float) (3f * (5. / (5. + 1.))))
+          new ScoreDoc(4, (float) (3f * (5. / (5. + 0.)))),
+          new ScoreDoc(2, (float) (3f * (5. / (5. + 1.))))
         },
         topHits.scoreDocs);
-    
+
     reader.close();
     w.close();
     dir.close();
@@ -120,8 +124,11 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
   public void testOverUnderFlow() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     LongPoint point = new LongPoint("foo", 0L);
     doc.add(point);
@@ -150,17 +157,26 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, Long.MAX_VALUE - 1, 100);
     TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(3, (float) (3f * (100. / (100. + 1.)))),
-            new ScoreDoc(0, (float) (3f * (100. / (100. + Long.MAX_VALUE)))) // rounding makes the distance treated as if it was MAX_VALUE
+          new ScoreDoc(3, (float) (3f * (100. / (100. + 1.)))),
+          new ScoreDoc(
+              0,
+              (float)
+                  (3f
+                      * (100.
+                          / (100.
+                              + Long
+                                  .MAX_VALUE)))) // rounding makes the distance treated as if it was
+          // MAX_VALUE
         },
         topHits.scoreDocs);
 
@@ -171,13 +187,22 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     assertEquals(2, topHits.scoreDocs.length);
     CheckHits.checkExplanations(q, "", searcher);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(4, (float) (3f * (100. / (100. + 1.)))),
-            new ScoreDoc(0, (float) (3f * (100. / (100. + Long.MAX_VALUE)))) // rounding makes the distance treated as if it was MAX_VALUE
+          new ScoreDoc(4, (float) (3f * (100. / (100. + 1.)))),
+          new ScoreDoc(
+              0,
+              (float)
+                  (3f
+                      * (100.
+                          / (100.
+                              + Long
+                                  .MAX_VALUE)))) // rounding makes the distance treated as if it was
+          // MAX_VALUE
         },
         topHits.scoreDocs);
-    
+
     reader.close();
     w.close();
     dir.close();
@@ -186,7 +211,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
   public void testMissingField() throws IOException {
     IndexReader reader = new MultiReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
     TopDocs topHits = searcher.search(q, 2);
     assertEquals(0, topHits.totalHits.value);
@@ -194,8 +219,11 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
   public void testMissingValue() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     LongPoint point = new LongPoint("foo", 0L);
     doc.add(point);
@@ -214,17 +242,18 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
     TopScoreDocCollector collector = TopScoreDocCollector.create(3, null, 1);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(2, (float) (3f * (5. / (5. + 3.)))),
-            new ScoreDoc(0, (float) (3f * (5. / (5. + 7.))))
+          new ScoreDoc(2, (float) (3f * (5. / (5. + 3.)))),
+          new ScoreDoc(0, (float) (3f * (5. / (5. + 7.))))
         },
         topHits.scoreDocs);
 
@@ -237,8 +266,11 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
   public void testMultiValued() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
 
     Document doc = new Document();
     for (long v : new long[] {3, 1000, Long.MAX_VALUE}) {
@@ -262,7 +294,7 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     w.addDocument(doc);
 
     doc = new Document();
-    for (long v : new long[] { -1 }) {
+    for (long v : new long[] {-1}) {
       doc.add(new LongPoint("foo", v));
       doc.add(new SortedNumericDocValuesField("foo", v));
     }
@@ -277,17 +309,18 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
     DirectoryReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     Query q = LongPoint.newDistanceFeatureQuery("foo", 3, 10, 5);
     TopScoreDocCollector collector = TopScoreDocCollector.create(2, null, 1);
     searcher.search(q, collector);
     TopDocs topHits = collector.topDocs();
     assertEquals(2, topHits.scoreDocs.length);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(1, (float) (3f * (5. / (5. + 2.)))),
-            new ScoreDoc(2, (float) (3f * (5. / (5. + 2.))))
+          new ScoreDoc(1, (float) (3f * (5. / (5. + 2.)))),
+          new ScoreDoc(2, (float) (3f * (5. / (5. + 2.))))
         },
         topHits.scoreDocs);
 
@@ -298,13 +331,14 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
     assertEquals(2, topHits.scoreDocs.length);
     CheckHits.checkExplanations(q, "", searcher);
 
-    CheckHits.checkEqual(q,
+    CheckHits.checkEqual(
+        q,
         new ScoreDoc[] {
-            new ScoreDoc(4, (float) (3f * (5. / (5. + 0.)))),
-            new ScoreDoc(2, (float) (3f * (5. / (5. + 1.))))
+          new ScoreDoc(4, (float) (3f * (5. / (5. + 0.)))),
+          new ScoreDoc(2, (float) (3f * (5. / (5. + 1.))))
         },
         topHits.scoreDocs);
-    
+
     reader.close();
     w.close();
     dir.close();
@@ -312,8 +346,9 @@ public class TestLongDistanceFeatureQuery extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    IndexWriter w =
+        new IndexWriter(
+            dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     LongPoint point = new LongPoint("foo", 0L);
     doc.add(point);

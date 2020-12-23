@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.FileChannel;
@@ -25,14 +24,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
-
 import org.apache.lucene.mockfile.FilterFileChannel;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.LeakFS;
 
-/**
- * Tests NIOFSDirectory
- */
+/** Tests NIOFSDirectory */
 public class TestNIOFSDirectory extends BaseDirectoryTestCase {
 
   @Override
@@ -42,25 +38,28 @@ public class TestNIOFSDirectory extends BaseDirectoryTestCase {
 
   public void testHandleExceptionInConstructor() throws Exception {
     Path path = createTempDir().toRealPath();
-    final LeakFS leakFS = new LeakFS(path.getFileSystem()) {
-      @Override
-      public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options,
-                                        FileAttribute<?>... attrs) throws IOException {
-        return new FilterFileChannel(super.newFileChannel(path, options, attrs)) {
+    final LeakFS leakFS =
+        new LeakFS(path.getFileSystem()) {
           @Override
-          public long size() throws IOException {
-            throw new IOException("simulated");
+          public FileChannel newFileChannel(
+              Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+              throws IOException {
+            return new FilterFileChannel(super.newFileChannel(path, options, attrs)) {
+              @Override
+              public long size() throws IOException {
+                throw new IOException("simulated");
+              }
+            };
           }
         };
-      }
-    };
     FileSystem fs = leakFS.getFileSystem(URI.create("file:///"));
     Path wrapped = new FilterPath(path, fs);
     try (Directory dir = new NIOFSDirectory(wrapped)) {
       try (IndexOutput out = dir.createOutput("test.bin", IOContext.DEFAULT)) {
         out.writeString("hello");
       }
-      final IOException error = expectThrows(IOException.class, () -> dir.openInput("test.bin", IOContext.DEFAULT));
+      final IOException error =
+          expectThrows(IOException.class, () -> dir.openInput("test.bin", IOContext.DEFAULT));
       assertEquals("simulated", error.getMessage());
     }
   }

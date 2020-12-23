@@ -25,5 +25,4 @@ public class TestFastLZ4 extends LZ4TestCase {
     LZ4.HashTable hashTable = new LZ4.FastCompressionHashTable();
     return new AssertingHashTable(hashTable);
   }
-
 }

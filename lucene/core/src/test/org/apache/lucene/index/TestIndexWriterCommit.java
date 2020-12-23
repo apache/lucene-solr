@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,46 +40,46 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    * these docs until writer is closed.
    */
   public void testCommitOnClose() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      for (int i = 0; i < 14; i++) {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    for (int i = 0; i < 14; i++) {
+      TestIndexWriter.addDoc(writer);
+    }
+    writer.close();
+
+    Term searchTerm = new Term("content", "aaa");
+    DirectoryReader reader = DirectoryReader.open(dir);
+    IndexSearcher searcher = newSearcher(reader);
+    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
+    assertEquals("first number of hits", 14, hits.length);
+    reader.close();
+
+    reader = DirectoryReader.open(dir);
+
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 11; j++) {
         TestIndexWriter.addDoc(writer);
       }
-      writer.close();
-
-      Term searchTerm = new Term("content", "aaa");
-      DirectoryReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
-      assertEquals("first number of hits", 14, hits.length);
-      reader.close();
-
-      reader = DirectoryReader.open(dir);
-
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      for(int i=0;i<3;i++) {
-        for(int j=0;j<11;j++) {
-          TestIndexWriter.addDoc(writer);
-        }
-        IndexReader r = DirectoryReader.open(dir);
-        searcher = newSearcher(r);
-        hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
-        assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
-        r.close();
-        assertTrue("reader should have still been current", reader.isCurrent());
-      }
-
-      // Now, close the writer:
-      writer.close();
-      assertFalse("reader should not be current now", reader.isCurrent());
-
       IndexReader r = DirectoryReader.open(dir);
       searcher = newSearcher(r);
       hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
-      assertEquals("reader did not see changes after writer was closed", 47, hits.length);
+      assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
       r.close();
-      reader.close();
-      dir.close();
+      assertTrue("reader should have still been current", reader.isCurrent());
+    }
+
+    // Now, close the writer:
+    writer.close();
+    assertFalse("reader should not be current now", reader.isCurrent());
+
+    IndexReader r = DirectoryReader.open(dir);
+    searcher = newSearcher(r);
+    hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
+    assertEquals("reader did not see changes after writer was closed", 47, hits.length);
+    r.close();
+    reader.close();
+    dir.close();
   }
 
   /*
@@ -94,8 +92,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    */
   public void testCommitOnCloseAbort() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                .setMaxBufferedDocs(10));
+    IndexWriter writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(10));
     for (int i = 0; i < 14; i++) {
       TestIndexWriter.addDoc(writer);
     }
@@ -108,10 +107,13 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals("first number of hits", 14, hits.length);
     reader.close();
 
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                    .setOpenMode(OpenMode.APPEND)
-                                    .setMaxBufferedDocs(10));
-    for(int j=0;j<17;j++) {
+    writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setOpenMode(OpenMode.APPEND)
+                .setMaxBufferedDocs(10));
+    for (int j = 0; j < 17; j++) {
       TestIndexWriter.addDoc(writer);
     }
     // Delete all docs:
@@ -136,12 +138,15 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // Now make sure we can re-open the index, add docs,
     // and all is good:
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                    .setOpenMode(OpenMode.APPEND)
-                                    .setMaxBufferedDocs(10));
+    writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setOpenMode(OpenMode.APPEND)
+                .setMaxBufferedDocs(10));
 
-    for(int i=0;i<12;i++) {
-      for(int j=0;j<17;j++) {
+    for (int i = 0; i < 12; i++) {
+      for (int j = 0; j < 17; j++) {
         TestIndexWriter.addDoc(writer);
       }
       IndexReader r = DirectoryReader.open(dir);
@@ -183,32 +188,35 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Analyzer analyzer;
     if (random().nextBoolean()) {
       // no payloads
-     analyzer = new Analyzer() {
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-          return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
-        }
-      };
+      analyzer =
+          new Analyzer() {
+            @Override
+            public TokenStreamComponents createComponents(String fieldName) {
+              return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
+            }
+          };
     } else {
       // fixed length payloads
       final int length = random().nextInt(200);
-      analyzer = new Analyzer() {
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-          Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-          return new TokenStreamComponents(tokenizer, new MockFixedLengthPayloadFilter(random(), tokenizer, length));
-        }
-      };
+      analyzer =
+          new Analyzer() {
+            @Override
+            public TokenStreamComponents createComponents(String fieldName) {
+              Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
+              return new TokenStreamComponents(
+                  tokenizer, new MockFixedLengthPayloadFilter(random(), tokenizer, length));
+            }
+          };
     }
-    
-    IndexWriter writer  = new IndexWriter(
-        dir,
-        newIndexWriterConfig(analyzer)
-            .setMaxBufferedDocs(10)
-            .setReaderPooling(false)
-            .setMergePolicy(newLogMergePolicy(10))
-    );
-    for(int j=0;j<30;j++) {
+
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(10)
+                .setReaderPooling(false)
+                .setMergePolicy(newLogMergePolicy(10)));
+    for (int j = 0; j < 30; j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
     writer.close();
@@ -216,17 +224,17 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     dir.setTrackDiskUsage(true);
     long startDiskUsage = dir.getMaxUsedSizeInBytes();
-    writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(analyzer)
-            .setOpenMode(OpenMode.APPEND)
-            .setMaxBufferedDocs(10)
-            .setMergeScheduler(new SerialMergeScheduler())
-            .setReaderPooling(false)
-            .setMergePolicy(newLogMergePolicy(10))
+    writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setOpenMode(OpenMode.APPEND)
+                .setMaxBufferedDocs(10)
+                .setMergeScheduler(new SerialMergeScheduler())
+                .setReaderPooling(false)
+                .setMergePolicy(newLogMergePolicy(10)));
 
-    );
-    for(int j=0;j<1470;j++) {
+    for (int j = 0; j < 1470; j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
     long midDiskUsage = dir.getMaxUsedSizeInBytes();
@@ -243,14 +251,28 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // transient usage.  If something is wrong w/ deleter
     // and it doesn't delete intermediate segments then it
     // will exceed this 150X:
-    // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
-    assertTrue("writer used too much space while adding documents: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage + " max=" + (startDiskUsage*150),
-               midDiskUsage < 150*startDiskUsage);
-    assertTrue("writer used too much space after close: endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage + " max=" + (startDiskUsage*150),
-               endDiskUsage < 150*startDiskUsage);
+    // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " +
+    // endDiskUsage);
+    assertTrue(
+        "writer used too much space while adding documents: mid="
+            + midDiskUsage
+            + " start="
+            + startDiskUsage
+            + " end="
+            + endDiskUsage
+            + " max="
+            + (startDiskUsage * 150),
+        midDiskUsage < 150 * startDiskUsage);
+    assertTrue(
+        "writer used too much space after close: endDiskUsage="
+            + endDiskUsage
+            + " startDiskUsage="
+            + startDiskUsage
+            + " max="
+            + (startDiskUsage * 150),
+        endDiskUsage < 150 * startDiskUsage);
     dir.close();
   }
-
 
   /*
    * Verify that calling forceMerge when writer is open for
@@ -259,19 +281,20 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    */
   public void testCommitOnCloseForceMerge() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-            .setMaxBufferedDocs(10)
-            .setMergePolicy(newLogMergePolicy(10))
-    );
-    for(int j=0;j<17;j++) {
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(10)
+                .setMergePolicy(newLogMergePolicy(10)));
+    for (int j = 0; j < 17; j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
     writer.close();
 
-    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                     .setOpenMode(OpenMode.APPEND));
+    writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
 
     // Open a reader before closing (commiting) the writer:
@@ -296,8 +319,9 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: do real full merge");
     }
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                    .setOpenMode(OpenMode.APPEND));
+    writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
     writer.close();
 
@@ -314,7 +338,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   // LUCENE-2095: make sure with multiple threads commit
   // doesn't return until all changes are in fact in the
   // index
@@ -322,49 +346,53 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     final int NUM_THREADS = 5;
     final double RUN_SEC = 0.5;
     final Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                                       .setMergePolicy(newLogMergePolicy()));
+    final RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     TestUtil.reduceOpenFiles(w.w);
     w.commit();
     final AtomicBoolean failed = new AtomicBoolean();
     Thread[] threads = new Thread[NUM_THREADS];
-    final long endTime = System.currentTimeMillis()+((long) (RUN_SEC*1000));
-    for(int i=0;i<NUM_THREADS;i++) {
+    final long endTime = System.currentTimeMillis() + ((long) (RUN_SEC * 1000));
+    for (int i = 0; i < NUM_THREADS; i++) {
       final int finalI = i;
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              final Document doc = new Document();
-              DirectoryReader r = DirectoryReader.open(dir);
-              Field f = newStringField("f", "", Field.Store.NO);
-              doc.add(f);
-              int count = 0;
-              do {
-                if (failed.get()) break;
-                for(int j=0;j<10;j++) {
-                  final String s = finalI + "_" + String.valueOf(count++);
-                  f.setStringValue(s);
-                  w.addDocument(doc);
-                  w.commit();
-                  DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-                  assertNotNull(r2);
-                  assertTrue(r2 != r);
-                  r.close();
-                  r = r2;
-                  assertEquals("term=f:" + s + "; r=" + r, 1, r.docFreq(new Term("f", s)));
-                }
-              } while(System.currentTimeMillis() < endTime);
-              r.close();
-            } catch (Throwable t) {
-              failed.set(true);
-              throw new RuntimeException(t);
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                final Document doc = new Document();
+                DirectoryReader r = DirectoryReader.open(dir);
+                Field f = newStringField("f", "", Field.Store.NO);
+                doc.add(f);
+                int count = 0;
+                do {
+                  if (failed.get()) break;
+                  for (int j = 0; j < 10; j++) {
+                    final String s = finalI + "_" + String.valueOf(count++);
+                    f.setStringValue(s);
+                    w.addDocument(doc);
+                    w.commit();
+                    DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+                    assertNotNull(r2);
+                    assertTrue(r2 != r);
+                    r.close();
+                    r = r2;
+                    assertEquals("term=f:" + s + "; r=" + r, 1, r.docFreq(new Term("f", s)));
+                  }
+                } while (System.currentTimeMillis() < endTime);
+                r.close();
+              } catch (Throwable t) {
+                failed.set(true);
+                throw new RuntimeException(t);
+              }
             }
-          }
-        };
+          };
       threads[i].start();
     }
-    for(int i=0;i<NUM_THREADS;i++) {
+    for (int i = 0; i < NUM_THREADS; i++) {
       threads[i].join();
     }
     assertFalse(failed.get());
@@ -376,16 +404,15 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   public void testForceCommit() throws IOException {
     Directory dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-            .setMaxBufferedDocs(2)
-            .setMergePolicy(newLogMergePolicy(5))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy(5)));
     writer.commit();
 
-    for (int i = 0; i < 23; i++)
-      TestIndexWriter.addDoc(writer);
+    for (int i = 0; i < 23; i++) TestIndexWriter.addDoc(writer);
 
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
@@ -396,8 +423,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(23, reader2.numDocs());
     reader.close();
 
-    for (int i = 0; i < 17; i++)
-      TestIndexWriter.addDoc(writer);
+    for (int i = 0; i < 17; i++) TestIndexWriter.addDoc(writer);
     assertEquals(23, reader2.numDocs());
     reader2.close();
     reader = DirectoryReader.open(dir);
@@ -411,17 +437,20 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
+
   public void testFutureCommit() throws Exception {
     Directory dir = newDirectory();
 
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                           .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     Document doc = new Document();
     w.addDocument(doc);
 
     // commit to "first"
-    Map<String,String> commitData = new HashMap<>();
+    Map<String, String> commitData = new HashMap<>();
     commitData.put("tag", "first");
     w.setLiveCommitData(commitData.entrySet());
     w.commit();
@@ -434,7 +463,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // open "first" with IndexWriter
     IndexCommit commit = null;
-    for(IndexCommit c : DirectoryReader.listCommits(dir)) {
+    for (IndexCommit c : DirectoryReader.listCommits(dir)) {
       if (c.getUserData().get("tag").equals("first")) {
         commit = c;
         break;
@@ -443,9 +472,12 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     assertNotNull(commit);
 
-    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                               .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE)
-                               .setIndexCommit(commit));
+    w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE)
+                .setIndexCommit(commit));
 
     assertEquals(1, w.getDocStats().numDocs);
 
@@ -457,7 +489,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     // make sure "second" commit is still there
     commit = null;
-    for(IndexCommit c : DirectoryReader.listCommits(dir)) {
+    for (IndexCommit c : DirectoryReader.listCommits(dir)) {
       if (c.getUserData().get("tag").equals("second")) {
         commit = c;
         break;
@@ -468,37 +500,38 @@ public class TestIndexWriterCommit extends LuceneTestCase {
 
     dir.close();
   }
-  
+
   public void testZeroCommits() throws Exception {
     // Tests that if we don't call commit(), the directory has 0 commits. This has
     // changed since LUCENE-2386, where before IW would always commit on a fresh
     // new index.
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    expectThrows(IndexNotFoundException.class, () -> {
-      DirectoryReader.listCommits(dir);
-    });
+    expectThrows(
+        IndexNotFoundException.class,
+        () -> {
+          DirectoryReader.listCommits(dir);
+        });
 
     // No changes still should generate a commit, because it's a new index.
     writer.close();
     assertEquals("expected 1 commits!", 1, DirectoryReader.listCommits(dir).size());
     dir.close();
   }
-  
+
   // LUCENE-1274: test writer.prepareCommit()
   public void testPrepareCommit() throws IOException {
     Directory dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-            .setMaxBufferedDocs(2)
-            .setMergePolicy(newLogMergePolicy(5))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy(5)));
     writer.commit();
 
-    for (int i = 0; i < 23; i++)
-      TestIndexWriter.addDoc(writer);
+    for (int i = 0; i < 23; i++) TestIndexWriter.addDoc(writer);
 
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(0, reader.numDocs());
@@ -518,8 +551,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader.close();
     reader2.close();
 
-    for (int i = 0; i < 17; i++)
-      TestIndexWriter.addDoc(writer);
+    for (int i = 0; i < 17; i++) TestIndexWriter.addDoc(writer);
 
     assertEquals(23, reader3.numDocs());
     reader3.close();
@@ -545,12 +577,12 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   public void testPrepareCommitRollback() throws IOException {
     Directory dir = newDirectory();
 
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-            .setMaxBufferedDocs(2)
-            .setMergePolicy(newLogMergePolicy(5))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy(5)));
     writer.commit();
 
     for (int i = 0; i < 23; i++) {
@@ -613,14 +645,14 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   // LUCENE-1382
   public void testCommitUserData() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                           .setMaxBufferedDocs(2));
-    for(int j=0;j<17;j++)
-      TestIndexWriter.addDoc(w);
+    IndexWriter w =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    for (int j = 0; j < 17; j++) TestIndexWriter.addDoc(w);
     w.close();
 
     DirectoryReader r = DirectoryReader.open(dir);
@@ -628,11 +660,11 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(0, r.getIndexCommit().getUserData().size());
     r.close();
 
-    w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                               .setMaxBufferedDocs(2));
-    for(int j=0;j<17;j++)
-      TestIndexWriter.addDoc(w);
-    Map<String,String> data = new HashMap<>();
+    w =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    for (int j = 0; j < 17; j++) TestIndexWriter.addDoc(w);
+    Map<String, String> data = new HashMap<>();
     data.put("label", "test1");
     w.setLiveCommitData(data.entrySet());
     w.close();
@@ -654,9 +686,11 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     w.addDocument(new Document());
 
     w.prepareCommit();
-    expectThrows(IllegalStateException.class, () -> {
-      w.close();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          w.close();
+        });
     w.commit();
     w.close();
 
@@ -672,7 +706,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     w.addDocument(new Document());
 
-    final Map<String,String> commitData = new HashMap<>();
+    final Map<String, String> commitData = new HashMap<>();
     commitData.put("foo", "bar");
 
     // make sure "foo" / "bar" doesn't take
@@ -688,7 +722,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     assertEquals(1, commits.size());
 
     IndexCommit commit = commits.get(0);
-    Map<String,String> data = commit.getUserData();
+    Map<String, String> data = commit.getUserData();
     assertEquals(1, data.size());
     assertEquals("baz", data.get("boo"));
     dir.close();

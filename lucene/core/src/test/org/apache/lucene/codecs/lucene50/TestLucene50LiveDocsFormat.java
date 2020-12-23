@@ -26,5 +26,4 @@ public class TestLucene50LiveDocsFormat extends BaseLiveDocsFormatTestCase {
   protected Codec getCodec() {
     return TestUtil.getDefaultCodec();
   }
-
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,20 +32,21 @@ public class TestFlex extends LuceneTestCase {
 
     final int DOC_COUNT = 177;
 
-    IndexWriter w = new IndexWriter(
-        d,
-        new IndexWriterConfig(new MockAnalyzer(random())).
-            setMaxBufferedDocs(7).setMergePolicy(newLogMergePolicy())
-    );
+    IndexWriter w =
+        new IndexWriter(
+            d,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(7)
+                .setMergePolicy(newLogMergePolicy()));
 
-    for(int iter=0;iter<2;iter++) {
+    for (int iter = 0; iter < 2; iter++) {
       if (iter == 0) {
         Document doc = new Document();
         doc.add(newTextField("field1", "this is field1", Field.Store.NO));
         doc.add(newTextField("field2", "this is field2", Field.Store.NO));
         doc.add(newTextField("field3", "aaa", Field.Store.NO));
         doc.add(newTextField("field4", "bbb", Field.Store.NO));
-        for(int i=0;i<DOC_COUNT;i++) {
+        for (int i = 0; i < DOC_COUNT; i++) {
           w.addDocument(doc);
         }
       } else {
@@ -54,7 +54,7 @@ public class TestFlex extends LuceneTestCase {
       }
 
       IndexReader r = w.getReader();
-      
+
       TermsEnum terms = MultiTerms.getTerms(r, "field3").iterator();
       assertEquals(TermsEnum.SeekStatus.END, terms.seekCeil(new BytesRef("abc")));
       r.close();
@@ -66,8 +66,11 @@ public class TestFlex extends LuceneTestCase {
 
   public void testTermOrd() throws Exception {
     Directory d = newDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random()))
-                                         .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
+    IndexWriter w =
+        new IndexWriter(
+            d,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
     Document doc = new Document();
     doc.add(newTextField("f", "a b c", Field.Store.NO));
     w.addDocument(doc);
@@ -85,4 +88,3 @@ public class TestFlex extends LuceneTestCase {
     d.close();
   }
 }
-

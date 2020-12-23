@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,16 +27,18 @@ public class OutputStreamIndexOutput extends IndexOutput {
 
   private final CRC32 crc = new CRC32();
   private final BufferedOutputStream os;
-  
+
   private long bytesWritten = 0L;
   private boolean flushedOnClose = false;
 
   /**
-   * Creates a new {@link OutputStreamIndexOutput} with the given buffer size. 
+   * Creates a new {@link OutputStreamIndexOutput} with the given buffer size.
+   *
    * @param bufferSize the buffer size in bytes used to buffer writes internally.
    * @throws IllegalArgumentException if the given buffer size is less or equal to <code>0</code>
    */
-  public OutputStreamIndexOutput(String resourceDescription, String name, OutputStream out, int bufferSize) {
+  public OutputStreamIndexOutput(
+      String resourceDescription, String name, OutputStream out, int bufferSize) {
     super(resourceDescription, name);
     this.os = new BufferedOutputStream(new CheckedOutputStream(out, crc), bufferSize);
   }
@@ -47,7 +48,7 @@ public class OutputStreamIndexOutput extends IndexOutput {
     os.write(b);
     bytesWritten++;
   }
-  
+
   @Override
   public final void writeBytes(byte[] b, int offset, int length) throws IOException {
     os.write(b, offset, length);
@@ -69,7 +70,7 @@ public class OutputStreamIndexOutput extends IndexOutput {
       }
     }
   }
-  
+
   @Override
   public final long getFilePointer() {
     return bytesWritten;

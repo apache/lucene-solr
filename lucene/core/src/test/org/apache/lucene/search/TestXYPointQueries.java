@@ -22,7 +22,7 @@ import org.apache.lucene.geo.BaseXYPointTestCase;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 
-public class TestXYPointQueries extends BaseXYPointTestCase  {
+public class TestXYPointQueries extends BaseXYPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, float x, float y) {

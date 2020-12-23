@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 
 import org.apache.lucene.util.Accountable;
@@ -24,12 +23,11 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/**
- * Utility class to compress integers into a {@link LongValues} instance.
- */
+/** Utility class to compress integers into a {@link LongValues} instance. */
 public class PackedLongValues extends LongValues implements Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PackedLongValues.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(PackedLongValues.class);
 
   static final int DEFAULT_PAGE_SIZE = 1024;
   static final int MIN_PAGE_SIZE = 64;
@@ -38,7 +36,8 @@ public class PackedLongValues extends LongValues implements Accountable {
   static final int MAX_PAGE_SIZE = 1 << 20;
 
   /** Return a new {@link Builder} that will compress efficiently positive integers. */
-  public static PackedLongValues.Builder packedBuilder(int pageSize, float acceptableOverheadRatio) {
+  public static PackedLongValues.Builder packedBuilder(
+      int pageSize, float acceptableOverheadRatio) {
     return new PackedLongValues.Builder(pageSize, acceptableOverheadRatio);
   }
 
@@ -47,9 +46,12 @@ public class PackedLongValues extends LongValues implements Accountable {
     return packedBuilder(DEFAULT_PAGE_SIZE, acceptableOverheadRatio);
   }
 
-  /** Return a new {@link Builder} that will compress efficiently integers that
-   *  are close to each other. */
-  public static PackedLongValues.Builder deltaPackedBuilder(int pageSize, float acceptableOverheadRatio) {
+  /**
+   * Return a new {@link Builder} that will compress efficiently integers that are close to each
+   * other.
+   */
+  public static PackedLongValues.Builder deltaPackedBuilder(
+      int pageSize, float acceptableOverheadRatio) {
     return new DeltaPackedLongValues.Builder(pageSize, acceptableOverheadRatio);
   }
 
@@ -58,9 +60,12 @@ public class PackedLongValues extends LongValues implements Accountable {
     return deltaPackedBuilder(DEFAULT_PAGE_SIZE, acceptableOverheadRatio);
   }
 
-  /** Return a new {@link Builder} that will compress efficiently integers that
-   *  would be a monotonic function of their index. */
-  public static PackedLongValues.Builder monotonicBuilder(int pageSize, float acceptableOverheadRatio) {
+  /**
+   * Return a new {@link Builder} that will compress efficiently integers that would be a monotonic
+   * function of their index.
+   */
+  public static PackedLongValues.Builder monotonicBuilder(
+      int pageSize, float acceptableOverheadRatio) {
     return new MonotonicLongValues.Builder(pageSize, acceptableOverheadRatio);
   }
 
@@ -74,7 +79,8 @@ public class PackedLongValues extends LongValues implements Accountable {
   private final long size;
   private final long ramBytesUsed;
 
-  PackedLongValues(int pageShift, int pageMask, PackedInts.Reader[] values, long size, long ramBytesUsed) {
+  PackedLongValues(
+      int pageShift, int pageMask, PackedInts.Reader[] values, long size, long ramBytesUsed) {
     this.pageShift = pageShift;
     this.pageMask = pageMask;
     this.values = values;
@@ -119,7 +125,7 @@ public class PackedLongValues extends LongValues implements Accountable {
   }
 
   /** An iterator over long values. */
-  final public class Iterator {
+  public final class Iterator {
 
     final long[] currentValues;
     int vOff, pOff;
@@ -156,14 +162,14 @@ public class PackedLongValues extends LongValues implements Accountable {
       }
       return result;
     }
-
   }
 
   /** A Builder for a {@link PackedLongValues} instance. */
   public static class Builder implements Accountable {
 
     private static final int INITIAL_PAGE_COUNT = 16;
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Builder.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(Builder.class);
 
     final int pageShift, pageMask;
     final float acceptableOverheadRatio;
@@ -184,16 +190,22 @@ public class PackedLongValues extends LongValues implements Accountable {
       valuesOff = 0;
       pendingOff = 0;
       size = 0;
-      ramBytesUsed = baseRamBytesUsed() + RamUsageEstimator.sizeOf(pending) + RamUsageEstimator.shallowSizeOf(values);
+      ramBytesUsed =
+          baseRamBytesUsed()
+              + RamUsageEstimator.sizeOf(pending)
+              + RamUsageEstimator.shallowSizeOf(values);
     }
 
-    /** Build a {@link PackedLongValues} instance that contains values that
-     *  have been added to this builder. This operation is destructive. */
+    /**
+     * Build a {@link PackedLongValues} instance that contains values that have been added to this
+     * builder. This operation is destructive.
+     */
     public PackedLongValues build() {
       finish();
       pending = null;
       final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
-      final long ramBytesUsed = PackedLongValues.BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(values);
+      final long ramBytesUsed =
+          PackedLongValues.BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(values);
       return new PackedLongValues(pageShift, pageMask, values, size, ramBytesUsed);
     }
 
@@ -261,7 +273,8 @@ public class PackedLongValues extends LongValues implements Accountable {
         this.values[block] = new PackedInts.NullReader(numValues);
       } else {
         final int bitsRequired = minValue < 0 ? 64 : PackedInts.bitsRequired(maxValue);
-        final PackedInts.Mutable mutable = PackedInts.getMutable(numValues, bitsRequired, acceptableOverheadRatio);
+        final PackedInts.Mutable mutable =
+            PackedInts.getMutable(numValues, bitsRequired, acceptableOverheadRatio);
         for (int i = 0; i < numValues; ) {
           i += mutable.set(i, values, i, numValues - i);
         }
@@ -274,7 +287,5 @@ public class PackedLongValues extends LongValues implements Accountable {
       values = ArrayUtil.growExact(values, newBlockCount);
       ramBytesUsed += RamUsageEstimator.shallowSizeOf(values);
     }
-
   }
-
 }

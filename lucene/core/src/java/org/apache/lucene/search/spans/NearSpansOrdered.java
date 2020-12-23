@@ -16,31 +16,34 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.List;
 
 /**
- * A Spans that is formed from the ordered subspans of a SpanNearQuery
- * where the subspans do not overlap and have a maximum slop between them.
- * <p>
- * The formed spans only contains minimum slop matches.<br>
- * The matching slop is computed from the distance(s) between
- * the non overlapping matching Spans.<br>
- * Successive matches are always formed from the successive Spans
- * of the SpanNearQuery.
- * <p>
- * The formed spans may contain overlaps when the slop is at least 1.
- * For example, when querying using
+ * A Spans that is formed from the ordered subspans of a SpanNearQuery where the subspans do not
+ * overlap and have a maximum slop between them.
+ *
+ * <p>The formed spans only contains minimum slop matches.<br>
+ * The matching slop is computed from the distance(s) between the non overlapping matching Spans.
+ * <br>
+ * Successive matches are always formed from the successive Spans of the SpanNearQuery.
+ *
+ * <p>The formed spans may contain overlaps when the slop is at least 1. For example, when querying
+ * using
+ *
  * <pre>t1 t2 t3</pre>
+ *
  * with slop at least 1, the fragment:
+ *
  * <pre>t1 t2 t1 t3 t2 t3</pre>
+ *
  * matches twice:
+ *
  * <pre>t1 t2 .. t3      </pre>
+ *
  * <pre>      t1 .. t2 t3</pre>
  *
- * Expert:
- * Only public for subclassing.  Most implementations should not need this class
+ * Expert: Only public for subclassing. Most implementations should not need this class
  */
 public class NearSpansOrdered extends ConjunctionSpans {
 
@@ -70,8 +73,7 @@ public class NearSpansOrdered extends ConjunctionSpans {
 
   private boolean unpositioned() {
     for (Spans span : subSpans) {
-      if (span.startPosition() != -1)
-        return false;
+      if (span.startPosition() != -1) return false;
     }
     return true;
   }
@@ -92,15 +94,15 @@ public class NearSpansOrdered extends ConjunctionSpans {
   }
 
   /**
-   * Order the subSpans within the same document by using nextStartPosition on all subSpans
-   * after the first as little as necessary.
-   * Return true when the subSpans could be ordered in this way,
+   * Order the subSpans within the same document by using nextStartPosition on all subSpans after
+   * the first as little as necessary. Return true when the subSpans could be ordered in this way,
    * otherwise at least one is exhausted in the current doc.
    */
   private boolean stretchToOrder() throws IOException {
     Spans prevSpans = subSpans[0];
     matchStart = prevSpans.startPosition();
-    assert prevSpans.startPosition() != NO_MORE_POSITIONS : "prevSpans no start position "+prevSpans;
+    assert prevSpans.startPosition() != NO_MORE_POSITIONS
+        : "prevSpans no start position " + prevSpans;
     assert prevSpans.endPosition() != NO_MORE_POSITIONS;
     matchWidth = 0;
     for (int i = 1; i < subSpans.length; i++) {
@@ -120,7 +122,7 @@ public class NearSpansOrdered extends ConjunctionSpans {
 
   private static int advancePosition(Spans spans, int position) throws IOException {
     if (spans instanceof SpanNearQuery.GapSpans) {
-      return ((SpanNearQuery.GapSpans)spans).skipToPosition(position);
+      return ((SpanNearQuery.GapSpans) spans).skipToPosition(position);
     }
     while (spans.startPosition() < position) {
       spans.nextStartPosition();
@@ -149,6 +151,4 @@ public class NearSpansOrdered extends ConjunctionSpans {
       span.collect(collector);
     }
   }
-
 }
-

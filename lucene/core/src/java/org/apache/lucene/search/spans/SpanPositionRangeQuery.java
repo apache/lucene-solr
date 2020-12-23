@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.search.spans;
 
-
-import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
-
 import java.io.IOException;
-
+import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 
 /**
  * Checks to see if the {@link #getMatch()} lies between a start and end position
  *
- * See {@link SpanFirstQuery} for a derivation that is optimized for the case where start position is 0.
+ * <p>See {@link SpanFirstQuery} for a derivation that is optimized for the case where start
+ * position is 0.
  */
 public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
   protected int start;
@@ -40,23 +38,21 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
   @Override
   protected AcceptStatus acceptPosition(Spans spans) throws IOException {
     assert spans.startPosition() != spans.endPosition();
-    AcceptStatus res = (spans.startPosition() >= end)
-        ? AcceptStatus.NO_MORE_IN_CURRENT_DOC
-        : (spans.startPosition() >= start && spans.endPosition() <= end)
-        ? AcceptStatus.YES : AcceptStatus.NO;
+    AcceptStatus res =
+        (spans.startPosition() >= end)
+            ? AcceptStatus.NO_MORE_IN_CURRENT_DOC
+            : (spans.startPosition() >= start && spans.endPosition() <= end)
+                ? AcceptStatus.YES
+                : AcceptStatus.NO;
     return res;
   }
 
-  /**
-   * @return The minimum position permitted in a match
-   */
+  /** @return The minimum position permitted in a match */
   public int getStart() {
     return start;
   }
 
-  /**
-   * @return the maximum end position permitted in a match.
-   */
+  /** @return the maximum end position permitted in a match. */
   public int getEnd() {
     return end;
   }
@@ -74,10 +70,10 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
 
   @Override
   public boolean equals(Object o) {
-    if (! super.equals(o)) {
+    if (!super.equals(o)) {
       return false;
     }
-    SpanPositionRangeQuery other = (SpanPositionRangeQuery)o;
+    SpanPositionRangeQuery other = (SpanPositionRangeQuery) o;
     return this.end == other.end && this.start == other.start;
   }
 
@@ -87,5 +83,4 @@ public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
     h = (h * 127) ^ start;
     return h;
   }
-
 }
