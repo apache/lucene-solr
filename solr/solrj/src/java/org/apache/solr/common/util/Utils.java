@@ -758,8 +758,9 @@ public class Utils {
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
+
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme,  boolean isV2) {
-    final int _offset = nodeName.indexOf("_");
+    final int _offset = nodeName.lastIndexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }

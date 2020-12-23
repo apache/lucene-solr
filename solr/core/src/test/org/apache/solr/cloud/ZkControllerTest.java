@@ -106,6 +106,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkStateReader.createClusterStateWatchersAndUpdate();
 
           // getBaseUrlForNodeName
+          assertEquals("http://zzz_xxx:1234/solr",
+              zkStateReader.getBaseUrlForNodeName("zzz_xxx:1234_solr"));
           assertEquals("http://zzz.xxx:1234/solr",
               zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
           assertEquals("http://xxx:99",
