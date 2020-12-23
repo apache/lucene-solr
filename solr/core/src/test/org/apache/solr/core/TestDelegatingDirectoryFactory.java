@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.util.function.Function;
 
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.*;
 
 /**
  * Tests {@link DelegatingDirectoryFactory}.
