@@ -17,15 +17,24 @@
 
 package org.apache.solr.prometheus.exporter;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPathConstants;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.thisptr.jackson.jq.JsonQuery;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.prometheus.utils.Helpers;
 import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
+import static org.apache.solr.prometheus.exporter.MetricsConfiguration.xpathFactory;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MetricsQueryTemplateTest {
@@ -67,6 +76,52 @@ public class MetricsQueryTemplateTest {
       assertTrue(maybeMatcher.isPresent());
       String jsonQuery = template.applyTemplate(maybeMatcher.get());
       assertEquals(expectedApply[m], jsonQuery);
+    }
+  }
+
+  @Test
+  public void testQueryMetricTemplate() throws Exception {
+    Document config =
+        DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(SolrTestCaseJ4.getFile("conf/test-config-with-templates.xml"));
+    NodeList jqTemplates =
+        (NodeList) (xpathFactory.newXPath()).evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
+    assertNotNull(jqTemplates);
+    assertTrue(jqTemplates.getLength() > 0);
+    MetricsQueryTemplate coreQueryTemplate = MetricsConfiguration.loadJqTemplates(jqTemplates).get("core-query");
+    assertNotNull(coreQueryTemplate);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    JsonNode parsedMetrics = objectMapper.readTree(SolrTestCaseJ4.getFile("query-metrics.json"));
+    String[] queryMetrics = new String[]{
+        "$jq:core-query(1minRate, endswith(\".distrib.requestTimes\"))",
+        "$jq:core-query(p75_ms, endswith(\".distrib.requestTimes\"))",
+        "$jq:core-query(mean_rate, endswith(\".distrib.requestTimes\"), meanRate)",
+        "$jq:core-query(local_5minRate, endswith(\".local.requestTimes\"), 5minRate)",
+        "$jq:core-query(local_median_ms, endswith(\".local.requestTimes\"), median_ms)",
+        "$jq:core-query(local_p95_ms, endswith(\".local.requestTimes\"), p95_ms)",
+        "$jq:core-query(local_count, endswith(\".local.requestTimes\"), count, COUNTER)"
+    };
+
+    double[] expectedMetrics = new double[]{
+        5.156897804421665,
+        1.31788,
+        0.0031956674240800156,
+        0.030666407244305586,
+        0.079579,
+        0.105268,
+        4712
+    };
+
+    for (int m = 0; m < queryMetrics.length; m++) {
+      Optional<Matcher> maybe = MetricsQueryTemplate.matches(queryMetrics[m]);
+      assertTrue(maybe.isPresent());
+      Matcher matcher = maybe.get();
+      JsonQuery jsonQuery = JsonQuery.compile(coreQueryTemplate.applyTemplate(matcher));
+      List<JsonNode> results = jsonQuery.apply(parsedMetrics);
+      assertNotNull(results);
+      assertTrue(results.size() == 1);
+      double value = results.get(0).get("value").doubleValue();
+      assertEquals(expectedMetrics[m], value, 0.0001);
     }
   }
 }

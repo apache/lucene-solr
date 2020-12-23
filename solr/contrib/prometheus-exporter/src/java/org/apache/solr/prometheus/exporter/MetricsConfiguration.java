@@ -108,11 +108,10 @@ public class MetricsConfiguration {
   public static MetricsConfiguration from(Document config) throws Exception {
     Node settings = getNode(config, "/config/settings");
 
-    Map<String,MetricsQueryTemplate> jqTemplatesMap = null;
-    NodeList jqTemplates = (NodeList)(xpathFactory.newXPath()).evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
-    if (jqTemplates.getLength() > 0) {
-      jqTemplatesMap = loadJqTemplates(jqTemplates);
-    }
+    NodeList jqTemplates =
+        (NodeList)(xpathFactory.newXPath()).evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
+    Map<String,MetricsQueryTemplate> jqTemplatesMap =
+        (jqTemplates != null && jqTemplates.getLength() > 0) ? loadJqTemplates(jqTemplates) : Collections.emptyMap();
 
     Node pingConfig = getNode(config, "/config/rules/ping");
     Node metricsConfig = getNode(config, "/config/rules/metrics");
@@ -158,7 +157,7 @@ public class MetricsConfiguration {
     return MetricsQuery.from(node, jqTemplatesMap);
   }
 
-  private static Map<String,MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
+  static Map<String,MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
     Map<String,MetricsQueryTemplate> map = new HashMap<>();
     for (int t=0; t < jqTemplates.getLength(); t++) {
       Node template = jqTemplates.item(t);

@@ -119,15 +119,15 @@ public class MetricsQuery {
         for (String jsonQuery : jsonQueries) {
 
           // does this query refer to a reusable jq template to reduce boilerplate in the config?
-          String stripWs = jsonQuery.replaceAll("\\s+", " ").trim();
-          if (stripWs.startsWith("$jq:")) {
-            Optional<Matcher> maybeMatcher = MetricsQueryTemplate.matches(stripWs);
+          final String jsonQueryCollapseWs = jsonQuery.replaceAll("\\s+", " ").trim();
+          if (jsonQueryCollapseWs.startsWith("$jq:")) {
+            Optional<Matcher> maybeMatcher = MetricsQueryTemplate.matches(jsonQueryCollapseWs);
             if (maybeMatcher.isPresent()) {
               Matcher matcher = maybeMatcher.get();
               String templateName = matcher.group("TEMPLATE");
               MetricsQueryTemplate template = jqTemplates.get(templateName);
               if (template == null) {
-                throw new IllegalStateException("jq template '"+matcher.group("TEMPLATE")+"' not found!");
+                throw new IllegalStateException("jq template '" + matcher.group("TEMPLATE") + "' not found!");
               }
 
               jsonQuery = template.applyTemplate(matcher);
