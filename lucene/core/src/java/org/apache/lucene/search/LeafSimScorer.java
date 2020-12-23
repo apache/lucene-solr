@@ -18,23 +18,19 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
-/**
- * {@link SimScorer} on a specific {@link LeafReader}.
- */
+/** {@link SimScorer} on a specific {@link LeafReader}. */
 public final class LeafSimScorer {
 
   private final SimScorer scorer;
   private final NumericDocValues norms;
 
-  /**
-   * Sole constructor: Score documents of {@code reader} with {@code scorer}.
-   */
-  public LeafSimScorer(SimScorer scorer, LeafReader reader, String field, boolean needsScores) throws IOException {
+  /** Sole constructor: Score documents of {@code reader} with {@code scorer}. */
+  public LeafSimScorer(SimScorer scorer, LeafReader reader, String field, boolean needsScores)
+      throws IOException {
     this.scorer = Objects.requireNonNull(scorer);
     norms = needsScores ? reader.getNormValues(field) : null;
   }
@@ -54,18 +50,23 @@ public final class LeafSimScorer {
     }
   }
 
-  /** Score the provided document assuming the given term document frequency.
-   *  This method must be called on non-decreasing sequences of doc ids.
-   *  @see SimScorer#score(float, long) */
+  /**
+   * Score the provided document assuming the given term document frequency. This method must be
+   * called on non-decreasing sequences of doc ids.
+   *
+   * @see SimScorer#score(float, long)
+   */
   public float score(int doc, float freq) throws IOException {
     return scorer.score(freq, getNormValue(doc));
   }
 
-  /** Explain the score for the provided document assuming the given term document frequency.
-   *  This method must be called on non-decreasing sequences of doc ids.
-   *  @see SimScorer#explain(Explanation, long) */
+  /**
+   * Explain the score for the provided document assuming the given term document frequency. This
+   * method must be called on non-decreasing sequences of doc ids.
+   *
+   * @see SimScorer#explain(Explanation, long)
+   */
   public Explanation explain(int doc, Explanation freqExpl) throws IOException {
     return scorer.explain(freqExpl, getNormValue(doc));
   }
-
 }

@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntRange;
 import org.apache.lucene.index.IndexReader;
@@ -25,9 +24,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Random testing for IntRange Queries.
- */
+/** Random testing for IntRange Queries. */
 public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "intRangeField";
 
@@ -59,7 +56,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     int[] max = new int[dimensions];
 
     int minV, maxV;
-    for (int d=0; d<dimensions; ++d) {
+    for (int d = 0; d < dimensions; ++d) {
       minV = nextIntInternal();
       maxV = nextIntInternal();
       min[d] = Math.min(minV, maxV);
@@ -70,27 +67,27 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
   @Override
   protected org.apache.lucene.document.IntRange newRangeField(Range r) {
-    return new IntRange(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
+    return new IntRange(FIELD_NAME, ((IntTestRange) r).min, ((IntTestRange) r).max);
   }
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return IntRange.newIntersectsQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
+    return IntRange.newIntersectsQuery(FIELD_NAME, ((IntTestRange) r).min, ((IntTestRange) r).max);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    return IntRange.newContainsQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
+    return IntRange.newContainsQuery(FIELD_NAME, ((IntTestRange) r).min, ((IntTestRange) r).max);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    return IntRange.newWithinQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
+    return IntRange.newWithinQuery(FIELD_NAME, ((IntTestRange) r).min, ((IntTestRange) r).max);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    return IntRange.newCrossesQuery(FIELD_NAME, ((IntTestRange)r).min, ((IntTestRange)r).max);
+    return IntRange.newCrossesQuery(FIELD_NAME, ((IntTestRange) r).min, ((IntTestRange) r).max);
   }
 
   /** Basic test */
@@ -141,14 +138,22 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(7, searcher.count(IntRange.newIntersectsQuery(FIELD_NAME,
-        new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(3, searcher.count(IntRange.newWithinQuery(FIELD_NAME,
-        new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(2, searcher.count(IntRange.newContainsQuery(FIELD_NAME,
-        new int[] {-11, -15}, new int[] {15, 20})));
-    assertEquals(4, searcher.count(IntRange.newCrossesQuery(FIELD_NAME,
-        new int[] {-11, -15}, new int[] {15, 20})));
+    assertEquals(
+        7,
+        searcher.count(
+            IntRange.newIntersectsQuery(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20})));
+    assertEquals(
+        3,
+        searcher.count(
+            IntRange.newWithinQuery(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20})));
+    assertEquals(
+        2,
+        searcher.count(
+            IntRange.newContainsQuery(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20})));
+    assertEquals(
+        4,
+        searcher.count(
+            IntRange.newCrossesQuery(FIELD_NAME, new int[] {-11, -15}, new int[] {15, 20})));
 
     reader.close();
     writer.close();
@@ -180,7 +185,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMin(int dim, Object val) {
-      int v = (Integer)val;
+      int v = (Integer) val;
       if (min[dim] < v) {
         max[dim] = v;
       } else {
@@ -195,7 +200,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMax(int dim, Object val) {
-      int v = (Integer)val;
+      int v = (Integer) val;
       if (max[dim] > v) {
         min[dim] = v;
       } else {
@@ -205,14 +210,14 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      IntTestRange o = (IntTestRange)other;
+      IntTestRange o = (IntTestRange) other;
       return Arrays.equals(min, o.min) && Arrays.equals(max, o.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      IntTestRange other = (IntTestRange)o;
-      for (int d=0; d<this.min.length; ++d) {
+      IntTestRange other = (IntTestRange) o;
+      for (int d = 0; d < this.min.length; ++d) {
         if (this.min[d] > other.max[d] || this.max[d] < other.min[d]) {
           // disjoint:
           return true;
@@ -223,8 +228,8 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range o) {
-      IntTestRange other = (IntTestRange)o;
-      for (int d=0; d<this.min.length; ++d) {
+      IntTestRange other = (IntTestRange) o;
+      for (int d = 0; d < this.min.length; ++d) {
         if ((this.min[d] >= other.min[d] && this.max[d] <= other.max[d]) == false) {
           // not within:
           return false;
@@ -236,7 +241,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected boolean contains(Range o) {
       IntTestRange other = (IntTestRange) o;
-      for (int d=0; d<this.min.length; ++d) {
+      for (int d = 0; d < this.min.length; ++d) {
         if ((this.min[d] <= other.min[d] && this.max[d] >= other.max[d]) == false) {
           // not contains:
           return false;
@@ -252,7 +257,7 @@ public class TestIntRangeFieldQueries extends BaseRangeFieldQueryTestCase {
       b.append(min[0]);
       b.append(" TO ");
       b.append(max[0]);
-      for (int d=1; d<min.length; ++d) {
+      for (int d = 1; d < min.length; ++d) {
         b.append(", ");
         b.append(min[d]);
         b.append(" TO ");

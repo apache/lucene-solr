@@ -29,8 +29,11 @@ final class MultiLeafFieldComparator implements LeafFieldComparator {
 
   MultiLeafFieldComparator(LeafFieldComparator[] comparators, int[] reverseMul) {
     if (comparators.length != reverseMul.length) {
-      throw new IllegalArgumentException("Must have the same number of comparators and reverseMul, got "
-          + comparators.length + " and " + reverseMul.length);
+      throw new IllegalArgumentException(
+          "Must have the same number of comparators and reverseMul, got "
+              + comparators.length
+              + " and "
+              + reverseMul.length);
     }
     this.comparators = comparators;
     this.reverseMul = reverseMul;

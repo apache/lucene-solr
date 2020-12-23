@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.spans;
 
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -30,16 +31,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
-
 public class TestSpanFirstQuery extends LuceneTestCase {
   public void testStartPositions() throws Exception {
     Directory dir = newDirectory();
-    
+
     // mimic StopAnalyzer
     CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|a|of").toAutomaton());
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, stopSet);
-    
+
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, analyzer);
     Document doc = new Document();
     doc.add(newTextField("field", "the quick brown fox", Field.Store.NO));
@@ -47,19 +46,19 @@ public class TestSpanFirstQuery extends LuceneTestCase {
     Document doc2 = new Document();
     doc2.add(newTextField("field", "quick brown fox", Field.Store.NO));
     writer.addDocument(doc2);
-    
+
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    
+
     // user queries on "starts-with quick"
     SpanQuery sfq = spanFirstQuery(spanTermQuery("field", "quick"), 1);
     assertEquals(1, searcher.search(sfq, 10).totalHits.value);
-    
+
     // user queries on "starts-with the quick"
     SpanQuery include = spanFirstQuery(spanTermQuery("field", "quick"), 2);
     sfq = spanNotQuery(include, sfq);
     assertEquals(1, searcher.search(sfq, 10).totalHits.value);
-    
+
     writer.close();
     reader.close();
     dir.close();

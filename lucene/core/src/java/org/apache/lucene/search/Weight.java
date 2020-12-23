@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -27,48 +25,54 @@ import org.apache.lucene.util.Bits;
 
 /**
  * Expert: Calculate query weights and build query scorers.
- * <p>
- * The purpose of {@link Weight} is to ensure searching does not modify a
- * {@link Query}, so that a {@link Query} instance can be reused. <br>
- * {@link IndexSearcher} dependent state of the query should reside in the
- * {@link Weight}. <br>
- * {@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link Scorer}.
- * <p>
- * Since {@link Weight} creates {@link Scorer} instances for a given
- * {@link org.apache.lucene.index.LeafReaderContext} ({@link #scorer(org.apache.lucene.index.LeafReaderContext)})
- * callers must maintain the relationship between the searcher's top-level
- * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
- * <p>
- * A <code>Weight</code> is used in the following way:
+ *
+ * <p>The purpose of {@link Weight} is to ensure searching does not modify a {@link Query}, so that
+ * a {@link Query} instance can be reused.
+ *
+ * <p>{@link IndexSearcher} dependent state of the query should reside in the {@link Weight}.
+ *
+ * <p>{@link org.apache.lucene.index.LeafReader} dependent state should reside in the {@link
+ * Scorer}.
+ *
+ * <p>Since {@link Weight} creates {@link Scorer} instances for a given {@link
+ * org.apache.lucene.index.LeafReaderContext} ({@link
+ * #scorer(org.apache.lucene.index.LeafReaderContext)}) callers must maintain the relationship
+ * between the searcher's top-level {@link IndexReaderContext} and the context used to create a
+ * {@link Scorer}.
+ *
+ * <p>A <code>Weight</code> is used in the following way:
+ *
  * <ol>
- * <li>A <code>Weight</code> is constructed by a top-level query, given a
- * <code>IndexSearcher</code> ({@link Query#createWeight(IndexSearcher, ScoreMode, float)}).
- * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(org.apache.lucene.index.LeafReaderContext)}.
+ *   <li>A <code>Weight</code> is constructed by a top-level query, given a <code>IndexSearcher
+ *       </code> ({@link Query#createWeight(IndexSearcher, ScoreMode, float)}).
+ *   <li>A <code>Scorer</code> is constructed by {@link
+ *       #scorer(org.apache.lucene.index.LeafReaderContext)}.
  * </ol>
- * 
+ *
  * @since 2.9
  */
 public abstract class Weight implements SegmentCacheable {
 
   protected final Query parentQuery;
 
-  /** Sole constructor, typically invoked by sub-classes.
-   * @param query         the parent query
+  /**
+   * Sole constructor, typically invoked by sub-classes.
+   *
+   * @param query the parent query
    */
   protected Weight(Query query) {
     this.parentQuery = query;
   }
 
   /**
-   * Returns {@link Matches} for a specific document, or {@code null} if the document
-   * does not match the parent query
+   * Returns {@link Matches} for a specific document, or {@code null} if the document does not match
+   * the parent query
    *
-   * A query match that contains no position information (for example, a Point or
-   * DocValues query) will return {@link MatchesUtils#MATCH_WITH_NO_TERMS}
+   * <p>A query match that contains no position information (for example, a Point or DocValues
+   * query) will return {@link MatchesUtils#MATCH_WITH_NO_TERMS}
    *
    * @param context the reader's context to create the {@link Matches} for
-   * @param doc     the document's id relative to the given context's reader
+   * @param doc the document's id relative to the given context's reader
    * @lucene.experimental
    */
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
@@ -82,8 +86,7 @@ public abstract class Weight implements SegmentCacheable {
       if (scorer.iterator().advance(doc) != doc) {
         return null;
       }
-    }
-    else {
+    } else {
       if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
         return null;
       }
@@ -93,7 +96,7 @@ public abstract class Weight implements SegmentCacheable {
 
   /**
    * An explanation of the score computation for the named document.
-   * 
+   *
    * @param context the readers context to create the {@link Explanation} for.
    * @param doc the document's id relative to the given context's reader
    * @return an Explanation for the score
@@ -107,28 +110,26 @@ public abstract class Weight implements SegmentCacheable {
   }
 
   /**
-   * Returns a {@link Scorer} which can iterate in order over all matching
-   * documents and assign them a score.
-   * <p>
-   * <b>NOTE:</b> null can be returned if no documents will be scored by this
-   * query.
-   * <p>
-   * <b>NOTE</b>: The returned {@link Scorer} does not have
-   * {@link LeafReader#getLiveDocs()} applied, they need to be checked on top.
-   * 
-   * @param context
-   *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
-   *          
+   * Returns a {@link Scorer} which can iterate in order over all matching documents and assign them
+   * a score.
+   *
+   * <p><b>NOTE:</b> null can be returned if no documents will be scored by this query.
+   *
+   * <p><b>NOTE</b>: The returned {@link Scorer} does not have {@link LeafReader#getLiveDocs()}
+   * applied, they need to be checked on top.
+   *
+   * @param context the {@link org.apache.lucene.index.LeafReaderContext} for which to return the
+   *     {@link Scorer}.
    * @return a {@link Scorer} which scores documents in/out-of order.
    * @throws IOException if there is a low-level I/O error
    */
   public abstract Scorer scorer(LeafReaderContext context) throws IOException;
 
   /**
-   * Optional method.
-   * Get a {@link ScorerSupplier}, which allows to know the cost of the {@link Scorer}
-   * before building it. The default implementation calls {@link #scorer} and
-   * builds a {@link ScorerSupplier} wrapper around it.
+   * Optional method. Get a {@link ScorerSupplier}, which allows to know the cost of the {@link
+   * Scorer} before building it. The default implementation calls {@link #scorer} and builds a
+   * {@link ScorerSupplier} wrapper around it.
+   *
    * @see #scorer
    */
   public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
@@ -150,18 +151,14 @@ public abstract class Weight implements SegmentCacheable {
   }
 
   /**
-   * Optional method, to return a {@link BulkScorer} to
-   * score the query and send hits to a {@link Collector}.
-   * Only queries that have a different top-level approach
-   * need to override this; the default implementation
-   * pulls a normal {@link Scorer} and iterates and
-   * collects the resulting hits which are not marked as deleted.
+   * Optional method, to return a {@link BulkScorer} to score the query and send hits to a {@link
+   * Collector}. Only queries that have a different top-level approach need to override this; the
+   * default implementation pulls a normal {@link Scorer} and iterates and collects the resulting
+   * hits which are not marked as deleted.
    *
-   * @param context
-   *          the {@link org.apache.lucene.index.LeafReaderContext} for which to return the {@link Scorer}.
-   *
-   * @return a {@link BulkScorer} which scores documents and
-   * passes them to a collector.
+   * @param context the {@link org.apache.lucene.index.LeafReaderContext} for which to return the
+   *     {@link Scorer}.
+   * @return a {@link BulkScorer} which scores documents and passes them to a collector.
    * @throws IOException if there is a low-level I/O error
    */
   public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
@@ -177,8 +174,11 @@ public abstract class Weight implements SegmentCacheable {
     return new DefaultBulkScorer(scorer);
   }
 
-  /** Just wraps a Scorer and performs top scoring using it.
-   *  @lucene.internal */
+  /**
+   * Just wraps a Scorer and performs top scoring using it.
+   *
+   * @lucene.internal
+   */
   protected static class DefaultBulkScorer extends BulkScorer {
     private final Scorer scorer;
     private final DocIdSetIterator iterator;
@@ -200,7 +200,8 @@ public abstract class Weight implements SegmentCacheable {
     }
 
     @Override
-    public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+    public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+        throws IOException {
       collector.setScorer(scorer);
       DocIdSetIterator scorerIterator = twoPhase == null ? iterator : twoPhase.approximation();
       DocIdSetIterator collectorIterator = collector.competitiveIterator();
@@ -209,11 +210,12 @@ public abstract class Weight implements SegmentCacheable {
         filteredIterator = scorerIterator;
       } else {
         if (scorerIterator.docID() != -1) {
-          // Wrap ScorerIterator to start from -1 for conjunction 
+          // Wrap ScorerIterator to start from -1 for conjunction
           scorerIterator = new StartDISIWrapper(scorerIterator);
         }
         // filter scorerIterator to keep only competitive docs as defined by collector
-        filteredIterator = ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
+        filteredIterator =
+            ConjunctionDISI.intersectIterators(Arrays.asList(scorerIterator, collectorIterator));
       }
       if (filteredIterator.docID() == -1 && min == 0 && max == DocIdSetIterator.NO_MORE_DOCS) {
         scoreAll(collector, filteredIterator, twoPhase, acceptDocs);
@@ -227,12 +229,19 @@ public abstract class Weight implements SegmentCacheable {
       }
     }
 
-    /** Specialized method to bulk-score a range of hits; we
-     *  separate this from {@link #scoreAll} to help out
-     *  hotspot.
-     *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static int scoreRange(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase,
-        Bits acceptDocs, int currentDoc, int end) throws IOException {
+    /**
+     * Specialized method to bulk-score a range of hits; we separate this from {@link #scoreAll} to
+     * help out hotspot. See <a
+     * href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a>
+     */
+    static int scoreRange(
+        LeafCollector collector,
+        DocIdSetIterator iterator,
+        TwoPhaseIterator twoPhase,
+        Bits acceptDocs,
+        int currentDoc,
+        int end)
+        throws IOException {
       if (twoPhase == null) {
         while (currentDoc < end) {
           if (acceptDocs == null || acceptDocs.get(currentDoc)) {
@@ -252,20 +261,30 @@ public abstract class Weight implements SegmentCacheable {
       }
     }
 
-    /** Specialized method to bulk-score all hits; we
-     *  separate this from {@link #scoreRange} to help out
-     *  hotspot.
-     *  See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a> */
-    static void scoreAll(LeafCollector collector, DocIdSetIterator iterator, TwoPhaseIterator twoPhase, Bits acceptDocs) throws IOException {
+    /**
+     * Specialized method to bulk-score all hits; we separate this from {@link #scoreRange} to help
+     * out hotspot. See <a href="https://issues.apache.org/jira/browse/LUCENE-5487">LUCENE-5487</a>
+     */
+    static void scoreAll(
+        LeafCollector collector,
+        DocIdSetIterator iterator,
+        TwoPhaseIterator twoPhase,
+        Bits acceptDocs)
+        throws IOException {
       if (twoPhase == null) {
-        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+        for (int doc = iterator.nextDoc();
+            doc != DocIdSetIterator.NO_MORE_DOCS;
+            doc = iterator.nextDoc()) {
           if (acceptDocs == null || acceptDocs.get(doc)) {
             collector.collect(doc);
           }
         }
       } else {
-        // The scorer has an approximation, so run the approximation first, then check acceptDocs, then confirm
-        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+        // The scorer has an approximation, so run the approximation first, then check acceptDocs,
+        // then confirm
+        for (int doc = iterator.nextDoc();
+            doc != DocIdSetIterator.NO_MORE_DOCS;
+            doc = iterator.nextDoc()) {
           if ((acceptDocs == null || acceptDocs.get(doc)) && twoPhase.matches()) {
             collector.collect(doc);
           }
@@ -274,9 +293,7 @@ public abstract class Weight implements SegmentCacheable {
     }
   }
 
-  /**
-   * Wraps an internal docIdSetIterator for it to start with docID = -1
-   */
+  /** Wraps an internal docIdSetIterator for it to start with docID = -1 */
   protected static class StartDISIWrapper extends DocIdSetIterator {
     private final DocIdSetIterator in;
     private final int min;
@@ -309,7 +326,5 @@ public abstract class Weight implements SegmentCacheable {
     public long cost() {
       return in.cost();
     }
-
   }
-
 }

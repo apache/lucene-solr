@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.search;
 
-
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
-
-/**
- * TestWildcard tests the '*' and '?' wildcard characters.
- */
+/** TestWildcard tests the '*' and '?' wildcard characters. */
 public class TestWildcard extends LuceneTestCase {
-  
+
   public void testEquals() {
     WildcardQuery wq1 = new WildcardQuery(new Term("field", "b*a"));
     WildcardQuery wq2 = new WildcardQuery(new Term("field", "b*a"));
@@ -55,40 +51,38 @@ public class TestWildcard extends LuceneTestCase {
     assertFalse(wq1.equals(fq));
     assertFalse(fq.equals(wq1));
   }
-  
+
   /**
-   * Tests if a WildcardQuery that has no wildcard in the term is rewritten to a single
-   * TermQuery. The boost should be preserved, and the rewrite should return
-   * a ConstantScoreQuery if the WildcardQuery had a ConstantScore rewriteMethod.
+   * Tests if a WildcardQuery that has no wildcard in the term is rewritten to a single TermQuery.
+   * The boost should be preserved, and the rewrite should return a ConstantScoreQuery if the
+   * WildcardQuery had a ConstantScore rewriteMethod.
    */
   public void testTermWithoutWildcard() throws IOException {
-      Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-      IndexReader reader = DirectoryReader.open(indexStore);
-      IndexSearcher searcher = newSearcher(reader);
+    Directory indexStore = getIndexStore("field", new String[] {"nowildcard", "nowildcardx"});
+    IndexReader reader = DirectoryReader.open(indexStore);
+    IndexSearcher searcher = newSearcher(reader);
 
-      MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
-      assertMatches(searcher, wq, 1);
+    MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
+    assertMatches(searcher, wq, 1);
 
-      wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
-      Query q = searcher.rewrite(wq);
-      assertTrue(q instanceof TermQuery);
-      
-      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
-      q = searcher.rewrite(wq);
-      assertTrue(q instanceof MultiTermQueryConstantScoreWrapper);
-      
-      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
-      q = searcher.rewrite(wq);
-      assertTrue(q instanceof ConstantScoreQuery);
-      reader.close();
-      indexStore.close();
+    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
+    Query q = searcher.rewrite(wq);
+    assertTrue(q instanceof TermQuery);
+
+    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_REWRITE);
+    q = searcher.rewrite(wq);
+    assertTrue(q instanceof MultiTermQueryConstantScoreWrapper);
+
+    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
+    q = searcher.rewrite(wq);
+    assertTrue(q instanceof ConstantScoreQuery);
+    reader.close();
+    indexStore.close();
   }
-  
-  /**
-   * Tests if a WildcardQuery with an empty term is rewritten to an empty BooleanQuery
-   */
+
+  /** Tests if a WildcardQuery with an empty term is rewritten to an empty BooleanQuery */
   public void testEmptyTerm() throws IOException {
-    Directory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+    Directory indexStore = getIndexStore("field", new String[] {"nowildcard", "nowildcardx"});
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = newSearcher(reader);
 
@@ -100,20 +94,19 @@ public class TestWildcard extends LuceneTestCase {
     reader.close();
     indexStore.close();
   }
-  
+
   /**
-   * Tests if a WildcardQuery that has only a trailing * in the term is
-   * rewritten to a single PrefixQuery. The boost and rewriteMethod should be
-   * preserved.
+   * Tests if a WildcardQuery that has only a trailing * in the term is rewritten to a single
+   * PrefixQuery. The boost and rewriteMethod should be preserved.
    */
   public void testPrefixTerm() throws IOException {
-    Directory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
+    Directory indexStore = getIndexStore("field", new String[] {"prefix", "prefixx"});
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = newSearcher(reader);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
     assertMatches(searcher, wq, 2);
-    
+
     wq = new WildcardQuery(new Term("field", "*"));
     assertMatches(searcher, wq, 2);
     Terms terms = MultiTerms.getTerms(searcher.getIndexReader(), "field");
@@ -122,13 +115,9 @@ public class TestWildcard extends LuceneTestCase {
     indexStore.close();
   }
 
-  /**
-   * Tests Wildcard queries with an asterisk.
-   */
-  public void testAsterisk()
-      throws IOException {
-    Directory indexStore = getIndexStore("body", new String[]
-    {"metal", "metals"});
+  /** Tests Wildcard queries with an asterisk. */
+  public void testAsterisk() throws IOException {
+    Directory indexStore = getIndexStore("body", new String[] {"metal", "metals"});
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = newSearcher(reader);
     Query query1 = new TermQuery(new Term("body", "metal"));
@@ -167,10 +156,9 @@ public class TestWildcard extends LuceneTestCase {
    *
    * @throws IOException if an error occurs
    */
-  public void testQuestionmark()
-      throws IOException {
-    Directory indexStore = getIndexStore("body", new String[]
-    {"metal", "metals", "mXtals", "mXtXls"});
+  public void testQuestionmark() throws IOException {
+    Directory indexStore =
+        getIndexStore("body", new String[] {"metal", "metals", "mXtals", "mXtXls"});
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = newSearcher(reader);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
@@ -179,8 +167,8 @@ public class TestWildcard extends LuceneTestCase {
     Query query4 = new WildcardQuery(new Term("body", "m?t?ls"));
     Query query5 = new WildcardQuery(new Term("body", "M?t?ls"));
     Query query6 = new WildcardQuery(new Term("body", "meta??"));
-    
-    assertMatches(searcher, query1, 1); 
+
+    assertMatches(searcher, query1, 1);
     assertMatches(searcher, query2, 1);
     assertMatches(searcher, query3, 0);
     assertMatches(searcher, query4, 3);
@@ -190,41 +178,39 @@ public class TestWildcard extends LuceneTestCase {
     indexStore.close();
   }
 
-  /**
-   * Tests if wildcard escaping works
-   */
+  /** Tests if wildcard escaping works */
   public void testEscapes() throws Exception {
-    Directory indexStore = getIndexStore("field", 
-        new String[]{"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
+    Directory indexStore =
+        getIndexStore(
+            "field", new String[] {"foo*bar", "foo??bar", "fooCDbar", "fooSOMETHINGbar", "foo\\"});
     IndexReader reader = DirectoryReader.open(indexStore);
     IndexSearcher searcher = newSearcher(reader);
 
     // without escape: matches foo??bar, fooCDbar, foo*bar, and fooSOMETHINGbar
     WildcardQuery unescaped = new WildcardQuery(new Term("field", "foo*bar"));
     assertMatches(searcher, unescaped, 4);
-    
+
     // with escape: only matches foo*bar
     WildcardQuery escaped = new WildcardQuery(new Term("field", "foo\\*bar"));
     assertMatches(searcher, escaped, 1);
-    
+
     // without escape: matches foo??bar and fooCDbar
     unescaped = new WildcardQuery(new Term("field", "foo??bar"));
     assertMatches(searcher, unescaped, 2);
-    
+
     // with escape: matches foo??bar only
     escaped = new WildcardQuery(new Term("field", "foo\\?\\?bar"));
     assertMatches(searcher, escaped, 1);
-    
+
     // check escaping at end: lenient parse yields "foo\"
     WildcardQuery atEnd = new WildcardQuery(new Term("field", "foo\\"));
     assertMatches(searcher, atEnd, 1);
-    
+
     reader.close();
     indexStore.close();
   }
-  
-  private Directory getIndexStore(String field, String[] contents)
-      throws IOException {
+
+  private Directory getIndexStore(String field, String[] contents) throws IOException {
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
     for (int i = 0; i < contents.length; ++i) {
@@ -244,105 +230,112 @@ public class TestWildcard extends LuceneTestCase {
   }
 
   /**
-   * Test that wild card queries are parsed to the correct type and are searched correctly.
-   * This test looks at both parsing and execution of wildcard queries.
-   * Although placed here, it also tests prefix queries, verifying that
-   * prefix queries are not parsed into wild card queries, and vice-versa.
+   * Test that wild card queries are parsed to the correct type and are searched correctly. This
+   * test looks at both parsing and execution of wildcard queries. Although placed here, it also
+   * tests prefix queries, verifying that prefix queries are not parsed into wild card queries, and
+   * vice-versa.
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";
     String docs[] = {
-        "\\ abcdefg1",
-        "\\79 hijklmn1",
-        "\\\\ opqrstu1",
+      "\\ abcdefg1", "\\79 hijklmn1", "\\\\ opqrstu1",
     };
 
     // queries that should find all docs
     Query matchAll[] = {
-        new WildcardQuery(new Term(field, "*")),
-        new WildcardQuery(new Term(field, "*1")),
-        new WildcardQuery(new Term(field, "**1")),
-        new WildcardQuery(new Term(field, "*?")),
-        new WildcardQuery(new Term(field, "*?1")),
-        new WildcardQuery(new Term(field, "?*1")),
-        new WildcardQuery(new Term(field, "**")),
-        new WildcardQuery(new Term(field, "***")),
-        new WildcardQuery(new Term(field, "\\\\*"))
+      new WildcardQuery(new Term(field, "*")),
+      new WildcardQuery(new Term(field, "*1")),
+      new WildcardQuery(new Term(field, "**1")),
+      new WildcardQuery(new Term(field, "*?")),
+      new WildcardQuery(new Term(field, "*?1")),
+      new WildcardQuery(new Term(field, "?*1")),
+      new WildcardQuery(new Term(field, "**")),
+      new WildcardQuery(new Term(field, "***")),
+      new WildcardQuery(new Term(field, "\\\\*"))
     };
 
     // queries that should find no docs
     Query matchNone[] = {
-        new WildcardQuery(new Term(field, "a*h")),
-        new WildcardQuery(new Term(field, "a?h")),
-        new WildcardQuery(new Term(field, "*a*h")),
-        new WildcardQuery(new Term(field, "?a")),
-        new WildcardQuery(new Term(field, "a?"))
+      new WildcardQuery(new Term(field, "a*h")),
+      new WildcardQuery(new Term(field, "a?h")),
+      new WildcardQuery(new Term(field, "*a*h")),
+      new WildcardQuery(new Term(field, "?a")),
+      new WildcardQuery(new Term(field, "a?"))
     };
 
     PrefixQuery matchOneDocPrefix[][] = {
-        {new PrefixQuery(new Term(field, "a")),
-         new PrefixQuery(new Term(field, "ab")),
-         new PrefixQuery(new Term(field, "abc"))}, // these should find only doc 0
-
-        {new PrefixQuery(new Term(field, "h")),
-         new PrefixQuery(new Term(field, "hi")),
-         new PrefixQuery(new Term(field, "hij")),
-         new PrefixQuery(new Term(field, "\\7"))}, // these should find only doc 1
-
-        {new PrefixQuery(new Term(field, "o")),
-         new PrefixQuery(new Term(field, "op")),
-         new PrefixQuery(new Term(field, "opq")),
-         new PrefixQuery(new Term(field, "\\\\"))}, // these should find only doc 2
+      {
+        new PrefixQuery(new Term(field, "a")),
+        new PrefixQuery(new Term(field, "ab")),
+        new PrefixQuery(new Term(field, "abc"))
+      }, // these should find only doc 0
+      {
+        new PrefixQuery(new Term(field, "h")),
+        new PrefixQuery(new Term(field, "hi")),
+        new PrefixQuery(new Term(field, "hij")),
+        new PrefixQuery(new Term(field, "\\7"))
+      }, // these should find only doc 1
+      {
+        new PrefixQuery(new Term(field, "o")),
+        new PrefixQuery(new Term(field, "op")),
+        new PrefixQuery(new Term(field, "opq")),
+        new PrefixQuery(new Term(field, "\\\\"))
+      }, // these should find only doc 2
     };
 
     WildcardQuery matchOneDocWild[][] = {
-
-        {new WildcardQuery(new Term(field, "*a*")), // these should find only doc 0
-            new WildcardQuery(new Term(field, "*ab*")),
-            new WildcardQuery(new Term(field, "*abc**")),
-            new WildcardQuery(new Term(field, "ab*e*")),
-            new WildcardQuery(new Term(field, "*g?")),
-            new WildcardQuery(new Term(field, "*f?1"))},
-
-        {new WildcardQuery(new Term(field, "*h*")), // these should find only doc 1
-            new WildcardQuery(new Term(field, "*hi*")),
-            new WildcardQuery(new Term(field, "*hij**")),
-            new WildcardQuery(new Term(field, "hi*k*")),
-            new WildcardQuery(new Term(field, "*n?")),
-            new WildcardQuery(new Term(field, "*m?1")),
-            new WildcardQuery(new Term(field, "hij**"))},
-
-        {new WildcardQuery(new Term(field, "*o*")), // these should find only doc 2
-            new WildcardQuery(new Term(field, "*op*")),
-            new WildcardQuery(new Term(field, "*opq**")),
-            new WildcardQuery(new Term(field, "op*q*")),
-            new WildcardQuery(new Term(field, "*u?")),
-            new WildcardQuery(new Term(field, "*t?1")),
-            new WildcardQuery(new Term(field, "opq**"))}
+      {
+        new WildcardQuery(new Term(field, "*a*")), // these should find only doc 0
+        new WildcardQuery(new Term(field, "*ab*")),
+        new WildcardQuery(new Term(field, "*abc**")),
+        new WildcardQuery(new Term(field, "ab*e*")),
+        new WildcardQuery(new Term(field, "*g?")),
+        new WildcardQuery(new Term(field, "*f?1"))
+      },
+      {
+        new WildcardQuery(new Term(field, "*h*")), // these should find only doc 1
+        new WildcardQuery(new Term(field, "*hi*")),
+        new WildcardQuery(new Term(field, "*hij**")),
+        new WildcardQuery(new Term(field, "hi*k*")),
+        new WildcardQuery(new Term(field, "*n?")),
+        new WildcardQuery(new Term(field, "*m?1")),
+        new WildcardQuery(new Term(field, "hij**"))
+      },
+      {
+        new WildcardQuery(new Term(field, "*o*")), // these should find only doc 2
+        new WildcardQuery(new Term(field, "*op*")),
+        new WildcardQuery(new Term(field, "*opq**")),
+        new WildcardQuery(new Term(field, "op*q*")),
+        new WildcardQuery(new Term(field, "*u?")),
+        new WildcardQuery(new Term(field, "*t?1")),
+        new WildcardQuery(new Term(field, "opq**"))
+      }
     };
 
     // prepare the index
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(newTextField(field, docs[i], Field.Store.NO));
       iw.addDocument(doc);
     }
     iw.close();
-    
+
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
-    
+
     // test queries that must find all
     for (Query q : matchAll) {
       if (VERBOSE) System.out.println("matchAll: q=" + q + " " + q.getClass().getName());
       ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
       assertEquals(docs.length, hits.length);
     }
-    
+
     // test queries that must find none
     for (Query q : matchNone) {
       if (VERBOSE) System.out.println("matchNone: q=" + q + " " + q.getClass().getName());
@@ -354,10 +347,12 @@ public class TestWildcard extends LuceneTestCase {
     for (int i = 0; i < matchOneDocPrefix.length; i++) {
       for (int j = 0; j < matchOneDocPrefix[i].length; j++) {
         Query q = matchOneDocPrefix[i][j];
-        if (VERBOSE) System.out.println("match 1 prefix: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
+        if (VERBOSE)
+          System.out.println(
+              "match 1 prefix: doc=" + docs[i] + " q=" + q + " " + q.getClass().getName());
         ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
-        assertEquals(1,hits.length);
-        assertEquals(i,hits[0].doc);
+        assertEquals(1, hits.length);
+        assertEquals(i, hits[0].doc);
       }
     }
 
@@ -365,10 +360,12 @@ public class TestWildcard extends LuceneTestCase {
     for (int i = 0; i < matchOneDocWild.length; i++) {
       for (int j = 0; j < matchOneDocWild[i].length; j++) {
         Query q = matchOneDocWild[i][j];
-        if (VERBOSE) System.out.println("match 1 wild: doc="+docs[i]+" q="+q+" "+q.getClass().getName());
+        if (VERBOSE)
+          System.out.println(
+              "match 1 wild: doc=" + docs[i] + " q=" + q + " " + q.getClass().getName());
         ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
-        assertEquals(1,hits.length);
-        assertEquals(i,hits[0].doc);
+        assertEquals(1, hits.length);
+        assertEquals(i, hits[0].doc);
       }
     }
 

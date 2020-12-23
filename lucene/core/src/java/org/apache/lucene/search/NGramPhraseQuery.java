@@ -16,28 +16,25 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
 /**
- * This is a {@link PhraseQuery} which is optimized for n-gram phrase query.
- * For example, when you query "ABCD" on a 2-gram field, you may want to use
- * NGramPhraseQuery rather than {@link PhraseQuery}, because NGramPhraseQuery
- * will {@link #rewrite(IndexReader)} the query to "AB/0 CD/2", while {@link PhraseQuery}
- * will query "AB/0 BC/1 CD/2" (where term/position).
- *
+ * This is a {@link PhraseQuery} which is optimized for n-gram phrase query. For example, when you
+ * query "ABCD" on a 2-gram field, you may want to use NGramPhraseQuery rather than {@link
+ * PhraseQuery}, because NGramPhraseQuery will {@link #rewrite(IndexReader)} the query to "AB/0
+ * CD/2", while {@link PhraseQuery} will query "AB/0 BC/1 CD/2" (where term/position).
  */
 public class NGramPhraseQuery extends Query {
 
   private final int n;
   private final PhraseQuery phraseQuery;
-  
+
   /**
    * Constructor that takes gram size.
+   *
    * @param n n-gram size
    */
   public NGramPhraseQuery(int n, PhraseQuery query) {
@@ -51,19 +48,20 @@ public class NGramPhraseQuery extends Query {
     final Term[] terms = phraseQuery.getTerms();
     final int[] positions = phraseQuery.getPositions();
 
-    boolean isOptimizable = phraseQuery.getSlop() == 0
-        && n >= 2 // non-overlap n-gram cannot be optimized
-        && terms.length >= 3; // short ones can't be optimized
+    boolean isOptimizable =
+        phraseQuery.getSlop() == 0
+            && n >= 2 // non-overlap n-gram cannot be optimized
+            && terms.length >= 3; // short ones can't be optimized
 
     if (isOptimizable) {
       for (int i = 1; i < positions.length; ++i) {
-        if (positions[i] != positions[i-1] + 1) {
+        if (positions[i] != positions[i - 1] + 1) {
           isOptimizable = false;
           break;
         }
       }
     }
-    
+
     if (isOptimizable == false) {
       return phraseQuery.rewrite(reader);
     }
@@ -84,13 +82,11 @@ public class NGramPhraseQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(NGramPhraseQuery other) {
-    return n == other.n && 
-           phraseQuery.equals(other.phraseQuery);
+    return n == other.n && phraseQuery.equals(other.phraseQuery);
   }
 
   @Override

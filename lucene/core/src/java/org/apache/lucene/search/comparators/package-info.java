@@ -16,8 +16,7 @@
  */
 
 /**
- * Comparators, used to compare hits so as to determine their
- * sort order when collecting the top results with
- * {@link org.apache.lucene.search.TopFieldCollector}.
+ * Comparators, used to compare hits so as to determine their sort order when collecting the top
+ * results with {@link org.apache.lucene.search.TopFieldCollector}.
  */
 package org.apache.lucene.search.comparators;

@@ -16,15 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
-/**
- * A query that matches no documents.
- */
-
+/** A query that matches no documents. */
 public class MatchNoDocsQuery extends Query {
 
   private final String reason;
@@ -38,9 +33,10 @@ public class MatchNoDocsQuery extends Query {
   public MatchNoDocsQuery(String reason) {
     this.reason = reason;
   }
-  
+
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {

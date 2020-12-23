@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -32,7 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** Basic tests for SpanTermQuery */
 public class TestSpanTermQuery extends LuceneTestCase {
-  
+
   public void testHashcodeEquals() {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field", "bar"));
@@ -40,22 +38,25 @@ public class TestSpanTermQuery extends LuceneTestCase {
     QueryUtils.check(q2);
     QueryUtils.checkUnequal(q1, q2);
   }
-  
+
   public void testNoPositions() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
-    
+
     IndexReader ir = iw.getReader();
     iw.close();
-    
+
     IndexSearcher is = new IndexSearcher(ir);
     SpanTermQuery query = new SpanTermQuery(new Term("foo", "bar"));
-    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
-      is.search(query, 5);
-    });
+    IllegalStateException expected =
+        expectThrows(
+            IllegalStateException.class,
+            () -> {
+              is.search(query, 5);
+            });
     assertTrue(expected.getMessage().contains("was indexed without position data"));
 
     ir.close();

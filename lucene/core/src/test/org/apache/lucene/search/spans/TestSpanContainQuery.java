@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.spans;
 
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,8 +30,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
-
 public class TestSpanContainQuery extends LuceneTestCase {
   IndexSearcher searcher;
   IndexReader reader;
@@ -42,7 +41,11 @@ public class TestSpanContainQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newTextField(field, docFields[i], Field.Store.YES));
@@ -62,10 +65,7 @@ public class TestSpanContainQuery extends LuceneTestCase {
   }
 
   String[] docFields = {
-    "w1 w2 w3 w4 w5",
-    "w1 w3 w2 w3",
-    "w1 xx w2 yy w3",
-    "w1 w3 xx w2 yy w3",
+    "w1 w2 w3 w4 w5", "w1 w3 w2 w3", "w1 xx w2 yy w3", "w1 w3 xx w2 yy w3",
   };
 
   void checkHits(Query query, int[] results) throws Exception {
@@ -73,7 +73,8 @@ public class TestSpanContainQuery extends LuceneTestCase {
   }
 
   Spans makeSpans(SpanQuery sq) throws Exception {
-    return sq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    return sq.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f)
+        .getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   void tstEqualSpans(String mes, SpanQuery expectedQ, SpanQuery actualQ) throws Exception {
@@ -111,10 +112,10 @@ public class TestSpanContainQuery extends LuceneTestCase {
     SpanQuery containedPhraseOr = spanWithinQuery(phraseQ, w23);
     tstEqualSpans("containing phrase or", phraseQ, containingPhraseOr);
     Spans spans = makeSpans(containedPhraseOr);
-    assertNext(spans,0,1,2);
-    assertNext(spans,0,2,3);
-    assertNext(spans,1,2,3);
-    assertNext(spans,1,3,4);
+    assertNext(spans, 0, 1, 2);
+    assertNext(spans, 0, 2, 3);
+    assertNext(spans, 1, 2, 3);
+    assertNext(spans, 1, 3, 4);
     assertFinished(spans);
   }
 
@@ -127,8 +128,8 @@ public class TestSpanContainQuery extends LuceneTestCase {
     SpanQuery containedPhraseW2 = spanWithinQuery(phraseQ, stqw2);
     tstEqualSpans("containing phrase w2", phraseQ, containingPhraseW2);
     Spans spans = makeSpans(containedPhraseW2);
-    assertNext(spans,0,1,2);
-    assertNext(spans,1,2,3);
+    assertNext(spans, 0, 1, 2);
+    assertNext(spans, 1, 2, 3);
     assertFinished(spans);
   }
 
@@ -141,9 +142,8 @@ public class TestSpanContainQuery extends LuceneTestCase {
     SpanQuery containedPhraseW3 = spanWithinQuery(phraseQ, stqw3);
     tstEqualSpans("containing phrase w3", phraseQ, containingPhraseW3);
     Spans spans = makeSpans(containedPhraseW3);
-    assertNext(spans,0,2,3);
-    assertNext(spans,1,3,4);
+    assertNext(spans, 0, 2, 3);
+    assertNext(spans, 1, 3, 4);
     assertFinished(spans);
   }
-
 }
