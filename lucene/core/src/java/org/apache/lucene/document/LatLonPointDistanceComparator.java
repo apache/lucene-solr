@@ -16,8 +16,12 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
+import java.io.IOException;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
@@ -30,16 +34,11 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.SloppyMath;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-
 /**
  * Compares documents by distance from an origin point
- * <p>
- * When the least competitive item on the priority queue changes (setBottom), we recompute
- * a bounding box representing competitive distance to the top-N. Then in compareBottom, we can
+ *
+ * <p>When the least competitive item on the priority queue changes (setBottom), we recompute a
+ * bounding box representing competitive distance to the top-N. Then in compareBottom, we can
  * quickly reject hits based on bounding box alone without computing distance for every element.
  */
 class LatLonPointDistanceComparator extends FieldComparator<Double> implements LeafFieldComparator {
@@ -51,9 +50,9 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   double bottom;
   double topValue;
   SortedNumericDocValues currentDocs;
-  
+
   // current bounding box(es) for the bottom distance on the PQ.
-  // these are pre-encoded with LatLonPoint's encoding and 
+  // these are pre-encoded with LatLonPoint's encoding and
   // used to exclude uncompetitive hits faster.
   int minLon = Integer.MIN_VALUE;
   int maxLon = Integer.MAX_VALUE;
@@ -69,13 +68,14 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   private long[] currentValues = new long[4];
   private int valuesDocID = -1;
 
-  public LatLonPointDistanceComparator(String field, double latitude, double longitude, int numHits) {
+  public LatLonPointDistanceComparator(
+      String field, double latitude, double longitude, int numHits) {
     this.field = field;
     this.latitude = latitude;
     this.longitude = longitude;
     this.values = new double[numHits];
   }
-  
+
   @Override
   public void setScorer(Scorable scorer) {}
 
@@ -83,7 +83,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   public int compare(int slot1, int slot2) {
     return Double.compare(values[slot1], values[slot2]);
   }
-  
+
   @Override
   public void setBottom(int slot) {
     bottom = values[slot];
@@ -92,7 +92,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
     if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
       Rectangle box = Rectangle.fromPointDistance(latitude, longitude, haversin2(bottom));
-      // pre-encode our box to our integer encoding, so we don't have to decode 
+      // pre-encode our box to our integer encoding, so we don't have to decode
       // to double values for uncompetitive hits. This has some cost!
       minLat = encodeLatitude(box.minLat);
       maxLat = encodeLatitude(box.maxLat);
@@ -111,7 +111,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     }
     setBottomCounter++;
   }
-  
+
   @Override
   public void setTopValue(Double value) {
     topValue = value.doubleValue();
@@ -119,18 +119,19 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
 
   private void setValues() throws IOException {
     if (valuesDocID != currentDocs.docID()) {
-      assert valuesDocID < currentDocs.docID(): " valuesDocID=" + valuesDocID + " vs " + currentDocs.docID();
+      assert valuesDocID < currentDocs.docID()
+          : " valuesDocID=" + valuesDocID + " vs " + currentDocs.docID();
       valuesDocID = currentDocs.docID();
       int count = currentDocs.docValueCount();
       if (count > currentValues.length) {
         currentValues = new long[ArrayUtil.oversize(count, Long.BYTES)];
       }
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         currentValues[i] = currentDocs.nextValue();
       }
     }
   }
-  
+
   @Override
   public int compareBottom(int doc) throws IOException {
     if (doc > currentDocs.docID()) {
@@ -149,11 +150,11 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       long encoded = currentValues[i];
 
       // test bounding box
-      int latitudeBits = (int)(encoded >> 32);
+      int latitudeBits = (int) (encoded >> 32);
       if (latitudeBits < minLat || latitudeBits > maxLat) {
         continue;
       }
-      int longitudeBits = (int)(encoded & 0xFFFFFFFF);
+      int longitudeBits = (int) (encoded & 0xFFFFFFFF);
       if ((longitudeBits < minLon || longitudeBits > maxLon) && (longitudeBits < minLon2)) {
         continue;
       }
@@ -161,7 +162,12 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       // only compute actual distance if its inside "competitive bounding box"
       double docLatitude = decodeLatitude(latitudeBits);
       double docLongitude = decodeLongitude(longitudeBits);
-      cmp = Math.max(cmp, Double.compare(bottom, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude)));
+      cmp =
+          Math.max(
+              cmp,
+              Double.compare(
+                  bottom,
+                  SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude)));
       // once we compete in the PQ, no need to continue.
       if (cmp > 0) {
         return cmp;
@@ -169,12 +175,12 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     }
     return cmp;
   }
-  
+
   @Override
   public void copy(int slot, int doc) throws IOException {
     values[slot] = sortKey(doc);
   }
-  
+
   @Override
   public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
     LeafReader reader = context.reader();
@@ -186,17 +192,17 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     valuesDocID = -1;
     return this;
   }
-  
+
   @Override
   public Double value(int slot) {
     return Double.valueOf(haversin2(values[slot]));
   }
-  
+
   @Override
   public int compareTop(int doc) throws IOException {
     return Double.compare(topValue, haversin2(sortKey(doc)));
   }
-  
+
   // TODO: optimize for single-valued case?
   // TODO: do all kinds of other optimizations!
   double sortKey(int doc) throws IOException {
@@ -209,15 +215,19 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       int numValues = currentDocs.docValueCount();
       for (int i = 0; i < numValues; i++) {
         long encoded = currentValues[i];
-        double docLatitude = decodeLatitude((int)(encoded >> 32));
-        double docLongitude = decodeLongitude((int)(encoded & 0xFFFFFFFF));
-        minValue = Math.min(minValue, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude));
+        double docLatitude = decodeLatitude((int) (encoded >> 32));
+        double docLongitude = decodeLongitude((int) (encoded & 0xFFFFFFFF));
+        minValue =
+            Math.min(
+                minValue,
+                SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude));
       }
     }
     return minValue;
   }
 
-  // second half of the haversin calculation, used to convert results from haversin1 (used internally
+  // second half of the haversin calculation, used to convert results from haversin1 (used
+  // internally
   // for sorting) for display purposes.
   static double haversin2(double partial) {
     if (Double.isInfinite(partial)) {

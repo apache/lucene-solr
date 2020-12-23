@@ -25,8 +25,6 @@ allprojects { prj ->
   plugins.withType(JavaPlugin) {
     prj.apply plugin: 'com.diffplug.spotless'
 
-    println "case \"" + prj.path + '"'
-
     spotless {
       java {
         // TODO: work out how to have multiple different header files (we have
@@ -49,7 +47,7 @@ allprojects { prj ->
             target "src/**/org/apache/lucene/*.java",
                    "src/**/org/apache/lucene/analysis/**",
                    // "src/**/org/apache/lucene/codecs/**",
-                   // "src/**/org/apache/lucene/document/**",
+                   "src/**/org/apache/lucene/document/**",
                    "src/**/org/apache/lucene/geo/**",
                    "src/**/org/apache/lucene/index/**",
                    // "src/**/org/apache/lucene/search/**",

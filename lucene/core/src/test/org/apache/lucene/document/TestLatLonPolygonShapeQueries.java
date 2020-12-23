@@ -30,7 +30,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return LatLonShape.createIndexableFields(field, (Polygon)polygon);
+    return LatLonShape.createIndexableFields(field, (Polygon) polygon);
   }
 
   @Override
@@ -47,7 +47,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       Polygon polygon = (Polygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", polygon));
     }

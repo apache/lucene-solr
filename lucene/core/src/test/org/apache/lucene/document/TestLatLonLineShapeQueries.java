@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
@@ -35,8 +34,9 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Line randomQueryLine(Object... shapes) {
     if (random().nextInt(100) == 42) {
-      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
-      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      // we want to ensure some cross, so randomly generate lines that share vertices with the
+      // indexed point set
+      int maxBound = (int) Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
@@ -60,7 +60,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object line) {
-    return LatLonShape.createIndexableFields(field, (Line)line);
+    return LatLonShape.createIndexableFields(field, (Line) line);
   }
 
   @Override
@@ -72,12 +72,13 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     protected LineValidator(Encoder encoder) {
       super(encoder);
     }
-    
+
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", line));
     }
