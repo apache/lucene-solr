@@ -19,6 +19,7 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -26,6 +27,7 @@ import org.apache.solr.common.MapWriter;
 
 class DoubleFieldWriter extends FieldWriter {
   private String field;
+  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap();
 
   public DoubleFieldWriter(String field) {
     this.field = field;
@@ -43,7 +45,20 @@ class DoubleFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      NumericDocValues vals = DocValues.getNumeric(reader, this.field);
+      int readerOrd = reader.getContext().ord;
+      NumericDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        NumericDocValues numericDocValues = docValuesCache.get(readerOrd);
+        if(numericDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = numericDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getNumeric(reader, this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
       if (vals.advance(sortDoc.docId) == sortDoc.docId) {
         long val = vals.longValue();
         ew.put(this.field, Double.longBitsToDouble(val));

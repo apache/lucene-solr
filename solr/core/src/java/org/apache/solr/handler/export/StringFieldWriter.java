@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -36,6 +37,7 @@ class StringFieldWriter extends FieldWriter {
   private FieldType fieldType;
   private BytesRef lastRef;
   private int lastOrd = -1;
+  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap();
 
   private CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
@@ -60,9 +62,12 @@ class StringFieldWriter extends FieldWriter {
     BytesRef ref = null;
 
     if (stringValue != null) {
-      //We already have the top level ordinal used for sorting.
-      //Now let's use it for caching the BytesRef so we don't have to look it up.
-      //When we have long runs of repeated values do to the sort order of the docs this i huge win.
+      /*
+        We already have the top level ordinal used for sorting.
+        Now let's use it for caching the BytesRef so we don't have to look it up.
+        When we have long runs of repeated values do to the sort order of the docs this is huge win.
+       */
+
       if (this.lastOrd == stringValue.currentOrd) {
         ref = lastRef;
       }
@@ -71,7 +76,25 @@ class StringFieldWriter extends FieldWriter {
     }
 
     if (ref == null) {
-      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+
+      /*
+        Reuse the last DocValues object if possible
+       */
+      int readerOrd = reader.getContext().ord;
+      SortedDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
+        if(sortedDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = sortedDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getSorted(reader, this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
       }

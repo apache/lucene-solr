@@ -19,6 +19,7 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -31,6 +32,8 @@ class BoolFieldWriter extends FieldWriter {
   private String field;
   private FieldType fieldType;
   private CharsRefBuilder cref = new CharsRefBuilder();
+  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap();
+
 
   public BoolFieldWriter(String field, FieldType fieldType) {
     this.field = field;
@@ -48,10 +51,25 @@ class BoolFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+      int readerOrd = reader.getContext().ord;
+      SortedDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
+        if(sortedDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = sortedDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getSorted(reader, this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
       }
+
       int ord = vals.ordValue();
       ref = vals.lookupOrd(ord);
     }
