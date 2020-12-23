@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.thisptr.jackson.jq.exception.JsonQueryException;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -163,9 +164,9 @@ public class MetricsConfiguration {
       Node template = jqTemplates.item(t);
       if (template.getNodeType() == Node.ELEMENT_NODE && template.hasAttributes()) {
         Node nameAttr = template.getAttributes().getNamedItem("name");
+        String name = nameAttr != null ? nameAttr.getNodeValue() : null;
         String tmpl = template.getTextContent();
-        if (nameAttr != null && tmpl != null && !tmpl.trim().isEmpty()) {
-          String name = nameAttr.getNodeValue();
+        if (!StringUtils.isEmpty(name) && !StringUtils.isEmpty(tmpl)) {
           Node defaultTypeAttr = template.getAttributes().getNamedItem("defaultType");
           String defaultType = defaultTypeAttr != null ? defaultTypeAttr.getNodeValue() : null;
           map.put(name, new MetricsQueryTemplate(name, tmpl, defaultType));
