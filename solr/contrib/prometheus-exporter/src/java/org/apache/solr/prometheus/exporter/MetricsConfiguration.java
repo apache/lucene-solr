@@ -27,7 +27,9 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.slf4j.Logger;
@@ -80,6 +82,7 @@ public class MetricsConfiguration {
   }
 
   public static MetricsConfiguration from(String resource) throws Exception {
+
     // See solr-core XmlConfigFile
     final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
@@ -105,6 +108,12 @@ public class MetricsConfiguration {
   public static MetricsConfiguration from(Document config) throws Exception {
     Node settings = getNode(config, "/config/settings");
 
+    Map<String,MetricsQueryTemplate> jqTemplatesMap = null;
+    NodeList jqTemplates = (NodeList)(xpathFactory.newXPath()).evaluate("/config/jq-templates/template", config, XPathConstants.NODESET);
+    if (jqTemplates.getLength() > 0) {
+      jqTemplatesMap = loadJqTemplates(jqTemplates);
+    }
+
     Node pingConfig = getNode(config, "/config/rules/ping");
     Node metricsConfig = getNode(config, "/config/rules/metrics");
     Node collectionsConfig = getNode(config, "/config/rules/collections");
@@ -112,10 +121,10 @@ public class MetricsConfiguration {
 
     return new MetricsConfiguration(
         settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
-        toMetricQueries(pingConfig),
-        toMetricQueries(metricsConfig),
-        toMetricQueries(collectionsConfig),
-        toMetricQueries(searchConfiguration)
+        toMetricQueries(pingConfig, jqTemplatesMap),
+        toMetricQueries(metricsConfig, jqTemplatesMap),
+        toMetricQueries(collectionsConfig, jqTemplatesMap),
+        toMetricQueries(searchConfiguration, jqTemplatesMap)
     );
   }
 
@@ -141,12 +150,29 @@ public class MetricsConfiguration {
     }
   }
 
-  private static List<MetricsQuery> toMetricQueries(Node node) throws JsonQueryException {
+  private static List<MetricsQuery> toMetricQueries(Node node, Map<String,MetricsQueryTemplate> jqTemplatesMap) throws JsonQueryException {
     if (node == null) {
       return Collections.emptyList();
     }
 
-    return MetricsQuery.from(node);
+    return MetricsQuery.from(node, jqTemplatesMap);
   }
 
+  private static Map<String,MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
+    Map<String,MetricsQueryTemplate> map = new HashMap<>();
+    for (int t=0; t < jqTemplates.getLength(); t++) {
+      Node template = jqTemplates.item(t);
+      if (template.getNodeType() == Node.ELEMENT_NODE && template.hasAttributes()) {
+        Node nameAttr = template.getAttributes().getNamedItem("name");
+        String tmpl = template.getTextContent();
+        if (nameAttr != null && tmpl != null && !tmpl.trim().isEmpty()) {
+          String name = nameAttr.getNodeValue();
+          Node defaultTypeAttr = template.getAttributes().getNamedItem("defaultType");
+          String defaultType = defaultTypeAttr != null ? defaultTypeAttr.getNodeValue() : null;
+          map.put(name, new MetricsQueryTemplate(name, tmpl, defaultType));
+        }
+      }
+    }
+    return map;
+  }
 }
