@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -30,126 +28,123 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.compress.LZ4;
 
 /**
- * A compression mode. Tells how much effort should be spent on compression and
- * decompression of stored fields.
+ * A compression mode. Tells how much effort should be spent on compression and decompression of
+ * stored fields.
+ *
  * @lucene.experimental
  */
 public abstract class CompressionMode {
 
   /**
-   * A compression mode that trades compression ratio for speed. Although the
-   * compression ratio might remain high, compression and decompression are
-   * very fast. Use this mode with indices that have a high update rate but
-   * should be able to load documents from disk quickly.
+   * A compression mode that trades compression ratio for speed. Although the compression ratio
+   * might remain high, compression and decompression are very fast. Use this mode with indices that
+   * have a high update rate but should be able to load documents from disk quickly.
    */
-  public static final CompressionMode FAST = new CompressionMode() {
+  public static final CompressionMode FAST =
+      new CompressionMode() {
 
-    @Override
-    public Compressor newCompressor() {
-      return new LZ4FastCompressor();
-    }
+        @Override
+        public Compressor newCompressor() {
+          return new LZ4FastCompressor();
+        }
 
-    @Override
-    public Decompressor newDecompressor() {
-      return LZ4_DECOMPRESSOR;
-    }
+        @Override
+        public Decompressor newDecompressor() {
+          return LZ4_DECOMPRESSOR;
+        }
 
-    @Override
-    public String toString() {
-      return "FAST";
-    }
-
-  };
+        @Override
+        public String toString() {
+          return "FAST";
+        }
+      };
 
   /**
-   * A compression mode that trades speed for compression ratio. Although
-   * compression and decompression might be slow, this compression mode should
-   * provide a good compression ratio. This mode might be interesting if/when
-   * your index size is much bigger than your OS cache.
+   * A compression mode that trades speed for compression ratio. Although compression and
+   * decompression might be slow, this compression mode should provide a good compression ratio.
+   * This mode might be interesting if/when your index size is much bigger than your OS cache.
    */
-  public static final CompressionMode HIGH_COMPRESSION = new CompressionMode() {
+  public static final CompressionMode HIGH_COMPRESSION =
+      new CompressionMode() {
 
-    @Override
-    public Compressor newCompressor() {
-      // notes:
-      // 3 is the highest level that doesn't have lazy match evaluation
-      // 6 is the default, higher than that is just a waste of cpu
-      return new DeflateCompressor(6);
-    }
+        @Override
+        public Compressor newCompressor() {
+          // notes:
+          // 3 is the highest level that doesn't have lazy match evaluation
+          // 6 is the default, higher than that is just a waste of cpu
+          return new DeflateCompressor(6);
+        }
 
-    @Override
-    public Decompressor newDecompressor() {
-      return new DeflateDecompressor();
-    }
+        @Override
+        public Decompressor newDecompressor() {
+          return new DeflateDecompressor();
+        }
 
-    @Override
-    public String toString() {
-      return "HIGH_COMPRESSION";
-    }
-
-  };
+        @Override
+        public String toString() {
+          return "HIGH_COMPRESSION";
+        }
+      };
 
   /**
-   * This compression mode is similar to {@link #FAST} but it spends more time
-   * compressing in order to improve the compression ratio. This compression
-   * mode is best used with indices that have a low update rate but should be
-   * able to load documents from disk quickly.
+   * This compression mode is similar to {@link #FAST} but it spends more time compressing in order
+   * to improve the compression ratio. This compression mode is best used with indices that have a
+   * low update rate but should be able to load documents from disk quickly.
    */
-  public static final CompressionMode FAST_DECOMPRESSION = new CompressionMode() {
+  public static final CompressionMode FAST_DECOMPRESSION =
+      new CompressionMode() {
 
-    @Override
-    public Compressor newCompressor() {
-      return new LZ4HighCompressor();
-    }
+        @Override
+        public Compressor newCompressor() {
+          return new LZ4HighCompressor();
+        }
 
-    @Override
-    public Decompressor newDecompressor() {
-      return LZ4_DECOMPRESSOR;
-    }
+        @Override
+        public Decompressor newDecompressor() {
+          return LZ4_DECOMPRESSOR;
+        }
 
-    @Override
-    public String toString() {
-      return "FAST_DECOMPRESSION";
-    }
-
-  };
+        @Override
+        public String toString() {
+          return "FAST_DECOMPRESSION";
+        }
+      };
 
   /** Sole constructor. */
   protected CompressionMode() {}
 
-  /**
-   * Create a new {@link Compressor} instance.
-   */
+  /** Create a new {@link Compressor} instance. */
   public abstract Compressor newCompressor();
 
-  /**
-   * Create a new {@link Decompressor} instance.
-   */
+  /** Create a new {@link Decompressor} instance. */
   public abstract Decompressor newDecompressor();
 
-  private static final Decompressor LZ4_DECOMPRESSOR = new Decompressor() {
+  private static final Decompressor LZ4_DECOMPRESSOR =
+      new Decompressor() {
 
-    @Override
-    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
-      assert offset + length <= originalLength;
-      // add 7 padding bytes, this is not necessary but can help decompression run faster
-      if (bytes.bytes.length < originalLength + 7) {
-        bytes.bytes = new byte[ArrayUtil.oversize(originalLength + 7, 1)];
-      }
-      final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes, 0);
-      if (decompressedLength > originalLength) {
-        throw new CorruptIndexException("Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength, in);
-      }
-      bytes.offset = offset;
-      bytes.length = length;
-    }
+        @Override
+        public void decompress(
+            DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+            throws IOException {
+          assert offset + length <= originalLength;
+          // add 7 padding bytes, this is not necessary but can help decompression run faster
+          if (bytes.bytes.length < originalLength + 7) {
+            bytes.bytes = new byte[ArrayUtil.oversize(originalLength + 7, 1)];
+          }
+          final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes, 0);
+          if (decompressedLength > originalLength) {
+            throw new CorruptIndexException(
+                "Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength, in);
+          }
+          bytes.offset = offset;
+          bytes.length = length;
+        }
 
-    @Override
-    public Decompressor clone() {
-      return this;
-    }
-
-  };
+        @Override
+        public Decompressor clone() {
+          return this;
+        }
+      };
 
   private static final class LZ4FastCompressor extends Compressor {
 
@@ -160,8 +155,7 @@ public abstract class CompressionMode {
     }
 
     @Override
-    public void compress(byte[] bytes, int off, int len, DataOutput out)
-        throws IOException {
+    public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
       LZ4.compress(bytes, off, len, out, ht);
     }
 
@@ -180,8 +174,7 @@ public abstract class CompressionMode {
     }
 
     @Override
-    public void compress(byte[] bytes, int off, int len, DataOutput out)
-        throws IOException {
+    public void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
       LZ4.compress(bytes, off, len, out, ht);
     }
 
@@ -200,7 +193,8 @@ public abstract class CompressionMode {
     }
 
     @Override
-    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
+    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+        throws IOException {
       assert offset + length <= originalLength;
       if (length == 0) {
         bytes.length = 0;
@@ -227,14 +221,19 @@ public abstract class CompressionMode {
           throw new IOException(e);
         }
         if (!decompressor.finished()) {
-          throw new CorruptIndexException("Invalid decoder state: needsInput=" + decompressor.needsInput()
-                                                              + ", needsDict=" + decompressor.needsDictionary(), in);
+          throw new CorruptIndexException(
+              "Invalid decoder state: needsInput="
+                  + decompressor.needsInput()
+                  + ", needsDict="
+                  + decompressor.needsDictionary(),
+              in);
         }
       } finally {
         decompressor.end();
       }
       if (bytes.length != originalLength) {
-        throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength, in);
+        throw new CorruptIndexException(
+            "Lengths mismatch: " + bytes.length + " != " + originalLength, in);
       }
       bytes.offset = offset;
       bytes.length = length;
@@ -244,7 +243,6 @@ public abstract class CompressionMode {
     public Decompressor clone() {
       return new DeflateDecompressor();
     }
-
   }
 
   private static class DeflateCompressor extends Compressor {
@@ -272,8 +270,9 @@ public abstract class CompressionMode {
       }
 
       int totalCount = 0;
-      for (;;) {
-        final int count = compressor.deflate(compressed, totalCount, compressed.length - totalCount);
+      for (; ; ) {
+        final int count =
+            compressor.deflate(compressed, totalCount, compressed.length - totalCount);
         totalCount += count;
         assert totalCount <= compressed.length;
         if (compressor.finished()) {
@@ -294,7 +293,5 @@ public abstract class CompressionMode {
         closed = true;
       }
     }
-
   }
-
 }

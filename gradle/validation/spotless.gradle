@@ -39,22 +39,15 @@ allprojects { prj ->
           // These modules are complete - all sources scanned.
           case ":lucene:highlighter":
             target "src/**"
-            targetExclude "**/resources/**", "**/CambridgeMA.utf8", "**/overview.html"
+            targetExclude "**/resources/**", "**/overview.html", "**/CambridgeMA.utf8"
             break
 
           // Partially complete.
           case ":lucene:core":
-            target "src/**/org/apache/lucene/*.java",
-                   "src/**/org/apache/lucene/analysis/**",
-                   // "src/**/org/apache/lucene/codecs/**",
-                   "src/**/org/apache/lucene/document/**",
-                   "src/**/org/apache/lucene/geo/**",
-                   "src/**/org/apache/lucene/index/**",
-                   "src/**/org/apache/lucene/search/**",
-                   "src/**/org/apache/lucene/store/**",
-                   "src/**/org/apache/lucene/util/**"
-
+            target "src/java/**", "src/test/**"
             targetExclude "**/resources/**",
+                "**/overview.html",
+                "**/META-INF/**",
                 "**/StandardTokenizerImpl.jflex",
                 "**/StandardTokenizerImpl.java",
                 "**/createLevAutomata.py",
@@ -63,7 +56,8 @@ allprojects { prj ->
                 "**/gen_Packed64SingleBlock.py",
                 "**/makeEuroparlLineFile.py",
                 "**/wordliststopwords.txt",
-                "**/wordliststopwords_nocomment.txt"
+                "**/wordliststopwords_nocomment.txt",
+                "**/gen_ForUtil.py"
             break
 
           case ":lucene:analysis:common":

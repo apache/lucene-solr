@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
@@ -36,12 +34,13 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
  * Efficient index format for block-based {@link Codec}s.
- * <p>For each block of compressed stored fields, this stores the first document
- * of the block and the start pointer of the block in a
- * {@link DirectMonotonicWriter}. At read time, the docID is binary-searched in
- * the {@link DirectMonotonicReader} that records doc IDS, and the returned
- * index is used to look up the start pointer in the
- * {@link DirectMonotonicReader} that records start pointers.
+ *
+ * <p>For each block of compressed stored fields, this stores the first document of the block and
+ * the start pointer of the block in a {@link DirectMonotonicWriter}. At read time, the docID is
+ * binary-searched in the {@link DirectMonotonicReader} that records doc IDS, and the returned index
+ * is used to look up the start pointer in the {@link DirectMonotonicReader} that records start
+ * pointers.
+ *
  * @lucene.internal
  */
 public final class FieldsIndexWriter implements Closeable {
@@ -63,8 +62,16 @@ public final class FieldsIndexWriter implements Closeable {
   private int totalChunks;
   private long previousFP;
 
-  FieldsIndexWriter(Directory dir, String name, String suffix, String extension,
-      String codecName, byte[] id, int blockShift, IOContext ioContext) throws IOException {
+  FieldsIndexWriter(
+      Directory dir,
+      String name,
+      String suffix,
+      String extension,
+      String codecName,
+      byte[] id,
+      int blockShift,
+      IOContext ioContext)
+      throws IOException {
     this.dir = dir;
     this.name = name;
     this.suffix = suffix;
@@ -104,7 +111,8 @@ public final class FieldsIndexWriter implements Closeable {
     CodecUtil.writeFooter(filePointersOut);
     IOUtils.close(docsOut, filePointersOut);
 
-    try (IndexOutput dataOut = dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
+    try (IndexOutput dataOut =
+        dir.createOutput(IndexFileNames.segmentFileName(name, suffix, extension), ioContext)) {
       CodecUtil.writeIndexHeader(dataOut, codecName + "Idx", VERSION_CURRENT, id, suffix);
 
       metaOut.writeInt(numDocs);
@@ -112,11 +120,13 @@ public final class FieldsIndexWriter implements Closeable {
       metaOut.writeInt(totalChunks + 1);
       metaOut.writeLong(dataOut.getFilePointer());
 
-      try (ChecksumIndexInput docsIn = dir.openChecksumInput(docsOut.getName(), IOContext.READONCE)) {
+      try (ChecksumIndexInput docsIn =
+          dir.openChecksumInput(docsOut.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(docsIn, codecName + "Docs", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
         try {
-          final DirectMonotonicWriter docs = DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
+          final DirectMonotonicWriter docs =
+              DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
           long doc = 0;
           docs.add(doc);
           for (int i = 0; i < totalChunks; ++i) {
@@ -137,11 +147,14 @@ public final class FieldsIndexWriter implements Closeable {
       docsOut = null;
 
       metaOut.writeLong(dataOut.getFilePointer());
-      try (ChecksumIndexInput filePointersIn = dir.openChecksumInput(filePointersOut.getName(), IOContext.READONCE)) {
-        CodecUtil.checkHeader(filePointersIn, codecName + "FilePointers", VERSION_CURRENT, VERSION_CURRENT);
+      try (ChecksumIndexInput filePointersIn =
+          dir.openChecksumInput(filePointersOut.getName(), IOContext.READONCE)) {
+        CodecUtil.checkHeader(
+            filePointersIn, codecName + "FilePointers", VERSION_CURRENT, VERSION_CURRENT);
         Throwable priorE = null;
         try {
-          final DirectMonotonicWriter filePointers = DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
+          final DirectMonotonicWriter filePointers =
+              DirectMonotonicWriter.getInstance(metaOut, dataOut, totalChunks + 1, blockShift);
           long fp = 0;
           for (int i = 0; i < totalChunks; ++i) {
             fp += filePointersIn.readVLong();

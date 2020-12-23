@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -26,75 +24,77 @@ import org.apache.lucene.util.MathUtil;
 
 /**
  * This abstract class writes skip lists with multiple levels.
- * 
+ *
  * <pre>
  *
  * Example for skipInterval = 3:
  *                                                     c            (skip level 2)
- *                 c                 c                 c            (skip level 1) 
+ *                 c                 c                 c            (skip level 1)
  *     x     x     x     x     x     x     x     x     x     x      (skip level 0)
  * d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d  (posting list)
  *     3     6     9     12    15    18    21    24    27    30     (df)
- * 
+ *
  * d - document
  * x - skip data
  * c - skip data with child pointer
- * 
+ *
  * Skip level i contains every skipInterval-th entry from skip level i-1.
  * Therefore the number of entries on level i is: floor(df / ((skipInterval ^ (i + 1))).
- * 
+ *
  * Each skip entry on a level {@code i>0} contains a pointer to the corresponding skip entry in list i-1.
  * This guarantees a logarithmic amount of skips to find the target document.
- * 
+ *
  * While this class takes care of writing the different skip levels,
  * subclasses must define the actual format of the skip data.
  * </pre>
+ *
  * @lucene.experimental
  */
-
 public abstract class MultiLevelSkipListWriter {
   /** number of levels in this skip list */
   protected final int numberOfSkipLevels;
-  
+
   /** the skip interval in the list with level = 0 */
   private final int skipInterval;
 
   /** skipInterval used for level &gt; 0 */
   private final int skipMultiplier;
-  
-  /** for every skip level a different buffer is used  */
+
+  /** for every skip level a different buffer is used */
   private ByteBuffersDataOutput[] skipBuffer;
 
   /** Creates a {@code MultiLevelSkipListWriter}. */
-  protected MultiLevelSkipListWriter(int skipInterval, int skipMultiplier, int maxSkipLevels, int df) {
+  protected MultiLevelSkipListWriter(
+      int skipInterval, int skipMultiplier, int maxSkipLevels, int df) {
     this.skipInterval = skipInterval;
     this.skipMultiplier = skipMultiplier;
-    
+
     int numberOfSkipLevels;
     // calculate the maximum number of skip levels for this document frequency
     if (df <= skipInterval) {
       numberOfSkipLevels = 1;
     } else {
-      numberOfSkipLevels = 1+MathUtil.log(df/skipInterval, skipMultiplier);
+      numberOfSkipLevels = 1 + MathUtil.log(df / skipInterval, skipMultiplier);
     }
-    
+
     // make sure it does not exceed maxSkipLevels
     if (numberOfSkipLevels > maxSkipLevels) {
       numberOfSkipLevels = maxSkipLevels;
     }
     this.numberOfSkipLevels = numberOfSkipLevels;
   }
-  
-  /** Creates a {@code MultiLevelSkipListWriter}, where
-   *  {@code skipInterval} and {@code skipMultiplier} are
-   *  the same. */
+
+  /**
+   * Creates a {@code MultiLevelSkipListWriter}, where {@code skipInterval} and {@code
+   * skipMultiplier} are the same.
+   */
   protected MultiLevelSkipListWriter(int skipInterval, int maxSkipLevels, int df) {
     this(skipInterval, skipInterval, maxSkipLevels, df);
   }
 
   /** Allocates internal skip buffers. */
   protected void init() {
-    skipBuffer = new ByteBuffersDataOutput [numberOfSkipLevels];
+    skipBuffer = new ByteBuffersDataOutput[numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
       skipBuffer[i] = ByteBuffersDataOutput.newResettableInstance();
     }
@@ -108,22 +108,22 @@ public abstract class MultiLevelSkipListWriter {
       for (int i = 0; i < skipBuffer.length; i++) {
         skipBuffer[i].reset();
       }
-    }      
+    }
   }
 
   /**
    * Subclasses must implement the actual skip data encoding in this method.
-   *  
+   *
    * @param level the level skip data shall be writing for
    * @param skipBuffer the skip buffer to write to
    */
   protected abstract void writeSkipData(int level, DataOutput skipBuffer) throws IOException;
 
   /**
-   * Writes the current skip data to the buffers. The current document frequency determines
-   * the max level is skip data is to be written to. 
-   * 
-   * @param df the current document frequency 
+   * Writes the current skip data to the buffers. The current document frequency determines the max
+   * level is skip data is to be written to.
+   *
+   * @param df the current document frequency
    * @throws IOException If an I/O error occurs
    */
   public void bufferSkip(int df) throws IOException {
@@ -131,41 +131,41 @@ public abstract class MultiLevelSkipListWriter {
     assert df % skipInterval == 0;
     int numLevels = 1;
     df /= skipInterval;
-   
+
     // determine max level
     while ((df % skipMultiplier) == 0 && numLevels < numberOfSkipLevels) {
       numLevels++;
       df /= skipMultiplier;
     }
-    
+
     long childPointer = 0;
-    
+
     for (int level = 0; level < numLevels; level++) {
       writeSkipData(level, skipBuffer[level]);
-      
+
       long newChildPointer = skipBuffer[level].size();
-      
+
       if (level != 0) {
         // store child pointers for all levels except the lowest
         skipBuffer[level].writeVLong(childPointer);
       }
-      
-      //remember the childPointer for the next level
+
+      // remember the childPointer for the next level
       childPointer = newChildPointer;
     }
   }
 
   /**
    * Writes the buffered skip lists to the given output.
-   * 
-   * @param output the IndexOutput the skip lists shall be written to 
+   *
+   * @param output the IndexOutput the skip lists shall be written to
    * @return the pointer the skip list starts
    */
   public long writeSkip(IndexOutput output) throws IOException {
     long skipPointer = output.getFilePointer();
-    //System.out.println("skipper.writeSkip fp=" + skipPointer);
+    // System.out.println("skipper.writeSkip fp=" + skipPointer);
     if (skipBuffer == null || skipBuffer.length == 0) return skipPointer;
-    
+
     for (int level = numberOfSkipLevels - 1; level > 0; level--) {
       long length = skipBuffer[level].size();
       if (length > 0) {
@@ -174,7 +174,7 @@ public abstract class MultiLevelSkipListWriter {
       }
     }
     skipBuffer[0].copyTo(output);
-    
+
     return skipPointer;
   }
 }

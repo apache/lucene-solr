@@ -18,41 +18,42 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.Accountable;
 
-
-/** Abstract API that produces field normalization values
+/**
+ * Abstract API that produces field normalization values
  *
  * @lucene.experimental
  */
 public abstract class NormsProducer implements Closeable, Accountable {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected NormsProducer() {}
 
-  /** Returns {@link NumericDocValues} for this field.
-   *  The returned instance need not be thread-safe: it will only be
-   *  used by a single thread. */
+  /**
+   * Returns {@link NumericDocValues} for this field. The returned instance need not be thread-safe:
+   * it will only be used by a single thread.
+   */
   public abstract NumericDocValues getNorms(FieldInfo field) throws IOException;
-  
-  /** 
+
+  /**
    * Checks consistency of this producer
-   * <p>
-   * Note that this may be costly in terms of I/O, e.g. 
-   * may involve computing a checksum value against large data files.
+   *
+   * <p>Note that this may be costly in terms of I/O, e.g. may involve computing a checksum value
+   * against large data files.
+   *
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
-  
-  /** 
-   * Returns an instance optimized for merging. This instance may only be used
-   * from the thread that acquires it.
-   * <p>
-   * The default implementation returns {@code this} */
+
+  /**
+   * Returns an instance optimized for merging. This instance may only be used from the thread that
+   * acquires it.
+   *
+   * <p>The default implementation returns {@code this}
+   */
   public NormsProducer getMergeInstance() {
     return this;
   }

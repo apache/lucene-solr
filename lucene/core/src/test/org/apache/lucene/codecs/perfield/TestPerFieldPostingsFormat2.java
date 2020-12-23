@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.codecs.perfield;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -44,8 +42,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -60,18 +58,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-/**
- * 
- *
- */
-//TODO: would be better in this test to pull termsenums and instanceof or something?
+/** */
+// TODO: would be better in this test to pull termsenums and instanceof or something?
 // this way we can verify PFPF is doing the right thing.
 // for now we do termqueries.
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
-  private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
-      throws IOException {
+  private IndexWriter newWriter(Directory dir, IndexWriterConfig conf) throws IOException {
     LogDocMergePolicy logByteSizeMergePolicy = new LogDocMergePolicy();
     logByteSizeMergePolicy.setNoCFSRatio(0.0); // make sure we use plain
     // files
@@ -112,8 +106,10 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   @Test
   public void testMergeUnusedPerFieldCodec() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
-                                 .setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+    IndexWriterConfig iwconf =
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setOpenMode(OpenMode.CREATE)
+            .setCodec(new MockCodec());
     IndexWriter writer = newWriter(dir, iwconf);
     addDocs(writer, 10);
     writer.commit();
@@ -132,17 +128,20 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   /*
    * Test that heterogeneous index segments are merged sucessfully
    */
-  // TODO: not sure this test is that great, we should probably peek inside PerFieldPostingsFormat or something?!
+  // TODO: not sure this test is that great, we should probably peek inside PerFieldPostingsFormat
+  // or something?!
   @Test
   public void testChangeCodecAndMerge() throws IOException {
     Directory dir = newDirectory();
     if (VERBOSE) {
       System.out.println("TEST: make new index");
     }
-    IndexWriterConfig iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
-                                 .setOpenMode(OpenMode.CREATE).setCodec(new MockCodec());
+    IndexWriterConfig iwconf =
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setOpenMode(OpenMode.CREATE)
+            .setCodec(new MockCodec());
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
+    // ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     IndexWriter writer = newWriter(dir, iwconf);
 
     addDocs(writer, 10);
@@ -159,10 +158,12 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     assertQuery(new Term("content", "aaa"), dir, 10);
     Codec codec = iwconf.getCodec();
 
-    iwconf = newIndexWriterConfig(new MockAnalyzer(random()))
-        .setOpenMode(OpenMode.APPEND).setCodec(codec);
-    //((LogMergePolicy) iwconf.getMergePolicy()).setNoCFSRatio(0.0);
-    //((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
+    iwconf =
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setOpenMode(OpenMode.APPEND)
+            .setCodec(codec);
+    // ((LogMergePolicy) iwconf.getMergePolicy()).setNoCFSRatio(0.0);
+    // ((LogMergePolicy) iwconf.getMergePolicy()).setMergeFactor(10);
     iwconf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
     iwconf.setCodec(new MockCodec()); // uses standard for field content
@@ -176,7 +177,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     codec = iwconf.getCodec();
     assertEquals(30, writer.getDocStats().maxDoc);
     assertQuery(new Term("content", "bbb"), dir, 10);
-    assertQuery(new Term("content", "ccc"), dir, 10);   ////
+    assertQuery(new Term("content", "ccc"), dir, 10); // //
     assertQuery(new Term("content", "aaa"), dir, 10);
 
     if (VERBOSE) {
@@ -202,8 +203,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     dir.close();
   }
 
-  public void assertQuery(Term t, Directory dir, int num)
-      throws IOException {
+  public void assertQuery(Term t, Directory dir, int num) throws IOException {
     if (VERBOSE) {
       System.out.println("\nTEST: assertQuery " + t);
     }
@@ -212,7 +212,6 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     TopDocs search = searcher.search(new TermQuery(t), num + 10);
     assertEquals(num, search.totalHits.value);
     reader.close();
-
   }
 
   public static class MockCodec extends AssertingCodec {
@@ -239,8 +238,7 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     int numRounds = atLeast(1);
     for (int i = 0; i < numRounds; i++) {
       int num = TestUtil.nextInt(random(), 30, 60);
-      IndexWriterConfig config = newIndexWriterConfig(random(),
-          new MockAnalyzer(random()));
+      IndexWriterConfig config = newIndexWriterConfig(random(), new MockAnalyzer(random()));
       config.setOpenMode(OpenMode.CREATE_OR_APPEND);
       IndexWriter writer = newWriter(dir, config);
       for (int j = 0; j < docsPerRound; j++) {
@@ -249,8 +247,8 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
           FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
           customType.setTokenized(random().nextBoolean());
           customType.setOmitNorms(random().nextBoolean());
-          Field field = newField("" + k, TestUtil
-              .randomRealisticUnicodeString(random(), 128), customType);
+          Field field =
+              newField("" + k, TestUtil.randomRealisticUnicodeString(random(), 128), customType);
           doc.add(field);
         }
         writer.addDocument(doc);
@@ -266,37 +264,39 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
   }
 
   public void testSameCodecDifferentInstance() throws Exception {
-    Codec codec = new AssertingCodec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        if ("id".equals(field)) {
-          return new DirectPostingsFormat();
-        } else if ("date".equals(field)) {
-          return new DirectPostingsFormat();
-        } else {
-          return super.getPostingsFormatForField(field);
-        }
-      }
-    };
+    Codec codec =
+        new AssertingCodec() {
+          @Override
+          public PostingsFormat getPostingsFormatForField(String field) {
+            if ("id".equals(field)) {
+              return new DirectPostingsFormat();
+            } else if ("date".equals(field)) {
+              return new DirectPostingsFormat();
+            } else {
+              return super.getPostingsFormatForField(field);
+            }
+          }
+        };
     doTestMixedPostings(codec);
   }
-  
+
   public void testSameCodecDifferentParams() throws Exception {
-    Codec codec = new AssertingCodec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        if ("id".equals(field)) {
-          return new LuceneVarGapFixedInterval(1);
-        } else if ("date".equals(field)) {
-          return new LuceneVarGapFixedInterval(2);
-        } else {
-          return super.getPostingsFormatForField(field);
-        }
-      }
-    };
+    Codec codec =
+        new AssertingCodec() {
+          @Override
+          public PostingsFormat getPostingsFormatForField(String field) {
+            if ("id".equals(field)) {
+              return new LuceneVarGapFixedInterval(1);
+            } else if ("date".equals(field)) {
+              return new LuceneVarGapFixedInterval(2);
+            } else {
+              return super.getPostingsFormatForField(field);
+            }
+          }
+        };
     doTestMixedPostings(codec);
   }
-  
+
   private void doTestMixedPostings(Codec codec) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -323,27 +323,30 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
 
   @SuppressWarnings("deprecation")
   public void testMergeCalledOnTwoFormats() throws IOException {
-    MergeRecordingPostingsFormatWrapper pf1 = new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
-    MergeRecordingPostingsFormatWrapper pf2 = new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
+    MergeRecordingPostingsFormatWrapper pf1 =
+        new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
+    MergeRecordingPostingsFormatWrapper pf2 =
+        new MergeRecordingPostingsFormatWrapper(TestUtil.getDefaultPostingsFormat());
 
     IndexWriterConfig iwc = new IndexWriterConfig();
-    iwc.setCodec(new AssertingCodec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        switch (field) {
-          case "f1":
-          case "f2":
-            return pf1;
+    iwc.setCodec(
+        new AssertingCodec() {
+          @Override
+          public PostingsFormat getPostingsFormatForField(String field) {
+            switch (field) {
+              case "f1":
+              case "f2":
+                return pf1;
 
-          case "f3":
-          case "f4":
-            return pf2;
+              case "f3":
+              case "f4":
+                return pf2;
 
-          default:
-            return super.getPostingsFormatForField(field);
-        }
-      }
-    });
+              default:
+                return super.getPostingsFormatForField(field);
+            }
+          }
+        });
 
     Directory directory = newDirectory();
 
@@ -352,7 +355,10 @@ public class TestPerFieldPostingsFormat2 extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new StringField("f1", "val1", Field.Store.NO));
     doc.add(new StringField("f2", "val2", Field.Store.YES));
-    doc.add(new IntPoint("f3", 3)); // Points are not indexed as postings and should not appear in the merge fields
+    doc.add(
+        new IntPoint(
+            "f3",
+            3)); // Points are not indexed as postings and should not appear in the merge fields
     doc.add(new StringField("f4", "val4", Field.Store.NO));
     iwriter.addDocument(doc);
     iwriter.commit();

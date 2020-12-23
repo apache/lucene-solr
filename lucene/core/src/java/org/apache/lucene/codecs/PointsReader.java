@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.Accountable;
 
-/** Abstract API to visit point values.
+/**
+ * Abstract API to visit point values.
  *
  * @lucene.experimental
  */
@@ -32,11 +31,12 @@ public abstract class PointsReader implements Closeable, Accountable {
   /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected PointsReader() {}
 
-  /** 
+  /**
    * Checks consistency of this reader.
-   * <p>
-   * Note that this may be costly in terms of I/O, e.g. 
-   * may involve computing a checksum value against large data files.
+   *
+   * <p>Note that this may be costly in terms of I/O, e.g. may involve computing a checksum value
+   * against large data files.
+   *
    * @lucene.internal
    */
   public abstract void checkIntegrity() throws IOException;
@@ -44,11 +44,12 @@ public abstract class PointsReader implements Closeable, Accountable {
   /** Return {@link PointValues} for the given {@code field}. */
   public abstract PointValues getValues(String field) throws IOException;
 
-  /** 
-   * Returns an instance optimized for merging. This instance may only be used
-   * in the thread that acquires it.
-   * <p>
-   * The default implementation returns {@code this} */
+  /**
+   * Returns an instance optimized for merging. This instance may only be used in the thread that
+   * acquires it.
+   *
+   * <p>The default implementation returns {@code this}
+   */
   public PointsReader getMergeInstance() {
     return this;
   }
