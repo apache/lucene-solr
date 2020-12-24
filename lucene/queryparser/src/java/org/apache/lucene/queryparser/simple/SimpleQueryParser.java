@@ -122,6 +122,8 @@ public class SimpleQueryParser extends QueryBuilder {
   public static final int FUZZY_OPERATOR       = 1<<8;
   /** Enables {@code NEAR} operators: (~) on phrases */
   public static final int NEAR_OPERATOR        = 1<<9;
+  /** Enables {@code FIELD} operators: (field:term) */
+  public static final int FIELD_OPERATOR        = 1<<10;
 
 
   private BooleanClause.Occur defaultOperator = BooleanClause.Occur.SHOULD;
@@ -268,6 +270,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // parenthesis so the current operation is reset since it would
       // have been applied to this subquery
       state.currentOperation = null;
+      state.field = null;
 
       ++state.index;
     } else {
@@ -333,6 +336,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // double quote so the current operation is reset since it would
       // have been applied to this phrase
       state.currentOperation = null;
+      state.field = null;
 
       ++state.index;
     } else {
@@ -341,9 +345,9 @@ public class SimpleQueryParser extends QueryBuilder {
       String phrase = new String(state.buffer, 0, copied);
       Query branch;
       if (hasSlop) {
-        branch = newPhraseQuery(phrase, parseFuzziness(state));
+        branch = newPhraseQuery(phrase, state.field, parseFuzziness(state));
       } else {
-        branch = newPhraseQuery(phrase, 0);
+        branch = newPhraseQuery(phrase, state.field,0);
       }
       buildQueryTree(state, branch);
 
@@ -368,6 +372,11 @@ public class SimpleQueryParser extends QueryBuilder {
           prefix = false;
           ++state.index;
 
+          continue;
+        } else if (state.data[state.index] == ':' && (flags & FIELD_OPERATOR) != 0) {
+          state.field = new String(state.buffer, 0, copied);
+          ++state.index;
+          copied = 0;
           continue;
         } else if (tokenFinished(state)) {
           // this should be the end of the term
@@ -399,20 +408,20 @@ public class SimpleQueryParser extends QueryBuilder {
         // edit distance has a maximum, limit to the maximum supported
         fuzziness = Math.min(fuzziness, LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
         if (fuzziness == 0) {
-          branch = newDefaultQuery(token);
+          branch = newDefaultQuery(token, state.field);
         } else {
-          branch = newFuzzyQuery(token, fuzziness);
+          branch = newFuzzyQuery(token, state.field, fuzziness);
         }
       } else if (prefix) {
         // if a term is found with a closing '*' it is considered to be a prefix query
         // and will have prefix added as an option
         String token = new String(state.buffer, 0, copied - 1);
-        branch = newPrefixQuery(token);
+        branch = newPrefixQuery(token, state.field);
       } else {
         // a standard term has been found so it will be run through
         // the entire analysis chain from the specified schema field
         String token = new String(state.buffer, 0, copied);
-        branch = newDefaultQuery(token);
+        branch = newDefaultQuery(token, state.field);
       }
 
       buildQueryTree(state, branch);
@@ -472,6 +481,7 @@ public class SimpleQueryParser extends QueryBuilder {
       // the incoming term (or phrase or subquery) even if branch was null
       // due to other possible errors
       state.currentOperation = null;
+      state.field = null;
     }
   }
 
@@ -538,7 +548,11 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a standard query (no phrase or prefix operators).
    */
-  protected Query newDefaultQuery(String text) {
+  protected Query newDefaultQuery(String text, String field) {
+    if (field != null) {
+      return createBooleanQuery(field, text, defaultOperator);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);
@@ -556,7 +570,12 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a fuzzy query.
    */
-  protected Query newFuzzyQuery(String text, int fuzziness) {
+  protected Query newFuzzyQuery(String text, String field, int fuzziness) {
+    if (field != null) {
+      final BytesRef term = getAnalyzer().normalize(field, text);
+      return new FuzzyQuery(new Term(field, term), fuzziness);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
@@ -574,7 +593,11 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a phrase query with slop.
    */
-  protected Query newPhraseQuery(String text, int slop) {
+  protected Query newPhraseQuery(String text, String field, int slop) {
+    if (field != null) {
+      return createPhraseQuery(field, text, slop);
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
@@ -592,7 +615,12 @@ public class SimpleQueryParser extends QueryBuilder {
   /**
    * Factory method to generate a prefix query.
    */
-  protected Query newPrefixQuery(String text) {
+  protected Query newPrefixQuery(String text, String field) {
+    if (field != null) {
+      final BytesRef term = getAnalyzer().normalize(field, text);
+      return new PrefixQuery(new Term(field, term));
+    }
+
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     for (Map.Entry<String,Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
@@ -648,6 +676,7 @@ public class SimpleQueryParser extends QueryBuilder {
     BooleanClause.Occur currentOperation;
     BooleanClause.Occur previousOperation;
     int not;
+    String field;
 
     Query top;
 

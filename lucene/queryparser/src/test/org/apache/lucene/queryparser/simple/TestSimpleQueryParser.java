@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -40,6 +41,7 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.ESCAPE_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.FIELD_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.FUZZY_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NOT_OPERATOR;
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.OR_OPERATOR;
@@ -140,6 +142,99 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(expected, parse("foobar*"));
   }
 
+  /** test a simple term with a field configuration */
+  public void testTermField() throws Exception {
+    Query expected = new TermQuery(new Term("myfield", "foobar"));
+
+    assertEquals(expected, parse("myfield:foobar"));
+
+    // Different fields
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("otherfield", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:foobar otherfield:test"));
+
+    // Make sure the field for additional resets correctly
+    bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("field", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:foobar test"));
+  }
+
+  /** test a simple phrase with field configuration */
+  public void testPhraseField() throws Exception {
+    PhraseQuery expected = new PhraseQuery("myfield", "foo", "bar");
+
+    assertEquals(expected, parse("myfield:\"foo bar\""));
+
+    // Make sure the field for additional resets correctly
+    BooleanQuery.Builder bq = new BooleanQuery.Builder();
+    bq.add(new BooleanClause(expected, Occur.MUST));
+    bq.add(new BooleanClause(new TermQuery(new Term("field", "test")), Occur.MUST));
+    assertEquals(bq.build(), parse("myfield:\"foo bar\" test"));
+  }
+
+
+  /** test a simple phrase with various slop settings */
+  public void testPhraseWithSlopField() throws Exception {
+    PhraseQuery expectedWithSlop = new PhraseQuery(2, "myfield", "foo", "bar");
+
+    assertEquals(expectedWithSlop, parse("myfield:\"foo bar\"~2"));
+
+    PhraseQuery expectedWithMultiDigitSlop = new PhraseQuery(10, "myfield", "foo", "bar");
+
+    assertEquals(expectedWithMultiDigitSlop, parse("myfield:\"foo bar\"~10"));
+
+    PhraseQuery expectedNoSlop = new PhraseQuery("myfield", "foo", "bar");
+
+    assertEquals("Ignore trailing tilde with no slop", expectedNoSlop, parse("myfield:\"foo bar\"~"));
+    assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("myfield:\"foo bar\"~a"));
+    assertEquals("Ignore non-numeric trailing slop", expectedNoSlop, parse("myfield:\"foo bar\"~1a"));
+    assertEquals("Ignore negative trailing slop", expectedNoSlop, parse("myfield:\"foo bar\"~-1"));
+
+    PhraseQuery pq = new PhraseQuery(12, "myfield", "foo", "bar");
+
+    BooleanQuery.Builder expectedBoolean = new BooleanQuery.Builder();
+    expectedBoolean.add(pq, Occur.MUST);
+    expectedBoolean.add(new TermQuery(new Term("field", "baz")), Occur.MUST);
+
+    assertEquals(expectedBoolean.build(), parse("myfield:\"foo bar\"~12 baz"));
+  }
+
+  /** test a simple prefix with a field */
+  public void testPrefixField() throws Exception {
+    PrefixQuery expected = new PrefixQuery(new Term("myfield", "foobar"));
+
+    assertEquals(expected, parse("myfield:foobar*"));
+  }
+
+  /** test a fuzzy query */
+  public void testFuzzyField() throws Exception {
+    Query regular = new TermQuery(new Term("myfield", "foobar"));
+    Query expected = new FuzzyQuery(new Term("myfield", "foobar"), 2);
+
+    assertEquals(expected, parse("myfield:foobar~2"));
+    assertEquals(expected, parse("myfield:foobar~"));
+    assertEquals(regular, parse("myfield:foobar~a"));
+    assertEquals(regular, parse("myfield:foobar~1a"));
+
+    BooleanQuery.Builder bool = new BooleanQuery.Builder();
+    FuzzyQuery fuzzy = new FuzzyQuery(new Term("myfield", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    bool.add(fuzzy, Occur.MUST);
+    bool.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
+
+    assertEquals(bool.build(), parse("myfield:foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
+  }
+
+  /** test some AND'd terms using '+' operator */
+  public void testANDField() throws Exception {
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    expected.add(new TermQuery(new Term("myfield", "foo")), Occur.MUST);
+    expected.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
+
+    assertEquals(expected.build(), parse("myfield:foo+bar"));
+  }
+
   /** test some AND'd terms using '+' operator */
   public void testAND() throws Exception {
     BooleanQuery.Builder expected = new BooleanQuery.Builder();
@@ -209,6 +304,18 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(expected.build(), parse("-foo"));
     assertEquals(expected.build(), parse("-(foo)"));
     assertEquals(expected.build(), parse("---foo"));
+  }
+
+
+  /** test negated term */
+  public void testNOTField() throws Exception {
+    BooleanQuery.Builder expected = new BooleanQuery.Builder();
+    expected.add(new TermQuery(new Term("myfield", "foo")), Occur.MUST_NOT);
+    expected.add(new MatchAllDocsQuery(), Occur.SHOULD);
+
+    assertEquals(expected.build(), parse("-myfield:foo"));
+    assertEquals(expected.build(), parse("-(myfield:foo)"));
+    assertEquals(expected.build(), parse("---myfield:foo"));
   }
 
   /** test crazy prefixes with multiple asterisks */
@@ -471,7 +578,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   /** test a term with field weights */
-  public void testWeightedTerm() throws Exception {
+  public void testWeightedTerm() {
     Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
@@ -490,7 +597,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   /** test a more complex query with field weights */
-  public void testWeightedOR() throws Exception {
+  public void testWeightedOR() {
     Map<String,Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
@@ -538,6 +645,12 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   public void testDisablePrefix() {
     Query expected = new TermQuery(new Term("field", "test*"));
     assertEquals(expected, parseKeyword("test*", ~PREFIX_OPERATOR));
+  }
+
+  /** test the ability to enable/disable field operator */
+  public void testDisableField() {
+    Query expected = new TermQuery(new Term("field", "myfield:test"));
+    assertEquals(expected, parseKeyword("myfield:test", ~FIELD_OPERATOR));
   }
 
   /** test the ability to enable/disable AND operator */
@@ -602,7 +715,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   // we aren't supposed to barf on any input...
-  public void testRandomQueries() throws Exception {
+  public void testRandomQueries() {
     for (int i = 0; i < 1000; i++) {
       String query = TestUtil.randomUnicodeString(random());
       parse(query); // no exception
@@ -610,8 +723,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     }
   }
 
-  public void testRandomQueries2() throws Exception {
-    char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~'};
+  public void testRandomQueries2() {
+    char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~', ':'};
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 1000; i++) {
       sb.setLength(0);
@@ -624,7 +737,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     }
   }
 
-  public void testStarBecomesMatchAll() throws Exception {
+  public void testStarBecomesMatchAll() {
     Query q = parse("*");
     assertEquals(q, new MatchAllDocsQuery());
     q = parse(" *   ");
