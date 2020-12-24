@@ -65,6 +65,11 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
+          case ":lucene:queries":
+            target "src/java/**", "src/test/**"
+            targetExclude "**/overview.html"
+          break
+
           // All others - disable reformatting/ checks for now.
           case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
@@ -87,7 +92,6 @@ allprojects { prj ->
           case ":lucene:memory":
           case ":lucene:misc":
           case ":lucene:monitor":
-          case ":lucene:queries":
           case ":lucene:queryparser":
           case ":lucene:replicator":
           case ":lucene:sandbox":

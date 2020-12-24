@@ -20,15 +20,12 @@ package org.apache.lucene.queries.intervals;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
-/**
- * A mock interval source that will only return a constant position for all documents
- */
+/** A mock interval source that will only return a constant position for all documents */
 public class OneTimeIntervalSource extends IntervalsSource {
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
@@ -36,6 +33,7 @@ public class OneTimeIntervalSource extends IntervalsSource {
       int doc = -1;
       boolean flag;
       final int maxDoc = ctx.reader().maxDoc();
+
       @Override
       public int start() {
         return 0;
@@ -103,9 +101,11 @@ public class OneTimeIntervalSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     return new IntervalMatchesIterator() {
       boolean next = true;
+
       @Override
       public int gaps() {
         return 0;
@@ -158,9 +158,7 @@ public class OneTimeIntervalSource extends IntervalsSource {
   }
 
   @Override
-  public void visit(String field, QueryVisitor visitor) {
-
-  }
+  public void visit(String field, QueryVisitor visitor) {}
 
   @Override
   public int minExtent() {

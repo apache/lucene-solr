@@ -18,9 +18,8 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -30,8 +29,8 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
 /**
- * Obtains long field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and makes those
- * values available as other numeric types, casting as needed.
+ * Obtains long field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and
+ * makes those values available as other numeric types, casting as needed.
  */
 public class LongFieldSource extends FieldCacheSource {
 
@@ -60,10 +59,11 @@ public class LongFieldSource extends FieldCacheSource {
   public SortField getSortField(boolean reverse) {
     return new SortField(field, Type.LONG, reverse);
   }
-  
+
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+
     final NumericDocValues arr = getNumericDocValues(context, readerContext);
 
     return new LongDocValues(this) {
@@ -71,7 +71,8 @@ public class LongFieldSource extends FieldCacheSource {
 
       private long getValueForDoc(int doc) throws IOException {
         if (doc < lastDocID) {
-          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          throw new IllegalArgumentException(
+              "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
         }
         lastDocID = doc;
         int curDocID = arr.docID();
@@ -84,7 +85,7 @@ public class LongFieldSource extends FieldCacheSource {
           return 0;
         }
       }
-      
+
       @Override
       public long longVal(int doc) throws IOException {
         return getValueForDoc(doc);
@@ -138,16 +139,16 @@ public class LongFieldSource extends FieldCacheSource {
           }
         };
       }
-
     };
   }
 
-  protected NumericDocValues getNumericDocValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  protected NumericDocValues getNumericDocValues(
+      Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     return DocValues.getNumeric(readerContext.reader(), field);
   }
 
   protected MutableValueLong newMutableValueLong() {
-    return new MutableValueLong();  
+    return new MutableValueLong();
   }
 
   @Override

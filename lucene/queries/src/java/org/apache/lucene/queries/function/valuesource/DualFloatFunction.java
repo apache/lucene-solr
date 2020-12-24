@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.Map;
-
 /**
- * Abstract {@link ValueSource} implementation which wraps two ValueSources
- * and applies an extendible float function to their values.
- **/
+ * Abstract {@link ValueSource} implementation which wraps two ValueSources and applies an
+ * extendible float function to their values.
+ */
 public abstract class DualFloatFunction extends ValueSource {
   protected final ValueSource a;
   protected final ValueSource b;
 
- /**
-   * @param   a  the base.
-   * @param   b  the exponent.
+  /**
+   * @param a the base.
+   * @param b the exponent.
    */
   public DualFloatFunction(ValueSource a, ValueSource b) {
     this.a = a;
@@ -43,7 +42,9 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   protected abstract String name();
-  protected abstract float func(int doc, FunctionValues aVals, FunctionValues bVals) throws IOException;
+
+  protected abstract float func(int doc, FunctionValues aVals, FunctionValues bVals)
+      throws IOException;
 
   @Override
   public String description() {
@@ -51,22 +52,24 @@ public abstract class DualFloatFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues aVals =  a.getValues(context, readerContext);
-    final FunctionValues bVals =  b.getValues(context, readerContext);
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    final FunctionValues aVals = a.getValues(context, readerContext);
+    final FunctionValues bVals = b.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) throws IOException {
         return func(doc, aVals, bVals);
       }
-      /** 
-       * True if and only if <em>all</em> of the wrapped {@link FunctionValues} 
-       * <code>exists</code> for the specified doc 
+      /**
+       * True if and only if <em>all</em> of the wrapped {@link FunctionValues} <code>exists</code>
+       * for the specified doc
        */
       @Override
       public boolean exists(int doc) throws IOException {
         return MultiFunction.allExists(doc, aVals, bVals);
       }
+
       @Override
       public String toString(int doc) throws IOException {
         return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
@@ -76,8 +79,8 @@ public abstract class DualFloatFunction extends ValueSource {
 
   @Override
   public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-    a.createWeight(context,searcher);
-    b.createWeight(context,searcher);
+    a.createWeight(context, searcher);
+    b.createWeight(context, searcher);
   }
 
   @Override
@@ -93,8 +96,7 @@ public abstract class DualFloatFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    DualFloatFunction other = (DualFloatFunction)o;
-    return this.a.equals(other.a)
-        && this.b.equals(other.b);
+    DualFloatFunction other = (DualFloatFunction) o;
+    return this.a.equals(other.a) && this.b.equals(other.b);
   }
 }

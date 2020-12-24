@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -57,10 +56,39 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
   static IndexReader reader;
   static IndexSearcher searcher;
 
-  static final List<String[]> documents = Arrays.asList(
-      /*             id,  double, float, int,  long,   string, text,                       double MV (x3),             int MV (x3)*/
-      new String[] { "0", "3.63", "5.2", "35", "4343", "test", "this is a test test test", "2.13", "3.69",  "-0.11",   "1", "7", "5"},
-      new String[] { "1", "5.65", "9.3", "54", "1954", "bar",  "second test",              "12.79", "123.456", "0.01", "12", "900", "-1" });
+  static final List<String[]> documents =
+      Arrays.asList(
+          /*             id,  double, float, int,  long,   string, text,                       double MV (x3),             int MV (x3)*/
+          new String[] {
+            "0",
+            "3.63",
+            "5.2",
+            "35",
+            "4343",
+            "test",
+            "this is a test test test",
+            "2.13",
+            "3.69",
+            "-0.11",
+            "1",
+            "7",
+            "5"
+          },
+          new String[] {
+            "1",
+            "5.65",
+            "9.3",
+            "54",
+            "1954",
+            "bar",
+            "second test",
+            "12.79",
+            "123.456",
+            "0.01",
+            "12",
+            "900",
+            "-1"
+          });
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -69,7 +97,7 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
     IndexWriterConfig iwConfig = newIndexWriterConfig(analyzer);
     iwConfig.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConfig);
-    for (String [] doc : documents) {
+    for (String[] doc : documents) {
       Document document = new Document();
       document.add(new StringField("id", doc[0], Field.Store.NO));
       document.add(new SortedDocValuesField("id", new BytesRef(doc[0])));
@@ -95,64 +123,66 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
 
   public void testDocFreq() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.docFreq(new Term("text", "test"));
-    assertHits(vs, new float[] { 2f, 2f });
+    assertHits(vs, new float[] {2f, 2f});
     assertEquals("docFreq(text:test)", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testMaxDoc() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.maxDoc();
-    assertHits(vs, new float[] { 2f, 2f });
+    assertHits(vs, new float[] {2f, 2f});
     assertEquals("maxDoc()", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testNumDocs() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.numDocs();
-    assertHits(vs, new float[] { 2f, 2f });
+    assertHits(vs, new float[] {2f, 2f});
     assertEquals("numDocs()", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testSumTotalTermFreq() throws Exception {
     LongValuesSource vs = IndexReaderFunctions.sumTotalTermFreq("text");
-    assertHits(vs.toDoubleValuesSource(), new float[] { 8f, 8f });
+    assertHits(vs.toDoubleValuesSource(), new float[] {8f, 8f});
     assertEquals("sumTotalTermFreq(text)", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testTermFreq() throws Exception {
-    assertHits(IndexReaderFunctions.termFreq(new Term("string", "bar")), new float[] { 0f, 1f });
-    assertHits(IndexReaderFunctions.termFreq(new Term("text", "test")), new float[] { 3f, 1f });
-    assertHits(IndexReaderFunctions.termFreq(new Term("bogus", "bogus")), new float[] { 0F, 0F });
-    assertEquals("termFreq(string:bar)", IndexReaderFunctions.termFreq(new Term("string", "bar")).toString());
+    assertHits(IndexReaderFunctions.termFreq(new Term("string", "bar")), new float[] {0f, 1f});
+    assertHits(IndexReaderFunctions.termFreq(new Term("text", "test")), new float[] {3f, 1f});
+    assertHits(IndexReaderFunctions.termFreq(new Term("bogus", "bogus")), new float[] {0F, 0F});
+    assertEquals(
+        "termFreq(string:bar)",
+        IndexReaderFunctions.termFreq(new Term("string", "bar")).toString());
     assertCacheable(IndexReaderFunctions.termFreq(new Term("text", "test")), true);
   }
 
   public void testTotalTermFreq() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.totalTermFreq(new Term("text", "test"));
-    assertHits(vs, new float[] { 4f, 4f });
+    assertHits(vs, new float[] {4f, 4f});
     assertEquals("totalTermFreq(text:test)", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testNumDeletedDocs() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.numDeletedDocs();
-    assertHits(vs, new float[] { 0, 0 });
+    assertHits(vs, new float[] {0, 0});
     assertEquals("numDeletedDocs()", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testSumDocFreq() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.sumDocFreq("text");
-    assertHits(vs, new float[] { 6, 6 });
+    assertHits(vs, new float[] {6, 6});
     assertEquals("sumDocFreq(text)", vs.toString());
     assertCacheable(vs, false);
   }
 
   public void testDocCount() throws Exception {
     DoubleValuesSource vs = IndexReaderFunctions.docCount("text");
-    assertHits(vs, new float[] { 2, 2 });
+    assertHits(vs, new float[] {2, 2});
     assertEquals("docCount(text)", vs.toString());
     assertCacheable(vs, false);
   }
@@ -179,8 +209,9 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
       expectedDocs[i] = i;
       expected[i] = new ScoreDoc(i, scores[i]);
     }
-    TopDocs docs = searcher.search(q, documents.size(),
-        new Sort(new SortField("id", SortField.Type.STRING)), true);
+    TopDocs docs =
+        searcher.search(
+            q, documents.size(), new Sort(new SortField("id", SortField.Type.STRING)), true);
     CheckHits.checkHits(random(), q, "", searcher, expectedDocs);
     CheckHits.checkHitsQuery(q, expected, docs.scoreDocs, expectedDocs);
     CheckHits.checkExplanations(q, "", searcher);
@@ -189,14 +220,15 @@ public class TestIndexReaderFunctions extends LuceneTestCase {
 
   void assertSort(DoubleValuesSource vs, ScoreDoc expected[]) throws Exception {
     boolean reversed = random().nextBoolean();
-    Arrays.sort(expected, (a, b) -> reversed ? (int) (b.score - a.score) : (int) (a.score - b.score));
+    Arrays.sort(
+        expected, (a, b) -> reversed ? (int) (b.score - a.score) : (int) (a.score - b.score));
     int[] expectedDocs = new int[expected.length];
     for (int i = 0; i < expected.length; i++) {
       expectedDocs[i] = expected[i].doc;
     }
-    TopDocs docs = searcher.search(new MatchAllDocsQuery(), expected.length,
-        new Sort(vs.getSortField(reversed)));
+    TopDocs docs =
+        searcher.search(
+            new MatchAllDocsQuery(), expected.length, new Sort(vs.getSortField(reversed)));
     CheckHits.checkHitsQuery(new MatchAllDocsQuery(), expected, docs.scoreDocs, expectedDocs);
   }
-
 }
