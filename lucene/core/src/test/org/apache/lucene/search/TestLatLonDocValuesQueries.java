@@ -50,7 +50,8 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, ShapeField.QueryRelation.INTERSECTS, geometry);
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, ShapeField.QueryRelation.INTERSECTS, geometry);
   }
 
   @Override

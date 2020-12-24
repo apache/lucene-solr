@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.document;
 
-import java.util.Arrays;
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import java.util.Arrays;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
@@ -31,30 +31,39 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.geo.Circle;
 
-
-/** Base test case for testing geospatial indexing and search functionality  for {@link LatLonShape} **/
+/**
+ * Base test case for testing geospatial indexing and search functionality for {@link LatLonShape} *
+ */
 public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase {
 
   @Override
-  protected Query newRectQuery(String field, QueryRelation queryRelation, double minLon, double maxLon, double minLat, double maxLat) {
+  protected Query newRectQuery(
+      String field,
+      QueryRelation queryRelation,
+      double minLon,
+      double maxLon,
+      double minLat,
+      double maxLat) {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
   protected Query newLineQuery(String field, QueryRelation queryRelation, Object... lines) {
-    return LatLonShape.newLineQuery(field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
+    return LatLonShape.newLineQuery(
+        field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
   }
 
   @Override
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons) {
-    return LatLonShape.newPolygonQuery(field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
+    return LatLonShape.newPolygonQuery(
+        field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
   }
 
   @Override
   protected Query newPointsQuery(String field, QueryRelation queryRelation, Object... points) {
-    return LatLonShape.newPointQuery(field, queryRelation, Arrays.stream(points).toArray(double[][]::new));
+    return LatLonShape.newPointQuery(
+        field, queryRelation, Arrays.stream(points).toArray(double[][]::new));
   }
 
   @Override
@@ -68,7 +77,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
-    for (int  i =0; i < numShapes; i++) {
+    for (int i = 0; i < numShapes; i++) {
       indexRandomShapes(w.w, nextShape());
     }
     if (random().nextBoolean()) {
@@ -82,20 +91,28 @@ public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase 
 
     Rectangle box = GeoTestUtil.nextBox();
 
-    Query q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.INTERSECTS, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    Query q1 =
+        LatLonShape.newBoxQuery(
+            FIELD_NAME, QueryRelation.INTERSECTS, box.minLat, box.maxLat, box.minLon, box.maxLon);
     Query q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.INTERSECTS, box);
     assertEquals(searcher.count(q1), searcher.count(q2));
-    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.WITHIN, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    q1 =
+        LatLonShape.newBoxQuery(
+            FIELD_NAME, QueryRelation.WITHIN, box.minLat, box.maxLat, box.minLon, box.maxLon);
     q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.WITHIN, box);
     assertEquals(searcher.count(q1), searcher.count(q2));
-    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.CONTAINS, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    q1 =
+        LatLonShape.newBoxQuery(
+            FIELD_NAME, QueryRelation.CONTAINS, box.minLat, box.maxLat, box.minLon, box.maxLon);
     if (box.crossesDateline()) {
       q2 = LatLonShape.newGeometryQuery(FIELD_NAME, QueryRelation.CONTAINS, box);
     } else {
       q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.CONTAINS, box);
     }
     assertEquals(searcher.count(q1), searcher.count(q2));
-    q1 = LatLonShape.newBoxQuery(FIELD_NAME, QueryRelation.DISJOINT, box.minLat, box.maxLat, box.minLon, box.maxLon);
+    q1 =
+        LatLonShape.newBoxQuery(
+            FIELD_NAME, QueryRelation.DISJOINT, box.minLat, box.maxLat, box.minLon, box.maxLon);
     q2 = new LatLonShapeQuery(FIELD_NAME, QueryRelation.DISJOINT, box);
     assertEquals(searcher.count(q1), searcher.count(q2));
 
@@ -106,15 +123,43 @@ public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase 
     Rectangle rectangle = GeoTestUtil.nextBox();
     QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
     String fieldName = "foo";
-    Query q1 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
-    Query q2 = newRectQuery(fieldName, queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    Query q1 =
+        newRectQuery(
+            fieldName,
+            queryRelation,
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat);
+    Query q2 =
+        newRectQuery(
+            fieldName,
+            queryRelation,
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat);
     QueryUtils.checkEqual(q1, q2);
     // different field name
-    Query q3 = newRectQuery("bar", queryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    Query q3 =
+        newRectQuery(
+            "bar",
+            queryRelation,
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat);
     QueryUtils.checkUnequal(q1, q3);
     // different query relation
     QueryRelation newQueryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-    Query q4 = newRectQuery(fieldName, newQueryRelation, rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat);
+    Query q4 =
+        newRectQuery(
+            fieldName,
+            newQueryRelation,
+            rectangle.minLon,
+            rectangle.maxLon,
+            rectangle.minLat,
+            rectangle.maxLat);
     if (queryRelation == newQueryRelation) {
       QueryUtils.checkEqual(q1, q4);
     } else {
@@ -122,7 +167,14 @@ public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase 
     }
     // different shape
     Rectangle newRectangle = GeoTestUtil.nextBox();
-    Query q5 = newRectQuery(fieldName, queryRelation, newRectangle.minLon, newRectangle.maxLon, newRectangle.minLat, newRectangle.maxLat);
+    Query q5 =
+        newRectQuery(
+            fieldName,
+            queryRelation,
+            newRectangle.minLon,
+            newRectangle.maxLon,
+            newRectangle.minLat,
+            newRectangle.maxLat);
     if (rectangle.equals(newRectangle)) {
       QueryUtils.checkEqual(q1, q5);
     } else {
@@ -177,7 +229,8 @@ public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase 
       QueryUtils.checkUnequal(q1, q4);
     }
     // different shape
-    Polygon newPolygon = GeoTestUtil.nextPolygon();;
+    Polygon newPolygon = GeoTestUtil.nextPolygon();
+    ;
     Query q5 = newPolygonQuery(fieldName, queryRelation, newPolygon);
     if (polygon.equals(newPolygon)) {
       QueryUtils.checkEqual(q1, q5);

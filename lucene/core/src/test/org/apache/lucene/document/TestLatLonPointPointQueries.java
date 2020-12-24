@@ -20,7 +20,10 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Point;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude,
+ * longitude} points
+ */
 public class TestLatLonPointPointQueries extends BaseLatLonPointTestCase {
 
   @Override
@@ -48,9 +51,12 @@ public class TestLatLonPointPointQueries extends BaseLatLonPointTestCase {
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point p = (Point) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon())) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(
+                query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()))
+            == Component2D.WithinRelation.CANDIDATE;
       }
-      return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()));
+      return testComponentQuery(
+          query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()));
     }
   }
 

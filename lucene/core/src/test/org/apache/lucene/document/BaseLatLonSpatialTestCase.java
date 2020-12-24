@@ -16,7 +16,17 @@
  */
 package org.apache.lucene.document;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
+import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
+import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
+
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import java.util.Arrays;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Component2D;
@@ -31,18 +41,7 @@ import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.TestUtil;
 
-import java.util.Arrays;
-
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
-import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
-
-/** Base test case for testing geospatial indexing and search functionality **/
+/** Base test case for testing geospatial indexing and search functionality * */
 public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
 
   protected abstract ShapeType getShapeType();
@@ -70,12 +69,11 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
   protected Component2D toPoint2D(Object... points) {
     double[][] p = Arrays.stream(points).toArray(double[][]::new);
     Point[] pointArray = new Point[points.length];
-    for (int i =0; i < points.length; i++) {
+    for (int i = 0; i < points.length; i++) {
       pointArray[i] = new Point(p[i][0], p[i][1]);
     }
     return LatLonGeometry.create(pointArray);
   }
-  
 
   @Override
   protected Component2D toCircle2D(Object circle) {
@@ -84,7 +82,8 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
 
   @Override
   protected Circle nextCircle() {
-    final double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
+    final double radiusMeters =
+        random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
     return new Circle(nextLatitude(), nextLongitude(), radiusMeters);
   }
 
@@ -106,19 +105,19 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
 
   @Override
   protected double rectMinX(Object rect) {
-    return ((Rectangle)rect).minLon;
+    return ((Rectangle) rect).minLon;
   }
 
   @Override
   protected double rectMaxX(Object rect) {
-    return ((Rectangle)rect).maxLon;
+    return ((Rectangle) rect).maxLon;
   }
 
   @Override
   protected double rectMinY(Object rect) {
-    return ((Rectangle)rect).minLat;
+    return ((Rectangle) rect).minLat;
   }
-  
+
   /** factory method to create a new polygon query */
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
@@ -126,14 +125,14 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
 
   @Override
   protected double rectMaxY(Object rect) {
-    return ((Rectangle)rect).maxLat;
+    return ((Rectangle) rect).maxLat;
   }
 
   @Override
   protected boolean rectCrossesDateline(Object rect) {
-    return ((Rectangle)rect).crossesDateline();
+    return ((Rectangle) rect).crossesDateline();
   }
-  
+
   @Override
   public Line nextLine() {
     return GeoTestUtil.nextLine();
@@ -194,7 +193,7 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
     POLYGON() {
       public Polygon nextShape() {
         while (true) {
-          Polygon p =  GeoTestUtil.nextPolygon();
+          Polygon p = GeoTestUtil.nextPolygon();
           try {
             Tessellator.tessellate(p);
             return p;
@@ -211,6 +210,7 @@ public abstract class BaseLatLonSpatialTestCase extends BaseSpatialTestCase {
     };
 
     static ShapeType[] subList;
+
     static {
       subList = new ShapeType[] {POINT, LINE, POLYGON};
     }

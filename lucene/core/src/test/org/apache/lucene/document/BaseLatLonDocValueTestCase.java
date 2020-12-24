@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import java.util.Arrays;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Line;
@@ -24,24 +25,34 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.Query;
 
-import java.util.Arrays;
-
-/** Base test case for testing geospatial indexing and search functionality for {@link LatLonDocValuesField} **/
+/**
+ * Base test case for testing geospatial indexing and search functionality for {@link
+ * LatLonDocValuesField} *
+ */
 public abstract class BaseLatLonDocValueTestCase extends BaseLatLonSpatialTestCase {
 
   @Override
-  protected Query newRectQuery(String field, QueryRelation queryRelation, double minLon, double maxLon, double minLat, double maxLat) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, queryRelation, new Rectangle(minLat, maxLat, minLon, maxLon));
+  protected Query newRectQuery(
+      String field,
+      QueryRelation queryRelation,
+      double minLon,
+      double maxLon,
+      double minLat,
+      double maxLat) {
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, queryRelation, new Rectangle(minLat, maxLat, minLon, maxLon));
   }
-  
+
   @Override
   protected Query newLineQuery(String field, QueryRelation queryRelation, Object... lines) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
   }
-  
+
   @Override
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
   }
 
   @Override

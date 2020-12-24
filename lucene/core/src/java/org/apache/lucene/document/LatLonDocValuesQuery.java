@@ -17,6 +17,10 @@
 
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -35,18 +39,12 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 /**
- * Finds all previously indexed geo points that comply the given {@link ShapeField.QueryRelation} with
- * the specified array of {@link LatLonGeometry}.
+ * Finds all previously indexed geo points that comply the given {@link ShapeField.QueryRelation}
+ * with the specified array of {@link LatLonGeometry}.
  *
  * <p>The field must be indexed using {@link LatLonDocValuesField} added per document.
- *
- **/
+ */
 class LatLonDocValuesQuery extends Query {
 
   private final String field;
@@ -54,8 +52,8 @@ class LatLonDocValuesQuery extends Query {
   private final ShapeField.QueryRelation queryRelation;
   private final Component2D component2D;
 
-
-  LatLonDocValuesQuery(String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... geometries) {
+  LatLonDocValuesQuery(
+      String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... geometries) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
@@ -66,14 +64,20 @@ class LatLonDocValuesQuery extends Query {
       for (LatLonGeometry geometry : geometries) {
         if (geometry instanceof Line) {
           // TODO: line queries do not support within relations
-          throw new IllegalArgumentException("LatLonDocValuesPointQuery does not support " + ShapeField.QueryRelation.WITHIN + " queries with line geometries");
+          throw new IllegalArgumentException(
+              "LatLonDocValuesPointQuery does not support "
+                  + ShapeField.QueryRelation.WITHIN
+                  + " queries with line geometries");
         }
       }
     }
     if (queryRelation == ShapeField.QueryRelation.CONTAINS) {
       for (LatLonGeometry geometry : geometries) {
         if ((geometry instanceof Point) == false) {
-          throw new IllegalArgumentException("LatLonDocValuesPointQuery does not support " + ShapeField.QueryRelation.CONTAINS + " queries with non-points geometries");
+          throw new IllegalArgumentException(
+              "LatLonDocValuesPointQuery does not support "
+                  + ShapeField.QueryRelation.CONTAINS
+                  + " queries with non-points geometries");
         }
       }
     }
@@ -101,9 +105,9 @@ class LatLonDocValuesQuery extends Query {
       return false;
     }
     LatLonDocValuesQuery other = (LatLonDocValuesQuery) obj;
-    return field.equals(other.field) && 
-           queryRelation == other.queryRelation &&
-           Arrays.equals(geometries, other.geometries);
+    return field.equals(other.field)
+        && queryRelation == other.queryRelation
+        && Arrays.equals(geometries, other.geometries);
   }
 
   @Override
@@ -123,11 +127,14 @@ class LatLonDocValuesQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final GeoEncodingUtils.Component2DPredicate component2DPredicate = 
-            queryRelation == ShapeField.QueryRelation.CONTAINS ? null : GeoEncodingUtils.createComponentPredicate(component2D);
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    final GeoEncodingUtils.Component2DPredicate component2DPredicate =
+        queryRelation == ShapeField.QueryRelation.CONTAINS
+            ? null
+            : GeoEncodingUtils.createComponentPredicate(component2D);
     return new ConstantScoreWeight(this, boost) {
-      
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = context.reader().getSortedNumericDocValues(field);
@@ -149,7 +156,8 @@ class LatLonDocValuesQuery extends Query {
             iterator = contains(values, geometries);
             break;
           default:
-            throw new IllegalArgumentException("Invalid query relationship:[" + queryRelation + "]");
+            throw new IllegalArgumentException(
+                "Invalid query relationship:[" + queryRelation + "]");
         }
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
@@ -160,8 +168,9 @@ class LatLonDocValuesQuery extends Query {
       }
     };
   }
-  
-  private TwoPhaseIterator intersects(SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
+
+  private TwoPhaseIterator intersects(
+      SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
     return new TwoPhaseIterator(values) {
       @Override
       public boolean matches() throws IOException {
@@ -183,7 +192,8 @@ class LatLonDocValuesQuery extends Query {
     };
   }
 
-  private TwoPhaseIterator within(SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
+  private TwoPhaseIterator within(
+      SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
     return new TwoPhaseIterator(values) {
       @Override
       public boolean matches() throws IOException {
@@ -205,7 +215,8 @@ class LatLonDocValuesQuery extends Query {
     };
   }
 
-  private TwoPhaseIterator disjoint(SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
+  private TwoPhaseIterator disjoint(
+      SortedNumericDocValues values, GeoEncodingUtils.Component2DPredicate component2DPredicate) {
     return new TwoPhaseIterator(values) {
       @Override
       public boolean matches() throws IOException {

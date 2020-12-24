@@ -20,7 +20,10 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Point;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude,
+ * longitude} points
+ */
 public class TestLatLonMultiPointPointQueries extends BaseLatLonPointTestCase {
 
   @Override
@@ -32,7 +35,7 @@ public class TestLatLonMultiPointPointQueries extends BaseLatLonPointTestCase {
   protected Object nextShape() {
     int n = random().nextInt(4) + 1;
     Point[] points = new Point[n];
-    for (int i =0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       points[i] = (Point) ShapeType.POINT.nextShape();
     }
     return points;
@@ -47,7 +50,7 @@ public class TestLatLonMultiPointPointQueries extends BaseLatLonPointTestCase {
     }
     return fields;
   }
-  
+
   @Override
   public Validator getValidator() {
     return new MultiPointValidator(ENCODER);
@@ -55,6 +58,7 @@ public class TestLatLonMultiPointPointQueries extends BaseLatLonPointTestCase {
 
   protected class MultiPointValidator extends Validator {
     TestLatLonPointShapeQueries.PointValidator POINTVALIDATOR;
+
     MultiPointValidator(Encoder encoder) {
       super(encoder);
       POINTVALIDATOR = new TestLatLonPointShapeQueries.PointValidator(encoder);
@@ -66,7 +70,7 @@ public class TestLatLonMultiPointPointQueries extends BaseLatLonPointTestCase {
       POINTVALIDATOR.queryRelation = relation;
       return this;
     }
-    
+
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point[] points = (Point[]) shape;
