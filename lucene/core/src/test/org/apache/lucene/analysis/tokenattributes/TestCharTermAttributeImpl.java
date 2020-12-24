@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
-
 import java.nio.CharBuffer;
-import java.util.HashMap;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestCharTermAttributeImpl extends LuceneTestCase {
 
@@ -34,8 +32,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, content.length);
-    for (int i = 0; i < 2000; i++)
-    {
+    for (int i = 0; i < 2000; i++) {
       t.resizeBuffer(i);
       assertTrue(i <= t.buffer().length);
       assertEquals("hello", t.toString());
@@ -46,17 +43,18 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.copyBuffer(content, 0, content.length);
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.setLength(-1);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.setLength(-1);
+        });
   }
 
   @Slow
   public void testGrow() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     StringBuilder buf = new StringBuilder("ab");
-    for (int i = 0; i < 20; i++)
-    {
+    for (int i = 0; i < 20; i++) {
       char[] content = buf.toString().toCharArray();
       t.copyBuffer(content, 0, content.length);
       assertEquals(buf.length(), t.length());
@@ -68,8 +66,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     // now as a StringBuilder, first variant
     t = new CharTermAttributeImpl();
     buf = new StringBuilder("ab");
-    for (int i = 0; i < 20; i++)
-    {
+    for (int i = 0; i < 20; i++) {
       t.setEmpty().append(buf);
       assertEquals(buf.length(), t.length());
       assertEquals(buf.toString(), t.toString());
@@ -80,8 +77,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     // Test for slow growth to a long term
     t = new CharTermAttributeImpl();
     buf = new StringBuilder("a");
-    for (int i = 0; i < 20000; i++)
-    {
+    for (int i = 0; i < 20000; i++) {
       t.setEmpty().append(buf);
       assertEquals(buf.length(), t.length());
       assertEquals(buf.toString(), t.toString());
@@ -109,7 +105,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
   }
-  
+
   public void testEquals() throws Exception {
     CharTermAttributeImpl t1a = new CharTermAttributeImpl();
     char[] content1a = "hello".toCharArray();
@@ -124,7 +120,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertFalse(t1a.equals(t2));
     assertFalse(t2.equals(t1b));
   }
-  
+
   public void testCopyTo() throws Exception {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     CharTermAttributeImpl copy = assertCopyIsEqual(t);
@@ -139,30 +135,34 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals(t.toString(), copy.toString());
     assertNotSame(buf, copy.buffer());
   }
-  
+
   public void testAttributeReflection() throws Exception {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append("foobar");
-    TestUtil.assertAttributeReflection(t, new HashMap<String, Object>() {{
-      put(CharTermAttribute.class.getName() + "#term", "foobar");
-      put(TermToBytesRefAttribute.class.getName() + "#bytes", new BytesRef("foobar"));
-    }});
+    TestUtil.assertAttributeReflection(
+        t,
+        new HashMap<String, Object>() {
+          {
+            put(CharTermAttribute.class.getName() + "#term", "foobar");
+            put(TermToBytesRefAttribute.class.getName() + "#bytes", new BytesRef("foobar"));
+          }
+        });
   }
-  
+
   public void testCharSequenceInterface() {
-    final String s = "0123456789"; 
+    final String s = "0123456789";
     final CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append(s);
-    
+
     assertEquals(s.length(), t.length());
-    assertEquals("12", t.subSequence(1,3).toString());
-    assertEquals(s, t.subSequence(0,s.length()).toString());
-    
+    assertEquals("12", t.subSequence(1, 3).toString());
+    assertEquals(s, t.subSequence(0, s.length()).toString());
+
     assertTrue(Pattern.matches("01\\d+", t));
-    assertTrue(Pattern.matches("34", t.subSequence(3,5)));
-    
-    assertEquals(s.subSequence(3,7).toString(), t.subSequence(3,7).toString());
-    
+    assertTrue(Pattern.matches("34", t.subSequence(3, 5)));
+
+    assertEquals(s.subSequence(3, 7).toString(), t.subSequence(3, 7).toString());
+
     for (int i = 0; i < s.length(); i++) {
       assertTrue(t.charAt(i) == s.charAt(i));
     }
@@ -200,24 +200,34 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals("4test", t.toString());
     t.append((CharSequence) t2, 1, 2);
     assertEquals("4teste", t.toString());
-    
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.append((CharSequence) t2, 1, 5);
-    });
 
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.append((CharSequence) t2, 1, 0);
-    });
-    
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.append((CharSequence) t2, 1, 5);
+        });
+
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.append((CharSequence) t2, 1, 0);
+        });
+
     t.append((CharSequence) null);
     assertEquals("4testenull", t.toString());
   }
-  
+
   public void testAppendableInterfaceWithLongSequences() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append((CharSequence) "01234567890123456789012345678901234567890123456789");
-    t.append((CharSequence) CharBuffer.wrap("01234567890123456789012345678901234567890123456789".toCharArray()), 3, 50);
-    assertEquals("0123456789012345678901234567890123456789012345678934567890123456789012345678901234567890123456789", t.toString());
+    t.append(
+        (CharSequence)
+            CharBuffer.wrap("01234567890123456789012345678901234567890123456789".toCharArray()),
+        3,
+        50);
+    assertEquals(
+        "0123456789012345678901234567890123456789012345678934567890123456789012345678901234567890123456789",
+        t.toString());
     t.setEmpty().append((CharSequence) new StringBuilder("01234567890123456789"), 5, 17);
     assertEquals((CharSequence) "567890123456", t.toString());
     t.append(new StringBuffer(t));
@@ -227,22 +237,34 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals("345678901234567", buf.toString());
     t.setEmpty().append(buf, 1, 14);
     assertEquals("4567890123456", t.toString());
-    
+
     // finally use a completely custom CharSequence that is not catched by instanceof checks
     final String longTestString = "012345678901234567890123456789";
-    t.append(new CharSequence() {
-      @Override
-      public char charAt(int i) { return longTestString.charAt(i); }
-      @Override
-      public int length() { return longTestString.length(); }
-      @Override
-      public CharSequence subSequence(int start, int end) { return longTestString.subSequence(start, end); }
-      @Override
-      public String toString() { return longTestString; }
-    });
-    assertEquals("4567890123456"+longTestString, t.toString());
+    t.append(
+        new CharSequence() {
+          @Override
+          public char charAt(int i) {
+            return longTestString.charAt(i);
+          }
+
+          @Override
+          public int length() {
+            return longTestString.length();
+          }
+
+          @Override
+          public CharSequence subSequence(int start, int end) {
+            return longTestString.subSequence(start, end);
+          }
+
+          @Override
+          public String toString() {
+            return longTestString;
+          }
+        });
+    assertEquals("4567890123456" + longTestString, t.toString());
   }
-  
+
   public void testNonCharSequenceAppend() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append("0123456789");
@@ -259,27 +281,35 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     t.append((CharTermAttribute) null);
     assertEquals("012345678901234567890123456789testnullnullnull", t.toString());
   }
-  
+
   public void testExceptions() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     t.append("test");
     assertEquals("test", t.toString());
 
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.charAt(-1);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.charAt(-1);
+        });
 
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.charAt(4);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.charAt(4);
+        });
 
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.subSequence(0, 5);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.subSequence(0, 5);
+        });
 
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      t.subSequence(5, 0);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          t.subSequence(5, 0);
+        });
   }
 
   public static <T extends AttributeImpl> T assertCloneIsEqual(T att) {
@@ -298,9 +328,9 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());
     return copy;
   }
-  
+
   /*
-  
+
   // test speed of the dynamic instanceof checks in append(CharSequence),
   // to find the best max length for the generic while (start<end) loop:
   public void testAppendPerf() {
@@ -334,7 +364,7 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     long endTime = System.currentTimeMillis();
     System.out.println("Time: " + (endTime-startTime)/1000.0 + " s");
   }
-  
+
   */
 
 }

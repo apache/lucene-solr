@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.EOFException;
 import java.io.IOException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
@@ -27,10 +26,11 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Reads points from disk in a fixed-with format, previously written with {@link OfflinePointWriter}.
+ * Reads points from disk in a fixed-with format, previously written with {@link
+ * OfflinePointWriter}.
  *
  * @lucene.internal
- * */
+ */
 public final class OfflinePointReader implements PointReader {
 
   long countLeft;
@@ -45,22 +45,43 @@ public final class OfflinePointReader implements PointReader {
   final String name;
   private final OfflinePointValue pointValue;
 
-  public OfflinePointReader(BKDConfig config, Directory tempDir, String tempFileName, long start, long length, byte[] reusableBuffer) throws IOException {
+  public OfflinePointReader(
+      BKDConfig config,
+      Directory tempDir,
+      String tempFileName,
+      long start,
+      long length,
+      byte[] reusableBuffer)
+      throws IOException {
     this.config = config;
 
-    if ((start + length) * config.bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
-      throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + config.bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
+    if ((start + length) * config.bytesPerDoc + CodecUtil.footerLength()
+        > tempDir.fileLength(tempFileName)) {
+      throw new IllegalArgumentException(
+          "requested slice is beyond the length of this file: start="
+              + start
+              + " length="
+              + length
+              + " bytesPerDoc="
+              + config.bytesPerDoc
+              + " fileLength="
+              + tempDir.fileLength(tempFileName)
+              + " tempFileName="
+              + tempFileName);
     }
     if (reusableBuffer == null) {
       throw new IllegalArgumentException("[reusableBuffer] cannot be null");
     }
     if (reusableBuffer.length < config.bytesPerDoc) {
-      throw new IllegalArgumentException("Length of [reusableBuffer] must be bigger than " + config.bytesPerDoc);
+      throw new IllegalArgumentException(
+          "Length of [reusableBuffer] must be bigger than " + config.bytesPerDoc);
     }
 
-    this.maxPointOnHeap =  reusableBuffer.length / config.bytesPerDoc;
+    this.maxPointOnHeap = reusableBuffer.length / config.bytesPerDoc;
     // Best-effort checksumming:
-    if (start == 0 && length*config.bytesPerDoc == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
+    if (start == 0
+        && length * config.bytesPerDoc
+            == tempDir.fileLength(tempFileName) - CodecUtil.footerLength()) {
       // If we are going to read the entire file, e.g. because BKDWriter is now
       // partitioning it, we open with checksums:
       in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE);
@@ -114,14 +135,14 @@ public final class OfflinePointReader implements PointReader {
   @Override
   public PointValue pointValue() {
     pointValue.setOffset(offset);
-   return pointValue;
+    return pointValue;
   }
 
   @Override
   public void close() throws IOException {
     try {
       if (countLeft == 0 && in instanceof ChecksumIndexInput && checked == false) {
-        //System.out.println("NOW CHECK: " + name);
+        // System.out.println("NOW CHECK: " + name);
         checked = true;
         CodecUtil.checkFooter((ChecksumIndexInput) in);
       }
@@ -130,9 +151,7 @@ public final class OfflinePointReader implements PointReader {
     }
   }
 
-  /**
-   * Reusable implementation for a point value offline
-   */
+  /** Reusable implementation for a point value offline */
   static class OfflinePointValue implements PointValue {
 
     final BytesRef packedValue;
@@ -145,9 +164,7 @@ public final class OfflinePointReader implements PointReader {
       this.packedValueDocID = new BytesRef(value, 0, config.bytesPerDoc);
     }
 
-    /**
-     * Sets a new value by changing the offset.
-     */
+    /** Sets a new value by changing the offset. */
     public void setOffset(int offset) {
       packedValue.offset = offset;
       packedValueDocID.offset = offset;
@@ -161,8 +178,10 @@ public final class OfflinePointReader implements PointReader {
     @Override
     public int docID() {
       int position = packedValueDocID.offset + packedValueLength;
-      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
-          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
+      return ((packedValueDocID.bytes[position] & 0xFF) << 24)
+          | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[++position] & 0xFF) << 8)
+          | (packedValueDocID.bytes[++position] & 0xFF);
     }
 
     @Override
@@ -170,6 +189,4 @@ public final class OfflinePointReader implements PointReader {
       return packedValueDocID;
     }
   }
-
 }
-

@@ -104,7 +104,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     Directory directory = newDirectory();
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
-    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm" +
+        "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new NumericDocValuesField("dv", 5));

@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
@@ -102,21 +101,24 @@ class DocIdsWriter {
       long l1 = in.readLong();
       long l2 = in.readLong();
       long l3 = in.readLong();
-      docIDs[i] =  (int) (l1 >>> 40);
-      docIDs[i+1] = (int) (l1 >>> 16) & 0xffffff;
-      docIDs[i+2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
-      docIDs[i+3] = (int) (l2 >>> 32) & 0xffffff;
-      docIDs[i+4] = (int) (l2 >>> 8) & 0xffffff;
-      docIDs[i+5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
-      docIDs[i+6] = (int) (l3 >>> 24) & 0xffffff;
-      docIDs[i+7] = (int) l3 & 0xffffff;
+      docIDs[i] = (int) (l1 >>> 40);
+      docIDs[i + 1] = (int) (l1 >>> 16) & 0xffffff;
+      docIDs[i + 2] = (int) (((l1 & 0xffff) << 8) | (l2 >>> 56));
+      docIDs[i + 3] = (int) (l2 >>> 32) & 0xffffff;
+      docIDs[i + 4] = (int) (l2 >>> 8) & 0xffffff;
+      docIDs[i + 5] = (int) (((l2 & 0xff) << 16) | (l3 >>> 48));
+      docIDs[i + 6] = (int) (l3 >>> 24) & 0xffffff;
+      docIDs[i + 7] = (int) l3 & 0xffffff;
     }
     for (; i < count; ++i) {
       docIDs[i] = (Short.toUnsignedInt(in.readShort()) << 8) | Byte.toUnsignedInt(in.readByte());
     }
   }
 
-  /** Read {@code count} integers and feed the result directly to {@link IntersectVisitor#visit(int)}. */
+  /**
+   * Read {@code count} integers and feed the result directly to {@link
+   * IntersectVisitor#visit(int)}.
+   */
   static void readInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     final int bpv = in.readByte();
     switch (bpv) {
@@ -134,7 +136,8 @@ class DocIdsWriter {
     }
   }
 
-  private static void readDeltaVInts(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  private static void readDeltaVInts(IndexInput in, int count, IntersectVisitor visitor)
+      throws IOException {
     int doc = 0;
     for (int i = 0; i < count; i++) {
       doc += in.readVInt();
@@ -142,13 +145,15 @@ class DocIdsWriter {
     }
   }
 
-  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  private static void readInts32(IndexInput in, int count, IntersectVisitor visitor)
+      throws IOException {
     for (int i = 0; i < count; i++) {
       visitor.visit(in.readInt());
     }
   }
 
-  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
+  private static void readInts24(IndexInput in, int count, IntersectVisitor visitor)
+      throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
       long l1 = in.readLong();

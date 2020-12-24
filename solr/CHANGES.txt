@@ -226,9 +226,13 @@ Improvements
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
 
+* SOLR-14413: Allow timeAllowed and cursorMark parameters together. (John Gallagher via Mike Drob)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
+
+* SOLR-15049: Optimize same-core, same-field joins in TopLevelJoinQuery (Jason Gerlowski)
 
 Bug Fixes
 ---------------------
@@ -262,16 +266,26 @@ Bug Fixes
 * SOLR-12182: Don't persist base_url in ZK as the URL scheme is variable, compute from node_name instead when reading
   state back from ZK. (Timothy Potter)
 
+* SOLR-15046: Check if SOLR_SSL_ENABLED strictly equal to true for setting solr.jetty.https.port (Timothy Potter)
+
 * SOLR-14939: JSON range faceting to support cache=false parameter. (Christine Poerschke, Mike Drob)
+
+* SOLR-15031: Fix preventing null being wrapped in a QueryValueSource subQuery. Such null queries can be caused by query text
+  resulting in an empty token stream. (Pieter van Boxtel via Mike Drob)
 
 Other Changes
 ---------------------
 
 * SOLR-14954: Heavily edit reindexing.adoc (Sameul García Martínez and Erick Erickson)
 
+* SOLR-14981: Removed search results clustering contrib from 8x (due to Carrot2 incompatibility with Java 1.8).
+  (Dawid Weiss)
+
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
 * SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
+
+* SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
 
 ==================  8.7.0 ==================
 

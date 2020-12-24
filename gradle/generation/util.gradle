@@ -95,4 +95,21 @@ configure(project(":lucene:core")) {
       )
     }
   }
+
+  task regenerate() {
+    description "Regenerate any generated sources"
+    group "generation"
+
+    // Run regeneration tasks.
+    dependsOn utilGenPacked
+    dependsOn utilGenLev
+
+    // Clean up and reformat the generated sources after generation.
+    dependsOn "tidy"
+  }
+
+  // Make sure tidy runs after generation, if they're defined.
+  tasks.matching { it.name == "tidy" }.configureEach {
+    mustRunAfter utilGenPacked, utilGenLev
+  }
 }

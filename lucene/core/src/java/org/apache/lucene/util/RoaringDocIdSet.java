@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
  * {@link DocIdSet} implementation inspired from http://roaringbitmap.org/
  *
- * The space is divided into blocks of 2^16 bits and each block is encoded
- * independently. In each block, if less than 2^12 bits are set, then
- * documents are simply stored in a short[]. If more than 2^16-2^12 bits are
- * set, then the inverse of the set is encoded in a simple short[]. Otherwise
- * a {@link FixedBitSet} is used.
+ * <p>The space is divided into blocks of 2^16 bits and each block is encoded independently. In each
+ * block, if less than 2^12 bits are set, then documents are simply stored in a short[]. If more
+ * than 2^16-2^12 bits are set, then the inverse of the set is encoded in a simple short[].
+ * Otherwise a {@link FixedBitSet} is used.
  *
  * @lucene.internal
  */
@@ -39,7 +36,8 @@ public class RoaringDocIdSet extends DocIdSet {
   private static final int BLOCK_SIZE = 1 << 16;
   // The maximum length for an array, beyond that point we switch to a bitset
   private static final int MAX_ARRAY_LENGTH = 1 << 12;
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(RoaringDocIdSet.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(RoaringDocIdSet.class);
 
   /** A builder of {@link RoaringDocIdSet}s. */
   public static class Builder {
@@ -72,12 +70,14 @@ public class RoaringDocIdSet extends DocIdSet {
         // Use sparse encoding
         assert denseBuffer == null;
         if (currentBlockCardinality > 0) {
-          sets[currentBlock] = new ShortArrayDocIdSet(ArrayUtil.copyOfSubArray(buffer, 0, currentBlockCardinality));
+          sets[currentBlock] =
+              new ShortArrayDocIdSet(ArrayUtil.copyOfSubArray(buffer, 0, currentBlockCardinality));
         }
       } else {
         assert denseBuffer != null;
         assert denseBuffer.cardinality() == currentBlockCardinality;
-        if (denseBuffer.length() == BLOCK_SIZE && BLOCK_SIZE - currentBlockCardinality < MAX_ARRAY_LENGTH) {
+        if (denseBuffer.length() == BLOCK_SIZE
+            && BLOCK_SIZE - currentBlockCardinality < MAX_ARRAY_LENGTH) {
           // Doc ids are very dense, inverse the encoding
           final short[] excludedDocs = new short[BLOCK_SIZE - currentBlockCardinality];
           denseBuffer.flip(0, denseBuffer.length());
@@ -87,7 +87,8 @@ public class RoaringDocIdSet extends DocIdSet {
             assert excludedDoc != DocIdSetIterator.NO_MORE_DOCS;
             excludedDocs[i] = (short) excludedDoc;
           }
-          assert excludedDoc + 1 == denseBuffer.length() || denseBuffer.nextSetBit(excludedDoc + 1) == DocIdSetIterator.NO_MORE_DOCS;
+          assert excludedDoc + 1 == denseBuffer.length()
+              || denseBuffer.nextSetBit(excludedDoc + 1) == DocIdSetIterator.NO_MORE_DOCS;
           sets[currentBlock] = new NotDocIdSet(BLOCK_SIZE, new ShortArrayDocIdSet(excludedDocs));
         } else {
           // Neither sparse nor super dense, use a fixed bit set
@@ -101,13 +102,11 @@ public class RoaringDocIdSet extends DocIdSet {
       currentBlockCardinality = 0;
     }
 
-    /**
-     * Add a new doc-id to this builder.
-     * NOTE: doc ids must be added in order.
-     */
+    /** Add a new doc-id to this builder. NOTE: doc ids must be added in order. */
     public Builder add(int docId) {
       if (docId <= lastDocId) {
-        throw new IllegalArgumentException("Doc ids must be added in-order, got " + docId + " which is <= lastDocID=" + lastDocId);
+        throw new IllegalArgumentException(
+            "Doc ids must be added in-order, got " + docId + " which is <= lastDocID=" + lastDocId);
       }
       final int block = docId >>> 16;
       if (block != currentBlock) {
@@ -148,15 +147,13 @@ public class RoaringDocIdSet extends DocIdSet {
       flush();
       return new RoaringDocIdSet(sets, cardinality);
     }
-
   }
 
-  /**
-   * {@link DocIdSet} implementation that can store documents up to 2^16-1 in a short[].
-   */
+  /** {@link DocIdSet} implementation that can store documents up to 2^16-1 in a short[]. */
   private static class ShortArrayDocIdSet extends DocIdSet {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(ShortArrayDocIdSet.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(ShortArrayDocIdSet.class);
 
     private final short[] docIDs;
 
@@ -222,7 +219,6 @@ public class RoaringDocIdSet extends DocIdSet {
         }
       };
     }
-
   }
 
   private final DocIdSet[] docIdSets;
@@ -320,7 +316,6 @@ public class RoaringDocIdSet extends DocIdSet {
     public long cost() {
       return cardinality;
     }
-
   }
 
   /** Return the exact number of documents that are contained in this set. */

@@ -19,16 +19,16 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 /**
- * Interface for a component that needs to be initialized by
- * an implementation of {@link ResourceLoader}.
- * 
+ * Interface for a component that needs to be initialized by an implementation of {@link
+ * ResourceLoader}.
+ *
  * @see ResourceLoader
  */
 public interface ResourceLoaderAware {
 
   /**
-   * Initializes this component with the provided ResourceLoader
-   * (used for loading classes, files, etc).
+   * Initializes this component with the provided ResourceLoader (used for loading classes, files,
+   * etc).
    */
   void inform(ResourceLoader loader) throws IOException;
 }

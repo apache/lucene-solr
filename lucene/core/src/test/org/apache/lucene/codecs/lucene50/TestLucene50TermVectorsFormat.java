@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 import org.apache.lucene.util.TestUtil;

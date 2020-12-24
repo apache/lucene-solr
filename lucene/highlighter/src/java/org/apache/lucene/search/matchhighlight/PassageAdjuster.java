@@ -17,11 +17,11 @@
 package org.apache.lucene.search.matchhighlight;
 
 /**
- * Adjusts the range of one or more passages over a given value. An example
- * adjuster could shift passage boundary to the next or previous word delimiter
- * or white space, for example.
+ * Adjusts the range of one or more passages over a given value. An example adjuster could shift
+ * passage boundary to the next or previous word delimiter or white space, for example.
  */
 public interface PassageAdjuster {
   void currentValue(CharSequence value);
+
   OffsetRange adjust(Passage p);
 }

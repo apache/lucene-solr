@@ -16,8 +16,9 @@
  */
 package org.apache.lucene.codecs.lucene80;
 
-import java.io.IOException;
+import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
 
+import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -29,24 +30,32 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
-
-/**
- * Writer for {@link Lucene80NormsFormat}
- */
+/** Writer for {@link Lucene80NormsFormat} */
 final class Lucene80NormsConsumer extends NormsConsumer {
   IndexOutput data, meta;
   final int maxDoc;
 
-  Lucene80NormsConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene80NormsConsumer(
+      SegmentWriteState state,
+      String dataCodec,
+      String dataExtension,
+      String metaCodec,
+      String metaExtension)
+      throws IOException {
     boolean success = false;
     try {
-      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+      String dataName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeIndexHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-      String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
+      CodecUtil.writeIndexHeader(
+          data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      String metaName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeIndexHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
@@ -108,7 +117,8 @@ final class Lucene80NormsConsumer extends NormsConsumer {
       long offset = data.getFilePointer();
       meta.writeLong(offset); // docsWithFieldOffset
       values = normsProducer.getNorms(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
+      final short jumpTableEntryCount =
+          IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
       meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
       meta.writeShort(jumpTableEntryCount);
       meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
@@ -141,7 +151,8 @@ final class Lucene80NormsConsumer extends NormsConsumer {
     }
   }
 
-  private void writeValues(NumericDocValues values, int numBytesPerValue, IndexOutput out) throws IOException, AssertionError {
+  private void writeValues(NumericDocValues values, int numBytesPerValue, IndexOutput out)
+      throws IOException, AssertionError {
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       long value = values.longValue();
       switch (numBytesPerValue) {

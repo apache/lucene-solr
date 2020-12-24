@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Arrays;
-
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLineWithBoundary;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
+import java.util.Arrays;
+
 /**
- * Internal tree node: represents geometry edge from [x1, y1] to [x2, y2].
- * The sort value is {@code low}, which is the minimum y of the edge.
- * {@code max} stores the maximum y of this edge or any children.
- * <p>
- * Construction takes {@code O(n log n)} time for sorting and tree construction.
- * Methods are {@code O(n)}, but for most
- * practical lines and polygons are much faster than brute force.
+ * Internal tree node: represents geometry edge from [x1, y1] to [x2, y2]. The sort value is {@code
+ * low}, which is the minimum y of the edge. {@code max} stores the maximum y of this edge or any
+ * children.
+ *
+ * <p>Construction takes {@code O(n log n)} time for sorting and tree construction. Methods are
+ * {@code O(n)}, but for most practical lines and polygons are much faster than brute force.
  */
 final class EdgeTree {
   // X-Y pair (in original order) of the two vertices
@@ -44,9 +43,10 @@ final class EdgeTree {
   /** right child edge, or null */
   EdgeTree right;
   /** helper bytes to signal if a point is on an edge, it is within the edge tree or disjoint */
-  final private static byte FALSE = 0x00;
-  final private static byte TRUE = 0x01;
-  final private static byte ON_EDGE = 0x02;
+  private static final byte FALSE = 0x00;
+
+  private static final byte TRUE = 0x01;
+  private static final byte ON_EDGE = 0x02;
 
   private EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
     this.y1 = y1;
@@ -57,31 +57,33 @@ final class EdgeTree {
     this.max = max;
   }
 
-  /**
-   * Returns true if the point is on an edge or crosses the edge subtree an odd number
-   * of times.
-   */
+  /** Returns true if the point is on an edge or crosses the edge subtree an odd number of times. */
   protected boolean contains(double x, double y) {
     return containsPnPoly(x, y) > FALSE;
   }
 
   /**
-   * Returns byte 0x00 if the point crosses this edge subtree an even number of times.
-   * Returns byte 0x01 if the point crosses this edge subtree an odd number of times.
-   * Returns byte 0x02 if the point is on one of the edges.
-   * <p>
-   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
+   * Returns byte 0x00 if the point crosses this edge subtree an even number of times. Returns byte
+   * 0x01 if the point crosses this edge subtree an odd number of times. Returns byte 0x02 if the
+   * point is on one of the edges.
+   *
+   * <p>See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
    */
   // ported to java from https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html
-  // original code under the BSD license (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
+  // original code under the BSD license
+  // (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
   //
   // Copyright (c) 1970-2003, Wm. Randolph Franklin
   //
-  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-  // documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-  // to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+  // and associated
+  // documentation files (the "Software"), to deal in the Software without restriction, including
+  // without limitation
+  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+  // the Software, and
+  // to permit persons to whom the Software is furnished to do so, subject to the following
+  // conditions:
   //
   // 1. Redistributions of source code must retain the above copyright
   //    notice, this list of conditions and the following disclaimers.
@@ -92,22 +94,29 @@ final class EdgeTree {
   //    promote products derived from this Software without specific
   //    prior written permission.
   //
-  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+  // BUT NOT LIMITED
+  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+  // NO EVENT SHALL
+  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+  // IN AN ACTION OF
+  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+  // OR OTHER DEALINGS
   // IN THE SOFTWARE.
   private byte containsPnPoly(double x, double y) {
     byte res = FALSE;
     if (y <= this.max) {
-      if (y == this.y1 && y == this.y2 ||
-          (y <= this.y1 && y >= this.y2) != (y >= this.y1 && y <= this.y2)) {
-        if ((x == this.x1 && x == this.x2) ||
-            ((x <= this.x1 && x >= this.x2) != (x >= this.x1 && x <= this.x2) &&
-                GeoUtils.orient(this.x1, this.y1, this.x2, this.y2, x, y) == 0)) {
+      if (y == this.y1 && y == this.y2
+          || (y <= this.y1 && y >= this.y2) != (y >= this.y1 && y <= this.y2)) {
+        if ((x == this.x1 && x == this.x2)
+            || ((x <= this.x1 && x >= this.x2) != (x >= this.x1 && x <= this.x2)
+                && GeoUtils.orient(this.x1, this.y1, this.x2, this.y2, x, y) == 0)) {
           return ON_EDGE;
         } else if (this.y1 > y != this.y2 > y) {
-          res = x < (this.x2 - this.x1) * (y - this.y1) / (this.y2 - this.y1) + this.x1 ? TRUE : FALSE;
+          res =
+              x < (this.x2 - this.x1) * (y - this.y1) / (this.y2 - this.y1) + this.x1
+                  ? TRUE
+                  : FALSE;
         }
       }
       if (this.left != null) {
@@ -135,10 +144,11 @@ final class EdgeTree {
       double a1y = y1;
       double b1x = x2;
       double b1y = y2;
-      boolean outside = (a1y < y && b1y < y) ||
-          (a1y > y && b1y > y) ||
-          (a1x < x && b1x < x) ||
-          (a1x > x && b1x > x);
+      boolean outside =
+          (a1y < y && b1y < y)
+              || (a1y > y && b1y > y)
+              || (a1x < x && b1x < x)
+              || (a1x > x && b1x > x);
       if (outside == false && orient(a1x, a1y, b1x, b1y, x, y) == 0) {
         return true;
       }
@@ -152,54 +162,69 @@ final class EdgeTree {
     return false;
   }
 
-
   /** Returns true if the triangle crosses any edge in this edge subtree */
-  boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
-                          double ax, double ay, double bx, double by, double cx, double cy, boolean includeBoundary) {
-      if (minY <= max) {
-        double dy = y1;
-        double ey = y2;
-        double dx = x1;
-        double ex = x2;
+  boolean crossesTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double ax,
+      double ay,
+      double bx,
+      double by,
+      double cx,
+      double cy,
+      boolean includeBoundary) {
+    if (minY <= max) {
+      double dy = y1;
+      double ey = y2;
+      double dx = x1;
+      double ex = x2;
 
-        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-        // if not, don't waste our time trying more complicated stuff
-        boolean outside = (dy < minY && ey < minY) ||
-            (dy > maxY && ey > maxY) ||
-            (dx < minX && ex < minX) ||
-            (dx > maxX && ex > maxX);
+      // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+      // if not, don't waste our time trying more complicated stuff
+      boolean outside =
+          (dy < minY && ey < minY)
+              || (dy > maxY && ey > maxY)
+              || (dx < minX && ex < minX)
+              || (dx > maxX && ex > maxX);
 
-        if (outside == false) {
-          if (includeBoundary == true) {
-            if (lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by) ||
-                lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy) ||
-                lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay)) {
-              return true;
-            }
-          } else {
-            if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
-                lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
-                lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
-              return true;
-            }
+      if (outside == false) {
+        if (includeBoundary == true) {
+          if (lineCrossesLineWithBoundary(dx, dy, ex, ey, ax, ay, bx, by)
+              || lineCrossesLineWithBoundary(dx, dy, ex, ey, bx, by, cx, cy)
+              || lineCrossesLineWithBoundary(dx, dy, ex, ey, cx, cy, ax, ay)) {
+            return true;
+          }
+        } else {
+          if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by)
+              || lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy)
+              || lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
+            return true;
           }
         }
-
-
-        if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
-          return true;
-        }
-
-        if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
-          return true;
-        }
       }
-      return false;
+
+      if (left != null
+          && left.crossesTriangle(
+              minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+        return true;
+      }
+
+      if (right != null
+          && maxY >= low
+          && right.crossesTriangle(
+              minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, includeBoundary)) {
+        return true;
+      }
     }
+    return false;
+  }
 
   /** Returns true if the box crosses any edge in this edge subtree */
   boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
-    // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
+    // we just have to cross one edge to answer the question, so we descend the tree and return when
+    // we do.
     if (minY <= max) {
       // we compute line intersections of every polygon edge with every box line.
       // if we find one, return true.
@@ -212,32 +237,33 @@ final class EdgeTree {
       double dx = x2;
 
       // optimization: see if either end of the line segment is contained by the rectangle
-      if (Rectangle.containsPoint(cy, cx, minY, maxY, minX, maxX) ||
-          Rectangle.containsPoint(dy, dx, minY, maxY, minX, maxX)) {
+      if (Rectangle.containsPoint(cy, cx, minY, maxY, minX, maxX)
+          || Rectangle.containsPoint(dy, dx, minY, maxY, minX, maxX)) {
         return true;
       }
 
       // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
       // if not, don't waste our time trying more complicated stuff
-      boolean outside = (cy < minY && dy < minY) ||
-          (cy > maxY && dy > maxY) ||
-          (cx < minX && dx < minX) ||
-          (cx > maxX && dx > maxX);
+      boolean outside =
+          (cy < minY && dy < minY)
+              || (cy > maxY && dy > maxY)
+              || (cx < minX && dx < minX)
+              || (cx > maxX && dx > maxX);
 
       if (outside == false) {
         if (includeBoundary == true) {
-           if (lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY) ||
-            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
-            lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
-            lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
-             // include boundaries: ensures box edges that terminate on the polygon are included
-             return true;
-           }
+          if (lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, minY, maxX, minY)
+              || lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, minY, maxX, maxY)
+              || lineCrossesLineWithBoundary(cx, cy, dx, dy, maxX, maxY, minX, maxY)
+              || lineCrossesLineWithBoundary(cx, cy, dx, dy, minX, maxY, minX, minY)) {
+            // include boundaries: ensures box edges that terminate on the polygon are included
+            return true;
+          }
         } else {
-          if (lineCrossesLine(cx, cy, dx, dy, minX, minY, maxX, minY) ||
-              lineCrossesLine(cx, cy, dx, dy, maxX, minY, maxX, maxY) ||
-              lineCrossesLine(cx, cy, dx, dy, maxX, maxY, minX, maxY) ||
-              lineCrossesLine(cx, cy, dx, dy, minX, maxY, minX, minY)) {
+          if (lineCrossesLine(cx, cy, dx, dy, minX, minY, maxX, minY)
+              || lineCrossesLine(cx, cy, dx, dy, maxX, minY, maxX, maxY)
+              || lineCrossesLine(cx, cy, dx, dy, maxX, maxY, minX, maxY)
+              || lineCrossesLine(cx, cy, dx, dy, minX, maxY, minX, minY)) {
             return true;
           }
         }
@@ -247,7 +273,9 @@ final class EdgeTree {
         return true;
       }
 
-      if (right != null && maxY >= low && right.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
+      if (right != null
+          && maxY >= low
+          && right.crossesBox(minX, maxX, minY, maxY, includeBoundary)) {
         return true;
       }
     }
@@ -255,17 +283,27 @@ final class EdgeTree {
   }
 
   /** Returns true if the line crosses any edge in this edge subtree */
-  boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y, boolean includeBoundary) {
+  boolean crossesLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double a2x,
+      double a2y,
+      double b2x,
+      double b2y,
+      boolean includeBoundary) {
     if (minY <= max) {
       double a1x = x1;
       double a1y = y1;
       double b1x = x2;
       double b1y = y2;
 
-      boolean outside = (a1y < minY && b1y < minY) ||
-          (a1y > maxY && b1y > maxY) ||
-          (a1x < minX && b1x < minX) ||
-          (a1x > maxX && b1x > maxX);
+      boolean outside =
+          (a1y < minY && b1y < minY)
+              || (a1y > maxY && b1y > maxY)
+              || (a1x < minX && b1x < minX)
+              || (a1x > maxX && b1x > maxX);
       if (outside == false) {
         if (includeBoundary) {
           if (lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
@@ -277,10 +315,13 @@ final class EdgeTree {
           }
         }
       }
-      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
+      if (left != null
+          && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
-      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
+      if (right != null
+          && maxY >= low
+          && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
     }
@@ -289,25 +330,28 @@ final class EdgeTree {
 
   /**
    * Creates an edge interval tree from a set of geometry vertices.
+   *
    * @return root node of the tree.
    */
   static EdgeTree createTree(double[] x, double[] y) {
     EdgeTree edges[] = new EdgeTree[x.length - 1];
     for (int i = 1; i < x.length; i++) {
-      double x1 = x[i-1];
-      double y1 = y[i-1];
+      double x1 = x[i - 1];
+      double y1 = y[i - 1];
       double x2 = x[i];
       double y2 = y[i];
       edges[i - 1] = new EdgeTree(x1, y1, x2, y2, Math.min(y1, y2), Math.max(y1, y2));
     }
     // sort the edges then build a balanced tree from them
-    Arrays.sort(edges, (left, right) -> {
-      int ret = Double.compare(left.low, right.low);
-      if (ret == 0) {
-        ret = Double.compare(left.max, right.max);
-      }
-      return ret;
-    });
+    Arrays.sort(
+        edges,
+        (left, right) -> {
+          int ret = Double.compare(left.low, right.low);
+          if (ret == 0) {
+            ret = Double.compare(left.max, right.max);
+          }
+          return ret;
+        });
     return createTree(edges, 0, edges.length - 1);
   }
 

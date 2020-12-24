@@ -19,7 +19,6 @@ package org.apache.lucene.util.compress;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
@@ -39,7 +38,8 @@ public class TestLowercaseAsciiCompression extends LuceneTestCase {
       assertTrue(compressed.size() < len);
       byte[] restored = new byte[len + random().nextInt(10)];
       LowercaseAsciiCompression.decompress(compressed.toDataInput(), restored, len);
-      assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, 0, len), ArrayUtil.copyOfSubArray(restored, 0, len));
+      assertArrayEquals(
+          ArrayUtil.copyOfSubArray(bytes, 0, len), ArrayUtil.copyOfSubArray(restored, 0, len));
       return true;
     } else {
       return false;
@@ -58,7 +58,8 @@ public class TestLowercaseAsciiCompression extends LuceneTestCase {
   }
 
   public void testFarAwayExceptions() throws Exception {
-    String s = "01W" + IntStream.range(0, 300).mapToObj(i -> "a").collect(Collectors.joining()) + "W.";
+    String s =
+        "01W" + IntStream.range(0, 300).mapToObj(i -> "a").collect(Collectors.joining()) + "W.";
     assertTrue(doTestCompress(s.getBytes("UTF-8")));
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.util.BitSet;
 
@@ -32,10 +31,8 @@ public class TestRoaringDocIdSet extends BaseDocIdSetTestCase<RoaringDocIdSet> {
   }
 
   @Override
-  public void assertEquals(int numBits, BitSet ds1, RoaringDocIdSet ds2)
-      throws IOException {
+  public void assertEquals(int numBits, BitSet ds1, RoaringDocIdSet ds2) throws IOException {
     super.assertEquals(numBits, ds1, ds2);
     assertEquals(ds1.cardinality(), ds2.cardinality());
   }
-
 }

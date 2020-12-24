@@ -16,21 +16,18 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 /**
  * Saturated measure of distance from independence
- * <p>
- * Described as:
- * "for tasks that require high recall against long queries"
+ *
+ * <p>Described as: "for tasks that require high recall against long queries"
+ *
  * @lucene.experimental
  */
 public class IndependenceSaturated extends Independence {
 
-  /**
-   * Sole constructor.
-   */
+  /** Sole constructor. */
   public IndependenceSaturated() {}
-  
+
   @Override
   public double score(double freq, double expected) {
     return (freq - expected) / expected;

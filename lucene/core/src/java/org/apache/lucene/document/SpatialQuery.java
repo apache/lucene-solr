@@ -103,7 +103,7 @@ abstract class SpatialQuery extends Query {
       final Function<byte[], Component2D.WithinRelation> contains = contains();
       return bytes -> contains.apply(bytes) == Component2D.WithinRelation.CANDIDATE;
     }
-    
+
     private BiFunction<byte[], byte[], Relation> getInnerFunction(ShapeField.QueryRelation queryRelation) {
       if (queryRelation == QueryRelation.DISJOINT) {
         return (minPackedValue, maxPackedValue) -> transposeRelation(relate(minPackedValue, maxPackedValue));
@@ -278,7 +278,7 @@ abstract class SpatialQuery extends Query {
           return getContainsDenseScorer(reader, weight, boost, scoreMode);
         case WITHIN:
         case DISJOINT:
-          return values.getDocCount() == values.size() ?  
+          return values.getDocCount() == values.size() ?
                   getSparseScorer(reader, weight, boost, scoreMode) : getDenseScorer(reader, weight, boost, scoreMode);
         default:
           throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");

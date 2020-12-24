@@ -18,13 +18,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.store.DataInput;
 
-/**
- * This exception is thrown when Lucene detects
- * an index that is newer than this Lucene version.
- */
+/** This exception is thrown when Lucene detects an index that is newer than this Lucene version. */
 public class IndexFormatTooNewException extends IOException {
 
   private final String resourceDescription;
@@ -32,59 +28,62 @@ public class IndexFormatTooNewException extends IOException {
   private final int minVersion;
   private final int maxVersion;
 
-  /** Creates an {@code IndexFormatTooNewException}
+  /**
+   * Creates an {@code IndexFormatTooNewException}
    *
-   *  @param resourceDescription describes the file that was too new
-   *  @param version the version of the file that was too new
-   *  @param minVersion the minimum version accepted
-   *  @param maxVersion the maximum version accepted
-   *
-   * @lucene.internal */
-  public IndexFormatTooNewException(String resourceDescription, int version, int minVersion, int maxVersion) {
-    super("Format version is not supported (resource " + resourceDescription + "): "
-        + version + " (needs to be between " + minVersion + " and " + maxVersion + ")");
+   * @param resourceDescription describes the file that was too new
+   * @param version the version of the file that was too new
+   * @param minVersion the minimum version accepted
+   * @param maxVersion the maximum version accepted
+   * @lucene.internal
+   */
+  public IndexFormatTooNewException(
+      String resourceDescription, int version, int minVersion, int maxVersion) {
+    super(
+        "Format version is not supported (resource "
+            + resourceDescription
+            + "): "
+            + version
+            + " (needs to be between "
+            + minVersion
+            + " and "
+            + maxVersion
+            + ")");
     this.resourceDescription = resourceDescription;
     this.version = version;
     this.minVersion = minVersion;
     this.maxVersion = maxVersion;
   }
 
-  /** Creates an {@code IndexFormatTooNewException}
+  /**
+   * Creates an {@code IndexFormatTooNewException}
    *
-   *  @param in the open file that's too new
-   *  @param version the version of the file that was too new
-   *  @param minVersion the minimum version accepted
-   *  @param maxVersion the maximum version accepted
-   *
-   * @lucene.internal */
+   * @param in the open file that's too new
+   * @param version the version of the file that was too new
+   * @param minVersion the minimum version accepted
+   * @param maxVersion the maximum version accepted
+   * @lucene.internal
+   */
   public IndexFormatTooNewException(DataInput in, int version, int minVersion, int maxVersion) {
     this(Objects.toString(in), version, minVersion, maxVersion);
   }
 
-  /**
-   * Returns a description of the file that was too new
-   */
+  /** Returns a description of the file that was too new */
   public String getResourceDescription() {
     return resourceDescription;
   }
 
-  /**
-   * Returns the version of the file that was too new
-   */
+  /** Returns the version of the file that was too new */
   public int getVersion() {
     return version;
   }
 
-  /**
-   * Returns the maximum version accepted
-   */
+  /** Returns the maximum version accepted */
   public int getMaxVersion() {
     return maxVersion;
   }
 
-  /**
-   * Returns the minimum version accepted
-   */
+  /** Returns the minimum version accepted */
   public int getMinVersion() {
     return minVersion;
   }

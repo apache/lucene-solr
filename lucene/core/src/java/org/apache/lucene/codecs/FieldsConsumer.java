@@ -16,33 +16,27 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MappedMultiFields;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderSlice;
 
-/** 
- * Abstract API that consumes terms, doc, freq, prox, offset and
- * payloads postings.  Concrete implementations of this
- * actually do "something" with the postings (write it into
- * the index in a specific format).
+/**
+ * Abstract API that consumes terms, doc, freq, prox, offset and payloads postings. Concrete
+ * implementations of this actually do "something" with the postings (write it into the index in a
+ * specific format).
  *
  * @lucene.experimental
  */
-
 public abstract class FieldsConsumer implements Closeable {
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected FieldsConsumer() {
-  }
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected FieldsConsumer() {}
 
   // TODO: can we somehow compute stats for you...?
 
@@ -50,46 +44,38 @@ public abstract class FieldsConsumer implements Closeable {
   // iterables, no counts/stats) base classes from
   // Fields/Terms/Docs/AndPositions?
 
-  /** Write all fields, terms and postings.  This the "pull"
-   *  API, allowing you to iterate more than once over the
-   *  postings, somewhat analogous to using a DOM API to
-   *  traverse an XML tree.
+  /**
+   * Write all fields, terms and postings. This the "pull" API, allowing you to iterate more than
+   * once over the postings, somewhat analogous to using a DOM API to traverse an XML tree.
    *
-   *  <p><b>Notes</b>:
+   * <p><b>Notes</b>:
    *
-   *  <ul>
-   *    <li> You must compute index statistics,
-   *         including each Term's docFreq and totalTermFreq,
-   *         as well as the summary sumTotalTermFreq,
-   *         sumTotalDocFreq and docCount.
-   *
-   *    <li> You must skip terms that have no docs and
-   *         fields that have no terms, even though the provided
-   *         Fields API will expose them; this typically
-   *         requires lazily writing the field or term until
-   *         you've actually seen the first term or
-   *         document.
-   *
-   *    <li> The provided Fields instance is limited: you
-   *         cannot call any methods that return
-   *         statistics/counts; you cannot pass a non-null
-   *         live docs when pulling docs/positions enums.
-   *  </ul>
+   * <ul>
+   *   <li>You must compute index statistics, including each Term's docFreq and totalTermFreq, as
+   *       well as the summary sumTotalTermFreq, sumTotalDocFreq and docCount.
+   *   <li>You must skip terms that have no docs and fields that have no terms, even though the
+   *       provided Fields API will expose them; this typically requires lazily writing the field or
+   *       term until you've actually seen the first term or document.
+   *   <li>The provided Fields instance is limited: you cannot call any methods that return
+   *       statistics/counts; you cannot pass a non-null live docs when pulling docs/positions
+   *       enums.
+   * </ul>
    */
   public abstract void write(Fields fields, NormsProducer norms) throws IOException;
-  
-  /** Merges in the fields from the readers in 
-   *  <code>mergeState</code>. The default implementation skips
-   *  and maps around deleted documents, and calls {@link #write(Fields,NormsProducer)}.
-   *  Implementations can override this method for more sophisticated
-   *  merging (bulk-byte copying, etc). */
+
+  /**
+   * Merges in the fields from the readers in <code>mergeState</code>. The default implementation
+   * skips and maps around deleted documents, and calls {@link #write(Fields,NormsProducer)}.
+   * Implementations can override this method for more sophisticated merging (bulk-byte copying,
+   * etc).
+   */
   public void merge(MergeState mergeState, NormsProducer norms) throws IOException {
     final List<Fields> fields = new ArrayList<>();
     final List<ReaderSlice> slices = new ArrayList<>();
 
     int docBase = 0;
 
-    for(int readerIndex=0;readerIndex<mergeState.fieldsProducers.length;readerIndex++) {
+    for (int readerIndex = 0; readerIndex < mergeState.fieldsProducers.length; readerIndex++) {
       final FieldsProducer f = mergeState.fieldsProducers[readerIndex];
 
       final int maxDoc = mergeState.maxDocs[readerIndex];
@@ -99,9 +85,11 @@ public abstract class FieldsConsumer implements Closeable {
       docBase += maxDoc;
     }
 
-    Fields mergedFields = new MappedMultiFields(mergeState, 
-                                                new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
-                                                                slices.toArray(ReaderSlice.EMPTY_ARRAY)));
+    Fields mergedFields =
+        new MappedMultiFields(
+            mergeState,
+            new MultiFields(
+                fields.toArray(Fields.EMPTY_ARRAY), slices.toArray(ReaderSlice.EMPTY_ARRAY)));
     write(mergedFields, norms);
   }
 

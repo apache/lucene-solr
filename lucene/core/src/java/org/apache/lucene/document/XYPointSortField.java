@@ -19,9 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 
-/**
- * Sorts by distance from an origin location.
- */
+/** Sorts by distance from an origin location. */
 final class XYPointSortField extends SortField {
   final float x;
   final float y;
@@ -35,7 +33,7 @@ final class XYPointSortField extends SortField {
     this.y = y;
     setMissingValue(Double.POSITIVE_INFINITY);
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     return new XYPointDistanceComparator(getField(), x, y, numHits);
@@ -49,11 +47,13 @@ final class XYPointSortField extends SortField {
   @Override
   public void setMissingValue(Object missingValue) {
     if (Double.valueOf(Double.POSITIVE_INFINITY).equals(missingValue) == false) {
-      throw new IllegalArgumentException("Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got " + missingValue);
+      throw new IllegalArgumentException(
+          "Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got "
+              + missingValue);
     }
     this.missingValue = missingValue;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;

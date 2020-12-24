@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,9 +42,10 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
   // would be good to investigate further...
   @Override
   protected Directory getDirectory(Path path) throws IOException {
-    return new NRTCachingDirectory(new ByteBuffersDirectory(),
-                                   .1 + 2.0*random().nextDouble(),
-                                   .1 + 5.0*random().nextDouble());
+    return new NRTCachingDirectory(
+        new ByteBuffersDirectory(),
+        .1 + 2.0 * random().nextDouble(),
+        .1 + 5.0 * random().nextDouble());
   }
 
   public void testNRTAndCommit() throws Exception {
@@ -65,7 +64,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
 
     final List<BytesRef> ids = new ArrayList<>();
     DirectoryReader r = null;
-    for(int docCount=0;docCount<numDocs;docCount++) {
+    for (int docCount = 0; docCount < numDocs; docCount++) {
       final Document doc = docs.nextDoc();
       ids.add(new BytesRef(doc.get("docid")));
       w.addDocument(doc);
@@ -79,7 +78,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
             r = r2;
           }
         }
-        assertEquals(1+docCount, r.numDocs());
+        assertEquals(1 + docCount, r.numDocs());
         final IndexSearcher s = newSearcher(r);
         // Just make sure search can run; we can't assert
         // totHits since it could be 0
@@ -96,13 +95,13 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     w.close();
 
     final String[] cachedFiles = cachedDir.listCachedFiles();
-    for(String file : cachedFiles) {
+    for (String file : cachedFiles) {
       System.out.println("FAIL: cached file " + file + " remains after sync");
     }
     assertEquals(0, cachedFiles.length);
-    
+
     r = DirectoryReader.open(dir);
-    for(BytesRef id : ids) {
+    for (BytesRef id : ids) {
       assertEquals(1, r.docFreq(new Term("docid", id)));
     }
     r.close();
@@ -140,26 +139,28 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
   public void testUnknownFileSize() throws IOException {
     Directory dir = newDirectory();
 
-    Directory nrtDir1 = new NRTCachingDirectory(dir, 1, 1) {
-      @Override
-      protected boolean doCacheWrite(String name, IOContext context) {
-        boolean cache = super.doCacheWrite(name, context);
-        assertTrue(cache);
-        return cache;
-      }
-    };
+    Directory nrtDir1 =
+        new NRTCachingDirectory(dir, 1, 1) {
+          @Override
+          protected boolean doCacheWrite(String name, IOContext context) {
+            boolean cache = super.doCacheWrite(name, context);
+            assertTrue(cache);
+            return cache;
+          }
+        };
     IOContext ioContext = new IOContext(new FlushInfo(3, 42));
     nrtDir1.createOutput("foo", ioContext).close();
     nrtDir1.createTempOutput("bar", "baz", ioContext).close();
 
-    Directory nrtDir2 = new NRTCachingDirectory(dir, 1, 1) {
-      @Override
-      protected boolean doCacheWrite(String name, IOContext context) {
-        boolean cache = super.doCacheWrite(name, context);
-        assertFalse(cache);
-        return cache;
-      }
-    };
+    Directory nrtDir2 =
+        new NRTCachingDirectory(dir, 1, 1) {
+          @Override
+          protected boolean doCacheWrite(String name, IOContext context) {
+            boolean cache = super.doCacheWrite(name, context);
+            assertFalse(cache);
+            return cache;
+          }
+        };
     ioContext = IOContext.DEFAULT;
     nrtDir2.createOutput("foo", ioContext).close();
     nrtDir2.createTempOutput("bar", "baz", ioContext).close();

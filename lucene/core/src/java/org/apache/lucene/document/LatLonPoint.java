@@ -41,7 +41,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
-/** 
+/**
  * An indexed location field.
  * <p>
  * Finding all documents within a range at search time is
@@ -81,7 +81,7 @@ public class LatLonPoint extends Field {
     TYPE.setDimensions(2, Integer.BYTES);
     TYPE.freeze();
   }
-  
+
   /**
    * Change the values of this field
    * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
@@ -104,7 +104,7 @@ public class LatLonPoint extends Field {
     NumericUtils.intToSortableBytes(longitudeEncoded, bytes, Integer.BYTES);
   }
 
-  /** 
+  /**
    * Creates a new LatLonPoint with the specified latitude and longitude
    * @param name field name
    * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
@@ -132,7 +132,7 @@ public class LatLonPoint extends Field {
     result.append('>');
     return result.toString();
   }
-  
+
   /** sugar encodes a single point as a byte array */
   private static byte[] encode(double latitude, double longitude) {
     byte[] bytes = new byte[2 * Integer.BYTES];
@@ -140,7 +140,7 @@ public class LatLonPoint extends Field {
     NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes, Integer.BYTES);
     return bytes;
   }
-  
+
   /** sugar encodes a single point as a byte array, rounding values up */
   private static byte[] encodeCeil(double latitude, double longitude) {
     byte[] bytes = new byte[2 * Integer.BYTES];
@@ -154,13 +154,13 @@ public class LatLonPoint extends Field {
     // point/dv properties could be "unset", if you e.g. used only StoredField with this same name in the segment.
     if (fieldInfo.getPointDimensionCount() != 0 && fieldInfo.getPointDimensionCount() != TYPE.pointDimensionCount()) {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() +
-          " but this point type has numDims=" + TYPE.pointDimensionCount() +
-                                         ", is the field really a LatLonPoint?");
+              " but this point type has numDims=" + TYPE.pointDimensionCount() +
+              ", is the field really a LatLonPoint?");
     }
     if (fieldInfo.getPointNumBytes() != 0 && fieldInfo.getPointNumBytes() != TYPE.pointNumBytes()) {
-      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + 
-                                         " but this point type has bytesPerDim=" + TYPE.pointNumBytes() + 
-                                         ", is the field really a LatLonPoint?");
+      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() +
+              " but this point type has bytesPerDim=" + TYPE.pointNumBytes() +
+              ", is the field really a LatLonPoint?");
     }
   }
 
@@ -218,7 +218,7 @@ public class LatLonPoint extends Field {
       return newBoxInternal(field, lower, upper);
     }
   }
-  
+
   private static Query newBoxInternal(String field, byte[] min, byte[] max) {
     return new PointRangeQuery(field, min, max, 2) {
       @Override
@@ -233,7 +233,7 @@ public class LatLonPoint extends Field {
       }
     };
   }
-  
+
   /**
    * Create a query for matching points within the specified distance of the supplied location.
    * @param field field name. must not be null.
@@ -246,8 +246,8 @@ public class LatLonPoint extends Field {
   public static Query newDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     return new LatLonPointDistanceQuery(field, latitude, longitude, radiusMeters);
   }
-  
-  /** 
+
+  /**
    * Create a query for matching one or more polygons.
    * @param field field name. must not be null.
    * @param polygons array of polygons. must not be null or empty

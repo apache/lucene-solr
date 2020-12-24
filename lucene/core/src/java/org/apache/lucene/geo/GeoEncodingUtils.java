@@ -167,15 +167,15 @@ public final class GeoEncodingUtils {
     final double axisLat = Rectangle.axisLat(lat, radiusMeters);
     final double distanceSortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
     final Function<Rectangle, Relation> boxToRelation = box -> GeoUtils.relate(
-        box.minLat, box.maxLat, box.minLon, box.maxLon, lat, lon, distanceSortKey, axisLat);
+            box.minLat, box.maxLat, box.minLon, box.maxLon, lat, lon, distanceSortKey, axisLat);
     final Grid subBoxes = createSubBoxes(boundingBox.minLat, boundingBox.maxLat, boundingBox.minLon, boundingBox.maxLon, boxToRelation);
 
     return new DistancePredicate(
-        subBoxes.latShift, subBoxes.lonShift,
-        subBoxes.latBase, subBoxes.lonBase,
-        subBoxes.maxLatDelta, subBoxes.maxLonDelta,
-        subBoxes.relations,
-        lat, lon, distanceSortKey);
+            subBoxes.latShift, subBoxes.lonShift,
+            subBoxes.latBase, subBoxes.lonBase,
+            subBoxes.maxLatDelta, subBoxes.maxLonDelta,
+            subBoxes.relations,
+            lat, lon, distanceSortKey);
   }
 
   /** Create a predicate that checks whether points are within a geometry.
@@ -183,18 +183,18 @@ public final class GeoEncodingUtils {
    *  @lucene.internal */
   public static Component2DPredicate createComponentPredicate(Component2D tree) {
     final Function<Rectangle, Relation> boxToRelation = box -> tree.relate(
-        box.minLon, box.maxLon, box.minLat, box.maxLat);
+            box.minLon, box.maxLon, box.minLat, box.maxLat);
     final Grid subBoxes = createSubBoxes(tree.getMinY(), tree.getMaxY(), tree.getMinX(), tree.getMaxX(), boxToRelation);
 
     return new Component2DPredicate(
-        subBoxes.latShift, subBoxes.lonShift,
-        subBoxes.latBase, subBoxes.lonBase,
-        subBoxes.maxLatDelta, subBoxes.maxLonDelta,
-        subBoxes.relations,
-        tree);
+            subBoxes.latShift, subBoxes.lonShift,
+            subBoxes.latBase, subBoxes.lonBase,
+            subBoxes.maxLatDelta, subBoxes.maxLonDelta,
+            subBoxes.relations,
+            tree);
   }
 
-  private static Grid createSubBoxes(double shapeMinlat, double  shapeMaxLat, double shapeMinLon, double shapeMaxLon, 
+  private static Grid createSubBoxes(double shapeMinlat, double  shapeMaxLat, double shapeMinLon, double shapeMaxLon,
                                      Function<Rectangle, Relation> boxToRelation) {
     final int minLat = encodeLatitudeCeil(shapeMinlat);
     final int maxLat = encodeLatitude(shapeMaxLat);
@@ -239,16 +239,16 @@ public final class GeoEncodingUtils {
 
         relations[i * maxLonDelta + j] = (byte) boxToRelation.apply(new Rectangle(
                 decodeLatitude(boxMinLat), decodeLatitude(boxMaxLat),
-            decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon))
-            ).ordinal();
+                decodeLongitude(boxMinLon), decodeLongitude(boxMaxLon))
+        ).ordinal();
       }
     }
 
     return new Grid(
-        latShift, lonShift,
-        latBase, lonBase,
-        maxLatDelta, maxLonDelta,
-        relations);
+            latShift, lonShift,
+            latBase, lonBase,
+            maxLatDelta, maxLonDelta,
+            relations);
   }
 
   /** Compute the minimum shift value so that
@@ -276,10 +276,10 @@ public final class GeoEncodingUtils {
     final byte[] relations;
 
     private Grid(
-        int latShift, int lonShift,
-        int latBase, int lonBase,
-        int maxLatDelta, int maxLonDelta,
-        byte[] relations) {
+            int latShift, int lonShift,
+            int latBase, int lonBase,
+            int maxLatDelta, int maxLonDelta,
+            byte[] relations) {
       if (latShift < 1 || latShift > 31) {
         throw new IllegalArgumentException();
       }
@@ -303,11 +303,11 @@ public final class GeoEncodingUtils {
     private final double distanceKey;
 
     private DistancePredicate(
-        int latShift, int lonShift,
-        int latBase, int lonBase,
-        int maxLatDelta, int maxLonDelta,
-        byte[] relations,
-        double lat, double lon, double distanceKey) {
+            int latShift, int lonShift,
+            int latBase, int lonBase,
+            int maxLatDelta, int maxLonDelta,
+            byte[] relations,
+            double lat, double lon, double distanceKey) {
       super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
       this.lat = lat;
       this.lon = lon;
@@ -334,8 +334,8 @@ public final class GeoEncodingUtils {
       final int relation = relations[(lat2 - latBase) * maxLonDelta + (lon2 - lonBase)];
       if (relation == Relation.CELL_CROSSES_QUERY.ordinal()) {
         return SloppyMath.haversinSortKey(
-            decodeLatitude(lat), decodeLongitude(lon),
-            this.lat, this.lon) <= distanceKey;
+                decodeLatitude(lat), decodeLongitude(lon),
+                this.lat, this.lon) <= distanceKey;
       } else {
         return relation == Relation.CELL_INSIDE_QUERY.ordinal();
       }
@@ -348,17 +348,22 @@ public final class GeoEncodingUtils {
     private final Component2D tree;
 
     private Component2DPredicate(
-        int latShift, int lonShift,
-        int latBase, int lonBase,
-        int maxLatDelta, int maxLonDelta,
-        byte[] relations,
-        Component2D tree) {
+        int latShift,
+        int lonShift,
+        int latBase,
+        int lonBase,
+        int maxLatDelta,
+        int maxLonDelta,
+            byte[] relations,
+            Component2D tree) {
       super(latShift, lonShift, latBase, lonBase, maxLatDelta, maxLonDelta, relations);
       this.tree = tree;
     }
 
-    /** Check whether the given point is within the considered polygon.
-     *  NOTE: this operates directly on the encoded representation of points. */
+    /**
+     * Check whether the given point is within the considered polygon. NOTE: this operates directly
+     * on the encoded representation of points.
+     */
     public boolean test(int lat, int lon) {
       final int lat2 = ((lat - Integer.MIN_VALUE) >>> latShift);
       if (lat2 < latBase || lat2 >= latBase + maxLatDelta) {

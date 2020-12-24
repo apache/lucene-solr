@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -55,9 +54,10 @@ import org.junit.Test;
 
 /**
  * Tests highlighting for matters *expressly* relating to term vectors.
- * <p>
- * This test DOES NOT represent all testing for highlighting when term vectors are used.  Other tests pick the offset
- * source at random (to include term vectors) and in-effect test term vectors generally.
+ *
+ * <p>This test DOES NOT represent all testing for highlighting when term vectors are used. Other
+ * tests pick the offset source at random (to include term vectors) and in-effect test term vectors
+ * generally.
  */
 public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
@@ -66,7 +66,9 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
 
   @Before
   public void doBefore() throws IOException {
-    indexAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);//whitespace, punctuation, lowercase
+    indexAnalyzer =
+        new MockAnalyzer(
+            random(), MockTokenizer.SIMPLE, true); // whitespace, punctuation, lowercase
     dir = newDirectory();
   }
 
@@ -78,7 +80,8 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
   public void testFetchTermVecsOncePerDoc() throws IOException {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
-    // Declare some number of fields with random field type; but at least one will have term vectors.
+    // Declare some number of fields with random field type; but at least one will have term
+    // vectors.
     final int numTvFields = 1 + random().nextInt(3);
     List<String> fields = new ArrayList<>(numTvFields);
     List<FieldType> fieldTypes = new ArrayList<>(numTvFields);
@@ -86,7 +89,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
       fields.add("body" + i);
       fieldTypes.add(UHTestHelper.randomFieldType(random()));
     }
-    //ensure at least one has TVs by setting one randomly to it:
+    // ensure at least one has TVs by setting one randomly to it:
     fieldTypes.set(random().nextInt(fieldTypes.size()), UHTestHelper.tvType);
 
     final int numDocs = 1 + random().nextInt(3);
@@ -125,36 +128,39 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
   }
 
   private static class AssertOnceTermVecDirectoryReader extends FilterDirectoryReader {
-    static final SubReaderWrapper SUB_READER_WRAPPER = new SubReaderWrapper() {
-      @Override
-      public LeafReader wrap(LeafReader reader) {
-        return new FilterLeafReader(reader) {
-          BitSet seenDocIDs = new BitSet();
-
+    static final SubReaderWrapper SUB_READER_WRAPPER =
+        new SubReaderWrapper() {
           @Override
-          public Fields getTermVectors(int docID) throws IOException {
-            // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see LUCENE-6868
-            if (callStackContains(ParallelLeafReader.class) == false
-                && callStackContains(CheckIndex.class) == false) {
-              assertFalse("Should not request TVs for doc more than once.", seenDocIDs.get(docID));
-              seenDocIDs.set(docID);
-            }
+          public LeafReader wrap(LeafReader reader) {
+            return new FilterLeafReader(reader) {
+              BitSet seenDocIDs = new BitSet();
 
-            return super.getTermVectors(docID);
-          }
+              @Override
+              public Fields getTermVectors(int docID) throws IOException {
+                // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see
+                // LUCENE-6868
+                if (callStackContains(ParallelLeafReader.class) == false
+                    && callStackContains(CheckIndex.class) == false) {
+                  assertFalse(
+                      "Should not request TVs for doc more than once.", seenDocIDs.get(docID));
+                  seenDocIDs.set(docID);
+                }
 
-          @Override
-          public CacheHelper getCoreCacheHelper() {
-            return null;
-          }
+                return super.getTermVectors(docID);
+              }
 
-          @Override
-          public CacheHelper getReaderCacheHelper() {
-            return null;
+              @Override
+              public CacheHelper getCoreCacheHelper() {
+                return null;
+              }
+
+              @Override
+              public CacheHelper getReaderCacheHelper() {
+                return null;
+              }
+            };
           }
         };
-      }
-    };
 
     AssertOnceTermVecDirectoryReader(DirectoryReader in) throws IOException {
       super(in, SUB_READER_WRAPPER);
@@ -186,19 +192,19 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
-      @Override
-      protected Set<HighlightFlag> getFlags(String field) {
-        return Collections.emptySet();//no WEIGHT_MATCHES
-      }
-    };
+    UnifiedHighlighter highlighter =
+        new UnifiedHighlighter(searcher, indexAnalyzer) {
+          @Override
+          protected Set<HighlightFlag> getFlags(String field) {
+            return Collections.emptySet(); // no WEIGHT_MATCHES
+          }
+        };
     TermQuery query = new TermQuery(new Term("body", "vectors"));
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     try {
-      highlighter.highlight("body", query, topDocs, 1);//should throw
+      highlighter.highlight("body", query, topDocs, 1); // should throw
     } finally {
       ir.close();
     }
   }
-
 }

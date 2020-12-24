@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
@@ -42,9 +41,14 @@ public class TestReqOptSumScorer extends LuceneTestCase {
 
   public void testBasics() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(
-        // retain doc id order
-        newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig()
+                .setMergePolicy(
+                    // retain doc id order
+                    newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     doc.add(new StringField("f", "foo", Store.NO));
     w.addDocument(doc);
@@ -67,10 +71,11 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     IndexReader reader = w.getReader();
     w.close();
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new BooleanQuery.Builder()
-        .add(new ConstantScoreQuery(new TermQuery(new Term("f", "foo"))), Occur.MUST)
-        .add(new ConstantScoreQuery(new TermQuery(new Term("f", "bar"))), Occur.SHOULD)
-        .build();
+    Query query =
+        new BooleanQuery.Builder()
+            .add(new ConstantScoreQuery(new TermQuery(new Term("f", "foo"))), Occur.MUST)
+            .add(new ConstantScoreQuery(new TermQuery(new Term("f", "bar"))), Occur.SHOULD)
+            .build();
     Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1);
     LeafReaderContext context = searcher.getIndexReader().leaves().get(0);
 
@@ -108,7 +113,8 @@ public class TestReqOptSumScorer extends LuceneTestCase {
 
   public void testMaxBlock() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    IndexWriter w =
+        new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
     FieldType ft = new FieldType();
     ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
     ft.setTokenized(true);
@@ -117,7 +123,7 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     for (int i = 0; i < 1024; i++) {
       // create documents with an increasing number of As and one B
       Document doc = new Document();
-      doc.add(new Field("foo", new TermFreqTokenStream("a", i+1), ft));
+      doc.add(new Field("foo", new TermFreqTokenStream("a", i + 1), ft));
       if (random().nextFloat() < 0.5f) {
         doc.add(new Field("foo", new TermFreqTokenStream("b", 1), ft));
       }
@@ -132,20 +138,19 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     // searcher.setSimilarity(new TestSimilarity.SimpleSimilarity());
     final Query reqQ = new TermQuery(new Term("foo", "a"));
     final Query optQ = new TermQuery(new Term("foo", "b"));
-    final Query boolQ = new BooleanQuery.Builder()
-        .add(reqQ, Occur.MUST)
-        .add(optQ, Occur.SHOULD)
-        .build();
+    final Query boolQ =
+        new BooleanQuery.Builder().add(reqQ, Occur.MUST).add(optQ, Occur.SHOULD).build();
     Scorer actual = reqOptScorer(searcher, reqQ, optQ, true);
-    Scorer expected = searcher
-        .createWeight(boolQ, ScoreMode.COMPLETE, 1)
-        .scorer(searcher.getIndexReader().leaves().get(0));
+    Scorer expected =
+        searcher
+            .createWeight(boolQ, ScoreMode.COMPLETE, 1)
+            .scorer(searcher.getIndexReader().leaves().get(0));
     actual.setMinCompetitiveScore(Math.nextUp(1));
     // Checks that all blocks are fully visited
     for (int i = 0; i < 1024; i++) {
       assertEquals(i, actual.iterator().nextDoc());
       assertEquals(i, expected.iterator().nextDoc());
-      assertEquals(actual.score(),expected.score(), 0);
+      assertEquals(actual.score(), expected.score(), 0);
     }
     reader.close();
     dir.close();
@@ -153,17 +158,19 @@ public class TestReqOptSumScorer extends LuceneTestCase {
 
   public void testMaxScoreSegment() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
-    for (String[] values : Arrays.asList(
-        new String[]{ "A" },            // 0
-        new String[]{ "A" },            // 1
-        new String[]{ },                // 2
-        new String[]{ "A", "B" },       // 3
-        new String[]{ "A" },            // 4
-        new String[]{ "B" },            // 5
-        new String[]{ "A", "B" },       // 6
-        new String[]{ "B" }             // 7
-    )) {
+    IndexWriter w =
+        new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    for (String[] values :
+        Arrays.asList(
+            new String[] {"A"}, // 0
+            new String[] {"A"}, // 1
+            new String[] {}, // 2
+            new String[] {"A", "B"}, // 3
+            new String[] {"A"}, // 4
+            new String[] {"B"}, // 5
+            new String[] {"A", "B"}, // 6
+            new String[] {"B"} // 7
+            )) {
       Document doc = new Document();
       for (String value : values) {
         doc.add(new StringField("foo", value, Store.NO));
@@ -253,10 +260,8 @@ public class TestReqOptSumScorer extends LuceneTestCase {
 
     Query mustTerm = new TermQuery(new Term("f", "A"));
     Query shouldTerm = new TermQuery(new Term("f", "B"));
-    Query query = new BooleanQuery.Builder()
-        .add(mustTerm, Occur.MUST)
-        .add(shouldTerm, Occur.SHOULD)
-        .build();
+    Query query =
+        new BooleanQuery.Builder().add(mustTerm, Occur.MUST).add(shouldTerm, Occur.SHOULD).build();
 
     TopScoreDocCollector coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
     searcher.search(query, coll);
@@ -264,10 +269,11 @@ public class TestReqOptSumScorer extends LuceneTestCase {
 
     // Also test a filtered query, since it does not compute the score on all
     // matches.
-    query = new BooleanQuery.Builder()
-        .add(query, Occur.MUST)
-        .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
-        .build();
+    query =
+        new BooleanQuery.Builder()
+            .add(query, Occur.MUST)
+            .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
+            .build();
 
     coll = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE);
     searcher.search(query, coll);
@@ -276,29 +282,32 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     CheckHits.checkTopScores(random(), query, searcher);
 
     {
-      Query q = new BooleanQuery.Builder()
-          .add(new RandomApproximationQuery(mustTerm, random()), Occur.MUST)
-          .add(shouldTerm, Occur.SHOULD)
-          .build();
+      Query q =
+          new BooleanQuery.Builder()
+              .add(new RandomApproximationQuery(mustTerm, random()), Occur.MUST)
+              .add(shouldTerm, Occur.SHOULD)
+              .build();
 
       coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(q, coll);
       ScoreDoc[] actual = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(query, expected, actual);
 
-      q = new BooleanQuery.Builder()
-          .add(mustTerm, Occur.MUST)
-          .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
-          .build();
+      q =
+          new BooleanQuery.Builder()
+              .add(mustTerm, Occur.MUST)
+              .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
+              .build();
       coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(q, coll);
       actual = coll.topDocs().scoreDocs;
       CheckHits.checkEqual(q, expected, actual);
 
-      q = new BooleanQuery.Builder()
-          .add(new RandomApproximationQuery(mustTerm, random()), Occur.MUST)
-          .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
-          .build();
+      q =
+          new BooleanQuery.Builder()
+              .add(new RandomApproximationQuery(mustTerm, random()), Occur.MUST)
+              .add(new RandomApproximationQuery(shouldTerm, random()), Occur.SHOULD)
+              .build();
       coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(q, coll);
       actual = coll.topDocs().scoreDocs;
@@ -306,16 +315,20 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     }
 
     {
-      Query nestedQ = new BooleanQuery.Builder()
-          .add(query, Occur.MUST)
-          .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
-          .build();
+      Query nestedQ =
+          new BooleanQuery.Builder()
+              .add(query, Occur.MUST)
+              .add(new TermQuery(new Term("f", "C")), Occur.FILTER)
+              .build();
       CheckHits.checkTopScores(random(), nestedQ, searcher);
 
-      query = new BooleanQuery.Builder()
-          .add(query, Occur.MUST)
-          .add(new RandomApproximationQuery(new TermQuery(new Term("f", "C")), random()), Occur.FILTER)
-          .build();
+      query =
+          new BooleanQuery.Builder()
+              .add(query, Occur.MUST)
+              .add(
+                  new RandomApproximationQuery(new TermQuery(new Term("f", "C")), random()),
+                  Occur.FILTER)
+              .build();
 
       coll = TopScoreDocCollector.create(10, null, 1);
       searcher.search(nestedQ, coll);
@@ -324,17 +337,19 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     }
 
     {
-      query = new BooleanQuery.Builder()
-          .add(query, Occur.MUST)
-          .add(new TermQuery(new Term("f", "C")), Occur.SHOULD)
-          .build();
+      query =
+          new BooleanQuery.Builder()
+              .add(query, Occur.MUST)
+              .add(new TermQuery(new Term("f", "C")), Occur.SHOULD)
+              .build();
 
       CheckHits.checkTopScores(random(), query, searcher);
 
-      query = new BooleanQuery.Builder()
-          .add(new TermQuery(new Term("f", "C")), Occur.MUST)
-          .add(query, Occur.SHOULD)
-          .build();
+      query =
+          new BooleanQuery.Builder()
+              .add(new TermQuery(new Term("f", "C")), Occur.MUST)
+              .add(query, Occur.SHOULD)
+              .build();
 
       CheckHits.checkTopScores(random(), query, searcher);
     }
@@ -343,13 +358,16 @@ public class TestReqOptSumScorer extends LuceneTestCase {
     dir.close();
   }
 
-  private static Scorer reqOptScorer(IndexSearcher searcher, Query reqQ, Query optQ, boolean withBlockScore) throws IOException {
-    Scorer reqScorer = searcher
-        .createWeight(reqQ, ScoreMode.TOP_SCORES, 1)
-        .scorer(searcher.getIndexReader().leaves().get(0));
-    Scorer optScorer = searcher
-        .createWeight(optQ, ScoreMode.TOP_SCORES, 1)
-        .scorer(searcher.getIndexReader().leaves().get(0));
+  private static Scorer reqOptScorer(
+      IndexSearcher searcher, Query reqQ, Query optQ, boolean withBlockScore) throws IOException {
+    Scorer reqScorer =
+        searcher
+            .createWeight(reqQ, ScoreMode.TOP_SCORES, 1)
+            .scorer(searcher.getIndexReader().leaves().get(0));
+    Scorer optScorer =
+        searcher
+            .createWeight(optQ, ScoreMode.TOP_SCORES, 1)
+            .scorer(searcher.getIndexReader().leaves().get(0));
     if (withBlockScore) {
       return new ReqOptSumScorer(reqScorer, optScorer, ScoreMode.TOP_SCORES);
     } else {

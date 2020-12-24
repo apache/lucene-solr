@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -29,18 +28,18 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link DoubleValuesSource} instance which can be used to read the values of a feature from a 
+ * A {@link DoubleValuesSource} instance which can be used to read the values of a feature from a
  * {@link FeatureField} for documents.
  */
 class FeatureDoubleValuesSource extends DoubleValuesSource {
-  
+
   private final BytesRef featureName;
   private final String field;
 
   /**
-   * Creates a {@link DoubleValuesSource} instance which can be used to read the values of a feature from the a 
-   * {@link FeatureField} for documents.
-   * 
+   * Creates a {@link DoubleValuesSource} instance which can be used to read the values of a feature
+   * from the a {@link FeatureField} for documents.
+   *
    * @param field field name. Must not be null.
    * @param featureName feature name. Must not be null.
    * @throws NullPointerException if {@code field} or {@code featureName} is null.
@@ -95,17 +94,16 @@ class FeatureDoubleValuesSource extends DoubleValuesSource {
       return false;
     }
     FeatureDoubleValuesSource other = (FeatureDoubleValuesSource) obj;
-    return Objects.equals(field, other.field) &&
-        Objects.equals(featureName, other.featureName);
+    return Objects.equals(field, other.field) && Objects.equals(featureName, other.featureName);
   }
 
   @Override
   public String toString() {
-    return "FeatureDoubleValuesSource("+field+", "+featureName.utf8ToString()+")";
+    return "FeatureDoubleValuesSource(" + field + ", " + featureName.utf8ToString() + ")";
   }
-  
+
   static class FeatureDoubleValues extends DoubleValues {
-    
+
     private final PostingsEnum currentReaderPostingsValues;
 
     public FeatureDoubleValues(PostingsEnum currentReaderPostingsValues) throws IOException {
@@ -120,13 +118,12 @@ class FeatureDoubleValuesSource extends DoubleValuesSource {
     @Override
     public boolean advanceExact(int doc) throws IOException {
       if (doc >= currentReaderPostingsValues.docID()
-          && (currentReaderPostingsValues.docID() == doc || currentReaderPostingsValues.advance(doc) == doc)) {
+          && (currentReaderPostingsValues.docID() == doc
+              || currentReaderPostingsValues.advance(doc) == doc)) {
         return true;
       } else {
         return false;
       }
     }
-    
   }
-
 }

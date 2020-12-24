@@ -16,38 +16,30 @@
  */
 package org.apache.lucene.search;
 
-/**
- * Different modes of search.
- */
+/** Different modes of search. */
 public enum ScoreMode {
-  
-  /**
-   * Produced scorers will allow visiting all matches and get their score.
-   */
+
+  /** Produced scorers will allow visiting all matches and get their score. */
   COMPLETE(true, true),
 
-  /**
-   * Produced scorers will allow visiting all matches but scores won't be
-   * available.
-   */
+  /** Produced scorers will allow visiting all matches but scores won't be available. */
   COMPLETE_NO_SCORES(true, false),
 
   /**
-   * Produced scorers will optionally allow skipping over non-competitive
-   * hits using the {@link Scorer#setMinCompetitiveScore(float)} API.
+   * Produced scorers will optionally allow skipping over non-competitive hits using the {@link
+   * Scorer#setMinCompetitiveScore(float)} API.
    */
   TOP_SCORES(false, true),
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs
+   * ScoreMode for top field collectors that can provide their own iterators, to optionally allow to
+   * skip for non-competitive docs
    */
   TOP_DOCS(false, false),
 
   /**
-   * ScoreMode for top field collectors that can provide their own iterators,
-   * to optionally allow to skip for non-competitive docs.
-   * This mode is used when there is a secondary sort by _score.
+   * ScoreMode for top field collectors that can provide their own iterators, to optionally allow to
+   * skip for non-competitive docs. This mode is used when there is a secondary sort by _score.
    */
   TOP_DOCS_WITH_SCORES(false, true);
 
@@ -59,16 +51,14 @@ public enum ScoreMode {
     this.needsScores = needsScores;
   }
 
-  /**
-   * Whether this {@link ScoreMode} needs to compute scores.
-   */
+  /** Whether this {@link ScoreMode} needs to compute scores. */
   public boolean needsScores() {
     return needsScores;
   }
 
   /**
-   * Returns {@code true} if for this {@link ScoreMode} it is necessary to process all documents,
-   * or {@code false} if is enough to go through top documents only.
+   * Returns {@code true} if for this {@link ScoreMode} it is necessary to process all documents, or
+   * {@code false} if is enough to go through top documents only.
    */
   public boolean isExhaustive() {
     return isExhaustive;

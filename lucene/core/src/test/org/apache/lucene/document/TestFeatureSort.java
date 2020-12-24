@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -50,7 +49,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeature() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "name", 30.1F));
@@ -83,7 +83,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissing() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
@@ -114,7 +115,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissingFieldInSegment() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
@@ -146,7 +148,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMissingFeatureNameInSegment() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     doc.add(new FeatureField("field", "different_name", 0.5F));
@@ -179,7 +182,8 @@ public class TestFeatureSort extends LuceneTestCase {
 
   public void testFeatureMultipleMissing() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
+    IndexWriterConfig config =
+        newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
     writer.addDocument(doc);
@@ -247,17 +251,29 @@ public class TestFeatureSort extends LuceneTestCase {
     TopDocs featureTopDocs = null;
     do {
       if (topDocs == null) {
-        topDocs = searcher.search(new MatchAllDocsQuery(), 10,
-            new Sort(new SortField("float", SortField.Type.FLOAT, true)));
-        featureTopDocs = searcher.search(new MatchAllDocsQuery(), 10,
-            new Sort(FeatureField.newFeatureSort("feature", "foo")));
+        topDocs =
+            searcher.search(
+                new MatchAllDocsQuery(),
+                10,
+                new Sort(new SortField("float", SortField.Type.FLOAT, true)));
+        featureTopDocs =
+            searcher.search(
+                new MatchAllDocsQuery(),
+                10,
+                new Sort(FeatureField.newFeatureSort("feature", "foo")));
       } else {
-        topDocs = searcher.searchAfter(topDocs.scoreDocs[topDocs.scoreDocs.length - 1],
-            new MatchAllDocsQuery(), 10,
-            new Sort(new SortField("float", SortField.Type.FLOAT, true)));
-        featureTopDocs = searcher.searchAfter(featureTopDocs.scoreDocs[featureTopDocs.scoreDocs.length - 1],
-            new MatchAllDocsQuery(), 10,
-            new Sort(FeatureField.newFeatureSort("feature", "foo")));
+        topDocs =
+            searcher.searchAfter(
+                topDocs.scoreDocs[topDocs.scoreDocs.length - 1],
+                new MatchAllDocsQuery(),
+                10,
+                new Sort(new SortField("float", SortField.Type.FLOAT, true)));
+        featureTopDocs =
+            searcher.searchAfter(
+                featureTopDocs.scoreDocs[featureTopDocs.scoreDocs.length - 1],
+                new MatchAllDocsQuery(),
+                10,
+                new Sort(FeatureField.newFeatureSort("feature", "foo")));
       }
 
       CheckHits.checkEqual(new MatchAllDocsQuery(), topDocs.scoreDocs, featureTopDocs.scoreDocs);

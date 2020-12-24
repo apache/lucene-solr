@@ -21,16 +21,26 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestPoint extends LuceneTestCase {
 
   public void testInvalidLat() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Point(134.14, 45.23);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude 134.14; must be between -90.0 and 90.0"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Point(134.14, 45.23);
+            });
+    assertTrue(
+        expected.getMessage().contains("invalid latitude 134.14; must be between -90.0 and 90.0"));
   }
 
   public void testInvalidLon() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Point(43.5, 180.5);
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude 180.5; must be between -180.0 and 180.0"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Point(43.5, 180.5);
+            });
+    assertTrue(
+        expected
+            .getMessage()
+            .contains("invalid longitude 180.5; must be between -180.0 and 180.0"));
   }
 }

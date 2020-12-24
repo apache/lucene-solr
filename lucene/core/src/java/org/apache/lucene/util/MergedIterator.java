@@ -16,45 +16,45 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
  * Provides a merged sorted view from several sorted iterators.
- * <p>
- * If built with <code>removeDuplicates</code> set to true and an element
- * appears in multiple iterators then it is deduplicated, that is this iterator
- * returns the sorted union of elements.
- * <p>
- * If built with <code>removeDuplicates</code> set to false then all elements
- * in all iterators are returned.
- * <p>
- * Caveats:
+ *
+ * <p>If built with <code>removeDuplicates</code> set to true and an element appears in multiple
+ * iterators then it is deduplicated, that is this iterator returns the sorted union of elements.
+ *
+ * <p>If built with <code>removeDuplicates</code> set to false then all elements in all iterators
+ * are returned.
+ *
+ * <p>Caveats:
+ *
  * <ul>
  *   <li>The behavior is undefined if the iterators are not actually sorted.
  *   <li>Null elements are unsupported.
- *   <li>If removeDuplicates is set to true and if a single iterator contains
- *       duplicates then they will not be deduplicated.
+ *   <li>If removeDuplicates is set to true and if a single iterator contains duplicates then they
+ *       will not be deduplicated.
  *   <li>When elements are deduplicated it is not defined which one is returned.
- *   <li>If removeDuplicates is set to false then the order in which duplicates
- *       are returned isn't defined.
+ *   <li>If removeDuplicates is set to false then the order in which duplicates are returned isn't
+ *       defined.
  * </ul>
+ *
  * @lucene.internal
  */
 public final class MergedIterator<T extends Comparable<T>> implements Iterator<T> {
   private T current;
-  private final TermMergeQueue<T> queue; 
+  private final TermMergeQueue<T> queue;
   private final SubIterator<T>[] top;
   private final boolean removeDuplicates;
   private int numTop;
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public MergedIterator(Iterator<T>... iterators) {
     this(true, iterators);
   }
 
-  @SuppressWarnings({"unchecked","rawtypes"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public MergedIterator(boolean removeDuplicates, Iterator<T>... iterators) {
     this.removeDuplicates = removeDuplicates;
     queue = new TermMergeQueue<>(iterators.length);
@@ -70,13 +70,13 @@ public final class MergedIterator<T extends Comparable<T>> implements Iterator<T
       }
     }
   }
-  
+
   @Override
   public boolean hasNext() {
     if (queue.size() > 0) {
       return true;
     }
-    
+
     for (int i = 0; i < numTop; i++) {
       if (top[i].iterator.hasNext()) {
         return true;
@@ -84,12 +84,12 @@ public final class MergedIterator<T extends Comparable<T>> implements Iterator<T
     }
     return false;
   }
-  
+
   @Override
   public T next() {
     // restore queue
     pushTop();
-    
+
     // gather equal top elements
     if (queue.size() > 0) {
       pullTop();
@@ -101,25 +101,24 @@ public final class MergedIterator<T extends Comparable<T>> implements Iterator<T
     }
     return current;
   }
-  
+
   @Override
   public void remove() {
     throw new UnsupportedOperationException();
   }
-  
+
   private void pullTop() {
     assert numTop == 0;
     top[numTop++] = queue.pop();
     if (removeDuplicates) {
       // extract all subs from the queue that have the same top element
-      while (queue.size() != 0
-             && queue.top().current.equals(top[0].current)) {
+      while (queue.size() != 0 && queue.top().current.equals(top[0].current)) {
         top[numTop++] = queue.pop();
       }
     }
     current = top[0].current;
   }
-  
+
   private void pushTop() {
     // call next() on each top, and put back into queue
     for (int i = 0; i < numTop; i++) {
@@ -133,18 +132,19 @@ public final class MergedIterator<T extends Comparable<T>> implements Iterator<T
     }
     numTop = 0;
   }
-  
+
   private static class SubIterator<I extends Comparable<I>> {
     Iterator<I> iterator;
     I current;
     int index;
   }
-  
-  private static class TermMergeQueue<C extends Comparable<C>> extends PriorityQueue<SubIterator<C>> {
+
+  private static class TermMergeQueue<C extends Comparable<C>>
+      extends PriorityQueue<SubIterator<C>> {
     TermMergeQueue(int size) {
       super(size);
     }
-    
+
     @Override
     protected boolean lessThan(SubIterator<C> a, SubIterator<C> b) {
       final int cmp = a.current.compareTo(b.current);

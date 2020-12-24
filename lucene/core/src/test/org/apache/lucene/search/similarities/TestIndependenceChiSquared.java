@@ -24,5 +24,4 @@ public class TestIndependenceChiSquared extends BaseSimilarityTestCase {
   protected final Similarity getSimilarity(Random random) {
     return new DFISimilarity(new IndependenceChiSquared());
   }
-
 }

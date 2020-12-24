@@ -302,7 +302,7 @@ public abstract class BaseSpatialTestCase extends LuceneTestCase {
       }
 
       final FixedBitSet hits = searchIndex(s, query, maxDoc);
-     
+
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
       for (int docID = 0; docID < maxDoc; ++docID) {
@@ -681,7 +681,7 @@ public abstract class BaseSpatialTestCase extends LuceneTestCase {
     });
     return hits;
   }
-  
+
   protected abstract Validator getValidator();
 
   protected static abstract class Encoder {
@@ -714,7 +714,7 @@ public abstract class BaseSpatialTestCase extends LuceneTestCase {
     }
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
-    
+
     public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
     public Validator setRelation(QueryRelation relation) {

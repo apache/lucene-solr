@@ -53,7 +53,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
   protected SpatialVisitor getSpatialVisitor() {
     final EncodedRectangle encodedRectangle = new EncodedRectangle(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
     return new SpatialVisitor() {
-      
+
       @Override
       protected Relation relate(byte[] minTriangle, byte[] maxTriangle) {
         if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
@@ -123,7 +123,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
           }
         };
       }
-      
+
       @Override
       protected Function<byte[], Component2D.WithinRelation> contains() {
         if (encodedRectangle.crossesDateline()) {
@@ -236,7 +236,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
     Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
                              int maxXOffset, int maxYOffset, byte[] maxTriangle) {
       Relation eastRelation = compareBBoxToRangeBBox(this.bbox,
-          minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+              minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
         return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       }
@@ -249,7 +249,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
     Relation intersectRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
                                 int maxXOffset, int maxYOffset, byte[] maxTriangle) {
       Relation eastRelation = intersectBBoxWithRangeBBox(this.bbox,
-          minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+              minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
         return intersectBBoxWithRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       }
@@ -268,9 +268,9 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
       }
 
       if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+              Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+              Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+              Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
         return Relation.CELL_INSIDE_QUERY;
       }
 
@@ -290,25 +290,25 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
       }
 
       if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+              Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
         if (Arrays.compareUnsigned(maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+                Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
         if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+                Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
       }
 
       if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+              Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
         if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+                Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
         if (Arrays.compareUnsigned(minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+                Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
       }
@@ -323,9 +323,9 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
                                     int minXOffset, int minYOffset, byte[] minTriangle,
                                     int maxXOffset, int maxYOffset, byte[] maxTriangle) {
       return Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-             Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-             Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-             Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
+              Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+              Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+              Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
     }
 
     /**
@@ -394,9 +394,9 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
       }
       // expensive part
       return Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY) ||
-             edgeIntersectsQuery(aX, aY, bX, bY) ||
-             edgeIntersectsQuery(bX, bY, cX, cY) ||
-             edgeIntersectsQuery(cX, cY, aX, aY);
+              edgeIntersectsQuery(aX, aY, bX, bY) ||
+              edgeIntersectsQuery(bX, bY, cX, cY) ||
+              edgeIntersectsQuery(cX, cY, aX, aY);
     }
 
     /**
@@ -404,15 +404,15 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
      **/
     boolean containsLine(int aX, int aY, int bX, int bY) {
       if (aY < minY || bY < minY ||
-          aY > maxY || bY > maxY ) {
+              aY > maxY || bY > maxY ) {
         return false;
       }
       if (crossesDateline) { // crosses dateline
         return (aX >= minX && bX >= minX) ||
-               (aX <= maxX && bX <= maxX);
+                (aX <= maxX && bX <= maxX);
       } else {
         return aX >= minX && bX >= minX &&
-               aX <= maxX && bX <= maxX;
+                aX <= maxX && bX <= maxX;
       }
     }
 
@@ -421,15 +421,15 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
      **/
     boolean containsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
       if (aY < minY || bY < minY || cY < minY ||
-          aY > maxY || bY > maxY || cY > maxY) {
+              aY > maxY || bY > maxY || cY > maxY) {
         return false;
       }
       if (crossesDateline) { // crosses dateline
         return (aX >= minX && bX >= minX && cX >= minX) ||
-               (aX <= maxX && bX <= maxX && cX <= maxX);
+                (aX <= maxX && bX <= maxX && cX <= maxX);
       } else {
         return aX >= minX && bX >= minX && cX >= minX &&
-               aX <= maxX && bX <= maxX && cX <= maxX;
+                aX <= maxX && bX <= maxX && cX <= maxX;
       }
     }
 
@@ -438,7 +438,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
      */
     Component2D.WithinRelation withinLine(int ax, int ay, boolean ab, int bx, int by) {
       if (ab == true && edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
+        return Component2D.WithinRelation.NOTWITHIN;
       }
       return Component2D.WithinRelation.DISJOINT;
     }
@@ -496,7 +496,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
       }
       // Check if shape is within the triangle
       if (relation == Component2D.WithinRelation.CANDIDATE ||
-          Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
+              Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
         return Component2D.WithinRelation.CANDIDATE;
       }
       return relation;
@@ -508,7 +508,7 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
     private boolean edgeIntersectsQuery(int aX, int aY, int bX, int bY) {
       if (crossesDateline) {
         return edgeIntersectsBox(aX, aY, bX, bY, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
-            || edgeIntersectsBox(aX, aY, bX, bY, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
+                || edgeIntersectsBox(aX, aY, bX, bY, this.minX, MAX_LON_ENCODED, this.minY, this.maxY);
       }
       return edgeIntersectsBox(aX, aY, bX, bY, this.minX, this.maxX, this.minY, this.maxY);
     }
@@ -522,9 +522,9 @@ final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
         return false;
       }
       return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY,  maxX, maxY) || // top
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY,  maxX, minY) || // bottom
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY,  minX, minY) || // left
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY,  minX, maxY);   // right
+              GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY,  maxX, minY) || // bottom
+              GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY,  minX, minY) || // left
+              GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY,  minX, maxY);   // right
     }
   }
 }

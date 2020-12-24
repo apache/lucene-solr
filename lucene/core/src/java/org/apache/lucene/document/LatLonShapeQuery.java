@@ -56,10 +56,10 @@ final class LatLonShapeQuery extends SpatialQuery {
     this.component2D = LatLonGeometry.create(geometries);
     this.geometries = geometries.clone();
   }
-  
+
   @Override
   protected SpatialVisitor getSpatialVisitor() {
-    
+
     return new SpatialVisitor() {
       @Override
       protected Relation relate(byte[] minTriangle, byte[] maxTriangle) {

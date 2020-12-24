@@ -1,9 +1,9 @@
 /*
  * dk.brics.automaton
- * 
+ *
  * Copyright (c) 2001-2009 Anders Moeller
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -30,32 +30,31 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.Arrays;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Finite-state automaton with fast run operation.  The initial state is always 0.
- * 
+ * Finite-state automaton with fast run operation. The initial state is always 0.
+ *
  * @lucene.experimental
  */
 public abstract class RunAutomaton implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(RunAutomaton.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(RunAutomaton.class);
 
   final Automaton automaton;
   final int alphabetSize;
   final int size;
   final FixedBitSet accept;
   final int[] transitions; // delta(state,c) = transitions[state*points.length +
-                     // getCharClass(c)]
+  // getCharClass(c)]
   final int[] points; // char interval start points
   final int[] classmap; // map from char number to class
-  
+
   /**
-   * Constructs a new <code>RunAutomaton</code> from a deterministic
-   * <code>Automaton</code>.
-   * 
+   * Constructs a new <code>RunAutomaton</code> from a deterministic <code>Automaton</code>.
+   *
    * @param a an automaton
    */
   protected RunAutomaton(Automaton a, int alphabetSize) {
@@ -63,24 +62,22 @@ public abstract class RunAutomaton implements Accountable {
   }
 
   /**
-   * Constructs a new <code>RunAutomaton</code> from a deterministic
-   * <code>Automaton</code>.
-   * 
+   * Constructs a new <code>RunAutomaton</code> from a deterministic <code>Automaton</code>.
+   *
    * @param a an automaton
-   * @param maxDeterminizedStates maximum number of states that can be created
-   *   while determinizing a
+   * @param maxDeterminizedStates maximum number of states that can be created while determinizing a
    */
   protected RunAutomaton(Automaton a, int alphabetSize, int maxDeterminizedStates) {
     this.alphabetSize = alphabetSize;
     a = Operations.determinize(a, maxDeterminizedStates);
     this.automaton = a;
     points = a.getStartPoints();
-    size = Math.max(1,a.getNumStates());
+    size = Math.max(1, a.getNumStates());
     accept = new FixedBitSet(size);
     transitions = new int[size * points.length];
     Arrays.fill(transitions, -1);
     Transition transition = new Transition();
-    for (int n=0;n<size;n++) {
+    for (int n = 0; n < size; n++) {
       if (a.isAccept(n)) {
         accept.set(n);
       }
@@ -105,10 +102,8 @@ public abstract class RunAutomaton implements Accountable {
       classmap[j] = i;
     }
   }
-  
-  /**
-   * Returns a string representation of this automaton.
-   */
+
+  /** Returns a string representation of this automaton. */
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
@@ -136,32 +131,26 @@ public abstract class RunAutomaton implements Accountable {
     }
     return b.toString();
   }
-  
-  /**
-   * Returns number of states in automaton.
-   */
+
+  /** Returns number of states in automaton. */
   public final int getSize() {
     return size;
   }
-  
-  /**
-   * Returns acceptance status for given state.
-   */
+
+  /** Returns acceptance status for given state. */
   public final boolean isAccept(int state) {
     return accept.get(state);
   }
-  
+
   /**
-   * Returns array of codepoint class interval start points. The array should
-   * not be modified by the caller.
+   * Returns array of codepoint class interval start points. The array should not be modified by the
+   * caller.
    */
   public final int[] getCharIntervals() {
     return points.clone();
   }
-  
-  /**
-   * Gets character class of given codepoint
-   */
+
+  /** Gets character class of given codepoint */
   final int getCharClass(int c) {
 
     // binary search
@@ -177,10 +166,9 @@ public abstract class RunAutomaton implements Accountable {
   }
 
   /**
-   * Returns the state obtained by reading the given char from the given state.
-   * Returns -1 if not obtaining any such state. (If the original
-   * <code>Automaton</code> had no dead states, -1 is returned here if and only
-   * if a dead state is entered in an equivalent automaton with a total
+   * Returns the state obtained by reading the given char from the given state. Returns -1 if not
+   * obtaining any such state. (If the original <code>Automaton</code> had no dead states, -1 is
+   * returned here if and only if a dead state is entered in an equivalent automaton with a total
    * transition function.)
    */
   public final int step(int state, int c) {
@@ -218,11 +206,11 @@ public abstract class RunAutomaton implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        accept.ramBytesUsed() +
-        RamUsageEstimator.sizeOfObject(automaton) +
-        RamUsageEstimator.sizeOfObject(classmap) +
-        RamUsageEstimator.sizeOfObject(points) +
-        RamUsageEstimator.sizeOfObject(transitions);
+    return BASE_RAM_BYTES
+        + accept.ramBytesUsed()
+        + RamUsageEstimator.sizeOfObject(automaton)
+        + RamUsageEstimator.sizeOfObject(classmap)
+        + RamUsageEstimator.sizeOfObject(points)
+        + RamUsageEstimator.sizeOfObject(transitions);
   }
 }

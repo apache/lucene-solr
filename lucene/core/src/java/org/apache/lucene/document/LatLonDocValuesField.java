@@ -34,7 +34,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 
-/** 
+/**
  * An per-document location field.
  * <p>
  * Sorting by distance is efficient. Multiple values for the same field in one document
@@ -68,8 +68,8 @@ public class LatLonDocValuesField extends Field {
     TYPE.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE.freeze();
   }
-  
-  /** 
+
+  /**
    * Creates a new LatLonDocValuesField with the specified latitude and longitude
    * @param name field name
    * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
@@ -80,7 +80,7 @@ public class LatLonDocValuesField extends Field {
     super(name, TYPE);
     setLocationValue(latitude, longitude);
   }
-  
+
   /**
    * Change the values of this field
    * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
@@ -97,12 +97,12 @@ public class LatLonDocValuesField extends Field {
   static void checkCompatible(FieldInfo fieldInfo) {
     // dv properties could be "unset", if you e.g. used only StoredField with this same name in the segment.
     if (fieldInfo.getDocValuesType() != DocValuesType.NONE && fieldInfo.getDocValuesType() != TYPE.docValuesType()) {
-      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with docValuesType=" + fieldInfo.getDocValuesType() + 
-                                         " but this type has docValuesType=" + TYPE.docValuesType() + 
-                                         ", is the field really a LatLonDocValuesField?");
+      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with docValuesType=" + fieldInfo.getDocValuesType() +
+              " but this type has docValuesType=" + TYPE.docValuesType() +
+              ", is the field really a LatLonDocValuesField?");
     }
   }
-  
+
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
@@ -130,7 +130,7 @@ public class LatLonDocValuesField extends Field {
    * (missing values sort last).
    * <p>
    * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
-   * 
+   *
    * @param field field name. must not be null.
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
    * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.

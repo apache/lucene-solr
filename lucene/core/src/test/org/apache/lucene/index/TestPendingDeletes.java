@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -39,9 +38,21 @@ public class TestPendingDeletes extends LuceneTestCase {
 
   public void testDeleteDoc() throws IOException {
     Directory dir = new ByteBuffersDirectory();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "test",
+            10,
+            false,
+            Codec.getDefault(),
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            null);
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertNull(deletes.getLiveDocs());
     int docToDelete = TestUtil.nextInt(random(), 0, 7);
@@ -73,9 +84,21 @@ public class TestPendingDeletes extends LuceneTestCase {
 
   public void testWriteLiveDocs() throws IOException {
     Directory dir = new ByteBuffersDirectory();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 6, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0,  -1, -1, -1, StringHelper.randomId());
+    SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "test",
+            6,
+            false,
+            Codec.getDefault(),
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            null);
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     PendingDeletes deletes = newPendingDeletes(commitInfo);
     assertFalse(deletes.writeLiveDocs(dir));
     assertEquals(0, dir.listAll().length);
@@ -91,7 +114,8 @@ public class TestPendingDeletes extends LuceneTestCase {
     assertEquals(secondDocDeletes ? 2 : 1, deletes.numPendingDeletes());
     assertTrue(deletes.writeLiveDocs(dir));
     assertEquals(1, dir.listAll().length);
-    Bits liveDocs = Codec.getDefault().liveDocsFormat().readLiveDocs(dir, commitInfo, IOContext.DEFAULT);
+    Bits liveDocs =
+        Codec.getDefault().liveDocsFormat().readLiveDocs(dir, commitInfo, IOContext.DEFAULT);
     assertFalse(liveDocs.get(5));
     if (secondDocDeletes) {
       assertFalse(liveDocs.get(2));
@@ -130,9 +154,21 @@ public class TestPendingDeletes extends LuceneTestCase {
 
   public void testIsFullyDeleted() throws IOException {
     Directory dir = new ByteBuffersDirectory();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 3, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "test",
+            3,
+            false,
+            Codec.getDefault(),
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            null);
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     FieldInfos fieldInfos = FieldInfos.EMPTY;
     si.getCodec().fieldInfosFormat().write(dir, si, "", fieldInfos, IOContext.DEFAULT);
     PendingDeletes deletes = newPendingDeletes(commitInfo);

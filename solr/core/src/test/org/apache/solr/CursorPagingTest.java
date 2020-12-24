@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -46,6 +48,7 @@ import org.junit.BeforeClass;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import static org.apache.solr.common.params.CommonParams.TIME_ALLOWED;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
@@ -103,13 +106,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       "sort", "_docid_ asc, id desc", 
                       CURSOR_MARK_PARAM, CURSOR_MARK_START),
                ErrorCode.BAD_REQUEST, "_docid_");
-
-    // using cursor w/ timeAllowed
-    assertFail(params("q", "*:*", 
-                      "sort", "id desc", 
-                      CommonParams.TIME_ALLOWED, "1000",
-                      CURSOR_MARK_PARAM, CURSOR_MARK_START),
-               ErrorCode.BAD_REQUEST, CommonParams.TIME_ALLOWED);
 
     // using cursor w/ grouping
     assertFail(params("q", "*:*", 
@@ -498,6 +494,83 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                               ,"/response/docs==[]"
                               ));
   }
+
+  /**
+   * test that timeAllowed parameter can be used with cursors
+   * uses DelayingSearchComponent in solrconfig-deeppaging.xml
+   */
+  public void testTimeAllowed() throws Exception {
+    String wontExceedTimeout = "10000";
+    int numDocs = 1000;
+    List<String> ids = IntStream.range(0, 1000).mapToObj(String::valueOf).collect(Collectors.toList());
+    // Shuffle to test ordering
+    Collections.shuffle(ids, random());
+    for (String id : ids) {
+      assertU(adoc("id", id, "name", "a" + id));
+      if (random().nextInt(numDocs) == 0) {
+        assertU(commit());  // sometimes make multiple segments
+      }
+    }
+    assertU(commit());
+
+    Collections.sort(ids);
+
+    String cursorMark, nextCursorMark = CURSOR_MARK_START;
+
+    SolrParams params = params("q", "name:a*",
+        "fl", "id",
+        "sort", "id asc",
+        "rows", "50",
+        "sleep", "10");
+
+    List<String> foundDocIds = new ArrayList<>();
+    String[] timeAllowedVariants = {"1", "50", wontExceedTimeout};
+    int partialCount = 0;
+    do {
+      cursorMark = nextCursorMark;
+      for (String timeAllowed : timeAllowedVariants) {
+
+        // execute the query
+        String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark, TIME_ALLOWED, timeAllowed));
+
+        @SuppressWarnings({"unchecked"})
+        Map<Object, Object> response = (Map<Object, Object>) fromJSONString(json);
+        @SuppressWarnings({"unchecked"})
+        Map<Object, Object> responseHeader = (Map<Object, Object>) response.get("responseHeader");
+        @SuppressWarnings({"unchecked"})
+        Map<Object, Object> responseBody = (Map<Object, Object>) response.get("response");
+        nextCursorMark = (String) response.get(CURSOR_MARK_NEXT);
+
+        // count occurance of partialResults (confirm at the end at least one)
+        if (responseHeader.containsKey("partialResults")) {
+          partialCount++;
+        }
+
+        // add the ids found (confirm we found all at the end in correct order)
+        @SuppressWarnings({"unchecked"})
+        List<Map<Object, Object>> docs = (List<Map<Object, Object>>) (responseBody.get("docs"));
+        for (Map<Object, Object> doc : docs) {
+          foundDocIds.add(doc.get("id").toString());
+        }
+
+        // break out of the timeAllowed variants as soon as we progress
+        if (!cursorMark.equals(nextCursorMark)) {
+          break;
+        }
+      }
+    } while (!cursorMark.equals(nextCursorMark));
+
+    List<String> sortedFoundDocIds = new ArrayList<>();
+    sortedFoundDocIds.addAll(foundDocIds);
+    Collections.sort(sortedFoundDocIds);
+    // Note: it is not guaranteed that all docs will be found, because a query may time out
+    // before reaching all segments, this causes documents in the skipped segements to be skipped
+    // in the overall result set as the cursor pages through.
+    assertEquals("Should have found last doc id eventually", ids.get(ids.size() -1), foundDocIds.get(foundDocIds.size() -1));
+    assertEquals("Documents arrived in sorted order within and between pages", sortedFoundDocIds, foundDocIds);
+    assertTrue("Should have experienced at least one partialResult", partialCount > 0);
+  }
+
 
   /**
    * test that our assumptions about how caches are affected hold true

@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.ShapeField;
@@ -39,12 +38,14 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+  protected Query newRectQuery(
+      String field, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonPoint.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
+  protected Query newDistanceQuery(
+      String field, double centerLat, double centerLon, double radiusMeters) {
     return LatLonPoint.newDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 

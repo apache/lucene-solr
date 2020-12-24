@@ -24,40 +24,41 @@ import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.S
 
 public class TestWeightedFragListBuilder extends AbstractTestCase {
   public void test2WeightedFragList() throws Exception {
-    testCase( pqF( "the", "both" ), 100,
-        "subInfos=(theboth((195,203)))/0.8679108(149,249)",
-        0.8679108 );
+    testCase(
+        pqF("the", "both"), 100, "subInfos=(theboth((195,203)))/0.8679108(149,249)", 0.8679108);
   }
 
   public void test2SubInfos() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.add( pqF( "the", "both" ), Occur.MUST );
-    query.add( tq( "examples" ), Occur.MUST );
+    query.add(pqF("the", "both"), Occur.MUST);
+    query.add(tq("examples"), Occur.MUST);
 
-    testCase( query.build(), 1000,
+    testCase(
+        query.build(),
+        1000,
         "subInfos=(examples((19,27))examples((66,74))theboth((195,203)))/1.8411169(0,1000)",
-        1.8411169 );
+        1.8411169);
   }
 
-  private void testCase( Query query, int fragCharSize, String expectedFragInfo,
-      double expectedTotalSubInfoBoost ) throws Exception {
+  private void testCase(
+      Query query, int fragCharSize, String expectedFragInfo, double expectedTotalSubInfoBoost)
+      throws Exception {
     makeIndexLongMV();
 
-    FieldQuery fq = new FieldQuery( query, true, true );
-    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
-    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    FieldQuery fq = new FieldQuery(query, true, true);
+    FieldTermStack stack = new FieldTermStack(reader, 0, F, fq);
+    FieldPhraseList fpl = new FieldPhraseList(stack, fq);
     WeightedFragListBuilder wflb = new WeightedFragListBuilder();
-    FieldFragList ffl = wflb.createFieldFragList( fpl, fragCharSize );
-    assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( expectedFragInfo, ffl.getFragInfos().get( 0 ).toString() );
+    FieldFragList ffl = wflb.createFieldFragList(fpl, fragCharSize);
+    assertEquals(1, ffl.getFragInfos().size());
+    assertEquals(expectedFragInfo, ffl.getFragInfos().get(0).toString());
 
     float totalSubInfoBoost = 0;
-    for ( WeightedFragInfo info : ffl.getFragInfos() ) {
-      for ( SubInfo subInfo : info.getSubInfos() ) {
+    for (WeightedFragInfo info : ffl.getFragInfos()) {
+      for (SubInfo subInfo : info.getSubInfos()) {
         totalSubInfoBoost += subInfo.getBoost();
       }
     }
-    assertEquals( expectedTotalSubInfoBoost, totalSubInfoBoost, .0000001 );
+    assertEquals(expectedTotalSubInfoBoost, totalSubInfoBoost, .0000001);
   }
-
 }

@@ -16,24 +16,16 @@
  */
 package org.apache.lucene.index;
 
-/**
- * Per-document scoring factors.
- */
+/** Per-document scoring factors. */
 public final class Impact {
 
-  /**
-   * Term frequency of the term in the document.
-   */
+  /** Term frequency of the term in the document. */
   public int freq;
 
-  /**
-   * Norm factor of the document.
-   */
+  /** Norm factor of the document. */
   public long norm;
 
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   public Impact(int freq, long norm) {
     this.freq = freq;
     this.norm = norm;
@@ -57,5 +49,4 @@ public final class Impact {
     Impact other = (Impact) obj;
     return freq == other.freq && norm == other.norm;
   }
-
 }

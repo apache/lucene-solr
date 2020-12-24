@@ -36,27 +36,27 @@ import org.apache.lucene.geo.Circle;
 
 /** Base test case for testing geospatial indexing and search functionality  for {@link LatLonShape} **/
 public abstract class BaseLatLonShapeTestCase extends BaseLatLonSpatialTestCase {
-  
+
   @Override
   protected Query newRectQuery(String field, QueryRelation queryRelation, double minLon, double maxLon, double minLat, double maxLat) {
     return LatLonShape.newBoxQuery(field, queryRelation, minLat, maxLat, minLon, maxLon);
   }
-  
+
   @Override
   protected Query newLineQuery(String field, QueryRelation queryRelation, Object... lines) {
     return LatLonShape.newLineQuery(field, queryRelation, Arrays.stream(lines).toArray(Line[]::new));
   }
-  
+
   @Override
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, Arrays.stream(polygons).toArray(Polygon[]::new));
   }
-  
+
   @Override
   protected Query newPointsQuery(String field, QueryRelation queryRelation, Object... points) {
     return LatLonShape.newPointQuery(field, queryRelation, Arrays.stream(points).toArray(double[][]::new));
   }
-  
+
   @Override
   protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
     return LatLonShape.newDistanceQuery(field, queryRelation, (Circle) circle);

@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link ArabicStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_arstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -42,7 +41,7 @@ public class ArabicStemFilterFactory extends TokenFilterFactory {
   public static final String NAME = "arabicStem";
 
   /** Creates a new ArabicStemFilterFactory */
-  public ArabicStemFilterFactory(Map<String,String> args) {
+  public ArabicStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

@@ -30,12 +30,21 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+  <searchComponent name="delayingSearchComponent"
+                   class="org.apache.solr.search.DelayingSearchComponent"/>
+
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <arr name="first-components">
+      <str>delayingSearchComponent</str>
+    </arr>
+  </requestHandler>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
-  
+
   <!-- deep paging better play nice with caching -->
   <query>
     <!-- no wautowarming, it screws up our ability to sanity check cache stats in tests -->

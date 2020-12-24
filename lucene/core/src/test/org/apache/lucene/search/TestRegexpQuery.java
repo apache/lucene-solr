@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -33,69 +33,73 @@ import org.apache.lucene.util.automaton.AutomatonProvider;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
-/**
- * Some simple regex tests, mostly converted from contrib's TestRegexQuery.
- */
+/** Some simple regex tests, mostly converted from contrib's TestRegexQuery. */
 public class TestRegexpQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
   private static final String FN = "field";
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     Document doc = new Document();
-    doc.add(newTextField(FN, "the quick brown fox jumps over the lazy ??? dog 493432 49344 [foo] 12.3 \\", Field.Store.NO));
+    doc.add(
+        newTextField(
+            FN,
+            "the quick brown fox jumps over the lazy ??? dog 493432 49344 [foo] 12.3 \\",
+            Field.Store.NO));
     writer.addDocument(doc);
     reader = writer.getReader();
     writer.close();
     searcher = newSearcher(reader);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
     directory.close();
     super.tearDown();
   }
-  
+
   private Term newTerm(String value) {
     return new Term(FN, value);
   }
-  
+
   private long regexQueryNrHits(String regex) throws IOException {
     RegexpQuery query = new RegexpQuery(newTerm(regex));
     return searcher.count(query);
   }
-  
+
   private long caseInsensitiveRegexQueryNrHits(String regex) throws IOException {
-    RegexpQuery query = new RegexpQuery(newTerm(regex), RegExp.ALL, RegExp.ASCII_CASE_INSENSITIVE,
-        Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    RegexpQuery query =
+        new RegexpQuery(
+            newTerm(regex),
+            RegExp.ALL,
+            RegExp.ASCII_CASE_INSENSITIVE,
+            Operations.DEFAULT_MAX_DETERMINIZED_STATES);
     return searcher.count(query);
-  }  
-  
+  }
+
   public void testRegex1() throws IOException {
     assertEquals(1, regexQueryNrHits("q.[aeiou]c.*"));
   }
-  
+
   public void testRegex2() throws IOException {
     assertEquals(0, regexQueryNrHits(".[aeiou]c.*"));
   }
-  
+
   public void testRegex3() throws IOException {
     assertEquals(0, regexQueryNrHits("q.[aeiou]c"));
   }
-  
+
   public void testNumericRange() throws IOException {
     assertEquals(1, regexQueryNrHits("<420000-600000>"));
     assertEquals(0, regexQueryNrHits("<493433-600000>"));
   }
-  
+
   public void testCharacterClasses() throws IOException {
     assertEquals(0, regexQueryNrHits("\\d"));
     assertEquals(1, regexQueryNrHits("\\d*"));
@@ -105,67 +109,71 @@ public class TestRegexpQuery extends LuceneTestCase {
     assertEquals(0, regexQueryNrHits("\\d{4}"));
     assertEquals(0, regexQueryNrHits("\\dog"));
     assertEquals(1, regexQueryNrHits("493\\d32"));
-    
+
     assertEquals(1, regexQueryNrHits("\\wox"));
     assertEquals(1, regexQueryNrHits("493\\w32"));
     assertEquals(1, regexQueryNrHits("\\?\\?\\?"));
     assertEquals(1, regexQueryNrHits("\\?\\W\\?"));
     assertEquals(1, regexQueryNrHits("\\?\\S\\?"));
-    
+
     assertEquals(1, regexQueryNrHits("\\[foo\\]"));
     assertEquals(1, regexQueryNrHits("\\[\\w{3}\\]"));
-    
+
     assertEquals(0, regexQueryNrHits("\\s.*")); // no matches because all whitespace stripped
-    assertEquals(1, regexQueryNrHits("\\S*ck")); //matches quick
+    assertEquals(1, regexQueryNrHits("\\S*ck")); // matches quick
     assertEquals(1, regexQueryNrHits("[\\d\\.]{3,10}")); // matches 12.3
     assertEquals(1, regexQueryNrHits("\\d{1,3}(\\.(\\d{1,2}))+")); // matches 12.3
 
     assertEquals(1, regexQueryNrHits("\\\\"));
     assertEquals(1, regexQueryNrHits("\\\\.*"));
 
-    IllegalArgumentException expected = expectThrows(
-        IllegalArgumentException.class, () -> {
-          regexQueryNrHits("\\p");
-        }
-    );
-    assertTrue(expected.getMessage().contains("invalid character class"));         
-  }  
-  
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              regexQueryNrHits("\\p");
+            });
+    assertTrue(expected.getMessage().contains("invalid character class"));
+  }
+
   public void testCaseInsensitive() throws IOException {
     assertEquals(0, regexQueryNrHits("Quick"));
     assertEquals(1, caseInsensitiveRegexQueryNrHits("Quick"));
-  }  
-  
+  }
+
   public void testRegexComplement() throws IOException {
     assertEquals(1, regexQueryNrHits("4934~[3]"));
     // not the empty lang, i.e. match all docs
     assertEquals(1, regexQueryNrHits("~#"));
   }
-  
+
   public void testCustomProvider() throws IOException {
-    AutomatonProvider myProvider = new AutomatonProvider() {
-      // automaton that matches quick or brown
-      private Automaton quickBrownAutomaton = Operations.union(Arrays
-          .asList(Automata.makeString("quick"),
-          Automata.makeString("brown"),
-          Automata.makeString("bob")));
-      
-      @Override
-      public Automaton getAutomaton(String name) {
-        if (name.equals("quickBrown")) return quickBrownAutomaton;
-        else return null;
-      }
-    };
-    RegexpQuery query = new RegexpQuery(newTerm("<quickBrown>"), RegExp.ALL,
-      myProvider, DEFAULT_MAX_DETERMINIZED_STATES);
+    AutomatonProvider myProvider =
+        new AutomatonProvider() {
+          // automaton that matches quick or brown
+          private Automaton quickBrownAutomaton =
+              Operations.union(
+                  Arrays.asList(
+                      Automata.makeString("quick"),
+                      Automata.makeString("brown"),
+                      Automata.makeString("bob")));
+
+          @Override
+          public Automaton getAutomaton(String name) {
+            if (name.equals("quickBrown")) return quickBrownAutomaton;
+            else return null;
+          }
+        };
+    RegexpQuery query =
+        new RegexpQuery(
+            newTerm("<quickBrown>"), RegExp.ALL, myProvider, DEFAULT_MAX_DETERMINIZED_STATES);
     assertEquals(1, searcher.search(query, 5).totalHits.value);
   }
-  
+
   /**
-   * Test a corner case for backtracking: In this case the term dictionary has
-   * 493432 followed by 49344. When backtracking from 49343... to 4934, it's
-   * necessary to test that 4934 itself is ok before trying to append more
-   * characters.
+   * Test a corner case for backtracking: In this case the term dictionary has 493432 followed by
+   * 49344. When backtracking from 49343... to 4934, it's necessary to test that 4934 itself is ok
+   * before trying to append more characters.
    */
   public void testBacktracking() throws IOException {
     assertEquals(1, regexQueryNrHits("4934[314]"));

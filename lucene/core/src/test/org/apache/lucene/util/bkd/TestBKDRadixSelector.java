@@ -17,10 +17,8 @@
 
 package org.apache.lucene.util.bkd;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -35,7 +33,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int middle = 2;
     int dimensions = 1;
     int bytesPerDimensions = Integer.BYTES;
-    BKDConfig config = new BKDConfig(dimensions, dimensions, bytesPerDimensions, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    BKDConfig config =
+        new BKDConfig(
+            dimensions, dimensions, bytesPerDimensions, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
     PointWriter points = getRandomPointWriter(config, dir, values);
     byte[] value = new byte[config.packedBytesLength];
     NumericUtils.intToSortableBytes(1, value, 0);
@@ -47,7 +47,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     NumericUtils.intToSortableBytes(4, value, 0);
     points.append(value, 3);
     points.close();
-    PointWriter copy = copyPoints(config, dir,points);
+    PointWriter copy = copyPoints(config, dir, points);
     verify(config, dir, copy, 0, values, middle, 0);
     dir.close();
   }
@@ -67,42 +67,44 @@ public class TestBKDRadixSelector extends LuceneTestCase {
 
   private void doTestRandomBinary(int count) throws IOException {
     BKDConfig config = getRandomConfig();
-    int values = TestUtil.nextInt(random(), count, count*2);
+    int values = TestUtil.nextInt(random(), count, count * 2);
     Directory dir = getDirectory(values);
     int start;
     int end;
     if (random().nextBoolean()) {
       start = 0;
       end = values;
-    } else  {
-      start = TestUtil.nextInt(random(), 0, values -3);
-      end = TestUtil.nextInt(random(), start  + 2, values);
+    } else {
+      start = TestUtil.nextInt(random(), 0, values - 3);
+      end = TestUtil.nextInt(random(), start + 2, values);
     }
     int partitionPoint = TestUtil.nextInt(random(), start + 1, end - 1);
     int sortedOnHeap = random().nextInt(5000);
     PointWriter points = getRandomPointWriter(config, dir, values);
     byte[] value = new byte[config.packedBytesLength];
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       random().nextBytes(value);
       points.append(value, i);
     }
     points.close();
-    verify(config, dir, points,start, end, partitionPoint, sortedOnHeap);
+    verify(config, dir, points, start, end, partitionPoint, sortedOnHeap);
     dir.close();
   }
 
   public void testRandomAllDimensionsEquals() throws IOException {
-    int dimensions =  TestUtil.nextInt(random(), 1, BKDConfig.MAX_INDEX_DIMS);
+    int dimensions = TestUtil.nextInt(random(), 1, BKDConfig.MAX_INDEX_DIMS);
     int bytesPerDimensions = TestUtil.nextInt(random(), 2, 30);
-    BKDConfig config = new BKDConfig(dimensions, dimensions, bytesPerDimensions, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int values =  TestUtil.nextInt(random(), 15000, 20000);
+    BKDConfig config =
+        new BKDConfig(
+            dimensions, dimensions, bytesPerDimensions, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    int values = TestUtil.nextInt(random(), 15000, 20000);
     Directory dir = getDirectory(values);
     int partitionPoint = random().nextInt(values);
     int sortedOnHeap = random().nextInt(5000);
     PointWriter points = getRandomPointWriter(config, dir, values);
     byte[] value = new byte[config.packedBytesLength];
     random().nextBytes(value);
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       if (random().nextBoolean()) {
         points.append(value, i);
       } else {
@@ -123,7 +125,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     PointWriter points = getRandomPointWriter(config, dir, values);
     byte[] value = new byte[config.packedBytesLength];
     random().nextBytes(value);
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       if (random().nextBoolean()) {
         points.append(value, 1);
       } else {
@@ -144,7 +146,7 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     PointWriter points = getRandomPointWriter(config, dir, values);
     byte[] value = new byte[config.packedBytesLength];
     random().nextBytes(value);
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       points.append(value, 0);
     }
     points.close();
@@ -161,10 +163,10 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     PointWriter points = getRandomPointWriter(config, dir, values);
     int numberValues = random().nextInt(8) + 2;
     byte[][] differentValues = new byte[numberValues][config.packedBytesLength];
-    for (int i =0; i < numberValues; i++) {
+    for (int i = 0; i < numberValues; i++) {
       random().nextBytes(differentValues[i]);
     }
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       points.append(differentValues[random().nextInt(numberValues)], i);
     }
     points.close();
@@ -183,9 +185,14 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     int dataOnlyDims = config.numDims - config.numIndexDims;
     byte[] dataValue = new byte[dataOnlyDims * config.bytesPerDim];
     random().nextBytes(value);
-    for (int i =0; i < values; i++) {
+    for (int i = 0; i < values; i++) {
       random().nextBytes(dataValue);
-      System.arraycopy(dataValue, 0, value, config.numIndexDims * config.bytesPerDim, dataOnlyDims * config.bytesPerDim);
+      System.arraycopy(
+          dataValue,
+          0,
+          value,
+          config.numIndexDims * config.bytesPerDim,
+          dataOnlyDims * config.bytesPerDim);
       points.append(value, i);
     }
     points.close();
@@ -193,16 +200,27 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     dir.close();
   }
 
-  private void verify(BKDConfig config, Directory dir, PointWriter points, long start, long end, long middle, int sortedOnHeap) throws IOException{
+  private void verify(
+      BKDConfig config,
+      Directory dir,
+      PointWriter points,
+      long start,
+      long end,
+      long middle,
+      int sortedOnHeap)
+      throws IOException {
     BKDRadixSelector radixSelector = new BKDRadixSelector(config, sortedOnHeap, dir, "test");
     int dataOnlyDims = config.numDims - config.numIndexDims;
     // we only split by indexed dimension so we check for each only those dimension
     for (int splitDim = 0; splitDim < config.numIndexDims; splitDim++) {
       // We need to make a copy of the data as it is deleted in the process
-      BKDRadixSelector.PathSlice inputSlice = new BKDRadixSelector.PathSlice(copyPoints(config, dir, points), 0, points.count());
+      BKDRadixSelector.PathSlice inputSlice =
+          new BKDRadixSelector.PathSlice(copyPoints(config, dir, points), 0, points.count());
       int commonPrefixLengthInput = getRandomCommonPrefix(config, inputSlice, splitDim);
       BKDRadixSelector.PathSlice[] slices = new BKDRadixSelector.PathSlice[2];
-      byte[] partitionPoint = radixSelector.select(inputSlice, slices, start, end, middle, splitDim, commonPrefixLengthInput);
+      byte[] partitionPoint =
+          radixSelector.select(
+              inputSlice, slices, start, end, middle, splitDim, commonPrefixLengthInput);
       assertEquals(middle - start, slices[0].count);
       assertEquals(end - middle, slices[1].count);
       // check that left and right slices contain the correct points
@@ -213,7 +231,14 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       if (cmp == 0) {
         byte[] maxDataDim = getMaxDataDimension(config, slices[0], max, splitDim);
         byte[] minDataDim = getMinDataDimension(config, slices[1], min, splitDim);
-        cmp = Arrays.compareUnsigned(maxDataDim, 0, dataOnlyDims * config.bytesPerDim, minDataDim, 0, dataOnlyDims * config.bytesPerDim);
+        cmp =
+            Arrays.compareUnsigned(
+                maxDataDim,
+                0,
+                dataOnlyDims * config.bytesPerDim,
+                minDataDim,
+                0,
+                dataOnlyDims * config.bytesPerDim);
         assertTrue(cmp <= 0);
         if (cmp == 0) {
           int maxDocID = getMaxDocId(config, slices[0], splitDim, partitionPoint, maxDataDim);
@@ -228,9 +253,10 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     points.destroy();
   }
 
-  private PointWriter copyPoints(BKDConfig config, Directory dir, PointWriter points) throws IOException {
-    try (PointWriter copy  = getRandomPointWriter(config, dir, points.count());
-         PointReader reader = points.getReader(0, points.count())) {
+  private PointWriter copyPoints(BKDConfig config, Directory dir, PointWriter points)
+      throws IOException {
+    try (PointWriter copy = getRandomPointWriter(config, dir, points.count());
+        PointReader reader = points.getReader(0, points.count())) {
       while (reader.next()) {
         copy.append(reader.pointValue());
       }
@@ -239,17 +265,22 @@ public class TestBKDRadixSelector extends LuceneTestCase {
   }
 
   /** returns a common prefix length equal or lower than the current one */
-  private int getRandomCommonPrefix(BKDConfig config, BKDRadixSelector.PathSlice inputSlice, int splitDim) throws IOException {
+  private int getRandomCommonPrefix(
+      BKDConfig config, BKDRadixSelector.PathSlice inputSlice, int splitDim) throws IOException {
     byte[] pointsMax = getMax(config, inputSlice, splitDim);
     byte[] pointsMin = getMin(config, inputSlice, splitDim);
-    int commonPrefixLength = Arrays.mismatch(pointsMin, 0, config.bytesPerDim, pointsMax, 0, config.bytesPerDim);
+    int commonPrefixLength =
+        Arrays.mismatch(pointsMin, 0, config.bytesPerDim, pointsMax, 0, config.bytesPerDim);
     if (commonPrefixLength == -1) {
       commonPrefixLength = config.bytesPerDim;
     }
-    return (random().nextBoolean()) ? commonPrefixLength : commonPrefixLength == 0 ? 0 : random().nextInt(commonPrefixLength);
+    return (random().nextBoolean())
+        ? commonPrefixLength
+        : commonPrefixLength == 0 ? 0 : random().nextInt(commonPrefixLength);
   }
 
-  private PointWriter getRandomPointWriter(BKDConfig config, Directory dir, long numPoints) throws IOException {
+  private PointWriter getRandomPointWriter(BKDConfig config, Directory dir, long numPoints)
+      throws IOException {
     if (numPoints < 4096 && random().nextBoolean()) {
       return new HeapPointWriter(config, Math.toIntExact(numPoints));
     } else {
@@ -267,7 +298,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return dir;
   }
 
-  private byte[] getMin(BKDConfig config, BKDRadixSelector.PathSlice pathSlice, int dimension) throws  IOException {
+  private byte[] getMin(BKDConfig config, BKDRadixSelector.PathSlice pathSlice, int dimension)
+      throws IOException {
     byte[] min = new byte[config.bytesPerDim];
     Arrays.fill(min, (byte) 0xff);
     try (PointReader reader = pathSlice.writer.getReader(pathSlice.start, pathSlice.count)) {
@@ -276,7 +308,12 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
-        System.arraycopy(packedValue.bytes, packedValue.offset + dimension * config.bytesPerDim, value, 0, config.bytesPerDim);
+        System.arraycopy(
+            packedValue.bytes,
+            packedValue.offset + dimension * config.bytesPerDim,
+            value,
+            0,
+            config.bytesPerDim);
         if (Arrays.compareUnsigned(min, 0, config.bytesPerDim, value, 0, config.bytesPerDim) > 0) {
           System.arraycopy(value, 0, min, 0, config.bytesPerDim);
         }
@@ -285,8 +322,14 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return min;
   }
 
-  private int getMinDocId(BKDConfig config, BKDRadixSelector.PathSlice p, int dimension, byte[] partitionPoint, byte[] dataDim) throws  IOException {
-   int docID = Integer.MAX_VALUE;
+  private int getMinDocId(
+      BKDConfig config,
+      BKDRadixSelector.PathSlice p,
+      int dimension,
+      byte[] partitionPoint,
+      byte[] dataDim)
+      throws IOException {
+    int docID = Integer.MAX_VALUE;
     try (PointReader reader = p.writer.getReader(p.start, p.count)) {
       while (reader.next()) {
         PointValue pointValue = reader.pointValue();
@@ -294,8 +337,22 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         int offset = dimension * config.bytesPerDim;
         int dataOffset = config.packedIndexBytesLength;
         int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim;
-        if (Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + config.bytesPerDim, partitionPoint, 0, config.bytesPerDim) == 0
-          && Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + dataOffset, packedValue.offset + dataOffset + dataLength, dataDim, 0, dataLength) == 0) {
+        if (Arrays.compareUnsigned(
+                    packedValue.bytes,
+                    packedValue.offset + offset,
+                    packedValue.offset + offset + config.bytesPerDim,
+                    partitionPoint,
+                    0,
+                    config.bytesPerDim)
+                == 0
+            && Arrays.compareUnsigned(
+                    packedValue.bytes,
+                    packedValue.offset + dataOffset,
+                    packedValue.offset + dataOffset + dataLength,
+                    dataDim,
+                    0,
+                    dataLength)
+                == 0) {
           int newDocID = pointValue.docID();
           if (newDocID < docID) {
             docID = newDocID;
@@ -306,7 +363,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return docID;
   }
 
-  private byte[] getMinDataDimension(BKDConfig config, BKDRadixSelector.PathSlice p, byte[] minDim, int splitDim) throws  IOException {
+  private byte[] getMinDataDimension(
+      BKDConfig config, BKDRadixSelector.PathSlice p, byte[] minDim, int splitDim)
+      throws IOException {
     final int numDataDims = config.numDims - config.numIndexDims;
     byte[] min = new byte[numDataDims * config.bytesPerDim];
     Arrays.fill(min, (byte) 0xff);
@@ -316,9 +375,28 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
-        if (Arrays.mismatch(minDim, 0, config.bytesPerDim, packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + config.bytesPerDim) == -1) {
-          System.arraycopy(packedValue.bytes, packedValue.offset + config.numIndexDims * config.bytesPerDim, value, 0, numDataDims * config.bytesPerDim);
-          if (Arrays.compareUnsigned(min, 0, numDataDims * config.bytesPerDim, value, 0, numDataDims * config.bytesPerDim) > 0) {
+        if (Arrays.mismatch(
+                minDim,
+                0,
+                config.bytesPerDim,
+                packedValue.bytes,
+                packedValue.offset + offset,
+                packedValue.offset + offset + config.bytesPerDim)
+            == -1) {
+          System.arraycopy(
+              packedValue.bytes,
+              packedValue.offset + config.numIndexDims * config.bytesPerDim,
+              value,
+              0,
+              numDataDims * config.bytesPerDim);
+          if (Arrays.compareUnsigned(
+                  min,
+                  0,
+                  numDataDims * config.bytesPerDim,
+                  value,
+                  0,
+                  numDataDims * config.bytesPerDim)
+              > 0) {
             System.arraycopy(value, 0, min, 0, numDataDims * config.bytesPerDim);
           }
         }
@@ -327,7 +405,8 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return min;
   }
 
-  private byte[] getMax(BKDConfig config, BKDRadixSelector.PathSlice p, int dimension) throws  IOException {
+  private byte[] getMax(BKDConfig config, BKDRadixSelector.PathSlice p, int dimension)
+      throws IOException {
     byte[] max = new byte[config.bytesPerDim];
     Arrays.fill(max, (byte) 0);
     try (PointReader reader = p.writer.getReader(p.start, p.count)) {
@@ -335,7 +414,12 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
-        System.arraycopy(packedValue.bytes, packedValue.offset + dimension * config.bytesPerDim, value, 0, config.bytesPerDim);
+        System.arraycopy(
+            packedValue.bytes,
+            packedValue.offset + dimension * config.bytesPerDim,
+            value,
+            0,
+            config.bytesPerDim);
         if (Arrays.compareUnsigned(max, 0, config.bytesPerDim, value, 0, config.bytesPerDim) < 0) {
           System.arraycopy(value, 0, max, 0, config.bytesPerDim);
         }
@@ -344,7 +428,9 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return max;
   }
 
-  private byte[] getMaxDataDimension(BKDConfig config, BKDRadixSelector.PathSlice p, byte[] maxDim, int splitDim) throws  IOException {
+  private byte[] getMaxDataDimension(
+      BKDConfig config, BKDRadixSelector.PathSlice p, byte[] maxDim, int splitDim)
+      throws IOException {
     final int numDataDims = config.numDims - config.numIndexDims;
     byte[] max = new byte[numDataDims * config.bytesPerDim];
     Arrays.fill(max, (byte) 0);
@@ -354,9 +440,28 @@ public class TestBKDRadixSelector extends LuceneTestCase {
       while (reader.next()) {
         PointValue pointValue = reader.pointValue();
         BytesRef packedValue = pointValue.packedValue();
-        if (Arrays.mismatch(maxDim, 0, config.bytesPerDim, packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + config.bytesPerDim) == -1) {
-          System.arraycopy(packedValue.bytes, packedValue.offset + config.packedIndexBytesLength, value, 0, numDataDims * config.bytesPerDim);
-          if (Arrays.compareUnsigned(max, 0, numDataDims * config.bytesPerDim, value, 0, numDataDims * config.bytesPerDim) < 0) {
+        if (Arrays.mismatch(
+                maxDim,
+                0,
+                config.bytesPerDim,
+                packedValue.bytes,
+                packedValue.offset + offset,
+                packedValue.offset + offset + config.bytesPerDim)
+            == -1) {
+          System.arraycopy(
+              packedValue.bytes,
+              packedValue.offset + config.packedIndexBytesLength,
+              value,
+              0,
+              numDataDims * config.bytesPerDim);
+          if (Arrays.compareUnsigned(
+                  max,
+                  0,
+                  numDataDims * config.bytesPerDim,
+                  value,
+                  0,
+                  numDataDims * config.bytesPerDim)
+              < 0) {
             System.arraycopy(value, 0, max, 0, numDataDims * config.bytesPerDim);
           }
         }
@@ -365,7 +470,13 @@ public class TestBKDRadixSelector extends LuceneTestCase {
     return max;
   }
 
-  private int getMaxDocId(BKDConfig config, BKDRadixSelector.PathSlice p, int dimension, byte[] partitionPoint, byte[] dataDim) throws  IOException {
+  private int getMaxDocId(
+      BKDConfig config,
+      BKDRadixSelector.PathSlice p,
+      int dimension,
+      byte[] partitionPoint,
+      byte[] dataDim)
+      throws IOException {
     int docID = Integer.MIN_VALUE;
     try (PointReader reader = p.writer.getReader(p.start, p.count)) {
       while (reader.next()) {
@@ -374,8 +485,22 @@ public class TestBKDRadixSelector extends LuceneTestCase {
         int offset = dimension * config.bytesPerDim;
         int dataOffset = config.packedIndexBytesLength;
         int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim;
-        if (Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + offset, packedValue.offset + offset + config.bytesPerDim, partitionPoint, 0, config.bytesPerDim) == 0
-            && Arrays.compareUnsigned(packedValue.bytes, packedValue.offset + dataOffset, packedValue.offset + dataOffset + dataLength, dataDim, 0, dataLength) == 0) {
+        if (Arrays.compareUnsigned(
+                    packedValue.bytes,
+                    packedValue.offset + offset,
+                    packedValue.offset + offset + config.bytesPerDim,
+                    partitionPoint,
+                    0,
+                    config.bytesPerDim)
+                == 0
+            && Arrays.compareUnsigned(
+                    packedValue.bytes,
+                    packedValue.offset + dataOffset,
+                    packedValue.offset + dataOffset + dataLength,
+                    dataDim,
+                    0,
+                    dataLength)
+                == 0) {
           int newDocID = pointValue.docID();
           if (newDocID > docID) {
             docID = newDocID;

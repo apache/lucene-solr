@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
@@ -55,17 +54,23 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Helps the {@link FieldOffsetStrategy} with position sensitive queries (e.g. highlight phrases correctly).
- * This is a stateful class holding information about the query, but it can (and is) re-used across highlighting
- * documents.  Despite this state, it's immutable after construction.
+ * Helps the {@link FieldOffsetStrategy} with position sensitive queries (e.g. highlight phrases
+ * correctly). This is a stateful class holding information about the query, but it can (and is)
+ * re-used across highlighting documents. Despite this state, it's immutable after construction.
  *
  * @lucene.internal
  */
 // TODO rename to SpanHighlighting ?
 public class PhraseHelper {
 
-  public static final PhraseHelper NONE = new PhraseHelper(new MatchAllDocsQuery(), "_ignored_",
-      (s) -> false, spanQuery -> null, query -> null, true);
+  public static final PhraseHelper NONE =
+      new PhraseHelper(
+          new MatchAllDocsQuery(),
+          "_ignored_",
+          (s) -> false,
+          spanQuery -> null,
+          query -> null,
+          true);
 
   private final String fieldName;
   private final Set<BytesRef> positionInsensitiveTerms; // (TermQuery terms)
@@ -74,19 +79,23 @@ public class PhraseHelper {
   private final Predicate<String> fieldMatcher;
 
   /**
-   * Constructor.
-   * {@code rewriteQueryPred} is an extension hook to override the default choice of
-   * {@link WeightedSpanTermExtractor#mustRewriteQuery(SpanQuery)}. By default unknown query types are rewritten,
-   * so use this to return {@link Boolean#FALSE} if you know the query doesn't need to be rewritten.
-   * Similarly, {@code preExtractRewriteFunction} is also an extension hook for extract to allow different queries
-   * to be set before the {@link WeightedSpanTermExtractor}'s extraction is invoked.
-   * {@code ignoreQueriesNeedingRewrite} effectively ignores any query clause that needs to be "rewritten", which is
-   * usually limited to just a {@link SpanMultiTermQueryWrapper} but could be other custom ones.
-   * {@code fieldMatcher} The field name predicate to use for extracting the query part that must be highlighted.
+   * Constructor. {@code rewriteQueryPred} is an extension hook to override the default choice of
+   * {@link WeightedSpanTermExtractor#mustRewriteQuery(SpanQuery)}. By default unknown query types
+   * are rewritten, so use this to return {@link Boolean#FALSE} if you know the query doesn't need
+   * to be rewritten. Similarly, {@code preExtractRewriteFunction} is also an extension hook for
+   * extract to allow different queries to be set before the {@link WeightedSpanTermExtractor}'s
+   * extraction is invoked. {@code ignoreQueriesNeedingRewrite} effectively ignores any query clause
+   * that needs to be "rewritten", which is usually limited to just a {@link
+   * SpanMultiTermQueryWrapper} but could be other custom ones. {@code fieldMatcher} The field name
+   * predicate to use for extracting the query part that must be highlighted.
    */
-  public PhraseHelper(Query query, String field, Predicate<String> fieldMatcher, Function<SpanQuery, Boolean> rewriteQueryPred,
-                      Function<Query, Collection<Query>> preExtractRewriteFunction,
-                      boolean ignoreQueriesNeedingRewrite) {
+  public PhraseHelper(
+      Query query,
+      String field,
+      Predicate<String> fieldMatcher,
+      Function<SpanQuery, Boolean> rewriteQueryPred,
+      Function<Query, Collection<Query>> preExtractRewriteFunction,
+      boolean ignoreQueriesNeedingRewrite) {
     this.fieldName = field;
     this.fieldMatcher = fieldMatcher;
     // filter terms to those we want
@@ -95,24 +104,28 @@ public class PhraseHelper {
 
     // TODO Have toSpanQuery(query) Function as an extension point for those with custom Query impls
 
-    boolean[] mustRewriteHolder = {false}; // boolean wrapped in 1-ary array so it's mutable from inner class
+    // boolean wrapped in 1-ary array so it's mutable from inner class
+    boolean[] mustRewriteHolder = {false};
 
     // For TermQueries or other position insensitive queries, collect the Terms.
-    // For other Query types, WSTE will convert to an equivalent SpanQuery.  NOT extracting position spans here.
+    // For other Query types, WSTE will convert to an equivalent SpanQuery.  NOT extracting position
+    // spans here.
     new WeightedSpanTermExtractor(field) {
-      //anonymous constructor
+      // anonymous constructor
       {
-        setExpandMultiTermQuery(true); //necessary for mustRewriteQuery(spanQuery) to work.
+        setExpandMultiTermQuery(true); // necessary for mustRewriteQuery(spanQuery) to work.
 
         try {
-          extract(query, 1f, null); // null because we won't actually extract right now; we're not collecting
+          // null because we won't actually extract right now; we're not collecting
+          extract(query, 1f, null);
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       }
 
       @Override
-      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms) throws IOException {
+      protected void extract(Query query, float boost, Map<String, WeightedSpanTerm> terms)
+          throws IOException {
         Collection<Query> newQueriesToExtract = preExtractRewriteFunction.apply(query);
         if (newQueriesToExtract != null) {
           for (Query newQuery : newQueriesToExtract) {
@@ -126,34 +139,39 @@ public class PhraseHelper {
       @Override
       protected boolean isQueryUnsupported(Class<? extends Query> clazz) {
         if (clazz.isAssignableFrom(MultiTermQuery.class)) {
-          return true; //We do MTQ processing separately in MultiTermHighlighting.java
+          return true; // We do MTQ processing separately in MultiTermHighlighting.java
         }
-        return true; //TODO set to false and provide a hook to customize certain queries.
+        return true; // TODO set to false and provide a hook to customize certain queries.
       }
 
       // called on Query types that are NOT position sensitive, e.g. TermQuery
       @Override
-      protected void extractWeightedTerms(Map<String, WeightedSpanTerm> terms, Query query, float boost) {
-        query.visit(new QueryVisitor() {
-          @Override
-          public boolean acceptField(String field) {
-            return fieldMatcher.test(field);
-          }
-          @Override
-          public void consumeTerms(Query query, Term... terms) {
-            for (Term term : terms) {
-              positionInsensitiveTerms.add(term.bytes());
-            }
-          }
-        });
+      protected void extractWeightedTerms(
+          Map<String, WeightedSpanTerm> terms, Query query, float boost) {
+        query.visit(
+            new QueryVisitor() {
+              @Override
+              public boolean acceptField(String field) {
+                return fieldMatcher.test(field);
+              }
+
+              @Override
+              public void consumeTerms(Query query, Term... terms) {
+                for (Term term : terms) {
+                  positionInsensitiveTerms.add(term.bytes());
+                }
+              }
+            });
       }
 
-      // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted beforehand
+      // called on SpanQueries. Some other position-sensitive queries like PhraseQuery are converted
+      // beforehand
       @Override
-      protected void extractWeightedSpanTerms(Map<String, WeightedSpanTerm> terms, SpanQuery spanQuery,
-                                              float boost) throws IOException {
+      protected void extractWeightedSpanTerms(
+          Map<String, WeightedSpanTerm> terms, SpanQuery spanQuery, float boost)
+          throws IOException {
         // if this span query isn't for this field, skip it.
-        Set<String> fieldNameSet = new HashSet<>();//TODO reuse.  note: almost always size 1
+        Set<String> fieldNameSet = new HashSet<>(); // TODO reuse.  note: almost always size 1
         collectSpanQueryFields(spanQuery, fieldNameSet);
         for (String spanField : fieldNameSet) {
           if (!fieldMatcher.test(spanField)) {
@@ -163,7 +181,7 @@ public class PhraseHelper {
 
         boolean mustRewriteQuery = mustRewriteQuery(spanQuery);
         if (ignoreQueriesNeedingRewrite && mustRewriteQuery) {
-          return;// ignore this query
+          return; // ignore this query
         }
         mustRewriteHolder[0] |= mustRewriteQuery;
 
@@ -172,7 +190,7 @@ public class PhraseHelper {
 
       @Override
       protected boolean mustRewriteQuery(SpanQuery spanQuery) {
-        Boolean rewriteQ = rewriteQueryPred.apply(spanQuery);// allow to override
+        Boolean rewriteQ = rewriteQueryPred.apply(spanQuery); // allow to override
         return rewriteQ != null ? rewriteQ : super.mustRewriteQuery(spanQuery);
       }
     }; // calling the constructor triggered the extraction/visiting we want.  Hacky; yes.
@@ -184,17 +202,15 @@ public class PhraseHelper {
     return spanQueries;
   }
 
-  /**
-   * If there is no position sensitivity then use of the instance of this class can be ignored.
-   */
+  /** If there is no position sensitivity then use of the instance of this class can be ignored. */
   public boolean hasPositionSensitivity() {
     return spanQueries.isEmpty() == false;
   }
 
   /**
    * Rewrite is needed for handling a {@link SpanMultiTermQueryWrapper} (MTQ / wildcards) or some
-   * custom things.  When true, the resulting term list will probably be different than what it was known
-   * to be initially.
+   * custom things. When true, the resulting term list will probably be different than what it was
+   * known to be initially.
    */
   public boolean willRewrite() {
     return willRewrite;
@@ -202,37 +218,45 @@ public class PhraseHelper {
 
   /** Returns the terms that are position-insensitive (sorted). */
   public BytesRef[] getAllPositionInsensitiveTerms() {
-    BytesRef[] result = positionInsensitiveTerms.toArray(new BytesRef[positionInsensitiveTerms.size()]);
+    BytesRef[] result =
+        positionInsensitiveTerms.toArray(new BytesRef[positionInsensitiveTerms.size()]);
     Arrays.sort(result);
     return result;
   }
 
-  /** Given the internal SpanQueries, produce a number of OffsetsEnum into the {@code results} param. */
-  public void createOffsetsEnumsForSpans(LeafReader leafReader, int docId, List<OffsetsEnum> results) throws IOException {
+  /**
+   * Given the internal SpanQueries, produce a number of OffsetsEnum into the {@code results} param.
+   */
+  public void createOffsetsEnumsForSpans(
+      LeafReader leafReader, int docId, List<OffsetsEnum> results) throws IOException {
     leafReader = new SingleFieldWithOffsetsFilterLeafReader(leafReader, fieldName);
-    //TODO avoid searcher and do what it does to rewrite & get weight?
+    // TODO avoid searcher and do what it does to rewrite & get weight?
     IndexSearcher searcher = new IndexSearcher(leafReader);
     searcher.setQueryCache(null);
 
     // for each SpanQuery, grab it's Spans and put it into a PriorityQueue
-    PriorityQueue<Spans> spansPriorityQueue = new PriorityQueue<Spans>(spanQueries.size()) {
-      @Override
-      protected boolean lessThan(Spans a, Spans b) {
-        return a.startPosition() <= b.startPosition();
-      }
-    };
+    PriorityQueue<Spans> spansPriorityQueue =
+        new PriorityQueue<Spans>(spanQueries.size()) {
+          @Override
+          protected boolean lessThan(Spans a, Spans b) {
+            return a.startPosition() <= b.startPosition();
+          }
+        };
     for (Query query : spanQueries) {
-      Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+      Weight weight =
+          searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
       Scorer scorer = weight.scorer(leafReader.getContext());
       if (scorer == null) {
         continue;
       }
       TwoPhaseIterator twoPhaseIterator = scorer.twoPhaseIterator();
       if (twoPhaseIterator != null) {
-        if (twoPhaseIterator.approximation().advance(docId) != docId || !twoPhaseIterator.matches()) {
+        if (twoPhaseIterator.approximation().advance(docId) != docId
+            || !twoPhaseIterator.matches()) {
           continue;
         }
-      } else if (scorer.iterator().advance(docId) != docId) { // preposition, and return doing nothing if find none
+      } else if (scorer.iterator().advance(docId)
+          != docId) { // preposition, and return doing nothing if find none
         continue;
       }
 
@@ -243,17 +267,21 @@ public class PhraseHelper {
       }
     }
 
-    // Iterate the Spans in the PriorityQueue, collecting as we go.  By using a PriorityQueue ordered by position,
-    //   the underlying offsets in our collector will be mostly appended to the end of arrays (efficient).
+    // Iterate the Spans in the PriorityQueue, collecting as we go.  By using a PriorityQueue
+    // ordered by position,
+    //   the underlying offsets in our collector will be mostly appended to the end of arrays
+    // (efficient).
     // note: alternatively it'd interesting if we produced one OffsetsEnum that internally advanced
-    //   this PriorityQueue when nextPosition is called; it would cap what we have to cache for large docs and
+    //   this PriorityQueue when nextPosition is called; it would cap what we have to cache for
+    // large docs and
     //   exiting early (due to maxLen) is easy.
-    //   But at least we have an accurate "freq" and it shouldn't be too much data to collect.  Even SpanScorer
+    //   But at least we have an accurate "freq" and it shouldn't be too much data to collect.  Even
+    // SpanScorer
     //   navigates the spans fully to compute a good freq (and thus score)!
     OffsetSpanCollector spanCollector = new OffsetSpanCollector();
     while (spansPriorityQueue.size() > 0) {
       Spans spans = spansPriorityQueue.top();
-      //TODO limit to a capped endOffset length somehow so we can break this loop early
+      // TODO limit to a capped endOffset length somehow so we can break this loop early
       spans.collect(spanCollector);
 
       if (spans.nextStartPosition() == Spans.NO_MORE_POSITIONS) {
@@ -267,9 +295,9 @@ public class PhraseHelper {
 
   /**
    * Needed to support the ability to highlight a query irrespective of the field a query refers to
-   * (aka requireFieldMatch=false).
-   * This reader will just delegate every call to a single field in the wrapped
-   * LeafReader. This way we ensure that all queries going through this reader target the same field.
+   * (aka requireFieldMatch=false). This reader will just delegate every call to a single field in
+   * the wrapped LeafReader. This way we ensure that all queries going through this reader target
+   * the same field.
    */
   private static final class SingleFieldWithOffsetsFilterLeafReader extends FilterLeafReader {
     final String fieldName;
@@ -281,12 +309,13 @@ public class PhraseHelper {
 
     @Override
     public FieldInfos getFieldInfos() {
-      throw new UnsupportedOperationException();//TODO merge them
+      throw new UnsupportedOperationException(); // TODO merge them
     }
 
     @Override
     public Terms terms(String field) throws IOException {
-      // ensure the underlying PostingsEnum returns offsets.  It's sad we have to do this to use the SpanCollector.
+      // ensure the underlying PostingsEnum returns offsets.  It's sad we have to do this to use the
+      // SpanCollector.
       return new FilterTerms(super.terms(fieldName)) {
         @Override
         public TermsEnum iterator() throws IOException {
@@ -327,7 +356,8 @@ public class PhraseHelper {
 
       SpanCollectedOffsetsEnum offsetsEnum = termToOffsetsEnums.get(term.bytes());
       if (offsetsEnum == null) {
-        // If it's pos insensitive we handle it outside of PhraseHelper.  term.field() is from the Query.
+        // If it's pos insensitive we handle it outside of PhraseHelper.  term.field() is from the
+        // Query.
         if (positionInsensitiveTerms.contains(term.bytes())) {
           return;
         }
@@ -352,7 +382,8 @@ public class PhraseHelper {
 
     private SpanCollectedOffsetsEnum(BytesRef term, int postingsFreq) {
       this.term = term;
-      this.startOffsets = new int[postingsFreq]; // hopefully not wasteful?  At least we needn't resize it.
+      // hopefully not wasteful?  At least we needn't resize it.
+      this.startOffsets = new int[postingsFreq];
       this.endOffsets = new int[postingsFreq];
     }
 
@@ -372,7 +403,7 @@ public class PhraseHelper {
         if (cmp == 0) {
           return; // we already have this offset-pair for this term
         } else if (cmp < 0) {
-          break; //we will insert offsetPair to the right of pairIdx
+          break; // we will insert offsetPair to the right of pairIdx
         }
       }
       // pairIdx is now one position to the left of where we insert the new pair
@@ -413,5 +444,4 @@ public class PhraseHelper {
       return endOffsets[enumIdx];
     }
   }
-
 }

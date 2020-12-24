@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.Closeable;
 import java.io.EOFException;
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
@@ -40,13 +38,13 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 
 /**
- * On-disk sorting of byte arrays. Each byte array (entry) is a composed of the following
- * fields:
+ * On-disk sorting of byte arrays. Each byte array (entry) is a composed of the following fields:
+ *
  * <ul>
  *   <li>(two bytes) length of the following byte array,
  *   <li>exactly the above count of bytes for the sequence to be sorted.
  * </ul>
- * 
+ *
  * @see #sort(String)
  * @lucene.experimental
  * @lucene.internal
@@ -54,25 +52,20 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 public class OfflineSorter {
 
   /** Convenience constant for megabytes */
-  public final static long MB = 1024 * 1024;
+  public static final long MB = 1024 * 1024;
   /** Convenience constant for gigabytes */
-  public final static long GB = MB * 1024;
-  
-  /**
-   * Minimum recommended buffer size for sorting.
-   */
-  public final static long MIN_BUFFER_SIZE_MB = 32;
+  public static final long GB = MB * 1024;
 
-  /**
-   * Absolute minimum required buffer size for sorting.
-   */
+  /** Minimum recommended buffer size for sorting. */
+  public static final long MIN_BUFFER_SIZE_MB = 32;
+
+  /** Absolute minimum required buffer size for sorting. */
   public static final long ABSOLUTE_MIN_SORT_BUFFER_SIZE = MB / 2;
+
   private static final String MIN_BUFFER_SIZE_MSG = "At least 0.5MB RAM buffer is needed";
 
-  /**
-   * Maximum number of temporary files before doing an intermediate merge.
-   */
-  public final static int MAX_TEMPFILES = 10;
+  /** Maximum number of temporary files before doing an intermediate merge. */
+  public static final int MAX_TEMPFILES = 10;
 
   private final Directory dir;
   private final int valueLength;
@@ -81,70 +74,67 @@ public class OfflineSorter {
   private final ExecutorService exec;
   private final Semaphore partitionsInRAM;
 
-  /** 
+  /**
    * A bit more descriptive unit for constructors.
-   * 
+   *
    * @see #automatic()
    * @see #megabytes(long)
    */
   public static final class BufferSize {
     final int bytes;
-  
+
     private BufferSize(long bytes) {
       if (bytes > Integer.MAX_VALUE) {
-        throw new IllegalArgumentException("Buffer too large for Java ("
-            + (Integer.MAX_VALUE / MB) + "mb max): " + bytes);
+        throw new IllegalArgumentException(
+            "Buffer too large for Java (" + (Integer.MAX_VALUE / MB) + "mb max): " + bytes);
       }
-      
+
       if (bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
         throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + bytes);
       }
-  
+
       this.bytes = (int) bytes;
     }
-    
-    /**
-     * Creates a {@link BufferSize} in MB. The given 
-     * values must be &gt; 0 and &lt; 2048.
-     */
+
+    /** Creates a {@link BufferSize} in MB. The given values must be &gt; 0 and &lt; 2048. */
     public static BufferSize megabytes(long mb) {
       return new BufferSize(mb * MB);
     }
-  
-    /** 
-     * Approximately half of the currently available free heap, but no less
-     * than {@link #ABSOLUTE_MIN_SORT_BUFFER_SIZE}. However if current heap allocation 
-     * is insufficient or if there is a large portion of unallocated heap-space available 
-     * for sorting consult with max allowed heap size. 
+
+    /**
+     * Approximately half of the currently available free heap, but no less than {@link
+     * #ABSOLUTE_MIN_SORT_BUFFER_SIZE}. However if current heap allocation is insufficient or if
+     * there is a large portion of unallocated heap-space available for sorting consult with max
+     * allowed heap size.
      */
     public static BufferSize automatic() {
       Runtime rt = Runtime.getRuntime();
-      
+
       // take sizes in "conservative" order
       final long max = rt.maxMemory(); // max allocated
       final long total = rt.totalMemory(); // currently allocated
       final long free = rt.freeMemory(); // unused portion of currently allocated
       final long totalAvailableBytes = max - total + free;
-      
+
       // by free mem (attempting to not grow the heap for this)
-      long sortBufferByteSize = free/2;
-      final long minBufferSizeBytes = MIN_BUFFER_SIZE_MB*MB;
-      if (sortBufferByteSize <  minBufferSizeBytes
-          || totalAvailableBytes > 10 * minBufferSizeBytes) { // lets see if we need/should to grow the heap 
-        if (totalAvailableBytes/2 > minBufferSizeBytes) { // there is enough mem for a reasonable buffer
-          sortBufferByteSize = totalAvailableBytes/2; // grow the heap
+      long sortBufferByteSize = free / 2;
+      final long minBufferSizeBytes = MIN_BUFFER_SIZE_MB * MB;
+      // lets see if we need/should to grow the heap
+      if (sortBufferByteSize < minBufferSizeBytes
+          || totalAvailableBytes > 10 * minBufferSizeBytes) {
+        // there is enough mem for a reasonable buffer
+        if (totalAvailableBytes / 2 > minBufferSizeBytes) {
+          sortBufferByteSize = totalAvailableBytes / 2; // grow the heap
         } else {
-          //heap seems smallish lets be conservative fall back to the free/2 
+          // heap seems smallish lets be conservative fall back to the free/2
           sortBufferByteSize = Math.max(ABSOLUTE_MIN_SORT_BUFFER_SIZE, sortBufferByteSize);
         }
       }
-      return new BufferSize(Math.min((long)Integer.MAX_VALUE, sortBufferByteSize));
+      return new BufferSize(Math.min((long) Integer.MAX_VALUE, sortBufferByteSize));
     }
   }
-  
-  /**
-   * Sort info (debugging mostly).
-   */
+
+  /** Sort info (debugging mostly). */
   public class SortInfo {
     /** number of temporary files created when merging partitions */
     public int tempMergeFiles;
@@ -162,61 +152,83 @@ public class OfflineSorter {
     public long readTimeMS;
     /** read buffer size (in bytes) */
     public final long bufferSize = ramBufferSize.bytes;
-    
+
     /** create a new SortInfo (with empty statistics) for debugging */
     public SortInfo() {}
-    
+
     @Override
     public String toString() {
-      return String.format(Locale.ROOT,
-                           "time=%.2f sec. total (%.2f reading, %.2f sorting, %.2f merging), lines=%d, temp files=%d, merges=%d, soft ram limit=%.2f MB",
-                           totalTimeMS / 1000.0d, readTimeMS / 1000.0d, sortTimeMS.get() / 1000.0d, mergeTimeMS.get() / 1000.0d,
-                           lineCount, tempMergeFiles, mergeRounds,
-                           (double) bufferSize / MB);
+      return String.format(
+          Locale.ROOT,
+          "time=%.2f sec. total (%.2f reading, %.2f sorting, %.2f merging), lines=%d, temp files=%d, merges=%d, soft ram limit=%.2f MB",
+          totalTimeMS / 1000.0d,
+          readTimeMS / 1000.0d,
+          sortTimeMS.get() / 1000.0d,
+          mergeTimeMS.get() / 1000.0d,
+          lineCount,
+          tempMergeFiles,
+          mergeRounds,
+          (double) bufferSize / MB);
     }
   }
 
   private final BufferSize ramBufferSize;
-  
+
   SortInfo sortInfo;
   private int maxTempFiles;
   private final Comparator<BytesRef> comparator;
-  
+
   /** Default comparator: sorts in binary (codepoint) order */
   public static final Comparator<BytesRef> DEFAULT_COMPARATOR = Comparator.naturalOrder();
 
   /**
    * Defaults constructor.
-   * 
+   *
    * @see BufferSize#automatic()
    */
   public OfflineSorter(Directory dir, String tempFileNamePrefix) throws IOException {
-    this(dir, tempFileNamePrefix, DEFAULT_COMPARATOR, BufferSize.automatic(), MAX_TEMPFILES, -1, null, 0);
+    this(
+        dir,
+        tempFileNamePrefix,
+        DEFAULT_COMPARATOR,
+        BufferSize.automatic(),
+        MAX_TEMPFILES,
+        -1,
+        null,
+        0);
   }
-  
+
   /**
    * Defaults constructor with a custom comparator.
-   * 
+   *
    * @see BufferSize#automatic()
    */
-  public OfflineSorter(Directory dir, String tempFileNamePrefix, Comparator<BytesRef> comparator) throws IOException {
+  public OfflineSorter(Directory dir, String tempFileNamePrefix, Comparator<BytesRef> comparator)
+      throws IOException {
     this(dir, tempFileNamePrefix, comparator, BufferSize.automatic(), MAX_TEMPFILES, -1, null, 0);
   }
 
   /**
-   * All-details constructor.  If {@code valueLength} is -1 (the default), the length of each value differs; otherwise,
-   * all values have the specified length.  If you pass a non-null {@code ExecutorService} then it will be
-   * used to run sorting operations that can be run concurrently, and maxPartitionsInRAM is the maximum
-   * concurrent in-memory partitions.  Thus the maximum possible RAM used by this class while sorting is
-   * {@code maxPartitionsInRAM * ramBufferSize}.
+   * All-details constructor. If {@code valueLength} is -1 (the default), the length of each value
+   * differs; otherwise, all values have the specified length. If you pass a non-null {@code
+   * ExecutorService} then it will be used to run sorting operations that can be run concurrently,
+   * and maxPartitionsInRAM is the maximum concurrent in-memory partitions. Thus the maximum
+   * possible RAM used by this class while sorting is {@code maxPartitionsInRAM * ramBufferSize}.
    */
-  public OfflineSorter(Directory dir, String tempFileNamePrefix, Comparator<BytesRef> comparator,
-                       BufferSize ramBufferSize, int maxTempfiles, int valueLength, ExecutorService exec,
-                       int maxPartitionsInRAM) {
+  public OfflineSorter(
+      Directory dir,
+      String tempFileNamePrefix,
+      Comparator<BytesRef> comparator,
+      BufferSize ramBufferSize,
+      int maxTempfiles,
+      int valueLength,
+      ExecutorService exec,
+      int maxPartitionsInRAM) {
     if (exec != null) {
       this.exec = exec;
       if (maxPartitionsInRAM <= 0) {
-        throw new IllegalArgumentException("maxPartitionsInRAM must be > 0; got " + maxPartitionsInRAM);
+        throw new IllegalArgumentException(
+            "maxPartitionsInRAM must be > 0; got " + maxPartitionsInRAM);
       }
     } else {
       this.exec = new SameThreadExecutorService();
@@ -227,15 +239,16 @@ public class OfflineSorter {
     if (ramBufferSize.bytes < ABSOLUTE_MIN_SORT_BUFFER_SIZE) {
       throw new IllegalArgumentException(MIN_BUFFER_SIZE_MSG + ": " + ramBufferSize.bytes);
     }
-    
+
     if (maxTempfiles < 2) {
       throw new IllegalArgumentException("maxTempFiles must be >= 2");
     }
 
     if (valueLength != -1 && (valueLength == 0 || valueLength > Short.MAX_VALUE)) {
-      throw new IllegalArgumentException("valueLength must be 1 .. " + Short.MAX_VALUE + "; got: " + valueLength);
+      throw new IllegalArgumentException(
+          "valueLength must be 1 .. " + Short.MAX_VALUE + "; got: " + valueLength);
     }
-    
+
     this.valueLength = valueLength;
     this.ramBufferSize = ramBufferSize;
     this.maxTempFiles = maxTempfiles;
@@ -249,16 +262,17 @@ public class OfflineSorter {
     return dir;
   }
 
-  /** Returns the temp file name prefix passed to {@link Directory#createTempOutput} to generate temporary files. */
+  /**
+   * Returns the temp file name prefix passed to {@link Directory#createTempOutput} to generate
+   * temporary files.
+   */
   public String getTempFileNamePrefix() {
     return tempFileNamePrefix;
   }
 
-  /** 
-   * Sort input to a new temp file, returning its name.
-   */
+  /** Sort input to a new temp file, returning its name. */
   public String sort(String inputFileName) throws IOException {
-    
+
     sortInfo = new SortInfo();
     long startMS = System.currentTimeMillis();
 
@@ -269,7 +283,8 @@ public class OfflineSorter {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
 
     boolean success = false;
-    try (ByteSequencesReader is = getReader(dir.openChecksumInput(inputFileName, IOContext.READONCE), inputFileName)) {
+    try (ByteSequencesReader is =
+        getReader(dir.openChecksumInput(inputFileName, IOContext.READONCE), inputFileName)) {
       while (true) {
         Partition part = readPartition(is);
         if (part.count == 0) {
@@ -291,10 +306,10 @@ public class OfflineSorter {
         int mergeLevel = 0;
         while (levelCounts[mergeLevel] == maxTempFiles) {
           mergePartitions(trackingDir, segments);
-          if (mergeLevel+2 > levelCounts.length) {
-            levelCounts = ArrayUtil.grow(levelCounts, mergeLevel+2);
+          if (mergeLevel + 2 > levelCounts.length) {
+            levelCounts = ArrayUtil.grow(levelCounts, mergeLevel + 2);
           }
-          levelCounts[mergeLevel+1]++;
+          levelCounts[mergeLevel + 1]++;
           levelCounts[mergeLevel] = 0;
           mergeLevel++;
         }
@@ -303,18 +318,19 @@ public class OfflineSorter {
           break;
         }
       }
-      
+
       // TODO: we shouldn't have to do this?  Can't we return a merged reader to
       // the caller, who often consumes the result just once, instead?
 
       // Merge all partitions down to 1 (basically a forceMerge(1)):
-      while (segments.size() > 1) {     
+      while (segments.size() > 1) {
         mergePartitions(trackingDir, segments);
       }
 
       String result;
       if (segments.isEmpty()) {
-        try (IndexOutput out = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT)) {
+        try (IndexOutput out =
+            trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT)) {
           // Write empty file footer
           CodecUtil.writeFooter(out);
           result = out.getName();
@@ -323,8 +339,10 @@ public class OfflineSorter {
         result = getPartition(segments.get(0)).fileName;
       }
 
-      // We should be explicitly removing all intermediate files ourselves unless there is an exception:
-      assert trackingDir.getCreatedFiles().size() == 1 && trackingDir.getCreatedFiles().contains(result);
+      // We should be explicitly removing all intermediate files ourselves unless there is an
+      // exception:
+      assert trackingDir.getCreatedFiles().size() == 1
+          && trackingDir.getCreatedFiles().contains(result);
 
       sortInfo.totalTimeMS = System.currentTimeMillis() - startMS;
 
@@ -343,9 +361,12 @@ public class OfflineSorter {
     }
   }
 
-  /** Called on exception, to check whether the checksum is also corrupt in this source, and add that 
-   *  information (checksum matched or didn't) as a suppressed exception. */
-  private void verifyChecksum(Throwable priorException, ByteSequencesReader reader) throws IOException {
+  /**
+   * Called on exception, to check whether the checksum is also corrupt in this source, and add that
+   * information (checksum matched or didn't) as a suppressed exception.
+   */
+  private void verifyChecksum(Throwable priorException, ByteSequencesReader reader)
+      throws IOException {
     try (ChecksumIndexInput in = dir.openChecksumInput(reader.name, IOContext.READONCE)) {
       CodecUtil.checkFooter(in, priorException);
     }
@@ -363,7 +384,8 @@ public class OfflineSorter {
 
     sortInfo.mergeRounds++;
 
-    MergePartitionsTask task = new MergePartitionsTask(trackingDir, new ArrayList<>(segmentsToMerge));
+    MergePartitionsTask task =
+        new MergePartitionsTask(trackingDir, new ArrayList<>(segmentsToMerge));
 
     segmentsToMerge.clear();
     segments.add(exec.submit(task));
@@ -395,7 +417,9 @@ public class OfflineSorter {
     }
   }
 
-  /** Read in a single partition of data, setting isExhausted[0] to true if there are no more items. */
+  /**
+   * Read in a single partition of data, setting isExhausted[0] to true if there are no more items.
+   */
   Partition readPartition(ByteSequencesReader reader) throws IOException, InterruptedException {
     if (partitionsInRAM != null) {
       partitionsInRAM.acquire();
@@ -410,7 +434,7 @@ public class OfflineSorter {
         // fixed length case
         buffer = new FixedLengthBytesRefArray(valueLength);
         int limit = ramBufferSize.bytes / valueLength;
-        for(int i=0;i<limit;i++) {
+        for (int i = 0; i < limit; i++) {
           BytesRef item = null;
           try {
             item = reader.next();
@@ -439,7 +463,7 @@ public class OfflineSorter {
           }
           buffer.append(item);
           // Account for the created objects.
-          // (buffer slots do not account to buffer size.) 
+          // (buffer slots do not account to buffer size.)
           if (bufferBytesUsed.get() > ramBufferSize.bytes) {
             break;
           }
@@ -477,8 +501,8 @@ public class OfflineSorter {
 
   /**
    * Utility class to emit length-prefixed byte[] entries to an output stream for sorting.
-   * Complementary to {@link ByteSequencesReader}.  You must use {@link CodecUtil#writeFooter}
-   * to write a footer at the end of the input file.
+   * Complementary to {@link ByteSequencesReader}. You must use {@link CodecUtil#writeFooter} to
+   * write a footer at the end of the input file.
    */
   public static class ByteSequencesWriter implements Closeable {
     protected final IndexOutput out;
@@ -492,6 +516,7 @@ public class OfflineSorter {
 
     /**
      * Writes a BytesRef.
+     *
      * @see #write(byte[], int, int)
      */
     public final void write(BytesRef ref) throws IOException {
@@ -501,6 +526,7 @@ public class OfflineSorter {
 
     /**
      * Writes a byte array.
+     *
      * @see #write(byte[], int, int)
      */
     public final void write(byte[] bytes) throws IOException {
@@ -509,9 +535,8 @@ public class OfflineSorter {
 
     /**
      * Writes a byte array.
-     * <p>
-     * The length is written as a <code>short</code>, followed
-     * by the bytes.
+     *
+     * <p>The length is written as a <code>short</code>, followed by the bytes.
      */
     public void write(byte[] bytes, int off, int len) throws IOException {
       assert bytes != null;
@@ -523,19 +548,17 @@ public class OfflineSorter {
       out.writeShort((short) len);
       out.writeBytes(bytes, off, len);
     }
-    
-    /**
-     * Closes the provided {@link IndexOutput}.
-     */
+
+    /** Closes the provided {@link IndexOutput}. */
     @Override
     public void close() throws IOException {
       out.close();
-    }    
+    }
   }
 
   /**
-   * Utility class to read length-prefixed byte[] entries from an input.
-   * Complementary to {@link ByteSequencesWriter}.
+   * Utility class to read length-prefixed byte[] entries from an input. Complementary to {@link
+   * ByteSequencesWriter}.
    */
   public static class ByteSequencesReader implements BytesRefIterator, Closeable {
     protected final String name;
@@ -551,11 +574,11 @@ public class OfflineSorter {
     }
 
     /**
-     * Reads the next entry into the provided {@link BytesRef}. The internal
-     * storage is resized if needed.
-     * 
-     * @return Returns <code>false</code> if EOF occurred when trying to read
-     * the header of the next sequence. Returns <code>true</code> otherwise.
+     * Reads the next entry into the provided {@link BytesRef}. The internal storage is resized if
+     * needed.
+     *
+     * @return Returns <code>false</code> if EOF occurred when trying to read the header of the next
+     *     sequence. Returns <code>true</code> otherwise.
      * @throws EOFException if the file ends before the full sequence is read.
      */
     public BytesRef next() throws IOException {
@@ -570,9 +593,7 @@ public class OfflineSorter {
       return ref.get();
     }
 
-    /**
-     * Closes the provided {@link IndexInput}.
-     */
+    /** Closes the provided {@link IndexInput}. */
     @Override
     public void close() throws IOException {
       in.close();
@@ -584,22 +605,26 @@ public class OfflineSorter {
     return comparator;
   }
 
-  /** Sorts one in-memory partition, writes it to disk, and returns the resulting file-based partition. */
+  /**
+   * Sorts one in-memory partition, writes it to disk, and returns the resulting file-based
+   * partition.
+   */
   private class SortPartitionTask implements Callable<Partition> {
 
     private final Directory dir;
     private final Partition part;
-      
+
     public SortPartitionTask(Directory dir, Partition part) {
       this.dir = dir;
       this.part = part;
     }
-    
+
     @Override
     public Partition call() throws IOException {
-      try (IndexOutput tempFile = dir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
-           ByteSequencesWriter out = getWriter(tempFile, part.buffer.size());) {
-      
+      try (IndexOutput tempFile =
+              dir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
+          ByteSequencesWriter out = getWriter(tempFile, part.buffer.size()); ) {
+
         BytesRef spare;
 
         long startMS = System.currentTimeMillis();
@@ -642,7 +667,7 @@ public class OfflineSorter {
   private class MergePartitionsTask implements Callable<Partition> {
     private final Directory dir;
     private final List<Future<Partition>> segmentsToMerge;
-    
+
     public MergePartitionsTask(Directory dir, List<Future<Partition>> segmentsToMerge) {
       this.dir = dir;
       this.segmentsToMerge = segmentsToMerge;
@@ -655,27 +680,32 @@ public class OfflineSorter {
         totalCount += getPartition(segment).count;
       }
 
-      PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(segmentsToMerge.size()) {
-          @Override
-          protected boolean lessThan(FileAndTop a, FileAndTop b) {
-            return comparator.compare(a.current, b.current) < 0;
-          }
-        };
+      PriorityQueue<FileAndTop> queue =
+          new PriorityQueue<FileAndTop>(segmentsToMerge.size()) {
+            @Override
+            protected boolean lessThan(FileAndTop a, FileAndTop b) {
+              return comparator.compare(a.current, b.current) < 0;
+            }
+          };
 
       ByteSequencesReader[] streams = new ByteSequencesReader[segmentsToMerge.size()];
 
       String newSegmentName = null;
 
       long startMS = System.currentTimeMillis();
-      try (ByteSequencesWriter writer = getWriter(dir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT), totalCount)) {
+      try (ByteSequencesWriter writer =
+          getWriter(
+              dir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT), totalCount)) {
 
         newSegmentName = writer.out.getName();
-      
+
         // Open streams and read the top for each file
         for (int i = 0; i < segmentsToMerge.size(); i++) {
           Partition segment = getPartition(segmentsToMerge.get(i));
-          streams[i] = getReader(dir.openChecksumInput(segment.fileName, IOContext.READONCE), segment.fileName);
-              
+          streams[i] =
+              getReader(
+                  dir.openChecksumInput(segment.fileName, IOContext.READONCE), segment.fileName);
+
           BytesRef item = null;
           try {
             item = streams[i].next();
@@ -685,9 +715,9 @@ public class OfflineSorter {
           assert item != null;
           queue.insertWithOverflow(new FileAndTop(i, item));
         }
-  
+
         // Unix utility sort() uses ordered array of files to pick the next line from, updating
-        // it as it reads new lines. The PQ used here is a more elegant solution and has 
+        // it as it reads new lines. The PQ used here is a more elegant solution and has
         // a nicer theoretical complexity bound :) The entire sorting process is I/O bound anyway
         // so it shouldn't make much of a difference (didn't check).
         FileAndTop top;
@@ -708,7 +738,7 @@ public class OfflineSorter {
 
         CodecUtil.writeFooter(writer.out);
 
-        for(ByteSequencesReader reader : streams) {
+        for (ByteSequencesReader reader : streams) {
           CodecUtil.checkFooter(reader.in);
         }
 

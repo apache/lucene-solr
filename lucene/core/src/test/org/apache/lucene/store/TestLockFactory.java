@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,79 +30,83 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLockFactory extends LuceneTestCase {
 
-    // Verify: we can provide our own LockFactory implementation, the right
-    // methods are called at the right time, locks are created, etc.
+  // Verify: we can provide our own LockFactory implementation, the right
+  // methods are called at the right time, locks are created, etc.
 
-    public void testCustomLockFactory() throws IOException {
-        MockLockFactory lf = new MockLockFactory();
-        Directory dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory(lf));
+  public void testCustomLockFactory() throws IOException {
+    MockLockFactory lf = new MockLockFactory();
+    Directory dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory(lf));
 
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
 
-        // add 100 documents (so that commit lock is used)
-        for (int i = 0; i < 100; i++) {
-            addDoc(writer);
-        }
-
-        // Both write lock and commit lock should have been created:
-        assertEquals("# of unique locks created (after instantiating IndexWriter)",
-                     1, lf.locksCreated.size());
-        writer.close();
+    // add 100 documents (so that commit lock is used)
+    for (int i = 0; i < 100; i++) {
+      addDoc(writer);
     }
 
-    // Verify: we can use the NoLockFactory w/ no exceptions raised.
-    // Verify: NoLockFactory allows two IndexWriters
-    public void testDirectoryNoLocking() throws IOException {
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory(NoLockFactory.INSTANCE));
+    // Both write lock and commit lock should have been created:
+    assertEquals(
+        "# of unique locks created (after instantiating IndexWriter)", 1, lf.locksCreated.size());
+    writer.close();
+  }
 
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-        writer.commit(); // required so the second open succeed
+  // Verify: we can use the NoLockFactory w/ no exceptions raised.
+  // Verify: NoLockFactory allows two IndexWriters
+  public void testDirectoryNoLocking() throws IOException {
+    MockDirectoryWrapper dir =
+        new MockDirectoryWrapper(random(), new ByteBuffersDirectory(NoLockFactory.INSTANCE));
 
-        // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
-        // using any locks:
-        IndexWriter writer2 = null;
-        try {
-            writer2 = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-        } catch (Exception e) {
-            e.printStackTrace(System.out);
-            fail("Should not have hit an IOException with no locking");
-        }
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    writer.commit(); // required so the second open succeed
 
-        writer.close();
-        if (writer2 != null) {
-            writer2.close();
-        }
+    // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're
+    // not
+    // using any locks:
+    IndexWriter writer2 = null;
+    try {
+      writer2 =
+          new IndexWriter(
+              dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    } catch (Exception e) {
+      e.printStackTrace(System.out);
+      fail("Should not have hit an IOException with no locking");
     }
 
-    static class MockLockFactory extends LockFactory {
+    writer.close();
+    if (writer2 != null) {
+      writer2.close();
+    }
+  }
 
-        public Map<String,Lock> locksCreated = Collections.synchronizedMap(new HashMap<String,Lock>());
+  static class MockLockFactory extends LockFactory {
 
-        @Override
-        public synchronized Lock obtainLock(Directory dir, String lockName) {
-            Lock lock = new MockLock();
-            locksCreated.put(lockName, lock);
-            return lock;
-        }
+    public Map<String, Lock> locksCreated =
+        Collections.synchronizedMap(new HashMap<String, Lock>());
 
-        public static class MockLock extends Lock {
-
-            @Override
-            public void close() {
-                // do nothing
-            }
-
-            @Override
-            public void ensureValid() throws IOException {
-              // do nothing
-            }
-
-        }
+    @Override
+    public synchronized Lock obtainLock(Directory dir, String lockName) {
+      Lock lock = new MockLock();
+      locksCreated.put(lockName, lock);
+      return lock;
     }
 
-    private void addDoc(IndexWriter writer) throws IOException {
-        Document doc = new Document();
-        doc.add(newTextField("content", "aaa", Field.Store.NO));
-        writer.addDocument(doc);
+    public static class MockLock extends Lock {
+
+      @Override
+      public void close() {
+        // do nothing
+      }
+
+      @Override
+      public void ensureValid() throws IOException {
+        // do nothing
+      }
     }
+  }
+
+  private void addDoc(IndexWriter writer) throws IOException {
+    Document doc = new Document();
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    writer.addDocument(doc);
+  }
 }

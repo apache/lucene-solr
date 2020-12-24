@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMultiset extends LuceneTestCase {
@@ -95,5 +93,4 @@ public class TestMultiset extends LuceneTestCase {
       assertEquals(reference, toCountMap(multiset));
     }
   }
-
 }

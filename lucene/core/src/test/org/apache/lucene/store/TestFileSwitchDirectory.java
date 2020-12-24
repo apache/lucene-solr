@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -27,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter;
 import org.apache.lucene.index.DirectoryReader;
@@ -43,27 +41,30 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
 
-  /**
-   * Test if writing doc stores to disk and everything else to ram works.
-   */
+  /** Test if writing doc stores to disk and everything else to ram works. */
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<>();
     fileExtensions.add(CompressingStoredFieldsWriter.FIELDS_EXTENSION);
     fileExtensions.add("fdx");
     fileExtensions.add("fdm");
-    
-    MockDirectoryWrapper primaryDir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
+
+    MockDirectoryWrapper primaryDir =
+        new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     primaryDir.setCheckIndexOnClose(false); // only part of an index
-    MockDirectoryWrapper secondaryDir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
+    MockDirectoryWrapper secondaryDir =
+        new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
     secondaryDir.setCheckIndexOnClose(false); // only part of an index
-    
-    FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
+
+    FileSwitchDirectory fsd =
+        new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
     // for now we wire the default codec because we rely upon its specific impl
-    IndexWriter writer = new IndexWriter(
-        fsd,
-        new IndexWriterConfig(new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(false)).setCodec(TestUtil.getDefaultCodec()).setUseCompoundFile(false)
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            fsd,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(newLogMergePolicy(false))
+                .setCodec(TestUtil.getDefaultCodec())
+                .setUseCompoundFile(false));
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
     IndexReader reader = DirectoryReader.open(writer);
     assertEquals(100, reader.maxDoc());
@@ -71,14 +72,14 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     // we should see only fdx,fdt files here
     String[] files = primaryDir.listAll();
     assertTrue(files.length > 0);
-    for (int x=0; x < files.length; x++) {
+    for (int x = 0; x < files.length; x++) {
       String ext = FileSwitchDirectory.getExtension(files[x]);
       assertTrue(fileExtensions.contains(ext));
     }
     files = secondaryDir.listAll();
     assertTrue(files.length > 0);
     // we should not see fdx,fdt files here
-    for (int x=0; x < files.length; x++) {
+    for (int x = 0; x < files.length; x++) {
       String ext = FileSwitchDirectory.getExtension(files[x]);
       assertFalse(fileExtensions.contains(ext));
     }
@@ -86,32 +87,35 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     writer.close();
 
     files = fsd.listAll();
-    for(int i=0;i<files.length;i++) {
+    for (int i = 0; i < files.length; i++) {
       assertNotNull(files[i]);
     }
     fsd.close();
   }
-  
+
   private Directory newFSSwitchDirectory(Set<String> primaryExtensions) throws IOException {
     Path primDir = createTempDir("foo");
     Path secondDir = createTempDir("bar");
     return newFSSwitchDirectory(primDir, secondDir, primaryExtensions);
   }
 
-  private Directory newFSSwitchDirectory(Path aDir, Path bDir, Set<String> primaryExtensions) throws IOException {
+  private Directory newFSSwitchDirectory(Path aDir, Path bDir, Set<String> primaryExtensions)
+      throws IOException {
     Directory a = new NIOFSDirectory(aDir);
     Directory b = new NIOFSDirectory(bDir);
     return new FileSwitchDirectory(primaryExtensions, a, b, true);
   }
-  
+
   // LUCENE-3380 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
     Path primDir = createTempDir("foo");
     Path secondDir = createTempDir("bar");
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
-    expectThrows(IndexNotFoundException.class, () -> {
-      DirectoryReader.open(dir);
-    });
+    expectThrows(
+        IndexNotFoundException.class,
+        () -> {
+          DirectoryReader.open(dir);
+        });
 
     dir.close();
   }
@@ -130,15 +134,18 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
       assertEquals(0, Arrays.stream(directory.listAll()).filter(f -> f.equals(name)).count());
     }
 
-    try (Directory directory= newFSSwitchDirectory(Collections.singleton("bar"))) {
+    try (Directory directory = newFSSwitchDirectory(Collections.singleton("bar"))) {
       String brokenName;
       try (IndexOutput out = directory.createTempOutput("foo", "bar", IOContext.DEFAULT)) {
         out.writeInt(1);
         brokenName = out.getName();
       }
-      AtomicMoveNotSupportedException exception = expectThrows(AtomicMoveNotSupportedException.class,
-          () -> directory.rename(brokenName, "foo.bar"));
-      assertEquals("foo_bar_0.tmp -> foo.bar: source and dest are in different directories", exception.getMessage());
+      AtomicMoveNotSupportedException exception =
+          expectThrows(
+              AtomicMoveNotSupportedException.class, () -> directory.rename(brokenName, "foo.bar"));
+      assertEquals(
+          "foo_bar_0.tmp -> foo.bar: source and dest are in different directories",
+          exception.getMessage());
     }
   }
 
@@ -172,11 +179,16 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     assumeFalse("Irony we seem to not emulate windows well enough", Constants.WINDOWS);
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     Path indexPath = new FilterPath(path, fs);
-    try (final FileSwitchDirectory dir = new FileSwitchDirectory(Collections.singleton("tim"),
-        new NIOFSDirectory(indexPath), new NIOFSDirectory(indexPath), true)) {
+    try (final FileSwitchDirectory dir =
+        new FileSwitchDirectory(
+            Collections.singleton("tim"),
+            new NIOFSDirectory(indexPath),
+            new NIOFSDirectory(indexPath),
+            true)) {
       dir.createOutput("foo.tim", IOContext.DEFAULT).close();
-      Function<String[], Long> stripExtra = array -> Arrays.asList(array).stream()
-          .filter(f -> f.startsWith("extra") == false).count();
+      Function<String[], Long> stripExtra =
+          array ->
+              Arrays.asList(array).stream().filter(f -> f.startsWith("extra") == false).count();
       try (IndexInput indexInput = dir.openInput("foo.tim", IOContext.DEFAULT)) {
         assert indexInput != null;
         dir.deleteFile("foo.tim");
