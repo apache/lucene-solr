@@ -186,9 +186,4 @@ public class DelegatingDirectoryFactory extends DirectoryFactory {
     protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
         return delegateFactory.deleteOldIndexDirectory(oldDirPath);
     }
-
-    @Override
-    protected Directory getBaseDir(Directory dir) {
-        return delegateFactory.getBaseDir(dir);
-    }
 }

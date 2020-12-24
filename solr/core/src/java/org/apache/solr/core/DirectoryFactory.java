@@ -413,16 +413,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     }
   }
   
-  // special hack to work with FilterDirectory
-  protected Directory getBaseDir(Directory dir) {
-    Directory baseDir = dir;
-    while (baseDir instanceof FilterDirectory) {
-      baseDir = ((FilterDirectory)baseDir).getDelegate();
-    } 
-    
-    return baseDir;
-  }
-
   /**
    * Create a new DirectoryFactory instance from the given SolrConfig and tied to the specified core container.
    */

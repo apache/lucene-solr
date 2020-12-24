@@ -26,14 +26,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.store.*;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,12 +45,11 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
     return FSDirectory.open(new File(path).toPath(), lockFactory);
   }
   
   @Override
-  protected LockFactory createLockFactory(String rawLockType) throws IOException {
+  protected LockFactory createLockFactory(String rawLockType) {
     if (null == rawLockType) {
       rawLockType = DirectoryFactory.LOCK_TYPE_NATIVE;
       log.warn("No lockType configured, assuming '{}'.", rawLockType);
@@ -112,8 +104,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext)
       throws IOException {
     
-    Directory baseFromDir = getBaseDir(fromDir);
-    Directory baseToDir = getBaseDir(toDir);
+    Directory baseFromDir = FilterDirectory.unwrap(fromDir);
+    Directory baseToDir = FilterDirectory.unwrap(toDir);
     
     if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
   
@@ -133,7 +125,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   // perform an atomic rename if possible
   public void renameWithOverwrite(Directory dir, String fileName, String toName) throws IOException {
-    Directory baseDir = getBaseDir(dir);
+    Directory baseDir = FilterDirectory.unwrap(dir);
     if (baseDir instanceof FSDirectory) {
       Path path = ((FSDirectory) baseDir).getDirectory().toAbsolutePath();
       try {
