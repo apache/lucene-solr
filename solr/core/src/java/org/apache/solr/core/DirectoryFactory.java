@@ -27,10 +27,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
@@ -215,11 +215,22 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path.
    * 
-   * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Directory get(String path, DirContext dirContext, String rawLockType)
-      throws IOException;
+  public Directory get(String path, DirContext dirContext, String rawLockType) throws IOException {
+    return get(path, dirContext, rawLockType, Function.identity());
+  }
+
+  /**
+   * Returns the Directory for a given path, using the specified rawLockType.
+   * Will return the same Directory instance for the same path.
+   *
+   * @param wrappingFunction A function called to wrap the internally {@link #create(String, LockFactory, DirContext) created}
+   *                         {@link Directory} with another {@link Directory}. Use {@link Function#identity()} for no wrapping.
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract Directory get(String path, DirContext dirContext, String rawLockType, Function<Directory, Directory> wrappingFunction)
+          throws IOException;
   
   /**
    * Increment the number of references to the given Directory. You must call
@@ -401,16 +412,6 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     }
   }
   
-  // special hack to work with FilterDirectory
-  protected Directory getBaseDir(Directory dir) {
-    Directory baseDir = dir;
-    while (baseDir instanceof FilterDirectory) {
-      baseDir = ((FilterDirectory)baseDir).getDelegate();
-    } 
-    
-    return baseDir;
-  }
-
   /**
    * Create a new DirectoryFactory instance from the given SolrConfig and tied to the specified core container.
    */

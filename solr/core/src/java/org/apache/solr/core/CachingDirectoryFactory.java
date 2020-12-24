@@ -30,6 +30,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -97,14 +98,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   protected Map<Directory, List<CloseListener>> closeListeners = new HashMap<>();
 
   protected Set<CacheValue> removeEntries = new HashSet<>();
-
-  private Double maxWriteMBPerSecFlush;
-
-  private Double maxWriteMBPerSecMerge;
-
-  private Double maxWriteMBPerSecRead;
-
-  private Double maxWriteMBPerSecDefault;
 
   private boolean closed;
 
@@ -339,10 +332,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * (non-Javadoc)
    *
    * @see org.apache.solr.core.DirectoryFactory#get(java.lang.String,
-   * java.lang.String, boolean)
+   * java.lang.String, boolean, java.util.function.Function)
    */
   @Override
-  public final Directory get(String path, DirContext dirContext, String rawLockType)
+  public final Directory get(String path, DirContext dirContext, String rawLockType, Function<Directory, Directory> wrappingFunction)
       throws IOException {
     String fullPath = normalize(path);
     synchronized (this) {
@@ -357,7 +350,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
 
       if (directory == null) {
-        directory = create(fullPath, createLockFactory(rawLockType), dirContext);
+        directory = wrappingFunction.apply(create(fullPath, createLockFactory(rawLockType), dirContext));
         assert ObjectReleaseTracker.track(directory);
         boolean success = false;
         try {
@@ -405,11 +398,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
-    maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
-    maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
-    maxWriteMBPerSecRead = (Double) args.get("maxWriteMBPerSecRead");
-    maxWriteMBPerSecDefault = (Double) args.get("maxWriteMBPerSecDefault");
-
     // override global config
     if (args.get(SolrXmlConfig.SOLR_DATA_HOME) != null) {
       dataHomePath = Paths.get((String) args.get(SolrXmlConfig.SOLR_DATA_HOME)).toAbsolutePath().normalize();

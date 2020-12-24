@@ -41,12 +41,7 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.store.*;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -620,8 +615,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   @Override
   public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
     
-    Directory baseFromDir = getBaseDir(fromDir);
-    Directory baseToDir = getBaseDir(toDir);
+    Directory baseFromDir = FilterDirectory.unwrap(fromDir);
+    Directory baseToDir = FilterDirectory.unwrap(toDir);
     
     if (baseFromDir instanceof HdfsDirectory && baseToDir instanceof HdfsDirectory) {
       Path dir1 = ((HdfsDirectory) baseFromDir).getHdfsDirPath();
