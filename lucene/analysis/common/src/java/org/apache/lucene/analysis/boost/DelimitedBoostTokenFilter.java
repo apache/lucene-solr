@@ -16,21 +16,19 @@
  */
 package org.apache.lucene.analysis.boost;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.search.BoostAttribute;
 
-import java.io.IOException;
-
-
 /**
  * Characters before the delimiter are the "token", those after are the boost.
- * <p>
- * For example, if the delimiter is '|', then for the string "foo|0.7", foo is the token
- * and 0.7 is the boost.
- * <p>
- * Note make sure your Tokenizer doesn't split on the delimiter, or this won't work
+ *
+ * <p>For example, if the delimiter is '|', then for the string "foo|0.7", foo is the token and 0.7
+ * is the boost.
+ *
+ * <p>Note make sure your Tokenizer doesn't split on the delimiter, or this won't work
  */
 public final class DelimitedBoostTokenFilter extends TokenFilter {
   private final char delimiter;

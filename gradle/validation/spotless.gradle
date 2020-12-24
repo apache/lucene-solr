@@ -61,6 +61,8 @@ allprojects { prj ->
 
           case ":lucene:analysis:common":
             target "src/**/org/apache/lucene/analysis/ar/**",
+                   "src/**/org/apache/lucene/analysis/b*/**",
+                   "src/**/org/apache/lucene/analysis/ca/**",
                    "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**"
             break
@@ -68,7 +70,7 @@ allprojects { prj ->
           case ":lucene:queries":
             target "src/java/**", "src/test/**"
             targetExclude "**/overview.html"
-          break
+            break
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:analysis:icu":
