@@ -31,7 +31,6 @@ import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
