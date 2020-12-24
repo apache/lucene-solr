@@ -33,7 +33,7 @@ public interface AttributeValues {
   Optional<String> getEnvironmentVariable(Node node, String name);
 
   /**
-   * For the given node: metric of specific name and registry
+   * For the given node: metric identified by an instance of {@link NodeMetric}
    */
   <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
 

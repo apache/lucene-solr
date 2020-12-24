@@ -61,10 +61,10 @@ public interface AttributeFetcher {
   AttributeFetcher fetchFrom(Set<Node> nodes);
 
   /**
-   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non node attributes
-   * (those requested for example using {@link #requestNodeMetric(NodeMetric)}.
+   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non-node attributes
+   * (those requested using e.g. {@link #requestCollectionMetrics(SolrCollection, Set)}.
    *
-   * @return An instance allowing retrieval of all attributed that could be fetched.
+   * @return An instance allowing retrieval of all attributes that could be fetched.
    */
   AttributeValues fetchAttributes();
 }

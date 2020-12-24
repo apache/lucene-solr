@@ -20,10 +20,8 @@ package org.apache.solr.cluster.placement;
 /**
  * Node metric identifier, corresponding
  * to a node-level metric registry and the internal metric name.
- * Alternatively this identified may use a fully-qualified metric key,
- * in which case the registry is set to null.
  */
-public interface NodeMetric<T> extends MetricAttribute<T> {
+public interface NodeMetric<T> extends Metric<T> {
 
   /**
    * Metric registry. If this metric identifier uses a fully-qualified
@@ -46,6 +44,11 @@ public interface NodeMetric<T> extends MetricAttribute<T> {
     /**
      * corresponds to solr.jetty
      */
-    SOLR_JETTY
+    SOLR_JETTY,
+    /**
+     * In case when the registry name is not relevant (eg. a fully-qualified
+     * metric key was provided as the metric name).
+     */
+    UNSPECIFIED
   }
 }

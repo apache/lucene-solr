@@ -27,7 +27,7 @@ import java.util.function.Function;
  * Node metric identifier, corresponding
  * to a node-level metric registry and the internal metric name.
  */
-public class NodeMetricImpl<T> extends MetricAttributeImpl<T> implements NodeMetric<T> {
+public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Total disk space in GB. */
   public static final NodeMetricImpl<Double> TOTAL_DISK_GB = new NodeMetricImpl<>("totalDisk",
@@ -67,7 +67,7 @@ public class NodeMetricImpl<T> extends MetricAttributeImpl<T> implements NodeMet
 
   public NodeMetricImpl(String key, Function<Object, T> converter) {
     super(key, key, converter);
-    this.registry = null;
+    this.registry = Registry.UNSPECIFIED;
   }
 
   public Registry getRegistry() {

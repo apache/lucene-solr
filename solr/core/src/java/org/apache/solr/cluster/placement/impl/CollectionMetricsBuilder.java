@@ -22,6 +22,7 @@ import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ShardMetrics;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,12 +41,27 @@ public class CollectionMetricsBuilder {
   public CollectionMetrics build() {
     final Map<String, ShardMetrics> metricsMap = new HashMap<>();
     shardMetricsBuilders.forEach((shard, builder) -> metricsMap.put(shard, builder.build()));
-    return shardName -> Optional.ofNullable(metricsMap.get(shardName));
+    return new CollectionMetrics() {
+      @Override
+      public Optional<ShardMetrics> getShardMetrics(String shardName) {
+        return Optional.ofNullable(metricsMap.get(shardName));
+      }
+
+      @Override
+      public Iterator<ShardMetrics> iterator() {
+        return metricsMap.values().iterator();
+      }
+    };
   }
 
   public static class ShardMetricsBuilder {
     final Map<String, ReplicaMetricsBuilder> replicaMetricsBuilders = new HashMap<>();
+    final String shardName;
     ReplicaMetricsBuilder leaderMetricsBuilder;
+
+    public ShardMetricsBuilder(String shardName) {
+      this.shardName = shardName;
+    }
 
     public Map<String, ReplicaMetricsBuilder> getReplicaMetricsBuilders() {
       return replicaMetricsBuilders;
@@ -53,6 +69,9 @@ public class CollectionMetricsBuilder {
 
     public ShardMetricsBuilder setLeaderMetrics(ReplicaMetricsBuilder replicaMetricsBuilder) {
       leaderMetricsBuilder = replicaMetricsBuilder;
+      if (leaderMetricsBuilder != null) {
+        replicaMetricsBuilders.put(leaderMetricsBuilder.replicaName, leaderMetricsBuilder);
+      }
       return this;
     }
 
@@ -61,18 +80,19 @@ public class CollectionMetricsBuilder {
       replicaMetricsBuilders.forEach((name, replicaBuilder) -> {
         ReplicaMetrics metrics = replicaBuilder.build();
         metricsMap.put(name, metrics);
-        // skip leader from map
         if (replicaBuilder.leader) {
           if (leaderMetricsBuilder == null) {
             leaderMetricsBuilder = replicaBuilder;
-          }
-          if (replicaBuilder != leaderMetricsBuilder) {
-            throw new RuntimeException("inconsistent data for leader metrics: found " + replicaBuilder + " but expected " + leaderMetricsBuilder);
           }
         }
       });
       final ReplicaMetrics finalLeaderMetrics = leaderMetricsBuilder != null ? leaderMetricsBuilder.build() : null;
       return new ShardMetrics() {
+        @Override
+        public String getShardName() {
+          return shardName;
+        }
+
         @Override
         public Optional<ReplicaMetrics> getLeaderMetrics() {
           return Optional.ofNullable(finalLeaderMetrics);
@@ -82,13 +102,23 @@ public class CollectionMetricsBuilder {
         public Optional<ReplicaMetrics> getReplicaMetrics(String replicaName) {
           return Optional.ofNullable(metricsMap.get(replicaName));
         }
+
+        @Override
+        public Iterator<ReplicaMetrics> iterator() {
+          return metricsMap.values().iterator();
+        }
       };
     }
   }
 
   public static class ReplicaMetricsBuilder {
     final Map<ReplicaMetric<?>, Object> metrics = new HashMap<>();
+    final String replicaName;
     boolean leader;
+
+    public ReplicaMetricsBuilder(String replicaName) {
+      this.replicaName = replicaName;
+    }
 
     public ReplicaMetricsBuilder setLeader(boolean leader) {
       this.leader = leader;
@@ -111,9 +141,19 @@ public class CollectionMetricsBuilder {
     public ReplicaMetrics build() {
       return new ReplicaMetrics() {
         @Override
+        public String getReplicaName() {
+          return replicaName;
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
         public <T> Optional<T> getReplicaMetric(ReplicaMetric<T> metric) {
           return Optional.ofNullable((T) metrics.get(metric));
+        }
+
+        @Override
+        public Iterator<Map.Entry<ReplicaMetric<?>, Object>> iterator() {
+          return metrics.entrySet().iterator();
         }
       };
     }

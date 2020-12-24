@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.placement;
 
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -24,6 +25,8 @@ import java.util.Optional;
  * primitive shard-level metrics.
  */
 public interface ShardMetrics {
+  String getShardName();
   Optional<ReplicaMetrics> getLeaderMetrics();
   Optional<ReplicaMetrics> getReplicaMetrics(String replicaName);
+  Iterator<ReplicaMetrics> iterator();
 }

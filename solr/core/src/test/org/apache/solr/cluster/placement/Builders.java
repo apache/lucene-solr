@@ -286,7 +286,7 @@ public class Builders {
       for (int shardNumber = 1; shardNumber <= countShards; shardNumber++) {
         String shardName = buildShardName(shardNumber);
 
-        CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder = new CollectionMetricsBuilder.ShardMetricsBuilder();
+        CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder = new CollectionMetricsBuilder.ShardMetricsBuilder(shardName);
 
         LinkedList<ReplicaBuilder> replicas = new LinkedList<>();
         ReplicaBuilder leader = null;
@@ -315,7 +315,7 @@ public class Builders {
                 .setReplicaState(Replica.ReplicaState.ACTIVE).setReplicaNode(node);
             replicas.add(replicaBuilder);
 
-            CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder();
+            CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder = new CollectionMetricsBuilder.ReplicaMetricsBuilder(replicaName);
             shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.addMetric(ReplicaMetricImpl.INDEX_SIZE_GB, initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);

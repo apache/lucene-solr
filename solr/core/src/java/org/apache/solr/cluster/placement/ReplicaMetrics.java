@@ -17,6 +17,8 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -24,5 +26,7 @@ import java.util.Optional;
  */
 public interface ReplicaMetrics {
 
+  String getReplicaName();
   <T> Optional<T> getReplicaMetric(ReplicaMetric<T> metric);
+  Iterator<Map.Entry<ReplicaMetric<?>, Object>> iterator();
 }

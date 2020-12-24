@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -27,4 +28,5 @@ import java.util.Optional;
 public interface CollectionMetrics {
 
   Optional<ShardMetrics> getShardMetrics(String shardName);
+  Iterator<ShardMetrics> iterator();
 }

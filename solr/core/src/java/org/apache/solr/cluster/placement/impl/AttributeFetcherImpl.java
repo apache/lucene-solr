@@ -94,7 +94,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
 
   @Override
   public AttributeValues fetchAttributes() {
-    // TODO Code here only supports node related attributes for now
 
     // Maps in which attribute values will be added
     Map<String, Map<Node, String>> systemSnitchToNodeToValue = new HashMap<>();
@@ -132,6 +131,8 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     });
 
     // Now that we know everything we need to fetch (and where to put it), just do it.
+    // TODO: we could probably fetch this in parallel - for large clusters this could
+    // significantly shorten the execution time
     for (Node node : nodes) {
       Map<String, Object> tagValues = cloudManager.getNodeStateProvider().getNodeValues(node.getName(), allSnitchTagsToInsertion.keySet());
       for (Map.Entry<String, Object> e : tagValues.entrySet()) {
@@ -159,19 +160,16 @@ public class AttributeFetcherImpl implements AttributeFetcher {
             entry.getValue().forEach((shardName, replicas) -> {
               CollectionMetricsBuilder.ShardMetricsBuilder shardMetricsBuilder =
                   collectionMetricsBuilder.getShardMetricsBuilders()
-                  .computeIfAbsent(shardName, s -> new CollectionMetricsBuilder.ShardMetricsBuilder());
+                  .computeIfAbsent(shardName, s -> new CollectionMetricsBuilder.ShardMetricsBuilder(s));
               replicas.forEach(replica -> {
                 CollectionMetricsBuilder.ReplicaMetricsBuilder replicaMetricsBuilder =
                     shardMetricsBuilder.getReplicaMetricsBuilders()
-                    .computeIfAbsent(replica.getName(), n -> new CollectionMetricsBuilder.ReplicaMetricsBuilder());
+                    .computeIfAbsent(replica.getName(), n -> new CollectionMetricsBuilder.ReplicaMetricsBuilder(n));
                 replicaMetricsBuilder.setLeader(replica.isLeader());
                 if (replica.isLeader()) {
                   shardMetricsBuilder.setLeaderMetrics(replicaMetricsBuilder);
                 }
                 Set<ReplicaMetric<?>> requestedMetrics = requestedCollectionNamesMetrics.get(replica.getCollection());
-                if (requestedMetrics == null) {
-                  throw new RuntimeException("impossible error");
-                }
                 requestedMetrics.forEach(metric -> {
                   replicaMetricsBuilder.addMetric(metric, replica.get(metric.getInternalName()));
                 });
@@ -202,7 +200,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   }
 
   public static String getMetricSnitchTag(NodeMetric<?> metric) {
-    if (metric.getRegistry() != null) {
+    if (metric.getRegistry() != NodeMetric.Registry.UNSPECIFIED) {
       // regular registry + metricName
       return SolrClientNodeStateProvider.METRICS_PREFIX +
           SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry())) + ":" + metric.getInternalName();

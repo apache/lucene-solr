@@ -16,15 +16,15 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.MetricAttribute;
+import org.apache.solr.cluster.placement.Metric;
 
 import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Base class for {@link MetricAttribute} implementations.
+ * Base class for {@link Metric} implementations.
  */
-public class MetricAttributeImpl<T> implements MetricAttribute<T> {
+public abstract class MetricImpl<T> implements Metric<T> {
 
   public static final double GB = 1024 * 1024 * 1024;
 
@@ -54,7 +54,7 @@ public class MetricAttributeImpl<T> implements MetricAttribute<T> {
         return null;
       }
       try {
-        sizeInBytes = Double.valueOf(String.valueOf(v)).doubleValue();
+        sizeInBytes = Double.parseDouble(String.valueOf(v));
       } catch (Exception nfe) {
         return null;
       }
@@ -73,7 +73,7 @@ public class MetricAttributeImpl<T> implements MetricAttribute<T> {
    * @param name short-hand name that identifies this attribute.
    * @param internalName internal name of a Solr metric.
    */
-  public MetricAttributeImpl(String name, String internalName) {
+  public MetricImpl(String name, String internalName) {
     this(name, internalName, null);
   }
 
@@ -84,7 +84,7 @@ public class MetricAttributeImpl<T> implements MetricAttribute<T> {
    * @param converter optional raw value converter. If null then
    *                  {@link #IDENTITY_CONVERTER} will be used.
    */
-  public MetricAttributeImpl(String name, String internalName, Function<Object, T> converter) {
+  public MetricImpl(String name, String internalName, Function<Object, T> converter) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(internalName);
     this.name = name;
@@ -107,8 +107,8 @@ public class MetricAttributeImpl<T> implements MetricAttribute<T> {
   }
 
   @Override
-  public Function<Object, T> getConverter() {
-    return converter;
+  public T convert(Object value) {
+    return converter.apply(value);
   }
 
   @Override
@@ -119,8 +119,8 @@ public class MetricAttributeImpl<T> implements MetricAttribute<T> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MetricAttribute<?> that = (MetricAttribute<?>) o;
-    return name.equals(that.getName()) && internalName.equals(that.getInternalName()) && converter.equals(that.getConverter());
+    MetricImpl<?> that = (MetricImpl<?>) o;
+    return name.equals(that.getName()) && internalName.equals(that.getInternalName()) && converter.equals(that.converter);
   }
 
   @Override

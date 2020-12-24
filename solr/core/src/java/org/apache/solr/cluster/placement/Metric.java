@@ -16,14 +16,12 @@
  */
 package org.apache.solr.cluster.placement;
 
-import java.util.function.Function;
-
 /**
  * Metric-related attribute of a node or replica. It defines a short symbolic name of the metric, the corresponding
  * internal metric name and the desired format/unit conversion. Generic type
  * defines the type of converted values of this attribute.
  */
-public interface MetricAttribute<T> {
+public interface Metric<T> {
 
   /**
    * Return the short-hand name that identifies this attribute.
@@ -36,18 +34,9 @@ public interface MetricAttribute<T> {
   String getInternalName();
 
   /**
-   * Conversion function to convert formats/units of raw values.
-   */
-  Function<Object, T> getConverter();
-
-  /**
    * Convert raw value. This may involve changing value type or units.
-   * Default implementation simply applies the converter function
-   * returned by {@link #getConverter()}.
    * @param value raw value
    * @return converted value
    */
-  default T convert(Object value) {
-    return getConverter().apply(value);
-  }
+  T convert(Object value);
 }

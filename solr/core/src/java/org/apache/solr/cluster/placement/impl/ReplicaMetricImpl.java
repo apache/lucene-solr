@@ -24,7 +24,7 @@ import java.util.function.Function;
  * Replica metric identifier, corresponding to one of the
  * internal replica-level metric names (as reported in <code>solr.core.[collection].[replica]</code> registry)
  */
-public class ReplicaMetricImpl<T> extends MetricAttributeImpl<T> implements ReplicaMetric<T> {
+public class ReplicaMetricImpl<T> extends MetricImpl<T> implements ReplicaMetric<T> {
 
   public static final ReplicaMetricImpl<Double> INDEX_SIZE_GB = new ReplicaMetricImpl<>("sizeGB", "INDEX.sizeInBytes", BYTES_TO_GB_CONVERTER);
 
