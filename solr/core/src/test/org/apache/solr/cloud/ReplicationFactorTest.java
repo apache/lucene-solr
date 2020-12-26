@@ -278,7 +278,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
     log.info("Indexing docId=1");
-    int rf = sendDoc(1, minRf);
+    int rf = sendDoc(1);
     assertRf(3, "all replicas should be active", rf);
 
     // Uses cloudClient to do it's work
@@ -289,7 +289,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).close();
     
     log.info("Indexing docId=2");
-    rf = sendDoc(2, minRf);
+    rf = sendDoc(2);
     assertRf(2, "one replica should be down", rf);
 
     // Uses cloudClient to do it's work
@@ -313,7 +313,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(1)).close();    
 
     log.info("Indexing docId=3");
-    rf = sendDoc(3, minRf);
+    rf = sendDoc(3);
     assertRf(1, "both replicas should be down", rf);
 
     doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
@@ -329,7 +329,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
     log.info("Indexing docId=4");
-    rf = sendDoc(4, minRf);
+    rf = sendDoc(4);
     assertRf(3, "all replicas have been healed", rf);
 
     doDBQWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
@@ -358,7 +358,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // send a single doc (again)
     // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
     log.info("Indexing docId=5");
-    rf = sendDoc(5, minRf);
+    rf = sendDoc(5);
     assertRf(2, "doc should have succeded, only one replica should be down", rf);
     
     // now send a batch (again)
@@ -405,7 +405,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
     if (idList.length == 1) {
-      sendDoc(idList[0], expectedRf);
+      sendDoc(idList[0]);
       return;
     }
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
@@ -445,7 +445,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertEquals(msg, expectedRf, achievedRf);
   }
 
-  protected int sendDoc(int docId, int minRf) throws Exception {
+  protected int sendDoc(int docId) throws Exception {
     UpdateRequest up = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
