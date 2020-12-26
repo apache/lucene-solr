@@ -114,7 +114,6 @@ configure(project(":lucene:core")) {
 }
 
 configure(project(":lucene:analysis:common")) {
-
   task jflexUAX29URLEmailTokenizerImpl(type: JFlexTask) {
     description "Regenerate UAX29URLEmailTokenizerImpl.java"
     group "generation"
@@ -165,5 +164,22 @@ configure(project(":lucene:analysis:common")) {
           eol: "lf"
       )
     }
+  }
+
+  task regenerate() {
+    description "Regenerate any generated sources"
+    group "generation"
+
+    // Run regeneration tasks.
+    dependsOn jflexUAX29URLEmailTokenizerImpl
+    dependsOn jflexHTMLStripCharFilter
+
+    // Clean up and reformat the generated sources after generation.
+    dependsOn "tidy"
+  }
+
+  // Make sure tidy runs after generation, if they're defined.
+  tasks.matching { it.name == "tidy" }.configureEach {
+    mustRunAfter jflexUAX29URLEmailTokenizerImpl, jflexHTMLStripCharFilter
   }
 }

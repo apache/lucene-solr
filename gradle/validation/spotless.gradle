@@ -63,8 +63,10 @@ allprojects { prj ->
             target "src/**/org/apache/lucene/analysis/ar/**",
                    "src/**/org/apache/lucene/analysis/b*/**",
                    "src/**/org/apache/lucene/analysis/ca/**",
+                   "src/**/org/apache/lucene/analysis/charfilter/**",
                    "src/**/org/apache/lucene/collation/**"
-            targetExclude "**/resources/**"
+            targetExclude "**/resources/**", "**/*.jflex", "**/*.py", "**/*.htm*",
+                          "**/HTMLStripCharFilter.java"
             break
 
           case ":lucene:queries":
