@@ -37,27 +37,25 @@ allprojects { prj ->
 
         switch (project.path) {
           // These modules are complete - all sources scanned.
-          case ":lucene:highlighter":
-            target "src/java/**", "src/test/**"
-            targetExclude "**/overview.html", "**/CambridgeMA.utf8"
+          case ":lucene:core":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**", "**/StandardTokenizerImpl.java"
             break
 
-          // Partially complete.
-          case ":lucene:core":
-            target "src/java/**", "src/test/**"
-            targetExclude "**/overview.html",
-                "**/META-INF/**",
-                "**/StandardTokenizerImpl.jflex",
-                "**/StandardTokenizerImpl.java",
-                "**/createLevAutomata.py",
-                "**/UTF32ToUTF8.py",
-                "**/gen_BulkOperation.py",
-                "**/gen_Packed64SingleBlock.py",
-                "**/makeEuroparlLineFile.py",
-                "**/wordliststopwords.txt",
-                "**/wordliststopwords_nocomment.txt",
-                "**/gen_ForUtil.py"
+          case ":lucene:highlighter":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
             break
+
+          case ":lucene:queries":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+        // Partially complete.
 
           case ":lucene:analysis:common":
             target "src/**/org/apache/lucene/analysis/ar/**/*.java",
@@ -73,11 +71,6 @@ allprojects { prj ->
                    "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**",
                           "**/HTMLStripCharFilter.java"
-            break
-
-          case ":lucene:queries":
-            target "src/java/**", "src/test/**"
-            targetExclude "**/overview.html"
             break
 
           // All others - disable reformatting/ checks for now.
