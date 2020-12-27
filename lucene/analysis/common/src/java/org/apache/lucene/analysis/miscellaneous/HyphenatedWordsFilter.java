@@ -118,8 +118,6 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     lastEndOffset = 0;
   }
 
-  // ================================================= Helper Methods ================================================
-
   /**
    * Writes the joined unhyphenated term
    */

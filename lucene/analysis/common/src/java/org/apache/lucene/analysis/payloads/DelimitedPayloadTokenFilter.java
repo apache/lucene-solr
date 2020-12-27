@@ -65,6 +65,8 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
       // we have not seen the delimiter
       payAtt.setPayload(null);
       return true;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 }

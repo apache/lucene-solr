@@ -442,8 +442,6 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
     concatAll.clear();
   }
 
-  // ================================================= Helper Methods ================================================
-
   private class PositionSorter extends InPlaceMergeSorter {
     @Override
     protected int compare(int i, int j) {

@@ -204,8 +204,6 @@ public final class WordDelimiterIterator {
     setBounds();
   }
 
-  // ================================================= Helper Methods ================================================
-
   /**
    * Determines whether the transition from lastType to type indicates a break
    *

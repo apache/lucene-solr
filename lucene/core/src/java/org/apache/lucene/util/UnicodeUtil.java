@@ -359,8 +359,12 @@ public final class UnicodeUtil {
           char nextCH = s[i];
           if (nextCH >= UNI_SUR_LOW_START && nextCH <= UNI_SUR_LOW_END) {
             // Valid surrogate pair
-          } else return false;
-        } else return false;
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
       } else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END)
         // Unmatched low surrogate
         return false;

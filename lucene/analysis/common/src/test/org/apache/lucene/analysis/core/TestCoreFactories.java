@@ -16,61 +16,54 @@
  */
 package org.apache.lucene.analysis.core;
 
-
+import java.io.Reader;
+import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * Simple tests to ensure the core lucene factories are working.
- */
+/** Simple tests to ensure the core lucene factories are working. */
 public class TestCoreFactories extends BaseTokenStreamFactoryTestCase {
 
-  /**
-   * Test KeywordTokenizerFactory
-   */
+  /** Test KeywordTokenizerFactory */
   public void testKeywordTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
     Tokenizer stream = tokenizerFactory("Keyword").create();
     stream.setReader(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "What's this thing do?" });
+    assertTokenStreamContents(stream, new String[] {"What's this thing do?"});
   }
-  
-  /**
-   * Test WhitespaceTokenizerFactory
-   */
+
+  /** Test WhitespaceTokenizerFactory */
   public void testWhitespaceTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
     Tokenizer stream = tokenizerFactory("Whitespace").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "What's", "this", "thing", "do?" });
+    assertTokenStreamContents(stream, new String[] {"What's", "this", "thing", "do?"});
   }
-  
-  /**
-   * Test LetterTokenizerFactory
-   */
+
+  /** Test LetterTokenizerFactory */
   public void testLetterTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
     Tokenizer stream = tokenizerFactory("Letter").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream, 
-        new String[] { "What", "s", "this", "thing", "do" });
+    assertTokenStreamContents(stream, new String[] {"What", "s", "this", "thing", "do"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Whitespace", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Whitespace", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Letter", "bogusArg", "bogusValue");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Letter", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

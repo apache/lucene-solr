@@ -385,9 +385,6 @@ public final class WordDelimiterFilter extends TokenFilter {
     first = true;
   }
 
-  // ================================================= Helper Methods ================================================
-
-  
   private AttributeSource.State buffered[] = new AttributeSource.State[8];
   private int startOff[] = new int[8];
   private int posInc[] = new int[8];

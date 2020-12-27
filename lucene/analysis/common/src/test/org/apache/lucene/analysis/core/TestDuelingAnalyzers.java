@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -32,22 +30,22 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.Automaton;
 
 /**
- * Compares MockTokenizer (which is simple with no optimizations) with equivalent 
- * core tokenizers (that have optimizations like buffering).
- * 
- * Any tests here need to probably consider unicode version of the JRE (it could
- * cause false fails).
+ * Compares MockTokenizer (which is simple with no optimizations) with equivalent core tokenizers
+ * (that have optimizations like buffering).
+ *
+ * <p>Any tests here need to probably consider unicode version of the JRE (it could cause false
+ * fails).
  */
 public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
   private static CharacterRunAutomaton jvmLetter;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Automaton single = new Automaton();
@@ -64,7 +62,7 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     Automaton repeat = Operations.repeat(single);
     jvmLetter = new CharacterRunAutomaton(repeat);
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     jvmLetter = null;
@@ -73,121 +71,139 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
   public void testLetterAscii() throws Exception {
     Random random = random();
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomSimpleString(random);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   // not so useful since it's all one token?!
   public void testLetterAsciiHuge() throws Exception {
     Random random = random();
     int maxLength = 8192; // CharTokenizer.IO_BUFFER_SIZE*2
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomSimpleString(random, maxLength);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   public void testLetterHtmlish() throws Exception {
     Random random = random();
     Analyzer left = new MockAnalyzer(random, jvmLetter, false);
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomHtmlishString(random, 20);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   public void testLetterHtmlishHuge() throws Exception {
     Random random = random();
     int maxLength = 1024; // this is number of elements, not chars!
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomHtmlishString(random, maxLength);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   public void testLetterUnicode() throws Exception {
     Random random = random();
     Analyzer left = new MockAnalyzer(random(), jvmLetter, false);
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     for (int i = 0; i < 200; i++) {
       String s = TestUtil.randomUnicodeString(random);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   public void testLetterUnicodeHuge() throws Exception {
     Random random = random();
     int maxLength = 4300; // CharTokenizer.IO_BUFFER_SIZE + fudge
     MockAnalyzer left = new MockAnalyzer(random, jvmLetter, false);
     left.setMaxTokenLength(255); // match CharTokenizer's max token length
-    Analyzer right = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    Analyzer right =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new LetterTokenizer(newAttributeFactory());
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
     int numIterations = atLeast(10);
     for (int i = 0; i < numIterations; i++) {
       String s = TestUtil.randomUnicodeString(random, maxLength);
-      assertEquals(s, left.tokenStream("foo", newStringReader(s)), 
-                   right.tokenStream("foo", newStringReader(s)));
+      assertEquals(
+          s,
+          left.tokenStream("foo", newStringReader(s)),
+          right.tokenStream("foo", newStringReader(s)));
     }
     IOUtils.close(left, right);
   }
-  
+
   // we only check a few core attributes here.
   // TODO: test other things
   public void assertEquals(String s, TokenStream left, TokenStream right) throws Exception {
@@ -199,22 +215,31 @@ public class TestDuelingAnalyzers extends BaseTokenStreamTestCase {
     OffsetAttribute rightOffset = right.addAttribute(OffsetAttribute.class);
     PositionIncrementAttribute leftPos = left.addAttribute(PositionIncrementAttribute.class);
     PositionIncrementAttribute rightPos = right.addAttribute(PositionIncrementAttribute.class);
-    
+
     while (left.incrementToken()) {
       assertTrue("wrong number of tokens for input: " + s, right.incrementToken());
       assertEquals("wrong term text for input: " + s, leftTerm.toString(), rightTerm.toString());
-      assertEquals("wrong position for input: " + s, leftPos.getPositionIncrement(), rightPos.getPositionIncrement());
-      assertEquals("wrong start offset for input: " + s, leftOffset.startOffset(), rightOffset.startOffset());
-      assertEquals("wrong end offset for input: " + s, leftOffset.endOffset(), rightOffset.endOffset());
-    };
+      assertEquals(
+          "wrong position for input: " + s,
+          leftPos.getPositionIncrement(),
+          rightPos.getPositionIncrement());
+      assertEquals(
+          "wrong start offset for input: " + s,
+          leftOffset.startOffset(),
+          rightOffset.startOffset());
+      assertEquals(
+          "wrong end offset for input: " + s, leftOffset.endOffset(), rightOffset.endOffset());
+    }
+    ;
     assertFalse("wrong number of tokens for input: " + s, right.incrementToken());
     left.end();
     right.end();
-    assertEquals("wrong final offset for input: " + s, leftOffset.endOffset(), rightOffset.endOffset());
+    assertEquals(
+        "wrong final offset for input: " + s, leftOffset.endOffset(), rightOffset.endOffset());
     left.close();
     right.close();
   }
-  
+
   // TODO: maybe push this out to _TestUtil or LuceneTestCase and always use it instead?
   private static Reader newStringReader(String s) {
     Random random = random();

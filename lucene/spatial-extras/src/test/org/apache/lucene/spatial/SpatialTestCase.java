@@ -73,8 +73,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     super.tearDown();
   }
 
-  // ================================================= Helper Methods ================================================
-
   protected void addDocument(Document doc) throws IOException {
     indexWriter.addDocument(doc);
   }

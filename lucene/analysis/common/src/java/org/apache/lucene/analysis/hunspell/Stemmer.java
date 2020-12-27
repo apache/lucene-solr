@@ -262,8 +262,6 @@ final class Stemmer {
     }
   }
 
-  // ================================================= Helper Methods ================================================
-
   // some state for traversing FSTs
   final FST.BytesReader prefixReaders[] = new FST.BytesReader[3];
   @SuppressWarnings({"unchecked","rawtypes"})

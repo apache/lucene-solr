@@ -16,37 +16,39 @@
  */
 package org.apache.lucene.analysis.compound;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.util.IOUtils;
 import org.xml.sax.InputSource;
 
 /**
  * Factory for {@link HyphenationCompoundWordTokenFilter}.
- * <p>
- * This factory accepts the following parameters:
+ *
+ * <p>This factory accepts the following parameters:
+ *
  * <ul>
- *  <li><code>hyphenator</code> (mandatory): path to the FOP xml hyphenation pattern. 
- *  See <a href="http://offo.sourceforge.net/hyphenation/">http://offo.sourceforge.net/hyphenation/</a>.
- *  <li><code>encoding</code> (optional): encoding of the xml hyphenation file. defaults to UTF-8.
- *  <li><code>dictionary</code> (optional): dictionary of words. defaults to no dictionary.
- *  <li><code>minWordSize</code> (optional): minimal word length that gets decomposed. defaults to 5.
- *  <li><code>minSubwordSize</code> (optional): minimum length of subwords. defaults to 2.
- *  <li><code>maxSubwordSize</code> (optional): maximum length of subwords. defaults to 15.
- *  <li><code>onlyLongestMatch</code> (optional): if true, adds only the longest matching subword 
- *    to the stream. defaults to false.
+ *   <li><code>hyphenator</code> (mandatory): path to the FOP xml hyphenation pattern. See <a
+ *       href="http://offo.sourceforge.net/hyphenation/">http://offo.sourceforge.net/hyphenation/</a>.
+ *   <li><code>encoding</code> (optional): encoding of the xml hyphenation file. defaults to UTF-8.
+ *   <li><code>dictionary</code> (optional): dictionary of words. defaults to no dictionary.
+ *   <li><code>minWordSize</code> (optional): minimal word length that gets decomposed. defaults to
+ *       5.
+ *   <li><code>minSubwordSize</code> (optional): minimum length of subwords. defaults to 2.
+ *   <li><code>maxSubwordSize</code> (optional): maximum length of subwords. defaults to 15.
+ *   <li><code>onlyLongestMatch</code> (optional): if true, adds only the longest matching subword
+ *       to the stream. defaults to false.
  * </ul>
+ *
  * <br>
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_hyphncomp" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -60,7 +62,8 @@ import org.xml.sax.InputSource;
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
-public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   /** SPI name */
   public static final String NAME = "hyphenationCompoundWord";
@@ -74,7 +77,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
   private final int minSubwordSize;
   private final int maxSubwordSize;
   private final boolean onlyLongestMatch;
-  
+
   /** Creates a new HyphenationCompoundWordTokenFilterFactory */
   public HyphenationCompoundWordTokenFilterFactory(Map<String, String> args) {
     super(args);
@@ -82,14 +85,16 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     encoding = get(args, "encoding");
     hypFile = require(args, "hyphenator");
     minWordSize = getInt(args, "minWordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE);
-    minSubwordSize = getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
-    maxSubwordSize = getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
+    minSubwordSize =
+        getInt(args, "minSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE);
+    maxSubwordSize =
+        getInt(args, "maxSubwordSize", CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
     onlyLongestMatch = getBoolean(args, "onlyLongestMatch", false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public HyphenationCompoundWordTokenFilterFactory() {
     throw defaultCtorException();
@@ -100,7 +105,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     InputStream stream = null;
     try {
       if (dictFile != null) // the dictionary can be empty.
-        dictionary = getWordSet(loader, dictFile, false);
+      dictionary = getWordSet(loader, dictFile, false);
       // TODO: Broken, because we cannot resolve real system id
       // ResourceLoader should also supply method like ClassLoader to get resource URL
       stream = loader.openResource(hypFile);
@@ -112,9 +117,16 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
       IOUtils.closeWhileHandlingException(stream);
     }
   }
-  
+
   @Override
   public TokenFilter create(TokenStream input) {
-    return new HyphenationCompoundWordTokenFilter(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+    return new HyphenationCompoundWordTokenFilter(
+        input,
+        hyphenator,
+        dictionary,
+        minWordSize,
+        minSubwordSize,
+        maxSubwordSize,
+        onlyLongestMatch);
   }
 }

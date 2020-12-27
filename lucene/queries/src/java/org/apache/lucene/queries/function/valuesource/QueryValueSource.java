@@ -166,7 +166,9 @@ class QueryDocValues extends FloatDocValues {
           thisDocMatches = tpi == null || tpi.matches();
         }
         return thisDocMatches;
-      } else return false;
+      } else {
+        return false;
+      }
     } catch (IOException e) {
       throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
     }
