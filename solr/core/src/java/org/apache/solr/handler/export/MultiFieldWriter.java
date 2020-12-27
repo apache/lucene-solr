@@ -38,7 +38,7 @@ class MultiFieldWriter extends FieldWriter {
   private boolean numeric;
   private CharsRefBuilder cref = new CharsRefBuilder();
   private final LongFunction<Object> bitsToValue;
-  private IntObjectHashMap docValuesCache = new IntObjectHashMap();
+  private IntObjectHashMap<Object> docValuesCache = new IntObjectHashMap<>();
 
 
   public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
@@ -55,7 +55,7 @@ class MultiFieldWriter extends FieldWriter {
 
   public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
     if (this.fieldType.isPointField()) {
-      int readerOrd = reader.getContext().ord;
+      int readerOrd = sortDoc.ord;
       SortedNumericDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedNumericDocValues sortedNumericDocValues = (SortedNumericDocValues) docValuesCache.get(readerOrd);
@@ -82,7 +82,7 @@ class MultiFieldWriter extends FieldWriter {
           });
       return true;
     } else {
-      int readerOrd = reader.getContext().ord;
+      int readerOrd = sortDoc.ord;
       SortedSetDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedSetDocValues sortedSetDocValues = (SortedSetDocValues) docValuesCache.get(readerOrd);

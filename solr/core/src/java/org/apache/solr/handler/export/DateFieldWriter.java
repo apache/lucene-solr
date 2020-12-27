@@ -28,7 +28,7 @@ import org.apache.solr.common.MapWriter;
 
 class DateFieldWriter extends FieldWriter {
   private String field;
-  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap();
+  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap<>();
 
 
   public DateFieldWriter(String field) {

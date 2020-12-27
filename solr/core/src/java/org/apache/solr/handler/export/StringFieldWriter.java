@@ -37,7 +37,7 @@ class StringFieldWriter extends FieldWriter {
   private FieldType fieldType;
   private BytesRef lastRef;
   private int lastOrd = -1;
-  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap();
+  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
 
   private CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
@@ -76,11 +76,8 @@ class StringFieldWriter extends FieldWriter {
     }
 
     if (ref == null) {
-
-      /*
-        Reuse the last DocValues object if possible
-       */
-      int readerOrd = reader.getContext().ord;
+      //Reuse the last DocValues object if possible
+      int readerOrd = sortDoc.ord;
       SortedDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
@@ -103,6 +100,22 @@ class StringFieldWriter extends FieldWriter {
       ref = vals.lookupOrd(ord);
       lastRef = ref.clone();
     }
+
+
+/*
+    if (ref == null) {
+      SortedDocValues vals = DocValues.getSorted(reader, this.field);
+      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
+        return false;
+      }
+
+      int ord = vals.ordValue();
+      ref = vals.lookupOrd(ord);
+      lastRef = ref.clone();
+    }
+
+ */
+
 
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));

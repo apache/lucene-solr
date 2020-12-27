@@ -28,7 +28,7 @@ import org.apache.solr.common.MapWriter;
 class LongFieldWriter extends FieldWriter {
   private String field;
 
-  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap();
+  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap<>();
 
   public LongFieldWriter(String field) {
     this.field = field;
@@ -45,7 +45,7 @@ class LongFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      int readerOrd = reader.getContext().ord;
+      int readerOrd = sortDoc.ord;
       NumericDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         NumericDocValues numericDocValues = docValuesCache.get(readerOrd);

@@ -32,7 +32,7 @@ class BoolFieldWriter extends FieldWriter {
   private String field;
   private FieldType fieldType;
   private CharsRefBuilder cref = new CharsRefBuilder();
-  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap();
+  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
 
 
   public BoolFieldWriter(String field, FieldType fieldType) {
@@ -51,7 +51,7 @@ class BoolFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      int readerOrd = reader.getContext().ord;
+      int readerOrd = sortDoc.ord;
       SortedDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
