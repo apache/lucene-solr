@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.cjk;
 
-
-import org.apache.lucene.analysis.CharFilterFactory;
-
 import java.io.Reader;
 import java.util.Map;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
  * Factory for {@link CJKWidthCharFilter}.
+ *
  * @lucene.spi {@value #NAME}
  */
 public class CJKWidthCharFilterFactory extends CharFilterFactory {
@@ -32,7 +31,7 @@ public class CJKWidthCharFilterFactory extends CharFilterFactory {
   public static final String NAME = "cjkWidth";
 
   /** Creates a new CJKWidthCharFilterFactory */
-  public CJKWidthCharFilterFactory(Map<String,String> args) {
+  public CJKWidthCharFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -53,5 +52,4 @@ public class CJKWidthCharFilterFactory extends CharFilterFactory {
   public Reader normalize(Reader input) {
     return create(input);
   }
-
 }

@@ -64,9 +64,12 @@ allprojects { prj ->
                    "src/**/org/apache/lucene/analysis/b*/**",
                    "src/**/org/apache/lucene/analysis/ca/**",
                    "src/**/org/apache/lucene/analysis/charfilter/**",
+                   "src/**/org/apache/lucene/analysis/cjk/**",
+                   "src/**/org/apache/lucene/analysis/ckb/**",
+                   "src/**/org/apache/lucene/analysis/classic/**",
                    "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**", "**/*.jflex", "**/*.py", "**/*.htm*",
-                          "**/HTMLStripCharFilter.java"
+                          "**/HTMLStripCharFilter.java", "**/*.zip"
             break
 
           case ":lucene:queries":
