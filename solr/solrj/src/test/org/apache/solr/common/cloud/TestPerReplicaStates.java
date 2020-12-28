@@ -92,10 +92,10 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(3, rs.states.size());
     assertTrue(rs.cversion >= 5);
 
-    List<PerReplicaStates.Op> ops = PerReplicaStates.WriteOps.addReplica("R5",State.ACTIVE, false, rs).get();
+    List<PerReplicaStates.Operation> ops = PerReplicaStates.WriteOps.addReplica("R5",State.ACTIVE, false, rs).get();
 
     assertEquals(1, ops.size());
-    assertEquals(PerReplicaStates.Op.Type.ADD ,ops.get(0).typ );
+    assertEquals(PerReplicaStates.Operation.Type.ADD ,ops.get(0).typ );
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
     rs = zkStateReader.getReplicaStates(root);
     assertEquals(4, rs.states.size());
@@ -104,10 +104,10 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     ops =  PerReplicaStates.WriteOps.flipState("R1", State.DOWN , rs).get();
 
     assertEquals(4, ops.size());
-    assertEquals(PerReplicaStates.Op.Type.ADD,  ops.get(0).typ);
-    assertEquals(PerReplicaStates.Op.Type.DELETE,  ops.get(1).typ);
-    assertEquals(PerReplicaStates.Op.Type.DELETE,  ops.get(2).typ);
-    assertEquals(PerReplicaStates.Op.Type.DELETE,  ops.get(3).typ);
+    assertEquals(PerReplicaStates.Operation.Type.ADD,  ops.get(0).typ);
+    assertEquals(PerReplicaStates.Operation.Type.DELETE,  ops.get(1).typ);
+    assertEquals(PerReplicaStates.Operation.Type.DELETE,  ops.get(2).typ);
+    assertEquals(PerReplicaStates.Operation.Type.DELETE,  ops.get(3).typ);
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
     rs = zkStateReader.getReplicaStates(root);
     assertEquals(4, rs.states.size());
@@ -123,8 +123,8 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     ops = PerReplicaStates.WriteOps.flipLeader(ImmutableSet.of("R4","R3","R1"), "R4",rs).get();
 
     assertEquals(2, ops.size());
-    assertEquals(PerReplicaStates.Op.Type.ADD, ops.get(0).typ);
-    assertEquals(PerReplicaStates.Op.Type.DELETE, ops.get(1).typ);
+    assertEquals(PerReplicaStates.Operation.Type.ADD, ops.get(0).typ);
+    assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.get(1).typ);
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
     rs = zkStateReader.getReplicaStates(root);
     ops =  PerReplicaStates.WriteOps.flipLeader(ImmutableSet.of("R4","R3","R1"),"R3",rs).get();

@@ -38,6 +38,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.WrappedSimpleMap;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -65,6 +66,12 @@ public class PerReplicaStates implements ReflectMapWriter {
   @JsonProperty
   public final SimpleMap<State> states;
 
+  /**
+   * Construct with data read from ZK
+   * @param path path from where this is loaded
+   * @param cversion the current child version of the znode
+   * @param states the per-replica states (the list of all child nodes)
+   */
   public PerReplicaStates(String path, int cversion, List<String> states) {
     this.path = path;
     this.cversion = cversion;
@@ -105,32 +112,34 @@ public class PerReplicaStates implements ReflectMapWriter {
    * This is a persist operation with retry if a write fails due to stale state
    */
   public static void persist(WriteOps ops, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    try {
-      persist(ops.get(), znode, zkClient);
-    } catch (KeeperException.NodeExistsException | KeeperException.NoNodeException e) {
-      //state is stale
-      log.info("stale state for {} . retrying...", znode);
-      List<Op> freshOps = ops.get(PerReplicaStates.fetch(znode, zkClient, null));
-      persist(freshOps, znode, zkClient);
-      log.info("retried for stale state {}, succeeded", znode);
+    List<Operation> operations = ops.get();
+    for (int i = 0; i < 10; i++) {
+      try {
+        persist(operations, znode, zkClient);
+        return;
+      } catch (KeeperException.NodeExistsException | KeeperException.NoNodeException e) {
+        //state is stale
+        log.info("stale state for {}. retrying...", znode);
+        operations = ops.get(PerReplicaStates.fetch(znode, zkClient, null));
+      }
     }
   }
 
   /**
    * Persist a set of operations to Zookeeper
    */
-  public static void persist(List<Op> operations, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public static void persist(List<Operation> operations, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
     if (operations == null || operations.isEmpty()) return;
     log.debug("Per-replica state being persisted for :{}, ops: {}", znode, operations);
 
-    List<org.apache.zookeeper.Op> ops = new ArrayList<>(operations.size());
-    for (Op op : operations) {
+    List<Op> ops = new ArrayList<>(operations.size());
+    for (Operation op : operations) {
       //the state of the replica is being updated
       String path = znode + "/" + op.state.asString;
       List<ACL> acls = zkClient.getZkACLProvider().getACLsToAdd(path);
-      ops.add(op.typ == Op.Type.ADD ?
-          org.apache.zookeeper.Op.create(path, null, acls, CreateMode.PERSISTENT) :
-          org.apache.zookeeper.Op.delete(path, -1));
+      ops.add(op.typ == Operation.Type.ADD ?
+          Op.create(path, null, acls, CreateMode.PERSISTENT) :
+          Op.delete(path, -1));
     }
     try {
       zkClient.multi(ops, true);
@@ -174,9 +183,9 @@ public class PerReplicaStates implements ReflectMapWriter {
   }
 
 
-  private static List<Op> addDeleteStaleNodes(List<Op> ops, State rs) {
+  private static List<Operation> addDeleteStaleNodes(List<Operation> ops, State rs) {
     while (rs != null) {
-      ops.add(new Op(Op.Type.DELETE, rs));
+      ops.add(new Operation(Operation.Type.DELETE, rs));
       rs = rs.duplicate;
     }
     return ops;
@@ -194,11 +203,11 @@ public class PerReplicaStates implements ReflectMapWriter {
     return states.get(replica);
   }
 
-  public static class Op {
+  public static class Operation {
     public final Type typ;
     public final State state;
 
-    public Op(Type typ, State replicaState) {
+    public Operation(Type typ, State replicaState) {
       this.typ = typ;
       this.state = replicaState;
     }
@@ -339,9 +348,13 @@ public class PerReplicaStates implements ReflectMapWriter {
   }
 
 
+  /**This is a helper class that encapsulates various operations performed on the per-replica states
+   * Do not directly manipulate the per replica states as it can become difficult to debug them
+   *
+   */
   public static abstract class WriteOps {
     private PerReplicaStates rs;
-    List<Op> ops;
+    List<Operation> ops;
     private boolean preOp = true;
 
     /**
@@ -352,13 +365,13 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps flipState(String replica, Replica.State newState, PerReplicaStates rs) {
       return new WriteOps() {
         @Override
-        protected List<Op> refresh(PerReplicaStates rs) {
-          List<Op> ops = new ArrayList<>(2);
+        protected List<Operation> refresh(PerReplicaStates rs) {
+          List<Operation> ops = new ArrayList<>(2);
           State existing = rs.get(replica);
           if (existing == null) {
-            ops.add(new Op(Op.Type.ADD, new State(replica, newState, Boolean.FALSE, 0)));
+            ops.add(new Operation(Operation.Type.ADD, new State(replica, newState, Boolean.FALSE, 0)));
           } else {
-            ops.add(new Op(Op.Type.ADD, new State(replica, newState, existing.isLeader, existing.version + 1)));
+            ops.add(new Operation(Operation.Type.ADD, new State(replica, newState, existing.isLeader, existing.version + 1)));
             addDeleteStaleNodes(ops, existing);
           }
           if (log.isDebugEnabled()) {
@@ -379,19 +392,19 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps modifyCollection(DocCollection coll, boolean enable, PerReplicaStates prs) {
       return new WriteOps() {
         @Override
-        List<Op> refresh(PerReplicaStates prs) {
+        List<Operation> refresh(PerReplicaStates prs) {
           return enable ? enable(coll) : disable(prs);
         }
 
-        List<Op> enable(DocCollection coll) {
-          List<Op> result = new ArrayList<>();
-          coll.forEachReplica((s, r) -> result.add(new Op(Op.Type.ADD, new State(r.getName(), r.getState(), r.isLeader(), 0))));
+        List<Operation> enable(DocCollection coll) {
+          List<Operation> result = new ArrayList<>();
+          coll.forEachReplica((s, r) -> result.add(new Operation(Operation.Type.ADD, new State(r.getName(), r.getState(), r.isLeader(), 0))));
           return result;
         }
 
-        List<Op> disable(PerReplicaStates prs) {
-          List<Op> result = new ArrayList<>();
-          prs.states.forEachEntry((s, state) -> result.add(new Op(Op.Type.DELETE, state)));
+        List<Operation> disable(PerReplicaStates prs) {
+          List<Operation> result = new ArrayList<>();
+          prs.states.forEachEntry((s, state) -> result.add(new Operation(Operation.Type.DELETE, state)));
           return result;
         }
       }.init(prs);
@@ -408,20 +421,20 @@ public class PerReplicaStates implements ReflectMapWriter {
       return new WriteOps() {
 
         @Override
-        protected List<Op> refresh(PerReplicaStates rs) {
-          List<Op> ops = new ArrayList<>(4);
+        protected List<Operation> refresh(PerReplicaStates rs) {
+          List<Operation> ops = new ArrayList<>();
           if (next != null) {
             State st = rs.get(next);
             if (st != null) {
               if (!st.isLeader) {
-                ops.add(new Op(Op.Type.ADD, new State(st.replica, Replica.State.ACTIVE, Boolean.TRUE, st.version + 1)));
-                ops.add(new Op(Op.Type.DELETE, st));
+                ops.add(new Operation(Operation.Type.ADD, new State(st.replica, Replica.State.ACTIVE, Boolean.TRUE, st.version + 1)));
+                ops.add(new Operation(Operation.Type.DELETE, st));
               }
               //else do not do anything , that node is the leader
             } else {
               //there is no entry for the new leader.
               //create one
-              ops.add(new Op(Op.Type.ADD, new State(next, Replica.State.ACTIVE, Boolean.TRUE, 0)));
+              ops.add(new Operation(Operation.Type.ADD, new State(next, Replica.State.ACTIVE, Boolean.TRUE, 0)));
             }
           }
 
@@ -432,8 +445,8 @@ public class PerReplicaStates implements ReflectMapWriter {
             if (!Objects.equals(r, next)) {
               if (st.isLeader) {
                 //some other replica is the leader now. unset
-                ops.add(new Op(Op.Type.ADD, new State(st.replica, st.state, Boolean.FALSE, st.version + 1)));
-                ops.add(new Op(Op.Type.DELETE, st));
+                ops.add(new Operation(Operation.Type.ADD, new State(st.replica, st.state, Boolean.FALSE, st.version + 1)));
+                ops.add(new Operation(Operation.Type.DELETE, st));
               }
             }
           }
@@ -454,8 +467,8 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps deleteReplica(String replica, PerReplicaStates rs) {
       return new WriteOps() {
         @Override
-        protected List<Op> refresh(PerReplicaStates rs) {
-          List<Op> result;
+        protected List<Operation> refresh(PerReplicaStates rs) {
+          List<Operation> result;
           if (rs == null) {
             result = Collections.emptyList();
           } else {
@@ -470,8 +483,8 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps addReplica(String replica, Replica.State state, boolean isLeader, PerReplicaStates rs) {
       return new WriteOps() {
         @Override
-        protected List<Op> refresh(PerReplicaStates rs) {
-          return singletonList(new Op(Op.Type.ADD,
+        protected List<Operation> refresh(PerReplicaStates rs) {
+          return singletonList(new Operation(Operation.Type.ADD,
               new State(replica, state, isLeader, 0)));
         }
       }.init(rs);
@@ -483,16 +496,16 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps downReplicas(List<String> replicas, PerReplicaStates rs) {
       return new WriteOps() {
         @Override
-        List<Op> refresh(PerReplicaStates rs) {
-          List<Op> ops = new ArrayList<>();
+        List<Operation> refresh(PerReplicaStates rs) {
+          List<Operation> ops = new ArrayList<>();
           for (String replica : replicas) {
             State r = rs.get(replica);
             if (r != null) {
               if (r.state == Replica.State.DOWN && !r.isLeader) continue;
-              ops.add(new Op(Op.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
+              ops.add(new Operation(Operation.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
               addDeleteStaleNodes(ops, r);
             } else {
-              ops.add(new Op(Op.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, 0)));
+              ops.add(new Operation(Operation.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, 0)));
             }
           }
           if (log.isDebugEnabled()) {
@@ -510,11 +523,11 @@ public class PerReplicaStates implements ReflectMapWriter {
     public static WriteOps touchChildren() {
       WriteOps result = new WriteOps() {
         @Override
-        List<Op> refresh(PerReplicaStates rs) {
-          List<Op> ops = new ArrayList<>();
+        List<Operation> refresh(PerReplicaStates rs) {
+          List<Operation> ops = new ArrayList<>();
           State st = new State(".dummy." + System.nanoTime(), Replica.State.DOWN, Boolean.FALSE, 0);
-          ops.add(new Op(Op.Type.ADD, st));
-          ops.add(new Op(Op.Type.DELETE, st));
+          ops.add(new Operation(Operation.Type.ADD, st));
+          ops.add(new Operation(Operation.Type.DELETE, st));
           if (log.isDebugEnabled()) {
             log.debug("touchChildren {}", ops);
           }
@@ -532,11 +545,11 @@ public class PerReplicaStates implements ReflectMapWriter {
       return this;
     }
 
-    public List<Op> get() {
+    public List<Operation> get() {
       return ops;
     }
 
-    public List<Op> get(PerReplicaStates rs) {
+    public List<Operation> get(PerReplicaStates rs) {
       ops = refresh(rs);
       if (ops == null) ops = Collections.emptyList();
       this.rs = rs;
@@ -556,7 +569,7 @@ public class PerReplicaStates implements ReflectMapWriter {
      *
      * @param prs The new state
      */
-    abstract List<Op> refresh(PerReplicaStates prs);
+    abstract List<Operation> refresh(PerReplicaStates prs);
 
     @Override
     public String toString() {

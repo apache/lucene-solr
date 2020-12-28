@@ -163,11 +163,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
     assert shardId != null;
     boolean isAlreadyLeader = false;
-    String currentLeader = null;
     if (zkStateReader.getClusterState() != null &&
         zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
       Replica leader = zkStateReader.getLeader(collection, shardId);
-      if (leader != null) currentLeader = leader.getName();
       if (leader != null
           && leader.getNodeName().equals(leaderProps.get(ZkStateReader.NODE_NAME_PROP))
           && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
@@ -189,8 +187,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       } else {
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStates.WriteOps writeOps = PerReplicaStates.WriteOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs);
-        //nocommit make this debug
-        log.info("bypassed Zookeeper for leader election for {}/{}, old:{},new {} ", this.collection, shardId, currentLeader, id);
         PerReplicaStates.persist(writeOps, coll.getZNode(), zkStateReader.getZkClient());
       }
     }
@@ -200,9 +196,4 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     return leaderElector;
   }
 
-  Integer getLeaderZkNodeParentVersion() {
-    synchronized (lock) {
-      return leaderZkNodeParentVersion;
-    }
-  }
 }
