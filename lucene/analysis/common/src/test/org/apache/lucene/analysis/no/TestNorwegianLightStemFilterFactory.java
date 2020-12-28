@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.analysis.no;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Norwegian Light stem factory is working.
- */
+/** Simple tests to ensure the Norwegian Light stem factory is working. */
 public class TestNorwegianLightStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("epler eple");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NorwegianLightStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "epl", "epl" });
+    assertTokenStreamContents(stream, new String[] {"epl", "epl"});
   }
 
   /** Test stemming with variant set explicitly to Bokmål */
@@ -39,7 +35,7 @@ public class TestNorwegianLightStemFilterFactory extends BaseTokenStreamFactoryT
     Reader reader = new StringReader("epler eple");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NorwegianLightStem", "variant", "nb").create(stream);
-    assertTokenStreamContents(stream, new String[] { "epl", "epl" });
+    assertTokenStreamContents(stream, new String[] {"epl", "epl"});
   }
 
   /** Test stemming with variant set explicitly to Nynorsk */
@@ -47,14 +43,17 @@ public class TestNorwegianLightStemFilterFactory extends BaseTokenStreamFactoryT
     Reader reader = new StringReader("gutar gutane");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("NorwegianLightStem", "variant", "nn").create(stream);
-    assertTokenStreamContents(stream, new String[] { "gut", "gut" });
+    assertTokenStreamContents(stream, new String[] {"gut", "gut"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("NorwegianLightStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("NorwegianLightStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

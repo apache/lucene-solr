@@ -198,8 +198,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     return (result < 0 || result > max) ? mean : result; // due this due to computational numerical precision
   }
 
-  // ================================================= Inner Classes =================================================
-
   protected static class SearchResults {
 
     public long numFound;

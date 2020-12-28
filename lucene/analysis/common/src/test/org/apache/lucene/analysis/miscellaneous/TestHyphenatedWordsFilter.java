@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,67 +25,67 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * HyphenatedWordsFilter test
- */
+/** HyphenatedWordsFilter test */
 public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
   public void testHyphenatedWords() throws Exception {
-    String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
+    String input =
+        "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
     // first test
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)ts).setReader(new StringReader(input));
+    ((Tokenizer) ts).setReader(new StringReader(input));
     ts = new HyphenatedWordsFilter(ts);
-    assertTokenStreamContents(ts,
-        new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecological" });
+    assertTokenStreamContents(
+        ts, new String[] {"ecological", "develop", "comprehensive-hands-on", "and", "ecological"});
   }
 
-  /**
-   * Test that HyphenatedWordsFilter behaves correctly with a final hyphen
-   */
+  /** Test that HyphenatedWordsFilter behaves correctly with a final hyphen */
   public void testHyphenAtEnd() throws Exception {
     String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecology-";
-      // first test
+    // first test
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)ts).setReader(new StringReader(input));
+    ((Tokenizer) ts).setReader(new StringReader(input));
     ts = new HyphenatedWordsFilter(ts);
-    assertTokenStreamContents(ts,
-        new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecology-" });
+    assertTokenStreamContents(
+        ts, new String[] {"ecological", "develop", "comprehensive-hands-on", "and", "ecology-"});
   }
 
   public void testOffsets() throws Exception {
     String input = "abc- def geh 1234- 5678-";
     TokenStream ts = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)ts).setReader(new StringReader(input));
+    ((Tokenizer) ts).setReader(new StringReader(input));
     ts = new HyphenatedWordsFilter(ts);
-    assertTokenStreamContents(ts, 
-        new String[] { "abcdef", "geh", "12345678-" },
-        new int[] { 0, 9, 13 },
-        new int[] { 8, 12, 24 });
+    assertTokenStreamContents(
+        ts,
+        new String[] {"abcdef", "geh", "12345678-"},
+        new int[] {0, 9, 13},
+        new int[] {8, 12, 24});
   }
 
   /** blast some random strings through the analyzer */
   public void testRandomString() throws Exception {
-    Analyzer a = new Analyzer() {
+    Analyzer a =
+        new Analyzer() {
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
-      }
-    };
-    
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
+          }
+        };
+
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new HyphenatedWordsFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

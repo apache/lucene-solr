@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.Iterator;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -28,13 +27,13 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A TokenStream that takes an array of input TokenStreams as sources, and
- * concatenates them together.
+ * A TokenStream that takes an array of input TokenStreams as sources, and concatenates them
+ * together.
  *
- * Offsets from the second and subsequent sources are incremented to behave
- * as if all the inputs were from a single source.
+ * <p>Offsets from the second and subsequent sources are incremented to behave as if all the inputs
+ * were from a single source.
  *
- * All of the input TokenStreams must have the same attribute implementations
+ * <p>All of the input TokenStreams must have the same attribute implementations
  */
 public final class ConcatenatingTokenStream extends TokenStream {
 
@@ -50,6 +49,7 @@ public final class ConcatenatingTokenStream extends TokenStream {
 
   /**
    * Create a new ConcatenatingTokenStream from a set of inputs
+   *
    * @param sources an array of TokenStream inputs to concatenate
    */
   public ConcatenatingTokenStream(TokenStream... sources) {
@@ -77,9 +77,9 @@ public final class ConcatenatingTokenStream extends TokenStream {
         sources[i].copyTo(base);
       }
       return base;
-    }
-    catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Attempted to concatenate TokenStreams with different attribute types", e);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "Attempted to concatenate TokenStreams with different attribute types", e);
     }
   }
 
@@ -87,20 +87,19 @@ public final class ConcatenatingTokenStream extends TokenStream {
   public boolean incrementToken() throws IOException {
     boolean newSource = false;
     while (sources[currentSource].incrementToken() == false) {
-      if (currentSource >= sources.length - 1)
-        return false;
+      if (currentSource >= sources.length - 1) return false;
       sources[currentSource].end();
       initialPositionIncrement = sourceIncrements[currentSource].getPositionIncrement();
       OffsetAttribute att = sourceOffsets[currentSource];
-      if (att != null)
-        offsetIncrement += att.endOffset();
+      if (att != null) offsetIncrement += att.endOffset();
       currentSource++;
       newSource = true;
     }
 
     clearAttributes();
     sources[currentSource].copyTo(this);
-    offsetAtt.setOffset(offsetAtt.startOffset() + offsetIncrement, offsetAtt.endOffset() + offsetIncrement);
+    offsetAtt.setOffset(
+        offsetAtt.startOffset() + offsetIncrement, offsetAtt.endOffset() + offsetIncrement);
     if (newSource) {
       int posInc = posIncAtt.getPositionIncrement();
       posIncAtt.setPositionIncrement(posInc + initialPositionIncrement);
@@ -133,8 +132,7 @@ public final class ConcatenatingTokenStream extends TokenStream {
   public void close() throws IOException {
     try {
       IOUtils.close(sources);
-    }
-    finally {
+    } finally {
       super.close();
     }
   }

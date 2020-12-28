@@ -40,9 +40,7 @@ public class TestAllDictionaries2 extends LuceneTestCase {
   // set this to the location of where you downloaded all the files
   static final Path DICTIONARY_HOME = Paths.get("/data/thunderbirdDicts");
 
-  /**
-   * Triplets of [zip file, dictionary, affix].
-   */
+  /** Triplets of [zip file, dictionary, affix]. */
   final String tests[] = {
     "addon-0.4.5-an+fx+tb+fn+sm.xpi", "dictionaries/ru.dic", "dictionaries/ru.aff",
     "addon-0.5.5-fx+tb.xpi", "dictionaries/ko-KR.dic", "dictionaries/ko-KR.aff",

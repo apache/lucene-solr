@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.analysis.payloads;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link NumericPayloadTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_numpayload" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -41,7 +41,7 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
 
   private final float payload;
   private final String typeMatch;
-  
+
   /** Creates a new NumericPayloadTokenFilterFactory */
   public NumericPayloadTokenFilterFactory(Map<String, String> args) {
     super(args);
@@ -59,7 +59,6 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
 
   @Override
   public NumericPayloadTokenFilter create(TokenStream input) {
-    return new NumericPayloadTokenFilter(input,payload,typeMatch);
+    return new NumericPayloadTokenFilter(input, payload, typeMatch);
   }
 }
-

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,12 +24,12 @@ import org.junit.Test;
 public class TestLimitTokenOffsetFilter extends BaseTokenStreamTestCase {
 
   public void test() throws Exception {
-    for (final boolean consumeAll : new boolean[]{true, false}) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("A1 B2 C3 D4 E5 F6");
       tokenizer.setEnableChecks(consumeAll);
-      //note with '3', this test would fail if erroneously the filter used endOffset instead
+      // note with '3', this test would fail if erroneously the filter used endOffset instead
       TokenStream stream = new LimitTokenOffsetFilter(tokenizer, 3, consumeAll);
-      assertTokenStreamContents(stream, new String[]{"A1", "B2"});
+      assertTokenStreamContents(stream, new String[] {"A1", "B2"});
     }
   }
 
