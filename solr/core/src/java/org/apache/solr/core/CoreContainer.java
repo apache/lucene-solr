@@ -204,6 +204,8 @@ public class CoreContainer {
   private volatile ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
+  private final ExecutorService collectorExecutor;
+
   private final OrderedExecutor replayUpdatesExecutor;
 
   @SuppressWarnings({"rawtypes"})
@@ -351,7 +353,9 @@ public class CoreContainer {
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getReplayUpdatesThreads(),
             new SolrNamedThreadFactory("replayUpdatesExecutor")));
-
+    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(cfg.getCollectorsPoolSize(),
+            new SolrNamedThreadFactory("searcherCollector"));
+        
     this.allowPaths = new java.util.HashSet<>();
     this.allowPaths.add(cfg.getSolrHome());
     this.allowPaths.add(cfg.getCoreRootDirectory());
@@ -566,6 +570,7 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
+    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("searcherCollectorExecutor"));
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1016,6 +1021,7 @@ public class CoreContainer {
       log.info("Shutting down CoreContainer instance={}", System.identityHashCode(this));
     }
 
+    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -2254,6 +2260,10 @@ public class CoreContainer {
    */
   public void runAsync(Runnable r) {
     coreContainerAsyncTaskExecutor.submit(r);
+  }
+  
+  public ExecutorService getCollectorExecutor() {
+    return collectorExecutor;
   }
 }
 
