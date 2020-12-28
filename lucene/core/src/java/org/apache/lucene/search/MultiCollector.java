@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -113,6 +114,11 @@ public class MultiCollector implements Collector {
       }
     }
     return scoreMode;
+  }
+
+  // nocommit: need to raise a LUCENE jira for this?
+  public List<Collector> getCollectors() {
+    return Collections.unmodifiableList(Arrays.asList(collectors));
   }
 
   @Override

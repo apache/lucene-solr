@@ -77,7 +77,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         if (live == null) {
           live = searcher.getLiveDocSet();
         }
-        assertTrue( set == live);
+        assertTrue( set.equals(live) );
 
         QueryCommand cmd = new QueryCommand();
         cmd.setQuery( QParser.getParser(qstr, null, req).getQuery() );
@@ -86,19 +86,36 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        assertTrue( equals(live, set) );
 
         cmd.setQuery( QParser.getParser(qstr + " OR id:0", null, req).getQuery() );
         cmd.setFilterList( QParser.getParser(qstr + " OR id:1", null, req).getQuery() );
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue( set == live );
+        assertTrue( equals(live, set) );
       }
 
     } finally {
       req.close();
     }
+  }
+
+  boolean equals(DocSet ds1, DocSet ds2) {
+    DocSet smaller = ds1.getFixedBitSet().length() < ds2.getFixedBitSet().length() ? ds1: ds2;
+    DocSet larger = ds1.getFixedBitSet().length() > ds2.getFixedBitSet().length() ? ds1: ds2;
+    for (int i=0; i<Math.max(smaller.getFixedBitSet().length(), larger.getFixedBitSet().length()); i++) {
+      if (i>=smaller.getFixedBitSet().length()) {
+        if (larger.getFixedBitSet().get(i) == true) {
+          return false;
+        }
+      } else {
+        if (larger.getFixedBitSet().get(i) != smaller.getFixedBitSet().get(i)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
     public void testCaching() throws Exception {
