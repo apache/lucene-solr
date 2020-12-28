@@ -63,6 +63,7 @@ allprojects { prj ->
                 "**/tartarus/**"
             break
 
+          case ":lucene:demo":
           case ":lucene:analysis:morfologik":
             target "src/**/*.java"
             targetExclude "**/resources/**"
@@ -82,7 +83,6 @@ allprojects { prj ->
           case ":lucene:benchmark":
           case ":lucene:classification":
           case ":lucene:codecs":
-          case ":lucene:demo":
           case ":lucene:expressions":
           case ":lucene:facet":
           case ":lucene:grouping":
