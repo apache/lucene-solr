@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new TurkishAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new TurkishAnalyzer();
@@ -40,10 +37,10 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "dolayı", new String[] {});
     // apostrophes
     checkOneTerm(a, "Kıbrıs'ta", "kıbrıs");
-    assertAnalyzesTo(a, "Van Gölü'ne", new String[]{"van", "göl"});
+    assertAnalyzesTo(a, "Van Gölü'ne", new String[] {"van", "göl"});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
     CharArraySet exclusionSet = new CharArraySet(asSet("ağacı"), false);
@@ -52,7 +49,7 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "ağaç", "ağaç");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new TurkishAnalyzer();

@@ -203,7 +203,9 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
           && (type == null ? other.type == null : type.equals(other.type))
           && termFrequency == other.termFrequency
           && super.equals(obj));
-    } else return false;
+    } else {
+      return false;
+    }
   }
 
   @Override

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.in;
 
-
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -27,13 +25,9 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test IndicNormalizer
- */
+/** Test IndicNormalizer */
 public class TestIndicNormalizer extends BaseTokenStreamTestCase {
-  /**
-   * Test some basic normalization
-   */
+  /** Test some basic normalization */
   public void testBasics() throws IOException {
     check("अाॅअाॅ", "ऑऑ");
     check("अाॆअाॆ", "ऒऒ");
@@ -44,22 +38,24 @@ public class TestIndicNormalizer extends BaseTokenStreamTestCase {
     // khanda-ta
     check("ত্‍", "ৎ");
   }
-  
+
   private void check(String input, String output) throws IOException {
-    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);;
+    Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+    ;
     tokenizer.setReader(new StringReader(input));
     TokenFilter tf = new IndicNormalizationFilter(tokenizer);
-    assertTokenStreamContents(tf, new String[] { output });
+    assertTokenStreamContents(tf, new String[] {output});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new IndicNormalizationFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new IndicNormalizationFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

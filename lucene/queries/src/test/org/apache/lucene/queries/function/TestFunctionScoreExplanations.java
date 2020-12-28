@@ -18,7 +18,6 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BaseExplanationTestCase;
 import org.apache.lucene.search.BooleanClause;
@@ -38,13 +37,13 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
   public void testOneTerm() throws Exception {
     Query q = new TermQuery(new Term(FIELD, "w1"));
     FunctionScoreQuery fsq = new FunctionScoreQuery(q, DoubleValuesSource.constant(5));
-    qtest(fsq, new int[] { 0,1,2,3 });
+    qtest(fsq, new int[] {0, 1, 2, 3});
   }
 
   public void testBoost() throws Exception {
     Query q = new TermQuery(new Term(FIELD, "w1"));
     FunctionScoreQuery csq = new FunctionScoreQuery(q, DoubleValuesSource.constant(5));
-    qtest(new BoostQuery(csq, 4), new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(csq, 4), new int[] {0, 1, 2, 3});
   }
 
   public void testTopLevelBoost() throws Exception {
@@ -54,7 +53,7 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     bqB.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
     bqB.add(csq, BooleanClause.Occur.MUST);
     BooleanQuery bq = bqB.build();
-    qtest(new BoostQuery(bq, 6), new int[] { 0,1,2,3 });
+    qtest(new BoostQuery(bq, 6), new int[] {0, 1, 2, 3});
   }
 
   public void testExplanationsIncludingScore() throws Exception {
@@ -62,14 +61,13 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     Query q = new TermQuery(new Term(FIELD, "w1"));
     FunctionScoreQuery fsq = new FunctionScoreQuery(q, DoubleValuesSource.SCORES);
 
-    qtest(fsq, new int[] { 0, 1, 2, 3 });
+    qtest(fsq, new int[] {0, 1, 2, 3});
 
     Explanation e1 = searcher.explain(q, 0);
     Explanation e = searcher.explain(fsq, 0);
 
     assertEquals(e.getValue(), e1.getValue());
     assertEquals(e.getDetails()[0], e1);
-
   }
 
   public void testSubExplanations() throws IOException {
@@ -100,5 +98,4 @@ public class TestFunctionScoreExplanations extends BaseExplanationTestCase {
     assertEquals("boost", expl.getDetails()[0].getDescription());
     assertEquals(2f, expl.getDetails()[0].getValue().doubleValue(), 0f);
   }
-
 }

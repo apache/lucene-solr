@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -23,20 +26,16 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Scales values to be between min and max.
- * <p>This implementation currently traverses all of the source values to obtain
- * their min and max.
- * <p>This implementation currently cannot distinguish when documents have been
- * deleted or documents that have no value, and 0.0 values will be used for
- * these cases.  This means that if values are normally all greater than 0.0, one can
- * still end up with 0.0 as the min value to map from.  In these cases, an
- * appropriate map() function could be used as a workaround to change 0.0
- * to a value in the real range.
+ *
+ * <p>This implementation currently traverses all of the source values to obtain their min and max.
+ *
+ * <p>This implementation currently cannot distinguish when documents have been deleted or documents
+ * that have no value, and 0.0 values will be used for these cases. This means that if values are
+ * normally all greater than 0.0, one can still end up with 0.0 as the min value to map from. In
+ * these cases, an appropriate map() function could be used as a workaround to change 0.0 to a value
+ * in the real range.
  */
 public class ScaleFloatFunction extends ValueSource {
   protected final ValueSource source;
@@ -59,7 +58,8 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal;
   }
 
-  private ScaleInfo createScaleInfo(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  private ScaleInfo createScaleInfo(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 
     float minVal = Float.POSITIVE_INFINITY;
@@ -67,13 +67,13 @@ public class ScaleFloatFunction extends ValueSource {
 
     for (LeafReaderContext leaf : leaves) {
       int maxDoc = leaf.reader().maxDoc();
-      FunctionValues vals =  source.getValues(context, leaf);
-      for (int i=0; i<maxDoc; i++) {
-        if ( ! vals.exists(i) ) {
+      FunctionValues vals = source.getValues(context, leaf);
+      for (int i = 0; i < maxDoc; i++) {
+        if (!vals.exists(i)) {
           continue;
         }
         float val = vals.floatVal(i);
-        if ((Float.floatToRawIntBits(val) & (0xff<<23)) == 0xff<<23) {
+        if ((Float.floatToRawIntBits(val) & (0xff << 23)) == 0xff << 23) {
           // if the exponent in the float is all ones, then this is +Inf, -Inf or NaN
           // which don't make sense to factor into the scale function
           continue;
@@ -88,7 +88,7 @@ public class ScaleFloatFunction extends ValueSource {
     }
 
     if (minVal == Float.POSITIVE_INFINITY) {
-    // must have been an empty index
+      // must have been an empty index
       minVal = maxVal = 0;
     }
 
@@ -100,34 +100,47 @@ public class ScaleFloatFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
 
-    ScaleInfo scaleInfo = (ScaleInfo)context.get(ScaleFloatFunction.this);
+    ScaleInfo scaleInfo = (ScaleInfo) context.get(ScaleFloatFunction.this);
     if (scaleInfo == null) {
       scaleInfo = createScaleInfo(context, readerContext);
     }
 
-    final float scale = (scaleInfo.maxVal-scaleInfo.minVal==0) ? 0 : (max-min)/(scaleInfo.maxVal-scaleInfo.minVal);
+    final float scale =
+        (scaleInfo.maxVal - scaleInfo.minVal == 0)
+            ? 0
+            : (max - min) / (scaleInfo.maxVal - scaleInfo.minVal);
     final float minSource = scaleInfo.minVal;
     final float maxSource = scaleInfo.maxVal;
 
-    final FunctionValues vals =  source.getValues(context, readerContext);
+    final FunctionValues vals = source.getValues(context, readerContext);
 
     return new FloatDocValues(this) {
       @Override
       public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
+
       @Override
       public float floatVal(int doc) throws IOException {
         return (vals.floatVal(doc) - minSource) * scale + min;
       }
+
       @Override
       public String toString(int doc) throws IOException {
-        return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
-                + ",fromMin=" + minSource
-                + ",fromMax=" + maxSource
-                + ")";
+        return "scale("
+            + vals.toString(doc)
+            + ",toMin="
+            + min
+            + ",toMax="
+            + max
+            + ",fromMin="
+            + minSource
+            + ",fromMax="
+            + maxSource
+            + ")";
       }
     };
   }
@@ -140,9 +153,9 @@ public class ScaleFloatFunction extends ValueSource {
   @Override
   public int hashCode() {
     int h = Float.floatToIntBits(min);
-    h = h*29;
+    h = h * 29;
     h += Float.floatToIntBits(max);
-    h = h*29;
+    h = h * 29;
     h += source.hashCode();
     return h;
   }
@@ -150,9 +163,7 @@ public class ScaleFloatFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (ScaleFloatFunction.class != o.getClass()) return false;
-    ScaleFloatFunction other = (ScaleFloatFunction)o;
-    return this.min == other.min
-         && this.max == other.max
-         && this.source.equals(other.source);
+    ScaleFloatFunction other = (ScaleFloatFunction) o;
+    return this.min == other.min && this.max == other.max && this.source.equals(other.source);
   }
 }

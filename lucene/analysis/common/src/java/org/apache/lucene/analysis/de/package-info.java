@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for German.
- */
+/** Analyzer for German. */
 package org.apache.lucene.analysis.de;

@@ -21,7 +21,6 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
@@ -30,9 +29,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
- * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg
- * in custom QueryParser extensions. At query.rewrite() time the reader is used to construct the
- * actual MoreLikeThis object and obtain the real Query object.
+ * A simple wrapper for MoreLikeThis for use in scenarios where a Query object is required eg in
+ * custom QueryParser extensions. At query.rewrite() time the reader is used to construct the actual
+ * MoreLikeThis object and obtain the real Query object.
  */
 public class MoreLikeThisQuery extends Query {
 
@@ -46,10 +45,9 @@ public class MoreLikeThisQuery extends Query {
   private Set<?> stopWords = null;
   private int minDocFreq = -1;
 
-  /**
-   * @param moreLikeFields fields used for similarity measure
-   */
-  public MoreLikeThisQuery(String likeText, String[] moreLikeFields, Analyzer analyzer, String fieldName) {
+  /** @param moreLikeFields fields used for similarity measure */
+  public MoreLikeThisQuery(
+      String likeText, String[] moreLikeFields, Analyzer analyzer, String fieldName) {
     this.likeText = Objects.requireNonNull(likeText);
     this.moreLikeFields = Objects.requireNonNull(moreLikeFields);
     this.analyzer = Objects.requireNonNull(analyzer);
@@ -73,14 +71,14 @@ public class MoreLikeThisQuery extends Query {
     for (BooleanClause clause : bq) {
       newBq.add(clause);
     }
-    //make at least half the terms match
+    // make at least half the terms match
     newBq.setMinimumNumberShouldMatch((int) (bq.clauses().size() * percentTermsToMatch));
     return newBq.build();
   }
 
   /* (non-Javadoc)
-  * @see org.apache.lucene.search.Query#toString(java.lang.String)
-  */
+   * @see org.apache.lucene.search.Query#toString(java.lang.String)
+   */
   @Override
   public String toString(String field) {
     return "like:" + likeText;
@@ -165,20 +163,20 @@ public class MoreLikeThisQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(MoreLikeThisQuery other) {
-    return maxQueryTerms == other.maxQueryTerms &&
-           minDocFreq == other.minDocFreq &&
-           minTermFrequency == other.minTermFrequency &&
-           Float.floatToIntBits(percentTermsToMatch) == Float.floatToIntBits(other.percentTermsToMatch) &&
-           analyzer.equals(other.analyzer) &&
-           fieldName.equals(other.fieldName) &&
-           likeText.equals(other.likeText) &&
-           Arrays.equals(moreLikeFields, other.moreLikeFields) &&
-           Objects.equals(stopWords, other.stopWords);
+    return maxQueryTerms == other.maxQueryTerms
+        && minDocFreq == other.minDocFreq
+        && minTermFrequency == other.minTermFrequency
+        && Float.floatToIntBits(percentTermsToMatch)
+            == Float.floatToIntBits(other.percentTermsToMatch)
+        && analyzer.equals(other.analyzer)
+        && fieldName.equals(other.fieldName)
+        && likeText.equals(other.likeText)
+        && Arrays.equals(moreLikeFields, other.moreLikeFields)
+        && Objects.equals(stopWords, other.stopWords);
   }
 
   @Override

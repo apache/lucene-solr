@@ -16,19 +16,17 @@
  */
 
 /**
- *  Fast, general-purpose URLs and email addresses tokenizers.
- *  <ul>
- *      <li>{@link org.apache.lucene.analysis.email.UAX29URLEmailTokenizer UAX29URLEmailTokenizer}:
- *          implements the Word Break rules from the Unicode Text Segmentation
- *          algorithm, as specified in
- *          <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>, except
- *          URLs and email addresses are also tokenized according to the relevant RFCs.
- *          <br>
- *          {@link org.apache.lucene.analysis.email.UAX29URLEmailAnalyzer UAX29URLEmailAnalyzer} includes
- *          {@link org.apache.lucene.analysis.email.UAX29URLEmailTokenizer UAX29URLEmailTokenizer},
- *          {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
- *          and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
- *      </li>
- *  </ul>
- * */
+ * Fast, general-purpose URLs and email addresses tokenizers.
+ *
+ * <ul>
+ *   <li>{@link org.apache.lucene.analysis.email.UAX29URLEmailTokenizer UAX29URLEmailTokenizer}:
+ *       implements the Word Break rules from the Unicode Text Segmentation algorithm, as specified
+ *       in <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a>, except URLs
+ *       and email addresses are also tokenized according to the relevant RFCs. <br>
+ *       {@link org.apache.lucene.analysis.email.UAX29URLEmailAnalyzer UAX29URLEmailAnalyzer}
+ *       includes {@link org.apache.lucene.analysis.email.UAX29URLEmailTokenizer
+ *       UAX29URLEmailTokenizer}, {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
+ *       and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
+ * </ul>
+ */
 package org.apache.lucene.analysis.email;

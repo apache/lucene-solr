@@ -41,9 +41,8 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
     List<IntervalsSource> flattened = new ArrayList<>();
     for (IntervalsSource s : sources) {
       if (s instanceof OrderedIntervalsSource) {
-        flattened.addAll(((OrderedIntervalsSource)s).subSources);
-      }
-      else {
+        flattened.addAll(((OrderedIntervalsSource) s).subSources);
+      } else {
         flattened.add(s);
       }
     }
@@ -56,8 +55,7 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
     for (IntervalsSource source : sources) {
       if (current.size() == 0 || current.get(0).equals(source)) {
         current.add(source);
-      }
-      else {
+      } else {
         deduplicated.add(RepeatingIntervalsSource.build(current.get(0), current.size()));
         current.clear();
         current.add(source);
@@ -65,7 +63,7 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
     }
     deduplicated.add(RepeatingIntervalsSource.build(current.get(0), current.size()));
     if (deduplicated.size() == 1 && deduplicated.get(0) instanceof RepeatingIntervalsSource) {
-      ((RepeatingIntervalsSource)deduplicated.get(0)).setName("ORDERED");
+      ((RepeatingIntervalsSource) deduplicated.get(0)).setName("ORDERED");
     }
     return deduplicated;
   }
@@ -107,7 +105,9 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public String toString() {
-    return "ORDERED(" + subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(",")) + ")";
+    return "ORDERED("
+        + subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(","))
+        + ")";
   }
 
   private static class OrderedIntervalIterator extends ConjunctionIntervalIterator {
@@ -137,15 +137,19 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
       i = 1;
       while (true) {
         while (true) {
-          if (subIterators.get(i - 1).end() >= lastStart)
+          if (subIterators.get(i - 1).end() >= lastStart) {
             return start;
-          if (i == subIterators.size() || (minimizing && subIterators.get(i).start() > subIterators.get(i - 1).end()))
-            break;
-          do {
-            if (subIterators.get(i).end() >= lastStart || subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
-              return start;
           }
-          while (subIterators.get(i).start() <= subIterators.get(i - 1).end());
+          if (i == subIterators.size()
+              || (minimizing && subIterators.get(i).start() > subIterators.get(i - 1).end())) {
+            break;
+          }
+          do {
+            if (subIterators.get(i).end() >= lastStart
+                || subIterators.get(i).nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
+              return start;
+            }
+          } while (subIterators.get(i).start() <= subIterators.get(i - 1).end());
           i++;
         }
         start = subIterators.get(0).start();
@@ -159,8 +163,9 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
         }
         lastStart = subIterators.get(subIterators.size() - 1).start();
         i = 1;
-        if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
+        if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
           return start;
+        }
         minimizing = true;
       }
     }
@@ -177,5 +182,4 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
       start = end = slop = -1;
     }
   }
-
 }

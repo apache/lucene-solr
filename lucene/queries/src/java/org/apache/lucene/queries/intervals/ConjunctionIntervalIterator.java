@@ -19,7 +19,6 @@ package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 abstract class ConjunctionIntervalIterator extends IntervalIterator {
@@ -72,5 +71,4 @@ abstract class ConjunctionIntervalIterator extends IntervalIterator {
   public final float matchCost() {
     return cost;
   }
-
 }

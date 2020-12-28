@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestIgnore extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("ignore.aff", "ignore.dic");
   }
-  
+
   public void testExamples() {
     assertStemsTo("drink", "drink");
     assertStemsTo("drinkable", "drink");

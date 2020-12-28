@@ -16,14 +16,18 @@
  */
 package org.apache.lucene.queries.payloads;
 
-/**
- * Calculates the minimum payload seen
- *
- **/
+/** Calculates the minimum payload seen */
 public class MinPayloadFunction extends PayloadFunction {
 
   @Override
-  public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
+  public float currentScore(
+      int docId,
+      String field,
+      int start,
+      int end,
+      int numPayloadsSeen,
+      float currentScore,
+      float currentPayloadScore) {
     if (numPayloadsSeen == 0) {
       return currentPayloadScore;
     } else {
@@ -35,7 +39,7 @@ public class MinPayloadFunction extends PayloadFunction {
   public float docScore(int docId, String field, int numPayloadsSeen, float payloadScore) {
     return numPayloadsSeen > 0 ? payloadScore : 1;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -46,13 +50,15 @@ public class MinPayloadFunction extends PayloadFunction {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     return true;
   }
-
 }

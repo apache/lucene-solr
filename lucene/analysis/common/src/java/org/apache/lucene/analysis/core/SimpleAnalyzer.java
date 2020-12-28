@@ -16,25 +16,21 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-/** An {@link Analyzer} that filters {@link LetterTokenizer} 
- *  with {@link LowerCaseFilter} 
+/**
+ * An {@link Analyzer} that filters {@link LetterTokenizer} with {@link LowerCaseFilter}
  *
  * @since 3.1
- **/
+ */
 public final class SimpleAnalyzer extends Analyzer {
 
-  /**
-   * Creates a new {@link SimpleAnalyzer}
-   */
-  public SimpleAnalyzer() {
-  }
-  
+  /** Creates a new {@link SimpleAnalyzer} */
+  public SimpleAnalyzer() {}
+
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
     Tokenizer tokenizer = new LetterTokenizer();

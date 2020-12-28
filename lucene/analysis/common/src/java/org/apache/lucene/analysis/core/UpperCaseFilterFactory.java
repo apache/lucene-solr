@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link UpperCaseFilter}. 
+ * Factory for {@link UpperCaseFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_uppercase" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,11 +30,11 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.UpperCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * 
- * <p><b>NOTE:</b> In Unicode, this transformation may lose information when the
- * upper case character represents more than one lower case character. Use this filter
- * when you require uppercase tokens.  Use the {@link LowerCaseFilterFactory} for 
- * general search matching
+ *
+ * <p><b>NOTE:</b> In Unicode, this transformation may lose information when the upper case
+ * character represents more than one lower case character. Use this filter when you require
+ * uppercase tokens. Use the {@link LowerCaseFilterFactory} for general search matching
+ *
  * @since 4.7.0
  * @lucene.spi {@value #NAME}
  */
@@ -43,9 +42,9 @@ public class UpperCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "uppercase";
-  
+
   /** Creates a new UpperCaseFilterFactory */
-  public UpperCaseFilterFactory(Map<String,String> args) {
+  public UpperCaseFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

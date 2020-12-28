@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
@@ -32,14 +31,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
- * Generates an iterator that spans repeating instances of a sub-iterator,
- * avoiding minimization.  This is useful for repeated terms within an
- * unordered interval, for example, ensuring that multiple iterators do
- * not match on a single term.
+ * Generates an iterator that spans repeating instances of a sub-iterator, avoiding minimization.
+ * This is useful for repeated terms within an unordered interval, for example, ensuring that
+ * multiple iterators do not match on a single term.
  *
- * The generated iterators have a specialized {@link IntervalIterator#width()}
- * implementation that sums up the widths of the individual sub-iterators,
- * rather than just returning the full span of the iterator.
+ * <p>The generated iterators have a specialized {@link IntervalIterator#width()} implementation
+ * that sums up the widths of the individual sub-iterators, rather than just returning the full span
+ * of the iterator.
  */
 class RepeatingIntervalsSource extends IntervalsSource {
 
@@ -74,7 +72,8 @@ class RepeatingIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     List<IntervalMatchesIterator> subs = new ArrayList<>();
     for (int i = 0; i < childCount; i++) {
       IntervalMatchesIterator mi = in.matches(field, ctx, doc);
@@ -148,7 +147,9 @@ class RepeatingIntervalsSource extends IntervalsSource {
 
     @Override
     public int end() {
-      return exhausted ? NO_MORE_INTERVALS : cache[(((cacheBase + cacheLength - 1) % cacheLength) * 2) + 1];
+      return exhausted
+          ? NO_MORE_INTERVALS
+          : cache[(((cacheBase + cacheLength - 1) % cacheLength) * 2) + 1];
     }
 
     @Override
@@ -180,8 +181,7 @@ class RepeatingIntervalsSource extends IntervalsSource {
         cacheBase = 0;
         started = true;
         return start();
-      }
-      else {
+      } else {
         int insert = (cacheBase + cacheLength) % cacheLength;
         cacheBase = (cacheBase + 1) % cacheLength;
         return cacheNextInterval(insert);

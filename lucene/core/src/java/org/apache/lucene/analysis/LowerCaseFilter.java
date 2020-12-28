@@ -37,6 +37,8 @@ public class LowerCaseFilter extends TokenFilter {
     if (input.incrementToken()) {
       CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
       return true;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 }

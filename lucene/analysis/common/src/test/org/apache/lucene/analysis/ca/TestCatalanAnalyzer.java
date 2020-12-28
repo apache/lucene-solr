@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.ca;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new CatalanAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new CatalanAnalyzer();
@@ -37,18 +34,20 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "llengües", "llengu");
     checkOneTerm(a, "llengua", "llengu");
     // stopword
-    assertAnalyzesTo(a, "un", new String[] { });
+    assertAnalyzesTo(a, "un", new String[] {});
     a.close();
   }
-  
+
   /** test use of elisionfilter */
   public void testContractions() throws IOException {
     Analyzer a = new CatalanAnalyzer();
-    assertAnalyzesTo(a, "Diccionari de l'Institut d'Estudis Catalans",
-        new String[] { "diccion", "inst", "estud", "catalan" });
+    assertAnalyzesTo(
+        a,
+        "Diccionari de l'Institut d'Estudis Catalans",
+        new String[] {"diccion", "inst", "estud", "catalan"});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
     CharArraySet exclusionSet = new CharArraySet(asSet("llengües"), false);
@@ -57,7 +56,7 @@ public class TestCatalanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "llengua", "llengu");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     CatalanAnalyzer a = new CatalanAnalyzer();

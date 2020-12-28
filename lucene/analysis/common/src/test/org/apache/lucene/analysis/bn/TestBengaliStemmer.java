@@ -16,23 +16,17 @@
  */
 package org.apache.lucene.analysis.bn;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-import java.io.IOException;
-
-/**
- * Test Codes for BengaliStemmer
- */
+/** Test Codes for BengaliStemmer */
 public class TestBengaliStemmer extends BaseTokenStreamTestCase {
 
-  /**
-   * Testing few verbal words
-   */
+  /** Testing few verbal words */
   public void testVerbsInShadhuForm() throws IOException {
     check("করেছিলাম", "কর");
     check("করিতেছিলে", "কর");
@@ -62,17 +56,18 @@ public class TestBengaliStemmer extends BaseTokenStreamTestCase {
   private void check(String input, String output) throws IOException {
     Tokenizer tokenizer = whitespaceMockTokenizer(input);
     TokenFilter tf = new BengaliStemFilter(tokenizer);
-    assertTokenStreamContents(tf, new String[] { output });
+    assertTokenStreamContents(tf, new String[] {output});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new BengaliStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new BengaliStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

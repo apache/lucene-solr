@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link PatternCaptureGroupTokenFilter}. 
+ * Factory for {@link PatternCaptureGroupTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ptncapturegroup" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -44,13 +43,16 @@ public class PatternCaptureGroupFilterFactory extends TokenFilterFactory {
 
   private Pattern pattern;
   private boolean preserveOriginal = true;
-  
-  public  PatternCaptureGroupFilterFactory(Map<String,String> args) {
+
+  public PatternCaptureGroupFilterFactory(Map<String, String> args) {
     super(args);
     pattern = getPattern(args, "pattern");
-    preserveOriginal = args.containsKey("preserve_original") ? Boolean.parseBoolean(args.get("preserve_original")) : true;
+    preserveOriginal =
+        args.containsKey("preserve_original")
+            ? Boolean.parseBoolean(args.get("preserve_original"))
+            : true;
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public PatternCaptureGroupFilterFactory() {
     throw defaultCtorException();

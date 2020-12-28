@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Swedish.
- */
+/** Analyzer for Swedish. */
 package org.apache.lucene.analysis.sv;

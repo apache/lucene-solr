@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,22 +38,22 @@ public abstract class LongDocValues extends FunctionValues {
 
   @Override
   public byte byteVal(int doc) throws IOException {
-    return (byte)longVal(doc);
+    return (byte) longVal(doc);
   }
 
   @Override
   public short shortVal(int doc) throws IOException {
-    return (short)longVal(doc);
+    return (short) longVal(doc);
   }
 
   @Override
   public float floatVal(int doc) throws IOException {
-    return (float)longVal(doc);
+    return (float) longVal(doc);
   }
 
   @Override
   public int intVal(int doc) throws IOException {
-    return (int)longVal(doc);
+    return (int) longVal(doc);
   }
 
   @Override
@@ -62,7 +61,7 @@ public abstract class LongDocValues extends FunctionValues {
 
   @Override
   public double doubleVal(int doc) throws IOException {
-    return (double)longVal(doc);
+    return (double) longVal(doc);
   }
 
   @Override
@@ -84,25 +83,31 @@ public abstract class LongDocValues extends FunctionValues {
   public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
-  
+
   protected long externalToLong(String extVal) {
     return Long.parseLong(extVal);
   }
-  
+
   @Override
-  public ValueSourceScorer getRangeScorer(Weight weight,  LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-    long lower,upper;
+  public ValueSourceScorer getRangeScorer(
+      Weight weight,
+      LeafReaderContext readerContext,
+      String lowerVal,
+      String upperVal,
+      boolean includeLower,
+      boolean includeUpper) {
+    long lower, upper;
 
     // instead of using separate comparison functions, adjust the endpoints.
 
-    if (lowerVal==null) {
+    if (lowerVal == null) {
       lower = Long.MIN_VALUE;
     } else {
       lower = externalToLong(lowerVal);
       if (!includeLower && lower < Long.MAX_VALUE) lower++;
     }
 
-     if (upperVal==null) {
+    if (upperVal == null) {
       upper = Long.MAX_VALUE;
     } else {
       upper = externalToLong(upperVal);
