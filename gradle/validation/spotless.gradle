@@ -29,8 +29,8 @@ allprojects { prj ->
       java {
         // TODO: work out how to have multiple different header files (we have
         // classes in the codebase that have original headers).
-
         // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
@@ -55,15 +55,15 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
-        // Partially complete.
-
           case ":lucene:analysis:common":
             target "src/**/*.java"
             targetExclude "**/resources/**",
-                          "**/HTMLStripCharFilter.java",
-                          "**/UAX29URLEmailTokenizerImpl.java",
-                          "**/tartarus/**"
+                "**/HTMLStripCharFilter.java",
+                "**/UAX29URLEmailTokenizerImpl.java",
+                "**/tartarus/**"
             break
+
+          // Partially complete.
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:analysis:icu":
