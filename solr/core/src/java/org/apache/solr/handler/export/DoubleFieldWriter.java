@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.solr.common.MapWriter;
 
@@ -33,7 +33,7 @@ class DoubleFieldWriter extends FieldWriter {
     this.field = field;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
@@ -45,7 +45,7 @@ class DoubleFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      int readerOrd = sortDoc.ord;
+      int readerOrd = readerContext.ord;
       NumericDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         NumericDocValues numericDocValues = docValuesCache.get(readerOrd);
@@ -56,7 +56,7 @@ class DoubleFieldWriter extends FieldWriter {
       }
 
       if(vals == null) {
-        vals = DocValues.getNumeric(reader, this.field);
+        vals = DocValues.getNumeric(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
       if (vals.advance(sortDoc.docId) == sortDoc.docId) {

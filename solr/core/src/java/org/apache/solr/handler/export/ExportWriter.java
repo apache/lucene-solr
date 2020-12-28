@@ -17,8 +17,6 @@
 
 package org.apache.solr.handler.export;
 
-
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.TreeSet;
 
-import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -77,12 +74,12 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
+import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import java.util.LinkedList;
 import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
@@ -118,13 +115,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
-  final Timer transferBatchToBufferTimer;
-  final Timer getMergeIteratorTimer;
-  final Timer writeOutputBufferTimer;
-  final Timer writerWaitTimer;
-  final Timer fillerWaitTimer;
-  final Timer topDocsTimer;
-  final Timer totalTimer;
+
 
 
   public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt,
@@ -139,13 +130,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     // may be too tricky to get this right? always use default for now
     //this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
     this.batchSize = DEFAULT_BATCH_SIZE;
-    getMergeIteratorTimer = solrMetricsContext.timer("createMergeIterator", metricsPath);
-    transferBatchToBufferTimer = solrMetricsContext.timer("transferBatchToBuffer", metricsPath);
-    writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
-    writerWaitTimer = solrMetricsContext.timer("writerWait", metricsPath);
-    fillerWaitTimer = solrMetricsContext.timer("fillerWait", metricsPath);
-    topDocsTimer = solrMetricsContext.timer("segTopDocs", metricsPath);
-    totalTimer = solrMetricsContext.timer("totalTime", metricsPath);
   }
 
   @Override
@@ -188,11 +172,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public void write(OutputStream os) throws IOException {
-    Timer.Context timerContext = totalTimer.time();
     try {
       _write(os);
     } finally {
-      timerContext.stop();
+
     }
   }
 
@@ -333,7 +316,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   private void transferBatchToBufferForOutput(MergeIterator mergeIterator,
                                               ExportBuffers.Buffer destination) throws IOException {
-    Timer.Context timerContext = transferBatchToBufferTimer.time();
     try {
       int outDocsIndex = -1;
       for (int i = 0; i < batchSize; i++) {
@@ -352,7 +334,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       throw t;
     } finally {
-      timerContext.stop();
+
     }
   }
 
@@ -361,8 +343,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     final int queueSize = Math.min(batchSize, totalHits);
 
 
-    ExportBuffers buffers = new ExportBuffers(this, leaves, req.getSearcher(), os, writer, sort, queueSize, totalHits,
-        writeOutputBufferTimer, fillerWaitTimer, writerWaitTimer, sets);
+    ExportBuffers buffers = new ExportBuffers(this,
+                                              leaves,
+                                              req.getSearcher(),
+                                              os,
+                                              writer,
+                                              sort,
+                                              queueSize,
+                                              totalHits,
+                                              sets);
 
 
     if (streamExpression != null) {
@@ -415,7 +404,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             log.debug("--- writer interrupted");
             break;
           }
-          Timer.Context timerContext = writeOutputBufferTimer.time();
           try {
             for (int i = 0; i <= buffer.outDocsIndex; ++i) {
               // we're using the raw writer here because there's no potential
@@ -425,14 +413,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
             }
           } finally {
-            timerContext.stop();
           }
           log.debug("--- writer exchanging from {}", buffer);
-          timerContext = writerWaitTimer.time();
           try {
+            long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
+            long endExchangeBuffers = System.nanoTime();
+            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000000)));
           } finally {
-            timerContext.stop();
           }
           buffer = buffers.getOutputBuffer();
           log.debug("--- writer got {}", buffer);
@@ -624,7 +612,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     private SegmentIterator[] segmentIterators;
     private SortDoc outDoc;
 
-    public MergeIterator(SegmentIterator[] segmentIterators, SortDoc proto) {
+    public MergeIterator(SegmentIterator[] segmentIterators, SortDoc proto) throws IOException {
       outDoc = proto.copy();
       this.segmentIterators = segmentIterators;
       for (int i = 0; i < segmentIterators.length; i++) {
@@ -633,11 +621,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           if (sortDoc != null) {
             set.add(sortDoc);
           }
-        } catch (Exception e) {
-          e.printStackTrace();
+        } catch (IOException e) {
+          log.error("Error in MergeIterator: ", e);
           throw e;
         }
-
       }
     }
 
@@ -646,7 +633,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     * Returns null when all docs are iterated.
     */
 
-    public SortDoc next() {
+    public SortDoc next() throws IOException {
       SortDoc sortDoc = set.pollLast();
       //We've exhausted all documents
       if (sortDoc == null) {
@@ -665,7 +652,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public MergeIterator getMergeIterator(List<LeafReaderContext> leaves, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
-    Timer.Context timerContext = getMergeIteratorTimer.time();
     try {
       long totalDocs = 0;
       for (int i = 0; i < leaves.size(); i++) {
@@ -682,12 +668,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
       for (int i = 0; i < segmentIterators.length; i++) {
         SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
-        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy(), topDocsTimer);
+        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
       }
 
       return new MergeIterator(segmentIterators, sortDoc);
     } finally {
-      timerContext.stop();
     }
   }
 
@@ -698,25 +683,22 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     private final SortDoc sortDoc;
     private final LeafReaderContext context;
     private final SortDoc[] outDocs;
-    private final Timer topDocsTimer;
 
     private SortDoc nextDoc;
     private int index;
 
 
-    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc,
-                           Timer topDocsTimer) throws IOException {
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
       this.bits = bits;
       this.queue = sortQueue;
       this.sortDoc = sortDoc;
       this.nextDoc = sortDoc.copy();
       this.context = context;
       this.outDocs = new SortDoc[sortQueue.maxSize];
-      this.topDocsTimer = topDocsTimer;
       topDocs();
     }
 
-    public SortDoc next() {
+    public SortDoc next() throws IOException {
       SortDoc sortDoc = null;
       if (index > -1) {
         sortDoc = outDocs[index--];
@@ -745,8 +727,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return nextDoc;
     }
 
-    private void topDocs() {
-      Timer.Context timerContext = topDocsTimer.time();
+    private void topDocs() throws IOException {
       try {
         queue.reset();
         SortDoc top = queue.top();
@@ -771,9 +752,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           }
         }
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("Segment Iterator Error:", e);
+        throw new IOException(e);
       } finally {
-        timerContext.stop();
+
       }
     }
   }

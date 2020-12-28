@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -40,7 +40,7 @@ class BoolFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
     BytesRef ref;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
@@ -51,7 +51,7 @@ class BoolFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      int readerOrd = sortDoc.ord;
+      int readerOrd = readerContext.ord;
       SortedDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
@@ -62,7 +62,7 @@ class BoolFieldWriter extends FieldWriter {
       }
 
       if(vals == null) {
-        vals = DocValues.getSorted(reader, this.field);
+        vals = DocValues.getSorted(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
 

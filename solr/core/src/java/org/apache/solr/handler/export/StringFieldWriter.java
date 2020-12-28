@@ -18,12 +18,9 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -57,7 +54,7 @@ class StringFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
     StringValue stringValue = (StringValue) sortDoc.getSortValue(this.field);
     BytesRef ref = null;
 
@@ -65,7 +62,7 @@ class StringFieldWriter extends FieldWriter {
       /*
         We already have the top level ordinal used for sorting.
         Now let's use it for caching the BytesRef so we don't have to look it up.
-        When we have long runs of repeated values do to the sort order of the docs this is huge win.
+        When we have long runs of repeated values do to the sort order of the docs this is a huge win.
        */
 
       if (this.lastOrd == stringValue.currentOrd) {
@@ -77,7 +74,7 @@ class StringFieldWriter extends FieldWriter {
 
     if (ref == null) {
       //Reuse the last DocValues object if possible
-      int readerOrd = sortDoc.ord;
+      int readerOrd = readerContext.ord;
       SortedDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
@@ -88,7 +85,7 @@ class StringFieldWriter extends FieldWriter {
       }
 
       if(vals == null) {
-        vals = DocValues.getSorted(reader, this.field);
+        vals = DocValues.getSorted(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
 
@@ -100,22 +97,6 @@ class StringFieldWriter extends FieldWriter {
       ref = vals.lookupOrd(ord);
       lastRef = ref.clone();
     }
-
-
-/*
-    if (ref == null) {
-      SortedDocValues vals = DocValues.getSorted(reader, this.field);
-      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
-        return false;
-      }
-
-      int ord = vals.ordValue();
-      ref = vals.lookupOrd(ord);
-      lastRef = ref.clone();
-    }
-
- */
-
 
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));

@@ -53,9 +53,9 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
     if (this.fieldType.isPointField()) {
-      int readerOrd = sortDoc.ord;
+      int readerOrd = readerContext.ord;
       SortedNumericDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedNumericDocValues sortedNumericDocValues = (SortedNumericDocValues) docValuesCache.get(readerOrd);
@@ -66,7 +66,7 @@ class MultiFieldWriter extends FieldWriter {
       }
 
       if(vals == null) {
-        vals = DocValues.getSortedNumeric(reader, this.field);
+        vals = DocValues.getSortedNumeric(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
 
@@ -82,7 +82,7 @@ class MultiFieldWriter extends FieldWriter {
           });
       return true;
     } else {
-      int readerOrd = sortDoc.ord;
+      int readerOrd = readerContext.ord;
       SortedSetDocValues vals = null;
       if(docValuesCache.containsKey(readerOrd)) {
         SortedSetDocValues sortedSetDocValues = (SortedSetDocValues) docValuesCache.get(readerOrd);
@@ -93,7 +93,7 @@ class MultiFieldWriter extends FieldWriter {
       }
 
       if(vals == null) {
-        vals = DocValues.getSortedSet(reader, this.field);
+        vals = DocValues.getSortedSet(readerContext.reader(), this.field);
         docValuesCache.put(readerOrd, vals);
       }
 

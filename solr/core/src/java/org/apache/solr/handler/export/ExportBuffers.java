@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.BrokenBarrierException;
 
-import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.FixedBitSet;
@@ -54,9 +53,6 @@ class ExportBuffers {
   final List<LeafReaderContext> leaves;
   final ExportWriter exportWriter;
   final OutputStream os;
-  final Timer writeOutputBufferTimer;
-  final Timer fillerWaitTimer;
-  final Timer writerWaitTimer;
   final IteratorWriter.ItemWriter rawWriter;
   final IteratorWriter.ItemWriter writer;
   final CyclicBarrier barrier;
@@ -71,7 +67,7 @@ class ExportBuffers {
 
   ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
                 OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits,
-                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer, FixedBitSet[] sets) throws IOException {
+                FixedBitSet[] sets) throws IOException {
     this.exportWriter = exportWriter;
     this.leaves = leaves;
     this.os = os;
@@ -84,9 +80,7 @@ class ExportBuffers {
         return this;
       }
     };
-    this.writeOutputBufferTimer = writeOutputBufferTimer;
-    this.fillerWaitTimer = fillerWaitTimer;
-    this.writerWaitTimer = writerWaitTimer;
+
     this.bufferOne = new Buffer(queueSize);
     this.bufferTwo = new Buffer(queueSize);
     this.totalHits = totalHits;
@@ -106,30 +100,29 @@ class ExportBuffers {
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           // log.debug("--- filler fillOutDocs in {}", fillBuffer);
-
           exportWriter.fillOutDocs(mergeIterator, buffer);
           count += (buffer.outDocsIndex + 1);
           // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
-          Timer.Context timerContext = getFillerWaitTimer().time();
           try {
+            long startBufferWait = System.nanoTime();
             exchangeBuffers();
+            long endBufferWait = System.nanoTime();
+            log.debug("Waited for write thread:"+Long.toString(((endBufferWait-startBufferWait)/1000000000)));
           } finally {
-            timerContext.stop();
+
           }
+
           buffer = getFillBuffer();
           if (outputCounter.longValue() > lastOutputCounter) {
             lastOutputCounter = outputCounter.longValue();
             flushOutput();
           }
-          // log.debug("--- filler got empty buffer {}", buffer);
         }
         buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        // log.debug("--- filler final exchange buffer from {}", buffer);
-        Timer.Context timerContext = getFillerWaitTimer().time();
         try {
           exchangeBuffers();
         } finally {
-          timerContext.stop();
+
         }
         buffer = getFillBuffer();
         // log.debug("--- filler final got buffer {}", buffer);
@@ -183,18 +176,6 @@ class ExportBuffers {
 
   public Buffer getFillBuffer() {
     return fillBuffer;
-  }
-
-  public Timer getWriteOutputBufferTimer() {
-    return writeOutputBufferTimer;
-  }
-
-  public Timer getFillerWaitTimer() {
-    return fillerWaitTimer;
-  }
-
-  public Timer getWriterWaitTimer() {
-    return writerWaitTimer;
   }
 
   // decorated writer that keeps track of number of writes
