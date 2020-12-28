@@ -58,40 +58,11 @@ allprojects { prj ->
         // Partially complete.
 
           case ":lucene:analysis:common":
-            target "src/**/org/apache/lucene/analysis/ar/**/*.java",
-                   "src/**/org/apache/lucene/analysis/b*/**/*.java",
-                   "src/**/org/apache/lucene/analysis/ca/**/*.java",
-                   "src/**/org/apache/lucene/analysis/charfilter/**/*.java",
-                   "src/**/org/apache/lucene/analysis/cjk/**/*.java",
-                   "src/**/org/apache/lucene/analysis/ckb/**/*.java",
-                   "src/**/org/apache/lucene/analysis/classic/**/*.java",
-                   "src/**/org/apache/lucene/analysis/commongrams/**/*.java",
-                   "src/**/org/apache/lucene/analysis/compound/**/*.java",
-                   "src/**/org/apache/lucene/analysis/core/**/*.java",
-                "src/**/org/apache/lucene/analysis/custom/**/*.java",
-                "src/**/org/apache/lucene/analysis/cz/**/*.java",
-                "src/**/org/apache/lucene/analysis/da/**/*.java",
-                "src/**/org/apache/lucene/analysis/de/**/*.java",
-                "src/**/org/apache/lucene/analysis/el/**/*.java",
-                "src/**/org/apache/lucene/analysis/email/*.java",
-                "src/**/org/apache/lucene/analysis/e*/*.java",
-                "src/**/org/apache/lucene/analysis/f*/*.java",
-                "src/**/org/apache/lucene/analysis/g*/*.java",
-                "src/**/org/apache/lucene/analysis/h*/*.java",
-                "src/**/org/apache/lucene/analysis/i*/*.java",
-                "src/**/org/apache/lucene/analysis/l*/*.java",
-                "src/**/org/apache/lucene/analysis/m*/*.java",
-                "src/**/org/apache/lucene/analysis/n*/*.java",
-                "src/**/org/apache/lucene/analysis/p*/*.java",
-                "src/**/org/apache/lucene/analysis/q*/*.java",
-                "src/**/org/apache/lucene/analysis/r*/*.java",
-                "src/**/org/apache/lucene/analysis/s*/*.java",
-                "src/**/org/apache/lucene/analysis/t*/*.java",
-                "src/**/org/apache/lucene/analysis/u*/*.java"
-                   "src/**/org/apache/lucene/collation/**"
+            target "src/**/*.java"
             targetExclude "**/resources/**",
                           "**/HTMLStripCharFilter.java",
-                          "**/UAX29URLEmailTokenizerImpl.java"
+                          "**/UAX29URLEmailTokenizerImpl.java",
+                          "**/tartarus/**"
             break
 
           // All others - disable reformatting/ checks for now.
