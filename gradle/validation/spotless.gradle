@@ -63,12 +63,16 @@ allprojects { prj ->
                 "**/tartarus/**"
             break
 
+          case ":lucene:analysis:morfologik":
+            target "src/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
           // Partially complete.
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
-          case ":lucene:analysis:morfologik":
           case ":lucene:analysis:nori":
           case ":lucene:analysis:opennlp":
           case ":lucene:analysis:phonetic":
