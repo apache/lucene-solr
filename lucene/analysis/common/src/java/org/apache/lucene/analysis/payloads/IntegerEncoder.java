@@ -29,9 +29,7 @@ public class IntegerEncoder extends AbstractEncoder implements PayloadEncoder {
   @Override
   public BytesRef encode(char[] buffer, int offset, int length) {
     // TODO: improve this so that we don't have to new Strings
-    int payload =
-        ArrayUtil.parseInt(
-            buffer, offset, length);
+    int payload = ArrayUtil.parseInt(buffer, offset, length);
     byte[] bytes = PayloadHelper.encodeInt(payload);
     BytesRef result = new BytesRef(bytes);
     return result;

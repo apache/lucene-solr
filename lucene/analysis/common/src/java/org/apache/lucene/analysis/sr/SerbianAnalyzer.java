@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.sr;
 
+import java.io.IOException;
+import java.io.Reader;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.tartarus.snowball.ext.SerbianStemmer;
-
-import java.io.IOException;
-import java.io.Reader;
 
 /**
  * {@link Analyzer} for Serbian.
@@ -34,16 +33,14 @@ public class SerbianAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
 
   /** File containing default Serbian stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  public static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
 
-  /**
-   * The comment character in the stopwords file.
-   * All lines prefixed with this will be ignored.
-   */
+  /** The comment character in the stopwords file. All lines prefixed with this will be ignored. */
   private static final String STOPWORDS_COMMENT = "#";
 
   /**
    * Returns an unmodifiable instance of the default stop words set.
+   *
    * @return default stop words set.
    */
   public static CharArraySet getDefaultStopSet() {
@@ -51,16 +48,16 @@ public class SerbianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class
-   * accesses the static final set the first time.;
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class accesses the
+   * static final set the first time.;
    */
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, SerbianAnalyzer.class,
-                                           DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+        DEFAULT_STOP_SET =
+            loadStopwordSet(false, SerbianAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -69,9 +66,7 @@ public class SerbianAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
-   */
+  /** Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}. */
   public SerbianAnalyzer() {
     this(SerbianAnalyzer.DefaultSetHolder.DEFAULT_STOP_SET);
   }
@@ -86,9 +81,8 @@ public class SerbianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
-   * stemming.
+   * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is provided
+   * this analyzer will add a {@link SetKeywordMarkerFilter} before stemming.
    *
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
@@ -99,24 +93,21 @@ public class SerbianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates a
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * which tokenizes all the text in the provided {@link Reader}.
+   * Creates a {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} which tokenizes all
+   * the text in the provided {@link Reader}.
    *
-   * @return A
-   *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from an {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
-   *         provided, {@link SnowballFilter} ({@link SerbianStemmer} https://snowballstem.org/algorithms/serbian/stemmer.html), and {@link SerbianNormalizationFilter}.
+   * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
+   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, {@link
+   *     SetKeywordMarkerFilter} if a stem exclusion set is provided, {@link SnowballFilter} ({@link
+   *     SerbianStemmer} https://snowballstem.org/algorithms/serbian/stemmer.html), and {@link
+   *     SerbianNormalizationFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new LowerCaseFilter(source);
     result = new StopFilter(result, stopwords);
-    if(!stemExclusionSet.isEmpty())
-      result = new SetKeywordMarkerFilter(result, stemExclusionSet);
+    if (!stemExclusionSet.isEmpty()) result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new SerbianStemmer());
     result = new SerbianNormalizationFilter(result);
     return new TokenStreamComponents(source, result);

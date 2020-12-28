@@ -103,9 +103,8 @@ public final class LatvianAnalyzer extends StopwordAnalyzerBase {
    * the text in the provided {@link Reader}.
    *
    * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
-   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter},
-   *     {@link SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link
-   *     LatvianStemFilter}.
+   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, {@link
+   *     SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link LatvianStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {

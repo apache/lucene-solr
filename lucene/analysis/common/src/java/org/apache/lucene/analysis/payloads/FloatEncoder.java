@@ -28,10 +28,7 @@ public class FloatEncoder extends AbstractEncoder implements PayloadEncoder {
   @Override
   public BytesRef encode(char[] buffer, int offset, int length) {
     // TODO: improve this so that we don't have to new Strings
-    float payload =
-        Float.parseFloat(
-            new String(
-                buffer, offset, length));
+    float payload = Float.parseFloat(new String(buffer, offset, length));
     byte[] bytes = PayloadHelper.encodeFloat(payload);
     BytesRef result = new BytesRef(bytes);
     return result;

@@ -16,10 +16,9 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 /**
  * Some commonly-used stemming functions
- * 
+ *
  * @lucene.internal
  */
 public class StemmerUtil {
@@ -28,7 +27,7 @@ public class StemmerUtil {
 
   /**
    * Returns true if the character array starts with the suffix.
-   * 
+   *
    * @param s Input Buffer
    * @param len length of input buffer
    * @param prefix Prefix string to test
@@ -36,17 +35,14 @@ public class StemmerUtil {
    */
   public static boolean startsWith(char s[], int len, String prefix) {
     final int prefixLen = prefix.length();
-    if (prefixLen > len)
-      return false;
-    for (int i = 0; i < prefixLen; i++)
-      if (s[i] != prefix.charAt(i)) 
-        return false;
+    if (prefixLen > len) return false;
+    for (int i = 0; i < prefixLen; i++) if (s[i] != prefix.charAt(i)) return false;
     return true;
   }
-  
+
   /**
    * Returns true if the character array ends with the suffix.
-   * 
+   *
    * @param s Input Buffer
    * @param len length of input buffer
    * @param suffix Suffix string to test
@@ -54,18 +50,16 @@ public class StemmerUtil {
    */
   public static boolean endsWith(char s[], int len, String suffix) {
     final int suffixLen = suffix.length();
-    if (suffixLen > len)
-      return false;
+    if (suffixLen > len) return false;
     for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len -(suffixLen - i)] != suffix.charAt(i))
-        return false;
-    
+      if (s[len - (suffixLen - i)] != suffix.charAt(i)) return false;
+
     return true;
   }
-  
+
   /**
    * Returns true if the character array ends with the suffix.
-   * 
+   *
    * @param s Input Buffer
    * @param len length of input buffer
    * @param suffix Suffix string to test
@@ -73,18 +67,16 @@ public class StemmerUtil {
    */
   public static boolean endsWith(char s[], int len, char suffix[]) {
     final int suffixLen = suffix.length;
-    if (suffixLen > len)
-      return false;
+    if (suffixLen > len) return false;
     for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len -(suffixLen - i)] != suffix[i])
-        return false;
-    
+      if (s[len - (suffixLen - i)] != suffix[i]) return false;
+
     return true;
   }
-  
+
   /**
    * Delete a character in-place
-   * 
+   *
    * @param s Input Buffer
    * @param pos Position of character to delete
    * @param len length of input buffer
@@ -97,10 +89,10 @@ public class StemmerUtil {
     }
     return len - 1;
   }
-  
+
   /**
    * Delete n characters in-place
-   * 
+   *
    * @param s Input Buffer
    * @param pos Position of character to delete
    * @param len Length of input buffer

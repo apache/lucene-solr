@@ -16,27 +16,28 @@
  */
 package org.apache.lucene.analysis.synonym;
 
-
-import org.apache.lucene.analysis.TokenStream;
+import java.io.Reader;
+import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * @since solr 1.4
- */
+/** @since solr 1.4 */
 public class TestMultiWordSynonyms extends BaseTokenStreamFactoryTestCase {
-  
+
   public void testMultiWordSynonyms() throws Exception {
     Reader reader = new StringReader("a e");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Synonym", Version.LATEST,
-        new StringMockResourceLoader("a b c,d"),
-        "synonyms", "synonyms.txt").create(stream);
+    stream =
+        tokenFilterFactory(
+                "Synonym",
+                Version.LATEST,
+                new StringMockResourceLoader("a b c,d"),
+                "synonyms",
+                "synonyms.txt")
+            .create(stream);
     // This fails because ["e","e"] is the value of the token stream
-    assertTokenStreamContents(stream, new String[] { "a", "e" });
+    assertTokenStreamContents(stream, new String[] {"a", "e"});
   }
 }

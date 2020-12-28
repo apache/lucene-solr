@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.sv;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new SwedishAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new SwedishAnalyzer();
@@ -40,17 +37,16 @@ public class TestSwedishAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "och", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("jaktkarlarne"), false);
-    Analyzer a = new SwedishAnalyzer( 
-        SwedishAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("jaktkarlarne"), false);
+    Analyzer a = new SwedishAnalyzer(SwedishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "jaktkarlarne", "jaktkarlarne");
     checkOneTerm(a, "jaktkarlens", "jaktkarl");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new SwedishAnalyzer();

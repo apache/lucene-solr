@@ -85,6 +85,9 @@ allprojects { prj ->
                 "src/**/org/apache/lucene/analysis/p*/*.java",
                 "src/**/org/apache/lucene/analysis/q*/*.java",
                 "src/**/org/apache/lucene/analysis/r*/*.java",
+                "src/**/org/apache/lucene/analysis/s*/*.java",
+                "src/**/org/apache/lucene/analysis/t*/*.java",
+                "src/**/org/apache/lucene/analysis/u*/*.java"
                    "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**",
                           "**/HTMLStripCharFilter.java",
