@@ -16,39 +16,36 @@
  */
 package org.apache.lucene.analysis.en;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Simple tests for {@link EnglishMinimalStemFilter}
- */
+/** Simple tests for {@link EnglishMinimalStemFilter} */
 public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new EnglishMinimalStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new EnglishMinimalStemFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-    
+
   /** Test some examples from various papers about this technique */
   public void testExamples() throws IOException {
     checkOneTerm(analyzer, "queries", "query");
@@ -61,20 +58,21 @@ public class TestEnglishMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "congress", "congress");
     checkOneTerm(analyzer, "serious", "serious");
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new EnglishMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new EnglishMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
