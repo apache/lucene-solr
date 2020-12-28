@@ -106,7 +106,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * the text in the provided {@link Reader}.
    *
    * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from a {@link
-   *     StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter} , and {@link
+   *     StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, and {@link
    *     BrazilianStemFilter}.
    */
   @Override

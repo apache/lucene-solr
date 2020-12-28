@@ -101,8 +101,8 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * the text in the provided {@link Reader}.
    *
    * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
-   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter} ,
-   *     {@link SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link
+   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, {@link
+   *     SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link
    *     BulgarianStemFilter}.
    */
   @Override

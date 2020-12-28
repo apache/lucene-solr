@@ -68,9 +68,16 @@ allprojects { prj ->
                    "src/**/org/apache/lucene/analysis/commongrams/**/*.java",
                    "src/**/org/apache/lucene/analysis/compound/**/*.java",
                    "src/**/org/apache/lucene/analysis/core/**/*.java",
+                "src/**/org/apache/lucene/analysis/custom/**/*.java",
+                "src/**/org/apache/lucene/analysis/cz/**/*.java",
+                "src/**/org/apache/lucene/analysis/da/**/*.java",
+                "src/**/org/apache/lucene/analysis/de/**/*.java",
+                "src/**/org/apache/lucene/analysis/el/**/*.java",
+                "src/**/org/apache/lucene/analysis/email/*.java",
                    "src/**/org/apache/lucene/collation/**"
             targetExclude "**/resources/**",
-                          "**/HTMLStripCharFilter.java"
+                          "**/HTMLStripCharFilter.java",
+                          "**/UAX29URLEmailTokenizerImpl.java"
             break
 
           // All others - disable reformatting/ checks for now.

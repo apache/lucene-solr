@@ -105,7 +105,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
    *
    * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
    *     {@link StandardTokenizer} filtered with {@link SoraniNormalizationFilter}, {@link
-   *     LowerCaseFilter}, {@link DecimalDigitFilter}, {@link StopFilter} , {@link
+   *     LowerCaseFilter}, {@link DecimalDigitFilter}, {@link StopFilter}, {@link
    *     SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link SoraniStemFilter}.
    */
   @Override
