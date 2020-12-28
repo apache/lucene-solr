@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Set;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -29,7 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.English;
-
 
 public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
 
@@ -39,12 +36,10 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     final StandardTokenizer input = new StandardTokenizer(newAttributeFactory());
     input.setReader(reader);
     TokenStream stream = new TypeTokenFilter(input, stopTypes);
-    assertTokenStreamContents(stream, new String[]{"is", "palindrome", "while", "is", "not"});
+    assertTokenStreamContents(stream, new String[] {"is", "palindrome", "while", "is", "not"});
   }
 
-  /**
-   * Test Position increments applied by TypeTokenFilter with and without enabling this option.
-   */
+  /** Test Position increments applied by TypeTokenFilter with and without enabling this option. */
   public void testStopPositons() throws IOException {
     StringBuilder sb = new StringBuilder();
     for (int i = 10; i < 20; i++) {
@@ -56,7 +51,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
       }
     }
     log(sb.toString());
-    String stopTypes[] = new String[]{"<NUM>"};
+    String stopTypes[] = new String[] {"<NUM>"};
     Set<String> stopSet = asSet(stopTypes);
 
     // with increments
@@ -65,7 +60,6 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     input.setReader(reader);
     TypeTokenFilter typeTokenFilter = new TypeTokenFilter(input, stopSet);
     testPositons(typeTokenFilter);
-
   }
 
   private void testPositons(TypeTokenFilter stpf) throws IOException {
@@ -74,9 +68,17 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     PositionIncrementAttribute posIncrAtt = stpf.getAttribute(PositionIncrementAttribute.class);
     stpf.reset();
     while (stpf.incrementToken()) {
-      log("Token: " + termAttribute.toString() + ": " + typeAtt.type() + " - " + posIncrAtt.getPositionIncrement());
-      assertEquals("if position increment is enabled the positionIncrementAttribute value should be 3, otherwise 1",
-          posIncrAtt.getPositionIncrement(), 3);
+      log(
+          "Token: "
+              + termAttribute.toString()
+              + ": "
+              + typeAtt.type()
+              + " - "
+              + posIncrAtt.getPositionIncrement());
+      assertEquals(
+          "if position increment is enabled the positionIncrementAttribute value should be 3, otherwise 1",
+          posIncrAtt.getPositionIncrement(),
+          3);
     }
     stpf.end();
     stpf.close();
@@ -88,7 +90,7 @@ public class TestTypeTokenFilter extends BaseTokenStreamTestCase {
     final StandardTokenizer input = new StandardTokenizer(newAttributeFactory());
     input.setReader(reader);
     TokenStream stream = new TypeTokenFilter(input, stopTypes, true);
-    assertTokenStreamContents(stream, new String[]{"121", "123"});
+    assertTokenStreamContents(stream, new String[] {"121", "123"});
   }
 
   // print debug info depending on VERBOSE

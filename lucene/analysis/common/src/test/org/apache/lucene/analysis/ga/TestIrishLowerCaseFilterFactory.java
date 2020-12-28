@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.analysis.ga;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Irish lowercase filter factory is working.
- */
+/** Simple tests to ensure the Irish lowercase filter factory is working. */
 public class TestIrishLowerCaseFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testCasing() throws Exception {
     Reader reader = new StringReader("nAthair tUISCE hARD");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("IrishLowerCase").create(stream);
-    assertTokenStreamContents(stream, new String[] { "n-athair", "t-uisce", "hard" });
+    assertTokenStreamContents(stream, new String[] {"n-athair", "t-uisce", "hard"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("IrishLowerCase", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("IrishLowerCase", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

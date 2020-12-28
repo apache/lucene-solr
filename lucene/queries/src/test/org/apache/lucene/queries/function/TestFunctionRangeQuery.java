@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -41,7 +40,7 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createIndex(true);//doMultiSegment
+    createIndex(true); // doMultiSegment
   }
 
   @Before
@@ -59,7 +58,7 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
   public void testRangeInt() throws IOException {
     doTestRange(INT_VALUESOURCE);
   }
-  
+
   @Test
   public void testRangeIntMultiValued() throws IOException {
     doTestRange(INT_MV_MAX_VALUESOURCE);
@@ -70,7 +69,7 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
   public void testRangeFloat() throws IOException {
     doTestRange(FLOAT_VALUESOURCE);
   }
-  
+
   @Test
   public void testRangeFloatMultiValued() throws IOException {
     doTestRange(FLOAT_MV_MAX_VALUESOURCE);
@@ -91,23 +90,26 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
   public void testDeleted() throws IOException {
     doTestDeleted(INT_VALUESOURCE);
   }
-  
+
   @Test
   public void testDeletedMultiValued() throws IOException {
     doTestDeleted(INT_MV_MAX_VALUESOURCE);
     doTestDeleted(INT_MV_MIN_VALUESOURCE);
   }
-  
+
   private void doTestDeleted(ValueSource valueSource) throws IOException {
-    // We delete doc with #3. Note we don't commit it to disk; we search using a near real-time reader.
+    // We delete doc with #3. Note we don't commit it to disk; we search using a near real-time
+    // reader.
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(null));
     try {
-      writer.deleteDocuments(new FunctionRangeQuery(valueSource, 3, 3, true, true));//delete the one with #3
+      writer.deleteDocuments(
+          new FunctionRangeQuery(valueSource, 3, 3, true, true)); // delete the one with #3
       assert writer.hasDeletions();
       try (IndexReader indexReader2 = DirectoryReader.open(writer)) {
         IndexSearcher indexSearcher2 = new IndexSearcher(indexReader2);
-        TopDocs topDocs = indexSearcher2.search(new FunctionRangeQuery(valueSource, 3, 4, true, true), N_DOCS);
-        expectScores(topDocs.scoreDocs, 4);//missing #3 because it's deleted
+        TopDocs topDocs =
+            indexSearcher2.search(new FunctionRangeQuery(valueSource, 3, 4, true, true), N_DOCS);
+        expectScores(topDocs.scoreDocs, 4); // missing #3 because it's deleted
       }
     } finally {
       writer.rollback();
@@ -122,11 +124,10 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
     Explanation explain = indexSearcher.explain(rangeQuery, scoreDocs[0].doc);
     // Just validate it looks reasonable
     assertEquals(
-            "2.0 = frange(int(" + INT_FIELD + ")):[2 TO 2]\n" +
-            "  2.0 = int(" + INT_FIELD + ")=2\n",
+        "2.0 = frange(int(" + INT_FIELD + ")):[2 TO 2]\n" + "  2.0 = int(" + INT_FIELD + ")=2\n",
         explain.toString());
   }
-  
+
   @Test
   public void testExplainMultiValued() throws IOException {
     Query rangeQuery = new FunctionRangeQuery(INT_MV_MIN_VALUESOURCE, 2, 2, true, true);
@@ -134,8 +135,12 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
     Explanation explain = indexSearcher.explain(rangeQuery, scoreDocs[0].doc);
     // Just validate it looks reasonable
     assertEquals(
-            "2.0 = frange(int(" + INT_FIELD_MV_MIN + ",MIN)):[2 TO 2]\n" +
-            "  2.0 = int(" + INT_FIELD_MV_MIN + ",MIN)=2\n",
+        "2.0 = frange(int("
+            + INT_FIELD_MV_MIN
+            + ",MIN)):[2 TO 2]\n"
+            + "  2.0 = int("
+            + INT_FIELD_MV_MIN
+            + ",MIN)=2\n",
         explain.toString());
   }
 
@@ -143,10 +148,11 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
   public void testTwoRangeQueries() throws IOException {
     Query rq1 = new FunctionRangeQuery(INT_VALUESOURCE, 2, 4, true, true);
     Query rq2 = new FunctionRangeQuery(INT_VALUESOURCE, 8, 10, true, true);
-    Query bq = new BooleanQuery.Builder()
-        .add(rq1, BooleanClause.Occur.SHOULD)
-        .add(rq2, BooleanClause.Occur.SHOULD)
-        .build();
+    Query bq =
+        new BooleanQuery.Builder()
+            .add(rq1, BooleanClause.Occur.SHOULD)
+            .add(rq2, BooleanClause.Occur.SHOULD)
+            .build();
 
     ScoreDoc[] scoreDocs = indexSearcher.search(bq, N_DOCS).scoreDocs;
     expectScores(scoreDocs, 10, 9, 8, 4, 3, 2);

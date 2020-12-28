@@ -16,23 +16,22 @@
  */
 package org.apache.lucene.analysis.snowball;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 import org.tartarus.snowball.SnowballStemmer;
 
 /**
  * Factory for {@link SnowballFilter}, with configurable language
- * <p>
- * Note: Use of the "Lovins" stemmer is not recommended, as it is implemented with reflection.
+ *
+ * <p>Note: Use of the "Lovins" stemmer is not recommended, as it is implemented with reflection.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_snowballstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -56,9 +55,9 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
   private final String wordFiles;
   private Class<? extends SnowballStemmer> stemClass;
   private CharArraySet protectedWords = null;
-  
+
   /** Creates a new SnowballPorterFilterFactory */
-  public SnowballPorterFilterFactory(Map<String,String> args) {
+  public SnowballPorterFilterFactory(Map<String, String> args) {
     super(args);
     language = get(args, "language", "English");
     wordFiles = get(args, PROTECTED_TOKENS);
@@ -88,12 +87,11 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
     try {
       program = stemClass.getConstructor().newInstance();
     } catch (Exception e) {
-      throw new RuntimeException("Error instantiating stemmer for language " + language + "from class " + stemClass, e);
+      throw new RuntimeException(
+          "Error instantiating stemmer for language " + language + "from class " + stemClass, e);
     }
 
-    if (protectedWords != null)
-      input = new SetKeywordMarkerFilter(input, protectedWords);
+    if (protectedWords != null) input = new SetKeywordMarkerFilter(input, protectedWords);
     return new SnowballFilter(input, program);
   }
 }
-

@@ -17,18 +17,16 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 /**
- * This class represents a hyphen. A 'full' hyphen is made of 3 parts: the
- * pre-break text, post-break text and no-break. If no line-break is generated
- * at this position, the no-break text is used, otherwise, pre-break and
- * post-break are used. Typically, pre-break is equal to the hyphen character
- * and the others are empty. However, this general scheme allows support for
- * cases in some languages where words change spelling if they're split across
- * lines, like german's 'backen' which hyphenates 'bak-ken'. BTW, this comes
- * from TeX.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ * This class represents a hyphen. A 'full' hyphen is made of 3 parts: the pre-break text,
+ * post-break text and no-break. If no line-break is generated at this position, the no-break text
+ * is used, otherwise, pre-break and post-break are used. Typically, pre-break is equal to the
+ * hyphen character and the others are empty. However, this general scheme allows support for cases
+ * in some languages where words change spelling if they're split across lines, like german's
+ * 'backen' which hyphenates 'bak-ken'. BTW, this comes from TeX.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
-
 public class Hyphen {
   public String preBreak;
 
@@ -50,8 +48,7 @@ public class Hyphen {
 
   @Override
   public String toString() {
-    if (noBreak == null && postBreak == null && preBreak != null
-        && preBreak.equals("-")) {
+    if (noBreak == null && postBreak == null && preBreak != null && preBreak.equals("-")) {
       return "-";
     }
     StringBuilder res = new StringBuilder("{");
@@ -63,5 +60,4 @@ public class Hyphen {
     res.append('}');
     return res.toString();
   }
-
 }

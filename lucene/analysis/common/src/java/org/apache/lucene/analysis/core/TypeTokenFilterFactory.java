@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.analysis.core;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
  * Factory class for {@link TypeTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="chars" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -38,6 +37,7 @@ import java.util.Set;
  *                   useWhitelist="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -49,9 +49,9 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
   private final boolean useWhitelist;
   private final String stopTypesFiles;
   private Set<String> stopTypes;
-  
+
   /** Creates a new TypeTokenFilterFactory */
-  public TypeTokenFilterFactory(Map<String,String> args) {
+  public TypeTokenFilterFactory(Map<String, String> args) {
     super(args);
     stopTypesFiles = require(args, "types");
     useWhitelist = getBoolean(args, "useWhitelist", false);
@@ -59,7 +59,7 @@ public class TypeTokenFilterFactory extends TokenFilterFactory implements Resour
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public TypeTokenFilterFactory() {
     throw defaultCtorException();

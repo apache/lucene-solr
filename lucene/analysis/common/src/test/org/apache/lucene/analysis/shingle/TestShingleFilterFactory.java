@@ -16,209 +16,185 @@
  */
 package org.apache.lucene.analysis.shingle;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Shingle filter factory works.
- */
+/** Simple tests to ensure the Shingle filter factory works. */
 public class TestShingleFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Test the defaults
-   */
+  /** Test the defaults */
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("Shingle").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "this is", "is", "is a", "a", "a test", "test" }
-    );
+    assertTokenStreamContents(
+        stream, new String[] {"this", "this is", "is", "is a", "a", "a test", "test"});
   }
-  
-  /**
-   * Test with unigrams disabled
-   */
+
+  /** Test with unigrams disabled */
   public void testNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "outputUnigrams", "false").create(stream);
-    assertTokenStreamContents(stream,
-        new String[] {"this is", "is a", "a test"});
+    stream = tokenFilterFactory("Shingle", "outputUnigrams", "false").create(stream);
+    assertTokenStreamContents(stream, new String[] {"this is", "is a", "a test"});
   }
-  
-  /**
-   * Test with a higher max shingle size
-   */
+
+  /** Test with a higher max shingle size */
   public void testMaxShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "maxShingleSize", "3").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "this is", "this is a", "is", 
-                       "is a", "is a test", "a", "a test", "test" }
-    );
+    stream = tokenFilterFactory("Shingle", "maxShingleSize", "3").create(stream);
+    assertTokenStreamContents(
+        stream,
+        new String[] {
+          "this", "this is", "this is a", "is", "is a", "is a test", "a", "a test", "test"
+        });
   }
 
-  /**
-   * Test with higher min (and max) shingle size
-   */
+  /** Test with higher min (and max) shingle size */
   public void testMinShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "4").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "this is a", "this is a test",
-                       "is", "is a test", "a", "test" }
-    );
+    stream =
+        tokenFilterFactory("Shingle", "minShingleSize", "3", "maxShingleSize", "4").create(stream);
+    assertTokenStreamContents(
+        stream,
+        new String[] {"this", "this is a", "this is a test", "is", "is a test", "a", "test"});
   }
 
-  /**
-   * Test with higher min (and max) shingle size and with unigrams disabled
-   */
+  /** Test with higher min (and max) shingle size and with unigrams disabled */
   public void testMinShingleSizeNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "4",
-        "outputUnigrams", "false").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this is a", "this is a test", "is a test" });
+    stream =
+        tokenFilterFactory(
+                "Shingle", "minShingleSize", "3", "maxShingleSize", "4", "outputUnigrams", "false")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"this is a", "this is a test", "is a test"});
   }
 
-  /**
-   * Test with higher same min and max shingle size
-   */
+  /** Test with higher same min and max shingle size */
   public void testEqualMinAndMaxShingleSize() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "3").create(stream);
-    assertTokenStreamContents(stream, 
-         new String[] { "this", "this is a", "is", "is a test", "a", "test" });
+    stream =
+        tokenFilterFactory("Shingle", "minShingleSize", "3", "maxShingleSize", "3").create(stream);
+    assertTokenStreamContents(
+        stream, new String[] {"this", "this is a", "is", "is a test", "a", "test"});
   }
 
-  /**
-   * Test with higher same min and max shingle size and with unigrams disabled
-   */
+  /** Test with higher same min and max shingle size and with unigrams disabled */
   public void testEqualMinAndMaxShingleSizeNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "3",
-        "outputUnigrams", "false").create(stream);
-    assertTokenStreamContents(stream,
-        new String[] { "this is a", "is a test" });
+    stream =
+        tokenFilterFactory(
+                "Shingle", "minShingleSize", "3", "maxShingleSize", "3", "outputUnigrams", "false")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"this is a", "is a test"});
   }
-    
-  /**
-   * Test with a non-default token separator
-   */
+
+  /** Test with a non-default token separator */
   public void testTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "tokenSeparator", "=BLAH=").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "this=BLAH=is", "is", "is=BLAH=a", 
-                       "a", "a=BLAH=test", "test" }
-    );
+    stream = tokenFilterFactory("Shingle", "tokenSeparator", "=BLAH=").create(stream);
+    assertTokenStreamContents(
+        stream,
+        new String[] {"this", "this=BLAH=is", "is", "is=BLAH=a", "a", "a=BLAH=test", "test"});
   }
 
-  /**
-   * Test with a non-default token separator and with unigrams disabled
-   */
+  /** Test with a non-default token separator and with unigrams disabled */
   public void testTokenSeparatorNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "tokenSeparator", "=BLAH=",
-        "outputUnigrams", "false").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this=BLAH=is", "is=BLAH=a", "a=BLAH=test" });
+    stream =
+        tokenFilterFactory("Shingle", "tokenSeparator", "=BLAH=", "outputUnigrams", "false")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"this=BLAH=is", "is=BLAH=a", "a=BLAH=test"});
   }
 
-  /**
-   * Test with an empty token separator
-   */
+  /** Test with an empty token separator */
   public void testEmptyTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "tokenSeparator", "").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "thisis", "is", "isa", "a", "atest", "test" });
+    stream = tokenFilterFactory("Shingle", "tokenSeparator", "").create(stream);
+    assertTokenStreamContents(
+        stream, new String[] {"this", "thisis", "is", "isa", "a", "atest", "test"});
   }
-    
-  /**
-   * Test with higher min (and max) shingle size 
-   * and with a non-default token separator
-   */
+
+  /** Test with higher min (and max) shingle size and with a non-default token separator */
   public void testMinShingleSizeAndTokenSeparator() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "4",
-        "tokenSeparator", "=BLAH=").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this", "this=BLAH=is=BLAH=a", 
-                       "this=BLAH=is=BLAH=a=BLAH=test", "is", 
-                       "is=BLAH=a=BLAH=test", "a", "test" }
-    );
+    stream =
+        tokenFilterFactory(
+                "Shingle", "minShingleSize", "3", "maxShingleSize", "4", "tokenSeparator", "=BLAH=")
+            .create(stream);
+    assertTokenStreamContents(
+        stream,
+        new String[] {
+          "this",
+          "this=BLAH=is=BLAH=a",
+          "this=BLAH=is=BLAH=a=BLAH=test",
+          "is",
+          "is=BLAH=a=BLAH=test",
+          "a",
+          "test"
+        });
   }
 
   /**
-   * Test with higher min (and max) shingle size 
-   * and with a non-default token separator
-   * and with unigrams disabled
+   * Test with higher min (and max) shingle size and with a non-default token separator and with
+   * unigrams disabled
    */
   public void testMinShingleSizeAndTokenSeparatorNoUnigrams() throws Exception {
     Reader reader = new StringReader("this is a test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "minShingleSize", "3",
-        "maxShingleSize", "4",
-        "tokenSeparator", "=BLAH=",
-        "outputUnigrams", "false").create(stream);
-    assertTokenStreamContents(stream, 
-        new String[] { "this=BLAH=is=BLAH=a", "this=BLAH=is=BLAH=a=BLAH=test", 
-                       "is=BLAH=a=BLAH=test", }
-    );
+    stream =
+        tokenFilterFactory(
+                "Shingle",
+                "minShingleSize",
+                "3",
+                "maxShingleSize",
+                "4",
+                "tokenSeparator",
+                "=BLAH=",
+                "outputUnigrams",
+                "false")
+            .create(stream);
+    assertTokenStreamContents(
+        stream,
+        new String[] {
+          "this=BLAH=is=BLAH=a", "this=BLAH=is=BLAH=a=BLAH=test", "is=BLAH=a=BLAH=test",
+        });
   }
 
   /**
-   * Test with unigrams disabled except when there are no shingles, with
-   * a single input token. Using default min/max shingle sizes: 2/2.  No
-   * shingles will be created, since there are fewer input tokens than
-   * min shingle size.  However, because outputUnigramsIfNoShingles is
-   * set to true, even though outputUnigrams is set to false, one
-   * unigram should be output.
+   * Test with unigrams disabled except when there are no shingles, with a single input token. Using
+   * default min/max shingle sizes: 2/2. No shingles will be created, since there are fewer input
+   * tokens than min shingle size. However, because outputUnigramsIfNoShingles is set to true, even
+   * though outputUnigrams is set to false, one unigram should be output.
    */
   public void testOutputUnigramsIfNoShingles() throws Exception {
     Reader reader = new StringReader("test");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("Shingle",
-        "outputUnigrams", "false",
-        "outputUnigramsIfNoShingles", "true").create(stream);
-    assertTokenStreamContents(stream, new String[] { "test" });
+    stream =
+        tokenFilterFactory(
+                "Shingle", "outputUnigrams", "false", "outputUnigramsIfNoShingles", "true")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"test"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Shingle", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Shingle", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

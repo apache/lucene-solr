@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.ru;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -35,95 +33,90 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * {@link Analyzer} for Russian language. 
- * <p>
- * Supports an external list of stopwords (words that
- * will not be indexed at all).
- * A default set of stopwords is used unless an alternative list is specified.
+ * {@link Analyzer} for Russian language.
+ *
+ * <p>Supports an external list of stopwords (words that will not be indexed at all). A default set
+ * of stopwords is used unless an alternative list is specified.
  *
  * @since 3.1
  */
 public final class RussianAnalyzer extends StopwordAnalyzerBase {
-    
-    /** File containing default Russian stopwords. */
-    public final static String DEFAULT_STOPWORD_FILE = "russian_stop.txt";
-    
-    private static class DefaultSetHolder {
-      static final CharArraySet DEFAULT_STOP_SET;
-      
-      static {
-        try {
-          DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-              DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
-        } catch (IOException ex) {
-          // default set should always be present as it is part of the
-          // distribution (JAR)
-          throw new RuntimeException("Unable to load default stopword set", ex);
-        }
+
+  /** File containing default Russian stopwords. */
+  public static final String DEFAULT_STOPWORD_FILE = "russian_stop.txt";
+
+  private static class DefaultSetHolder {
+    static final CharArraySet DEFAULT_STOP_SET;
+
+    static {
+      try {
+        DEFAULT_STOP_SET =
+            WordlistLoader.getSnowballWordSet(
+                IOUtils.getDecodingReader(
+                    SnowballFilter.class, DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set", ex);
       }
     }
-    
-    private final CharArraySet stemExclusionSet;
-    
-    /**
-     * Returns an unmodifiable instance of the default stop-words set.
-     * 
-     * @return an unmodifiable instance of the default stop-words set.
-     */
-    public static CharArraySet getDefaultStopSet() {
-      return DefaultSetHolder.DEFAULT_STOP_SET;
-    }
+  }
 
-    public RussianAnalyzer() {
-      this(DefaultSetHolder.DEFAULT_STOP_SET);
-    }
-  
-    /**
-     * Builds an analyzer with the given stop words
-     * 
-     * @param stopwords
-     *          a stopword set
-     */
-    public RussianAnalyzer(CharArraySet stopwords) {
-      this(stopwords, CharArraySet.EMPTY_SET);
-    }
-    
-    /**
-     * Builds an analyzer with the given stop words
-     * 
-     * @param stopwords
-     *          a stopword set
-     * @param stemExclusionSet a set of words not to be stemmed
-     */
-    public RussianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
-      super(stopwords);
-      this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
-    }
-   
+  private final CharArraySet stemExclusionSet;
+
   /**
-   * Creates
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * used to tokenize all the text in the provided {@link Reader}.
-   * 
-   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
-   *         provided, and {@link SnowballFilter}
+   * Returns an unmodifiable instance of the default stop-words set.
+   *
+   * @return an unmodifiable instance of the default stop-words set.
    */
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-      final Tokenizer source = new StandardTokenizer();
-      TokenStream result = new LowerCaseFilter(source);
-      result = new StopFilter(result, stopwords);
-      if (!stemExclusionSet.isEmpty()) 
-        result = new SetKeywordMarkerFilter(result, stemExclusionSet);
-      result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
-      return new TokenStreamComponents(source, result);
-    }
+  public static CharArraySet getDefaultStopSet() {
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
 
-    @Override
-    protected TokenStream normalize(String fieldName, TokenStream in) {
-      return new LowerCaseFilter(in);
-    }
+  public RussianAnalyzer() {
+    this(DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words
+   *
+   * @param stopwords a stopword set
+   */
+  public RussianAnalyzer(CharArraySet stopwords) {
+    this(stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words
+   *
+   * @param stopwords a stopword set
+   * @param stemExclusionSet a set of words not to be stemmed
+   */
+  public RussianAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
+    super(stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+  }
+
+  /**
+   * Creates {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} used to tokenize all
+   * the text in the provided {@link Reader}.
+   *
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from a {@link
+   *     StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, {@link
+   *     SetKeywordMarkerFilter} if a stem exclusion set is provided, and {@link SnowballFilter}
+   */
+  @Override
+  protected TokenStreamComponents createComponents(String fieldName) {
+    final Tokenizer source = new StandardTokenizer();
+    TokenStream result = new LowerCaseFilter(source);
+    result = new StopFilter(result, stopwords);
+    if (!stemExclusionSet.isEmpty()) result = new SetKeywordMarkerFilter(result, stemExclusionSet);
+    result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
+    return new TokenStreamComponents(source, result);
+  }
+
+  @Override
+  protected TokenStream normalize(String fieldName, TokenStream in) {
+    return new LowerCaseFilter(in);
+  }
 }

@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
- * <p>
- * This {@link Tokenizer} create n-grams from the beginning edge of a input token.
- * <p><a id="match_version"></a>As of Lucene 4.4, this class supports
- * {@link #isTokenChar(int) pre-tokenization} and correctly handles
- * supplementary characters.
+ *
+ * <p>This {@link Tokenizer} create n-grams from the beginning edge of a input token.
+ *
+ * <p><a id="match_version"></a>As of Lucene 4.4, this class supports {@link #isTokenChar(int)
+ * pre-tokenization} and correctly handles supplementary characters.
  */
 public class EdgeNGramTokenizer extends NGramTokenizer {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
@@ -52,5 +51,4 @@ public class EdgeNGramTokenizer extends NGramTokenizer {
   public EdgeNGramTokenizer(AttributeFactory factory, int minGram, int maxGram) {
     super(factory, minGram, maxGram, true);
   }
-
 }

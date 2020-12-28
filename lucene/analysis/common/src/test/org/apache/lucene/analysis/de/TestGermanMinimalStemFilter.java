@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.analysis.de;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,32 +28,29 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-
-/**
- * Simple tests for {@link GermanMinimalStemFilter}
- */
+/** Simple tests for {@link GermanMinimalStemFilter} */
 public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new GermanMinimalStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new GermanMinimalStemFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /** Test some examples from the paper */
   public void testExamples() throws IOException {
     checkOneTerm(analyzer, "sängerinnen", "sangerin");
@@ -65,39 +62,41 @@ public class TestGermanMinimalStemFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "götter", "gott");
     checkOneTerm(analyzer, "äpfel", "apfel");
   }
-  
+
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("sängerinnen"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new GermanMinimalStemFilter(sink));
-      }
-    };
+    final CharArraySet exclusionSet = new CharArraySet(asSet("sängerinnen"), false);
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new GermanMinimalStemFilter(sink));
+          }
+        };
     checkOneTerm(a, "sängerinnen", "sängerinnen");
     a.close();
   }
-  
+
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataPath("deminimaltestdata.zip"), "deminimal.txt");
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new GermanMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new GermanMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

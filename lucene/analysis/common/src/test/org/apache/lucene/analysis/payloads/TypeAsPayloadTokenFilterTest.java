@@ -16,29 +16,32 @@
  */
 package org.apache.lucene.analysis.payloads;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-
-import java.io.IOException;
 
 public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(whitespaceMockTokenizer(test)));
+    TypeAsPayloadTokenFilter nptf =
+        new TypeAsPayloadTokenFilter(new WordTokenFilter(whitespaceMockTokenizer(test)));
     int count = 0;
     CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     nptf.reset();
     while (nptf.incrementToken()) {
-      assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.buffer()[0]))));
-      assertTrue("nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
+      assertTrue(
+          typeAtt.type() + " is not null and it should be",
+          typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.buffer()[0]))));
+      assertTrue(
+          "nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
       String type = payloadAtt.getPayload().utf8ToString();
       assertTrue(type + " is not equal to " + typeAtt.type(), type.equals(typeAtt.type()));
       count++;
@@ -50,7 +53,7 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   private static final class WordTokenFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    
+
     private WordTokenFilter(TokenStream input) {
       super(input);
     }
@@ -65,5 +68,4 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
       }
     }
   }
-
 }

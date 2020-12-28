@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -38,10 +37,11 @@ import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * Concatenates/Joins every incoming token with a separator into one output token for every path through the
- * token stream (which is a graph).  In simple cases this yields one token, but in the presence of any tokens with
- * a zero positionIncrmeent (e.g. synonyms) it will be more.  This filter uses the token bytes, position increment,
- * and position length of the incoming stream.  Other attributes are not used or manipulated.
+ * Concatenates/Joins every incoming token with a separator into one output token for every path
+ * through the token stream (which is a graph). In simple cases this yields one token, but in the
+ * presence of any tokens with a zero positionIncrmeent (e.g. synonyms) it will be more. This filter
+ * uses the token bytes, position increment, and position length of the incoming stream. Other
+ * attributes are not used or manipulated.
  *
  * @lucene.experimental
  */
@@ -55,17 +55,18 @@ public final class ConcatenateGraphFilter extends TokenStream {
    * a completion's payload (see {@link ConcatenateGraphFilter#setPayload(org.apache.lucene.util.BytesRef)})
    */
 
-  /**
-   * Represents the default separator between tokens.
-   */
-  public final static int SEP_LABEL = TokenStreamToAutomaton.POS_SEP;
-  public final static int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-  public final static Character DEFAULT_TOKEN_SEPARATOR = SEP_LABEL;
-  public final static boolean DEFAULT_PRESERVE_SEP = true;
-  public final static boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
+  /** Represents the default separator between tokens. */
+  public static final int SEP_LABEL = TokenStreamToAutomaton.POS_SEP;
 
-  private final BytesRefBuilderTermAttribute bytesAtt = addAttribute(BytesRefBuilderTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  public static final int DEFAULT_MAX_GRAPH_EXPANSIONS = Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+  public static final Character DEFAULT_TOKEN_SEPARATOR = SEP_LABEL;
+  public static final boolean DEFAULT_PRESERVE_SEP = true;
+  public static final boolean DEFAULT_PRESERVE_POSITION_INCREMENTS = true;
+
+  private final BytesRefBuilderTermAttribute bytesAtt =
+      addAttribute(BytesRefBuilderTermAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private final TokenStream inputTokenStream;
@@ -79,35 +80,42 @@ public final class ConcatenateGraphFilter extends TokenStream {
   private int endOffset;
 
   /**
-   * Creates a token stream to convert <code>input</code> to a token stream
-   * of accepted strings by its token stream graph.
-   * <p>
-   * This constructor uses the default settings of the constants in this class.
+   * Creates a token stream to convert <code>input</code> to a token stream of accepted strings by
+   * its token stream graph.
+   *
+   * <p>This constructor uses the default settings of the constants in this class.
    */
   public ConcatenateGraphFilter(TokenStream inputTokenStream) {
-    this(inputTokenStream, DEFAULT_TOKEN_SEPARATOR, DEFAULT_PRESERVE_POSITION_INCREMENTS, DEFAULT_MAX_GRAPH_EXPANSIONS);
+    this(
+        inputTokenStream,
+        DEFAULT_TOKEN_SEPARATOR,
+        DEFAULT_PRESERVE_POSITION_INCREMENTS,
+        DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
-   * Creates a token stream to convert <code>input</code> to a token stream
-   * of accepted strings by its token stream graph.
+   * Creates a token stream to convert <code>input</code> to a token stream of accepted strings by
+   * its token stream graph.
    *
    * @param inputTokenStream The input/incoming TokenStream
-   * @param tokenSeparator Separator to use for concatenation. Can be null, in this case tokens will be concatenated
-   *                       without any separators.
-   * @param preservePositionIncrements Whether to add an empty token for missing positions.
-   *                                   The effect is a consecutive {@link #SEP_LABEL}.
-   *                                   When false, it's as if there were no missing positions
-   *                                     (we pretend the surrounding tokens were adjacent).
-   * @param maxGraphExpansions If the tokenStream graph has more than this many possible paths through, then we'll throw
-   *                           {@link TooComplexToDeterminizeException} to preserve the stability and memory of the
-   *                           machine.
-   * @throws TooComplexToDeterminizeException if the tokenStream graph has more than {@code maxGraphExpansions}
-   *         expansions
-   *
+   * @param tokenSeparator Separator to use for concatenation. Can be null, in this case tokens will
+   *     be concatenated without any separators.
+   * @param preservePositionIncrements Whether to add an empty token for missing positions. The
+   *     effect is a consecutive {@link #SEP_LABEL}. When false, it's as if there were no missing
+   *     positions (we pretend the surrounding tokens were adjacent).
+   * @param maxGraphExpansions If the tokenStream graph has more than this many possible paths
+   *     through, then we'll throw {@link TooComplexToDeterminizeException} to preserve the
+   *     stability and memory of the machine.
+   * @throws TooComplexToDeterminizeException if the tokenStream graph has more than {@code
+   *     maxGraphExpansions} expansions
    */
-  public ConcatenateGraphFilter(TokenStream inputTokenStream, Character tokenSeparator, boolean preservePositionIncrements, int maxGraphExpansions) {
-    // Don't call the super(input) ctor - this is a true delegate and has a new attribute source since we consume
+  public ConcatenateGraphFilter(
+      TokenStream inputTokenStream,
+      Character tokenSeparator,
+      boolean preservePositionIncrements,
+      int maxGraphExpansions) {
+    // Don't call the super(input) ctor - this is a true delegate and has a new attribute source
+    // since we consume
     // the input stream entirely in the first call to incrementToken
     this.inputTokenStream = inputTokenStream;
     this.tokenSeparator = tokenSeparator;
@@ -116,11 +124,22 @@ public final class ConcatenateGraphFilter extends TokenStream {
   }
 
   /**
-   * Calls {@link #ConcatenateGraphFilter(org.apache.lucene.analysis.TokenStream, java.lang.Character, boolean, int)}
-   * @param preserveSep Whether {@link #SEP_LABEL} should separate the input tokens in the concatenated token
+   * Calls {@link #ConcatenateGraphFilter(org.apache.lucene.analysis.TokenStream,
+   * java.lang.Character, boolean, int)}
+   *
+   * @param preserveSep Whether {@link #SEP_LABEL} should separate the input tokens in the
+   *     concatenated token
    */
-  public ConcatenateGraphFilter(TokenStream inputTokenStream, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
-    this(inputTokenStream, (preserveSep) ? DEFAULT_TOKEN_SEPARATOR : null, preservePositionIncrements, maxGraphExpansions);
+  public ConcatenateGraphFilter(
+      TokenStream inputTokenStream,
+      boolean preserveSep,
+      boolean preservePositionIncrements,
+      int maxGraphExpansions) {
+    this(
+        inputTokenStream,
+        (preserveSep) ? DEFAULT_TOKEN_SEPARATOR : null,
+        preservePositionIncrements,
+        maxGraphExpansions);
   }
 
   @Override
@@ -138,9 +157,12 @@ public final class ConcatenateGraphFilter extends TokenStream {
         throw new IllegalStateException("reset() missing before incrementToken");
       }
       // lazy init/consume
-      Automaton automaton = toAutomaton(); // calls reset(), incrementToken() repeatedly, and end() on inputTokenStream
+      Automaton automaton =
+          toAutomaton(); // calls reset(), incrementToken() repeatedly, and end() on
+      // inputTokenStream
       finiteStrings = new LimitedFiniteStringsIterator(automaton, maxGraphExpansions);
-      //note: would be nice to know the startOffset but toAutomaton doesn't capture it.  We'll assume 0
+      // note: would be nice to know the startOffset but toAutomaton doesn't capture it.  We'll
+      // assume 0
       endOffset = inputTokenStream.getAttribute(OffsetAttribute.class).endOffset();
     }
 
@@ -170,7 +192,9 @@ public final class ConcatenateGraphFilter extends TokenStream {
   public void end() throws IOException {
     super.end();
     if (finiteStrings == null) { // thus inputTokenStream hasn't yet received end()
-      inputTokenStream.end(); // the input TS may really want to see "end()" called even if incrementToken hasn't.
+      inputTokenStream
+          .end(); // the input TS may really want to see "end()" called even if incrementToken
+      // hasn't.
     } // else we already eagerly consumed inputTokenStream including end()
     if (endOffset != -1) {
       offsetAtt.setOffset(0, endOffset);
@@ -180,23 +204,22 @@ public final class ConcatenateGraphFilter extends TokenStream {
   @Override
   public void close() throws IOException {
     super.close();
-    //delegate lifecycle.  Note toAutomaton does not close the stream
+    // delegate lifecycle.  Note toAutomaton does not close the stream
     inputTokenStream.close();
     finiteStrings = null;
-    wasReset = false;//reset
-    endOffset = -1;//reset
+    wasReset = false; // reset
+    endOffset = -1; // reset
   }
 
   /**
-   * Converts the tokenStream to an automaton, treating the transition labels as utf-8.  Does *not* close it.
+   * Converts the tokenStream to an automaton, treating the transition labels as utf-8. Does *not*
+   * close it.
    */
   public Automaton toAutomaton() throws IOException {
     return toAutomaton(false);
   }
 
-  /**
-   * Converts the tokenStream to an automaton.  Does *not* close it.
-   */
+  /** Converts the tokenStream to an automaton. Does *not* close it. */
   public Automaton toAutomaton(boolean unicodeAware) throws IOException {
     // TODO refactor this
     // maybe we could hook up a modified automaton from TermAutomatonQuery here?
@@ -224,9 +247,7 @@ public final class ConcatenateGraphFilter extends TokenStream {
     return Operations.determinize(automaton, maxGraphExpansions);
   }
 
-  /**
-   * Just escapes the {@link #SEP_LABEL} byte with an extra.
-   */
+  /** Just escapes the {@link #SEP_LABEL} byte with an extra. */
   private static final class EscapingTokenStreamToAutomaton extends TokenStreamToAutomaton {
 
     final BytesRefBuilder spare = new BytesRefBuilder();
@@ -310,34 +331,29 @@ public final class ConcatenateGraphFilter extends TokenStream {
 
   /**
    * Attribute providing access to the term builder and UTF-16 conversion
+   *
    * @lucene.internal
    */
   public interface BytesRefBuilderTermAttribute extends TermToBytesRefAttribute {
-    /**
-     * Returns the builder from which the term is derived.
-     */
+    /** Returns the builder from which the term is derived. */
     BytesRefBuilder builder();
 
-    /**
-     * Returns the term represented as UTF-16
-     */
+    /** Returns the term represented as UTF-16 */
     CharSequence toUTF16();
   }
 
   /**
    * Implementation of {@link BytesRefBuilderTermAttribute}
+   *
    * @lucene.internal
    */
-  public static final class BytesRefBuilderTermAttributeImpl extends AttributeImpl implements BytesRefBuilderTermAttribute, TermToBytesRefAttribute {
+  public static final class BytesRefBuilderTermAttributeImpl extends AttributeImpl
+      implements BytesRefBuilderTermAttribute, TermToBytesRefAttribute {
     private final BytesRefBuilder bytes = new BytesRefBuilder();
     private transient CharsRefBuilder charsRef;
 
-    /**
-     * Sole constructor
-     * no-op
-     */
-    public BytesRefBuilderTermAttributeImpl() {
-    }
+    /** Sole constructor no-op */
+    public BytesRefBuilderTermAttributeImpl() {}
 
     @Override
     public BytesRefBuilder builder() {

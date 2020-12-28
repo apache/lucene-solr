@@ -29,41 +29,41 @@ allprojects { prj ->
       java {
         // TODO: work out how to have multiple different header files (we have
         // classes in the codebase that have original headers).
-
         // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
 
         switch (project.path) {
           // These modules are complete - all sources scanned.
-          case ":lucene:highlighter":
-            target "src/java/**", "src/test/**"
-            targetExclude "**/overview.html", "**/CambridgeMA.utf8"
+          case ":lucene:core":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**", "**/StandardTokenizerImpl.java"
             break
 
-          // Partially complete.
-          case ":lucene:core":
-            target "src/java/**", "src/test/**"
-            targetExclude "**/overview.html",
-                "**/META-INF/**",
-                "**/StandardTokenizerImpl.jflex",
-                "**/StandardTokenizerImpl.java",
-                "**/createLevAutomata.py",
-                "**/UTF32ToUTF8.py",
-                "**/gen_BulkOperation.py",
-                "**/gen_Packed64SingleBlock.py",
-                "**/makeEuroparlLineFile.py",
-                "**/wordliststopwords.txt",
-                "**/wordliststopwords_nocomment.txt",
-                "**/gen_ForUtil.py"
+          case ":lucene:highlighter":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+          case ":lucene:queries":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
             break
 
           case ":lucene:analysis:common":
-            target "src/**/org/apache/lucene/analysis/ar/**",
-                   "src/**/org/apache/lucene/collation/**"
-            targetExclude "**/resources/**"
+            target "src/**/*.java"
+            targetExclude "**/resources/**",
+                "**/HTMLStripCharFilter.java",
+                "**/UAX29URLEmailTokenizerImpl.java",
+                "**/tartarus/**"
             break
+
+          // Partially complete.
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:analysis:icu":
@@ -87,7 +87,6 @@ allprojects { prj ->
           case ":lucene:memory":
           case ":lucene:misc":
           case ":lucene:monitor":
-          case ":lucene:queries":
           case ":lucene:queryparser":
           case ":lucene:replicator":
           case ":lucene:sandbox":

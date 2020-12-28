@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link PatternReplaceFilter}. 
+ * Factory for {@link PatternReplaceFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -36,7 +35,6 @@ import java.util.regex.Pattern;
  * &lt;/fieldType&gt;</pre>
  *
  * @see PatternReplaceFilter
- *
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
@@ -48,7 +46,7 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
   final Pattern pattern;
   final String replacement;
   final boolean replaceAll;
-  
+
   /** Creates a new PatternReplaceFilterFactory */
   public PatternReplaceFilterFactory(Map<String, String> args) {
     super(args);

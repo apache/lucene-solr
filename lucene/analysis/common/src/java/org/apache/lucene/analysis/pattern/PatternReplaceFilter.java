@@ -16,24 +16,20 @@
  */
 package org.apache.lucene.analysis.pattern;
 
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-import java.io.IOException;
-
 /**
- * A TokenFilter which applies a Pattern to each token in the stream,
- * replacing match occurrences with the specified replacement string.
+ * A TokenFilter which applies a Pattern to each token in the stream, replacing match occurrences
+ * with the specified replacement string.
  *
- * <p>
- * <b>Note:</b> Depending on the input and the pattern used and the input
- * TokenStream, this TokenFilter may produce Tokens whose text is the empty
- * string.
- * </p>
- * 
+ * <p><b>Note:</b> Depending on the input and the pattern used and the input TokenStream, this
+ * TokenFilter may produce Tokens whose text is the empty string.
+ *
  * @see Pattern
  */
 public final class PatternReplaceFilter extends TokenFilter {
@@ -47,26 +43,23 @@ public final class PatternReplaceFilter extends TokenFilter {
    *
    * @param in the TokenStream to process
    * @param p the patterm to apply to each Token
-   * @param replacement the "replacement string" to substitute, if null a
-   *        blank string will be used. Note that this is not the literal
-   *        string that will be used, '$' and '\' have special meaning.
+   * @param replacement the "replacement string" to substitute, if null a blank string will be used.
+   *     Note that this is not the literal string that will be used, '$' and '\' have special
+   *     meaning.
    * @param all if true, all matches will be replaced otherwise just the first match.
    * @see Matcher#quoteReplacement
    */
-  public PatternReplaceFilter(TokenStream in,
-                              Pattern p,
-                              String replacement,
-                              boolean all) {
+  public PatternReplaceFilter(TokenStream in, Pattern p, String replacement, boolean all) {
     super(in);
     this.replacement = (null == replacement) ? "" : replacement;
-    this.all=all;
+    this.all = all;
     this.m = p.matcher(termAtt);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (!input.incrementToken()) return false;
-    
+
     m.reset();
     if (m.find()) {
       // replaceAll/replaceFirst will reset() this previous find.
@@ -76,5 +69,4 @@ public final class PatternReplaceFilter extends TokenFilter {
 
     return true;
   }
-
 }

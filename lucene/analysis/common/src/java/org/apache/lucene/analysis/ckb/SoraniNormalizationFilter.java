@@ -16,17 +16,12 @@
  */
 package org.apache.lucene.analysis.ckb;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-/**
- * A {@link TokenFilter} that applies {@link SoraniNormalizer} to normalize the
- * orthography.
- */
+/** A {@link TokenFilter} that applies {@link SoraniNormalizer} to normalize the orthography. */
 public final class SoraniNormalizationFilter extends TokenFilter {
   private final SoraniNormalizer normalizer = new SoraniNormalizer();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -41,7 +36,7 @@ public final class SoraniNormalizationFilter extends TokenFilter {
       final int newlen = normalizer.normalize(termAtt.buffer(), termAtt.length());
       termAtt.setLength(newlen);
       return true;
-    } 
+    }
     return false;
   }
 }

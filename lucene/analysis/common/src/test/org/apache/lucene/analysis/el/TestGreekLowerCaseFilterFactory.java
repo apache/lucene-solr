@@ -16,32 +16,29 @@
  */
 package org.apache.lucene.analysis.el;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Greek lowercase filter factory is working.
- */
+/** Simple tests to ensure the Greek lowercase filter factory is working. */
 public class TestGreekLowerCaseFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually lowercases (and a bit more) greek text.
-   */
+  /** Ensure the filter actually lowercases (and a bit more) greek text. */
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("GreekLowerCase").create(stream);
-    assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
+    assertTokenStreamContents(stream, new String[] {"μαιοσ", "μαιοσ"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("GreekLowerCase", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("GreekLowerCase", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

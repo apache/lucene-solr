@@ -18,7 +18,6 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.FilterMatchesIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
@@ -27,9 +26,9 @@ import org.apache.lucene.util.ArrayUtil;
 class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMatchesIterator {
 
   private boolean positioned = false;
-  private int[] posAndOffsets = new int[4*4];
+  private int[] posAndOffsets = new int[4 * 4];
   private Query[] matchingQueries = new Query[4];
-  private int count = 0; 
+  private int count = 0;
 
   CachingMatchesIterator(IntervalMatchesIterator in) {
     super(in);
@@ -44,9 +43,8 @@ class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMa
       posAndOffsets[1] = in.endPosition();
       posAndOffsets[2] = in.startOffset();
       posAndOffsets[3] = in.endOffset();
-      matchingQueries [0] = in.getQuery();
-    }
-    else {
+      matchingQueries[0] = in.getQuery();
+    } else {
       while (mi.next()) {
         if (count * 4 >= posAndOffsets.length) {
           posAndOffsets = ArrayUtil.grow(posAndOffsets, (count + 1) * 4);
@@ -66,8 +64,7 @@ class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMa
   public boolean next() throws IOException {
     if (positioned == false) {
       positioned = true;
-    }
-    else {
+    } else {
       cache();
     }
     return in.next();
@@ -135,11 +132,11 @@ class CachingMatchesIterator extends FilterMatchesIterator implements IntervalMa
 
   @Override
   public int gaps() {
-    return ((IntervalMatchesIterator)in).gaps();
+    return ((IntervalMatchesIterator) in).gaps();
   }
 
   @Override
   public int width() {
-    return ((IntervalMatchesIterator)in).width();
+    return ((IntervalMatchesIterator) in).width();
   }
 }

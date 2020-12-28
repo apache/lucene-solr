@@ -17,9 +17,10 @@
 
 package org.apache.lucene.queries.function;
 
+import static org.apache.lucene.queries.function.FunctionMatchQuery.DEFAULT_MATCH_COST;
+
 import java.io.IOException;
 import java.util.function.DoublePredicate;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -30,8 +31,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import static org.apache.lucene.queries.function.FunctionMatchQuery.DEFAULT_MATCH_COST;
 
 public class TestFunctionMatchQuery extends FunctionTestSetup {
 
@@ -60,7 +59,6 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
     assertEquals(13, docs.scoreDocs[1].doc);
 
     QueryUtils.check(random(), fmq, searcher, rarely());
-
   }
 
   public void testTwoPhaseIteratorMatchCost() throws IOException {
@@ -78,8 +76,8 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
   private static float getMatchCost(FunctionMatchQuery fmq) throws IOException {
     LeafReaderContext ctx = reader.leaves().get(0);
     return fmq.createWeight(searcher, ScoreMode.TOP_DOCS, 1)
-      .scorer(ctx)
-      .twoPhaseIterator()
-      .matchCost();
+        .scorer(ctx)
+        .twoPhaseIterator()
+        .matchCost();
   }
 }
