@@ -419,7 +419,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
             long endExchangeBuffers = System.nanoTime();
-            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000000)));
+            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000)));
           } finally {
           }
           buffer = buffers.getOutputBuffer();
@@ -442,7 +442,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
     for (FieldWriter fieldWriter : writers) {
-      if (fieldWriter.write(sortDoc, context.reader(), ew, fieldIndex)) {
+      if (fieldWriter.write(sortDoc, context, ew, fieldIndex)) {
         ++fieldIndex;
       }
     }

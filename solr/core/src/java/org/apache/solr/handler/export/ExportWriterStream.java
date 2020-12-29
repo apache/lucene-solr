@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 
-import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -59,7 +58,6 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   int index = -1;
   ExportBuffers exportBuffers;
   ExportBuffers.Buffer buffer;
-  Timer.Context writeOutputTimerContext;
 
   private static final class TupleEntryWriter implements EntryWriter {
     Tuple tuple;
@@ -132,9 +130,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (writeOutputTimerContext != null) {
-      writeOutputTimerContext.stop();
-    }
+
     exportBuffers = null;
   }
 
@@ -142,18 +138,17 @@ public class ExportWriterStream extends TupleStream implements Expressible {
   public Tuple read() throws IOException {
     Tuple res = null;
     if (pos < 0) {
-      if (writeOutputTimerContext != null) {
-        writeOutputTimerContext.stop();
-        writeOutputTimerContext = null;
-      }
+
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
         log.debug("--- ews exchange empty buffer {}", buffer);
         boolean exchanged = false;
         while (!exchanged) {
-          Timer.Context timerContext = exportBuffers.getWriterWaitTimer().time();
           try {
+            long startExchangeBuffers = System.nanoTime();
             exportBuffers.exchangeBuffers();
+            long endExchangeBuffers = System.nanoTime();
+            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000)));
             exchanged = true;
           } catch (TimeoutException e) {
             log.debug("--- ews timeout loop");
@@ -176,7 +171,6 @@ public class ExportWriterStream extends TupleStream implements Expressible {
             }
             break;
           } finally {
-            timerContext.stop();
           }
         }
       } catch (InterruptedException e) {
@@ -207,14 +201,10 @@ public class ExportWriterStream extends TupleStream implements Expressible {
     }
     if (res != null) {
       // only errors or EOF assigned result so far
-      if (writeOutputTimerContext != null) {
-        writeOutputTimerContext.stop();
-      }
+
       return res;
     }
-    if (writeOutputTimerContext == null) {
-      writeOutputTimerContext = exportBuffers.getWriteOutputBufferTimer().time();
-    }
+
     SortDoc sortDoc = buffer.outDocs[++index];
     tupleEntryWriter.tuple = new Tuple();
     exportBuffers.exportWriter.writeDoc(sortDoc, exportBuffers.leaves, tupleEntryWriter, exportBuffers.exportWriter.fieldWriters);

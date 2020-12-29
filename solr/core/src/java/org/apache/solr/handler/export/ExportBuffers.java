@@ -107,7 +107,7 @@ class ExportBuffers {
             long startBufferWait = System.nanoTime();
             exchangeBuffers();
             long endBufferWait = System.nanoTime();
-            log.debug("Waited for write thread:"+Long.toString(((endBufferWait-startBufferWait)/1000000000)));
+            log.debug("Waited for writer thread:"+Long.toString(((endBufferWait-startBufferWait)/1000000)));
           } finally {
 
           }
