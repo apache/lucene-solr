@@ -206,7 +206,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
         return new WANDScorer(weight, optionalScorers, minShouldMatch);
       } else if (minShouldMatch > 1) {
         // nocommit minShouldMath > 1 && scoreMode != ScoreMode.TOP_SCORES still requires MinShouldMatchSumScorer.
-        // Do we want to depcate this entirely now ?
+        // Do we want to deprecate this entirely now ?
         return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
       } else {
         return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);

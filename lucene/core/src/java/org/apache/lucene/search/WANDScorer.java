@@ -136,12 +136,14 @@ final class WANDScorer extends Scorer {
   WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) throws IOException {
     super(weight);
 
-    if (minShouldMatch > scorers.size()) {
-      throw new IllegalArgumentException("minShouldMatch should be <= the number of scorers");
+    if (minShouldMatch >= scorers.size()) {
+      throw new IllegalArgumentException("minShouldMatch should be < the number of scorers");
     }
 
     this.minCompetitiveScore = 0;
-    this.minShouldMatch = minShouldMatch > 0 ? minShouldMatch : 0;
+
+    assert minShouldMatch >=0 : "minShouldMatch should not be negative, but got " + minShouldMatch;
+    this.minShouldMatch = minShouldMatch;
 
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
