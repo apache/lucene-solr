@@ -392,6 +392,7 @@
          threaded operation and thus is generally faster than LRUCache
          when the hit ratio of the cache is high (> 75%), and may be
          faster under other scenarios on multi-cpu systems.
+         Starting with Solr 9.0 the default cache implementation used is CaffeineCache.
     -->
 
     <!-- Filter Cache
