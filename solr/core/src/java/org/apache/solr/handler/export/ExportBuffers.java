@@ -159,7 +159,7 @@ class ExportBuffers {
   }
 
   private void swapBuffers() {
-    log.debug("--- swap buffers");
+    //log.debug("--- swap buffers");
     Buffer one = fillBuffer;
     fillBuffer = outputBuffer;
     outputBuffer = one;

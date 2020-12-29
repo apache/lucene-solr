@@ -414,7 +414,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             }
           } finally {
           }
-          log.debug("--- writer exchanging from {}", buffer);
+          //log.debug("--- writer exchanging from {}", buffer);
           try {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
@@ -423,7 +423,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           } finally {
           }
           buffer = buffers.getOutputBuffer();
-          log.debug("--- writer got {}", buffer);
+          //log.debug("--- writer got {}", buffer);
         }
         return true;
       });

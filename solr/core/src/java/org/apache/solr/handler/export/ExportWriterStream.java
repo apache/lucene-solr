@@ -141,7 +141,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
 
       try {
         buffer.outDocsIndex = ExportBuffers.Buffer.EMPTY;
-        log.debug("--- ews exchange empty buffer {}", buffer);
+        //log.debug("--- ews exchange empty buffer {}", buffer);
         boolean exchanged = false;
         while (!exchanged) {
           try {
