@@ -1469,7 +1469,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         return false;
       });
     } catch (TimeoutException | InterruptedException e) {
-      cc.getZkController().getZkStateReader().debugCollectionState(collectionName);
       String error = "Timeout waiting for active collection " + collectionName + " with timeout=" + seconds;
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }

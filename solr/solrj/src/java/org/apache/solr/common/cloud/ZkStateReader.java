@@ -264,20 +264,6 @@ public class ZkStateReader implements SolrCloseable {
     return new AutoScalingConfig(map);
   }
 
-  //nocommit
-  public void debugCollectionState(String collectionName) {
-    try {
-      String path = getCollectionPath(collectionName);
-      byte[] bytes = zkClient.getData(path, null, null, true);
-      log.info("{}/state.json: {}", collectionName, new String(bytes, StandardCharsets.UTF_8));
-      log.info("{}/state.json/: {}", collectionName, zkClient.getChildren(path, null, true));
-    } catch (Exception e) {
-
-      log.error("", e);
-    }
-
-  }
-
   private static class CollectionWatch<T> {
 
     int coreRefCount = 0;
@@ -803,12 +789,12 @@ public class ZkStateReader implements SolrCloseable {
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         boolean shouldFetch = true;
         if (cachedDocCollection != null) {
-          Stat exists = null;
+          Stat freshStats = null;
           try {
-            exists = zkClient.exists(getCollectionPath(collName), null, true);
+            freshStats = zkClient.exists(getCollectionPath(collName), null, true);
           } catch (Exception e) {
           }
-          if (exists != null && !cachedDocCollection.isModified(exists.getVersion(), exists.getCversion())) {
+          if (freshStats != null && !cachedDocCollection.isModified(freshStats.getVersion(), freshStats.getCversion())) {
             shouldFetch = false;
           }
         }

@@ -182,7 +182,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         if (created) break;
       }
       if (!created) {
-        ocmh.zkStateReader.debugCollectionState(collectionName);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
       }
 
