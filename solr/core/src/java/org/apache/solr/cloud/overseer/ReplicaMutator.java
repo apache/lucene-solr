@@ -293,7 +293,7 @@ public class ReplicaMutator {
       persistCollectionState = true;
     }
 
-    Slice slice = collection != null ?  collection.getSlice(sliceName) : null;
+    Slice slice = collection != null ? collection.getSlice(sliceName) : null;
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(message.getProperties());
     Replica oldReplica = null;
@@ -521,4 +521,3 @@ public class ReplicaMutator {
     return collection;
   }
 }
-

@@ -475,7 +475,7 @@ public class ZkController implements Closeable {
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
-    zkStateReader.nodeName =  nodeName;
+    zkStateReader.nodeName = nodeName;
 
     init(registerOnReconnect);
 

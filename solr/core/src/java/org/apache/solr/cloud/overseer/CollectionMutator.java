@@ -128,7 +128,7 @@ public class CollectionMutator {
 
       if (message.containsKey(prop)) {
         hasAnyOps = true;
-        if (message.get(prop) == null)  {
+        if (message.get(prop) == null) {
           m.remove(prop);
         } else  {
           m.put(prop, message.get(prop));
@@ -197,4 +197,3 @@ public class CollectionMutator {
     return true;
   }
 }
-

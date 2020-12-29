@@ -492,7 +492,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
-    public Create setPerReplicaState(Boolean b) {this.perReplicaState =  b; return this; }
+    public Create setPerReplicaState(Boolean b) {this.perReplicaState = b; return this; }
 
     public Create setAlias(String alias) {
       this.alias = alias;

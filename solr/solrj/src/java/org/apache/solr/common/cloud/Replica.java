@@ -260,7 +260,7 @@ public class Replica extends ZkNodeProps {
     STATES.put(Replica.State.RECOVERING.shortName, Replica.State.RECOVERING);
     STATES.put(Replica.State.RECOVERY_FAILED.shortName, Replica.State.RECOVERY_FAILED);
   }
-  public static State getState(String  c) {
+  public static State getState(String c) {
   return STATES.get(c);
   }
 

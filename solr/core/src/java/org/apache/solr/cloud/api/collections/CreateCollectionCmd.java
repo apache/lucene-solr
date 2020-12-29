@@ -179,7 +179,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       while (! waitUntil.hasTimedOut()) {
         waitUntil.sleep(100);
         created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
-        if(created) break;
+        if (created) break;
       }
       if (!created) {
         ocmh.zkStateReader.debugCollectionState(collectionName);

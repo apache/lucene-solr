@@ -159,7 +159,7 @@ public class ZkStateWriter {
     }
     clusterState = prevState;
 
-    if (forceFlush ||  maybeFlushAfter()) {
+    if (forceFlush || maybeFlushAfter()) {
       ClusterState state = writePendingUpdates();
       if (callback != null) {
         callback.onWrite();
@@ -199,7 +199,7 @@ public class ZkStateWriter {
     return numUpdates != 0 || isClusterStateModified;
   }
   public ClusterState writeUpdate(ZkWriteCommand command) throws IllegalStateException, KeeperException, InterruptedException {
-    Map<String, ZkWriteCommand> commands =  new HashMap<>();
+    Map<String, ZkWriteCommand> commands = new HashMap<>();
     commands.put(command.name, command);
     return writePendingUpdates(commands);
   }
@@ -323,4 +323,3 @@ public class ZkStateWriter {
     void onWrite() throws Exception;
   }
 }
-

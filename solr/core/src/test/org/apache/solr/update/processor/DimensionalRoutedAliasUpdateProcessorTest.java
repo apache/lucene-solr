@@ -102,7 +102,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     CollectionAdminRequest.DimensionalRoutedAlias dra = CollectionAdminRequest.createDimensionalRoutedAlias(getAlias(),
         CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
             .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-            .setMaxShardsPerNode(2), TRA_Dim,  CRA_Dim);
+            .setMaxShardsPerNode(2), TRA_Dim, CRA_Dim);
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[TIME,CATEGORY]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
