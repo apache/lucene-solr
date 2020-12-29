@@ -65,6 +65,7 @@ allprojects { prj ->
 
           case ":lucene:demo":
           case ":lucene:analysis:morfologik":
+          case ":lucene:analysis:icu":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -72,7 +73,6 @@ allprojects { prj ->
           // Partially complete.
 
           // All others - disable reformatting/ checks for now.
-          case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
           case ":lucene:analysis:nori":
           case ":lucene:analysis:opennlp":
