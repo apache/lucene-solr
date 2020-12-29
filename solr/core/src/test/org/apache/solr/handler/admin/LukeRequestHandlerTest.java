@@ -53,6 +53,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
         "solr_tt", "10",
         "solr_b", "true",
         "solr_i", "10",
+        "solr_pi", "10",
         "solr_l", "10",
         "solr_f", "10",
         "solr_d", "10",
@@ -61,7 +62,8 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
         "solr_tf", "10",
         "solr_td", "10",
         "solr_dt", "2000-01-01T01:01:01Z",
-        "solr_tdt", "2000-01-01T01:01:01Z"
+        "solr_tdt", "2000-01-01T01:01:01Z",
+        "solr_pdt", "2000-01-01T01:01:01Z"
     ));
     assertU(commit());
 
@@ -107,7 +109,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     // code should be the same for all fields, but just in case do several
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
         "solr_td","solr_dt","solr_b",
-        "solr_sS","solr_sI")) {
+        "solr_sS","solr_sI", "solr_pi", "solr_pdt")) {
 
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many schema flags as expected ("+numFlags+") for " + f,
@@ -119,7 +121,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     // diff loop for checking 'index' flags,
     // only valid for fields that are indexed & stored
     for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-        "solr_td","solr_dt","solr_b")) {
+        "solr_td","solr_dt","solr_b", "solr_pi", "solr_pdt")) {
       if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
       final String xp = getFieldXPathPrefix(f);
       assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
@@ -198,7 +200,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
               field(f) + "lst[@name='topTerms']/int[@name='Solr']",
               "count("+field(f)+"lst[@name='topTerms']/int)=2");
     }
-    
+
     assertQ(req("qt", "/admin/luke", "fl", f, "numTerms", "1"),
             // no garuntee which one we find
             "count("+field(f)+"lst[@name='topTerms']/int)=1");
@@ -211,6 +213,12 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       assertQ(req("qt", "/admin/luke", "fl", "bogus_s", "numTerms", n),
               "count("+field(f)+"lst[@name='topTerms']/int)=0");
     }
+  }
+
+  public void testPointFieldsInDocId() throws  Exception {
+    final String f = "solr_pi";
+    assertQ(req("qt", "/admin/luke", "docId", "0", "numTerms", "1", "fl", f),
+        "//lst[@name='lucene']/lst[@name='"+f+"']/int[@name='docFreq']=1");
   }
 
   /** @see CustomAnalyzerStrField */

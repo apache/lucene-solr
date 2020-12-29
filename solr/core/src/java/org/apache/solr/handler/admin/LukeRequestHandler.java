@@ -36,13 +36,13 @@ import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -52,6 +52,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -75,6 +77,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
@@ -168,7 +171,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         throw new SolrException( SolrException.ErrorCode.NOT_FOUND, "Can't find document: "+docId );
       }
 
-      SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, reader, schema );
+      SimpleOrderedMap<Object> info = getDocumentFieldsInfo( doc, docId, searcher, schema );
 
       SimpleOrderedMap<Object> docinfo = new SimpleOrderedMap<>();
       docinfo.add( "docId", docId );
@@ -275,7 +278,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return key;
   }
 
-  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader,
+  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, SolrIndexSearcher searcher,
                                                                  IndexSchema schema ) throws IOException
   {
     final CharsRefBuilder spare = new CharsRefBuilder();
@@ -300,15 +303,26 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (bytes != null) {
         f.add( "binary", Base64.byteArrayToBase64(bytes.bytes, bytes.offset, bytes.length));
       }
-      if (!ftype.isPointField()) {
+      if (ftype != null && ftype.isPointField()) {
+        Query q;
+        if (ftype.getNumberType() == NumberType.DATE) {
+          q = LongPoint.newExactQuery(field.name(), field.numericValue().longValue());
+        } else {
+          q = ftype.getFieldQuery(null, sfield, field.stringValue());
+        }
+
+        TotalHitCountCollector hcc = new TotalHitCountCollector();
+        searcher.search(q, hcc);
+        f.add( "docFreq", hcc.getTotalHits() ); // this can be 0 for non-indexed fields
+      } else {
         Term t = new Term(field.name(), ftype!=null ? ftype.storedToIndexed(field) : field.stringValue());
-        f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
-      }// TODO: Calculate docFreq for point fields
+        f.add( "docFreq", t.text()==null ? 0 : searcher.docFreq( t ) ); // this can be 0 for non-indexed fields
+      }
 
       // If we have a term vector, return that
       if( field.fieldType().storeTermVectors() ) {
         try {
-          Terms v = reader.getTermVector( docId, field.name() );
+          Terms v = searcher.getIndexReader().getTermVector( docId, field.name() );
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
             final TermsEnum termsEnum = v.iterator();
