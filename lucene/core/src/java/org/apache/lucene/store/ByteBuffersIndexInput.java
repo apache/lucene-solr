@@ -188,6 +188,12 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
+  public void readFloats(float[] floats, int offset, int len) throws IOException {
+    ensureOpen();
+    in.readFloats(floats, offset, len);
+  }
+
+  @Override
   public IndexInput clone() {
     ensureOpen();
     ByteBuffersIndexInput cloned =

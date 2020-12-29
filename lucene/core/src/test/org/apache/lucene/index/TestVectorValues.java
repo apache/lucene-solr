@@ -43,12 +43,17 @@ public class TestVectorValues extends LuceneTestCase {
   private IndexWriterConfig createIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(Codec.forName("Lucene90"));
+    iwc.setUseCompoundFile(false);
     return iwc;
+  }
+
+  Directory newFSDirectory() throws IOException {
+    return FSDirectory.open(createTempDir());
   }
 
   // Suddenly add vectors to an existing field:
   public void testUpgradeFieldToVectors() throws Exception {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(newStringField("f", "foo", Store.NO));
@@ -93,7 +98,7 @@ public class TestVectorValues extends LuceneTestCase {
   // Illegal schema change tests:
 
   public void testIllegalDimChangeTwoDocs() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -113,7 +118,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalSearchStrategyChange() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -134,7 +139,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalDimChangeTwoWriters() throws Exception {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -153,7 +158,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalSearchStrategyChangeTwoWriters() throws Exception {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -176,8 +181,8 @@ public class TestVectorValues extends LuceneTestCase {
     String fieldName = "field";
     Document doc = new Document();
     doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
@@ -198,8 +203,8 @@ public class TestVectorValues extends LuceneTestCase {
   public void testAddIndexesDirectory1() throws Exception {
     String fieldName = "field";
     Document doc = new Document();
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
@@ -225,8 +230,8 @@ public class TestVectorValues extends LuceneTestCase {
     float[] vector = new float[1];
     Document doc = new Document();
     doc.add(new VectorField(fieldName, vector, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
@@ -251,8 +256,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalDimChangeViaAddIndexesDirectory() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
@@ -272,8 +277,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalSearchStrategyChangeViaAddIndexesDirectory() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -293,8 +298,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalDimChangeViaAddIndexesCodecReader() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
@@ -317,8 +322,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalSearchStrategyChangeViaAddIndexesCodecReader() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -342,8 +347,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalDimChangeViaAddIndexesSlowCodecReader() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -364,8 +369,8 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalSearchStrategyChangeViaAddIndexesSlowCodecReader() throws Exception {
-    try (Directory dir = newDirectory();
-        Directory dir2 = newDirectory()) {
+    try (Directory dir = newFSDirectory();
+        Directory dir2 = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -387,7 +392,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalMultipleValues() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -401,7 +406,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalDimensionTooLarge() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       expectThrows(
@@ -420,7 +425,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIllegalEmptyVector() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       Exception e =
@@ -437,7 +442,7 @@ public class TestVectorValues extends LuceneTestCase {
 
   // Write vectors, one segment with default codec, another with SimpleText, then forceMerge
   public void testDifferentCodecs1() throws Exception {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -458,7 +463,7 @@ public class TestVectorValues extends LuceneTestCase {
   public void testDifferentCodecs2() throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(Codec.forName("SimpleText"));
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, iwc)) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -484,7 +489,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testDeleteAllVectorDocs() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new StringField("id", "0", Store.NO));
@@ -540,7 +545,7 @@ public class TestVectorValues extends LuceneTestCase {
           VectorValues.SearchStrategy.values()[
               random().nextInt(VectorValues.SearchStrategy.values().length)];
     }
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         RandomIndexWriter w = new RandomIndexWriter(random(), dir, createIndexWriterConfig())) {
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
@@ -577,12 +582,20 @@ public class TestVectorValues extends LuceneTestCase {
     }
   }
 
+  public void testPadding() {
+    int[] expected = {0, 3, 2, 1, 0};
+    for (int i = 0; i < 4; i++) {
+      int padding = (4 - (i & 0x3)) & 0x3;
+      assertEquals (expected[i], padding);
+    }
+  }
+
   public void testIndexedValueNotAliased() throws Exception {
     // We copy indexed values (as for BinaryDocValues) so the input float[] can be reused across
     // calls to IndexWriter.addDocument.
     String fieldName = "field";
     float[] v = {0};
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter iw = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc1 = new Document();
       doc1.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
@@ -613,7 +626,7 @@ public class TestVectorValues extends LuceneTestCase {
     IndexWriterConfig iwc = createIndexWriterConfig();
     iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
     String fieldName = "field";
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter iw = new IndexWriter(dir, iwc)) {
       add(iw, fieldName, 1, 1, new float[] {-1, 0});
       add(iw, fieldName, 4, 4, new float[] {0, 1});
@@ -644,7 +657,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testIndexMultipleVectorFields() throws Exception {
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
       Document doc = new Document();
       float[] v = new float[] {1};
@@ -699,7 +712,7 @@ public class TestVectorValues extends LuceneTestCase {
       iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
     }
     String fieldName = "field";
-    try (Directory dir = newDirectory();
+    try (Directory dir = newFSDirectory();
         IndexWriter iw = new IndexWriter(dir, iwc)) {
       int numDoc = atLeast(100);
       int dimension = atLeast(10);
@@ -783,7 +796,7 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   public void testCheckIndexIncludesVectors() throws Exception {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory()) {
       try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("v1", randomVector(3), VectorValues.SearchStrategy.NONE));

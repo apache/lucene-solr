@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.codecs.VectorWriter;
@@ -269,9 +270,11 @@ class VectorValuesWriter {
       this.vectors = vectors;
       this.dimension = dimension;
       this.searchStrategy = searchStrategy;
-      buffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      buffer = ByteBuffer.allocate(dimension * Float.BYTES)
+        .order(ByteOrder.LITTLE_ENDIAN);
       binaryValue = new BytesRef(buffer.array());
-      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES)
+        .order(ByteOrder.LITTLE_ENDIAN);
       raBinaryValue = new BytesRef(raBuffer.array());
       docsWithFieldIter = docsWithField.iterator();
     }

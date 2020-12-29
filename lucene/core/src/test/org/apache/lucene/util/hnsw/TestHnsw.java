@@ -61,7 +61,7 @@ public class TestHnsw extends LuceneTestCase {
     HnswGraph hnsw = builder.build(vectors.randomAccess());
     // Recreate the graph while indexing with the same random seed and write it out
     HnswGraphBuilder.randSeed = seed;
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = newFSDirectory(createTempDir())) {
       int nVec = 0, indexedDoc = 0;
       // Don't merge randomly, create a single segment because we rely on the docid ordering for
       // this test

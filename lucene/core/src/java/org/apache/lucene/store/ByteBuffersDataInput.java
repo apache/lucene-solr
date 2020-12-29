@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 import java.io.EOFException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +36,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 public final class ByteBuffersDataInput extends DataInput
     implements Accountable, RandomAccessInput {
   private final ByteBuffer[] blocks;
+  private final FloatBuffer[] floatBuffers;
   private final int blockBits;
   private final int blockMask;
   private final long size;
@@ -50,7 +53,7 @@ public final class ByteBuffersDataInput extends DataInput
     ensureAssumptions(buffers);
 
     this.blocks = buffers.stream().map(buf -> buf.asReadOnlyBuffer()).toArray(ByteBuffer[]::new);
-
+    this.floatBuffers = new FloatBuffer[blocks.length * Float.BYTES]; // pre-allocate this array create the FloatBuffers lazily
     if (blocks.length == 1) {
       this.blockBits = 32;
       this.blockMask = ~0;
@@ -195,6 +198,51 @@ public final class ByteBuffersDataInput extends DataInput
     } else {
       return (((long) readInt(pos)) << 32) | (readInt(pos + 4) & 0xFFFFFFFFL);
     }
+  }
+
+  @Override
+  public void readFloats(float [] arr, int off, int len) throws EOFException {
+    try {
+      while (len > 0) {
+        FloatBuffer floatBuffer = getFloatBuffer(pos);
+        floatBuffer.position(blockOffset(pos) >> 2);
+        int chunk = Math.min(len, floatBuffer.remaining());
+        if (chunk == 0) {
+          // nocommit - we need to stitch around the boundaries of these byte buffers. There doesn't seem to be
+          // any way to enforce alignment, even though we try, in Lucene90VectorWriter, I guess due to cfs
+          throw new EOFException();
+        }
+
+        // Update pos early on for EOF detection, then try to get buffer content.
+        pos += chunk << 2;
+        floatBuffer.get(arr, off, chunk);
+
+        len -= chunk;
+        off += chunk;
+      }
+    } catch (BufferUnderflowException | ArrayIndexOutOfBoundsException e) {
+      if (pos >= size()) {
+        throw new EOFException();
+      } else {
+        throw e; // Something is wrong.
+      }
+    }
+  }
+
+  private FloatBuffer getFloatBuffer(long pos) {
+    // This creates a separate FloatBuffer for each ByteBuffer/alignment combination that is observed.
+    int bufferIndex = blockIndex(pos);
+    int alignment = (int) pos & 0x3;
+    assert alignment == 0;
+    int floatBufferIndex = bufferIndex * Float.BYTES + alignment;
+    if (floatBuffers[floatBufferIndex] == null) {
+      ByteBuffer dup = blocks[bufferIndex].duplicate();
+      dup.position(alignment);
+      floatBuffers[floatBufferIndex] = dup
+          .order(ByteOrder.LITTLE_ENDIAN)
+          .asFloatBuffer();
+    }
+    return floatBuffers[floatBufferIndex];
   }
 
   public long position() {
