@@ -273,25 +273,13 @@ final class WANDScorer extends Scorer {
 
       @Override
       public boolean matches() throws IOException {
-        while (leadMaxScore < minCompetitiveScore) {
-          if (leadMaxScore + tailMaxScore >= minCompetitiveScore) {
+        while (leadMaxScore < minCompetitiveScore || freq < minShouldMatch) {
+          if (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
+            return false;
+          } else {
             // a match on doc is still possible, try to
             // advance scorers from the tail
             advanceTail();
-          } else {
-            return false;
-          }
-        }
-
-        // minCompetitiveScore satisfied, now checks if the doc has enough required number of matches
-        // Combining this loop with the above makes for complicated conditional checks, so keeping them separate for readability
-        while (freq < minShouldMatch) {
-          if (freq + tailSize >= minShouldMatch) {
-            // a match on doc is still possible, try to
-            // advance scorers from the tail
-            advanceTail();
-          } else {
-            return false;
           }
         }
 
