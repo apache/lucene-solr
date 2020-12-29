@@ -160,7 +160,7 @@ public class SliceMutator {
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
         replica = new ReplicaMutator(cloudManager).unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
-        newLeader= replica = new ReplicaMutator(cloudManager).setLeader(replica);
+        newLeader = replica = new ReplicaMutator(cloudManager).setLeader(replica);
       }
 
       newReplicas.put(replica.getName(), replica);

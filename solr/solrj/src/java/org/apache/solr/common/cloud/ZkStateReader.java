@@ -142,9 +142,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String LEGACY_CLOUD = "legacyCloud";
   public static final String SAMPLE_PERCENTAGE = "samplePercentage";
 
-  //nocommit
-  public String nodeName;
-
   /**
    * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
    */
@@ -1418,7 +1415,7 @@ public class ZkStateReader implements SolrCloseable {
           constructState(Collections.singleton(coll));
         }
         if (log.isDebugEnabled()) {
-          log.debug("node : {} updated per-replica states changed for: {}, ver: {} , new vals: {}", nodeName, coll, stat.getCversion(), replicaStates);
+          log.debug("updated per-replica states changed for: {}, ver: {} , new vals: {}", coll, stat.getCversion(), replicaStates);
         }
 
       } catch (NoNodeException e) {
@@ -1848,7 +1845,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     long waitStartTime = System.currentTimeMillis();
-    log.debug("{} is waiting for collectionState at : {}", nodeName, waitStartTime);
+    log.debug("waiting for collectionState at : {}", waitStartTime);
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
