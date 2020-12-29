@@ -67,6 +67,7 @@ allprojects { prj ->
           case ":lucene:analysis:morfologik":
           case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
+          case ":lucene:memory":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -88,7 +89,6 @@ allprojects { prj ->
           case ":lucene:grouping":
           case ":lucene:join":
           case ":lucene:luke":
-          case ":lucene:memory":
           case ":lucene:misc":
           case ":lucene:monitor":
           case ":lucene:queryparser":
