@@ -16,23 +16,21 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.IOException;
 
 /**
- * Represents content from a specified source, such as TREC, Reuters etc. A
- * {@link ContentSource} is responsible for creating {@link DocData} objects for
- * its documents to be consumed by {@link DocMaker}. It also keeps track
- * of various statistics, such as how many documents were generated, size in
- * bytes etc.
- * <p>
- * For supported configuration parameters see {@link ContentItemsSource}.
+ * Represents content from a specified source, such as TREC, Reuters etc. A {@link ContentSource} is
+ * responsible for creating {@link DocData} objects for its documents to be consumed by {@link
+ * DocMaker}. It also keeps track of various statistics, such as how many documents were generated,
+ * size in bytes etc.
+ *
+ * <p>For supported configuration parameters see {@link ContentItemsSource}.
  */
 public abstract class ContentSource extends ContentItemsSource {
-  
-  /** Returns the next {@link DocData} from the content source. 
-   * Implementations must account for multi-threading, as multiple threads 
-   * can call this method simultaneously. */
-  public abstract DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException;
 
+  /**
+   * Returns the next {@link DocData} from the content source. Implementations must account for
+   * multi-threading, as multiple threads can call this method simultaneously.
+   */
+  public abstract DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException;
 }

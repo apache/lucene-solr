@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Miscellaneous utilities for search quality benchmarking: query parsing, submission reports.
- */
+/** Miscellaneous utilities for search quality benchmarking: query parsing, submission reports. */
 package org.apache.lucene.benchmark.quality.utils;

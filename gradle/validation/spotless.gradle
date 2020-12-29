@@ -68,6 +68,7 @@ allprojects { prj ->
           case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
           case ":lucene:memory":
+          case ":lucene:benchmark":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -81,7 +82,6 @@ allprojects { prj ->
           case ":lucene:analysis:smartcn":
           case ":lucene:analysis:stempel":
           case ":lucene:backward-codecs":
-          case ":lucene:benchmark":
           case ":lucene:classification":
           case ":lucene:codecs":
           case ":lucene:expressions":
