@@ -1683,7 +1683,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           TopFieldDocs[] topFieldDocs = Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
           mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
         } else {
-          mergedTopDocs = needTopDocs? TopDocs.merge(0, len, topDocs): null;
+          mergedTopDocs = needTopDocs? TopDocs.merge(0, len, topDocs, true): null;
         }
         int totalHits = needTopDocs? (int)mergedTopDocs.totalHits.value: -1;
         maxScore = totalHits > 0 ? maxScore : 0.0f;
