@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.cn.smart;
 
-
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.util.Iterator;
 import java.util.Locale;
-
 import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -31,18 +29,19 @@ import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizer for Chinese or mixed Chinese-English text.
- * <p>
- * The analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text.
- * The text is first broken into sentences, then each sentence is segmented into words.
+ *
+ * <p>The analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified
+ * Chinese text. The text is first broken into sentences, then each sentence is segmented into
+ * words.
  */
 public class HMMChineseTokenizer extends SegmentingTokenizerBase {
   /** used for breaking the text into sentences */
   private static final BreakIterator sentenceProto = BreakIterator.getSentenceInstance(Locale.ROOT);
-  
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  
+
   private final WordSegmenter wordSegmenter = new WordSegmenter();
   private Iterator<SegToken> tokens;
 
@@ -50,10 +49,10 @@ public class HMMChineseTokenizer extends SegmentingTokenizerBase {
   public HMMChineseTokenizer() {
     this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
   }
-      
+
   /** Creates a new HMMChineseTokenizer, supplying the AttributeFactory */
   public HMMChineseTokenizer(AttributeFactory factory) {
-    super(factory, (BreakIterator)sentenceProto.clone());
+    super(factory, (BreakIterator) sentenceProto.clone());
   }
 
   @Override
@@ -75,7 +74,7 @@ public class HMMChineseTokenizer extends SegmentingTokenizerBase {
       return true;
     }
   }
-  
+
   @Override
   public void reset() throws IOException {
     super.reset();
