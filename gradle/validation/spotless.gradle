@@ -80,12 +80,16 @@ allprojects { prj ->
 
           // Partially complete.
 
+          case ":lucene:facet":
+            target "src/**/*.java"
+            targetExclude "**/taxonomy.8.6.3-cfs.zip"
+            break
+
           // All others - disable reformatting/ checks for now.
           case ":lucene:backward-codecs":
           case ":lucene:classification":
           case ":lucene:codecs":
           case ":lucene:expressions":
-          case ":lucene:facet":
           case ":lucene:grouping":
           case ":lucene:join":
           case ":lucene:luke":

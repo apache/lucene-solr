@@ -19,14 +19,12 @@ package org.apache.lucene.facet.taxonomy;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.util.Arrays;
-
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache; // javadocs
 import org.apache.lucene.facet.taxonomy.writercache.NameHashIntCacheLRU; // javadocs
 
 /**
- * Holds a sequence of string components, specifying the hierarchical name of a
- * category.
- * 
+ * Holds a sequence of string components, specifying the hierarchical name of a category.
+ *
  * @lucene.internal
  */
 public class FacetLabel implements Comparable<FacetLabel> {
@@ -37,16 +35,13 @@ public class FacetLabel implements Comparable<FacetLabel> {
    * silently dropped! Therefore we limit the number of characters to MAX/4 to
    * be on the safe side.
    */
-  /**
-   * The maximum number of characters a {@link FacetLabel} can have.
-   */
-  public final static int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
+  /** The maximum number of characters a {@link FacetLabel} can have. */
+  public static final int MAX_CATEGORY_PATH_LENGTH = (BYTE_BLOCK_SIZE - 2) / 4;
 
   /**
-   * The components of this {@link FacetLabel}. Note that this array may be
-   * shared with other {@link FacetLabel} instances, e.g. as a result of
-   * {@link #subpath(int)}, therefore you should traverse the array up to
-   * {@link #length} for this path's components.
+   * The components of this {@link FacetLabel}. Note that this array may be shared with other {@link
+   * FacetLabel} instances, e.g. as a result of {@link #subpath(int)}, therefore you should traverse
+   * the array up to {@link #length} for this path's components.
    */
   public final String[] components;
 
@@ -58,13 +53,15 @@ public class FacetLabel implements Comparable<FacetLabel> {
     // while the code which calls this method is safe, at some point a test
     // tripped on AIOOBE in toString, but we failed to reproduce. adding the
     // assert as a safety check.
-    assert prefixLen >= 0 && prefixLen <= copyFrom.components.length : 
-      "prefixLen cannot be negative nor larger than the given components' length: prefixLen=" + prefixLen
-        + " components.length=" + copyFrom.components.length;
+    assert prefixLen >= 0 && prefixLen <= copyFrom.components.length
+        : "prefixLen cannot be negative nor larger than the given components' length: prefixLen="
+            + prefixLen
+            + " components.length="
+            + copyFrom.components.length;
     this.components = copyFrom.components;
     length = prefixLen;
   }
-  
+
   /** Construct from the given path components. */
   public FacetLabel(final String... components) {
     this.components = components;
@@ -74,7 +71,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
 
   /** Construct from the dimension plus the given path components. */
   public FacetLabel(String dim, String[] path) {
-    components = new String[1+path.length];
+    components = new String[1 + path.length];
     components[0] = dim;
     System.arraycopy(path, 0, components, 1, path.length);
     length = components.length;
@@ -85,22 +82,25 @@ public class FacetLabel implements Comparable<FacetLabel> {
     long len = 0;
     for (String comp : components) {
       if (comp == null || comp.isEmpty()) {
-        throw new IllegalArgumentException("empty or null components not allowed: " + Arrays.toString(components));
+        throw new IllegalArgumentException(
+            "empty or null components not allowed: " + Arrays.toString(components));
       }
       len += comp.length();
     }
     len += components.length - 1; // add separators
     if (len > MAX_CATEGORY_PATH_LENGTH) {
-      throw new IllegalArgumentException("category path exceeds maximum allowed path length: max="
-          + MAX_CATEGORY_PATH_LENGTH + " len=" + len
-          + " path=" + Arrays.toString(components).substring(0, 30) + "...");
+      throw new IllegalArgumentException(
+          "category path exceeds maximum allowed path length: max="
+              + MAX_CATEGORY_PATH_LENGTH
+              + " len="
+              + len
+              + " path="
+              + Arrays.toString(components).substring(0, 30)
+              + "...");
     }
   }
 
-  /**
-   * Compares this path with another {@link FacetLabel} for lexicographic
-   * order.
-   */
+  /** Compares this path with another {@link FacetLabel} for lexicographic order. */
   @Override
   public int compareTo(FacetLabel other) {
     final int len = length < other.length ? length : other.length;
@@ -113,7 +113,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
         return 1; // this is 'after'
       }
     }
-    
+
     // one is a prefix of the other
     return length - other.length;
   }
@@ -123,12 +123,12 @@ public class FacetLabel implements Comparable<FacetLabel> {
     if (!(obj instanceof FacetLabel)) {
       return false;
     }
-    
+
     FacetLabel other = (FacetLabel) obj;
     if (length != other.length) {
       return false; // not same length, cannot be equal
     }
-    
+
     // CategoryPaths are more likely to differ at the last components, so start
     // from last-first
     for (int i = length - 1; i >= 0; i--) {
@@ -144,7 +144,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
     if (length == 0) {
       return 0;
     }
-    
+
     int hash = length;
     for (int i = 0; i < length; i++) {
       hash = hash * 31 + components[i].hashCode();
@@ -152,16 +152,16 @@ public class FacetLabel implements Comparable<FacetLabel> {
     return hash;
   }
 
-  /** Calculate a 64-bit hash function for this path.  This
-   *  is necessary for {@link NameHashIntCacheLRU} (the
-   *  default cache impl for {@link
-   *  LruTaxonomyWriterCache}) to reduce the chance of
-   *  "silent but deadly" collisions. */
+  /**
+   * Calculate a 64-bit hash function for this path. This is necessary for {@link
+   * NameHashIntCacheLRU} (the default cache impl for {@link LruTaxonomyWriterCache}) to reduce the
+   * chance of "silent but deadly" collisions.
+   */
   public long longHashCode() {
     if (length == 0) {
       return 0;
     }
-    
+
     long hash = length;
     for (int i = 0; i < length; i++) {
       hash = hash * 65599 + components[i].hashCode();
@@ -178,9 +178,7 @@ public class FacetLabel implements Comparable<FacetLabel> {
     }
   }
 
-  /**
-   * Returns a string representation of the path.
-   */
+  /** Returns a string representation of the path. */
   @Override
   public String toString() {
     if (length == 0) {

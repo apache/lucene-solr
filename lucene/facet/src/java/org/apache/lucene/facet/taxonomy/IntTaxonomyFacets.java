@@ -16,31 +16,30 @@
  */
 package org.apache.lucene.facet.taxonomy;
 
+import com.carrotsearch.hppc.IntIntScatterMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.FacetsConfig.DimConfig;
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.TopOrdAndIntQueue;
 
-import com.carrotsearch.hppc.IntIntScatterMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-
-/** Base class for all taxonomy-based facets that aggregate
- *  to a per-ords int[]. */
-
+/** Base class for all taxonomy-based facets that aggregate to a per-ords int[]. */
 public abstract class IntTaxonomyFacets extends TaxonomyFacets {
 
   /** Per-ordinal value. */
   private final int[] values;
+
   private final IntIntScatterMap sparseValues;
 
   /** Sole constructor. */
-  protected IntTaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+  protected IntTaxonomyFacets(
+      String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc)
+      throws IOException {
     super(indexFieldName, taxoReader, config);
 
     if (useHashTable(fc, taxoReader)) {
@@ -63,7 +62,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
       // counting all docs: use an array
       return false;
     }
-    
+
     int maxDoc = 0;
     int sumTotalHits = 0;
     for (MatchingDocs docs : fc.getMatchingDocs()) {
@@ -72,7 +71,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
     }
 
     // if our result set is < 10% of the index, we collect sparsely (use hash map):
-    return sumTotalHits < maxDoc/10;
+    return sumTotalHits < maxDoc / 10;
   }
 
   /** Increment the count for this ordinal by 1. */
@@ -101,7 +100,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
     int[] children = null;
-    for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
+    for (Map.Entry<String, DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
@@ -140,7 +139,8 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
       } else if (dimConfig.requireDimCount && dimConfig.multiValued) {
         // ok: we indexed all ords at index time
       } else {
-        throw new IllegalArgumentException("cannot return dimension-level value alone; use getTopChildren instead");
+        throw new IllegalArgumentException(
+            "cannot return dimension-level value alone; use getTopChildren instead");
       }
     }
     int ord = taxoReader.getOrdinal(new FacetLabel(dim, path));
@@ -163,7 +163,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
     }
 
     TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
-    
+
     int bottomValue = 0;
 
     int totValue = 0;
@@ -198,7 +198,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
       int[] children = getChildren();
       int[] siblings = getSiblings();
       int ord = children[dimOrd];
-      while(ord != TaxonomyReader.INVALID_ORDINAL) {
+      while (ord != TaxonomyReader.INVALID_ORDINAL) {
         int value = values[ord];
         if (value > 0) {
           totValue += value;
@@ -236,7 +236,7 @@ public abstract class IntTaxonomyFacets extends TaxonomyFacets {
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
+    for (int i = labelValues.length - 1; i >= 0; i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);

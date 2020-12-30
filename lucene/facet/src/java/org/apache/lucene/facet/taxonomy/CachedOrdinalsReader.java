@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader;
@@ -32,35 +31,26 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A per-segment cache of documents' facet ordinals. Every
- * {@link CachedOrds} holds the ordinals in a raw {@code
- * int[]}, and therefore consumes as much RAM as the total
- * number of ordinals found in the segment, but saves the
- * CPU cost of decoding ordinals during facet counting.
- * 
- * <p>
- * <b>NOTE:</b> every {@link CachedOrds} is limited to 2.1B
- * total ordinals. If that is a limitation for you then
- * consider limiting the segment size to fewer documents, or
- * use an alternative cache which pages through the category
- * ordinals.
- * 
- * <p>
- * <b>NOTE:</b> when using this cache, it is advised to use
- * a {@link DocValuesFormat} that does not cache the data in
- * memory, at least for the category lists fields, or
- * otherwise you'll be doing double-caching.
+ * A per-segment cache of documents' facet ordinals. Every {@link CachedOrds} holds the ordinals in
+ * a raw {@code int[]}, and therefore consumes as much RAM as the total number of ordinals found in
+ * the segment, but saves the CPU cost of decoding ordinals during facet counting.
  *
- * <p>
- * <b>NOTE:</b> create one instance of this and re-use it
- * for all facet implementations (the cache is per-instance,
- * not static).
+ * <p><b>NOTE:</b> every {@link CachedOrds} is limited to 2.1B total ordinals. If that is a
+ * limitation for you then consider limiting the segment size to fewer documents, or use an
+ * alternative cache which pages through the category ordinals.
+ *
+ * <p><b>NOTE:</b> when using this cache, it is advised to use a {@link DocValuesFormat} that does
+ * not cache the data in memory, at least for the category lists fields, or otherwise you'll be
+ * doing double-caching.
+ *
+ * <p><b>NOTE:</b> create one instance of this and re-use it for all facet implementations (the
+ * cache is per-instance, not static).
  */
 public class CachedOrdinalsReader extends OrdinalsReader implements Accountable {
 
   private final OrdinalsReader source;
 
-  private final Map<Object,CachedOrds> ordsCache = new WeakHashMap<>();
+  private final Map<Object, CachedOrds> ordsCache = new WeakHashMap<>();
 
   /** Sole constructor. */
   public CachedOrdinalsReader(OrdinalsReader source) {
@@ -95,7 +85,7 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
       public void get(int docID, IntsRef ordinals) {
         ordinals.ints = cachedOrds.ordinals;
         ordinals.offset = cachedOrds.offsets[docID];
-        ordinals.length = cachedOrds.offsets[docID+1] - ordinals.offset;
+        ordinals.length = cachedOrds.offsets[docID + 1] - ordinals.offset;
       }
     };
   }
@@ -110,8 +100,8 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
     public final int[] ordinals;
 
     /**
-     * Creates a new {@link CachedOrds} from the {@link BinaryDocValues}.
-     * Assumes that the {@link BinaryDocValues} is not {@code null}.
+     * Creates a new {@link CachedOrds} from the {@link BinaryDocValues}. Assumes that the {@link
+     * BinaryDocValues} is not {@code null}.
      */
     public CachedOrds(OrdinalsSegmentReader source, int maxDoc) throws IOException {
       offsets = new int[maxDoc + 1];
@@ -134,9 +124,9 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
         totOrds = nextLength;
       }
       offsets[maxDoc] = (int) totOrds;
-      
+
       // if ords array is bigger by more than 10% of what we really need, shrink it
-      if ((double) totOrds / ords.length < 0.9) { 
+      if ((double) totOrds / ords.length < 0.9) {
         this.ordinals = new int[(int) totOrds];
         System.arraycopy(ords, 0, this.ordinals, 0, (int) totOrds);
       } else {
@@ -157,13 +147,13 @@ public class CachedOrdinalsReader extends OrdinalsReader implements Accountable 
   @Override
   public synchronized long ramBytesUsed() {
     long bytes = 0;
-    for(CachedOrds ords : ordsCache.values()) {
+    for (CachedOrds ords : ordsCache.values()) {
       bytes += ords.ramBytesUsed();
     }
 
     return bytes;
   }
-  
+
   @Override
   public synchronized Collection<Accountable> getChildResources() {
     return Accountables.namedAccountables("segment", ordsCache);

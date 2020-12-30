@@ -19,7 +19,6 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.BulkScorer;
@@ -34,7 +33,7 @@ import org.apache.lucene.util.FixedBitSet;
 
 class DrillSidewaysScorer extends BulkScorer {
 
-  //private static boolean DEBUG = false;
+  // private static boolean DEBUG = false;
 
   private final Collector drillDownCollector;
   private LeafCollector drillDownLeafCollector;
@@ -50,13 +49,17 @@ class DrillSidewaysScorer extends BulkScorer {
   final boolean scoreSubDocsAtOnce;
 
   private static final int CHUNK = 2048;
-  private static final int MASK = CHUNK-1;
+  private static final int MASK = CHUNK - 1;
 
   private int collectDocID = -1;
   private float collectScore;
 
-  DrillSidewaysScorer(LeafReaderContext context, Scorer baseScorer, Collector drillDownCollector,
-                      DocsAndCost[] dims, boolean scoreSubDocsAtOnce) {
+  DrillSidewaysScorer(
+      LeafReaderContext context,
+      Scorer baseScorer,
+      Collector drillDownCollector,
+      DocsAndCost[] dims,
+      boolean scoreSubDocsAtOnce) {
     this.dims = dims;
     this.context = context;
     this.baseScorer = baseScorer;
@@ -71,17 +74,18 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   @Override
-  public int score(LeafCollector collector, Bits acceptDocs, int min, int maxDoc) throws IOException {
+  public int score(LeafCollector collector, Bits acceptDocs, int min, int maxDoc)
+      throws IOException {
     if (min != 0) {
       throw new IllegalArgumentException("min must be 0, got " + min);
     }
     if (maxDoc != Integer.MAX_VALUE) {
       throw new IllegalArgumentException("maxDoc must be Integer.MAX_VALUE");
     }
-    //if (DEBUG) {
+    // if (DEBUG) {
     //  System.out.println("\nscore: reader=" + context.reader());
-    //}
-    //System.out.println("score r=" + context.reader());
+    // }
+    // System.out.println("score r=" + context.reader());
     ScoreAndDoc scorer = new ScoreAndDoc();
     collector.setScorer(scorer);
     if (drillDownCollector != null) {
@@ -101,7 +105,7 @@ class DrillSidewaysScorer extends BulkScorer {
     final int numDims = dims.length;
 
     long drillDownCost = 0;
-    for (int dim=0;dim<numDims;dim++) {
+    for (int dim = 0; dim < numDims; dim++) {
       drillDownCost += dims[dim].approximation.cost();
     }
 
@@ -126,32 +130,35 @@ class DrillSidewaysScorer extends BulkScorer {
     }
     */
 
-    if (scoreSubDocsAtOnce || baseQueryCost < drillDownCost/10) {
-      //System.out.println("queryFirst: baseScorer=" + baseScorer + " disis.length=" + disis.length + " bits.length=" + bits.length);
+    if (scoreSubDocsAtOnce || baseQueryCost < drillDownCost / 10) {
+      // System.out.println("queryFirst: baseScorer=" + baseScorer + " disis.length=" + disis.length
+      // + " bits.length=" + bits.length);
       doQueryFirstScoring(acceptDocs, collector, dims);
-    } else if (numDims > 1 && drillDownAdvancedCost < baseQueryCost/10) {
-      //System.out.println("drillDownAdvance");
+    } else if (numDims > 1 && drillDownAdvancedCost < baseQueryCost / 10) {
+      // System.out.println("drillDownAdvance");
       doDrillDownAdvanceScoring(acceptDocs, collector, dims);
     } else {
-      //System.out.println("union");
+      // System.out.println("union");
       doUnionScoring(acceptDocs, collector, dims);
     }
 
     return Integer.MAX_VALUE;
   }
 
-  /** Used when base query is highly constraining vs the
-   *  drilldowns, or when the docs must be scored at once
-   *  (i.e., like BooleanScorer2, not BooleanScorer).  In
-   *  this case we just .next() on base and .advance() on
-   *  the dim filters. */ 
-  private void doQueryFirstScoring(Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims) throws IOException {
-    //if (DEBUG) {
+  /**
+   * Used when base query is highly constraining vs the drilldowns, or when the docs must be scored
+   * at once (i.e., like BooleanScorer2, not BooleanScorer). In this case we just .next() on base
+   * and .advance() on the dim filters.
+   */
+  private void doQueryFirstScoring(Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims)
+      throws IOException {
+    // if (DEBUG) {
     //  System.out.println("  doQueryFirstScoring");
-    //}
+    // }
     int docID = baseScorer.docID();
 
-    nextDoc: while (docID != PostingsEnum.NO_MORE_DOCS) {
+    nextDoc:
+    while (docID != PostingsEnum.NO_MORE_DOCS) {
       if (acceptDocs != null && acceptDocs.get(docID) == false) {
         docID = baseIterator.nextDoc();
         continue;
@@ -204,15 +211,15 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  /** Used when drill downs are highly constraining vs
-   *  baseQuery. */
-  private void doDrillDownAdvanceScoring(Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims) throws IOException {
+  /** Used when drill downs are highly constraining vs baseQuery. */
+  private void doDrillDownAdvanceScoring(
+      Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims) throws IOException {
     final int maxDoc = context.reader().maxDoc();
     final int numDims = dims.length;
 
-    //if (DEBUG) {
+    // if (DEBUG) {
     //  System.out.println("  doDrillDownAdvanceScoring");
-    //}
+    // }
 
     // TODO: maybe a class like BS, instead of parallel arrays
     int[] filledSlots = new int[CHUNK];
@@ -227,14 +234,15 @@ class DrillSidewaysScorer extends BulkScorer {
     final FixedBitSet seen = new FixedBitSet(CHUNK);
 
     while (true) {
-      //if (DEBUG) {
-      //  System.out.println("\ncycle nextChunkStart=" + nextChunkStart + " docIds[0]=" + docIDs[0]);
-      //}
+      // if (DEBUG) {
+      //  System.out.println("\ncycle nextChunkStart=" + nextChunkStart + " docIds[0]=" +
+      // docIDs[0]);
+      // }
 
       // First dim:
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  dim0");
-      //}
+      // }
       DocsAndCost dc = dims[0];
       int docID = dc.approximation.docID();
       while (docID < nextChunkStart) {
@@ -244,9 +252,10 @@ class DrillSidewaysScorer extends BulkScorer {
           if (docIDs[slot] != docID && (dc.twoPhase == null || dc.twoPhase.matches())) {
             seen.set(slot);
             // Mark slot as valid:
-            //if (DEBUG) {
-            //  System.out.println("    set docID=" + docID + " id=" + context.reader().document(docID).get("id"));
-            //}
+            // if (DEBUG) {
+            //  System.out.println("    set docID=" + docID + " id=" +
+            // context.reader().document(docID).get("id"));
+            // }
             docIDs[slot] = docID;
             missingDims[slot] = 1;
             counts[slot] = 1;
@@ -255,24 +264,25 @@ class DrillSidewaysScorer extends BulkScorer {
 
         docID = dc.approximation.nextDoc();
       }
-      
+
       // Second dim:
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  dim1");
-      //}
+      // }
       dc = dims[1];
       docID = dc.approximation.docID();
       while (docID < nextChunkStart) {
-        if (acceptDocs == null || acceptDocs.get(docID)
-            && (dc.twoPhase == null || dc.twoPhase.matches())) {
+        if (acceptDocs == null
+            || acceptDocs.get(docID) && (dc.twoPhase == null || dc.twoPhase.matches())) {
           int slot = docID & MASK;
 
           if (docIDs[slot] != docID) {
             // Mark slot as valid:
             seen.set(slot);
-            //if (DEBUG) {
-            //  System.out.println("    set docID=" + docID + " missingDim=0 id=" + context.reader().document(docID).get("id"));
-            //}
+            // if (DEBUG) {
+            //  System.out.println("    set docID=" + docID + " missingDim=0 id=" +
+            // context.reader().document(docID).get("id"));
+            // }
             docIDs[slot] = docID;
             missingDims[slot] = 0;
             counts[slot] = 1;
@@ -282,14 +292,16 @@ class DrillSidewaysScorer extends BulkScorer {
             if (missingDims[slot] >= 1) {
               missingDims[slot] = 2;
               counts[slot] = 2;
-              //if (DEBUG) {
-              //  System.out.println("    set docID=" + docID + " missingDim=2 id=" + context.reader().document(docID).get("id"));
-              //}
+              // if (DEBUG) {
+              //  System.out.println("    set docID=" + docID + " missingDim=2 id=" +
+              // context.reader().document(docID).get("id"));
+              // }
             } else {
               counts[slot] = 1;
-              //if (DEBUG) {
-              //  System.out.println("    set docID=" + docID + " missingDim=" + missingDims[slot] + " id=" + context.reader().document(docID).get("id"));
-              //}
+              // if (DEBUG) {
+              //  System.out.println("    set docID=" + docID + " missingDim=" + missingDims[slot] +
+              // " id=" + context.reader().document(docID).get("id"));
+              // }
             }
           }
         }
@@ -301,9 +313,9 @@ class DrillSidewaysScorer extends BulkScorer {
       // any doc not seen by either dim 0 or dim 1 cannot be
       // a hit or a near miss:
 
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  baseScorer");
-      //}
+      // }
 
       // Fold in baseScorer, using advance:
       int filledCount = 0;
@@ -317,16 +329,18 @@ class DrillSidewaysScorer extends BulkScorer {
           baseDocID = baseIterator.advance(ddDocID);
         }
         if (baseDocID == ddDocID) {
-          //if (DEBUG) {
-          //  System.out.println("    keep docID=" + ddDocID + " id=" + context.reader().document(ddDocID).get("id"));
-          //}
+          // if (DEBUG) {
+          //  System.out.println("    keep docID=" + ddDocID + " id=" +
+          // context.reader().document(ddDocID).get("id"));
+          // }
           scores[slot0] = baseScorer.score();
           filledSlots[filledCount++] = slot0;
           counts[slot0]++;
         } else {
-          //if (DEBUG) {
-          //  System.out.println("    no docID=" + ddDocID + " id=" + context.reader().document(ddDocID).get("id"));
-          //}
+          // if (DEBUG) {
+          //  System.out.println("    no docID=" + ddDocID + " id=" +
+          // context.reader().document(ddDocID).get("id"));
+          // }
           docIDs[slot0] = -1;
 
           // TODO: we could jump slot0 forward to the
@@ -344,13 +358,13 @@ class DrillSidewaysScorer extends BulkScorer {
         nextChunkStart += CHUNK;
         continue;
       }
-      
+
       // TODO: factor this out & share w/ union scorer,
       // except we start from dim=2 instead:
-      for (int dim=2;dim<numDims;dim++) {
-        //if (DEBUG) {
+      for (int dim = 2; dim < numDims; dim++) {
+        // if (DEBUG) {
         //  System.out.println("  dim=" + dim + " [" + dims[dim].dim + "]");
-        //}
+        // }
         dc = dims[dim];
         docID = dc.approximation.docID();
         while (docID < nextChunkStart) {
@@ -361,16 +375,16 @@ class DrillSidewaysScorer extends BulkScorer {
             // TODO: single-valued dims will always be true
             // below; we could somehow specialize
             if (missingDims[slot] >= dim) {
-              //if (DEBUG) {
+              // if (DEBUG) {
               //  System.out.println("    set docID=" + docID + " count=" + (dim+2));
-              //}
-              missingDims[slot] = dim+1;
-              counts[slot] = dim+2;
+              // }
+              missingDims[slot] = dim + 1;
+              counts[slot] = dim + 2;
             } else {
-              //if (DEBUG) {
+              // if (DEBUG) {
               //  System.out.println("    set docID=" + docID + " missing count=" + (dim+1));
-              //}
-              counts[slot] = dim+1;
+              // }
+              counts[slot] = dim + 1;
             }
           }
 
@@ -380,17 +394,17 @@ class DrillSidewaysScorer extends BulkScorer {
       }
 
       // Collect:
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  now collect: " + filledCount + " hits");
-      //}
-      for (int i=0;i<filledCount;i++) {
+      // }
+      for (int i = 0; i < filledCount; i++) {
         int slot = filledSlots[i];
         collectDocID = docIDs[slot];
         collectScore = scores[slot];
-        //if (DEBUG) {
+        // if (DEBUG) {
         //  System.out.println("    docID=" + docIDs[slot] + " count=" + counts[slot]);
-        //}
-        if (counts[slot] == 1+numDims) {
+        // }
+        if (counts[slot] == 1 + numDims) {
           collectHit(collector, dims);
         } else if (counts[slot] == numDims) {
           collectNearMiss(dims[missingDims[slot]].sidewaysLeafCollector);
@@ -405,10 +419,11 @@ class DrillSidewaysScorer extends BulkScorer {
     }
   }
 
-  private void doUnionScoring(Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims) throws IOException {
-    //if (DEBUG) {
+  private void doUnionScoring(Bits acceptDocs, LeafCollector collector, DocsAndCost[] dims)
+      throws IOException {
+    // if (DEBUG) {
     //  System.out.println("  doUnionScoring");
-    //}
+    // }
 
     final int maxDoc = context.reader().maxDoc();
     final int numDims = dims.length;
@@ -429,23 +444,25 @@ class DrillSidewaysScorer extends BulkScorer {
     int nextChunkStart = CHUNK;
 
     while (true) {
-      //if (DEBUG) {
-      //  System.out.println("\ncycle nextChunkStart=" + nextChunkStart + " docIds[0]=" + docIDs[0]);
-      //}
+      // if (DEBUG) {
+      //  System.out.println("\ncycle nextChunkStart=" + nextChunkStart + " docIds[0]=" +
+      // docIDs[0]);
+      // }
       int filledCount = 0;
       int docID = baseIterator.docID();
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  base docID=" + docID);
-      //}
+      // }
       while (docID < nextChunkStart) {
         if (acceptDocs == null || acceptDocs.get(docID)) {
           int slot = docID & MASK;
-          //if (DEBUG) {
-          //  System.out.println("    docIDs[slot=" + slot + "]=" + docID + " id=" + context.reader().document(docID).get("id"));
-          //}
+          // if (DEBUG) {
+          //  System.out.println("    docIDs[slot=" + slot + "]=" + docID + " id=" +
+          // context.reader().document(docID).get("id"));
+          // }
 
           // Mark slot as valid:
-          assert docIDs[slot] != docID: "slot=" + slot + " docID=" + docID;
+          assert docIDs[slot] != docID : "slot=" + slot + " docID=" + docID;
           docIDs[slot] = docID;
           scores[slot] = baseScorer.score();
           filledSlots[filledCount++] = slot;
@@ -465,22 +482,22 @@ class DrillSidewaysScorer extends BulkScorer {
 
       // First drill-down dim, basically adds SHOULD onto
       // the baseQuery:
-      //if (DEBUG) {
+      // if (DEBUG) {
       //  System.out.println("  dim=0 [" + dims[0].dim + "]");
-      //}
+      // }
       {
         DocsAndCost dc = dims[0];
         docID = dc.approximation.docID();
-        //if (DEBUG) {
+        // if (DEBUG) {
         //  System.out.println("    start docID=" + docID);
-        //}
+        // }
         while (docID < nextChunkStart) {
           int slot = docID & MASK;
           if (docIDs[slot] == docID // this also checks that the doc is not deleted
               && (dc.twoPhase == null || dc.twoPhase.matches())) {
-            //if (DEBUG) {
+            // if (DEBUG) {
             //  System.out.println("      set docID=" + docID + " count=2");
-            //}
+            // }
             missingDims[slot] = 1;
             counts[slot] = 2;
           }
@@ -488,16 +505,16 @@ class DrillSidewaysScorer extends BulkScorer {
         }
       }
 
-      for (int dim=1;dim<numDims;dim++) {
-        //if (DEBUG) {
+      for (int dim = 1; dim < numDims; dim++) {
+        // if (DEBUG) {
         //  System.out.println("  dim=" + dim + " [" + dims[dim].dim + "]");
-        //}
+        // }
 
         DocsAndCost dc = dims[dim];
         docID = dc.approximation.docID();
-        //if (DEBUG) {
+        // if (DEBUG) {
         //  System.out.println("    start docID=" + docID);
-        //}
+        // }
         while (docID < nextChunkStart) {
           int slot = docID & MASK;
           if (docIDs[slot] == docID // also means that the doc is not deleted
@@ -507,16 +524,16 @@ class DrillSidewaysScorer extends BulkScorer {
             // TODO: single-valued dims will always be true
             // below; we could somehow specialize
             if (missingDims[slot] >= dim) {
-              //if (DEBUG) {
+              // if (DEBUG) {
               //  System.out.println("      set docID=" + docID + " count=" + (dim+2));
-              //}
-              missingDims[slot] = dim+1;
-              counts[slot] = dim+2;
+              // }
+              missingDims[slot] = dim + 1;
+              counts[slot] = dim + 2;
             } else {
-              //if (DEBUG) {
+              // if (DEBUG) {
               //  System.out.println("      set docID=" + docID + " missing count=" + (dim+1));
-              //}
-              counts[slot] = dim+1;
+              // }
+              counts[slot] = dim + 1;
             }
           }
           docID = dc.approximation.nextDoc();
@@ -524,23 +541,24 @@ class DrillSidewaysScorer extends BulkScorer {
       }
 
       // Collect:
-      //System.out.println("  now collect: " + filledCount + " hits");
-      for (int i=0;i<filledCount;i++) {
+      // System.out.println("  now collect: " + filledCount + " hits");
+      for (int i = 0; i < filledCount; i++) {
         // NOTE: This is actually in-order collection,
         // because we only accept docs originally returned by
         // the baseScorer (ie that Scorer is AND'd)
         int slot = filledSlots[i];
         collectDocID = docIDs[slot];
         collectScore = scores[slot];
-        //if (DEBUG) {
+        // if (DEBUG) {
         //  System.out.println("    docID=" + docIDs[slot] + " count=" + counts[slot]);
-        //}
-        //System.out.println("  collect doc=" + collectDocID + " main.freq=" + (counts[slot]-1) + " main.doc=" + collectDocID + " exactCount=" + numDims);
-        if (counts[slot] == 1+numDims) {
-          //System.out.println("    hit");
+        // }
+        // System.out.println("  collect doc=" + collectDocID + " main.freq=" + (counts[slot]-1) + "
+        // main.doc=" + collectDocID + " exactCount=" + numDims);
+        if (counts[slot] == 1 + numDims) {
+          // System.out.println("    hit");
           collectHit(collector, dims);
         } else if (counts[slot] == numDims) {
-          //System.out.println("    sw");
+          // System.out.println("    sw");
           collectNearMiss(dims[missingDims[slot]].sidewaysLeafCollector);
         }
       }
@@ -554,9 +572,9 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   private void collectHit(LeafCollector collector, DocsAndCost[] dims) throws IOException {
-    //if (DEBUG) {
+    // if (DEBUG) {
     //  System.out.println("      hit");
-    //}
+    // }
 
     collector.collect(collectDocID);
     if (drillDownCollector != null) {
@@ -574,9 +592,9 @@ class DrillSidewaysScorer extends BulkScorer {
   }
 
   private void collectNearMiss(LeafCollector sidewaysCollector) throws IOException {
-    //if (DEBUG) {
+    // if (DEBUG) {
     //  System.out.println("      missingDim=" + dim);
-    //}
+    // }
     sidewaysCollector.collect(collectDocID);
   }
 
@@ -586,7 +604,7 @@ class DrillSidewaysScorer extends BulkScorer {
     public int docID() {
       return collectDocID;
     }
-    
+
     @Override
     public float score() {
       return collectScore;
@@ -596,7 +614,6 @@ class DrillSidewaysScorer extends BulkScorer {
     public Collection<ChildScorable> getChildren() {
       return Collections.singletonList(new ChildScorable(baseScorer, "MUST"));
     }
-
   }
 
   static class DocsAndCost {
