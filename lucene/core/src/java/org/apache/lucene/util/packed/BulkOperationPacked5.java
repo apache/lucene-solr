@@ -18,9 +18,7 @@
  */
 package org.apache.lucene.util.packed;
 
-/**
- * Efficient sequential read/write of packed integers.
- */
+/** Efficient sequential read/write of packed integers. */
 final class BulkOperationPacked5 extends BulkOperationPacked {
 
   public BulkOperationPacked5() {
@@ -28,7 +26,8 @@ final class BulkOperationPacked5 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
       values[valuesOffset++] = (int) (block0 >>> 59);
@@ -103,7 +102,8 @@ final class BulkOperationPacked5 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final int byte0 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = byte0 >>> 3;
@@ -122,7 +122,8 @@ final class BulkOperationPacked5 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
       values[valuesOffset++] = block0 >>> 59;
@@ -197,7 +198,8 @@ final class BulkOperationPacked5 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long byte0 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = byte0 >>> 3;
@@ -214,5 +216,4 @@ final class BulkOperationPacked5 extends BulkOperationPacked {
       values[valuesOffset++] = byte4 & 31;
     }
   }
-
 }

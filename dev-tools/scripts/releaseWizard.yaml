@@ -1380,6 +1380,16 @@ groups:
     links:
     - https://en.wikipedia.org/wiki/Apache_Lucene
     - https://en.wikipedia.org/wiki/Apache_Solr
+  - !Todo
+    id: add_to_apache_reporter
+    title: Add the new version to the Apache Release Reporter
+    description: |
+      Go to the Apache Release Reporter and add a release for lucene.
+      Fill in the same date that you used for the release in previous steps.
+      Do not use a product name prefix for the version, as this is the main release of the lucene PMC.
+      Just use the version of this release: {{ release_version }}
+    links:
+      - https://reporter.apache.org/addrelease.html?lucene
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.

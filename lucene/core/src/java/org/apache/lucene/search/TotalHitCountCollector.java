@@ -16,11 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
-/**
- * Just counts the total number of hits.
- */
-
+/** Just counts the total number of hits. */
 public class TotalHitCountCollector extends SimpleCollector {
   private int totalHits;
 

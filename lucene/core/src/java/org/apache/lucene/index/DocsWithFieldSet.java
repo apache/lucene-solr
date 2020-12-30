@@ -22,11 +22,14 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** Accumulator for documents that have a value for a field. This is optimized
- *  for the case that all documents have a value. */
+/**
+ * Accumulator for documents that have a value for a field. This is optimized for the case that all
+ * documents have a value.
+ */
 final class DocsWithFieldSet extends DocIdSet {
 
-  private static long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DocsWithFieldSet.class);
+  private static long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(DocsWithFieldSet.class);
 
   private FixedBitSet set;
   private int cost = 0;
@@ -34,7 +37,8 @@ final class DocsWithFieldSet extends DocIdSet {
 
   void add(int docID) {
     if (docID <= lastDocId) {
-      throw new IllegalArgumentException("Out of order doc ids: last=" + lastDocId + ", next=" + docID);
+      throw new IllegalArgumentException(
+          "Out of order doc ids: last=" + lastDocId + ", next=" + docID);
     }
     if (set != null) {
       set = FixedBitSet.ensureCapacity(set, docID);
@@ -58,5 +62,4 @@ final class DocsWithFieldSet extends DocIdSet {
   public DocIdSetIterator iterator() {
     return set != null ? new BitSetIterator(set, cost) : DocIdSetIterator.all(cost);
   }
-
 }

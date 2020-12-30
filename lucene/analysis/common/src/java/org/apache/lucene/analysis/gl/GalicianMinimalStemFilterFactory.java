@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.gl;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link GalicianMinimalStemFilter}. 
+ * Factory for {@link GalicianMinimalStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_glplural" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.GalicianMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -39,15 +39,15 @@ public class GalicianMinimalStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "galicianMinimalStem";
-  
+
   /** Creates a new GalicianMinimalStemFilterFactory */
-  public GalicianMinimalStemFilterFactory(Map<String,String> args) {
+  public GalicianMinimalStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public GalicianMinimalStemFilterFactory() {
     throw defaultCtorException();

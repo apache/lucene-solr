@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BytesRef;
@@ -34,18 +33,23 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
-/** Maps per-segment ordinals to/from global ordinal space, using a compact packed-ints representation.
+/**
+ * Maps per-segment ordinals to/from global ordinal space, using a compact packed-ints
+ * representation.
  *
- *  <p><b>NOTE</b>: this is a costly operation, as it must merge sort all terms, and may require non-trivial RAM once done.  It's better to operate in
- *  segment-private ordinal space instead when possible.
+ * <p><b>NOTE</b>: this is a costly operation, as it must merge sort all terms, and may require
+ * non-trivial RAM once done. It's better to operate in segment-private ordinal space instead when
+ * possible.
  *
- * @lucene.internal */
+ * @lucene.internal
+ */
 public class OrdinalMap implements Accountable {
-  // TODO: we could also have a utility method to merge Terms[] and use size() as a weight when we need it
+  // TODO: we could also have a utility method to merge Terms[] and use size() as a weight when we
+  // need it
   // TODO: use more efficient packed ints structures?
 
   private static class TermsEnumIndex {
-    public final static TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
+    public static final TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
     final int subIndex;
     final TermsEnum termsEnum;
     BytesRef currentTerm;
@@ -62,7 +66,8 @@ public class OrdinalMap implements Accountable {
   }
 
   private static class SegmentMap implements Accountable {
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SegmentMap.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(SegmentMap.class);
 
     /** Build a map from an index into a sorted view of `weights` to an index into `weights`. */
     private static int[] map(final long[] weights) {
@@ -77,6 +82,7 @@ public class OrdinalMap implements Accountable {
           newToOld[i] = newToOld[j];
           newToOld[j] = tmp;
         }
+
         @Override
         protected int compare(int i, int j) {
           // j first since we actually want higher weights first
@@ -113,16 +119,21 @@ public class OrdinalMap implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(newToOld) + RamUsageEstimator.sizeOf(oldToNew);
+      return BASE_RAM_BYTES_USED
+          + RamUsageEstimator.sizeOf(newToOld)
+          + RamUsageEstimator.sizeOf(oldToNew);
     }
   }
 
   /**
-   * Create an ordinal map that uses the number of unique values of each
-   * {@link SortedDocValues} instance as a weight.
+   * Create an ordinal map that uses the number of unique values of each {@link SortedDocValues}
+   * instance as a weight.
+   *
    * @see #build(IndexReader.CacheKey, TermsEnum[], long[], float)
    */
-  public static OrdinalMap build(IndexReader.CacheKey owner, SortedDocValues[] values, float acceptableOverheadRatio) throws IOException {
+  public static OrdinalMap build(
+      IndexReader.CacheKey owner, SortedDocValues[] values, float acceptableOverheadRatio)
+      throws IOException {
     final TermsEnum[] subs = new TermsEnum[values.length];
     final long[] weights = new long[values.length];
     for (int i = 0; i < values.length; ++i) {
@@ -133,11 +144,14 @@ public class OrdinalMap implements Accountable {
   }
 
   /**
-   * Create an ordinal map that uses the number of unique values of each
-   * {@link SortedSetDocValues} instance as a weight.
+   * Create an ordinal map that uses the number of unique values of each {@link SortedSetDocValues}
+   * instance as a weight.
+   *
    * @see #build(IndexReader.CacheKey, TermsEnum[], long[], float)
    */
-  public static OrdinalMap build(IndexReader.CacheKey owner, SortedSetDocValues[] values, float acceptableOverheadRatio) throws IOException {
+  public static OrdinalMap build(
+      IndexReader.CacheKey owner, SortedSetDocValues[] values, float acceptableOverheadRatio)
+      throws IOException {
     final TermsEnum[] subs = new TermsEnum[values.length];
     final long[] weights = new long[values.length];
     for (int i = 0; i < values.length; ++i) {
@@ -147,18 +161,19 @@ public class OrdinalMap implements Accountable {
     return build(owner, subs, weights, acceptableOverheadRatio);
   }
 
-  /** 
-   * Creates an ordinal map that allows mapping ords to/from a merged
-   * space from <code>subs</code>.
+  /**
+   * Creates an ordinal map that allows mapping ords to/from a merged space from <code>subs</code>.
+   *
    * @param owner a cache key
-   * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need
-   *             not be dense (e.g. can be FilteredTermsEnums}.
-   * @param weights a weight for each sub. This is ideally correlated with
-   *             the number of unique terms that each sub introduces compared
-   *             to the other subs
+   * @param subs TermsEnums that support {@link TermsEnum#ord()}. They need not be dense (e.g. can
+   *     be FilteredTermsEnums}.
+   * @param weights a weight for each sub. This is ideally correlated with the number of unique
+   *     terms that each sub introduces compared to the other subs
    * @throws IOException if an I/O error occurred.
    */
-  public static OrdinalMap build(IndexReader.CacheKey owner, TermsEnum subs[], long[] weights, float acceptableOverheadRatio) throws IOException {
+  public static OrdinalMap build(
+      IndexReader.CacheKey owner, TermsEnum subs[], long[] weights, float acceptableOverheadRatio)
+      throws IOException {
     if (subs.length != weights.length) {
       throw new IllegalArgumentException("subs and weights must have the same length");
     }
@@ -168,13 +183,15 @@ public class OrdinalMap implements Accountable {
     return new OrdinalMap(owner, subs, segmentMap, acceptableOverheadRatio);
   }
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OrdinalMap.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(OrdinalMap.class);
 
   /** Cache key of whoever asked for this awful thing */
   public final IndexReader.CacheKey owner;
   // number of global ordinals
   final long valueCount;
-  // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment that contains this term
+  // globalOrd -> (globalOrd - segmentOrd) where segmentOrd is the the ordinal in the first segment
+  // that contains this term
   final LongValues globalOrdDeltas;
   // globalOrd -> first segment container
   final LongValues firstSegments;
@@ -184,16 +201,22 @@ public class OrdinalMap implements Accountable {
   final SegmentMap segmentMap;
   // ram usage
   final long ramBytesUsed;
-    
-  OrdinalMap(IndexReader.CacheKey owner, TermsEnum subs[], SegmentMap segmentMap, float acceptableOverheadRatio) throws IOException {
-    // create the ordinal mappings by pulling a termsenum over each sub's 
+
+  OrdinalMap(
+      IndexReader.CacheKey owner,
+      TermsEnum subs[],
+      SegmentMap segmentMap,
+      float acceptableOverheadRatio)
+      throws IOException {
+    // create the ordinal mappings by pulling a termsenum over each sub's
     // unique terms, and walking a multitermsenum over those
     this.owner = owner;
     this.segmentMap = segmentMap;
     // even though we accept an overhead ratio, we keep these ones with COMPACT
     // since they are only used to resolve values given a global ord, which is
     // slow anyway
-    PackedLongValues.Builder globalOrdDeltas = PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
+    PackedLongValues.Builder globalOrdDeltas =
+        PackedLongValues.monotonicBuilder(PackedInts.COMPACT);
     PackedLongValues.Builder firstSegments = PackedLongValues.packedBuilder(PackedInts.COMPACT);
     long firstSegmentBits = 0L;
     final PackedLongValues.Builder[] ordDeltas = new PackedLongValues.Builder[subs.length];
@@ -204,13 +227,14 @@ public class OrdinalMap implements Accountable {
     long[] segmentOrds = new long[subs.length];
 
     // Just merge-sorts by term:
-    PriorityQueue<TermsEnumIndex> queue = new PriorityQueue<TermsEnumIndex>(subs.length) {
-        @Override
-        protected boolean lessThan(TermsEnumIndex a, TermsEnumIndex b) {
-          return a.currentTerm.compareTo(b.currentTerm) < 0;
-        }
-      };
-    
+    PriorityQueue<TermsEnumIndex> queue =
+        new PriorityQueue<TermsEnumIndex>(subs.length) {
+          @Override
+          protected boolean lessThan(TermsEnumIndex a, TermsEnumIndex b) {
+            return a.currentTerm.compareTo(b.currentTerm) < 0;
+          }
+        };
+
     for (int i = 0; i < subs.length; i++) {
       TermsEnumIndex sub = new TermsEnumIndex(subs[segmentMap.newToOld(i)], i);
       if (sub.next() != null) {
@@ -219,7 +243,7 @@ public class OrdinalMap implements Accountable {
     }
 
     BytesRefBuilder scratch = new BytesRefBuilder();
-      
+
     long globalOrd = 0;
     while (queue.size() != 0) {
       TermsEnumIndex top = queue.top();
@@ -254,7 +278,7 @@ public class OrdinalMap implements Accountable {
           ordDeltas[segmentIndex].add(delta);
           segmentOrds[segmentIndex]++;
         } while (segmentOrds[segmentIndex] <= segmentOrd);
-        
+
         if (top.next() == null) {
           queue.pop();
           if (queue.size() == 0) {
@@ -301,33 +325,37 @@ public class OrdinalMap implements Accountable {
         // likely in case of low cardinalities and large segments
         segmentToGlobalOrds[i] = LongValues.IDENTITY;
       } else {
-        final int bitsRequired = ordDeltaBits[i] < 0 ? 64 : PackedInts.bitsRequired(ordDeltaBits[i]);
+        final int bitsRequired =
+            ordDeltaBits[i] < 0 ? 64 : PackedInts.bitsRequired(ordDeltaBits[i]);
         final long monotonicBits = deltas.ramBytesUsed() * 8;
         final long packedBits = bitsRequired * deltas.size();
         if (deltas.size() <= Integer.MAX_VALUE
             && packedBits <= monotonicBits * (1 + acceptableOverheadRatio)) {
           // monotonic compression mostly adds overhead, let's keep the mapping in plain packed ints
           final int size = (int) deltas.size();
-          final PackedInts.Mutable newDeltas = PackedInts.getMutable(size, bitsRequired, acceptableOverheadRatio);
+          final PackedInts.Mutable newDeltas =
+              PackedInts.getMutable(size, bitsRequired, acceptableOverheadRatio);
           final PackedLongValues.Iterator it = deltas.iterator();
           for (int ord = 0; ord < size; ++ord) {
             newDeltas.set(ord, it.next());
           }
           assert it.hasNext() == false;
-          segmentToGlobalOrds[i] = new LongValues() {
-              @Override
-              public long get(long ord) {
-                return ord + newDeltas.get((int) ord);
-              }
-            };
+          segmentToGlobalOrds[i] =
+              new LongValues() {
+                @Override
+                public long get(long ord) {
+                  return ord + newDeltas.get((int) ord);
+                }
+              };
           ramBytesUsed += newDeltas.ramBytesUsed();
         } else {
-          segmentToGlobalOrds[i] = new LongValues() {
-              @Override
-              public long get(long ord) {
-                return ord + deltas.get(ord);
-              }
-            };
+          segmentToGlobalOrds[i] =
+              new LongValues() {
+                @Override
+                public long get(long ord) {
+                  return ord + deltas.get(ord);
+                }
+              };
           ramBytesUsed += deltas.ramBytesUsed();
         }
         ramBytesUsed += RamUsageEstimator.shallowSizeOf(segmentToGlobalOrds[i]);
@@ -337,33 +365,28 @@ public class OrdinalMap implements Accountable {
     this.ramBytesUsed = ramBytesUsed;
   }
 
-  /** 
-   * Given a segment number, return a {@link LongValues} instance that maps
-   * segment ordinals to global ordinals.
+  /**
+   * Given a segment number, return a {@link LongValues} instance that maps segment ordinals to
+   * global ordinals.
    */
   public LongValues getGlobalOrds(int segmentIndex) {
     return segmentToGlobalOrds[segmentMap.oldToNew(segmentIndex)];
   }
 
   /**
-   * Given global ordinal, returns the ordinal of the first segment which contains
-   * this ordinal (the corresponding to the segment return {@link #getFirstSegmentNumber}).
+   * Given global ordinal, returns the ordinal of the first segment which contains this ordinal (the
+   * corresponding to the segment return {@link #getFirstSegmentNumber}).
    */
   public long getFirstSegmentOrd(long globalOrd) {
     return globalOrd - globalOrdDeltas.get(globalOrd);
   }
-    
-  /** 
-   * Given a global ordinal, returns the index of the first
-   * segment that contains this term.
-   */
+
+  /** Given a global ordinal, returns the index of the first segment that contains this term. */
   public int getFirstSegmentNumber(long globalOrd) {
     return segmentMap.newToOld((int) firstSegments.get(globalOrd));
   }
-    
-  /**
-   * Returns the total number of unique terms in global ord space.
-   */
+
+  /** Returns the total number of unique terms in global ord space. */
   public long getValueCount() {
     return valueCount;
   }

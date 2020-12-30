@@ -18,14 +18,14 @@
 package org.apache.lucene.analysis.shingle;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link FixedShingleFilter}
  *
- * Parameters are:
+ * <p>Parameters are:
+ *
  * <ul>
  *   <li>shingleSize - how many tokens should be combined into each shingle (default: 2)
  *   <li>tokenSeparator - how tokens should be joined together in the shingle (default: space)

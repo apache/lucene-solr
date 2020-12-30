@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Indian languages.
- */
+/** Analyzer for Indian languages. */
 package org.apache.lucene.analysis.in;

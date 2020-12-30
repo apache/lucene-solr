@@ -19,15 +19,13 @@ package org.apache.lucene.analysis.bn;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
-/**
- * Tests the BengaliAnalyzer
- */
+/** Tests the BengaliAnalyzer */
 public class TestBengaliAnalyzer extends BaseTokenStreamTestCase {
 
   public void testResourcesAvailable() {
     new BengaliAnalyzer().close();
   }
-  
+
   public void testBasics() throws Exception {
     Analyzer a = new BengaliAnalyzer();
 
@@ -35,15 +33,13 @@ public class TestBengaliAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "বারী", "বার");
     a.close();
   }
-  /**
-   * test Digits
-   */
+  /** test Digits */
   public void testDigits() throws Exception {
     BengaliAnalyzer a = new BengaliAnalyzer();
     checkOneTerm(a, "১২৩৪৫৬৭৮৯০", "1234567890");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new BengaliAnalyzer();

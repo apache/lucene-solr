@@ -1,0 +1,242 @@
+= Cluster Plugins
+:toc: macro
+:toclevels: 3
+
+toc::[]
+
+== Cluster (CoreContainer-level) plugins subsystem
+Cluster plugins are pluggable components that are defined and instantiated at the
+`CoreContainer` (node) level. These components usually provide admin-level functionality
+and APIs for additional functionality at the Solr node level.
+
+=== Plugin configurations
+Plugin configurations are maintained using `/cluster/plugin` API.
+
+This API endpoint allows adding, removing and updating plugin configurations.
+
+Each plugin MUST have a unique name under which it's registered. Attempting to
+add a plugin with a duplicate name is an error. Some types of plugins use
+pre-defined names, and they MUST be registered under these names in order to
+properly function.
+
+Internally, as of Solr 9.0 plugin configurations are maintained in ZooKeeper in the
+`/clusterprops.json` file, under the `plugin` entry. The configuration is a JSON map
+where keys are the unique plugin names, and values are serialized
+`org.apache.solr.client.solrj.request.beans.PluginMeta` beans.
+
+The following common plugin properties are supported:
+
+`name`::
+(required) unique plugin name. Some plugin types require using one of the
+pre-defined names to properly function. By convention such predefined names use
+a leading-dot prefix (e.g. `.placement-plugin`)
+
+`class`::
+(required) implementation class. This can be specified as a fully-qualified
+class name if the class is available as a part of Solr, or it can be also
+specified using the `<package>:<className>` syntax to refer to a class inside
+one of the Solr packages.
+
+`version`::
+(required when class is loaded from a package). Solr package version.
+
+`path-prefix`::
+(optional, default is none). Path prefix to be added to the REST API endpoints defined in the plugin.
+
+`config`::
+(optional, default is none). A JSON map of additional plugin configuration parameters.
+Plugins that implement `ConfigurablePlugin` interface will be initialized with a
+plugin-specific configuration object deserialized from this map.
+
+Example plugin configuration:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": ".placement-plugin",
+        "class": "org.apache.solr.cluster.placement.impl.CollectionsRepairEventListener"
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+=== Types of cluster plugins
+Classes loaded from plugins in general support two types of functionality (not mutually exclusive):
+
+* request handler plugins that expose REST API endpoints (the implementing class is annotated with
+`@EndPoint` and optionally `@Command` annotations). The APIs of these plugins are automatically
+registered as REST endpoints under the paths defined in the `@EndPoint` annotations.
+
+* plugins that implement a specific interface, for use as an internal component. Upon loading they are
+automatically discovered and registered with sub-systems that use this type of plugin. Examples here
+include the `ClusterSingleton`, ClusterEventProducer`, `ClusterEventListener`
+and `PlacementPluginFactory`.
+
+=== Plugin life-cycle
+Plugin instances are loaded and initialized when Solr's `CoreContainer` is first created during
+Solr node start-up.
+
+Then on each update of the configurations each node is notified about the change,
+and then the existing plugins are compared with the new configs, and plugin instances
+present on the node are respectively created, removed, or
+replaced (i.e. removed and added using the new configuration).
+
+In practice this means that cluster-level plugins managed by this API can be
+dynamically changed and reconfigured without restarting the Solr nodes, and the changes
+apply to all nodes nearly simultaneously.
+
+== Plugin types
+
+=== Predefined plugin names
+
+Plugins with these names are used in specific parts of Solr. Their names are reserved
+and cannot be used for other plugin types:
+
+`.placement-plugin`::
+plugin that implements `PlacementPluginFactory` interface. This type of plugin
+determines the replica placement strategy in the cluster.
+
+`.cluster-event-producer`::
+plugin that implements `ClusterEventProducer` interface. This type of plugin
+is used for generating cluster-level events.
+
+=== PlacementPluginFactory plugins
+This type of plugin supports configurable placement strategies for collection
+replicas.
+
+=== ClusterSingleton plugins
+Plugins that implement `ClusterSingleton` interface are instantiated on each
+Solr node. However, their start/stop life-cycle, as defined in the interface,
+is controlled in such a way that only a single running instance of the plugin
+is present in the cluster at any time.
+
+(Currently this is implemented by re-using the Overseer leader election, so all
+`ClusterSingleton`-s that are in the RUNNING state execute on the Overseer leader node).
+
+Any plugin can implement this interface to indicate to Solr that
+it requires this cluster singleton behavior.
+
+=== ClusterEventProducer plugin
+In order to support the generation of cluster-level events an implementation of
+`ClusterEventProducer` is created on each Solr node. This component is also a
+`ClusterSingleton`, which means that only one active instance is present in the
+cluster at any time.
+
+If no plugin configuration is specified then the default implementation
+`org.apache.solr.cluster.events.impl.NoOpProducer` is used, which doesn't generate
+any events - this means that by default event generation is turned off. An implementation
+that supports node and collection event generation is also available in
+`org.apache.solr.cluster.events.impl.DefaultClusterEventProducer`.
+
+Event producer configuration can be changed dynamically by changing the predefined
+plugin configuration, for example:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": ".cluster-event-producer",
+        "class": "org.apache.solr.cluster.events.impl.DefaultClusterEventProducer"
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+It can be restored to the default no-op configuration by simply removing the plugin:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "remove": ".cluster-event-producer"
+  }'
+  http://localhost:8983/api/cluster/plugin
+----
+
+
+=== ClusterEventListener plugins
+Plugins that implement the `ClusterEventListener` interface will be automatically
+registered with the instance of `ClusterEventProducer`.
+
+// XXX edit this once SOLR-14977 is done
+Implementations will be notified of all events that are generated by the
+`ClusterEventProducer` and need to select only events that they are interested in.
+
+==== org.apache.solr.cluster.events.impl.CollectionsRepairEventListener
+An implementation of listener that reacts to NODE_LOST events and checks what replicas
+need to be re-added to other nodes to keep the replication counts the same as before.
+
+This implementation waits for a certain period (default is 30s) to make sure the node
+is really down, and for the replicas located on nodes that were down sufficiently long
+it generates appropriate ADDREPLICA commands to counter-balance the lost replicas on
+these nodes.
+
+Example plugin configuration:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": "collections-repair-listener",
+        "class": "org.apache.solr.cluster.events.impl.CollectionsRepairEventListener"
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+== Plugin management API
+
+=== List plugins
+This command uses HTTP GET and returns a list of loaded plugins and their configurations:
+
+[source,bash]
+----
+curl http://localhost:8983/api/cluster/plugin
+----
+
+=== Add plugin
+This command uses HTTP POST to add a new plugin configuration. If a plugin with the
+same name already exists this results in an error.
+
+Example command, which adds a plugin contained in a Solr package:
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": "my-plugin1",
+        "class": "my-package:com.example.MyPlugin",
+        "version": "1.0"
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+=== Update plugin
+This command uses HTTP POST to update an existing plugin configuration. If a plugin
+with this name doesn't exist this results in an error.
+
+This example updates an existing plugin, possibly changing its configuration paramers.
+The old instance of the plugin is removed and a new instance is created using the supplied
+configuration.
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "update":{
+        "name": "collections-repair-listener",
+        "class": "org.apache.solr.cluster.events.impl.CollectionsRepairEventListener",
+        "config":{
+          "waitForSecond": 30
+    }}}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+=== Remove plugin
+This command uses HTTP POST to delete an existing plugin configuration. If a plugin
+with this name doesn't exist this results in an error.
+
+Unlike other commands the command payload here consists just of
+the name of the plugin to remove, as a string.
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "remove": "my-plugin1"
+    }'
+  http://localhost:8983/api/cluster/plugin
+----

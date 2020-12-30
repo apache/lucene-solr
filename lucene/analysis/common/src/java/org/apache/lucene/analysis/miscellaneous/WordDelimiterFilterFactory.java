@@ -24,17 +24,17 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.search.PhraseQuery;
 
 /**
  * Factory for {@link WordDelimiterFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_wd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -47,10 +47,9 @@ import org.apache.lucene.search.PhraseQuery;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * @deprecated Use {@link WordDelimiterGraphFilterFactory} instead: it produces a correct
- * token graph so that e.g. {@link PhraseQuery} works correctly when it's used in
- * the search time analyzer.
- *
+ * @deprecated Use {@link WordDelimiterGraphFilterFactory} instead: it produces a correct token
+ *     graph so that e.g. {@link PhraseQuery} works correctly when it's used in the search time
+ *     analyzer.
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
@@ -73,7 +72,6 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   private static final int SUBWORD_DELIM = WordDelimiterFilter.SUBWORD_DELIM;
   private static final int UPPER = WordDelimiterFilter.UPPER;
 
-
   /** SPI name */
   public static final String NAME = "wordDelimiter";
 
@@ -85,7 +83,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   private final int flags;
   byte[] typeTable = null;
   private CharArraySet protectedWords = null;
-  
+
   /** Creates a new WordDelimiterFilterFactory */
   public WordDelimiterFilterFactory(Map<String, String> args) {
     super(args);
@@ -124,7 +122,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public WordDelimiterFilterFactory() {
     throw defaultCtorException();
@@ -132,15 +130,15 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    if (wordFiles != null) {  
+    if (wordFiles != null) {
       protectedWords = getWordSet(loader, wordFiles, false);
     }
     if (types != null) {
-      List<String> files = splitFileNames( types );
+      List<String> files = splitFileNames(types);
       List<String> wlist = new ArrayList<>();
-      for( String file : files ){
+      for (String file : files) {
         List<String> lines = getLines(loader, file.trim());
-        wlist.addAll( lines );
+        wlist.addAll(lines);
       }
       typeTable = parseTypes(wlist);
     }
@@ -148,84 +146,94 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public TokenFilter create(TokenStream input) {
-    return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
-                                   flags, protectedWords);
+    return new WordDelimiterFilter(
+        input,
+        typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
+        flags,
+        protectedWords);
   }
-  
+
   // source => type
-  private static Pattern typePattern = Pattern.compile( "(.*)\\s*=>\\s*(.*)\\s*$" );
-  
+  private static Pattern typePattern = Pattern.compile("(.*)\\s*=>\\s*(.*)\\s*$");
+
   // parses a list of MappingCharFilter style rules into a custom byte[] type table
   private byte[] parseTypes(List<String> rules) {
-    SortedMap<Character,Byte> typeMap = new TreeMap<>();
-    for( String rule : rules ){
+    SortedMap<Character, Byte> typeMap = new TreeMap<>();
+    for (String rule : rules) {
       Matcher m = typePattern.matcher(rule);
-      if( !m.find() )
-        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]");
+      if (!m.find()) throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]");
       String lhs = parseString(m.group(1).trim());
       Byte rhs = parseType(m.group(2).trim());
       if (lhs.length() != 1)
-        throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]. Only a single character is allowed.");
+        throw new IllegalArgumentException(
+            "Invalid Mapping Rule : [" + rule + "]. Only a single character is allowed.");
       if (rhs == null)
         throw new IllegalArgumentException("Invalid Mapping Rule : [" + rule + "]. Illegal type.");
       typeMap.put(lhs.charAt(0), rhs);
     }
-    
+
     // ensure the table is always at least as big as DEFAULT_WORD_DELIM_TABLE for performance
-    byte types[] = new byte[Math.max(typeMap.lastKey()+1, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE.length)];
-    for (int i = 0; i < types.length; i++)
-      types[i] = WordDelimiterIterator.getType(i);
-    for (Map.Entry<Character,Byte> mapping : typeMap.entrySet())
+    byte types[] =
+        new byte
+            [Math.max(
+                typeMap.lastKey() + 1, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE.length)];
+    for (int i = 0; i < types.length; i++) types[i] = WordDelimiterIterator.getType(i);
+    for (Map.Entry<Character, Byte> mapping : typeMap.entrySet())
       types[mapping.getKey()] = mapping.getValue();
     return types;
   }
-  
+
   private Byte parseType(String s) {
-    if (s.equals("LOWER"))
-      return LOWER;
-    else if (s.equals("UPPER"))
-      return UPPER;
-    else if (s.equals("ALPHA"))
-      return ALPHA;
-    else if (s.equals("DIGIT"))
-      return DIGIT;
-    else if (s.equals("ALPHANUM"))
-      return ALPHANUM;
-    else if (s.equals("SUBWORD_DELIM"))
-      return SUBWORD_DELIM;
-    else
-      return null;
+    if (s.equals("LOWER")) return LOWER;
+    else if (s.equals("UPPER")) return UPPER;
+    else if (s.equals("ALPHA")) return ALPHA;
+    else if (s.equals("DIGIT")) return DIGIT;
+    else if (s.equals("ALPHANUM")) return ALPHANUM;
+    else if (s.equals("SUBWORD_DELIM")) return SUBWORD_DELIM;
+    else return null;
   }
-  
+
   char[] out = new char[256];
-  
-  private String parseString(String s){
+
+  private String parseString(String s) {
     int readPos = 0;
     int len = s.length();
     int writePos = 0;
-    while( readPos < len ){
-      char c = s.charAt( readPos++ );
-      if( c == '\\' ){
-        if( readPos >= len )
+    while (readPos < len) {
+      char c = s.charAt(readPos++);
+      if (c == '\\') {
+        if (readPos >= len)
           throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
-        c = s.charAt( readPos++ );
-        switch( c ) {
-          case '\\' : c = '\\'; break;
-          case 'n' : c = '\n'; break;
-          case 't' : c = '\t'; break;
-          case 'r' : c = '\r'; break;
-          case 'b' : c = '\b'; break;
-          case 'f' : c = '\f'; break;
-          case 'u' :
-            if( readPos + 3 >= len )
+        c = s.charAt(readPos++);
+        switch (c) {
+          case '\\':
+            c = '\\';
+            break;
+          case 'n':
+            c = '\n';
+            break;
+          case 't':
+            c = '\t';
+            break;
+          case 'r':
+            c = '\r';
+            break;
+          case 'b':
+            c = '\b';
+            break;
+          case 'f':
+            c = '\f';
+            break;
+          case 'u':
+            if (readPos + 3 >= len)
               throw new IllegalArgumentException("Invalid escaped char in [" + s + "]");
-            c = (char)Integer.parseInt( s.substring( readPos, readPos + 4 ), 16 );
+            c = (char) Integer.parseInt(s.substring(readPos, readPos + 4), 16);
             readPos += 4;
             break;
         }
       }
       out[writePos++] = c;
     }
-    return new String( out, 0, writePos );
+    return new String(out, 0, writePos);
   }
 }

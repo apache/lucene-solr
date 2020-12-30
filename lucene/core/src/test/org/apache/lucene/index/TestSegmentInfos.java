@@ -16,7 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.mockfile.ExtrasFS;
@@ -31,19 +35,17 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 public class TestSegmentInfos extends LuceneTestCase {
 
   public void testIllegalCreatedVersion() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> new SegmentInfos(5));
+    IllegalArgumentException e =
+        expectThrows(IllegalArgumentException.class, () -> new SegmentInfos(5));
     assertEquals("indexCreatedVersionMajor must be >= 6, got: 5", e.getMessage());
-    e = expectThrows(IllegalArgumentException.class, () -> new SegmentInfos(Version.LATEST.major + 1));
-    assertEquals("indexCreatedVersionMajor is in the future: " + (Version.LATEST.major + 1), e.getMessage());
+    e =
+        expectThrows(
+            IllegalArgumentException.class, () -> new SegmentInfos(Version.LATEST.major + 1));
+    assertEquals(
+        "indexCreatedVersionMajor is in the future: " + (Version.LATEST.major + 1), e.getMessage());
   }
 
   // LUCENE-5954
@@ -66,11 +68,23 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            Version.LUCENE_9_0_0,
+            Version.LUCENE_9_0_0,
+            "_0",
+            1,
+            false,
+            Codec.getDefault(),
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.<String, String>emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
 
     sis.add(commitInfo);
     sis.commit(dir);
@@ -88,18 +102,41 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-    SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            Version.LUCENE_9_0_0,
+            Version.LUCENE_9_0_0,
+            "_0",
+            1,
+            false,
+            Codec.getDefault(),
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.<String, String>emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
-    info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_1", 1, false, Codec.getDefault(),
-                           Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    info =
+        new SegmentInfo(
+            dir,
+            Version.LUCENE_9_0_0,
+            Version.LUCENE_9_0_0,
+            "_1",
+            1,
+            false,
+            Codec.getDefault(),
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.<String, String>emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    commitInfo = new SegmentCommitInfo(info, 0, 0,-1, -1, -1, StringHelper.randomId());
+    commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
     sis.commit(dir);
@@ -108,13 +145,15 @@ public class TestSegmentInfos extends LuceneTestCase {
     sis = SegmentInfos.readLatestCommit(dir);
     assertEquals(Version.LUCENE_9_0_0, sis.getMinSegmentLuceneVersion());
     assertEquals(Version.LATEST, sis.getCommitLuceneVersion());
-    assertEquals(StringHelper.idToString(commitInfoId0), StringHelper.idToString(sis.info(0).getId()));
-    assertEquals(StringHelper.idToString(commitInfoId1), StringHelper.idToString(sis.info(1).getId()));
+    assertEquals(
+        StringHelper.idToString(commitInfoId0), StringHelper.idToString(sis.info(0).getId()));
+    assertEquals(
+        StringHelper.idToString(commitInfoId1), StringHelper.idToString(sis.info(1).getId()));
     dir.close();
   }
 
   /** Test toString method */
-  public void testToString() throws Throwable{
+  public void testToString() throws Throwable {
     SegmentInfo si;
     final Directory dir = newDirectory();
     Codec codec = Codec.getDefault();
@@ -123,35 +162,103 @@ public class TestSegmentInfos extends LuceneTestCase {
     Map<String, String> diagnostics = Map.of("key1", "value1", "key2", "value2");
 
     // attributes map
-    Map<String,String> attributes =  Map.of("akey1", "value1", "akey2", "value2");
+    Map<String, String> attributes = Map.of("akey1", "value1", "akey2", "value2");
 
     // diagnostics X, attributes X
-    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), Sort.INDEXORDER);
-    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
-        ":C10000" +
-        ":[indexSort=<doc>]", si.toString());
+    si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "TEST",
+            10000,
+            false,
+            codec,
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            Sort.INDEXORDER);
+    assertEquals(
+        "TEST(" + Version.LATEST.toString() + ")" + ":C10000" + ":[indexSort=<doc>]",
+        si.toString());
 
     // diagnostics O, attributes X
-    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, diagnostics, StringHelper.randomId(), new HashMap<>(), Sort.INDEXORDER);
-    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
-        ":C10000" +
-        ":[indexSort=<doc>]" +
-        ":[diagnostics=" + diagnostics + "]", si.toString());
+    si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "TEST",
+            10000,
+            false,
+            codec,
+            diagnostics,
+            StringHelper.randomId(),
+            new HashMap<>(),
+            Sort.INDEXORDER);
+    assertEquals(
+        "TEST("
+            + Version.LATEST.toString()
+            + ")"
+            + ":C10000"
+            + ":[indexSort=<doc>]"
+            + ":[diagnostics="
+            + diagnostics
+            + "]",
+        si.toString());
 
     // diagnostics X, attributes O
-    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), attributes, Sort.INDEXORDER);
-    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
-        ":C10000" +
-        ":[indexSort=<doc>]" +
-        ":[attributes=" + attributes + "]", si.toString());
+    si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "TEST",
+            10000,
+            false,
+            codec,
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            attributes,
+            Sort.INDEXORDER);
+    assertEquals(
+        "TEST("
+            + Version.LATEST.toString()
+            + ")"
+            + ":C10000"
+            + ":[indexSort=<doc>]"
+            + ":[attributes="
+            + attributes
+            + "]",
+        si.toString());
 
     // diagnostics O, attributes O
-    si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, diagnostics, StringHelper.randomId(), attributes, Sort.INDEXORDER);
-    assertEquals("TEST(" + Version.LATEST.toString() + ")" +
-        ":C10000" +
-        ":[indexSort=<doc>]" +
-        ":[diagnostics=" + diagnostics + "]" +
-        ":[attributes=" + attributes + "]", si.toString());
+    si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "TEST",
+            10000,
+            false,
+            codec,
+            diagnostics,
+            StringHelper.randomId(),
+            attributes,
+            Sort.INDEXORDER);
+    assertEquals(
+        "TEST("
+            + Version.LATEST.toString()
+            + ")"
+            + ":C10000"
+            + ":[indexSort=<doc>]"
+            + ":[diagnostics="
+            + diagnostics
+            + "]"
+            + ":[attributes="
+            + attributes
+            + "]",
+        si.toString());
 
     dir.close();
   }
@@ -160,8 +267,19 @@ public class TestSegmentInfos extends LuceneTestCase {
     try (BaseDirectoryWrapper dir = newDirectory()) {
       dir.setCheckIndexOnClose(false);
       byte id[] = StringHelper.randomId();
-      SegmentInfo info = new SegmentInfo(dir, Version.LUCENE_9_0_0, Version.LUCENE_9_0_0, "_0", 1, false, Codec.getDefault(),
-          Collections.<String, String>emptyMap(), StringHelper.randomId(), Collections.<String, String>emptyMap(), null);
+      SegmentInfo info =
+          new SegmentInfo(
+              dir,
+              Version.LUCENE_9_0_0,
+              Version.LUCENE_9_0_0,
+              "_0",
+              1,
+              false,
+              Codec.getDefault(),
+              Collections.<String, String>emptyMap(),
+              StringHelper.randomId(),
+              Collections.<String, String>emptyMap(),
+              null);
       SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, id);
       assertEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
       commitInfo.advanceDelGen();
@@ -181,7 +299,10 @@ public class TestSegmentInfos extends LuceneTestCase {
 
       commitInfo.advanceFieldInfosGen();
       assertNotEquals(StringHelper.idToString(id), StringHelper.idToString(commitInfo.getId()));
-      assertEquals("clone changed but shouldn't", StringHelper.idToString(id), StringHelper.idToString(clone.getId()));
+      assertEquals(
+          "clone changed but shouldn't",
+          StringHelper.idToString(id),
+          StringHelper.idToString(clone.getId()));
     }
   }
 
@@ -192,18 +313,41 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     SegmentInfos sis = new SegmentInfos(Version.LATEST.major);
-    SegmentInfo info = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, Codec.getDefault(),
-                                       Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "_0",
+            1,
+            false,
+            Codec.getDefault(),
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.<String, String>emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
-    info = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_1", 1, false, Codec.getDefault(),
-                           Collections.<String,String>emptyMap(), id, Collections.<String,String>emptyMap(), null);
+    info =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "_1",
+            1,
+            false,
+            Codec.getDefault(),
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.<String, String>emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    commitInfo = new SegmentCommitInfo(info, 0, 0,-1, -1, -1, StringHelper.randomId());
+    commitInfo = new SegmentCommitInfo(info, 0, 0, -1, -1, -1, StringHelper.randomId());
     sis.add(commitInfo);
 
     sis.commit(dir);
@@ -238,10 +382,12 @@ public class TestSegmentInfos extends LuceneTestCase {
     assertTrue("No segments file found", corrupt);
 
     expectThrowsAnyOf(
-        Arrays.asList(CorruptIndexException.class, IndexFormatTooOldException.class, IndexFormatTooNewException.class),
+        Arrays.asList(
+            CorruptIndexException.class,
+            IndexFormatTooOldException.class,
+            IndexFormatTooNewException.class),
         () -> SegmentInfos.readLatestCommit(corruptDir));
     dir.close();
     corruptDir.close();
   }
 }
-

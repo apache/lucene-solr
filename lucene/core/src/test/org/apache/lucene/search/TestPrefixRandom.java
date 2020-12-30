@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -37,22 +35,25 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Create an index with random unicode terms
- * Generates random prefix queries, and validates against a simple impl.
+ * Create an index with random unicode terms Generates random prefix queries, and validates against
+ * a simple impl.
  */
 public class TestPrefixRandom extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
@@ -73,16 +74,16 @@ public class TestPrefixRandom extends LuceneTestCase {
     dir.close();
     super.tearDown();
   }
-  
+
   /** a stupid prefix query that just blasts thru the terms */
   private static class DumbPrefixQuery extends MultiTermQuery {
     private final BytesRef prefix;
-    
+
     DumbPrefixQuery(Term term) {
       super(term.field());
       prefix = term.bytes();
     }
-    
+
     @Override
     protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
       return new SimplePrefixTermsEnum(terms.iterator(), prefix);
@@ -96,7 +97,7 @@ public class TestPrefixRandom extends LuceneTestCase {
         this.prefix = prefix;
         setInitialSeekTerm(new BytesRef(""));
       }
-      
+
       @Override
       protected AcceptStatus accept(BytesRef term) throws IOException {
         return StringHelper.startsWith(term, prefix) ? AcceptStatus.YES : AcceptStatus.NO;
@@ -109,9 +110,7 @@ public class TestPrefixRandom extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public boolean equals(Object obj) {
@@ -122,21 +121,18 @@ public class TestPrefixRandom extends LuceneTestCase {
       return prefix.equals(that.prefix);
     }
   }
-  
+
   /** test a bunch of random prefixes */
   public void testPrefixes() throws Exception {
-      int num = atLeast(100);
-      for (int i = 0; i < num; i++)
-        assertSame(TestUtil.randomUnicodeString(random(), 5));
+    int num = atLeast(100);
+    for (int i = 0; i < num; i++) assertSame(TestUtil.randomUnicodeString(random(), 5));
   }
-  
-  /** check that the # of hits is the same as from a very
-   * simple prefixquery implementation.
-   */
-  private void assertSame(String prefix) throws IOException {   
+
+  /** check that the # of hits is the same as from a very simple prefixquery implementation. */
+  private void assertSame(String prefix) throws IOException {
     PrefixQuery smart = new PrefixQuery(new Term("field", prefix));
     DumbPrefixQuery dumb = new DumbPrefixQuery(new Term("field", prefix));
-    
+
     TopDocs smartDocs = searcher.search(smart, 25);
     TopDocs dumbDocs = searcher.search(dumb, 25);
     CheckHits.checkEqual(smart, smartDocs.scoreDocs, dumbDocs.scoreDocs);

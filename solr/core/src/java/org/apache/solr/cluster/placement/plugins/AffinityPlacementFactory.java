@@ -41,32 +41,25 @@ import java.util.stream.Collectors;
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- * "set-placement-plugin": {
- * "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
- * "minimalFreeDiskGB": 10,
- * "prioritizedFreeDiskGB": 50
+ * "add": {
+ *   "name": ".placement-plugin",
+ *   "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+ *   "config": {
+ *     "minimalFreeDiskGB": 10,
+ *     "prioritizedFreeDiskGB": 50
+ *   }
  * }
- * }' http://localhost:8983/api/cluster
+ * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
- * <p>The consequence will be the creation of an element in the Zookeeper file {@code /clusterprops.json} as follows:</p>
- *
- * <pre>
- *
- * "placement-plugin":{
- *     "class":"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
- *     "minimalFreeDiskGB":10,
- *     "prioritizedFreeDiskGB":50}
- * </pre>
- *
- * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
+ * <p>In order to delete the placement-plugin section (and to fallback to either Legacy
  * or rule based placement if configured for a collection), execute:</p>
  *
  * <pre>
  *
  * curl -X POST -H 'Content-type:application/json' -d '{
- * "set-placement-plugin" : null
- * }' http://localhost:8983/api/cluster
+ * "remove" : ".placement-plugin"
+ * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
  *
@@ -115,7 +108,7 @@ import java.util.stream.Collectors;
  * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
  * to allow configuration base option selection as well...</p>
  */
-public class AffinityPlacementFactory implements PlacementPluginFactory {
+public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -140,19 +133,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
    */
   public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
-  /**
-   * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
-   * Set to 0 or less to disable.
-   */
-  public static final String MINIMAL_FREE_DISK_GB = "minimalFreeDiskGB";
-
-  /**
-   * Replica allocation will assign replicas to nodes with at least this number of GB of free disk space regardless
-   * of the number of cores on these nodes rather than assigning replicas to nodes with less than this amount of free
-   * disk space if that's an option (if that's not an option, replicas can still be assigned to nodes with less than this
-   * amount of free space).
-   */
-  public static final String PRIORITIZED_FREE_DISK_GB = "prioritizedFreeDiskGB";
+  private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
 
   /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow the factory to do one
@@ -164,10 +145,19 @@ public class AffinityPlacementFactory implements PlacementPluginFactory {
   }
 
   @Override
-  public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
-    final long minimalFreeDiskGB = config.getLongConfig(MINIMAL_FREE_DISK_GB, 20L);
-    final long prioritizedFreeDiskGB = config.getLongConfig(PRIORITIZED_FREE_DISK_GB, 100L);
-    return new AffinityPlacementPlugin(minimalFreeDiskGB, prioritizedFreeDiskGB);
+  public PlacementPlugin createPluginInstance() {
+    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB);
+  }
+
+  @Override
+  public void configure(AffinityPlacementConfig cfg) {
+    Objects.requireNonNull(cfg, "configuration must never be null");
+    this.config = cfg;
+  }
+
+  @Override
+  public AffinityPlacementConfig getConfig() {
+    return config;
   }
 
   /**

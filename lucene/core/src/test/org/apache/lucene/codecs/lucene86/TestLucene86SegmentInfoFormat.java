@@ -26,12 +26,11 @@ public class TestLucene86SegmentInfoFormat extends BaseSegmentInfoFormatTestCase
 
   @Override
   protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
+    return new Version[] {Version.LATEST};
   }
 
   @Override
   protected Codec getCodec() {
     return TestUtil.getDefaultCodec();
   }
-
 }

@@ -17,6 +17,8 @@
 
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -34,15 +36,11 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 /** Geometry query for {@link LatLonDocValuesField}. */
 public class LatLonDocValuesPointInGeometryQuery extends Query {
 
   private final String field;
   private final LatLonGeometry[] geometries;
-
 
   LatLonDocValuesPointInGeometryQuery(String field, LatLonGeometry... geometries) {
     if (field == null) {
@@ -59,7 +57,8 @@ public class LatLonDocValuesPointInGeometryQuery extends Query {
         throw new IllegalArgumentException("geometries[" + i + "] must not be null");
       }
       if (geometries[i] instanceof Line) {
-        throw new IllegalArgumentException("LatLonDocValuesPointInGeometryQuery does not support queries with line geometries");
+        throw new IllegalArgumentException(
+            "LatLonDocValuesPointInGeometryQuery does not support queries with line geometries");
       }
     }
     this.field = field;
@@ -83,8 +82,7 @@ public class LatLonDocValuesPointInGeometryQuery extends Query {
       return false;
     }
     LatLonDocValuesPointInGeometryQuery other = (LatLonDocValuesPointInGeometryQuery) obj;
-    return field.equals(other.field) &&
-           Arrays.equals(geometries, other.geometries);
+    return field.equals(other.field) && Arrays.equals(geometries, other.geometries);
   }
 
   @Override
@@ -103,12 +101,30 @@ public class LatLonDocValuesPointInGeometryQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    final Component2D tree = LatLonGeometry.create(geometries);
+
+    if (tree.getMinY() > tree.getMaxY()) {
+      // encodeLatitudeCeil may cause minY to be > maxY iff
+      // the delta between the longitude < the encoding resolution
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) {
+          return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+      };
+    }
+
+    final GeoEncodingUtils.Component2DPredicate component2DPredicate =
+        GeoEncodingUtils.createComponentPredicate(tree);
 
     return new ConstantScoreWeight(this, boost) {
-
-      final Component2D tree = LatLonGeometry.create(geometries);
-      final GeoEncodingUtils.Component2DPredicate component2DPredicate = GeoEncodingUtils.createComponentPredicate(tree);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -117,26 +133,27 @@ public class LatLonDocValuesPointInGeometryQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator iterator = new TwoPhaseIterator(values) {
+        final TwoPhaseIterator iterator =
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-              final long value = values.nextValue();
-              final int lat = (int) (value >>> 32);
-              final int lon = (int) (value & 0xFFFFFFFF);
-              if (component2DPredicate.test(lat, lon)) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                  final long value = values.nextValue();
+                  final int lat = (int) (value >>> 32);
+                  final int lon = (int) (value & 0xFFFFFFFF);
+                  if (component2DPredicate.test(lat, lon)) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 1000f; // TODO: what should it be?
-          }
-        };
+              @Override
+              public float matchCost() {
+                return 1000f; // TODO: what should it be?
+              }
+            };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
@@ -144,7 +161,6 @@ public class LatLonDocValuesPointInGeometryQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
 }

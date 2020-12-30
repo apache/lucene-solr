@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,12 +35,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Test that norms info is preserved during index life - including
- * separate norms, addDocument, addIndexes, forceMerge.
+ * Test that norms info is preserved during index life - including separate norms, addDocument,
+ * addIndexes, forceMerge.
  */
 public class TestNorms extends LuceneTestCase {
   static final String BYTE_TEST_FIELD = "normsTestByte";
-  
+
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
@@ -58,7 +56,7 @@ public class TestNorms extends LuceneTestCase {
     open.close();
     dir.close();
   }
-  
+
   // TODO: create a testNormsNotPresent ourselves by adding/deleting/merging docs
 
   public void buildIndex(Directory dir) throws IOException {
@@ -74,7 +72,10 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document doc = new Document();
       int boost = TestUtil.nextInt(random, 1, 255);
-      String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
+      String value =
+          IntStream.range(0, boost)
+              .mapToObj(k -> Integer.toString(boost))
+              .collect(Collectors.joining(" "));
       Field f = new TextField(BYTE_TEST_FIELD, value, Field.Store.YES);
       doc.add(f);
       writer.addDocument(doc);
@@ -83,7 +84,6 @@ public class TestNorms extends LuceneTestCase {
     writer.commit();
     writer.close();
   }
-
 
   public class MySimProvider extends PerFieldSimilarityWrapper {
     Similarity delegate = new ClassicSimilarity();
@@ -98,7 +98,6 @@ public class TestNorms extends LuceneTestCase {
     }
   }
 
-  
   public static class ByteEncodingBoostSimilarity extends Similarity {
 
     @Override
@@ -107,10 +106,11 @@ public class TestNorms extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
-  } 
+  }
 
   public void testEmptyValueVsNoValue() throws IOException {
     Directory dir = newDirectory();

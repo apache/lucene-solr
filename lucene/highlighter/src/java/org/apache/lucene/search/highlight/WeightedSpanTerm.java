@@ -16,17 +16,12 @@
  */
 package org.apache.lucene.search.highlight;
 
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-
-/**
- * Lightweight class to hold term, weight, and positions used for scoring this
- * term.
- */
-public class WeightedSpanTerm extends WeightedTerm{
+/** Lightweight class to hold term, weight, and positions used for scoring this term. */
+public class WeightedSpanTerm extends WeightedTerm {
   boolean positionSensitive;
   private List<PositionSpan> positionSpans = new ArrayList<>();
 
@@ -43,8 +38,7 @@ public class WeightedSpanTerm extends WeightedTerm{
   /**
    * Checks to see if this term is valid at <code>position</code>.
    *
-   * @param position
-   *            to check against valid term positions
+   * @param position to check against valid term positions
    * @return true iff this term is a hit at this position
    */
   public boolean checkPosition(int position) {
@@ -80,7 +74,4 @@ public class WeightedSpanTerm extends WeightedTerm{
   public List<PositionSpan> getPositionSpans() {
     return positionSpans;
   }
-
 }
-
-

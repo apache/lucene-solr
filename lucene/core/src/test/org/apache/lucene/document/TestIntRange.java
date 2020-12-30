@@ -20,7 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIntRange extends LuceneTestCase {
   public void testToString() {
-    IntRange range = new IntRange("foo", new int[] { 1, 11, 21, 31 }, new int[] { 2, 12, 22, 32 });
+    IntRange range = new IntRange("foo", new int[] {1, 11, 21, 31}, new int[] {2, 12, 22, 32});
     assertEquals("IntRange <foo: [1 : 2] [11 : 12] [21 : 22] [31 : 32]>", range.toString());
   }
 }

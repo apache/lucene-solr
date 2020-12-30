@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.util.Random;
 
-
 public class TestRollingBuffer extends LuceneTestCase {
 
   private static class Position implements RollingBuffer.Resettable {
@@ -31,17 +30,18 @@ public class TestRollingBuffer extends LuceneTestCase {
   }
 
   public void test() {
-    
-    final RollingBuffer<Position> buffer = new RollingBuffer<Position>() {
-      @Override
-      protected Position newInstance() {
-        final Position pos = new Position();
-        pos.pos = -1;
-        return pos;
-      }
-    };
 
-    for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+    final RollingBuffer<Position> buffer =
+        new RollingBuffer<Position>() {
+          @Override
+          protected Position newInstance() {
+            final Position pos = new Position();
+            pos.pos = -1;
+            return pos;
+          }
+        };
+
+    for (int iter = 0; iter < 100 * RANDOM_MULTIPLIER; iter++) {
 
       int freeBeforePos = 0;
       final int maxPos = atLeast(10000);
@@ -72,7 +72,7 @@ public class TestRollingBuffer extends LuceneTestCase {
             System.out.println("  freeBeforePos=" + freeBeforePos);
           }
           buffer.freeBefore(freeBeforePos);
-        }          
+        }
       }
 
       buffer.reset();

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashSet;
@@ -25,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -44,7 +42,8 @@ import org.apache.lucene.util.Version;
 @LuceneTestCase.SuppressCodecs({"SimpleText", "Direct"})
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
-  // LUCENE-5644: for first segment, two threads each indexed one doc (likely concurrently), but for second segment, each thread indexed the
+  // LUCENE-5644: for first segment, two threads each indexed one doc (likely concurrently), but for
+  // second segment, each thread indexed the
   // doc NOT at the same time, and should have shared the same thread state / segment
   public void testSegmentCountOnFlushBasic() throws Exception {
     Directory dir = newDirectory();
@@ -54,30 +53,31 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     final CountDownLatch middleGun = new CountDownLatch(1);
     final CountDownLatch finalGun = new CountDownLatch(1);
     Thread[] threads = new Thread[2];
-    for(int i=0;i<threads.length;i++) {
+    for (int i = 0; i < threads.length; i++) {
       final int threadID = i;
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              startingGun.await();
-              Document doc = new Document();
-              doc.add(newTextField("field", "here is some text", Field.Store.NO));
-              w.addDocument(doc);
-              startDone.countDown();
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                Document doc = new Document();
+                doc.add(newTextField("field", "here is some text", Field.Store.NO));
+                w.addDocument(doc);
+                startDone.countDown();
 
-              middleGun.await();
-              if (threadID == 0) {
-                w.addDocument(doc);
-              } else {
-                finalGun.await();
-                w.addDocument(doc);
+                middleGun.await();
+                if (threadID == 0) {
+                  w.addDocument(doc);
+                } else {
+                  finalGun.await();
+                  w.addDocument(doc);
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
@@ -99,8 +99,9 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
     r = DirectoryReader.open(w);
     assertEquals(4, r.numDocs());
-    // Both threads should have shared a single thread state since they did not try to index concurrently:
-    assertEquals(1+numSegments, r.leaves().size());
+    // Both threads should have shared a single thread state since they did not try to index
+    // concurrently:
+    assertEquals(1 + numSegments, r.leaves().size());
     r.close();
 
     w.close();
@@ -116,7 +117,9 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     private final AtomicInteger indexingCount;
     private DirectoryReader r;
 
-    public CheckSegmentCount(IndexWriter w, AtomicInteger maxThreadCountPerIter, AtomicInteger indexingCount) throws IOException {
+    public CheckSegmentCount(
+        IndexWriter w, AtomicInteger maxThreadCountPerIter, AtomicInteger indexingCount)
+        throws IOException {
       this.w = w;
       this.maxThreadCountPerIter = maxThreadCountPerIter;
       this.indexingCount = indexingCount;
@@ -135,9 +138,16 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
         r = r2;
         int maxExpectedSegments = oldSegmentCount + maxThreadCountPerIter.get();
         if (VERBOSE) {
-          System.out.println("TEST: iter done; now verify oldSegCount=" + oldSegmentCount + " newSegCount=" + r2.leaves().size() + " maxExpected=" + maxExpectedSegments);
+          System.out.println(
+              "TEST: iter done; now verify oldSegCount="
+                  + oldSegmentCount
+                  + " newSegCount="
+                  + r2.leaves().size()
+                  + " maxExpected="
+                  + maxExpectedSegments);
         }
-        // NOTE: it won't necessarily be ==, in case some threads were strangely scheduled and never conflicted with one another (should be uncommon...?):
+        // NOTE: it won't necessarily be ==, in case some threads were strangely scheduled and never
+        // conflicted with one another (should be uncommon...?):
         assertTrue(r.leaves().size() <= maxExpectedSegments);
         setNextIterThreadCount();
       } catch (Exception e) {
@@ -160,7 +170,8 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     }
   }
 
-  // LUCENE-5644: index docs w/ multiple threads but in between flushes we limit how many threads can index concurrently in the next
+  // LUCENE-5644: index docs w/ multiple threads but in between flushes we limit how many threads
+  // can index concurrently in the next
   // iteration, and then verify that no more segments were flushed than number of threads:
   public void testSegmentCountOnFlushRandom() throws Exception {
     Directory dir = newFSDirectory(createTempDir());
@@ -183,48 +194,57 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
     CheckSegmentCount checker = new CheckSegmentCount(w, maxThreadCount, indexingCount);
 
-    // We spin up 10 threads up front, but then in between flushes we limit how many can run on each iteration
+    // We spin up 10 threads up front, but then in between flushes we limit how many can run on each
+    // iteration
     final int ITERS = TEST_NIGHTLY ? 300 : 10;
     Thread[] threads = new Thread[MAX_THREADS_AT_ONCE];
 
-    // We use this to stop all threads once they've indexed their docs in the current iter, and pull a new NRT reader, and verify the
+    // We use this to stop all threads once they've indexed their docs in the current iter, and pull
+    // a new NRT reader, and verify the
     // segment count:
     final CyclicBarrier barrier = new CyclicBarrier(MAX_THREADS_AT_ONCE, checker);
-    
-    for(int i=0;i<threads.length;i++) {
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              for(int iter=0;iter<ITERS;iter++) {
-                if (indexingCount.incrementAndGet() <= maxThreadCount.get()) {
-                  if (VERBOSE) {
-                    System.out.println("TEST: " + Thread.currentThread().getName() + ": do index");
-                  }
 
-                  // We get to index on this cycle:
-                  Document doc = new Document();
-                  doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
-                  for(int j=0;j<200;j++) {
-                    w.addDocument(doc);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                for (int iter = 0; iter < ITERS; iter++) {
+                  if (indexingCount.incrementAndGet() <= maxThreadCount.get()) {
+                    if (VERBOSE) {
+                      System.out.println(
+                          "TEST: " + Thread.currentThread().getName() + ": do index");
+                    }
+
+                    // We get to index on this cycle:
+                    Document doc = new Document();
+                    doc.add(
+                        new TextField(
+                            "field",
+                            "here is some text that is a bit longer than normal trivial text",
+                            Field.Store.NO));
+                    for (int j = 0; j < 200; j++) {
+                      w.addDocument(doc);
+                    }
+                  } else {
+                    // We lose: no indexing for us on this cycle
+                    if (VERBOSE) {
+                      System.out.println(
+                          "TEST: " + Thread.currentThread().getName() + ": don't index");
+                    }
                   }
-                } else {
-                  // We lose: no indexing for us on this cycle
-                  if (VERBOSE) {
-                    System.out.println("TEST: " + Thread.currentThread().getName() + ": don't index");
-                  }
+                  barrier.await();
                 }
-                barrier.await();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
-    for(Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
 
@@ -240,24 +260,29 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     w.setDoRandomForceMerge(false);
     Thread[] threads = new Thread[TestUtil.nextInt(random(), 4, 30)];
     final CountDownLatch startingGun = new CountDownLatch(1);
-    for(int i=0;i<threads.length;i++) {
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              startingGun.await();
-              Document doc = new Document();
-              doc.add(new TextField("field", "here is some text that is a bit longer than normal trivial text", Field.Store.NO));
-              for(int j=0;j<1000;j++) {
-                w.addDocument(doc);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                Document doc = new Document();
+                doc.add(
+                    new TextField(
+                        "field",
+                        "here is some text that is a bit longer than normal trivial text",
+                        Field.Store.NO));
+                for (int j = 0; j < 1000; j++) {
+                  w.addDocument(doc);
+                }
+              } catch (AlreadyClosedException ace) {
+                // ok
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (AlreadyClosedException ace) {
-              // ok
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
@@ -269,7 +294,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     } catch (IllegalStateException ise) {
       // OK but not required
     }
-    for(Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
     w.close();
@@ -286,28 +311,29 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     final IndexWriter w = new IndexWriter(dir, iwc);
     final CountDownLatch startingGun = new CountDownLatch(1);
     Thread[] threads = new Thread[2];
-    for(int i=0;i<threads.length;i++) {
+    for (int i = 0; i < threads.length; i++) {
       final int threadID = i;
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              startingGun.await();
-              for(int j=0;j<1000;j++) {
-                Document doc = new Document();
-                doc.add(newStringField("field", "threadID" + threadID, Field.Store.NO));
-                w.addDocument(doc);
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                for (int j = 0; j < 1000; j++) {
+                  Document doc = new Document();
+                  doc.add(newStringField("field", "threadID" + threadID, Field.Store.NO));
+                  w.addDocument(doc);
+                }
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
     startingGun.countDown();
-    for(Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
 
@@ -315,8 +341,10 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     int thread0Count = 0;
     int thread1Count = 0;
 
-    // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread until we see all 1000 thread0 & thread1
-    // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this will run forever:
+    // At this point the writer should have 2 thread states w/ docs; now we index with only 1 thread
+    // until we see all 1000 thread0 & thread1
+    // docs flushed.  If the writer incorrectly holds onto previously indexed docs forever then this
+    // will run forever:
     long counter = 0;
     long checkAt = 100;
     while (thread0Count < 1000 || thread1Count < 1000) {
@@ -324,15 +352,19 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
       doc.add(newStringField("field", "threadIDmain", Field.Store.NO));
       w.addDocument(doc);
       if (counter++ == checkAt) {
-        for(String fileName : dir.listAll()) {
+        for (String fileName : dir.listAll()) {
           if (fileName.endsWith(".si")) {
             String segName = IndexFileNames.parseSegmentName(fileName);
             if (segSeen.contains(segName) == false) {
               segSeen.add(segName);
               byte id[] = readSegmentInfoID(dir, fileName);
-              SegmentInfo si = TestUtil.getDefaultCodec().segmentInfoFormat().read(dir, segName, id, IOContext.DEFAULT);
+              SegmentInfo si =
+                  TestUtil.getDefaultCodec()
+                      .segmentInfoFormat()
+                      .read(dir, segName, id, IOContext.DEFAULT);
               si.setCodec(codec);
-              SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
+              SegmentCommitInfo sci =
+                  new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
               SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, IOContext.DEFAULT);
               try {
                 thread0Count += sr.docFreq(new Term("field", "threadID0"));
@@ -352,7 +384,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  
+
   // TODO: remove this hack and fix this test to be better?
   // the whole thing relies on default codec too...
   byte[] readSegmentInfoID(Directory dir, String file) throws IOException {

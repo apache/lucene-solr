@@ -17,7 +17,6 @@
 package org.apache.lucene.search.highlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -36,8 +35,10 @@ public class TestMisses extends LuceneTestCase {
   public void testTermQuery() throws IOException, InvalidTokenOffsetsException {
     try (Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       final Query query = new TermQuery(new Term("test", "foo"));
-      final Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
-      assertEquals("this is a <B>foo</B> bar example",
+      final Highlighter highlighter =
+          new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
+      assertEquals(
+          "this is a <B>foo</B> bar example",
           highlighter.getBestFragment(analyzer, "test", "this is a foo bar example"));
       assertNull(highlighter.getBestFragment(analyzer, "test", "this does not match"));
     }
@@ -48,8 +49,10 @@ public class TestMisses extends LuceneTestCase {
       final BooleanQuery.Builder query = new BooleanQuery.Builder();
       query.add(new TermQuery(new Term("test", "foo")), Occur.MUST);
       query.add(new TermQuery(new Term("test", "bar")), Occur.MUST);
-      final Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query.build()));
-      assertEquals("this is a <B>foo</B> <B>bar</B> example",
+      final Highlighter highlighter =
+          new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query.build()));
+      assertEquals(
+          "this is a <B>foo</B> <B>bar</B> example",
           highlighter.getBestFragment(analyzer, "test", "this is a foo bar example"));
       assertNull(highlighter.getBestFragment(analyzer, "test", "this does not match"));
     }
@@ -58,8 +61,10 @@ public class TestMisses extends LuceneTestCase {
   public void testPhraseQuery() throws IOException, InvalidTokenOffsetsException {
     try (Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
       final PhraseQuery query = new PhraseQuery("test", "foo", "bar");
-      final Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
-      assertEquals("this is a <B>foo</B> <B>bar</B> example",
+      final Highlighter highlighter =
+          new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
+      assertEquals(
+          "this is a <B>foo</B> <B>bar</B> example",
           highlighter.getBestFragment(analyzer, "test", "this is a foo bar example"));
       assertNull(highlighter.getBestFragment(analyzer, "test", "this does not match"));
     }
@@ -67,11 +72,18 @@ public class TestMisses extends LuceneTestCase {
 
   public void testSpanNearQuery() throws IOException, InvalidTokenOffsetsException {
     try (Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)) {
-      final Query query = new SpanNearQuery(new SpanQuery[] {
-          new SpanTermQuery(new Term("test", "foo")),
-          new SpanTermQuery(new Term("test", "bar"))}, 0, true);
-      final Highlighter highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
-      assertEquals("this is a <B>foo</B> <B>bar</B> example",
+      final Query query =
+          new SpanNearQuery(
+              new SpanQuery[] {
+                new SpanTermQuery(new Term("test", "foo")),
+                new SpanTermQuery(new Term("test", "bar"))
+              },
+              0,
+              true);
+      final Highlighter highlighter =
+          new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
+      assertEquals(
+          "this is a <B>foo</B> <B>bar</B> example",
           highlighter.getBestFragment(analyzer, "test", "this is a foo bar example"));
       assertNull(highlighter.getBestFragment(analyzer, "test", "this does not match"));
     }

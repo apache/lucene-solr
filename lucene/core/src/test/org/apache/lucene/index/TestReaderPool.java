@@ -17,13 +17,12 @@
 
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -45,7 +44,9 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
     assertSame(readersAndUpdates, pool.get(commitInfo, false));
@@ -64,7 +65,9 @@ public class TestReaderPool extends LuceneTestCase {
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
 
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory, directory, segmentInfos, fieldNumbers, () -> 0l, null, null, null);
     SegmentCommitInfo commitInfo = RandomPicks.randomFrom(random(), segmentInfos.asList());
     assertFalse(pool.isReaderPoolingEnabled());
     pool.release(pool.get(commitInfo, true), random().nextBoolean());
@@ -80,7 +83,8 @@ public class TestReaderPool extends LuceneTestCase {
     assertEquals(0, pool.ramBytesUsed());
     for (SegmentCommitInfo info : segmentInfos) {
       pool.release(pool.get(info, true), random().nextBoolean());
-      assertEquals(" used: " + ramBytesUsed + " actual: " + pool.ramBytesUsed(), 0, pool.ramBytesUsed());
+      assertEquals(
+          " used: " + ramBytesUsed + " actual: " + pool.ramBytesUsed(), 0, pool.ramBytesUsed());
       ramBytesUsed = pool.ramBytesUsed();
       assertSame(pool.get(info, false), pool.get(info, false));
     }
@@ -93,14 +97,21 @@ public class TestReaderPool extends LuceneTestCase {
     IOUtils.close(pool, reader, directory);
   }
 
-
   public void testUpdate() throws IOException {
     Directory directory = newDirectory();
     FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory,
+            directory,
+            segmentInfos,
+            fieldNumbers,
+            () -> 0l,
+            new NullInfoStream(),
+            null,
+            null);
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
@@ -112,7 +123,8 @@ public class TestReaderPool extends LuceneTestCase {
       boolean expectUpdate = false;
       int doc = -1;
       if (postings != null && postings.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        NumericDocValuesFieldUpdates number = new NumericDocValuesFieldUpdates(0, "number", commitInfo.info.maxDoc());
+        NumericDocValuesFieldUpdates number =
+            new NumericDocValuesFieldUpdates(0, "number", commitInfo.info.maxDoc());
         number.add(doc = postings.docID(), 1000l);
         number.finish();
         readersAndUpdates.addDVUpdate(number);
@@ -155,8 +167,8 @@ public class TestReaderPool extends LuceneTestCase {
         NumericDocValues number = updatedReader.getNumericDocValues("number");
         assertEquals(doc, number.advance(doc));
         assertEquals(1000l, number.longValue());
-       readersAndUpdates.release(updatedReader);
-       assertFalse(pool.release(readersAndUpdates, random().nextBoolean()));
+        readersAndUpdates.release(updatedReader);
+        assertFalse(pool.release(readersAndUpdates, random().nextBoolean()));
       }
     }
     IOUtils.close(pool, reader, directory);
@@ -167,8 +179,16 @@ public class TestReaderPool extends LuceneTestCase {
     FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory,
+            directory,
+            segmentInfos,
+            fieldNumbers,
+            () -> 0l,
+            new NullInfoStream(),
+            null,
+            null);
     int id = random().nextInt(10);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
@@ -212,37 +232,49 @@ public class TestReaderPool extends LuceneTestCase {
     FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0L,
-        new NullInfoStream(), null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory,
+            directory,
+            segmentInfos,
+            fieldNumbers,
+            () -> 0L,
+            new NullInfoStream(),
+            null,
+            null);
     if (random().nextBoolean()) {
       pool.enableReaderPooling();
     }
     AtomicBoolean isDone = new AtomicBoolean();
     CountDownLatch latch = new CountDownLatch(1);
-    Thread refresher = new Thread(() -> {
-      try {
-        latch.countDown();
-        while (isDone.get() == false) {
-          for (SegmentCommitInfo commitInfo : segmentInfos) {
-            ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-            SegmentReader segmentReader = readersAndUpdates.getReader(IOContext.READ);
-            readersAndUpdates.release(segmentReader);
-            pool.release(readersAndUpdates, random().nextBoolean());
-          }
-        }
-      } catch (Exception ex) {
-        throw new AssertionError(ex);
-      }
-    });
+    Thread refresher =
+        new Thread(
+            () -> {
+              try {
+                latch.countDown();
+                while (isDone.get() == false) {
+                  for (SegmentCommitInfo commitInfo : segmentInfos) {
+                    ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
+                    SegmentReader segmentReader = readersAndUpdates.getReader(IOContext.READ);
+                    readersAndUpdates.release(segmentReader);
+                    pool.release(readersAndUpdates, random().nextBoolean());
+                  }
+                }
+              } catch (Exception ex) {
+                throw new AssertionError(ex);
+              }
+            });
     refresher.start();
-    MergePolicy mergePolicy = new FilterMergePolicy(newMergePolicy()) {
-      @Override
-      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
-        CodecReader reader = readerIOSupplier.get();
-        assert reader.maxDoc() > 0; // just try to access the reader
-        return true;
-      }
-    };
+    MergePolicy mergePolicy =
+        new FilterMergePolicy(newMergePolicy()) {
+          @Override
+          public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier)
+              throws IOException {
+            CodecReader reader = readerIOSupplier.get();
+            assert reader.maxDoc() > 0; // just try to access the reader
+            return true;
+          }
+        };
     latch.await();
     for (int i = 0; i < reader.maxDoc(); i++) {
       for (SegmentCommitInfo commitInfo : segmentInfos) {
@@ -251,7 +283,9 @@ public class TestReaderPool extends LuceneTestCase {
         PostingsEnum postings = sr.postings(new Term("id", "" + i));
         sr.decRef();
         if (postings != null) {
-          for (int docId = postings.nextDoc(); docId != DocIdSetIterator.NO_MORE_DOCS; docId = postings.nextDoc()) {
+          for (int docId = postings.nextDoc();
+              docId != DocIdSetIterator.NO_MORE_DOCS;
+              docId = postings.nextDoc()) {
             readersAndUpdates.delete(docId);
             assertTrue(readersAndUpdates.keepFullyDeletedSegment(mergePolicy));
           }
@@ -286,14 +320,23 @@ public class TestReaderPool extends LuceneTestCase {
     FieldInfos.FieldNumbers fieldNumbers = buildIndex(directory);
     StandardDirectoryReader reader = (StandardDirectoryReader) DirectoryReader.open(directory);
     SegmentInfos segmentInfos = reader.segmentInfos.clone();
-    ReaderPool pool = new ReaderPool(directory, directory, segmentInfos, fieldNumbers, () -> 0l,
-        new NullInfoStream(), null, null);
+    ReaderPool pool =
+        new ReaderPool(
+            directory,
+            directory,
+            segmentInfos,
+            fieldNumbers,
+            () -> 0l,
+            new NullInfoStream(),
+            null,
+            null);
     assertEquals(0, pool.getReadersByRam().size());
 
     int ord = 0;
     for (SegmentCommitInfo commitInfo : segmentInfos) {
       ReadersAndUpdates readersAndUpdates = pool.get(commitInfo, true);
-      BinaryDocValuesFieldUpdates test = new BinaryDocValuesFieldUpdates(0, "test", commitInfo.info.maxDoc());
+      BinaryDocValuesFieldUpdates test =
+          new BinaryDocValuesFieldUpdates(0, "test", commitInfo.info.maxDoc());
       test.add(0, new BytesRef(new byte[ord++]));
       test.finish();
       readersAndUpdates.addDVUpdate(test);
@@ -303,7 +346,9 @@ public class TestReaderPool extends LuceneTestCase {
     assertEquals(segmentInfos.size(), readersByRam.size());
     long previousRam = Long.MAX_VALUE;
     for (ReadersAndUpdates rld : readersByRam) {
-      assertTrue("previous: " + previousRam + " now: " + rld.ramBytesUsed.get(), previousRam >= rld.ramBytesUsed.get());
+      assertTrue(
+          "previous: " + previousRam + " now: " + rld.ramBytesUsed.get(),
+          previousRam >= rld.ramBytesUsed.get());
       previousRam = rld.ramBytesUsed.get();
       rld.dropChanges();
       pool.drop(rld.info);

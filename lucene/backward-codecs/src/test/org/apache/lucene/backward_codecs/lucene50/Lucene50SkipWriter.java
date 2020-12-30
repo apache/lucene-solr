@@ -32,10 +32,11 @@ import org.apache.lucene.store.IndexOutput;
  * Write skip lists with multiple levels, and support skip within block ints.
  *
  * Assume that docFreq = 28, skipInterval = blockSize = 12
- *
+ * <pre>
  *  |       block#0       | |      block#1        | |vInts|
  *  d d d d d d d d d d d d d d d d d d d d d d d d d d d d (posting list)
  *                          ^                       ^       (level 0 skip point)
+ * </pre>
  *
  * Note that skipWriter will ignore first document in block#0, since 
  * it is useless as a skip point.  Also, we'll never skip into the vInts

@@ -16,29 +16,26 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-/** Implements limited (iterators only, no stats) {@link
- *  Fields} interface over the in-RAM buffered
- *  fields/terms/postings, to flush postings through the
- *  PostingsFormat. */
-
+/**
+ * Implements limited (iterators only, no stats) {@link Fields} interface over the in-RAM buffered
+ * fields/terms/postings, to flush postings through the PostingsFormat.
+ */
 class FreqProxFields extends Fields {
-  final Map<String,FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
+  final Map<String, FreqProxTermsWriterPerField> fields = new LinkedHashMap<>();
 
   public FreqProxFields(List<FreqProxTermsWriterPerField> fieldList) {
     // NOTE: fields are already sorted by field name
-    for(FreqProxTermsWriterPerField field : fieldList) {
+    for (FreqProxTermsWriterPerField field : fieldList) {
       fields.put(field.getFieldName(), field);
     }
   }
@@ -91,7 +88,7 @@ class FreqProxFields extends Fields {
     public int getDocCount() {
       throw new UnsupportedOperationException();
     }
-  
+
     @Override
     public boolean hasFreqs() {
       return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
@@ -102,9 +99,10 @@ class FreqProxFields extends Fields {
       // NOTE: the in-memory buffer may have indexed offsets
       // because that's what FieldInfo said when we started,
       // but during indexing this may have been downgraded:
-      return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+          >= 0;
     }
-  
+
     @Override
     public boolean hasPositions() {
       // NOTE: the in-memory buffer may have indexed positions
@@ -112,7 +110,7 @@ class FreqProxFields extends Fields {
       // but during indexing this may have been downgraded:
       return terms.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
-  
+
     @Override
     public boolean hasPayloads() {
       return terms.sawPayloads;
@@ -274,13 +272,12 @@ class FreqProxFields extends Fields {
     }
 
     /**
-     * Expert: Returns the TermsEnums internal state to position the TermsEnum
-     * without re-seeking the term dictionary.
-     * <p>
-     * NOTE: A seek by {@link TermState} might not capture the
-     * {@link AttributeSource}'s state. Callers must maintain the
-     * {@link AttributeSource} states separately
-     * 
+     * Expert: Returns the TermsEnums internal state to position the TermsEnum without re-seeking
+     * the term dictionary.
+     *
+     * <p>NOTE: A seek by {@link TermState} might not capture the {@link AttributeSource}'s state.
+     * Callers must maintain the {@link AttributeSource} states separately
+     *
      * @see TermState
      * @see #seekExact(BytesRef, TermState)
      */
@@ -305,7 +302,8 @@ class FreqProxFields extends Fields {
     boolean ended;
     int termID;
 
-    public FreqProxDocsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
+    public FreqProxDocsEnum(
+        FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
       this.terms = terms;
       this.postingsArray = postingsArray;
       this.readTermFreq = terms.hasFreq;
@@ -417,7 +415,8 @@ class FreqProxFields extends Fields {
     boolean hasPayload;
     BytesRefBuilder payload = new BytesRefBuilder();
 
-    public FreqProxPostingsEnum(FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
+    public FreqProxPostingsEnum(
+        FreqProxTermsWriterPerField terms, FreqProxPostingsArray postingsArray) {
       this.terms = terms;
       this.postingsArray = postingsArray;
       this.readOffsets = terms.hasOffsets;

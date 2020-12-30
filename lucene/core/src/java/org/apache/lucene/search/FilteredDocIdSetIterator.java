@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 /**
- * Abstract decorator class of a DocIdSetIterator
- * implementation that provides on-demand filter/validation
- * mechanism on an underlying DocIdSetIterator.
+ * Abstract decorator class of a DocIdSetIterator implementation that provides on-demand
+ * filter/validation mechanism on an underlying DocIdSetIterator.
  */
 public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
   protected DocIdSetIterator _innerIter;
@@ -30,6 +28,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
 
   /**
    * Constructor.
+   *
    * @param innerIter Underlying DocIdSetIterator.
    */
   public FilteredDocIdSetIterator(DocIdSetIterator innerIter) {
@@ -47,6 +46,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
 
   /**
    * Validation method to determine whether a docid should be in the result set.
+   *
    * @param doc docid to be tested
    * @return true if input docid should be in the result set, false otherwise.
    * @see #FilteredDocIdSetIterator(DocIdSetIterator)
@@ -57,7 +57,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
   public int docID() {
     return doc;
   }
-  
+
   @Override
   public int nextDoc() throws IOException {
     while ((doc = _innerIter.nextDoc()) != NO_MORE_DOCS) {
@@ -67,7 +67,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
     }
     return doc;
   }
-  
+
   @Override
   public int advance(int target) throws IOException {
     doc = _innerIter.advance(target);

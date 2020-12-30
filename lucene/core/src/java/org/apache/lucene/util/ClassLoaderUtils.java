@@ -17,18 +17,20 @@
 package org.apache.lucene.util;
 
 /**
- * Helper class used by ServiceLoader to investigate parent/child relationships of {@link ClassLoader}s.
+ * Helper class used by ServiceLoader to investigate parent/child relationships of {@link
+ * ClassLoader}s.
  *
  * @lucene.internal
  */
 public interface ClassLoaderUtils {
-  
+
   /**
    * Utility method to check if some class loader is a (grand-)parent of or the same as another one.
    * This means the child will be able to load all classes from the parent, too.
-   * <p>
-   * If caller's codesource doesn't have enough permissions to do the check, {@code false} is returned
-   * (this is fine, because if we get a {@code SecurityException} it is for sure no parent).
+   *
+   * <p>If caller's codesource doesn't have enough permissions to do the check, {@code false} is
+   * returned (this is fine, because if we get a {@code SecurityException} it is for sure no
+   * parent).
    */
   public static boolean isParentClassLoader(final ClassLoader parent, final ClassLoader child) {
     try {
@@ -44,5 +46,4 @@ public interface ClassLoaderUtils {
       return false;
     }
   }
-
 }

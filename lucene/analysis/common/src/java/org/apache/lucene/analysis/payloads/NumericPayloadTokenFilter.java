@@ -16,19 +16,17 @@
  */
 package org.apache.lucene.analysis.payloads;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.BytesRef;
 
-
 /**
- * Assigns a payload to a token based on the {@link org.apache.lucene.analysis.tokenattributes.TypeAttribute}
- **/
+ * Assigns a payload to a token based on the {@link
+ * org.apache.lucene.analysis.tokenattributes.TypeAttribute}
+ */
 public class NumericPayloadTokenFilter extends TokenFilter {
 
   private String typeMatch;
@@ -42,7 +40,7 @@ public class NumericPayloadTokenFilter extends TokenFilter {
     if (typeMatch == null) {
       throw new IllegalArgumentException("typeMatch must not be null");
     }
-    //Need to encode the payload
+    // Need to encode the payload
     thePayload = new BytesRef(PayloadHelper.encodeFloat(payload));
     this.typeMatch = typeMatch;
   }
@@ -50,8 +48,7 @@ public class NumericPayloadTokenFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      if (typeAtt.type().equals(typeMatch))
-        payloadAtt.setPayload(thePayload);
+      if (typeAtt.type().equals(typeMatch)) payloadAtt.setPayload(thePayload);
       return true;
     } else {
       return false;

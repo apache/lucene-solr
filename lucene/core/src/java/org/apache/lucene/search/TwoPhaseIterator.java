@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Returned by {@link Scorer#twoPhaseIterator()}
- * to expose an approximation of a {@link DocIdSetIterator}.
- * When the {@link #approximation()}'s
- * {@link DocIdSetIterator#nextDoc()} or {@link DocIdSetIterator#advance(int)}
- * return, {@link #matches()} needs to be checked in order to know whether the
- * returned doc ID actually matches.
+ * Returned by {@link Scorer#twoPhaseIterator()} to expose an approximation of a {@link
+ * DocIdSetIterator}. When the {@link #approximation()}'s {@link DocIdSetIterator#nextDoc()} or
+ * {@link DocIdSetIterator#advance(int)} return, {@link #matches()} needs to be checked in order to
+ * know whether the returned doc ID actually matches.
+ *
  * @lucene.experimental
  */
 public abstract class TwoPhaseIterator {
@@ -38,16 +36,14 @@ public abstract class TwoPhaseIterator {
     this.approximation = Objects.requireNonNull(approximation);
   }
 
-  /** Return a {@link DocIdSetIterator} view of the provided
-   *  {@link TwoPhaseIterator}. */
+  /** Return a {@link DocIdSetIterator} view of the provided {@link TwoPhaseIterator}. */
   public static DocIdSetIterator asDocIdSetIterator(TwoPhaseIterator twoPhaseIterator) {
     return new TwoPhaseIteratorAsDocIdSetIterator(twoPhaseIterator);
   }
 
   /**
-   * If the given {@link DocIdSetIterator} has been created with
-   * {@link #asDocIdSetIterator}, then this will return the wrapped
-   * {@link TwoPhaseIterator}. Otherwise this returns {@code null}.
+   * If the given {@link DocIdSetIterator} has been created with {@link #asDocIdSetIterator}, then
+   * this will return the wrapped {@link TwoPhaseIterator}. Otherwise this returns {@code null}.
    */
   public static TwoPhaseIterator unwrap(DocIdSetIterator iterator) {
     if (iterator instanceof TwoPhaseIteratorAsDocIdSetIterator) {
@@ -83,7 +79,7 @@ public abstract class TwoPhaseIterator {
     }
 
     private int doNext(int doc) throws IOException {
-      for (;; doc = approximation.nextDoc()) {
+      for (; ; doc = approximation.nextDoc()) {
         if (doc == NO_MORE_DOCS) {
           return NO_MORE_DOCS;
         } else if (twoPhaseIterator.matches()) {
@@ -98,25 +94,28 @@ public abstract class TwoPhaseIterator {
     }
   }
 
-  /** Return an approximation. The returned {@link DocIdSetIterator} is a
-   *  superset of the matching documents, and each match needs to be confirmed
-   *  with {@link #matches()} in order to know whether it matches or not. */
+  /**
+   * Return an approximation. The returned {@link DocIdSetIterator} is a superset of the matching
+   * documents, and each match needs to be confirmed with {@link #matches()} in order to know
+   * whether it matches or not.
+   */
   public DocIdSetIterator approximation() {
     return approximation;
   }
 
-  /** Return whether the current doc ID that {@link #approximation()} is on matches. This
-   *  method should only be called when the iterator is positioned -- ie. not
-   *  when {@link DocIdSetIterator#docID()} is {@code -1} or
-   *  {@link DocIdSetIterator#NO_MORE_DOCS} -- and at most once. */
+  /**
+   * Return whether the current doc ID that {@link #approximation()} is on matches. This method
+   * should only be called when the iterator is positioned -- ie. not when {@link
+   * DocIdSetIterator#docID()} is {@code -1} or {@link DocIdSetIterator#NO_MORE_DOCS} -- and at most
+   * once.
+   */
   public abstract boolean matches() throws IOException;
 
-  /** An estimate of the expected cost to determine that a single document {@link #matches()}.
-   *  This can be called before iterating the documents of {@link #approximation()}.
-   *  Returns an expected cost in number of simple operations like addition, multiplication,
-   *  comparing two numbers and indexing an array.
-   *  The returned value must be positive.
+  /**
+   * An estimate of the expected cost to determine that a single document {@link #matches()}. This
+   * can be called before iterating the documents of {@link #approximation()}. Returns an expected
+   * cost in number of simple operations like addition, multiplication, comparing two numbers and
+   * indexing an array. The returned value must be positive.
    */
   public abstract float matchCost();
-
 }

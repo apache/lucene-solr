@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.codecs.lucene86;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -38,26 +36,33 @@ import org.apache.lucene.util.bkd.BKDReader;
 public class Lucene86PointsReader extends PointsReader implements Closeable {
   final IndexInput indexIn, dataIn;
   final SegmentReadState readState;
-  final Map<Integer,BKDReader> readers = new HashMap<>();
+  final Map<Integer, BKDReader> readers = new HashMap<>();
 
   /** Sole constructor */
   public Lucene86PointsReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
 
-    String metaFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-        readState.segmentSuffix,
-        Lucene86PointsFormat.META_EXTENSION);
-    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-        readState.segmentSuffix,
-        Lucene86PointsFormat.INDEX_EXTENSION);
-    String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-        readState.segmentSuffix,
-        Lucene86PointsFormat.DATA_EXTENSION);
+    String metaFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            Lucene86PointsFormat.META_EXTENSION);
+    String indexFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            Lucene86PointsFormat.INDEX_EXTENSION);
+    String dataFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            Lucene86PointsFormat.DATA_EXTENSION);
 
     boolean success = false;
     try {
       indexIn = readState.directory.openInput(indexFileName, readState.context);
-      CodecUtil.checkIndexHeader(indexIn,
+      CodecUtil.checkIndexHeader(
+          indexIn,
           Lucene86PointsFormat.INDEX_CODEC_NAME,
           Lucene86PointsFormat.VERSION_START,
           Lucene86PointsFormat.VERSION_CURRENT,
@@ -65,7 +70,8 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           readState.segmentSuffix);
 
       dataIn = readState.directory.openInput(dataFileName, readState.context);
-      CodecUtil.checkIndexHeader(dataIn,
+      CodecUtil.checkIndexHeader(
+          dataIn,
           Lucene86PointsFormat.DATA_CODEC_NAME,
           Lucene86PointsFormat.VERSION_START,
           Lucene86PointsFormat.VERSION_CURRENT,
@@ -73,10 +79,12 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
           readState.segmentSuffix);
 
       long indexLength = -1, dataLength = -1;
-      try (ChecksumIndexInput metaIn = readState.directory.openChecksumInput(metaFileName, readState.context)) {
+      try (ChecksumIndexInput metaIn =
+          readState.directory.openChecksumInput(metaFileName, readState.context)) {
         Throwable priorE = null;
         try {
-          CodecUtil.checkIndexHeader(metaIn,
+          CodecUtil.checkIndexHeader(
+              metaIn,
               Lucene86PointsFormat.META_CODEC_NAME,
               Lucene86PointsFormat.VERSION_START,
               Lucene86PointsFormat.VERSION_CURRENT,
@@ -111,12 +119,13 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
         IOUtils.closeWhileHandlingException(this);
       }
     }
-
   }
 
-  /** Returns the underlying {@link BKDReader}.
+  /**
+   * Returns the underlying {@link BKDReader}.
    *
-   * @lucene.internal */
+   * @lucene.internal
+   */
   @Override
   public PointValues getValues(String fieldName) {
     FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(fieldName);
@@ -147,6 +156,4 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
     // Free up heap:
     readers.clear();
   }
-
 }
-  

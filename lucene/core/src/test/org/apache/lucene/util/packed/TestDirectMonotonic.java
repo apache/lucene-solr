@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -35,23 +33,33 @@ import org.apache.lucene.util.TestUtil;
 public class TestDirectMonotonic extends LuceneTestCase {
 
   public void testValidation() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
-        () -> DirectMonotonicWriter.getInstance(null, null, -1, 10));
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> DirectMonotonicWriter.getInstance(null, null, -1, 10));
     assertEquals("numValues can't be negative, got -1", e.getMessage());
 
-    e = expectThrows(IllegalArgumentException.class,
-        () -> DirectMonotonicWriter.getInstance(null, null, 10, 1));
+    e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> DirectMonotonicWriter.getInstance(null, null, 10, 1));
     assertEquals("blockShift must be in [2-22], got 1", e.getMessage());
 
-    e = expectThrows(IllegalArgumentException.class,
-        () -> DirectMonotonicWriter.getInstance(null, null, 1L << 40, 5));
-    assertEquals("blockShift is too low for the provided number of values: blockShift=5, numValues=1099511627776, MAX_ARRAY_LENGTH=" +
-        ArrayUtil.MAX_ARRAY_LENGTH, e.getMessage());
+    e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> DirectMonotonicWriter.getInstance(null, null, 1L << 40, 5));
+    assertEquals(
+        "blockShift is too low for the provided number of values: blockShift=5, numValues=1099511627776, MAX_ARRAY_LENGTH="
+            + ArrayUtil.MAX_ARRAY_LENGTH,
+        e.getMessage());
   }
 
   public void testEmpty() throws IOException {
     Directory dir = newDirectory();
-    final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+    final int blockShift =
+        TestUtil.nextInt(
+            random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
 
     final long dataLength;
     try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
@@ -81,7 +89,8 @@ public class TestDirectMonotonic extends LuceneTestCase {
     final long dataLength;
     try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
         IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
-      DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
+      DirectMonotonicWriter w =
+          DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
       for (long v : actualValues) {
         w.add(v);
       }
@@ -91,8 +100,10 @@ public class TestDirectMonotonic extends LuceneTestCase {
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
         IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
-      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
-      LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
+      DirectMonotonicReader.Meta meta =
+          DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
+      LongValues values =
+          DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
       for (int i = 0; i < numValues; ++i) {
         final long v = values.get(i);
         assertEquals(actualValues.get(i).longValue(), v);
@@ -104,7 +115,9 @@ public class TestDirectMonotonic extends LuceneTestCase {
 
   public void testConstantSlope() throws IOException {
     Directory dir = newDirectory();
-    final int blockShift = TestUtil.nextInt(random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+    final int blockShift =
+        TestUtil.nextInt(
+            random(), DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
     final int numValues = TestUtil.nextInt(random(), 1, 1 << 20);
     final long min = random().nextLong();
     final long inc = random().nextInt(1 << random().nextInt(20));
@@ -117,7 +130,8 @@ public class TestDirectMonotonic extends LuceneTestCase {
     final long dataLength;
     try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
         IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
-      DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
+      DirectMonotonicWriter w =
+          DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
       for (long v : actualValues) {
         w.add(v);
       }
@@ -127,8 +141,10 @@ public class TestDirectMonotonic extends LuceneTestCase {
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
         IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
-      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
-      LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
+      DirectMonotonicReader.Meta meta =
+          DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
+      LongValues values =
+          DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
       for (int i = 0; i < numValues; ++i) {
         assertEquals(actualValues.get(i).longValue(), values.get(i));
       }
@@ -143,7 +159,9 @@ public class TestDirectMonotonic extends LuceneTestCase {
     final int iters = atLeast(random, 3);
     for (int iter = 0; iter < iters; ++iter) {
       Directory dir = newDirectory();
-      final int blockShift = TestUtil.nextInt(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
+      final int blockShift =
+          TestUtil.nextInt(
+              random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
       final int maxNumValues = 1 << 20;
       final int numValues;
       if (random.nextBoolean()) {
@@ -163,34 +181,38 @@ public class TestDirectMonotonic extends LuceneTestCase {
         previous += random.nextInt(1 << random.nextInt(20));
         actualValues.add(previous);
       }
-  
+
       final long dataLength;
       try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
           IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
-        DirectMonotonicWriter w = DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
+        DirectMonotonicWriter w =
+            DirectMonotonicWriter.getInstance(metaOut, dataOut, numValues, blockShift);
         for (long v : actualValues) {
           w.add(v);
         }
         w.finish();
         dataLength = dataOut.getFilePointer();
       }
-  
+
       try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
           IndexInput dataIn = dir.openInput("data", IOContext.DEFAULT)) {
-        DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
-        LongValues values = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
+        DirectMonotonicReader.Meta meta =
+            DirectMonotonicReader.loadMeta(metaIn, numValues, blockShift);
+        LongValues values =
+            DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0, dataLength));
         for (int i = 0; i < numValues; ++i) {
           assertEquals(actualValues.get(i).longValue(), values.get(i));
         }
       }
-  
+
       dir.close();
     }
   }
 
   public void testMonotonicBinarySearch() throws IOException {
     try (Directory dir = newDirectory()) {
-      doTestMonotonicBinarySearchAgainstLongArray(dir, new long[] {4, 7, 8, 10, 19, 30, 55, 78, 100}, 2);
+      doTestMonotonicBinarySearchAgainstLongArray(
+          dir, new long[] {4, 7, 8, 10, 19, 30, 55, 78, 100}, 2);
     }
   }
 
@@ -211,10 +233,12 @@ public class TestDirectMonotonic extends LuceneTestCase {
     }
   }
 
-  private void doTestMonotonicBinarySearchAgainstLongArray(Directory dir, long[] array, int blockShift) throws IOException {
+  private void doTestMonotonicBinarySearchAgainstLongArray(
+      Directory dir, long[] array, int blockShift) throws IOException {
     try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
         IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
-      DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(metaOut, dataOut, array.length, blockShift);
+      DirectMonotonicWriter writer =
+          DirectMonotonicWriter.getInstance(metaOut, dataOut, array.length, blockShift);
       for (long l : array) {
         writer.add(l);
       }
@@ -223,8 +247,11 @@ public class TestDirectMonotonic extends LuceneTestCase {
 
     try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
         IndexInput dataIn = dir.openInput("data", IOContext.READ)) {
-      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, array.length, blockShift);
-      DirectMonotonicReader reader = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0L, dir.fileLength("data")));
+      DirectMonotonicReader.Meta meta =
+          DirectMonotonicReader.loadMeta(metaIn, array.length, blockShift);
+      DirectMonotonicReader reader =
+          DirectMonotonicReader.getInstance(
+              meta, dataIn.randomAccessSlice(0L, dir.fileLength("data")));
 
       if (array.length == 0) {
         assertEquals(-1, reader.binarySearch(0, array.length, 42L));
@@ -239,18 +266,19 @@ public class TestDirectMonotonic extends LuceneTestCase {
           assertEquals(-1, reader.binarySearch(0, array.length, array[0] - 1));
         }
         if (array[array.length - 1] != Long.MAX_VALUE) {
-          assertEquals(-1 - array.length, reader.binarySearch(0, array.length, array[array.length - 1] + 1));
+          assertEquals(
+              -1 - array.length, reader.binarySearch(0, array.length, array[array.length - 1] + 1));
         }
         for (int i = 0; i < array.length - 2; ++i) {
-          if (array[i] + 1 < array[i+1]) {
-            final long intermediate = random().nextBoolean() ? array[i] + 1 : array[i+1] - 1;
+          if (array[i] + 1 < array[i + 1]) {
+            final long intermediate = random().nextBoolean() ? array[i] + 1 : array[i + 1] - 1;
             final long index = reader.binarySearch(0, array.length, intermediate);
             assertTrue(index < 0);
-            final int insertionPoint = Math.toIntExact(-1 -index);
+            final int insertionPoint = Math.toIntExact(-1 - index);
             assertTrue(insertionPoint > 0);
             assertTrue(insertionPoint < array.length);
             assertTrue(array[insertionPoint] > intermediate);
-            assertTrue(array[insertionPoint-1] < intermediate);
+            assertTrue(array[insertionPoint - 1] < intermediate);
           }
         }
       }

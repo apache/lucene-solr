@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 /**
  * Subreader slice from a parent composite reader.
  *

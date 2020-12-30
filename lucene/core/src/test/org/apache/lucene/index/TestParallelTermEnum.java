@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,7 +31,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
   private LeafReader ir2;
   private Directory rd1;
   private Directory rd2;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -69,11 +67,11 @@ public class TestParallelTermEnum extends LuceneTestCase {
     rd2.close();
     super.tearDown();
   }
-  
+
   private void checkTerms(Terms terms, String... termsList) throws IOException {
     assertNotNull(terms);
     final TermsEnum te = terms.iterator();
-    
+
     for (String t : termsList) {
       BytesRef b = te.next();
       assertNotNull(b);

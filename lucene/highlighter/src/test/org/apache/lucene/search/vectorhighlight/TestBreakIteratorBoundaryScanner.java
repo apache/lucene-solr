@@ -18,20 +18,19 @@ package org.apache.lucene.search.vectorhighlight;
 
 import java.text.BreakIterator;
 import java.util.Locale;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
   static final String TEXT =
-    "Apache Lucene(TM) is a high-performance, full-featured text search engine library written entirely in Java." +
-    "\nIt is a technology suitable for nearly any application that requires\n" +
-    "full-text search, especially cross-platform. \nApache Lucene is an open source project available for free download.";
+      "Apache Lucene(TM) is a high-performance, full-featured text search engine library written entirely in Java."
+          + "\nIt is a technology suitable for nearly any application that requires\n"
+          + "full-text search, especially cross-platform. \nApache Lucene is an open source project available for free download.";
 
   public void testOutOfRange() throws Exception {
     StringBuilder text = new StringBuilder(TEXT);
     BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
-    
+
     int start = TEXT.length() + 1;
     assertEquals(start, scanner.findStartOffset(text, start));
     assertEquals(start, scanner.findEndOffset(text, start));
@@ -45,7 +44,7 @@ public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
     StringBuilder text = new StringBuilder(TEXT);
     BreakIterator bi = BreakIterator.getWordInstance(Locale.ROOT);
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
-    
+
     int start = TEXT.indexOf("formance");
     int expected = TEXT.indexOf("high-performance");
     testFindStartOffset(text, start, expected, scanner);
@@ -59,7 +58,7 @@ public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
     // we test this with default locale, it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getSentenceInstance(Locale.getDefault());
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
-    
+
     int start = TEXT.indexOf("any application");
     int expected = TEXT.indexOf("It is a");
     testFindStartOffset(text, start, expected, scanner);
@@ -73,7 +72,7 @@ public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
     // we test this with default locale, it's randomized by LuceneTestCase
     BreakIterator bi = BreakIterator.getLineInstance(Locale.getDefault());
     BoundaryScanner scanner = new BreakIteratorBoundaryScanner(bi);
-    
+
     int start = TEXT.indexOf("any application");
     int expected = TEXT.indexOf("nearly");
     testFindStartOffset(text, start, expected, scanner);
@@ -81,12 +80,14 @@ public class TestBreakIteratorBoundaryScanner extends LuceneTestCase {
     expected = TEXT.indexOf("application that requires");
     testFindEndOffset(text, start, expected, scanner);
   }
-  
-  private void testFindStartOffset(StringBuilder text, int start, int expected, BoundaryScanner scanner) throws Exception {
+
+  private void testFindStartOffset(
+      StringBuilder text, int start, int expected, BoundaryScanner scanner) throws Exception {
     assertEquals(expected, scanner.findStartOffset(text, start));
   }
-  
-  private void testFindEndOffset(StringBuilder text, int start, int expected, BoundaryScanner scanner) throws Exception {
+
+  private void testFindEndOffset(
+      StringBuilder text, int start, int expected, BoundaryScanner scanner) throws Exception {
     assertEquals(expected, scanner.findEndOffset(text, start));
   }
 }

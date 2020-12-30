@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -34,9 +33,9 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
 
   private static class PredeterminedMergePolicy extends MergePolicy {
 
-    final private MergePolicy.MergeSpecification merges;
-    final private MergePolicy.MergeSpecification forcedMerges;
-    final private MergePolicy.MergeSpecification forcedDeletesMerges;
+    private final MergePolicy.MergeSpecification merges;
+    private final MergePolicy.MergeSpecification forcedMerges;
+    private final MergePolicy.MergeSpecification forcedDeletesMerges;
 
     public PredeterminedMergePolicy(
         MergePolicy.MergeSpecification merges,
@@ -48,23 +47,27 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
     }
 
     @Override
-    public MergePolicy.MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+    public MergePolicy.MergeSpecification findMerges(
+        MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
       return merges;
     }
 
     @Override
-    public MergePolicy.MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-                                                           Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
+    public MergePolicy.MergeSpecification findForcedMerges(
+        SegmentInfos segmentInfos,
+        int maxSegmentCount,
+        Map<SegmentCommitInfo, Boolean> segmentsToMerge,
+        MergeContext mergeContext)
+        throws IOException {
       return forcedMerges;
     }
 
     @Override
-    public MergePolicy.MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
-        throws IOException {
+    public MergePolicy.MergeSpecification findForcedDeletesMerges(
+        SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
       return forcedDeletesMerges;
     }
-
   }
 
   private static class WrappedOneMerge extends MergePolicy.OneMerge {
@@ -75,7 +78,6 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
       super(original.segments);
       this.original = original;
     }
-
   }
 
   @Test
@@ -88,9 +90,8 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
       // secondly, pass them to the predetermined merge policy constructor
       final MergePolicy originalMP = new PredeterminedMergePolicy(msM, msF, msD);
       // thirdly wrap the predetermined merge policy
-      final MergePolicy oneMergeWrappingMP = new OneMergeWrappingMergePolicy(
-          originalMP,
-          merge -> new WrappedOneMerge(merge));
+      final MergePolicy oneMergeWrappingMP =
+          new OneMergeWrappingMergePolicy(originalMP, merge -> new WrappedOneMerge(merge));
       // finally, ask for merges and check what we got
       implTestSegmentsAreWrapped(msM, oneMergeWrappingMP.findMerges(null, null, null));
       implTestSegmentsAreWrapped(msF, oneMergeWrappingMP.findForcedMerges(null, 0, null, null));
@@ -98,20 +99,21 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
     }
   }
 
-  private static void implTestSegmentsAreWrapped(MergePolicy.MergeSpecification originalMS, MergePolicy.MergeSpecification testMS) {
+  private static void implTestSegmentsAreWrapped(
+      MergePolicy.MergeSpecification originalMS, MergePolicy.MergeSpecification testMS) {
     // wrapping does not add or remove merge specs
     assertEquals((originalMS == null), (testMS == null));
     if (originalMS == null) return;
     assertEquals(originalMS.merges.size(), testMS.merges.size());
     // wrapping does not re-order merge specs
     for (int ii = 0; ii < originalMS.merges.size(); ++ii) {
-        final MergePolicy.OneMerge originalOM = originalMS.merges.get(ii);
-        final MergePolicy.OneMerge testOM = testMS.merges.get(ii);
-        // wrapping wraps
-        assertTrue(testOM instanceof WrappedOneMerge);
-        final WrappedOneMerge wrappedOM = (WrappedOneMerge)testOM;
-        // and what is wrapped is what was originally passed in
-        assertEquals(originalOM, wrappedOM.original);
+      final MergePolicy.OneMerge originalOM = originalMS.merges.get(ii);
+      final MergePolicy.OneMerge testOM = testMS.merges.get(ii);
+      // wrapping wraps
+      assertTrue(testOM instanceof WrappedOneMerge);
+      final WrappedOneMerge wrappedOM = (WrappedOneMerge) testOM;
+      // and what is wrapped is what was originally passed in
+      assertEquals(originalOM, wrappedOM.original);
     }
   }
 
@@ -121,21 +123,21 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
       ms = new MergePolicy.MergeSpecification();
       // append up to 10 (random non-sensical) one merge objects
       for (int ii = 0; ii < random().nextInt(10); ++ii) {
-        final SegmentInfo si = new SegmentInfo(
-            dir, // dir
-            Version.LATEST, // version
-            Version.LATEST, // min version
-            TestUtil.randomSimpleString(random()), // name
-            random().nextInt(), // maxDoc
-            random().nextBoolean(), // isCompoundFile
-            null, // codec
-            Collections.emptyMap(), // diagnostics
-            TestUtil.randomSimpleString(// id
-                random(),
-                StringHelper.ID_LENGTH,
-                StringHelper.ID_LENGTH).getBytes(StandardCharsets.US_ASCII),
-            Collections.emptyMap(), // attributes
-            null /* indexSort */);
+        final SegmentInfo si =
+            new SegmentInfo(
+                dir, // dir
+                Version.LATEST, // version
+                Version.LATEST, // min version
+                TestUtil.randomSimpleString(random()), // name
+                random().nextInt(), // maxDoc
+                random().nextBoolean(), // isCompoundFile
+                null, // codec
+                Collections.emptyMap(), // diagnostics
+                TestUtil.randomSimpleString( // id
+                        random(), StringHelper.ID_LENGTH, StringHelper.ID_LENGTH)
+                    .getBytes(StandardCharsets.US_ASCII),
+                Collections.emptyMap(), // attributes
+                null /* indexSort */);
         final List<SegmentCommitInfo> segments = new LinkedList<SegmentCommitInfo>();
         segments.add(new SegmentCommitInfo(si, 0, 0, 0, 0, 0, StringHelper.randomId()));
         ms.add(new MergePolicy.OneMerge(segments));
@@ -143,5 +145,4 @@ public class TestOneMergeWrappingMergePolicy extends LuceneTestCase {
     }
     return null;
   }
-
 }

@@ -280,6 +280,40 @@
               value        : $value
             }
           </str>
+          <!--
+            overseer metrics
+          -->
+          <str>
+            .metrics | to_entries | .[] | select(.key | startswith("solr.overseer")) as $object |
+            $object.value as $value | $value | to_entries | .[]  |
+            select(.key | startswith("queue.") and endswith("collectionWorkQueueSize")) as $object |
+            $object.value as $value |
+            {
+            name         : "solr_metrics_overseer_collectionWorkQueueSize",
+            type         : "GAUGE",
+            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            label_names  : [],
+            label_values : [],
+            value        : $value
+            }
+          </str>
+          <str>
+            .metrics | to_entries | .[] | select(.key | startswith("solr.overseer")) as $object |
+            $object.value as $value | $value | to_entries | .[]  |
+            select(.key | startswith("queue.") and endswith("stateUpdateQueueSize")) as $object |
+            $object.value as $value |
+            {
+            name         : "solr_metrics_overseer_stateUpdateQueueSize",
+            type         : "GAUGE",
+            help         : "See following URL: https://lucene.apache.org/solr/guide/metrics-reporting.html",
+            label_names  : [],
+            label_values : [],
+            value        : $value
+            }
+          </str>
+          <!--
+            node metrics
+          -->
           <str>
             .metrics["solr.node"] | to_entries | .[] | select(.key | endswith(".clientErrors")) as $object |
             $object.key | split(".")[0] as $category |

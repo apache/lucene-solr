@@ -16,6 +16,13 @@
  */
 package org.apache.lucene.document;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -39,20 +46,13 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-
-/** Finds all previously indexed points that fall within the specified geometries.
+/**
+ * Finds all previously indexed points that fall within the specified geometries.
  *
- *  <p>The field must be indexed with using {@link LatLonPoint} added per document.
+ * <p>The field must be indexed with using {@link LatLonPoint} added per document.
  *
- *  @lucene.experimental */
-
+ * @lucene.experimental
+ */
 final class LatLonPointInGeometryQuery extends Query {
   final String field;
   final LatLonGeometry[] geometries;
@@ -72,7 +72,8 @@ final class LatLonPointInGeometryQuery extends Query {
         throw new IllegalArgumentException("geometries[" + i + "] must not be null");
       }
       if (geometries[i] instanceof Line) {
-        throw new IllegalArgumentException("LatLonPointInGeometryQuery does not support queries with line geometries");
+        throw new IllegalArgumentException(
+            "LatLonPointInGeometryQuery does not support queries with line geometries");
       }
     }
     this.field = field;
@@ -86,66 +87,106 @@ final class LatLonPointInGeometryQuery extends Query {
     }
   }
 
-  private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result, Component2D tree, GeoEncodingUtils.Component2DPredicate component2DPredicate,
-                                               byte[] minLat, byte[] maxLat, byte[] minLon, byte[] maxLon) {
+  private IntersectVisitor getIntersectVisitor(
+      DocIdSetBuilder result,
+      Component2D tree,
+      GeoEncodingUtils.Component2DPredicate component2DPredicate,
+      byte[] minLat,
+      byte[] maxLat,
+      byte[] minLon,
+      byte[] maxLon) {
     return new IntersectVisitor() {
-          DocIdSetBuilder.BulkAdder adder;
+      DocIdSetBuilder.BulkAdder adder;
 
-          @Override
-          public void grow(int count) {
-            adder = result.grow(count);
+      @Override
+      public void grow(int count) {
+        adder = result.grow(count);
+      }
+
+      @Override
+      public void visit(int docID) {
+        adder.add(docID);
+      }
+
+      @Override
+      public void visit(int docID, byte[] packedValue) {
+        if (component2DPredicate.test(
+            NumericUtils.sortableBytesToInt(packedValue, 0),
+            NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+          visit(docID);
+        }
+      }
+
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+        if (component2DPredicate.test(
+            NumericUtils.sortableBytesToInt(packedValue, 0),
+            NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
           }
+        }
+      }
 
-          @Override
-          public void visit(int docID) {
-            adder.add(docID);
-          }
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0
+            || Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES)
+                < 0
+            || Arrays.compareUnsigned(
+                    minPackedValue,
+                    Integer.BYTES,
+                    Integer.BYTES + Integer.BYTES,
+                    maxLon,
+                    0,
+                    Integer.BYTES)
+                > 0
+            || Arrays.compareUnsigned(
+                    maxPackedValue,
+                    Integer.BYTES,
+                    Integer.BYTES + Integer.BYTES,
+                    minLon,
+                    0,
+                    Integer.BYTES)
+                < 0) {
+          // outside of global bounding box range
+          return Relation.CELL_OUTSIDE_QUERY;
+        }
 
-          @Override
-          public void visit(int docID, byte[] packedValue) {
-            if (component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
-              visit(docID);
-            }
-          }
+        double cellMinLat = decodeLatitude(minPackedValue, 0);
+        double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
+        double cellMaxLat = decodeLatitude(maxPackedValue, 0);
+        double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-          @Override
-          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
-            if (component2DPredicate.test(NumericUtils.sortableBytesToInt(packedValue, 0),
-                NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
-              int docID;
-              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                visit(docID);
-              }
-            }
-          }
-
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
-                Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0 ||
-                Arrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
-                Arrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0) {
-              // outside of global bounding box range
-              return Relation.CELL_OUTSIDE_QUERY;
-            }
-
-            double cellMinLat = decodeLatitude(minPackedValue, 0);
-            double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
-            double cellMaxLat = decodeLatitude(maxPackedValue, 0);
-            double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
-
-            return tree.relate(cellMinLon, cellMaxLon, cellMinLat, cellMaxLat);
-          }
-        };
+        return tree.relate(cellMinLon, cellMaxLon, cellMinLat, cellMaxLat);
+      }
+    };
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Component2D tree = LatLonGeometry.create(geometries);
-    final GeoEncodingUtils.Component2DPredicate component2DPredicate = GeoEncodingUtils.createComponentPredicate(tree);
-    // bounding box over all geometries, this can speed up tree intersection/cheaply improve approximation for complex multi-geometries
+    if (tree.getMinY() > tree.getMaxY()) {
+      // encodeLatitudeCeil may cause minY to be > maxY iff
+      // the delta between the longitude < the encoding resolution
+      return new ConstantScoreWeight(this, boost) {
+        @Override
+        public Scorer scorer(LeafReaderContext context) {
+          return null;
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+      };
+    }
+    final GeoEncodingUtils.Component2DPredicate component2DPredicate =
+        GeoEncodingUtils.createComponentPredicate(tree);
+    // bounding box over all geometries, this can speed up tree intersection/cheaply improve
+    // approximation for complex multi-geometries
     final byte minLat[] = new byte[Integer.BYTES];
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];
@@ -177,7 +218,9 @@ final class LatLonPointInGeometryQuery extends Query {
 
           long cost = -1;
           DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-          final IntersectVisitor visitor = getIntersectVisitor(result, tree, component2DPredicate, minLat, maxLat, minLon, maxLon);
+          final IntersectVisitor visitor =
+              getIntersectVisitor(
+                  result, tree, component2DPredicate, minLat, maxLat, minLon, maxLon);
 
           @Override
           public Scorer get(long leadCost) throws IOException {
@@ -188,7 +231,7 @@ final class LatLonPointInGeometryQuery extends Query {
           @Override
           public long cost() {
             if (cost == -1) {
-               // Computing the cost may be expensive, so only do it if necessary
+              // Computing the cost may be expensive, so only do it if necessary
               cost = values.estimateDocCount(visitor);
               assert cost >= 0;
             }
@@ -211,7 +254,6 @@ final class LatLonPointInGeometryQuery extends Query {
         return true;
       }
     };
-
   }
 
   /** Returns the query field */
@@ -235,13 +277,11 @@ final class LatLonPointInGeometryQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(LatLonPointInGeometryQuery other) {
-    return field.equals(other.field) &&
-           Arrays.equals(geometries, other.geometries);
+    return field.equals(other.field) && Arrays.equals(geometries, other.geometries);
   }
 
   @Override

@@ -35,6 +35,11 @@ public interface SimpleMap<T> extends MapWriter {
   /**get a value by key. If not present , null is returned */
   T get(String key);
 
+  default T get(String key, T def) {
+    T val = get(key);
+    return val == null ? def : val;
+  }
+
   /**Navigate through all keys and values */
   void forEachEntry(BiConsumer<String, ? super T> fun);
 

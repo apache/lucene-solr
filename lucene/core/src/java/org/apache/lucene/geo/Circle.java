@@ -16,16 +16,18 @@
  */
 package org.apache.lucene.geo;
 
-
 /**
  * Represents a circle on the earth's surface.
- * <p>
- * NOTES:
+ *
+ * <p>NOTES:
+ *
  * <ol>
- *   <li> Latitude/longitude values must be in decimal degrees.
- *   <li> Radius must be in meters.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li>Latitude/longitude values must be in decimal degrees.
+ *   <li>Radius must be in meters.
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras}
+ *       module
  * </ol>
+ *
  * @lucene.experimental
  */
 public final class Circle extends LatLonGeometry {
@@ -36,9 +38,7 @@ public final class Circle extends LatLonGeometry {
   /** radius in meters */
   private final double radiusMeters;
 
-  /**
-   * Creates a new circle from the supplied latitude/longitude center and a radius in meters..
-   */
+  /** Creates a new circle from the supplied latitude/longitude center and a radius in meters.. */
   public Circle(double lat, double lon, double radiusMeters) {
     GeoUtils.checkLatitude(lat);
     GeoUtils.checkLongitude(lon);

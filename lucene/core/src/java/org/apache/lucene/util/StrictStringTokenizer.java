@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.util;
 
-
-/** Used for parsing Version strings so we don't have to
- *  use overkill String.split nor StringTokenizer (which silently
- *  skips empty tokens). */
-
+/**
+ * Used for parsing Version strings so we don't have to use overkill String.split nor
+ * StringTokenizer (which silently skips empty tokens).
+ */
 final class StrictStringTokenizer {
 
   public StrictStringTokenizer(String s, char delimiter) {
@@ -37,10 +36,10 @@ final class StrictStringTokenizer {
     String s1;
     if (pos1 >= 0) {
       s1 = s.substring(pos, pos1);
-      pos = pos1+1;
+      pos = pos1 + 1;
     } else {
       s1 = s.substring(pos);
-      pos=-1;
+      pos = -1;
     }
 
     return s1;

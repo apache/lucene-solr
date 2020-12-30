@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
-
 import java.io.Reader;
 import java.io.StringReader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
 public class TestScandinavianFoldingFilterFactory extends BaseTokenStreamFactoryTestCase {
 
@@ -28,15 +27,17 @@ public class TestScandinavianFoldingFilterFactory extends BaseTokenStreamFactory
     Reader reader = new StringReader("räksmörgås");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("ScandinavianFolding").create(stream);
-    assertTokenStreamContents(stream, new String[] { "raksmorgas" });
+    assertTokenStreamContents(stream, new String[] {"raksmorgas"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("ScandinavianFolding",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("ScandinavianFolding", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

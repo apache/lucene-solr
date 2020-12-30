@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.gl;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,69 +26,70 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
-/**
- * Simple tests for {@link GalicianMinimalStemmer}
- */
+/** Simple tests for {@link GalicianMinimalStemmer} */
 public class TestGalicianMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer a;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
-      }
-    };
+    a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     a.close();
     super.tearDown();
   }
-  
+
   public void testPlural() throws Exception {
     checkOneTerm(a, "elefantes", "elefante");
     checkOneTerm(a, "elefante", "elefante");
     checkOneTerm(a, "kalóres", "kalór");
     checkOneTerm(a, "kalór", "kalór");
   }
-  
+
   public void testExceptions() throws Exception {
     checkOneTerm(a, "mas", "mas");
     checkOneTerm(a, "barcelonês", "barcelonês");
   }
-  
+
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("elefantes"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new GalicianMinimalStemFilter(sink));
-      }
-    };
+    final CharArraySet exclusionSet = new CharArraySet(asSet("elefantes"), false);
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new GalicianMinimalStemFilter(sink));
+          }
+        };
     checkOneTerm(a, "elefantes", "elefantes");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new GalicianMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

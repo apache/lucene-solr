@@ -16,21 +16,21 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.*;
-import org.apache.lucene.store.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.*;
 
 public class TestStressIndexing extends LuceneTestCase {
-  private static abstract class TimedThread extends Thread {
+  private abstract static class TimedThread extends Thread {
     volatile boolean failed;
     int count;
     private static int RUN_TIME_MSEC = atLeast(1000);
     private TimedThread[] allThreads;
 
-    abstract public void doWork() throws Throwable;
+    public abstract void doWork() throws Throwable;
 
     TimedThread(TimedThread[] threads) {
       this.allThreads = threads;
@@ -47,7 +47,7 @@ public class TestStressIndexing extends LuceneTestCase {
           if (anyErrors()) break;
           doWork();
           count++;
-        } while(System.currentTimeMillis() < stopTime);
+        } while (System.currentTimeMillis() < stopTime);
       } catch (Throwable e) {
         System.out.println(Thread.currentThread() + ": exc");
         e.printStackTrace(System.out);
@@ -56,9 +56,8 @@ public class TestStressIndexing extends LuceneTestCase {
     }
 
     private boolean anyErrors() {
-      for(int i=0;i<allThreads.length;i++)
-        if (allThreads[i] != null && allThreads[i].failed)
-          return true;
+      for (int i = 0; i < allThreads.length; i++)
+        if (allThreads[i] != null && allThreads[i].failed) return true;
       return false;
     }
   }
@@ -75,7 +74,7 @@ public class TestStressIndexing extends LuceneTestCase {
     @Override
     public void doWork() throws Exception {
       // Add 10 docs:
-      for(int j=0; j<10; j++) {
+      for (int j = 0; j < 10; j++) {
         Document d = new Document();
         int n = random().nextInt();
         d.add(newStringField("id", Integer.toString(nextID++), Field.Store.YES));
@@ -84,9 +83,9 @@ public class TestStressIndexing extends LuceneTestCase {
       }
 
       // Delete 5 docs:
-      int deleteID = nextID-1;
-      for(int j=0; j<5; j++) {
-        writer.deleteDocuments(new Term("id", ""+deleteID));
+      int deleteID = nextID - 1;
+      for (int j = 0; j < 5; j++) {
+        writer.deleteDocuments(new Term("id", "" + deleteID));
         deleteID -= 2;
       }
     }
@@ -102,7 +101,7 @@ public class TestStressIndexing extends LuceneTestCase {
 
     @Override
     public void doWork() throws Throwable {
-      for (int i=0; i<100; i++) {
+      for (int i = 0; i < 100; i++) {
         IndexReader ir = DirectoryReader.open(directory);
         IndexSearcher is = newSearcher(ir);
         ir.close();
@@ -116,26 +115,28 @@ public class TestStressIndexing extends LuceneTestCase {
     stress test.
   */
   public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(10)
-        .setMergeScheduler(mergeScheduler));
+    IndexWriter modifier =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setOpenMode(OpenMode.CREATE)
+                .setMaxBufferedDocs(10)
+                .setMergeScheduler(mergeScheduler));
     modifier.commit();
-    
+
     TimedThread[] threads = new TimedThread[4];
     int numThread = 0;
-
 
     // One modifier that writes 10 docs then removes 5, over
     // and over:
     IndexerThread indexerThread = new IndexerThread(modifier, threads);
     threads[numThread++] = indexerThread;
     indexerThread.start();
-    
+
     IndexerThread indexerThread2 = new IndexerThread(modifier, threads);
     threads[numThread++] = indexerThread2;
     indexerThread2.start();
-      
+
     // Two searchers that constantly just re-instantiate the
     // searcher:
     SearcherThread searcherThread1 = new SearcherThread(directory, threads);
@@ -146,17 +147,15 @@ public class TestStressIndexing extends LuceneTestCase {
     threads[numThread++] = searcherThread2;
     searcherThread2.start();
 
-    for(int i=0;i<numThread;i++)
-      threads[i].join();
+    for (int i = 0; i < numThread; i++) threads[i].join();
 
     modifier.close();
 
-    for(int i=0;i<numThread;i++)
-      assertTrue(! threads[i].failed);
+    for (int i = 0; i < numThread; i++) assertTrue(!threads[i].failed);
 
-    //System.out.println("    Writer: " + indexerThread.count + " iterations");
-    //System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");
-    //System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
+    // System.out.println("    Writer: " + indexerThread.count + " iterations");
+    // System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");
+    // System.out.println("Searcher 2: " + searcherThread2.count + " searchers created");
   }
 
   /* */

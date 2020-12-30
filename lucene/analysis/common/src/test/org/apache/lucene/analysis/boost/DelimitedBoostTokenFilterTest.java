@@ -25,9 +25,9 @@ public class DelimitedBoostTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testBoosts() throws Exception {
     String test = "The quick|0.4 red|0.5 fox|0.2 jumped|0.1 over the lazy|0.8 brown|0.9 dogs|0.9";
-    DelimitedBoostTokenFilter filter = new DelimitedBoostTokenFilter
-            (whitespaceMockTokenizer(test),
-                    DelimitedBoostTokenFilterFactory.DEFAULT_DELIMITER);
+    DelimitedBoostTokenFilter filter =
+        new DelimitedBoostTokenFilter(
+            whitespaceMockTokenizer(test), DelimitedBoostTokenFilterFactory.DEFAULT_DELIMITER);
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     BoostAttribute boostAtt = filter.addAttribute(BoostAttribute.class);
     filter.reset();
@@ -48,9 +48,9 @@ public class DelimitedBoostTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testNext() throws Exception {
     String test = "The quick|0.1 red|0.2 fox|0.3 jumped|0.4 over the lazy|0.5 brown|0.6 dogs|0.6";
-    DelimitedBoostTokenFilter filter = new DelimitedBoostTokenFilter
-      (whitespaceMockTokenizer(test), 
-       DelimitedBoostTokenFilterFactory.DEFAULT_DELIMITER);
+    DelimitedBoostTokenFilter filter =
+        new DelimitedBoostTokenFilter(
+            whitespaceMockTokenizer(test), DelimitedBoostTokenFilterFactory.DEFAULT_DELIMITER);
     filter.reset();
     assertTermEquals("The", filter, 1.0f);
     assertTermEquals("quick", filter, 0.1f);
@@ -75,8 +75,14 @@ public class DelimitedBoostTokenFilterTest extends BaseTokenStreamTestCase {
     float actualBoost = boostAtt.getBoost();
     assertTrue(actualBoost + " does not equal: " + expectedBoost, actualBoost == expectedBoost);
   }
-  
-  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt, BoostAttribute boostAtt, float expectedBoost) throws Exception {
+
+  void assertTermEquals(
+      String expected,
+      TokenStream stream,
+      CharTermAttribute termAtt,
+      BoostAttribute boostAtt,
+      float expectedBoost)
+      throws Exception {
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
     float actualBoost = boostAtt.getBoost();

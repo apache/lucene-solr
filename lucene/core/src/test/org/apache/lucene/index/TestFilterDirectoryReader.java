@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FilterDirectoryReader.SubReaderWrapper;
 import org.apache.lucene.store.Directory;
@@ -37,7 +35,6 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     public LeafReader wrap(LeafReader reader) {
       return reader;
     }
-    
   }
 
   private static class DummyFilterDirectoryReader extends FilterDirectoryReader {
@@ -55,7 +52,6 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
     }
-    
   }
 
   public void testDoubleClose() throws IOException {
@@ -105,14 +101,14 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
         }
       };
     }
-
   }
 
   private static class NumDocsCountingFilterDirectoryReader extends FilterDirectoryReader {
 
     private final AtomicLong numDocsCallCount;
 
-    public NumDocsCountingFilterDirectoryReader(DirectoryReader in, AtomicLong numDocsCallCount) throws IOException {
+    public NumDocsCountingFilterDirectoryReader(DirectoryReader in, AtomicLong numDocsCallCount)
+        throws IOException {
       super(in, new NumDocsCountingSubReaderWrapper(numDocsCallCount));
       this.numDocsCallCount = numDocsCallCount;
     }
@@ -126,7 +122,6 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
     }
-
   }
 
   public void testFilterDirectoryReaderNumDocsIsLazy() throws IOException {
@@ -137,7 +132,8 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     w.close();
 
     AtomicLong numDocsCallCount = new AtomicLong();
-    DirectoryReader directoryReaderWrapper = new NumDocsCountingFilterDirectoryReader(directoryReader, numDocsCallCount);
+    DirectoryReader directoryReaderWrapper =
+        new NumDocsCountingFilterDirectoryReader(directoryReader, numDocsCallCount);
     assertEquals(0L, numDocsCallCount.get());
     assertEquals(1, directoryReaderWrapper.numDocs());
     assertEquals(1L, numDocsCallCount.get()); // one segment, so called once
@@ -147,5 +143,4 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     directoryReader.close();
     dir.close();
   }
-
 }

@@ -19,21 +19,17 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-/**
- * A per-document numeric value.
- */
+/** A per-document numeric value. */
 public abstract class NumericDocValues extends DocValuesIterator {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected NumericDocValues() {}
 
   /**
-   * Returns the numeric value for the current document ID.
-   * It is illegal to call this method after {@link #advanceExact(int)}
-   * returned {@code false}.
+   * Returns the numeric value for the current document ID. It is illegal to call this method after
+   * {@link #advanceExact(int)} returned {@code false}.
+   *
    * @return numeric value
    */
   public abstract long longValue() throws IOException;
-
 }

@@ -16,54 +16,42 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Space optimized random access capable array of values with a fixed number of
- * bits/value. Values are packed contiguously.
- * <p>
- * The implementation strives to perform as fast as possible under the
- * constraint of contiguous bits, by avoiding expensive operations. This comes
- * at the cost of code clarity.
- * <p>
- * Technical details: This implementation is a refinement of a non-branching
- * version. The non-branching get and set methods meant that 2 or 4 atomics in
- * the underlying array were always accessed, even for the cases where only
- * 1 or 2 were needed. Even with caching, this had a detrimental effect on
- * performance.
- * Related to this issue, the old implementation used lookup tables for shifts
- * and masks, which also proved to be a bit slower than calculating the shifts
- * and masks on the fly.
- * See https://issues.apache.org/jira/browse/LUCENE-4062 for details.
+ * Space optimized random access capable array of values with a fixed number of bits/value. Values
+ * are packed contiguously.
  *
+ * <p>The implementation strives to perform as fast as possible under the constraint of contiguous
+ * bits, by avoiding expensive operations. This comes at the cost of code clarity.
+ *
+ * <p>Technical details: This implementation is a refinement of a non-branching version. The
+ * non-branching get and set methods meant that 2 or 4 atomics in the underlying array were always
+ * accessed, even for the cases where only 1 or 2 were needed. Even with caching, this had a
+ * detrimental effect on performance. Related to this issue, the old implementation used lookup
+ * tables for shifts and masks, which also proved to be a bit slower than calculating the shifts and
+ * masks on the fly. See https://issues.apache.org/jira/browse/LUCENE-4062 for details.
  */
 class Packed64 extends PackedInts.MutableImpl {
   static final int BLOCK_SIZE = 64; // 32 = int, 64 = long
   static final int BLOCK_BITS = 6; // The #bits representing BLOCK_SIZE
   static final int MOD_MASK = BLOCK_SIZE - 1; // x % BLOCK_SIZE
 
-  /**
-   * Values are stores contiguously in the blocks array.
-   */
+  /** Values are stores contiguously in the blocks array. */
   private final long[] blocks;
-  /**
-   * A right-aligned mask of width BitsPerValue used by {@link #get(int)}.
-   */
+  /** A right-aligned mask of width BitsPerValue used by {@link #get(int)}. */
   private final long maskRight;
-  /**
-   * Optimization: Saves one lookup in {@link #get(int)}.
-   */
+  /** Optimization: Saves one lookup in {@link #get(int)}. */
   private final int bpvMinusBlockSize;
 
   /**
-   * Creates an array with the internal structures adjusted for the given
-   * limits and initialized to 0.
-   * @param valueCount   the number of elements.
+   * Creates an array with the internal structures adjusted for the given limits and initialized to
+   * 0.
+   *
+   * @param valueCount the number of elements.
    * @param bitsPerValue the number of bits available for any given value.
    */
   public Packed64(int valueCount, int bitsPerValue) {
@@ -71,24 +59,26 @@ class Packed64 extends PackedInts.MutableImpl {
     final PackedInts.Format format = PackedInts.Format.PACKED;
     final int longCount = format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue);
     this.blocks = new long[longCount];
-    maskRight = ~0L << (BLOCK_SIZE-bitsPerValue) >>> (BLOCK_SIZE-bitsPerValue);
+    maskRight = ~0L << (BLOCK_SIZE - bitsPerValue) >>> (BLOCK_SIZE - bitsPerValue);
     bpvMinusBlockSize = bitsPerValue - BLOCK_SIZE;
   }
 
   /**
    * Creates an array with content retrieved from the given DataInput.
-   * @param in       a DataInput, positioned at the start of Packed64-content.
-   * @param valueCount  the number of elements.
+   *
+   * @param in a DataInput, positioned at the start of Packed64-content.
+   * @param valueCount the number of elements.
    * @param bitsPerValue the number of bits available for any given value.
-   * @throws java.io.IOException if the values for the backing array could not
-   *                             be retrieved.
+   * @throws java.io.IOException if the values for the backing array could not be retrieved.
    */
   public Packed64(int packedIntsVersion, DataInput in, int valueCount, int bitsPerValue)
-                                                            throws IOException {
+      throws IOException {
     super(valueCount, bitsPerValue);
     final PackedInts.Format format = PackedInts.Format.PACKED;
-    final long byteCount = format.byteCount(packedIntsVersion, valueCount, bitsPerValue); // to know how much to read
-    final int longCount = format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue); // to size the array
+    final long byteCount =
+        format.byteCount(packedIntsVersion, valueCount, bitsPerValue); // to know how much to read
+    final int longCount =
+        format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue); // to size the array
     blocks = new long[longCount];
     // read as many longs as we can
     for (int i = 0; i < byteCount / 8; ++i) {
@@ -103,7 +93,7 @@ class Packed64 extends PackedInts.MutableImpl {
       }
       blocks[blocks.length - 1] = lastLong;
     }
-    maskRight = ~0L << (BLOCK_SIZE-bitsPerValue) >>> (BLOCK_SIZE-bitsPerValue);
+    maskRight = ~0L << (BLOCK_SIZE - bitsPerValue) >>> (BLOCK_SIZE - bitsPerValue);
     bpvMinusBlockSize = bitsPerValue - BLOCK_SIZE;
   }
 
@@ -114,9 +104,9 @@ class Packed64 extends PackedInts.MutableImpl {
   @Override
   public long get(final int index) {
     // The abstract index in a bit stream
-    final long majorBitPos = (long)index * bitsPerValue;
+    final long majorBitPos = (long) index * bitsPerValue;
     // The index in the backing long-array
-    final int elementPos = (int)(majorBitPos >>> BLOCK_BITS);
+    final int elementPos = (int) (majorBitPos >>> BLOCK_BITS);
     // The number of value-bits in the second long
     final long endBits = (majorBitPos & MOD_MASK) + bpvMinusBlockSize;
 
@@ -124,8 +114,7 @@ class Packed64 extends PackedInts.MutableImpl {
       return (blocks[elementPos] >>> -endBits) & maskRight;
     }
     // Two blocks
-    return ((blocks[elementPos] << endBits)
-        | (blocks[elementPos+1] >>> (BLOCK_SIZE - endBits)))
+    return ((blocks[elementPos] << endBits) | (blocks[elementPos + 1] >>> (BLOCK_SIZE - endBits)))
         & maskRight;
   }
 
@@ -154,7 +143,7 @@ class Packed64 extends PackedInts.MutableImpl {
     // bulk get
     assert index % decoder.longValueCount() == 0;
     int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
-    assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
+    assert (((long) index * bitsPerValue) & MOD_MASK) == 0;
     final int iterations = len / decoder.longValueCount();
     decoder.decode(blocks, blockIndex, arr, off, iterations);
     final int gotValues = iterations * decoder.longValueCount();
@@ -175,22 +164,20 @@ class Packed64 extends PackedInts.MutableImpl {
   @Override
   public void set(final int index, final long value) {
     // The abstract index in a contiguous bit stream
-    final long majorBitPos = (long)index * bitsPerValue;
+    final long majorBitPos = (long) index * bitsPerValue;
     // The index in the backing long-array
-    final int elementPos = (int)(majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
+    final int elementPos = (int) (majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
     // The number of value-bits in the second long
     final long endBits = (majorBitPos & MOD_MASK) + bpvMinusBlockSize;
 
     if (endBits <= 0) { // Single block
-      blocks[elementPos] = blocks[elementPos] &  ~(maskRight << -endBits)
-         | (value << -endBits);
+      blocks[elementPos] = blocks[elementPos] & ~(maskRight << -endBits) | (value << -endBits);
       return;
     }
     // Two blocks
-    blocks[elementPos] = blocks[elementPos] &  ~(maskRight >>> endBits)
-        | (value >>> endBits);
-    blocks[elementPos+1] = blocks[elementPos+1] &  (~0L >>> endBits)
-        | (value << (BLOCK_SIZE - endBits));
+    blocks[elementPos] = blocks[elementPos] & ~(maskRight >>> endBits) | (value >>> endBits);
+    blocks[elementPos + 1] =
+        blocks[elementPos + 1] & (~0L >>> endBits) | (value << (BLOCK_SIZE - endBits));
   }
 
   @Override
@@ -218,7 +205,7 @@ class Packed64 extends PackedInts.MutableImpl {
     // bulk set
     assert index % encoder.longValueCount() == 0;
     int blockIndex = (int) (((long) index * bitsPerValue) >>> BLOCK_BITS);
-    assert (((long)index * bitsPerValue) & MOD_MASK) == 0;
+    assert (((long) index * bitsPerValue) & MOD_MASK) == 0;
     final int iterations = len / encoder.longValueCount();
     encoder.encode(arr, off, blocks, blockIndex, iterations);
     final int setValues = iterations * encoder.longValueCount();
@@ -238,17 +225,22 @@ class Packed64 extends PackedInts.MutableImpl {
 
   @Override
   public String toString() {
-    return "Packed64(bitsPerValue=" + bitsPerValue + ",size="
-            + size() + ",blocks=" + blocks.length + ")";
+    return "Packed64(bitsPerValue="
+        + bitsPerValue
+        + ",size="
+        + size()
+        + ",blocks="
+        + blocks.length
+        + ")";
   }
 
   @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
-        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 3 * Integer.BYTES   // bpvMinusBlockSize,valueCount,bitsPerValue
-        + Long.BYTES          // maskRight
-        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
+            RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+                + 3 * Integer.BYTES // bpvMinusBlockSize,valueCount,bitsPerValue
+                + Long.BYTES // maskRight
+                + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
         + RamUsageEstimator.sizeOf(blocks);
   }
 
@@ -291,7 +283,7 @@ class Packed64 extends PackedInts.MutableImpl {
     }
     final int startBlock = (int) (((long) fromIndex * bitsPerValue) >>> 6);
     final int endBlock = (int) (((long) toIndex * bitsPerValue) >>> 6);
-    for (int  block = startBlock; block < endBlock; ++block) {
+    for (int block = startBlock; block < endBlock; ++block) {
       final long blockValue = nAlignedValuesBlocks[block % nAlignedBlocks];
       blocks[block] = blockValue;
     }

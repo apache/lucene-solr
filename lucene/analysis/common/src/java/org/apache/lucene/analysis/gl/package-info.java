@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Galician.
- */
+/** Analyzer for Galician. */
 package org.apache.lucene.analysis.gl;

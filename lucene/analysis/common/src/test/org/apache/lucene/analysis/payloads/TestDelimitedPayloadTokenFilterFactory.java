@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.analysis.payloads;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testEncoder() throws Exception {
     Reader reader = new StringReader("the|0.1 quick|0.1 red|0.1");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("DelimitedPayload", "encoder", "float").create(stream);
 
     stream.reset();
@@ -50,10 +48,9 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamFacto
   public void testDelim() throws Exception {
     Reader reader = new StringReader("the*0.1 quick*0.1 red*0.1");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
-    stream = tokenFilterFactory("DelimitedPayload",
-        "encoder", "float",
-        "delimiter", "*").create(stream);
+    ((Tokenizer) stream).setReader(reader);
+    stream =
+        tokenFilterFactory("DelimitedPayload", "encoder", "float", "delimiter", "*").create(stream);
     stream.reset();
     while (stream.incrementToken()) {
       PayloadAttribute payAttr = stream.getAttribute(PayloadAttribute.class);
@@ -66,15 +63,15 @@ public class TestDelimitedPayloadTokenFilterFactory extends BaseTokenStreamFacto
     stream.end();
     stream.close();
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("DelimitedPayload", 
-          "encoder", "float",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("DelimitedPayload", "encoder", "float", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }
-

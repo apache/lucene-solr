@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.synonym;
 
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -28,55 +27,51 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.core.FlattenGraphFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
 
 /**
  * Factory for {@link SynonymFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_synonym" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
- *     &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" 
- *             format="solr" ignoreCase="false" expand="true" 
+ *     &lt;filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt"
+ *             format="solr" ignoreCase="false" expand="true"
  *             tokenizerFactory="solr.WhitespaceTokenizerFactory"
  *             [optional tokenizer factory parameters]/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * <p>
- * An optional param name prefix of "tokenizerFactory." may be used for any 
- * init params that the SynonymFilterFactory needs to pass to the specified 
- * TokenizerFactory.  If the TokenizerFactory expects an init parameters with 
- * the same name as an init param used by the SynonymFilterFactory, the prefix 
- * is mandatory.
- * </p>
- * 
- * <p>
- * The optional {@code format} parameter controls how the synonyms will be parsed:
- * It supports the short names of {@code solr} for {@link SolrSynonymParser} 
- * and {@code wordnet} for and {@link WordnetSynonymParser}, or your own 
- * {@code SynonymMap.Parser} class name. The default is {@code solr}.
- * A custom {@link SynonymMap.Parser} is expected to have a constructor taking:
+ * <p>An optional param name prefix of "tokenizerFactory." may be used for any init params that the
+ * SynonymFilterFactory needs to pass to the specified TokenizerFactory. If the TokenizerFactory
+ * expects an init parameters with the same name as an init param used by the SynonymFilterFactory,
+ * the prefix is mandatory.
+ *
+ * <p>The optional {@code format} parameter controls how the synonyms will be parsed: It supports
+ * the short names of {@code solr} for {@link SolrSynonymParser} and {@code wordnet} for and {@link
+ * WordnetSynonymParser}, or your own {@code SynonymMap.Parser} class name. The default is {@code
+ * solr}. A custom {@link SynonymMap.Parser} is expected to have a constructor taking:
+ *
  * <ul>
- *   <li><code>boolean dedup</code> - true if duplicates should be ignored, false otherwise</li>
- *   <li><code>boolean expand</code> - true if conflation groups should be expanded, false if they are one-directional</li>
- *   <li><code>{@link Analyzer} analyzer</code> - an analyzer used for each raw synonym</li>
+ *   <li><code>boolean dedup</code> - true if duplicates should be ignored, false otherwise
+ *   <li><code>boolean expand</code> - true if conflation groups should be expanded, false if they
+ *       are one-directional
+ *   <li><code>{@link Analyzer} analyzer</code> - an analyzer used for each raw synonym
  * </ul>
+ *
  * @see SolrSynonymParser SolrSynonymParser: default format
- *
- * @deprecated Use {@link SynonymGraphFilterFactory} instead, but be sure to also
- * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
- *
+ * @deprecated Use {@link SynonymGraphFilterFactory} instead, but be sure to also use {@link
+ *     FlattenGraphFilterFactory} at index time (not at search time) as well.
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
@@ -95,8 +90,8 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
   private final Map<String, String> tokArgs = new HashMap<>();
 
   private SynonymMap map;
-  
-  public SynonymFilterFactory(Map<String,String> args) {
+
+  public SynonymFilterFactory(Map<String, String> args) {
     super(args);
     ignoreCase = getBoolean(args, "ignoreCase", false);
     synonyms = require(args, "synonyms");
@@ -106,15 +101,18 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     analyzerName = get(args, "analyzer");
     tokenizerFactory = get(args, "tokenizerFactory");
     if (analyzerName != null && tokenizerFactory != null) {
-      throw new IllegalArgumentException("Analyzer and TokenizerFactory can't be specified both: " +
-                                         analyzerName + " and " + tokenizerFactory);
+      throw new IllegalArgumentException(
+          "Analyzer and TokenizerFactory can't be specified both: "
+              + analyzerName
+              + " and "
+              + tokenizerFactory);
     }
 
     if (tokenizerFactory != null) {
       tokArgs.put("luceneMatchVersion", getLuceneMatchVersion().toString());
-      for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext();) {
+      for (Iterator<String> itr = args.keySet().iterator(); itr.hasNext(); ) {
         String key = itr.next();
-        tokArgs.put(key.replaceAll("^tokenizerFactory\\.",""), args.get(key));
+        tokArgs.put(key.replaceAll("^tokenizerFactory\\.", ""), args.get(key));
         itr.remove();
       }
     }
@@ -122,7 +120,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public SynonymFilterFactory() {
     throw defaultCtorException();
@@ -137,20 +135,22 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    final TokenizerFactory factory = tokenizerFactory == null ? null : loadTokenizerFactory(loader, tokenizerFactory);
+    final TokenizerFactory factory =
+        tokenizerFactory == null ? null : loadTokenizerFactory(loader, tokenizerFactory);
     Analyzer analyzer;
-    
+
     if (analyzerName != null) {
       analyzer = loadAnalyzer(loader, analyzerName);
     } else {
-      analyzer = new Analyzer() {
-        @Override
-        protected TokenStreamComponents createComponents(String fieldName) {
-          Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer() : factory.create();
-          TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
-          return new TokenStreamComponents(tokenizer, stream);
-        }
-      };
+      analyzer =
+          new Analyzer() {
+            @Override
+            protected TokenStreamComponents createComponents(String fieldName) {
+              Tokenizer tokenizer = factory == null ? new WhitespaceTokenizer() : factory.create();
+              TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
+              return new TokenStreamComponents(tokenizer, stream);
+            }
+          };
     }
 
     try (Analyzer a = analyzer) {
@@ -167,18 +167,23 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     }
   }
 
-  /**
-   * Load synonyms with the given {@link SynonymMap.Parser} class.
-   */
-  protected SynonymMap loadSynonyms(ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer) throws IOException, ParseException {
-    CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-        .onMalformedInput(CodingErrorAction.REPORT)
-        .onUnmappableCharacter(CodingErrorAction.REPORT);
+  /** Load synonyms with the given {@link SynonymMap.Parser} class. */
+  protected SynonymMap loadSynonyms(
+      ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer)
+      throws IOException, ParseException {
+    CharsetDecoder decoder =
+        StandardCharsets.UTF_8
+            .newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT);
 
     SynonymMap.Parser parser;
     Class<? extends SynonymMap.Parser> clazz = loader.findClass(cname, SynonymMap.Parser.class);
     try {
-      parser = clazz.getConstructor(boolean.class, boolean.class, Analyzer.class).newInstance(dedup, expand, analyzer);
+      parser =
+          clazz
+              .getConstructor(boolean.class, boolean.class, Analyzer.class)
+              .newInstance(dedup, expand, analyzer);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -192,9 +197,10 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
     }
     return parser.build();
   }
-  
+
   // (there are no tests for this functionality)
-  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname) throws IOException {
+  private TokenizerFactory loadTokenizerFactory(ResourceLoader loader, String cname)
+      throws IOException {
     Class<? extends TokenizerFactory> clazz = loader.findClass(cname, TokenizerFactory.class);
     try {
       TokenizerFactory tokFactory = clazz.getConstructor(Map.class).newInstance(tokArgs);

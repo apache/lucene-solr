@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Arabic.
- */
+/** Analyzer for Arabic. */
 package org.apache.lucene.analysis.ar;

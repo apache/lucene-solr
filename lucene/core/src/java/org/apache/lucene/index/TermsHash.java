@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 
-/** This class is passed each token produced by the analyzer
- *  on each field during indexing, and it stores these
- *  tokens in a hash table, and allocates separate byte
- *  streams per token.  Consumers of this class, eg {@link
- *  FreqProxTermsWriter} and {@link TermVectorsConsumer},
- *  write their own byte streams under each term. */
+/**
+ * This class is passed each token produced by the analyzer on each field during indexing, and it
+ * stores these tokens in a hash table, and allocates separate byte streams per token. Consumers of
+ * this class, eg {@link FreqProxTermsWriter} and {@link TermVectorsConsumer}, write their own byte
+ * streams under each term.
+ */
 abstract class TermsHash {
 
   final TermsHash nextTermsHash;
@@ -41,7 +39,11 @@ abstract class TermsHash {
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
 
-  TermsHash(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Counter bytesUsed, TermsHash nextTermsHash) {
+  TermsHash(
+      final IntBlockPool.Allocator intBlockAllocator,
+      final ByteBlockPool.Allocator byteBlockAllocator,
+      Counter bytesUsed,
+      TermsHash nextTermsHash) {
     this.nextTermsHash = nextTermsHash;
     this.bytesUsed = bytesUsed;
     intPool = new IntBlockPool(intBlockAllocator);
@@ -67,15 +69,19 @@ abstract class TermsHash {
   // Clear all state
   void reset() {
     // we don't reuse so we drop everything and don't fill with 0
-    intPool.reset(false, false); 
+    intPool.reset(false, false);
     bytePool.reset(false, false);
   }
 
-  void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state,
-      Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+  void flush(
+      Map<String, TermsHashPerField> fieldsToFlush,
+      final SegmentWriteState state,
+      Sorter.DocMap sortMap,
+      NormsProducer norms)
+      throws IOException {
     if (nextTermsHash != null) {
-      Map<String,TermsHashPerField> nextChildFields = new HashMap<>();
-      for (final Map.Entry<String,TermsHashPerField> entry : fieldsToFlush.entrySet()) {
+      Map<String, TermsHashPerField> nextChildFields = new HashMap<>();
+      for (final Map.Entry<String, TermsHashPerField> entry : fieldsToFlush.entrySet()) {
         nextChildFields.put(entry.getKey(), entry.getValue().getNextPerField());
       }
       nextTermsHash.flush(nextChildFields, state, sortMap, norms);

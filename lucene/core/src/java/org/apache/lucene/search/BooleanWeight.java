@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
-/**
- * Expert: the Weight for BooleanQuery, used to
- * normalize, score and explain these queries.
- */
+/** Expert: the Weight for BooleanQuery, used to normalize, score and explain these queries. */
 final class BooleanWeight extends Weight {
   /** The Similarity implementation. */
   final Similarity similarity;
+
   final BooleanQuery query;
 
   private static class WeightedBooleanClause {
@@ -51,14 +47,17 @@ final class BooleanWeight extends Weight {
   final ArrayList<WeightedBooleanClause> weightedClauses;
   final ScoreMode scoreMode;
 
-  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  BooleanWeight(BooleanQuery query, IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     super(query);
     this.query = query;
     this.scoreMode = scoreMode;
     this.similarity = searcher.getSimilarity();
     weightedClauses = new ArrayList<>();
     for (BooleanClause c : query) {
-      Weight w = searcher.createWeight(c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
+      Weight w =
+          searcher.createWeight(
+              c.getQuery(), c.isScoring() ? scoreMode : ScoreMode.COMPLETE_NO_SCORES, boost);
       weightedClauses.add(new WeightedBooleanClause(c, w));
     }
   }
@@ -78,10 +77,16 @@ final class BooleanWeight extends Weight {
         if (c.isScoring()) {
           subs.add(e);
         } else if (c.isRequired()) {
-          subs.add(Explanation.match(0f, "match on required clause, product of:",
-              Explanation.match(0f, Occur.FILTER + " clause"), e));
+          subs.add(
+              Explanation.match(
+                  0f,
+                  "match on required clause, product of:",
+                  Explanation.match(0f, Occur.FILTER + " clause"),
+                  e));
         } else if (c.isProhibited()) {
-          subs.add(Explanation.noMatch("match on prohibited clause (" + c.getQuery().toString() + ")", e));
+          subs.add(
+              Explanation.noMatch(
+                  "match on prohibited clause (" + c.getQuery().toString() + ")", e));
           fail = true;
         }
         if (!c.isProhibited()) {
@@ -91,16 +96,20 @@ final class BooleanWeight extends Weight {
           shouldMatchCount++;
         }
       } else if (c.isRequired()) {
-        subs.add(Explanation.noMatch("no match on required clause (" + c.getQuery().toString() + ")", e));
+        subs.add(
+            Explanation.noMatch(
+                "no match on required clause (" + c.getQuery().toString() + ")", e));
         fail = true;
       }
     }
     if (fail) {
-      return Explanation.noMatch("Failure to meet condition(s) of required/prohibited clause(s)", subs);
+      return Explanation.noMatch(
+          "Failure to meet condition(s) of required/prohibited clause(s)", subs);
     } else if (matchCount == 0) {
       return Explanation.noMatch("No matching clauses", subs);
     } else if (shouldMatchCount < minShouldMatch) {
-      return Explanation.noMatch("Failure to match minimum number of optional clauses: " + minShouldMatch, subs);
+      return Explanation.noMatch(
+          "Failure to match minimum number of optional clauses: " + minShouldMatch, subs);
     } else {
       // Replicating the same floating-point errors as the scorer does is quite
       // complex (essentially because of how ReqOptSumScorer casts intermediate
@@ -151,21 +160,23 @@ final class BooleanWeight extends Weight {
     return new BulkScorer() {
 
       @Override
-      public int score(final LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
-        final LeafCollector noScoreCollector = new LeafCollector() {
-          ScoreAndDoc fake = new ScoreAndDoc();
+      public int score(final LeafCollector collector, Bits acceptDocs, int min, int max)
+          throws IOException {
+        final LeafCollector noScoreCollector =
+            new LeafCollector() {
+              ScoreAndDoc fake = new ScoreAndDoc();
 
-          @Override
-          public void setScorer(Scorable scorer) throws IOException {
-            collector.setScorer(fake);
-          }
+              @Override
+              public void setScorer(Scorable scorer) throws IOException {
+                collector.setScorer(fake);
+              }
 
-          @Override
-          public void collect(int doc) throws IOException {
-            fake.doc = doc;
-            collector.collect(doc);
-          }
-        };
+              @Override
+              public void collect(int doc) throws IOException {
+                fake.doc = doc;
+                collector.collect(doc);
+              }
+            };
         return scorer.score(noScoreCollector, acceptDocs, min, max);
       }
 
@@ -206,7 +217,8 @@ final class BooleanWeight extends Weight {
       return optional.get(0);
     }
 
-    return new BooleanScorer(this, optional, Math.max(1, query.getMinimumNumberShouldMatch()), scoreMode.needsScores());
+    return new BooleanScorer(
+        this, optional, Math.max(1, query.getMinimumNumberShouldMatch()), scoreMode.needsScores());
   }
 
   // Return a BulkScorer for the required clauses only,
@@ -236,12 +248,15 @@ final class BooleanWeight extends Weight {
     return scorer;
   }
 
-  /** Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer}
-   *  cannot be used. */
+  /**
+   * Try to build a boolean scorer for this weight. Returns null if {@link BooleanScorer} cannot be
+   * used.
+   */
   BulkScorer booleanScorer(LeafReaderContext context) throws IOException {
     final int numOptionalClauses = query.getClauses(Occur.SHOULD).size();
-    final int numRequiredClauses = query.getClauses(Occur.MUST).size() + query.getClauses(Occur.FILTER).size();
-    
+    final int numRequiredClauses =
+        query.getClauses(Occur.MUST).size() + query.getClauses(Occur.FILTER).size();
+
     BulkScorer positiveScorer;
     if (numRequiredClauses == 0) {
       positiveScorer = optionalBulkScorer(context);
@@ -300,9 +315,10 @@ final class BooleanWeight extends Weight {
     if (prohibited.isEmpty()) {
       return positiveScorer;
     } else {
-      Scorer prohibitedScorer = prohibited.size() == 1
-          ? prohibited.get(0)
-          : new DisjunctionSumScorer(this, prohibited, ScoreMode.COMPLETE_NO_SCORES);
+      Scorer prohibitedScorer =
+          prohibited.size() == 1
+              ? prohibited.get(0)
+              : new DisjunctionSumScorer(this, prohibited, ScoreMode.COMPLETE_NO_SCORES);
       if (prohibitedScorer.twoPhaseIterator() != null) {
         // ReqExclBulkScorer can't deal efficiently with two-phased prohibited clauses
         return null;
@@ -347,8 +363,7 @@ final class BooleanWeight extends Weight {
     }
     for (WeightedBooleanClause wc : weightedClauses) {
       Weight w = wc.weight;
-      if (w.isCacheable(ctx) == false)
-        return false;
+      if (w.isCacheable(ctx) == false) return false;
     }
     return true;
   }
@@ -376,15 +391,17 @@ final class BooleanWeight extends Weight {
     }
 
     // scorer simplifications:
-    
+
     if (scorers.get(Occur.SHOULD).size() == minShouldMatch) {
       // any optional clauses are in fact required
       scorers.get(Occur.MUST).addAll(scorers.get(Occur.SHOULD));
       scorers.get(Occur.SHOULD).clear();
       minShouldMatch = 0;
     }
-    
-    if (scorers.get(Occur.FILTER).isEmpty() && scorers.get(Occur.MUST).isEmpty() && scorers.get(Occur.SHOULD).isEmpty()) {
+
+    if (scorers.get(Occur.FILTER).isEmpty()
+        && scorers.get(Occur.MUST).isEmpty()
+        && scorers.get(Occur.SHOULD).isEmpty()) {
       // no required and optional clauses.
       return null;
     } else if (scorers.get(Occur.SHOULD).size() < minShouldMatch) {
@@ -396,5 +413,4 @@ final class BooleanWeight extends Weight {
 
     return new Boolean2ScorerSupplier(this, scorers, scoreMode, minShouldMatch);
   }
-
 }

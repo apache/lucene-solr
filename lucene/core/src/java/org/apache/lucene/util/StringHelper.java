@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.DataInputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -32,85 +31,88 @@ import java.util.Properties;
 public abstract class StringHelper {
 
   /**
-   * Compares two {@link BytesRef}, element by element, and returns the
-   * number of elements common to both arrays (from the start of each).
-   * This method assumes currentTerm comes after priorTerm.
+   * Compares two {@link BytesRef}, element by element, and returns the number of elements common to
+   * both arrays (from the start of each). This method assumes currentTerm comes after priorTerm.
    *
    * @param priorTerm The first {@link BytesRef} to compare
    * @param currentTerm The second {@link BytesRef} to compare
    * @return The number of common elements (from the start of each).
    */
   public static int bytesDifference(BytesRef priorTerm, BytesRef currentTerm) {
-    int mismatch = Arrays.mismatch(priorTerm.bytes, priorTerm.offset, priorTerm.offset + priorTerm.length, 
-                                         currentTerm.bytes, currentTerm.offset, currentTerm.offset + currentTerm.length);
+    int mismatch =
+        Arrays.mismatch(
+            priorTerm.bytes,
+            priorTerm.offset,
+            priorTerm.offset + priorTerm.length,
+            currentTerm.bytes,
+            currentTerm.offset,
+            currentTerm.offset + currentTerm.length);
     if (mismatch < 0) {
-      throw new IllegalArgumentException("terms out of order: priorTerm=" + priorTerm + ",currentTerm=" + currentTerm);
+      throw new IllegalArgumentException(
+          "terms out of order: priorTerm=" + priorTerm + ",currentTerm=" + currentTerm);
     }
     return mismatch;
   }
-  
-  /** 
-   * Returns the length of {@code currentTerm} needed for use as a sort key.
-   * so that {@link BytesRef#compareTo(BytesRef)} still returns the same result.
-   * This method assumes currentTerm comes after priorTerm.
+
+  /**
+   * Returns the length of {@code currentTerm} needed for use as a sort key. so that {@link
+   * BytesRef#compareTo(BytesRef)} still returns the same result. This method assumes currentTerm
+   * comes after priorTerm.
    */
   public static int sortKeyLength(final BytesRef priorTerm, final BytesRef currentTerm) {
     return bytesDifference(priorTerm, currentTerm) + 1;
   }
 
-  private StringHelper() {
-  }
+  private StringHelper() {}
 
   /**
-   * Returns <code>true</code> iff the ref starts with the given prefix.
-   * Otherwise <code>false</code>.
-   * 
-   * @param ref
-   *         the {@code byte[]} to test
-   * @param prefix
-   *         the expected prefix
-   * @return Returns <code>true</code> iff the ref starts with the given prefix.
-   *         Otherwise <code>false</code>.
+   * Returns <code>true</code> iff the ref starts with the given prefix. Otherwise <code>false
+   * </code>.
+   *
+   * @param ref the {@code byte[]} to test
+   * @param prefix the expected prefix
+   * @return Returns <code>true</code> iff the ref starts with the given prefix. Otherwise <code>
+   *     false</code>.
    */
   public static boolean startsWith(byte[] ref, BytesRef prefix) {
     // not long enough to start with the prefix
     if (ref.length < prefix.length) {
       return false;
     }
-    return Arrays.equals(ref, 0, prefix.length,
-                               prefix.bytes, prefix.offset, prefix.offset + prefix.length);
+    return Arrays.equals(
+        ref, 0, prefix.length, prefix.bytes, prefix.offset, prefix.offset + prefix.length);
   }
 
   /**
-   * Returns <code>true</code> iff the ref starts with the given prefix.
-   * Otherwise <code>false</code>.
-   * 
-   * @param ref
-   *          the {@link BytesRef} to test
-   * @param prefix
-   *          the expected prefix
-   * @return Returns <code>true</code> iff the ref starts with the given prefix.
-   *         Otherwise <code>false</code>.
+   * Returns <code>true</code> iff the ref starts with the given prefix. Otherwise <code>false
+   * </code>.
+   *
+   * @param ref the {@link BytesRef} to test
+   * @param prefix the expected prefix
+   * @return Returns <code>true</code> iff the ref starts with the given prefix. Otherwise <code>
+   *     false</code>.
    */
   public static boolean startsWith(BytesRef ref, BytesRef prefix) {
     // not long enough to start with the prefix
     if (ref.length < prefix.length) {
       return false;
     }
-    return Arrays.equals(ref.bytes, ref.offset, ref.offset + prefix.length, 
-                               prefix.bytes, prefix.offset, prefix.offset + prefix.length);
+    return Arrays.equals(
+        ref.bytes,
+        ref.offset,
+        ref.offset + prefix.length,
+        prefix.bytes,
+        prefix.offset,
+        prefix.offset + prefix.length);
   }
 
   /**
-   * Returns <code>true</code> iff the ref ends with the given suffix. Otherwise
-   * <code>false</code>.
-   * 
-   * @param ref
-   *          the {@link BytesRef} to test
-   * @param suffix
-   *          the expected suffix
-   * @return Returns <code>true</code> iff the ref ends with the given suffix.
-   *         Otherwise <code>false</code>.
+   * Returns <code>true</code> iff the ref ends with the given suffix. Otherwise <code>false</code>.
+   *
+   * @param ref the {@link BytesRef} to test
+   * @param suffix the expected suffix
+   * @return Returns <code>true</code> iff the ref ends with the given suffix. Otherwise <code>false
+   *     </code>.
    */
   public static boolean endsWith(BytesRef ref, BytesRef suffix) {
     int startAt = ref.length - suffix.length;
@@ -118,8 +120,13 @@ public abstract class StringHelper {
     if (startAt < 0) {
       return false;
     }
-    return Arrays.equals(ref.bytes, ref.offset + startAt, ref.offset + startAt + suffix.length,
-                               suffix.bytes, suffix.offset, suffix.offset + suffix.length);
+    return Arrays.equals(
+        ref.bytes,
+        ref.offset + startAt,
+        ref.offset + startAt + suffix.length,
+        suffix.bytes,
+        suffix.offset,
+        suffix.offset + suffix.length);
   }
 
   /** Pass this as the seed to {@link #murmurhash3_x86_32}. */
@@ -142,8 +149,9 @@ public abstract class StringHelper {
     }
   }
 
-  /** Returns the MurmurHash3_x86_32 hash.
-   * Original source/tests at https://github.com/yonik/java_util/
+  /**
+   * Returns the MurmurHash3_x86_32 hash. Original source/tests at
+   * https://github.com/yonik/java_util/
    */
   @SuppressWarnings("fallthrough")
   public static int murmurhash3_x86_32(byte[] data, int offset, int len, int seed) {
@@ -152,24 +160,28 @@ public abstract class StringHelper {
     final int c2 = 0x1b873593;
 
     int h1 = seed;
-    int roundedEnd = offset + (len & 0xfffffffc);  // round down to 4 byte block
+    int roundedEnd = offset + (len & 0xfffffffc); // round down to 4 byte block
 
-    for (int i=offset; i<roundedEnd; i+=4) {
+    for (int i = offset; i < roundedEnd; i += 4) {
       // little endian load order
-      int k1 = (data[i] & 0xff) | ((data[i+1] & 0xff) << 8) | ((data[i+2] & 0xff) << 16) | (data[i+3] << 24);
+      int k1 =
+          (data[i] & 0xff)
+              | ((data[i + 1] & 0xff) << 8)
+              | ((data[i + 2] & 0xff) << 16)
+              | (data[i + 3] << 24);
       k1 *= c1;
       k1 = Integer.rotateLeft(k1, 15);
       k1 *= c2;
 
       h1 ^= k1;
       h1 = Integer.rotateLeft(h1, 13);
-      h1 = h1*5+0xe6546b64;
+      h1 = h1 * 5 + 0xe6546b64;
     }
 
     // tail
     int k1 = 0;
 
-    switch(len & 0x03) {
+    switch (len & 0x03) {
       case 3:
         k1 = (data[roundedEnd + 2] & 0xff) << 16;
         // fallthrough
@@ -211,7 +223,7 @@ public abstract class StringHelper {
     byte[] maskBytes128 = new byte[16];
     Arrays.fill(maskBytes128, (byte) 0xff);
     mask128 = new BigInteger(1, maskBytes128);
-    
+
     String prop = System.getProperty("tests.seed");
 
     // State for xorshift128:
@@ -222,13 +234,14 @@ public abstract class StringHelper {
       // So if there is a test failure that somehow relied on this id,
       // we remain reproducible based on the test seed:
       if (prop.length() > 8) {
-        prop = prop.substring(prop.length()-8);
+        prop = prop.substring(prop.length() - 8);
       }
       x0 = Long.parseLong(prop, 16);
       x1 = x0;
     } else {
       // seed from /dev/urandom, if its available
-      try (DataInputStream is = new DataInputStream(Files.newInputStream(Paths.get("/dev/urandom")))) {
+      try (DataInputStream is =
+          new DataInputStream(Files.newInputStream(Paths.get("/dev/urandom")))) {
         x0 = is.readLong();
         x1 = is.readLong();
       } catch (Exception unavailable) {
@@ -236,12 +249,12 @@ public abstract class StringHelper {
         // fall back to lower quality randomness from 3 different sources:
         x0 = System.nanoTime();
         x1 = (long) StringHelper.class.hashCode() << 32;
-        
+
         StringBuilder sb = new StringBuilder();
         // Properties can vary across JVM instances:
         try {
           Properties p = System.getProperties();
-          for (String s: p.stringPropertyNames()) {
+          for (String s : p.stringPropertyNames()) {
             sb.append(s);
             sb.append(p.getProperty(s));
           }
@@ -256,14 +269,14 @@ public abstract class StringHelper {
     // Use a few iterations of xorshift128 to scatter the seed
     // in case multiple Lucene instances starting up "near" the same
     // nanoTime, since we use ++ (mod 2^128) for full period cycle:
-    for(int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++) {
       long s1 = x0;
       long s0 = x1;
       x0 = s0;
       s1 ^= s1 << 23; // a
       x1 = s1 ^ s0 ^ (s1 >>> 17) ^ (s0 >>> 26); // b, c
     }
-    
+
     // 64-bit unsigned mask
     byte[] maskBytes64 = new byte[8];
     Arrays.fill(maskBytes64, (byte) 0xff);
@@ -276,7 +289,7 @@ public abstract class StringHelper {
     // Concatentate bits of x0 and x1, as unsigned 128 bit integer:
     nextId = unsignedX0.shiftLeft(64).or(unsignedX1);
   }
-  
+
   /** length in bytes of an ID */
   public static final int ID_LENGTH = 16;
 
@@ -298,11 +311,11 @@ public abstract class StringHelper {
     //     we use here is guaranteed to have the full period.
 
     byte bits[];
-    synchronized(idLock) {
+    synchronized (idLock) {
       bits = nextId.toByteArray();
       nextId = nextId.add(BigInteger.ONE).and(mask128);
     }
-    
+
     // toByteArray() always returns a sign bit, so it may require an extra byte (always zero)
     if (bits.length > ID_LENGTH) {
       assert bits.length == ID_LENGTH + 1;
@@ -314,14 +327,13 @@ public abstract class StringHelper {
       return result;
     }
   }
-  
-  /** 
+
+  /**
    * Helper method to render an ID as a string, for debugging
-   * <p>
-   * Returns the string {@code (null)} if the id is null.
-   * Otherwise, returns a string representation for debugging.
-   * Never throws an exception. The returned string may
-   * indicate if the id is definitely invalid.
+   *
+   * <p>Returns the string {@code (null)} if the id is null. Otherwise, returns a string
+   * representation for debugging. Never throws an exception. The returned string may indicate if
+   * the id is definitely invalid.
    */
   public static String idToString(byte id[]) {
     if (id == null) {
@@ -335,16 +347,19 @@ public abstract class StringHelper {
       return sb.toString();
     }
   }
-  
-  /** Just converts each int in the incoming {@link IntsRef} to each byte
-   *  in the returned {@link BytesRef}, throwing {@code IllegalArgumentException}
-   *  if any int value is out of bounds for a byte. */
+
+  /**
+   * Just converts each int in the incoming {@link IntsRef} to each byte in the returned {@link
+   * BytesRef}, throwing {@code IllegalArgumentException} if any int value is out of bounds for a
+   * byte.
+   */
   public static BytesRef intsRefToBytesRef(IntsRef ints) {
     byte[] bytes = new byte[ints.length];
-    for(int i=0;i<ints.length;i++) {
-      int x = ints.ints[ints.offset+i];
+    for (int i = 0; i < ints.length; i++) {
+      int x = ints.ints[ints.offset + i];
       if (x < 0 || x > 255) {
-        throw new IllegalArgumentException("int at pos=" + i + " with value=" + x + " is out-of-bounds for byte");
+        throw new IllegalArgumentException(
+            "int at pos=" + i + " with value=" + x + " is out-of-bounds for byte");
       }
       bytes[i] = (byte) x;
     }

@@ -17,6 +17,7 @@
 package org.apache.lucene.search.highlight;
 /**
  * Utility class to record Positions Spans
+ *
  * @lucene.internal
  */
 public class PositionSpan {

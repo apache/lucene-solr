@@ -16,19 +16,15 @@
  */
 package org.apache.lucene.search;
 
-
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.document.Document;
+import org.apache.lucene.util.LuceneTestCase;
 
-/** Similarity unit test.
- *
- *
- */
+/** Similarity unit test. */
 public class TestNot extends LuceneTestCase {
 
   public void testNot() throws Exception {

@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.NumericDocValuesFieldUpdates.SingleValueNumericDocValuesFieldUpdates;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,11 +52,13 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
     updates2.finish();
     updates3.finish();
     updates4.finish();
-    List<DocValuesFieldUpdates.Iterator> iterators = Arrays.asList(updates1.iterator(), updates2.iterator(),
-        updates3.iterator(), updates4.iterator());
+    List<DocValuesFieldUpdates.Iterator> iterators =
+        Arrays.asList(
+            updates1.iterator(), updates2.iterator(), updates3.iterator(), updates4.iterator());
     Collections.shuffle(iterators, random());
-    DocValuesFieldUpdates.Iterator iterator = DocValuesFieldUpdates
-        .mergedIterator(iterators.toArray(new DocValuesFieldUpdates.Iterator[0]));
+    DocValuesFieldUpdates.Iterator iterator =
+        DocValuesFieldUpdates.mergedIterator(
+            iterators.toArray(new DocValuesFieldUpdates.Iterator[0]));
     assertEquals(0, iterator.nextDoc());
     assertEquals(18, iterator.longValue());
     assertEquals(1, iterator.nextDoc());
@@ -136,7 +137,8 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
     int delGen = random().nextInt();
     int maxDoc = 1 + random().nextInt(1000);
     long value = random().nextLong();
-    SingleValueNumericDocValuesFieldUpdates update = new SingleValueNumericDocValuesFieldUpdates(delGen, "foo", maxDoc, value);
+    SingleValueNumericDocValuesFieldUpdates update =
+        new SingleValueNumericDocValuesFieldUpdates(delGen, "foo", maxDoc, value);
     assertEquals(value, update.longValue());
     Boolean[] values = new Boolean[maxDoc];
     boolean any = false;
@@ -175,7 +177,7 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
     while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       int doc = iterator.docID();
       if (index < iterator.docID()) {
-        for (;index < doc; index++) {
+        for (; index < doc; index++) {
           assertFalse(values[index]);
         }
       }

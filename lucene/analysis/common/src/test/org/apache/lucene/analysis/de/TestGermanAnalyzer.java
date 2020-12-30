@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.de;
 
-
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -36,26 +34,27 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "Tischen", "tisch");
     a.close();
   }
-  
+
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet( 1, true);
+    CharArraySet set = new CharArraySet(1, true);
     set.add("fischen");
     final Tokenizer in = new LetterTokenizer();
     in.setReader(new StringReader("Fischen Trinken"));
-    GermanStemFilter filter = new GermanStemFilter(
-        new SetKeywordMarkerFilter(new LowerCaseFilter(in), set));
-    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
+    GermanStemFilter filter =
+        new GermanStemFilter(new SetKeywordMarkerFilter(new LowerCaseFilter(in), set));
+    assertTokenStreamContents(filter, new String[] {"fischen", "trink"});
   }
 
   public void testStemExclusionTable() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer( CharArraySet.EMPTY_SET, 
-        new CharArraySet( asSet("tischen"), false));
+    GermanAnalyzer a =
+        new GermanAnalyzer(CharArraySet.EMPTY_SET, new CharArraySet(asSet("tischen"), false));
     checkOneTerm(a, "tischen", "tischen");
     a.close();
   }
-  
-  /** test some features of the new snowball filter
-   * these only pass with LATEST, not if you use o.a.l.a.de.GermanStemmer
+
+  /**
+   * test some features of the new snowball filter these only pass with LATEST, not if you use
+   * o.a.l.a.de.GermanStemmer
    */
   public void testGermanSpecials() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer();
@@ -64,7 +63,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "Schaltflaechen", "schaltflach");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer();

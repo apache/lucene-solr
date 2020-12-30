@@ -56,6 +56,13 @@ public class ShapeTestUtil {
     }
   }
 
+  public static XYPoint nextPoint() {
+    Random random = random();
+    float x = nextFloat(random);
+    float y = nextFloat(random);
+    return new XYPoint(x, y);
+  }
+
   public static XYLine nextLine() {
     XYPolygon poly = ShapeTestUtil.nextPolygon();
     float[] x = new float[poly.numPoints() - 1];

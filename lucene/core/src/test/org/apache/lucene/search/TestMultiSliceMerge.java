@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 import java.util.concurrent.Executor;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -41,7 +40,9 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     dir1 = newDirectory();
     dir2 = newDirectory();
     Random random = random();
-    RandomIndexWriter iw1 = new RandomIndexWriter(random(), dir1, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter iw1 =
+        new RandomIndexWriter(
+            random(), dir1, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
@@ -56,7 +57,9 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     reader1 = iw1.getReader();
     iw1.close();
 
-    RandomIndexWriter iw2 = new RandomIndexWriter(random(), dir2, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter iw2 =
+        new RandomIndexWriter(
+            random(), dir2, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       doc.add(newStringField("field", Integer.toString(i), Field.Store.NO));
@@ -85,10 +88,10 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     Executor executor1 = runnable -> runnable.run();
     Executor executor2 = runnable -> runnable.run();
 
-    IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, executor1),
-        new IndexSearcher(reader2, executor2)
-    };
+    IndexSearcher searchers[] =
+        new IndexSearcher[] {
+          new IndexSearcher(reader1, executor1), new IndexSearcher(reader2, executor2)
+        };
 
     Query query = new MatchAllDocsQuery();
 
@@ -102,10 +105,10 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     Executor executor1 = runnable -> runnable.run();
     Executor executor2 = runnable -> runnable.run();
 
-    IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, executor1),
-        new IndexSearcher(reader2, executor2)
-    };
+    IndexSearcher searchers[] =
+        new IndexSearcher[] {
+          new IndexSearcher(reader1, executor1), new IndexSearcher(reader2, executor2)
+        };
 
     Query query = new MatchAllDocsQuery();
 

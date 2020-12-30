@@ -19,15 +19,14 @@ package org.apache.lucene.codecs.lucene80;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests Lucene80DocValuesFormat
- */
+/** Tests Lucene80DocValuesFormat */
 public class TestBestSpeedLucene80DocValuesFormat extends BaseLucene80DocValuesFormatTestCase {
-  private final Codec codec = TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_SPEED));
+  private final Codec codec =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_SPEED));
 
   @Override
   protected Codec getCodec() {
     return codec;
   }
-
 }

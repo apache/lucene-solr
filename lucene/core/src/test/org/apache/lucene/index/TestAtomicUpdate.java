@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,12 +33,12 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestAtomicUpdate extends LuceneTestCase {
-  
-  private static abstract class TimedThread extends Thread {
+
+  private abstract static class TimedThread extends Thread {
     int numIterations;
     volatile Throwable failure;
 
-    abstract public void doWork(int currentIteration) throws IOException;
+    public abstract void doWork(int currentIteration) throws IOException;
 
     TimedThread(int numIterations) {
       this.numIterations = numIterations;
@@ -61,6 +60,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
   private static class IndexerThread extends TimedThread {
     IndexWriter writer;
+
     public IndexerThread(IndexWriter writer, int numIterations) {
       super(numIterations);
       this.writer = writer;
@@ -69,10 +69,12 @@ public class TestAtomicUpdate extends LuceneTestCase {
     @Override
     public void doWork(int currentIteration) throws IOException {
       // Update all 100 docs...
-      for(int i=0; i<100; i++) {
+      for (int i = 0; i < 100; i++) {
         Document d = new Document();
         d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
-        d.add(new TextField("contents", English.intToEnglish(i+10*currentIteration), Field.Store.NO));
+        d.add(
+            new TextField(
+                "contents", English.intToEnglish(i + 10 * currentIteration), Field.Store.NO));
         d.add(new IntPoint("doc", i));
         d.add(new IntPoint("doc2d", i, i));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
@@ -106,17 +108,17 @@ public class TestAtomicUpdate extends LuceneTestCase {
     int indexIterations = TEST_NIGHTLY ? 10 : 1;
     int searchIterations = TEST_NIGHTLY ? 10 : 1;
 
-    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(7);
+    IndexWriterConfig conf =
+        new IndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(7);
     ((TieredMergePolicy) conf.getMergePolicy()).setMaxMergeAtOnce(3);
     IndexWriter writer = RandomIndexWriter.mockIndexWriter(directory, conf, random());
 
     // Establish a base index of 100 docs:
-    for(int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       Document d = new Document();
       d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
       d.add(newTextField("contents", English.intToEnglish(i), Field.Store.NO));
-      if ((i-1)%7 == 0) {
+      if ((i - 1) % 7 == 0) {
         writer.commit();
       }
       writer.addDocument(d);
@@ -142,7 +144,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     }
 
     writer.close();
-    
+
     for (TimedThread thread : threads) {
       if (thread.failure != null) {
         throw new RuntimeException("hit exception from " + thread, thread.failure);

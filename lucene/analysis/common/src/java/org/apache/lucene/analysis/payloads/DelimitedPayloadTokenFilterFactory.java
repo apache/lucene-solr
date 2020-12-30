@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.payloads;
 
-
+import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
-import java.util.Map;
 
 /**
  * Factory for {@link DelimitedPayloadTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_dlmtd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -37,7 +36,8 @@ import java.util.Map;
  * @since 3.1
  * @lucene.spi {@value #NAME}
  */
-public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   /** SPI name */
   public static final String NAME = "delimitedPayload";
@@ -49,7 +49,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
   private final char delimiter;
 
   private PayloadEncoder encoder;
-  
+
   /** Creates a new DelimitedPayloadTokenFilterFactory */
   public DelimitedPayloadTokenFilterFactory(Map<String, String> args) {
     super(args);
@@ -72,11 +72,11 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
 
   @Override
   public void inform(ResourceLoader loader) {
-    if (encoderClass.equals("float")){
+    if (encoderClass.equals("float")) {
       encoder = new FloatEncoder();
-    } else if (encoderClass.equals("integer")){
+    } else if (encoderClass.equals("integer")) {
       encoder = new IntegerEncoder();
-    } else if (encoderClass.equals("identity")){
+    } else if (encoderClass.equals("identity")) {
       encoder = new IdentityEncoder();
     } else {
       encoder = loader.newInstance(encoderClass, PayloadEncoder.class);

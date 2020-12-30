@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene87;
 
-
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
@@ -28,17 +28,14 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
 public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFieldsFormatTestCase {
   @Override
   protected Codec getCodec() {
     return new Lucene90Codec(Mode.BEST_COMPRESSION);
   }
-  
+
   /**
-   * Change compression params (leaving it the same for old segments)
-   * and tests that nothing breaks.
+   * Change compression params (leaving it the same for old segments) and tests that nothing breaks.
    */
   public void testMixedCompressions() throws Exception {
     Directory dir = newDirectory();
@@ -56,7 +53,7 @@ public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFie
       iw.commit();
       iw.close();
     }
-    
+
     DirectoryReader ir = DirectoryReader.open(dir);
     assertEquals(10, ir.numDocs());
     for (int i = 0; i < 10; i++) {
@@ -68,17 +65,21 @@ public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFie
     // checkindex
     dir.close();
   }
-  
-  public void testInvalidOptions() {
-    expectThrows(NullPointerException.class, () -> {
-      new Lucene90Codec(null);
-    });
 
-    expectThrows(NullPointerException.class, () -> {
-      new Lucene87StoredFieldsFormat(null);
-    });
+  public void testInvalidOptions() {
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          new Lucene90Codec(null);
+        });
+
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          new Lucene87StoredFieldsFormat(null);
+        });
   }
-  
+
   public void testShowJDKBugStatus() {
     System.err.println("JDK is buggy (JDK-8252739): " + BugfixDeflater_JDK8252739.IS_BUGGY_JDK);
   }

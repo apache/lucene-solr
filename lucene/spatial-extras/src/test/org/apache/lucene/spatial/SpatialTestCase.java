@@ -73,8 +73,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     super.tearDown();
   }
 
-  // ================================================= Helper Methods ================================================
-
   protected void addDocument(Document doc) throws IOException {
     indexWriter.addDocument(doc);
   }
@@ -199,8 +197,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     double result = mean + flip * pivotResult;
     return (result < 0 || result > max) ? mean : result; // due this due to computational numerical precision
   }
-
-  // ================================================= Inner Classes =================================================
 
   protected static class SearchResults {
 
