@@ -102,7 +102,7 @@ Other Changes
 
 * SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
 
-* SOLR-14723: Remove the class attribute for the caches in the _default/example configsets (Tim Dillon)
+* SOLR-14723: Remove the class attribute for the caches in the _default/example configsets (Tim Dillon, Shashank Shekhar)
 
 ==================  8.7.0 ==================
 
