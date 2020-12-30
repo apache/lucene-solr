@@ -82,25 +82,21 @@
          that match a particular query.
       -->
     <filterCache
-        class="solr.search.FastLRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <queryResultCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <documentCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="0"/>
 
     <cache name="perSegFilter"
-           class="solr.search.LRUCache"
            size="10"
            initialSize="0"
            autowarmCount="10" />
@@ -112,7 +108,6 @@
     <!--
 
     <cache name="myUserCache"
-      class="solr.search.LRUCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"
@@ -537,4 +532,3 @@ based HashBitset. -->
   </initParams>
 
 </config>
-

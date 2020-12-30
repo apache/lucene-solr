@@ -69,7 +69,6 @@
            and old cache.
          -->
     <filterCache
-      class="solr.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
@@ -78,7 +77,6 @@
          document ids (DocList) based on a query, a sort, and the range
          of documents requested.  -->
     <queryResultCache
-      class="solr.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
@@ -86,7 +84,6 @@
   <!-- documentCache caches Lucene Document objects (the stored fields for each document).
        Since Lucene internal document ids are transient, this cache will not be autowarmed.  -->
     <documentCache
-      class="solr.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
@@ -106,7 +103,6 @@
          of solr.search.CacheRegenerator if autowarming is desired.  -->
     <!--
     <cache name="myUserCache"
-      class="solr.LRUCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"
@@ -284,4 +280,3 @@
   </updateRequestProcessorChain>
 
 </config>
-
