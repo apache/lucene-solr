@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Korean.
- */
+/** Analyzer for Korean. */
 package org.apache.lucene.analysis.ko;

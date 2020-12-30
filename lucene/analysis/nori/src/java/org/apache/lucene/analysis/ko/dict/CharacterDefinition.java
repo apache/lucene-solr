@@ -19,15 +19,12 @@ package org.apache.lucene.analysis.ko.dict;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * Character category data.
- */
+/** Character category data. */
 public final class CharacterDefinition {
 
   public static final String FILENAME_SUFFIX = ".dat";
@@ -38,7 +35,20 @@ public final class CharacterDefinition {
 
   // only used internally for lookup:
   enum CharacterClass {
-    NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, HANGUL, HANJA, HANJANUMERIC
+    NGRAM,
+    DEFAULT,
+    SPACE,
+    SYMBOL,
+    NUMERIC,
+    ALPHA,
+    CYRILLIC,
+    GREEK,
+    HIRAGANA,
+    KATAKANA,
+    KANJI,
+    HANGUL,
+    HANJA,
+    HANJANUMERIC
   }
 
   private final byte[] characterCategoryMap = new byte[0x10000];
@@ -61,7 +71,7 @@ public final class CharacterDefinition {
   public static final byte HANGUL = (byte) CharacterClass.HANGUL.ordinal();
   public static final byte HANJA = (byte) CharacterClass.HANJA.ordinal();
   public static final byte HANJANUMERIC = (byte) CharacterClass.HANJANUMERIC.ordinal();
-  
+
   private CharacterDefinition() throws IOException {
     InputStream is = null;
     boolean success = false;
@@ -85,15 +95,15 @@ public final class CharacterDefinition {
       }
     }
   }
-  
+
   public byte getCharacterClass(char c) {
     return characterCategoryMap[c];
   }
-  
+
   public boolean isInvoke(char c) {
     return invokeMap[characterCategoryMap[c]];
   }
-  
+
   public boolean isGroup(char c) {
     return groupMap[characterCategoryMap[c]];
   }
@@ -107,7 +117,7 @@ public final class CharacterDefinition {
     return getCharacterClass(c) == HANGUL;
   }
 
-  public boolean hasCoda(char ch){
+  public boolean hasCoda(char ch) {
     return ((ch - 0xAC00) % 0x001C) != 0;
   }
 
@@ -118,9 +128,10 @@ public final class CharacterDefinition {
   public static CharacterDefinition getInstance() {
     return SingletonHolder.INSTANCE;
   }
-  
+
   private static class SingletonHolder {
     static final CharacterDefinition INSTANCE;
+
     static {
       try {
         INSTANCE = new CharacterDefinition();
@@ -128,5 +139,5 @@ public final class CharacterDefinition {
         throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
       }
     }
-   }
+  }
 }

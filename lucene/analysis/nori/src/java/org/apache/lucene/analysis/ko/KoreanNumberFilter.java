@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.ko;
 
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -30,48 +28,47 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 
 /**
- * A {@link TokenFilter} that normalizes Korean numbers to regular Arabic
- * decimal numbers in half-width characters.
- * <p>
- * Korean numbers are often written using a combination of Hangul and Arabic numbers with
- * various kinds punctuation. For example, ３．２천 means 3200. This filter does this kind
- * of normalization and allows a search for 3200 to match ３．２천 in text, but can also be
- * used to make range facets based on the normalized numbers and so on.
- * <p>
- * Notice that this analyzer uses a token composition scheme and relies on punctuation
- * tokens being found in the token stream. Please make sure your {@link KoreanTokenizer}
- * has {@code discardPunctuation} set to false. In case punctuation characters, such as ．
- * (U+FF0E FULLWIDTH FULL STOP), is removed from the token stream, this filter would find
- * input tokens tokens ３ and ２천 and give outputs 3 and 2000 instead of 3200, which is
- * likely not the intended result. If you want to remove punctuation characters from your
- * index that are not part of normalized numbers, add a
- * {@link org.apache.lucene.analysis.StopFilter} with the punctuation you wish to
- * remove after {@link KoreanNumberFilter} in your analyzer chain.
- * <p>
- * Below are some examples of normalizations this filter supports. The input is untokenized
- * text and the result is the single term attribute emitted for the input.
+ * A {@link TokenFilter} that normalizes Korean numbers to regular Arabic decimal numbers in
+ * half-width characters.
+ *
+ * <p>Korean numbers are often written using a combination of Hangul and Arabic numbers with various
+ * kinds punctuation. For example, ３．２천 means 3200. This filter does this kind of normalization and
+ * allows a search for 3200 to match ３．２천 in text, but can also be used to make range facets based
+ * on the normalized numbers and so on.
+ *
+ * <p>Notice that this analyzer uses a token composition scheme and relies on punctuation tokens
+ * being found in the token stream. Please make sure your {@link KoreanTokenizer} has {@code
+ * discardPunctuation} set to false. In case punctuation characters, such as ． (U+FF0E FULLWIDTH
+ * FULL STOP), is removed from the token stream, this filter would find input tokens tokens ３ and ２천
+ * and give outputs 3 and 2000 instead of 3200, which is likely not the intended result. If you want
+ * to remove punctuation characters from your index that are not part of normalized numbers, add a
+ * {@link org.apache.lucene.analysis.StopFilter} with the punctuation you wish to remove after
+ * {@link KoreanNumberFilter} in your analyzer chain.
+ *
+ * <p>Below are some examples of normalizations this filter supports. The input is untokenized text
+ * and the result is the single term attribute emitted for the input.
+ *
  * <ul>
- * <li>영영칠 becomes 7</li>
- * <li>일영영영 becomes 1000</li>
- * <li>삼천2백2십삼 becomes 3223</li>
- * <li>조육백만오천일 becomes 1000006005001</li>
- * <li>３.２천 becomes 3200</li>
- * <li>１.２만３４５.６７ becomes 12345.67</li>
- * <li>4,647.100 becomes 4647.1</li>
- * <li>15,7 becomes 157 (be aware of this weakness)</li>
+ *   <li>영영칠 becomes 7
+ *   <li>일영영영 becomes 1000
+ *   <li>삼천2백2십삼 becomes 3223
+ *   <li>조육백만오천일 becomes 1000006005001
+ *   <li>３.２천 becomes 3200
+ *   <li>１.２만３４５.６７ becomes 12345.67
+ *   <li>4,647.100 becomes 4647.1
+ *   <li>15,7 becomes 157 (be aware of this weakness)
  * </ul>
- * <p>
- * Tokens preceded by a token with {@link PositionIncrementAttribute} of zero are left
- * left untouched and emitted as-is.
- * <p>
- * This filter does not use any part-of-speech information for its normalization and
- * the motivation for this is to also support n-grammed token streams in the future.
- * <p>
- * This filter may in some cases normalize tokens that are not numbers in their context.
- * For example, is 전중경일 is a name and means Tanaka Kyōichi, but 경일 (Kyōichi) out of
- * context can strictly speaking also represent the number 10000000000000001. This filter
- * respects the {@link KeywordAttribute}, which can be used to prevent specific
- * normalizations from happening.
+ *
+ * <p>Tokens preceded by a token with {@link PositionIncrementAttribute} of zero are left left
+ * untouched and emitted as-is.
+ *
+ * <p>This filter does not use any part-of-speech information for its normalization and the
+ * motivation for this is to also support n-grammed token streams in the future.
+ *
+ * <p>This filter may in some cases normalize tokens that are not numbers in their context. For
+ * example, is 전중경일 is a name and means Tanaka Kyōichi, but 경일 (Kyōichi) out of context can strictly
+ * speaking also represent the number 10000000000000001. This filter respects the {@link
+ * KeywordAttribute}, which can be used to prevent specific normalizations from happening.
  *
  * @lucene.experimental
  */
@@ -80,7 +77,8 @@ public class KoreanNumberFilter extends TokenFilter {
   private final CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttr = addAttribute(OffsetAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-  private final PositionIncrementAttribute posIncrAttr = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAttr =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAttr = addAttribute(PositionLengthAttribute.class);
 
   private static char NO_NUMERAL = Character.MAX_VALUE;
@@ -113,11 +111,11 @@ public class KoreanNumberFilter extends TokenFilter {
 
     exponents = new char[0x10000];
     Arrays.fill(exponents, (char) 0);
-    exponents['십'] = 1;  // 십 U+C2ED 10
-    exponents['백'] = 2;  // 백 U+BC31 100
-    exponents['천'] = 3;  // 천 U+CC9C 1,000
-    exponents['만'] = 4;  // 만 U+B9CC 10,000
-    exponents['억'] = 8;  // 억 U+C5B5 100,000,000
+    exponents['십'] = 1; // 십 U+C2ED 10
+    exponents['백'] = 2; // 백 U+BC31 100
+    exponents['천'] = 3; // 천 U+CC9C 1,000
+    exponents['만'] = 4; // 만 U+B9CC 10,000
+    exponents['억'] = 8; // 억 U+C5B5 100,000,000
     exponents['조'] = 12; // 조 U+C870 1,000,000,000,000
     exponents['경'] = 16; // 경 U+ACBD 10,000,000,000,000,000
     exponents['해'] = 20; // 해 U+D574 100,000,000,000,000,000,000
@@ -297,8 +295,8 @@ public class KoreanNumberFilter extends TokenFilter {
   }
 
   /**
-   * Parses a "medium sized" number, typically less than 10,000（만）, but might be larger
-   * due to a larger factor from {link parseBasicNumber}.
+   * Parses a "medium sized" number, typically less than 10,000（만）, but might be larger due to a
+   * larger factor from {link parseBasicNumber}.
    *
    * @param buffer buffer to parse
    * @return parsed number, or null on error or end of input
@@ -351,7 +349,8 @@ public class KoreanNumberFilter extends TokenFilter {
   }
 
   /**
-   * Parse a basic number, which is a sequence of Arabic numbers or a sequence or 0-9 Hangul numerals (영 to 구).
+   * Parse a basic number, which is a sequence of Arabic numbers or a sequence or 0-9 Hangul
+   * numerals (영 to 구).
    *
    * @param buffer buffer to parse
    * @return parsed number, or null on error or end of input
@@ -521,8 +520,8 @@ public class KoreanNumberFilter extends TokenFilter {
   }
 
   /**
-   * Returns the numeric value for the specified character Arabic numeral.
-   * Behavior is undefined if a non-Arabic numeral is provided
+   * Returns the numeric value for the specified character Arabic numeral. Behavior is undefined if
+   * a non-Arabic numeral is provided
    *
    * @param c arabic numeral character
    * @return numeral value
@@ -538,8 +537,8 @@ public class KoreanNumberFilter extends TokenFilter {
   }
 
   /**
-   * Hangul numeral predicate that tests if the provided character is one of 영, 일, 이, 삼, 사, 오, 육, 칠, 팔, or 구.
-   * Larger number Hangul gives a false value.
+   * Hangul numeral predicate that tests if the provided character is one of 영, 일, 이, 삼, 사, 오, 육, 칠,
+   * 팔, or 구. Larger number Hangul gives a false value.
    *
    * @param c character to test
    * @return true if and only is character is one of 영, 일, 이, 삼, 사, 오, 육, 칠, 팔, or 구 (0 to 9)
@@ -567,7 +566,7 @@ public class KoreanNumberFilter extends TokenFilter {
    * @return true if and only if c is a decimal point
    */
   private boolean isDecimalPoint(char c) {
-    return c == '.'   // U+002E FULL STOP
+    return c == '.' // U+002E FULL STOP
         || c == '．'; // U+FF0E FULLWIDTH FULL STOP
   }
 
@@ -578,13 +577,11 @@ public class KoreanNumberFilter extends TokenFilter {
    * @return true if and only if c is a thousand separator predicate
    */
   private boolean isThousandSeparator(char c) {
-    return c == ','   // U+002C COMMA
+    return c == ',' // U+002C COMMA
         || c == '，'; // U+FF0C FULLWIDTH COMMA
   }
 
-  /**
-   * Buffer that holds a Korean number string and a position index used as a parsed-to marker
-   */
+  /** Buffer that holds a Korean number string and a position index used as a parsed-to marker */
   public static class NumberBuffer {
 
     private int position;

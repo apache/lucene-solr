@@ -69,6 +69,7 @@ allprojects { prj ->
           case ":lucene:analysis:kuromoji":
           case ":lucene:memory":
           case ":lucene:benchmark":
+          case ":lucene:analysis:nori":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -76,7 +77,6 @@ allprojects { prj ->
           // Partially complete.
 
           // All others - disable reformatting/ checks for now.
-          case ":lucene:analysis:nori":
           case ":lucene:analysis:opennlp":
           case ":lucene:analysis:phonetic":
           case ":lucene:analysis:smartcn":
