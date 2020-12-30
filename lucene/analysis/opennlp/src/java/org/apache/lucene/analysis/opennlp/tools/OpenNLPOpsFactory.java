@@ -25,7 +25,6 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import opennlp.tools.chunker.ChunkerModel;
 import opennlp.tools.lemmatizer.LemmatizerModel;
 import opennlp.tools.namefind.TokenNameFinderModel;
@@ -35,17 +34,18 @@ import opennlp.tools.tokenize.TokenizerModel;
 import org.apache.lucene.util.ResourceLoader;
 
 /**
- * Supply OpenNLP Named Entity Recognizer
- * Cache model file objects. Assumes model files are thread-safe.
+ * Supply OpenNLP Named Entity Recognizer Cache model file objects. Assumes model files are
+ * thread-safe.
  */
 public class OpenNLPOpsFactory {
-  private static Map<String,SentenceModel> sentenceModels = new ConcurrentHashMap<>();
-  private static ConcurrentHashMap<String,TokenizerModel> tokenizerModels = new ConcurrentHashMap<>();
-  private static ConcurrentHashMap<String,POSModel> posTaggerModels = new ConcurrentHashMap<>();
-  private static ConcurrentHashMap<String,ChunkerModel> chunkerModels = new ConcurrentHashMap<>();
-  private static Map<String,TokenNameFinderModel> nerModels = new ConcurrentHashMap<>();
-  private static Map<String,LemmatizerModel> lemmatizerModels = new ConcurrentHashMap<>();
-  private static Map<String,String> lemmaDictionaries = new ConcurrentHashMap<>();
+  private static Map<String, SentenceModel> sentenceModels = new ConcurrentHashMap<>();
+  private static ConcurrentHashMap<String, TokenizerModel> tokenizerModels =
+      new ConcurrentHashMap<>();
+  private static ConcurrentHashMap<String, POSModel> posTaggerModels = new ConcurrentHashMap<>();
+  private static ConcurrentHashMap<String, ChunkerModel> chunkerModels = new ConcurrentHashMap<>();
+  private static Map<String, TokenNameFinderModel> nerModels = new ConcurrentHashMap<>();
+  private static Map<String, LemmatizerModel> lemmatizerModels = new ConcurrentHashMap<>();
+  private static Map<String, String> lemmaDictionaries = new ConcurrentHashMap<>();
 
   public static NLPSentenceDetectorOp getSentenceDetector(String modelName) throws IOException {
     if (modelName != null) {
@@ -56,7 +56,8 @@ public class OpenNLPOpsFactory {
     }
   }
 
-  public static SentenceModel getSentenceModel(String modelName, ResourceLoader loader) throws IOException {
+  public static SentenceModel getSentenceModel(String modelName, ResourceLoader loader)
+      throws IOException {
     SentenceModel model = sentenceModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
@@ -76,7 +77,8 @@ public class OpenNLPOpsFactory {
     }
   }
 
-  public static TokenizerModel getTokenizerModel(String modelName, ResourceLoader loader) throws IOException {
+  public static TokenizerModel getTokenizerModel(String modelName, ResourceLoader loader)
+      throws IOException {
     TokenizerModel model = tokenizerModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
@@ -92,7 +94,8 @@ public class OpenNLPOpsFactory {
     return new NLPPOSTaggerOp(model);
   }
 
-  public static POSModel getPOSTaggerModel(String modelName, ResourceLoader loader) throws IOException {
+  public static POSModel getPOSTaggerModel(String modelName, ResourceLoader loader)
+      throws IOException {
     POSModel model = posTaggerModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
@@ -108,7 +111,8 @@ public class OpenNLPOpsFactory {
     return new NLPChunkerOp(model);
   }
 
-  public static ChunkerModel getChunkerModel(String modelName, ResourceLoader loader) throws IOException {
+  public static ChunkerModel getChunkerModel(String modelName, ResourceLoader loader)
+      throws IOException {
     ChunkerModel model = chunkerModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
@@ -124,7 +128,8 @@ public class OpenNLPOpsFactory {
     return new NLPNERTaggerOp(model);
   }
 
-  public static TokenNameFinderModel getNERTaggerModel(String modelName, ResourceLoader loader) throws IOException {
+  public static TokenNameFinderModel getNERTaggerModel(String modelName, ResourceLoader loader)
+      throws IOException {
     TokenNameFinderModel model = nerModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
@@ -135,21 +140,26 @@ public class OpenNLPOpsFactory {
     return model;
   }
 
-  public static NLPLemmatizerOp getLemmatizer(String dictionaryFile, String lemmatizerModelFile) throws IOException {
-    assert dictionaryFile != null || lemmatizerModelFile != null : "At least one parameter must be non-null";
+  public static NLPLemmatizerOp getLemmatizer(String dictionaryFile, String lemmatizerModelFile)
+      throws IOException {
+    assert dictionaryFile != null || lemmatizerModelFile != null
+        : "At least one parameter must be non-null";
     InputStream dictionaryInputStream = null;
     if (dictionaryFile != null) {
       String dictionary = lemmaDictionaries.get(dictionaryFile);
       dictionaryInputStream = new ByteArrayInputStream(dictionary.getBytes(StandardCharsets.UTF_8));
     }
-    LemmatizerModel lemmatizerModel = lemmatizerModelFile == null ? null : lemmatizerModels.get(lemmatizerModelFile);
+    LemmatizerModel lemmatizerModel =
+        lemmatizerModelFile == null ? null : lemmatizerModels.get(lemmatizerModelFile);
     return new NLPLemmatizerOp(dictionaryInputStream, lemmatizerModel);
   }
 
-  public static String getLemmatizerDictionary(String dictionaryFile, ResourceLoader loader) throws IOException {
+  public static String getLemmatizerDictionary(String dictionaryFile, ResourceLoader loader)
+      throws IOException {
     String dictionary = lemmaDictionaries.get(dictionaryFile);
     if (dictionary == null) {
-      try (Reader reader = new InputStreamReader(loader.openResource(dictionaryFile), StandardCharsets.UTF_8)) {
+      try (Reader reader =
+          new InputStreamReader(loader.openResource(dictionaryFile), StandardCharsets.UTF_8)) {
         StringBuilder builder = new StringBuilder();
         char[] chars = new char[8092];
         int numRead = 0;
@@ -166,7 +176,8 @@ public class OpenNLPOpsFactory {
     return dictionary;
   }
 
-  public static LemmatizerModel getLemmatizerModel(String modelName, ResourceLoader loader) throws IOException {
+  public static LemmatizerModel getLemmatizerModel(String modelName, ResourceLoader loader)
+      throws IOException {
     LemmatizerModel model = lemmatizerModels.get(modelName);
     if (model == null) {
       try (InputStream resource = loader.openResource(modelName)) {
