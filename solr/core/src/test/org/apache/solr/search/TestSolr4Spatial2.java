@@ -315,8 +315,11 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
       // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+      // (i.e. the cache instance is new but it should've been regenerated from the old one).
       // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
       Object leafKey2 = getFirstLeafReaderKey();
+      // get the current instance of metrics - the old one may not represent the current cache instance
+      cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
       assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
     }
 
