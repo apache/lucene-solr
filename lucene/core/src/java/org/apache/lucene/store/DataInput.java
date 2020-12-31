@@ -186,13 +186,18 @@ public abstract class DataInput implements Cloneable {
     }
   }
 
-  /** Reads a specified number of floats into an array at the specified offset.
+  /**
+   * Reads a specified number of floats into an array at the specified offset.
+   *
    * @param floats the array to read bytes into
    * @param offset the offset in the array to start storing floats
    * @param len the number of floats to read
    */
   public void readFloats(float[] floats, int offset, int len) throws IOException {
-    throw new UnsupportedOperationException("not supported by " + getClass().getName());
+    Objects.checkFromIndexSize(offset, len, floats.length);
+    for (int i = 0; i < len; i++) {
+      floats[offset + i] = Float.intBitsToFloat(Integer.reverseBytes(readInt()));
+    }
   }
 
   /**

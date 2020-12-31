@@ -142,5 +142,4 @@ final class ByteBufferGuard {
     ensureValid();
     receiver.get(dst, offset, length);
   }
-
 }

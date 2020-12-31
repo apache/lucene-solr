@@ -237,7 +237,6 @@ public final class Lucene90VectorReader extends VectorReader {
     IndexInput bytesSlice =
         vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
     return new OffHeapVectorValues(fieldEntry, bytesSlice);
-    //return new OnHeapVectorValues(fieldEntry, bytesSlice);
   }
 
   public KnnGraphValues getGraphValues(String field) throws IOException {
@@ -280,8 +279,6 @@ public final class Lucene90VectorReader extends VectorReader {
     final long indexDataLength;
     final int[] ordToDoc;
 
-    float[] floats;
-
     FieldEntry(DataInput input, VectorValues.SearchStrategy searchStrategy) throws IOException {
       this.searchStrategy = searchStrategy;
       vectorDataOffset = input.readVLong();
@@ -320,7 +317,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
   /** Read the vector values from the index input. This supports both iterated and random access. */
   private class OffHeapVectorValues extends VectorValues
-    implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
+      implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
@@ -363,11 +360,6 @@ public final class Lucene90VectorReader extends VectorReader {
     public float[] vectorValue() throws IOException {
       dataIn.seek(ord * byteSize);
       dataIn.readFloats(value, 0, value.length);
-      /*
-      binaryValue();
-      floatBuffer.position(0);
-      floatBuffer.get(value, 0, fieldEntry.dimension);
-      */
       return value;
     }
 

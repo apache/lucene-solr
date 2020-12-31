@@ -53,7 +53,8 @@ public final class ByteBuffersDataInput extends DataInput
     ensureAssumptions(buffers);
 
     this.blocks = buffers.stream().map(buf -> buf.asReadOnlyBuffer()).toArray(ByteBuffer[]::new);
-    this.floatBuffers = new FloatBuffer[blocks.length * Float.BYTES]; // pre-allocate this array create the FloatBuffers lazily
+    // pre-allocate this array and create the FloatBuffers lazily
+    this.floatBuffers = new FloatBuffer[blocks.length * Float.BYTES];
     if (blocks.length == 1) {
       this.blockBits = 32;
       this.blockMask = ~0;
@@ -201,16 +202,19 @@ public final class ByteBuffersDataInput extends DataInput
   }
 
   @Override
-  public void readFloats(float [] arr, int off, int len) throws EOFException {
+  public void readFloats(float[] arr, int off, int len) throws EOFException {
     try {
       while (len > 0) {
         FloatBuffer floatBuffer = getFloatBuffer(pos);
         floatBuffer.position(blockOffset(pos) >> 2);
         int chunk = Math.min(len, floatBuffer.remaining());
         if (chunk == 0) {
-          // nocommit - we need to stitch around the boundaries of these byte buffers. There doesn't seem to be
-          // any way to enforce alignment, even though we try, in Lucene90VectorWriter, I guess due to cfs
-          throw new EOFException();
+          // read a single float spanning the boundary between two buffers
+          arr[off] = Float.intBitsToFloat(Integer.reverseBytes(readInt(pos - offset)));
+          off++;
+          len--;
+          pos += Float.BYTES;
+          continue;
         }
 
         // Update pos early on for EOF detection, then try to get buffer content.
@@ -220,8 +224,8 @@ public final class ByteBuffersDataInput extends DataInput
         len -= chunk;
         off += chunk;
       }
-    } catch (BufferUnderflowException | ArrayIndexOutOfBoundsException e) {
-      if (pos >= size()) {
+    } catch (BufferUnderflowException | IndexOutOfBoundsException e) {
+      if (pos - offset + Float.BYTES > size()) {
         throw new EOFException();
       } else {
         throw e; // Something is wrong.
@@ -230,17 +234,14 @@ public final class ByteBuffersDataInput extends DataInput
   }
 
   private FloatBuffer getFloatBuffer(long pos) {
-    // This creates a separate FloatBuffer for each ByteBuffer/alignment combination that is observed.
+    // This creates a separate FloatBuffer for each observed combination of ByteBuffer/alignment
     int bufferIndex = blockIndex(pos);
     int alignment = (int) pos & 0x3;
-    assert alignment == 0;
     int floatBufferIndex = bufferIndex * Float.BYTES + alignment;
     if (floatBuffers[floatBufferIndex] == null) {
       ByteBuffer dup = blocks[bufferIndex].duplicate();
       dup.position(alignment);
-      floatBuffers[floatBufferIndex] = dup
-          .order(ByteOrder.LITTLE_ENDIAN)
-          .asFloatBuffer();
+      floatBuffers[floatBufferIndex] = dup.order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer();
     }
     return floatBuffers[floatBufferIndex];
   }

@@ -82,6 +82,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected void setCurBuf(ByteBuffer curBuf) {
     this.curBuf = curBuf;
     curLongBufferViews = null;
+    curFloatBufferViews = null;
   }
 
   @Override

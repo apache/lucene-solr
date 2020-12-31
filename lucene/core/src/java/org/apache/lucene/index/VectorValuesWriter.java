@@ -270,11 +270,9 @@ class VectorValuesWriter {
       this.vectors = vectors;
       this.dimension = dimension;
       this.searchStrategy = searchStrategy;
-      buffer = ByteBuffer.allocate(dimension * Float.BYTES)
-        .order(ByteOrder.LITTLE_ENDIAN);
+      buffer = ByteBuffer.allocate(dimension * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
       binaryValue = new BytesRef(buffer.array());
-      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES)
-        .order(ByteOrder.LITTLE_ENDIAN);
+      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
       raBinaryValue = new BytesRef(raBuffer.array());
       docsWithFieldIter = docsWithField.iterator();
     }
