@@ -44,14 +44,14 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   boolean unmapHack;
   boolean preload;
-  private int maxChunk;
+  private long maxChunk;
 
   @Override
   @SuppressWarnings({"rawtypes"})
   public void init(NamedList args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
-    maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
+    maxChunk = params.getLong("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
     if (maxChunk <= 0){
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }

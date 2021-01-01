@@ -16,27 +16,20 @@
  */
 package org.apache.lucene.store;
 
-import static java.lang.invoke.MethodHandles.*;
-import static java.lang.invoke.MethodType.methodType;
-
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.Future;
-import org.apache.lucene.store.ByteBufferGuard.BufferCleaner;
+
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.SuppressForbidden;
+
+import jdk.incubator.foreign.MappedMemorySegments;
+import jdk.incubator.foreign.MemorySegment;
 
 /**
  * File-based {@link Directory} implementation that uses mmap for reading, and {@link
@@ -85,9 +78,9 @@ public class MMapDirectory extends FSDirectory {
   /**
    * Default max chunk size.
    *
-   * @see #MMapDirectory(Path, LockFactory, int)
+   * @see #MMapDirectory(Path, LockFactory, long)
    */
-  public static final int DEFAULT_MAX_CHUNK_SIZE = Constants.JRE_IS_64BIT ? (1 << 30) : (1 << 28);
+  public static final long DEFAULT_MAX_CHUNK_SIZE = Constants.JRE_IS_64BIT ? (1L << 34) : (1L << 28);
 
   final int chunkSizePower;
 
@@ -119,11 +112,11 @@ public class MMapDirectory extends FSDirectory {
    * directory is created at the named location if it does not yet exist.
    *
    * @param path the path of the directory
-   * @param maxChunkSize maximum chunk size (default is 1 GiBytes for 64 bit JVMs and 256 MiBytes
+   * @param maxChunkSize maximum chunk size (default is 16 GiBytes for 64 bit JVMs and 256 MiBytes
    *     for 32 bit JVMs) used for memory mapping.
    * @throws IOException if there is a low-level I/O error
    */
-  public MMapDirectory(Path path, int maxChunkSize) throws IOException {
+  public MMapDirectory(Path path, long maxChunkSize) throws IOException {
     this(path, FSLockFactory.getDefault(), maxChunkSize);
   }
 
@@ -134,25 +127,28 @@ public class MMapDirectory extends FSDirectory {
    * <p>Especially on 32 bit platform, the address space can be very fragmented, so large index
    * files cannot be mapped. Using a lower chunk size makes the directory implementation a little
    * bit slower (as the correct chunk may be resolved on lots of seeks) but the chance is higher
-   * that mmap does not fail. On 64 bit Java platforms, this parameter should always be {@code 1 <<
-   * 30}, as the address space is big enough.
+   * that mmap does not fail. On 64 bit Java platforms, this parameter should always be large
+   * (like 16 GiBytes), as the address space is big enough. If it is larger, fragmentation of
+   * address space increases, but number of file handles and mappings is lower for huge
+   * installations with many open indexes.
    *
    * <p><b>Please note:</b> The chunk size is always rounded down to a power of 2.
    *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default ({@link
    *     NativeFSLockFactory});
-   * @param maxChunkSize maximum chunk size (default is 1 GiBytes for 64 bit JVMs and 256 MiBytes
+   * @param maxChunkSize maximum chunk size (default is 16 GiBytes for 64 bit JVMs and 256 MiBytes
    *     for 32 bit JVMs) used for memory mapping.
    * @throws IOException if there is a low-level I/O error
    */
-  public MMapDirectory(Path path, LockFactory lockFactory, int maxChunkSize) throws IOException {
+  public MMapDirectory(Path path, LockFactory lockFactory, long maxChunkSize) throws IOException {
     super(path, lockFactory);
-    if (maxChunkSize <= 0) {
+    if (maxChunkSize <= 0L) {
       throw new IllegalArgumentException("Maximum chunk size for mmap must be >0");
     }
-    this.chunkSizePower = 31 - Integer.numberOfLeadingZeros(maxChunkSize);
-    assert this.chunkSizePower >= 0 && this.chunkSizePower <= 30;
+    this.chunkSizePower = Long.SIZE - 1 - Long.numberOfLeadingZeros(maxChunkSize);
+    assert (1L << chunkSizePower) <= maxChunkSize;
+    assert (1L << chunkSizePower) > (maxChunkSize / 2);
   }
 
   /**
@@ -218,10 +214,10 @@ public class MMapDirectory extends FSDirectory {
   /**
    * Returns the current mmap chunk size.
    *
-   * @see #MMapDirectory(Path, LockFactory, int)
+   * @see #MMapDirectory(Path, LockFactory, long)
    */
-  public final int getMaxChunkSize() {
-    return 1 << chunkSizePower;
+  public final long getMaxChunkSize() {
+    return 1L << chunkSizePower;
   }
 
   /** Creates an IndexInput for the file with the given name. */
@@ -230,54 +226,71 @@ public class MMapDirectory extends FSDirectory {
     ensureOpen();
     ensureCanRead(name);
     Path path = directory.resolve(name);
-    try (FileChannel c = FileChannel.open(path, StandardOpenOption.READ)) {
-      final String resourceDescription = "MMapIndexInput(path=\"" + path.toString() + "\")";
-      final boolean useUnmap = getUseUnmap();
-      return ByteBufferIndexInput.newInstance(
-          resourceDescription,
-          map(resourceDescription, c, 0, c.size()),
-          c.size(),
-          chunkSizePower,
-          new ByteBufferGuard(resourceDescription, useUnmap ? CLEANER : null));
-    }
+    final String resourceDescription = "MemorySegmentIndexInput(path=\"" + path.toString() + "\")";
+    final long fileSize = Files.size(path);
+    MemorySegment[] segments = map(resourceDescription, path, fileSize);
+    return MemorySegmentIndexInput.newInstance(
+        resourceDescription,
+        segments,
+        fileSize,
+        chunkSizePower);
   }
 
-  /** Maps a file into a set of buffers */
-  final ByteBuffer[] map(String resourceDescription, FileChannel fc, long offset, long length)
+  /** Maps a file into a set of segments */
+  final MemorySegment[] map(String resourceDescription, Path path, long length)
       throws IOException {
     if ((length >>> chunkSizePower) >= Integer.MAX_VALUE)
       throw new IllegalArgumentException(
-          "RandomAccessFile too big for chunk size: " + resourceDescription);
+          "File too big for chunk size: " + resourceDescription);
 
     final long chunkSize = 1L << chunkSizePower;
 
-    // we always allocate one more buffer, the last one may be a 0 byte one
-    final int nrBuffers = (int) (length >>> chunkSizePower) + 1;
+    // we always allocate one more segments, the last one may be a 0 byte one
+    final int nrSegments = (int) (length >>> chunkSizePower) + 1;
 
-    ByteBuffer buffers[] = new ByteBuffer[nrBuffers];
+    final MemorySegment segments[] = new MemorySegment[nrSegments];
 
-    long bufferStart = 0L;
-    for (int bufNr = 0; bufNr < nrBuffers; bufNr++) {
-      int bufSize =
-          (int) ((length > (bufferStart + chunkSize)) ? chunkSize : (length - bufferStart));
-      MappedByteBuffer buffer;
+    long startOffset = 0L;
+    for (int segNr = 0; segNr < nrSegments; segNr++) {
+      long segSize =
+          (length > (startOffset + chunkSize)) ? chunkSize : (length - startOffset);
+      final MemorySegment segment;
       try {
-        buffer = fc.map(MapMode.READ_ONLY, offset + bufferStart, bufSize);
+        segment = mapFileBugfix(path, startOffset, segSize, MapMode.READ_ONLY);
       } catch (IOException ioe) {
-        throw convertMapFailedIOException(ioe, resourceDescription, bufSize);
+        throw convertMapFailedIOException(ioe, resourceDescription, segSize);
       }
-      if (preload) {
-        buffer.load();
+      if (preload && segSize > 0L) {
+        MappedMemorySegments.load(segment);
       }
-      buffers[bufNr] = buffer;
-      bufferStart += bufSize;
+      segments[segNr] = segment.share();
+      startOffset += segSize;
     }
 
-    return buffers;
+    return segments;
+  }
+  
+  private static MemorySegment mapFileBugfix(Path path, long bytesOffset, long bytesSize, MapMode mapMode) throws IOException {
+    // work around NPE bug:
+    // https://bugs.openjdk.java.net/browse/JDK-8259027
+    if (bytesSize == 0L) {
+      return MemorySegment.ofArray(BytesRef.EMPTY_BYTES);
+    }
+    // work around alignment bug by applying alignment on our own:
+    // https://bugs.openjdk.java.net/browse/JDK-8259032
+    // allocationGranularity: known maximum for Win64, on Linux it's page size
+    // We are just safe here and use a granularity that's huge enough for all platforms!
+    final long allocationGranularity = 65536L;
+    final long pageOffset = bytesOffset % allocationGranularity;
+    final long mapBytesOffset = bytesOffset - pageOffset;
+    final long mapBytesSize = bytesSize + pageOffset;
+    final MemorySegment seg = MemorySegment.mapFile(path, mapBytesOffset, mapBytesSize, mapMode);
+    assert (seg.address().toRawLongValue() % allocationGranularity == 0);
+    return seg.asSlice(pageOffset);
   }
 
-  private IOException convertMapFailedIOException(
-      IOException ioe, String resourceDescription, int bufSize) {
+  private static IOException convertMapFailedIOException(
+      IOException ioe, String resourceDescription, long bufSize) {
     final String originalMessage;
     final Throwable originalCause;
     if (ioe.getCause() instanceof OutOfMemoryError) {
@@ -319,85 +332,12 @@ public class MMapDirectory extends FSDirectory {
   }
 
   /** <code>true</code>, if this platform supports unmapping mmapped files. */
-  public static final boolean UNMAP_SUPPORTED;
+  public static final boolean UNMAP_SUPPORTED = true; // nocommit: cleanup
 
   /**
    * if {@link #UNMAP_SUPPORTED} is {@code false}, this contains the reason why unmapping is not
    * supported.
    */
-  public static final String UNMAP_NOT_SUPPORTED_REASON;
+  public static final String UNMAP_NOT_SUPPORTED_REASON = null; // nocommit: cleanup
 
-  /** Reference to a BufferCleaner that does unmapping; {@code null} if not supported. */
-  private static final BufferCleaner CLEANER;
-
-  static {
-    final Object hack =
-        AccessController.doPrivileged((PrivilegedAction<Object>) MMapDirectory::unmapHackImpl);
-    if (hack instanceof BufferCleaner) {
-      CLEANER = (BufferCleaner) hack;
-      UNMAP_SUPPORTED = true;
-      UNMAP_NOT_SUPPORTED_REASON = null;
-    } else {
-      CLEANER = null;
-      UNMAP_SUPPORTED = false;
-      UNMAP_NOT_SUPPORTED_REASON = hack.toString();
-    }
-  }
-
-  @SuppressForbidden(
-      reason =
-          "Needs access to private APIs in DirectBuffer, sun.misc.Cleaner, and sun.misc.Unsafe to enable hack")
-  private static Object unmapHackImpl() {
-    final Lookup lookup = lookup();
-    try {
-      // *** sun.misc.Unsafe unmapping (Java 9+) ***
-      final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-      // first check if Unsafe has the right method, otherwise we can give up
-      // without doing any security critical stuff:
-      final MethodHandle unmapper =
-          lookup.findVirtual(
-              unsafeClass, "invokeCleaner", methodType(void.class, ByteBuffer.class));
-      // fetch the unsafe instance and bind it to the virtual MH:
-      final Field f = unsafeClass.getDeclaredField("theUnsafe");
-      f.setAccessible(true);
-      final Object theUnsafe = f.get(null);
-      return newBufferCleaner(ByteBuffer.class, unmapper.bindTo(theUnsafe));
-    } catch (SecurityException se) {
-      return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: "
-          + se
-          + " [Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\") "
-          + " and ReflectPermission(\"suppressAccessChecks\")]";
-    } catch (ReflectiveOperationException | RuntimeException e) {
-      return "Unmapping is not supported on this platform, because internal Java APIs are not compatible with this Lucene version: "
-          + e;
-    }
-  }
-
-  private static BufferCleaner newBufferCleaner(
-      final Class<?> unmappableBufferClass, final MethodHandle unmapper) {
-    assert Objects.equals(methodType(void.class, ByteBuffer.class), unmapper.type());
-    return (String resourceDescription, ByteBuffer buffer) -> {
-      if (!buffer.isDirect()) {
-        throw new IllegalArgumentException("unmapping only works with direct buffers");
-      }
-      if (!unmappableBufferClass.isInstance(buffer)) {
-        throw new IllegalArgumentException(
-            "buffer is not an instance of " + unmappableBufferClass.getName());
-      }
-      final Throwable error =
-          AccessController.doPrivileged(
-              (PrivilegedAction<Throwable>)
-                  () -> {
-                    try {
-                      unmapper.invokeExact(buffer);
-                      return null;
-                    } catch (Throwable t) {
-                      return t;
-                    }
-                  });
-      if (error != null) {
-        throw new IOException("Unable to unmap the mapped buffer: " + resourceDescription, error);
-      }
-    };
-  }
 }

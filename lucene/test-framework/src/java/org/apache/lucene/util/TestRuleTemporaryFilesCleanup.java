@@ -110,7 +110,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     super.before();
 
     assert tempDirBase == null;
-    fileSystem = initializeFileSystem();
+    fileSystem = FileSystems.getDefault(); // nocommit: disabled due to MemorySegmentAPI: initializeFileSystem();
     javaTempDir = initializeJavaTempDir();
   }
   

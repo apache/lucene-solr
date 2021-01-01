@@ -106,6 +106,7 @@ allprojects {
 
       jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
       jvmArgs '--illegal-access=deny'
+      jvmArgs "--add-modules", "jdk.incubator.foreign"
 
       systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
       systemProperty 'java.awt.headless', 'true'

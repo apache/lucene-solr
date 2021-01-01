@@ -60,3 +60,14 @@ allprojects {
     }
   }
 }
+
+configure(project(":lucene:core")) {
+  plugins.withType(JavaPlugin) {
+    tasks.named('compileJava').configure {
+      sourceCompatibility = 16
+      targetCompatibility = 16
+      options.compilerArgs += ["--release", 16 as String,  "--add-modules", "jdk.incubator.foreign"]
+      options.compilerArgs -= "-Werror"
+    }
+  }
+}
