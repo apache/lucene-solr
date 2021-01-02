@@ -99,6 +99,9 @@ allprojects {
       workingDir testsCwd
       useJUnit()
 
+      include '**/*Test.class', '**/Test*.class'
+      exclude '**/*$*'
+
       minHeapSize = resolvedTestOption("tests.minheapsize")
       maxHeapSize = resolvedTestOption("tests.heapsize")
 
