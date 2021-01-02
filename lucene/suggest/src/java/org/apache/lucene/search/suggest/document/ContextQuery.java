@@ -187,8 +187,8 @@ public class ContextQuery extends CompletionQuery implements Accountable {
 
     // If the inner automaton matches nothing, then we return an empty weight to avoid
     // traversing all contexts during scoring.
-    if (innerAutomaton.getNumStates() == 0) {
-      return new CompletionWeight(this, innerAutomaton);
+    if (Operations.isEmpty(innerAutomaton)) {
+      return new CompletionWeight(this, Automata.makeEmpty());
     }
 
     // if separators are preserved the fst contains a SEP_LABEL

@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
@@ -188,6 +189,12 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     ContextQuery query = new ContextQuery(new RegexCompletionQuery(new Term("suggest_field", "")));
     query.addContext("type", 1);
 
+    // Ensure that context queries optimize an empty regex to a fully empty automaton.
+    CompletionWeight weight = (CompletionWeight) query.createWeight(
+        suggestIndexSearcher, ScoreMode.COMPLETE, 1.0F);
+    assertEquals(0, weight.getAutomaton().getNumStates());
+
+    // Check that there are no suggestions.
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
     assertEquals(0, suggest.scoreDocs.length);
 
