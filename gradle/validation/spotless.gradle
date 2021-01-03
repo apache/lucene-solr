@@ -71,6 +71,7 @@ allprojects { prj ->
           case ":lucene:facet":
           case ":lucene:misc":
           case ":lucene:monitor":
+          case ":lucene:replicator":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -87,7 +88,6 @@ allprojects { prj ->
           case ":lucene:grouping":
           case ":lucene:luke":
           case ":lucene:queryparser":
-          case ":lucene:replicator":
           case ":lucene:sandbox":
           case ":lucene:spatial3d":
           case ":lucene:spatial-extras":

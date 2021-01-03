@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -35,10 +34,12 @@ import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-/** A SearcherManager that refreshes via an externally provided (NRT) SegmentInfos, either from {@link IndexWriter} or via
- *  nrt replication to another index.
+/**
+ * A SearcherManager that refreshes via an externally provided (NRT) SegmentInfos, either from
+ * {@link IndexWriter} or via nrt replication to another index.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
   private volatile SegmentInfos currentInfos;
   private final Directory dir;
@@ -46,7 +47,9 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
   private final AtomicInteger openReaderCount = new AtomicInteger();
   private final SearcherFactory searcherFactory;
 
-  public SegmentInfosSearcherManager(Directory dir, Node node, SegmentInfos infosIn, SearcherFactory searcherFactory) throws IOException {
+  public SegmentInfosSearcherManager(
+      Directory dir, Node node, SegmentInfos infosIn, SearcherFactory searcherFactory)
+      throws IOException {
     this.dir = dir;
     this.node = node;
     if (searcherFactory == null) {
@@ -55,7 +58,9 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     this.searcherFactory = searcherFactory;
     currentInfos = infosIn;
     node.message("SegmentInfosSearcherManager.init: use incoming infos=" + infosIn.toString());
-    current = SearcherManager.getSearcher(searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null), null);
+    current =
+        SearcherManager.getSearcher(
+            searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null), null);
     addReaderClosedListener(current.getIndexReader());
   }
 
@@ -78,8 +83,10 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     return currentInfos;
   }
 
-  /** Switch to new segments, refreshing if necessary.  Note that it's the caller job to ensure there's a held refCount for the
-   *  incoming infos, so all files exist. */
+  /**
+   * Switch to new segments, refreshing if necessary. Note that it's the caller job to ensure
+   * there's a held refCount for the incoming infos, so all files exist.
+   */
   public void setCurrentInfos(SegmentInfos infos) throws IOException {
     if (currentInfos != null) {
       // So that if we commit, we will go to the next
@@ -98,7 +105,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
       subs = null;
     } else {
       subs = new ArrayList<>();
-      for(LeafReaderContext ctx : old.getIndexReader().leaves()) {
+      for (LeafReaderContext ctx : old.getIndexReader().leaves()) {
         subs.add(ctx.reader());
       }
     }
@@ -116,17 +123,19 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
       throw new IllegalStateException("StandardDirectoryReader must support caching");
     }
     openReaderCount.incrementAndGet();
-    cacheHelper.addClosedListener(new IndexReader.ClosedListener() {
-        @Override
-        public void onClose(IndexReader.CacheKey cacheKey) {
-          onReaderClosed();
-        }
-      });
+    cacheHelper.addClosedListener(
+        new IndexReader.ClosedListener() {
+          @Override
+          public void onClose(IndexReader.CacheKey cacheKey) {
+            onReaderClosed();
+          }
+        });
   }
 
-  /** Tracks how many readers are still open, so that when we are closed,
-   *  we can additionally wait until all in-flight searchers are
-   *  closed. */
+  /**
+   * Tracks how many readers are still open, so that when we are closed, we can additionally wait
+   * until all in-flight searchers are closed.
+   */
   synchronized void onReaderClosed() {
     if (openReaderCount.decrementAndGet() == 0) {
       notifyAll();
