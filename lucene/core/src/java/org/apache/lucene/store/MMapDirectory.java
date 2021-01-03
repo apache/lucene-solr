@@ -311,7 +311,6 @@ public class MMapDirectory extends FSDirectory {
     final long mapBytesOffset = bytesOffset - pageOffset;
     final long mapBytesSize = bytesSize + pageOffset;
     final MemorySegment seg = MemorySegment.mapFile(path, mapBytesOffset, mapBytesSize, mapMode);
-    assert (seg.address().toRawLongValue() % allocationGranularity == 0);
     return (pageOffset == 0L) ? seg : seg.asSlice(pageOffset);
   }
 
