@@ -75,6 +75,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     this.chunkSizePower = chunkSizePower;
     this.chunkSizeMask = (1L << chunkSizePower) - 1L;
     this.isClone = isClone;
+    this.curSegment = segments[0];
   }
   
   void ensureOpen() {
@@ -226,6 +227,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public void seek(long pos) throws IOException {
+    ensureOpen();
     // we use >> here to preserve negative, so we will catch AIOOBE,
     // in case pos + offset overflows.
     final int si = (int) (pos >> chunkSizePower);
@@ -239,8 +241,6 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       this.curPosition = Objects.checkIndex(pos & chunkSizeMask, curSegment.byteSize() + 1);
     } catch (IndexOutOfBoundsException e) {
       handlePositionalIOOBE("seek", pos);
-    } catch (NullPointerException | IllegalStateException e) {
-      throw wrapAlreadyClosedException(e);
     }
   }
 
@@ -412,7 +412,6 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
         boolean isClone) {
       super(resourceDescription, new MemorySegment[] {segment}, length, chunkSizePower, isClone);
       this.curSegmentIndex = 0;
-      this.curSegment = segment;
     }
 
     @Override
