@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,6 +40,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.junit.Before;
 
 public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields = 4;
@@ -47,6 +49,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int mergeFactor = 3;
   static int maxBufferedDocs = 3;
   static int seed = 0;
+  private static Map<String, FieldType> fieldTypes;
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    fieldTypes = new ConcurrentHashMap<>();
+  }
 
   public void testRandomIWReader() throws Throwable {
     Directory dir = newMaybeVirusCheckingDirectory();
@@ -128,7 +137,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  static Term idTerm = new Term("id", "");
   IndexingThread[] threads;
   static Comparator<IndexableField> fieldNameComparator =
       new Comparator<IndexableField>() {
@@ -807,71 +815,58 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Field idField = newField("id", idString, customType1);
       fields.add(idField);
 
-      Map<String, FieldType> tvTypes = new HashMap<>();
-
       int nFields = nextInt(maxFields);
       for (int i = 0; i < nFields; i++) {
-
         String fieldName = "f" + nextInt(100);
-        FieldType customType;
-
-        // Use the same term vector settings if we already
-        // added this field to the doc:
-        FieldType oldTVType = tvTypes.get(fieldName);
-        if (oldTVType != null) {
-          customType = new FieldType(oldTVType);
-        } else {
-          customType = new FieldType();
-          switch (nextInt(4)) {
-            case 0:
-              break;
-            case 1:
-              customType.setStoreTermVectors(true);
-              break;
-            case 2:
-              customType.setStoreTermVectors(true);
-              customType.setStoreTermVectorPositions(true);
-              break;
-            case 3:
-              customType.setStoreTermVectors(true);
-              customType.setStoreTermVectorOffsets(true);
-              break;
-          }
-          FieldType newType = new FieldType(customType);
-          newType.freeze();
-          tvTypes.put(fieldName, newType);
-        }
-
-        switch (nextInt(4)) {
-          case 0:
-            customType.setStored(true);
-            customType.setOmitNorms(true);
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(1), customType));
-            break;
-          case 1:
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.setTokenized(true);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(0), customType));
-            break;
-          case 2:
-            customType.setStored(true);
-            customType.setStoreTermVectors(false);
-            customType.setStoreTermVectorOffsets(false);
-            customType.setStoreTermVectorPositions(false);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(0), customType));
-            break;
-          case 3:
-            customType.setStored(true);
-            customType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-            customType.setTokenized(true);
-            customType.freeze();
-            fields.add(newField(fieldName, getString(bigFieldSize), customType));
-            break;
-        }
+        // Use the same field type if we already added this field to the index
+        FieldType fieldType =
+            fieldTypes.computeIfAbsent(
+                fieldName,
+                fn -> {
+                  FieldType ft = new FieldType();
+                  switch (nextInt(4)) {
+                    case 0:
+                      break;
+                    case 1:
+                      ft.setStoreTermVectors(true);
+                      break;
+                    case 2:
+                      ft.setStoreTermVectors(true);
+                      ft.setStoreTermVectorPositions(true);
+                      break;
+                    case 3:
+                      ft.setStoreTermVectors(true);
+                      ft.setStoreTermVectorOffsets(true);
+                      break;
+                  }
+                  switch (nextInt(4)) {
+                    case 0:
+                      ft.setStored(true);
+                      ft.setOmitNorms(true);
+                      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                      break;
+                    case 1:
+                      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                      ft.setTokenized(true);
+                      break;
+                    case 2:
+                      ft.setStored(true);
+                      ft.setStoreTermVectors(false);
+                      ft.setStoreTermVectorOffsets(false);
+                      ft.setStoreTermVectorPositions(false);
+                      break;
+                    case 3:
+                      ft.setStored(true);
+                      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+                      ft.setTokenized(true);
+                      break;
+                  }
+                  ft.freeze();
+                  return ft;
+                });
+        int nTokens = nextInt(3);
+        nTokens = nTokens < 2 ? nTokens : bigFieldSize;
+        fields.add(newField(fieldName, getString(nTokens), fieldType));
       }
 
       if (sameFieldOrder) {

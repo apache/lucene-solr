@@ -226,8 +226,10 @@ public class TestOmitNorms extends LuceneTestCase {
 
   /**
    * Tests various combinations of omitNorms=true/false, the field not existing at all, ensuring
-   * that only omitNorms is 'viral'. Internally checks that MultiNorms.norms() is consistent
-   * (returns the same bytes) as the fully merged equivalent.
+   * that only omitNorms is 'viral'; can't check variations of field indexed with field un-indexed
+   * as it violates the requirement of consistency of data structures across documents. Internally
+   * checks that MultiNorms.norms() is consistent (returns the same bytes) as the fully merged
+   * equivalent.
    */
   public void testOmitNormsCombos() throws IOException {
     // indexed with norms
@@ -251,12 +253,8 @@ public class TestOmitNorms extends LuceneTestCase {
 
     assertNotNull(getNorms("foo", norms, norms));
     assertNull(getNorms("foo", norms, noNorms));
-    assertNotNull(getNorms("foo", norms, noIndex));
-    assertNotNull(getNorms("foo", norms, noNormsNoIndex));
     assertNotNull(getNorms("foo", norms, emptyNorms));
     assertNull(getNorms("foo", noNorms, noNorms));
-    assertNull(getNorms("foo", noNorms, noIndex));
-    assertNull(getNorms("foo", noNorms, noNormsNoIndex));
     assertNull(getNorms("foo", noNorms, emptyNorms));
     assertNull(getNorms("foo", noIndex, noIndex));
     assertNull(getNorms("foo", noIndex, noNormsNoIndex));

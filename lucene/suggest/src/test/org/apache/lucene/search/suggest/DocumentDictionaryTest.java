@@ -366,14 +366,13 @@ public class DocumentDictionaryTest extends LuceneTestCase {
 
       // usually have valid weight field in document
       if (usually()) {
-        Field weight =
-            (rarely())
-                ? new StoredField(WEIGHT_FIELD_NAME, 100d + i)
-                : new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
+        Field weight = new StoredField(WEIGHT_FIELD_NAME, 100d + i);
+        doc.add(weight);
+        weight = new NumericDocValuesField(WEIGHT_FIELD_NAME, 100 + i);
         doc.add(weight);
       }
 
-      String term = null;
+      String term;
       if (invalidDoc) {
         term = (field != null) ? field.stringValue() : "invalid_" + i;
         invalidDocTerms.add(term);

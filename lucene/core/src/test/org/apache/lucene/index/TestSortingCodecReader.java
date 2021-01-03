@@ -114,8 +114,8 @@ public class TestSortingCodecReader extends LuceneTestCase {
         for (int i = 0; i < numDocs; i++) {
           int docId = docIds.get(i);
           Document doc = new Document();
-          doc.add(new StringField("id", Integer.toString(docId), Field.Store.YES));
-          doc.add(new LongPoint("id", docId));
+          doc.add(new StringField("string_id", Integer.toString(docId), Field.Store.YES));
+          doc.add(new LongPoint("point_id", docId));
           String s = RandomStrings.randomRealisticUnicodeOfLength(random(), 25);
           doc.add(new TextField("text_field", s, Field.Store.YES));
           doc.add(new BinaryDocValuesField("text_field", new BytesRef(s)));
@@ -150,7 +150,7 @@ public class TestSortingCodecReader extends LuceneTestCase {
           iw.addDocument(doc);
           if (i > 0 && random().nextInt(5) == 0) {
             final int id = RandomPicks.randomFrom(random(), docIds.subList(0, i));
-            iw.deleteDocuments(new Term("id", Integer.toString(id)));
+            iw.deleteDocuments(new Term("string_id", Integer.toString(id)));
           }
         }
         iw.commit();
@@ -240,13 +240,15 @@ public class TestSortingCodecReader extends LuceneTestCase {
                       .terms("term_vectors")
                       .iterator()
                       .seekExact(new BytesRef("test" + ids.longValue())));
-              assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
+              assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("string_id"));
               IndexSearcher searcher = new IndexSearcher(r);
-              TopDocs result = searcher.search(LongPoint.newExactQuery("id", ids.longValue()), 1);
+              TopDocs result =
+                  searcher.search(LongPoint.newExactQuery("point_id", ids.longValue()), 1);
               assertEquals(1, result.totalHits.value);
               assertEquals(idNext, result.scoreDocs[0].doc);
 
-              result = searcher.search(new TermQuery(new Term("id", "" + ids.longValue())), 1);
+              result =
+                  searcher.search(new TermQuery(new Term("string_id", "" + ids.longValue())), 1);
               assertEquals(1, result.totalHits.value);
               assertEquals(idNext, result.scoreDocs[0].doc);
             }

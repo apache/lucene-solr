@@ -740,6 +740,7 @@ public class TestGrouping extends LuceneTestCase {
 
       Field group = newStringField("group", "", Field.Store.NO);
       doc.add(group);
+      docNoGroup.add(group);
       Field sort1 = new SortedDocValuesField("sort1", new BytesRef());
       doc.add(sort1);
       docNoGroup.add(sort1);

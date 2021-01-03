@@ -346,8 +346,10 @@ Rather, an IllegalArgumentException shall be thrown. This is introduced for bett
 defence and to ensure that there is no bubbling up of errors when Lucene is
 used in multi level applications
 
-## Assumption of data consistency between different data-structures sharing the same field name
+### Require consistency between data-structures on a per-field basis
 
-Sorting on a numeric field that is indexed with both doc values and points may use an
-optimization to skip non-competitive documents. This optimization relies on the assumption
-that the same data is stored in these points and doc values.
+A field must be indexed with the same index options and data-structures across 
+all documents within a segment. Thus, for example, it is not allowed to have 
+one document in a segment where a certain field is indexed with doc values 
+and points, and another document where the same field is indexed only with 
+points.

@@ -1541,8 +1541,11 @@ public abstract class LuceneTestCase extends Assert {
     return newField(random(), name, value, type);
   }
 
-  /** Returns a FieldType derived from newType but whose term vector options match the old type */
-  private static FieldType mergeTermVectorOptions(FieldType newType, FieldType oldType) {
+  /**
+   * Returns a FieldType derived from newType but whose store and term vector options match the old
+   * type
+   */
+  private static FieldType mergeStoreAndTermVectorOptions(FieldType newType, FieldType oldType) {
     if (newType.indexOptions() != IndexOptions.NONE
         && oldType.storeTermVectors() == true
         && newType.storeTermVectors() == false) {
@@ -1551,10 +1554,19 @@ public abstract class LuceneTestCase extends Assert {
       newType.setStoreTermVectorPositions(oldType.storeTermVectorPositions());
       newType.setStoreTermVectorOffsets(oldType.storeTermVectorOffsets());
       newType.setStoreTermVectorPayloads(oldType.storeTermVectorPayloads());
+      if (oldType.stored() == true) {
+        newType.setStored(true);
+      }
       newType.freeze();
+      return newType;
+    } else if (oldType.stored() == true && newType.stored() == false) {
+      newType = new FieldType(newType);
+      newType.setStored(true);
+      newType.freeze();
+      return newType;
+    } else {
+      return newType;
     }
-
-    return newType;
   }
 
   // TODO: if we can pull out the "make term vector options
@@ -1570,15 +1582,13 @@ public abstract class LuceneTestCase extends Assert {
     name = new String(name);
 
     FieldType prevType = fieldToType.get(name);
-
     if (usually(random) || type.indexOptions() == IndexOptions.NONE || prevType != null) {
       // most of the time, don't modify the params
       if (prevType == null) {
         fieldToType.put(name, new FieldType(type));
       } else {
-        type = mergeTermVectorOptions(type, prevType);
+        type = mergeStoreAndTermVectorOptions(type, prevType);
       }
-
       return createField(name, value, type);
     }
 
@@ -1587,6 +1597,8 @@ public abstract class LuceneTestCase extends Assert {
     // already indexing positions...
 
     FieldType newType = new FieldType(type);
+    // Randomly turn on stored, but always do
+    // so consistently for the same field name
     if (!newType.stored() && random.nextBoolean()) {
       newType.setStored(true); // randomly store it
     }

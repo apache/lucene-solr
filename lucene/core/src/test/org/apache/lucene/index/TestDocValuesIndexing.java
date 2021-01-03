@@ -844,29 +844,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir.close();
   }
 
-  public void testDocsWithField() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    IndexWriter writer = new IndexWriter(dir, conf);
-    Document doc = new Document();
-    doc.add(new NumericDocValuesField("dv", 0L));
-    writer.addDocument(doc);
-
-    doc = new Document();
-    doc.add(new TextField("dv", "some text", Field.Store.NO));
-    doc.add(new NumericDocValuesField("dv", 0L));
-    writer.addDocument(doc);
-
-    DirectoryReader r = writer.getReader();
-    writer.close();
-
-    LeafReader subR = r.leaves().get(0).reader();
-    assertEquals(2, subR.numDocs());
-
-    r.close();
-    dir.close();
-  }
-
   public void testSameFieldNameForPostingAndDocValue() throws Exception {
     // LUCENE-5192: FieldInfos.Builder neglected to update
     // globalFieldNumbers.docValuesType map if the field existed, resulting in

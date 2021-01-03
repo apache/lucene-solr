@@ -58,7 +58,7 @@ public class TestBlockJoinScorer extends LuceneTestCase {
       }
       Document parent = new Document();
       parent.add(newStringField("docType", "parent", Field.Store.NO));
-      parent.add(newStringField("value", Integer.toString(i), Field.Store.NO));
+      parent.add(newStringField("value", Integer.toString(i), Field.Store.YES));
       docs.add(parent);
       w.addDocuments(docs);
     }

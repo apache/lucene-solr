@@ -112,7 +112,7 @@ public class TestDistinctValuesCollector extends AbstractGroupingTestCase {
 
     // 6 -- no author field
     doc = new Document();
-    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.YES));
+    doc.add(new TextField("content", "random word stuck in alot of other text", Field.Store.NO));
     addField(doc, COUNT_FIELD, "1");
     doc.add(new StringField("id", "6", Field.Store.NO));
     w.addDocument(doc);

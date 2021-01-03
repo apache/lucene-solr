@@ -82,6 +82,10 @@ API Changes
 * LUCENE-9317 LUCENE-9318 LUCENE-9319 LUCENE-9558 LUCENE-9600 : Clean up package name conflicts
   between modules. See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
+* LUCENE-9334:  Require consistency between data-structures on a per-field basis.
+  A field across all documents within a segment must be indexed with the same index
+  options and data-structures.
+
 Improvements
 
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).

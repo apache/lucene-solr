@@ -86,6 +86,7 @@ public class TestBlockJoin extends LuceneTestCase {
     Document job = new Document();
     job.add(newStringField("qualification", qualification, Field.Store.YES));
     job.add(new IntPoint("year", year));
+    job.add(new StoredField("year", year));
     return job;
   }
 

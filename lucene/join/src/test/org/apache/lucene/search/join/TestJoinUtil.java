@@ -849,6 +849,7 @@ public class TestJoinUtil extends LuceneTestCase {
     doc.add(new TextField("description", "more random text", Field.Store.NO));
     doc.add(new TextField("name", "name2", Field.Store.NO));
     doc.add(new TextField(idField, "0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(idField, new BytesRef("0")));
     w.addDocument(doc);
     w.commit();
 

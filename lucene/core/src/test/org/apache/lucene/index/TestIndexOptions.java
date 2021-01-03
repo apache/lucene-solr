@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collections;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
@@ -31,52 +30,31 @@ public class TestIndexOptions extends LuceneTestCase {
   public void testChangeIndexOptionsViaAddDocument() throws IOException {
     for (IndexOptions from : IndexOptions.values()) {
       for (IndexOptions to : IndexOptions.values()) {
-        for (boolean preExisting : new boolean[] {false, true}) {
-          for (boolean onNewSegment : new boolean[] {false, true}) {
-            doTestChangeIndexOptionsViaAddDocument(preExisting, onNewSegment, from, to);
-          }
-        }
+        doTestChangeIndexOptionsViaAddDocument(from, to);
       }
     }
   }
 
-  private void doTestChangeIndexOptionsViaAddDocument(
-      boolean preExistingField, boolean onNewSegment, IndexOptions from, IndexOptions to)
+  private void doTestChangeIndexOptionsViaAddDocument(IndexOptions from, IndexOptions to)
       throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
-    if (preExistingField) {
-      w.addDocument(Collections.singleton(new IntPoint("foo", 1)));
-      if (onNewSegment) {
-        DirectoryReader.open(w).close();
-      }
-    }
     FieldType ft1 = new FieldType(TextField.TYPE_STORED);
     ft1.setIndexOptions(from);
     w.addDocument(Collections.singleton(new Field("foo", "bar", ft1)));
-    if (onNewSegment) {
-      DirectoryReader.open(w).close();
-    }
     FieldType ft2 = new FieldType(TextField.TYPE_STORED);
     ft2.setIndexOptions(to);
-    if (from == IndexOptions.NONE || to == IndexOptions.NONE || from == to) {
+    if (from == to) {
       w.addDocument(Collections.singleton(new Field("foo", "bar", ft2))); // no exception
-      w.forceMerge(1);
-      try (LeafReader r = getOnlyLeafReader(DirectoryReader.open(w))) {
-        IndexOptions expected = from == IndexOptions.NONE ? to : from;
-        assertEquals(expected, r.getFieldInfos().fieldInfo("foo").getIndexOptions());
-      }
     } else {
       IllegalArgumentException e =
           expectThrows(
               IllegalArgumentException.class,
               () -> w.addDocument(Collections.singleton(new Field("foo", "bar", ft2))));
-      assertEquals(
-          "cannot change field \"foo\" from index options="
-              + from
-              + " to inconsistent index options="
-              + to,
-          e.getMessage());
+      assertTrue(
+          e.getMessage().contains("cannot change field \"foo\" from index options=")
+              || e.getMessage()
+                  .contains("Inconsistency of field indexing options across documents"));
     }
     w.close();
     dir.close();
