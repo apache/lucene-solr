@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.blocktreeords;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.IndexOptions;
@@ -74,7 +72,7 @@ final class OrdsIntersectTermsEnumFrame {
 
   int numFollowFloorBlocks;
   int nextFloorLabel;
-        
+
   Transition transition = new Transition();
   int curTransitionMax;
   int transitionIndex;
@@ -83,7 +81,7 @@ final class OrdsIntersectTermsEnumFrame {
   FST.Arc<Output> arc;
 
   final BlockTermState termState;
-  
+
   // metadata
   public byte[] bytes;
   ByteArrayDataInput bytesReader;
@@ -105,12 +103,14 @@ final class OrdsIntersectTermsEnumFrame {
 
   void loadNextFloorBlock() throws IOException {
     assert numFollowFloorBlocks > 0;
-    //if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
+    // if (DEBUG) System.out.println("    loadNextFoorBlock trans=" + transitions[transitionIndex]);
 
     do {
       fp = fpOrig + (floorDataReader.readVLong() >>> 1);
       numFollowFloorBlocks--;
-      // if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+      // if (DEBUG) System.out.println("    skip floor block2!  nextFloorLabel=" + (char)
+      // nextFloorLabel + " vs target=" + (char) transitions[transitionIndex].getMin() + " newFP=" +
+      // fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
       if (numFollowFloorBlocks != 0) {
         nextFloorLabel = floorDataReader.readByte() & 0xff;
         termOrd += floorDataReader.readVLong();
@@ -138,7 +138,9 @@ final class OrdsIntersectTermsEnumFrame {
 
   void load(Output output) throws IOException {
 
-    // if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData=" + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state=" + state));
+    // if (DEBUG) System.out.println("    load fp=" + fp + " fpOrig=" + fpOrig + " frameIndexData="
+    // + frameIndexData + " trans=" + (transitions.length != 0 ? transitions[0] : "n/a" + " state="
+    // + state));
 
     if (output != null && output.bytes != null && transitionCount != 0) {
       BytesRef frameIndexData = output.bytes;
@@ -147,7 +149,8 @@ final class OrdsIntersectTermsEnumFrame {
       if (floorData.length < frameIndexData.length) {
         this.floorData = new byte[ArrayUtil.oversize(frameIndexData.length, 1)];
       }
-      System.arraycopy(frameIndexData.bytes, frameIndexData.offset, floorData, 0, frameIndexData.length);
+      System.arraycopy(
+          frameIndexData.bytes, frameIndexData.offset, floorData, 0, frameIndexData.length);
       floorDataReader.reset(floorData, 0, frameIndexData.length);
       final long code = floorDataReader.readVLong();
       if ((code & OrdsBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR) != 0) {
@@ -156,17 +159,20 @@ final class OrdsIntersectTermsEnumFrame {
 
         termOrd = termOrdOrig + floorDataReader.readVLong();
 
-        // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + " nextFloorLabel=" + nextFloorLabel);
+        // if (DEBUG) System.out.println("    numFollowFloorBlocks=" + numFollowFloorBlocks + "
+        // nextFloorLabel=" + nextFloorLabel);
 
         // If current state is accept, we must process
         // first block in case it has empty suffix:
         if (!ite.runAutomaton.isAccept(state)) {
           // Maybe skip floor blocks:
-          assert transitionIndex == 0: "transitionIndex=" + transitionIndex;
+          assert transitionIndex == 0 : "transitionIndex=" + transitionIndex;
           while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min) {
             fp = fpOrig + (floorDataReader.readVLong() >>> 1);
             numFollowFloorBlocks--;
-            // if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char) nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + " numFollowFloorBlocks=" + numFollowFloorBlocks);
+            // if (DEBUG) System.out.println("    skip floor block!  nextFloorLabel=" + (char)
+            // nextFloorLabel + " vs target=" + (char) transitions[0].getMin() + " newFP=" + fp + "
+            // numFollowFloorBlocks=" + numFollowFloorBlocks);
             if (numFollowFloorBlocks != 0) {
               nextFloorLabel = floorDataReader.readByte() & 0xff;
               termOrd += floorDataReader.readVLong();
@@ -188,7 +194,8 @@ final class OrdsIntersectTermsEnumFrame {
     code = ite.in.readVInt();
     isLeafBlock = (code & 1) != 0;
     int numBytes = code >>> 1;
-    // if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
+    // if (DEBUG) System.out.println("      entCount=" + entCount + " lastInFloor?=" + isLastInFloor
+    // + " leafBlock?=" + isLeafBlock + " numSuffixBytes=" + numBytes);
     if (suffixBytes.length < numBytes) {
       suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
@@ -206,7 +213,7 @@ final class OrdsIntersectTermsEnumFrame {
 
     termState.termBlockOrd = 0;
     nextEnt = 0;
-         
+
     // metadata
     numBytes = ite.in.readVInt();
     if (bytes == null) {
@@ -233,8 +240,10 @@ final class OrdsIntersectTermsEnumFrame {
 
   // Decodes next entry; returns true if it's a sub-block
   public boolean nextLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
-    assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
+    // if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + "
+    // entCount=" + entCount);
+    assert nextEnt != -1 && nextEnt < entCount
+        : "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     suffix = suffixesReader.readVInt();
     startBytePos = suffixesReader.getPosition();
@@ -243,8 +252,10 @@ final class OrdsIntersectTermsEnumFrame {
   }
 
   public boolean nextNonLeaf() {
-    //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
-    assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
+    // if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + "
+    // entCount=" + entCount);
+    assert nextEnt != -1 && nextEnt < entCount
+        : "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     final int code = suffixesReader.readVInt();
     suffix = code >>> 1;
@@ -288,12 +299,12 @@ final class OrdsIntersectTermsEnumFrame {
 
       // stats
       termState.docFreq = statsReader.readVInt();
-      //if (DEBUG) System.out.println("    dF=" + state.docFreq);
+      // if (DEBUG) System.out.println("    dF=" + state.docFreq);
       if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
         termState.totalTermFreq = termState.docFreq; // all tf values are 1
       } else {
         termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-        //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        // if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
       }
       // metadata
       ite.fr.parent.postingsReader.decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);

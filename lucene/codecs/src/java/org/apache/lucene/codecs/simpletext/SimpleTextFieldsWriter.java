@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -39,18 +37,20 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   private final SegmentWriteState writeState;
   final String segment;
 
-  final static BytesRef END          = new BytesRef("END");
-  final static BytesRef FIELD        = new BytesRef("field ");
-  final static BytesRef TERM         = new BytesRef("  term ");
-  final static BytesRef DOC          = new BytesRef("    doc ");
-  final static BytesRef FREQ         = new BytesRef("      freq ");
-  final static BytesRef POS          = new BytesRef("      pos ");
-  final static BytesRef START_OFFSET = new BytesRef("      startOffset ");
-  final static BytesRef END_OFFSET   = new BytesRef("      endOffset ");
-  final static BytesRef PAYLOAD      = new BytesRef("        payload ");
+  static final BytesRef END = new BytesRef("END");
+  static final BytesRef FIELD = new BytesRef("field ");
+  static final BytesRef TERM = new BytesRef("  term ");
+  static final BytesRef DOC = new BytesRef("    doc ");
+  static final BytesRef FREQ = new BytesRef("      freq ");
+  static final BytesRef POS = new BytesRef("      pos ");
+  static final BytesRef START_OFFSET = new BytesRef("      startOffset ");
+  static final BytesRef END_OFFSET = new BytesRef("      endOffset ");
+  static final BytesRef PAYLOAD = new BytesRef("        payload ");
 
   public SimpleTextFieldsWriter(SegmentWriteState writeState) throws IOException {
-    final String fileName = SimpleTextPostingsFormat.getPostingsFileName(writeState.segmentInfo.name, writeState.segmentSuffix);
+    final String fileName =
+        SimpleTextPostingsFormat.getPostingsFileName(
+            writeState.segmentInfo.name, writeState.segmentSuffix);
     segment = writeState.segmentInfo.name;
     out = writeState.directory.createOutput(fileName, writeState.context);
     this.writeState = writeState;
@@ -64,7 +64,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   public void write(FieldInfos fieldInfos, Fields fields) throws IOException {
 
     // for each field
-    for(String field : fields) {
+    for (String field : fields) {
       Terms terms = fields.terms(field);
       if (terms == null) {
         // Annoyingly, this can happen!
@@ -98,7 +98,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
       PostingsEnum postingsEnum = null;
 
       // for each term in field
-      while(true) {
+      while (true) {
         BytesRef term = termsEnum.next();
         if (term == null) {
           break;
@@ -106,12 +106,13 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
         postingsEnum = termsEnum.postings(postingsEnum, flags);
 
-        assert postingsEnum != null: "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
+        assert postingsEnum != null
+            : "termsEnum=" + termsEnum + " hasPos=" + hasPositions + " flags=" + flags;
 
         boolean wroteTerm = false;
 
         // for each doc in field+term
-        while(true) {
+        while (true) {
           int doc = postingsEnum.nextDoc();
           if (doc == PostingsEnum.NO_MORE_DOCS) {
             break;
@@ -121,7 +122,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
             if (!wroteField) {
               // we lazily do this, in case the field had
-              // no terms              
+              // no terms
               write(FIELD);
               write(field);
               newline();
@@ -150,7 +151,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
               int lastStartOffset = 0;
 
               // for each pos in field+term+doc
-              for(int i=0;i<freq;i++) {
+              for (int i = 0; i < freq; i++) {
                 int position = postingsEnum.nextPosition();
 
                 write(POS);
@@ -161,7 +162,8 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
                   int startOffset = postingsEnum.startOffset();
                   int endOffset = postingsEnum.endOffset();
                   assert endOffset >= startOffset;
-                  assert startOffset >= lastStartOffset: "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
+                  assert startOffset >= lastStartOffset
+                      : "startOffset=" + startOffset + " lastStartOffset=" + lastStartOffset;
                   lastStartOffset = startOffset;
                   write(START_OFFSET);
                   write(Integer.toString(startOffset));

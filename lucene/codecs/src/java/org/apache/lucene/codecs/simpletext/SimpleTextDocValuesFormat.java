@@ -16,23 +16,22 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * plain text doc values format.
- * <p>
- * <b>FOR RECREATIONAL USE ONLY</b>
- * <p>
- * the .dat file contains the data.
- *  for numbers this is a "fixed-width" file, for example a single byte range:
- *  <pre>
+ *
+ * <p><b>FOR RECREATIONAL USE ONLY</b>
+ *
+ * <p>the .dat file contains the data. for numbers this is a "fixed-width" file, for example a
+ * single byte range:
+ *
+ * <pre>
  *  field myField
  *    type NUMERIC
  *    minvalue 0
@@ -45,12 +44,14 @@ import org.apache.lucene.index.SegmentWriteState;
  *  T
  *  ...
  *  </pre>
- *  so a document's value (delta encoded from minvalue) can be retrieved by 
- *  seeking to startOffset + (1+pattern.length()+2)*docid. The extra 1 is the newline. 
- *  The extra 2 is another newline and 'T' or 'F': true if the value is real, false if missing.
- *  
- *  for bytes this is also a "fixed-width" file, for example:
- *  <pre>
+ *
+ * so a document's value (delta encoded from minvalue) can be retrieved by seeking to startOffset +
+ * (1+pattern.length()+2)*docid. The extra 1 is the newline. The extra 2 is another newline and 'T'
+ * or 'F': true if the value is real, false if missing.
+ *
+ * <p>for bytes this is also a "fixed-width" file, for example:
+ *
+ * <pre>
  *  field myField
  *    type BINARY
  *    maxlength 6
@@ -63,12 +64,14 @@ import org.apache.lucene.index.SegmentWriteState;
  *  T
  *  ...
  *  </pre>
- *  so a doc's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength+2)*doc
- *  the extra 9 is 2 newlines, plus "length " itself.
- *  the extra 2 is another newline and 'T' or 'F': true if the value is real, false if missing.
- *  
- *  for sorted bytes this is a fixed-width file, for example:
- *  <pre>
+ *
+ * so a doc's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength+2)*doc
+ * the extra 9 is 2 newlines, plus "length " itself. the extra 2 is another newline and 'T' or 'F':
+ * true if the value is real, false if missing.
+ *
+ * <p>for sorted bytes this is a fixed-width file, for example:
+ *
+ * <pre>
  *  field myField
  *    type SORTED
  *    numvalues 10
@@ -86,12 +89,14 @@ import org.apache.lucene.index.SegmentWriteState;
  *  10
  *  ...
  *  </pre>
- *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
- *  a document's ord can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
- *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
- *  
- *  for sorted set this is a fixed-width file very similar to the SORTED case, for example:
- *  <pre>
+ *
+ * so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues. a document's
+ * ord can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid an ord's value
+ * can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
+ *
+ * <p>for sorted set this is a fixed-width file very similar to the SORTED case, for example:
+ *
+ * <pre>
  *  field myField
  *    type SORTED_SET
  *    numvalues 10
@@ -103,27 +108,29 @@ import org.apache.lucene.index.SegmentWriteState;
  *  length 3
  *  baz[space][space][space][space][space]
  *  ...
- *  0,3,5   
+ *  0,3,5
  *  1,2
- *  
+ *
  *  10
  *  ...
  *  </pre>
- *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
- *  a document's ord list can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
- *  this is a comma-separated list, and it's padded with spaces to be fixed width. so trim() and split() it.
- *  and beware the empty string!
- *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
- *  
- *  for sorted numerics, it's encoded (not very creatively) as a comma-separated list of strings the same as binary.
- *  beware the empty string!
- *   
- *  the reader can just scan this file when it opens, skipping over the data blocks
- *  and saving the offset/etc for each field. 
- *  @lucene.experimental
+ *
+ * so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues. a document's
+ * ord list can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid this is a
+ * comma-separated list, and it's padded with spaces to be fixed width. so trim() and split() it.
+ * and beware the empty string! an ord's value can be retrieved by seeking to startOffset +
+ * (9+pattern.length+maxlength)*ord
+ *
+ * <p>for sorted numerics, it's encoded (not very creatively) as a comma-separated list of strings
+ * the same as binary. beware the empty string!
+ *
+ * <p>the reader can just scan this file when it opens, skipping over the data blocks and saving the
+ * offset/etc for each field.
+ *
+ * @lucene.experimental
  */
 class SimpleTextDocValuesFormat extends DocValuesFormat {
-  
+
   public SimpleTextDocValuesFormat() {
     super("SimpleText");
   }

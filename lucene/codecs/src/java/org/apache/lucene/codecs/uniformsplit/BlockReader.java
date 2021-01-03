@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.BaseTermsEnum;
@@ -36,93 +35,80 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Seeks the block corresponding to a given term, read the block bytes, and
- * scans the block terms.
- * <p>
- * Reads fully the block in {@link #blockReadBuffer}. Then scans the block
- * terms in memory. The details region is lazily decoded with {@link #termStatesReadBuffer}
- * which shares the same byte array with {@link #blockReadBuffer}.
- * See {@link BlockWriter} and {@link BlockLine} for the block format.
+ * Seeks the block corresponding to a given term, read the block bytes, and scans the block terms.
+ *
+ * <p>Reads fully the block in {@link #blockReadBuffer}. Then scans the block terms in memory. The
+ * details region is lazily decoded with {@link #termStatesReadBuffer} which shares the same byte
+ * array with {@link #blockReadBuffer}. See {@link BlockWriter} and {@link BlockLine} for the block
+ * format.
  *
  * @lucene.experimental
  */
 public class BlockReader extends BaseTermsEnum implements Accountable {
 
-  private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(BlockReader.class)
-      + RamUsageEstimator.shallowSizeOfInstance(IndexInput .class)
-      +RamUsageEstimator.shallowSizeOfInstance(ByteArrayDataInput .class)*2;
+  private static final long BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(BlockReader.class)
+          + RamUsageEstimator.shallowSizeOfInstance(IndexInput.class)
+          + RamUsageEstimator.shallowSizeOfInstance(ByteArrayDataInput.class) * 2;
 
   /**
    * {@link IndexInput} on the {@link UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}.
    */
   protected IndexInput blockInput;
+
   protected final PostingsReaderBase postingsReader;
   protected final FieldMetadata fieldMetadata;
   protected final BlockDecoder blockDecoder;
 
   protected BlockHeader.Serializer blockHeaderReader;
   protected BlockLine.Serializer blockLineReader;
-  /**
-   * In-memory read buffer for the current block.
-   */
+  /** In-memory read buffer for the current block. */
   protected ByteArrayDataInput blockReadBuffer;
   /**
-   * In-memory read buffer for the details region of the current block.
-   * It shares the same byte array as {@link #blockReadBuffer}, with a
-   * different position.
+   * In-memory read buffer for the details region of the current block. It shares the same byte
+   * array as {@link #blockReadBuffer}, with a different position.
    */
   protected ByteArrayDataInput termStatesReadBuffer;
+
   protected DeltaBaseTermStateSerializer termStateSerializer;
 
-  /**
-   * {@link IndexDictionary.Browser} supplier for lazy loading.
-   */
+  /** {@link IndexDictionary.Browser} supplier for lazy loading. */
   protected final IndexDictionary.BrowserSupplier dictionaryBrowserSupplier;
-  /**
-   * Holds the {@link IndexDictionary.Browser} once loaded.
-   */
+  /** Holds the {@link IndexDictionary.Browser} once loaded. */
   protected IndexDictionary.Browser dictionaryBrowser;
 
   /**
-   * Current block start file pointer, absolute in the
-   * {@link UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}.
+   * Current block start file pointer, absolute in the {@link
+   * UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}.
    */
   protected long blockStartFP;
-  /**
-   * Current block header.
-   */
+  /** Current block header. */
   protected BlockHeader blockHeader;
-  /**
-   * Current block line.
-   */
+  /** Current block line. */
   protected BlockLine blockLine;
-  /**
-   * Current block line details.
-   */
+  /** Current block line details. */
   protected BlockTermState termState;
   /**
-   * Offset of the start of the first line of the current block (just after the header), relative to the block start.
+   * Offset of the start of the first line of the current block (just after the header), relative to
+   * the block start.
    */
   protected int blockFirstLineStart;
-  /**
-   * Current line index in the block.
-   */
+  /** Current line index in the block. */
   protected int lineIndexInBlock;
   /**
-   * Whether the current {@link TermState} has been forced with a call to
-   * {@link #seekExact(BytesRef, TermState)}.
+   * Whether the current {@link TermState} has been forced with a call to {@link
+   * #seekExact(BytesRef, TermState)}.
    *
    * @see #forcedTerm
    */
   protected boolean termStateForced;
   /**
    * Set when {@link #seekExact(BytesRef, TermState)} is called.
-   * <p>
-   * This optimizes the use-case when the caller calls first {@link #seekExact(BytesRef, TermState)}
-   * and then {@link #postings(PostingsEnum, int)}. In this case we don't access
-   * the terms block file (we don't seek) but directly the postings file because
-   * we already have the {@link TermState} with the file pointers to the postings
-   * file.
+   *
+   * <p>This optimizes the use-case when the caller calls first {@link #seekExact(BytesRef,
+   * TermState)} and then {@link #postings(PostingsEnum, int)}. In this case we don't access the
+   * terms block file (we don't seek) but directly the postings file because we already have the
+   * {@link TermState} with the file pointers to the postings file.
    */
   protected BytesRefBuilder forcedTerm;
 
@@ -132,14 +118,18 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   protected BlockLine scratchBlockLine;
 
   /**
-   * @param dictionaryBrowserSupplier to load the {@link IndexDictionary.Browser}
-   *                                  lazily in {@link #seekCeil(BytesRef)}.
-   * @param blockDecoder              Optional block decoder, may be null if none.
-   *                                  It can be used for decompression or decryption.
+   * @param dictionaryBrowserSupplier to load the {@link IndexDictionary.Browser} lazily in {@link
+   *     #seekCeil(BytesRef)}.
+   * @param blockDecoder Optional block decoder, may be null if none. It can be used for
+   *     decompression or decryption.
    */
-  protected BlockReader(IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput,
-                        PostingsReaderBase postingsReader, FieldMetadata fieldMetadata,
-                        BlockDecoder blockDecoder) throws IOException {
+  protected BlockReader(
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
+      IndexInput blockInput,
+      PostingsReaderBase postingsReader,
+      FieldMetadata fieldMetadata,
+      BlockDecoder blockDecoder)
+      throws IOException {
     this.dictionaryBrowserSupplier = dictionaryBrowserSupplier;
     this.blockInput = blockInput;
     this.postingsReader = postingsReader;
@@ -177,7 +167,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     clearTermState();
 
     long blockStartFP = getOrCreateDictionaryBrowser().seekBlock(searchedTerm);
-    if (blockStartFP < fieldMetadata.getFirstBlockStartFP() || isBeyondLastTerm(searchedTerm, blockStartFP)) {
+    if (blockStartFP < fieldMetadata.getFirstBlockStartFP()
+        || isBeyondLastTerm(searchedTerm, blockStartFP)) {
       return false;
     }
     return seekInBlock(searchedTerm, blockStartFP) == SeekStatus.FOUND;
@@ -201,8 +192,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Seeks to the provided term in the block starting at the provided file pointer.
-   * Does not exceed the block.
+   * Seeks to the provided term in the block starting at the provided file pointer. Does not exceed
+   * the block.
    */
   protected SeekStatus seekInBlock(BytesRef searchedTerm, long blockStartFP) throws IOException {
     initializeHeader(searchedTerm, blockStartFP);
@@ -214,15 +205,14 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
 
   /**
    * Seeks to the provided term in this block.
-   * <p>
-   * Does not exceed this block; {@link org.apache.lucene.index.TermsEnum.SeekStatus#END}
-   * is returned if it follows the block.
-   * <p>
-   * Compares the line terms with the <code>searchedTerm</code>, taking
-   * advantage of the incremental encoding properties.
-   * <p>
-   * Scans linearly the terms. Updates the current block line with the current
-   * term.
+   *
+   * <p>Does not exceed this block; {@link org.apache.lucene.index.TermsEnum.SeekStatus#END} is
+   * returned if it follows the block.
+   *
+   * <p>Compares the line terms with the <code>searchedTerm</code>, taking advantage of the
+   * incremental encoding properties.
+   *
+   * <p>Scans linearly the terms. Updates the current block line with the current term.
    */
   protected SeekStatus seekInBlock(BytesRef searchedTerm) throws IOException {
     if (compareToMiddleAndJump(searchedTerm) == 0) {
@@ -246,7 +236,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
       int comparison = searchedTerm.length - lineTerm.length;
       for (int i = start; i < end; i++) {
         // Compare unsigned bytes.
-        int byteDiff = (searchedTerm.bytes[i + searchedTerm.offset] & 0xFF) - (lineTerm.bytes[i] & 0xFF);
+        int byteDiff =
+            (searchedTerm.bytes[i + searchedTerm.offset] & 0xFF) - (lineTerm.bytes[i] & 0xFF);
         if (byteDiff != 0) {
           comparison = byteDiff;
           break;
@@ -262,9 +253,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Compares the searched term to the middle term of the block.
-   * If the searched term is lexicographically equal or after the middle term
-   * then jumps to the second half of the block directly.
+   * Compares the searched term to the middle term of the block. If the searched term is
+   * lexicographically equal or after the middle term then jumps to the second half of the block
+   * directly.
    *
    * @return The comparison between the searched term and the middle term.
    */
@@ -290,8 +281,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Reads the current block line.
-   * Sets {@link #blockLine} and increments {@link #lineIndexInBlock}.
+   * Reads the current block line. Sets {@link #blockLine} and increments {@link #lineIndexInBlock}.
    *
    * @return The {@link BlockLine}; or null if there no more line in the block.
    */
@@ -299,17 +289,19 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     if (lineIndexInBlock >= blockHeader.getLinesCount()) {
       return blockLine = null;
     }
-    boolean isIncrementalEncodingSeed = lineIndexInBlock == 0 || lineIndexInBlock == blockHeader.getMiddleLineIndex();
+    boolean isIncrementalEncodingSeed =
+        lineIndexInBlock == 0 || lineIndexInBlock == blockHeader.getMiddleLineIndex();
     lineIndexInBlock++;
-    return blockLine = blockLineReader.readLine(blockReadBuffer, isIncrementalEncodingSeed, scratchBlockLine);
+    return blockLine =
+        blockLineReader.readLine(blockReadBuffer, isIncrementalEncodingSeed, scratchBlockLine);
   }
 
   /**
    * Positions this {@link BlockReader} without re-seeking the term dictionary.
-   * <p>
-   * The block containing the term is not read by this method. It will be read
-   * lazily only if needed, for example if {@link #next()} is called.
-   * Calling {@link #postings} after this method does require the block to be read.
+   *
+   * <p>The block containing the term is not read by this method. It will be read lazily only if
+   * needed, for example if {@link #next()} is called. Calling {@link #postings} after this method
+   * does require the block to be read.
    */
   @Override
   public void seekExact(BytesRef term, TermState state) {
@@ -322,9 +314,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     forcedTerm.copyBytes(term);
   }
 
-  /**
-   * Not supported.
-   */
+  /** Not supported. */
   @Override
   public void seekExact(long ord) {
     throw new UnsupportedOperationException();
@@ -335,7 +325,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     if (termStateForced) {
       initializeHeader(forcedTerm.get(), termState.blockFilePointer);
       if (blockHeader == null) {
-        throw newCorruptIndexException("Illegal absence of block for TermState", termState.blockFilePointer);
+        throw newCorruptIndexException(
+            "Illegal absence of block for TermState", termState.blockFilePointer);
       }
       for (int i = lineIndexInBlock; i < termState.termBlockOrd; i++) {
         readLineInBlock();
@@ -347,9 +338,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Moves to the next term line and reads it, it may be in the next block.
-   * The term details are not read yet. They will be read only when needed
-   * with {@link #readTermStateIfNotRead()}.
+   * Moves to the next term line and reads it, it may be in the next block. The term details are not
+   * read yet. They will be read only when needed with {@link #readTermStateIfNotRead()}.
    *
    * @return The read term bytes; or null if there is no more term for the field.
    */
@@ -358,7 +348,8 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
       // Read the first block for the field.
       initializeHeader(null, fieldMetadata.getFirstBlockStartFP());
       if (blockHeader == null) {
-        throw newCorruptIndexException("Illegal absence of first block", fieldMetadata.getFirstBlockStartFP());
+        throw newCorruptIndexException(
+            "Illegal absence of first block", fieldMetadata.getFirstBlockStartFP());
       }
     }
     if (readLineInBlock() == null) {
@@ -377,10 +368,11 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   /**
    * Reads and sets {@link #blockHeader}. Sets null if there is no block for the field anymore.
    *
-   * @param searchedTerm       The searched term; or null if none.
+   * @param searchedTerm The searched term; or null if none.
    * @param targetBlockStartFP The file pointer of the block to read.
    */
-  protected void initializeHeader(BytesRef searchedTerm, long targetBlockStartFP) throws IOException {
+  protected void initializeHeader(BytesRef searchedTerm, long targetBlockStartFP)
+      throws IOException {
     initializeBlockReadLazily();
     if (blockStartFP == targetBlockStartFP) {
       // Optimization: If the block to read is already the current block, then
@@ -388,7 +380,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
       if (blockHeader == null) {
         throw newCorruptIndexException("Illegal absence of block", blockStartFP);
       }
-      if (searchedTerm == null || blockLine == null || searchedTerm.compareTo(blockLine.getTermBytes().getTerm()) <= 0) {
+      if (searchedTerm == null
+          || blockLine == null
+          || searchedTerm.compareTo(blockLine.getTermBytes().getTerm()) <= 0) {
         // If the searched term precedes lexicographically the current term,
         // then reset the position to the first term line of the block.
         // If the searched term equals the current term, we also need to reset
@@ -431,8 +425,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Reads the block header.
-   * Sets {@link #blockHeader}.
+   * Reads the block header. Sets {@link #blockHeader}.
    *
    * @return The block header; or null if there is no block for the field anymore.
    */
@@ -458,10 +451,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     return blockDecoder.decode(blockReadBuffer, numBlockBytes);
   }
 
-  /**
-   * Reads the {@link BlockTermState} if it is not already set.
-   * Sets {@link #termState}.
-   */
+  /** Reads the {@link BlockTermState} if it is not already set. Sets {@link #termState}. */
   protected BlockTermState readTermStateIfNotRead() throws IOException {
     if (termState == null) {
       termState = readTermState();
@@ -474,21 +464,27 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   }
 
   /**
-   * Reads the {@link BlockTermState} on the current line.
-   * Sets {@link #termState}.
-   * <p>
-   * Overriding method may return null if there is no {@link BlockTermState}
-   * (in this case the extending class must support a null {@link #termState}).
+   * Reads the {@link BlockTermState} on the current line. Sets {@link #termState}.
+   *
+   * <p>Overriding method may return null if there is no {@link BlockTermState} (in this case the
+   * extending class must support a null {@link #termState}).
    *
    * @return The {@link BlockTermState}; or null if none.
    */
   protected BlockTermState readTermState() throws IOException {
     // We reuse scratchTermState safely as the read TermState is cloned in the termState() method.
-    termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return termState = termStateSerializer.readTermState(
-        blockHeader.getBaseDocsFP(), blockHeader.getBasePositionsFP(), blockHeader.getBasePayloadsFP(),
-        termStatesReadBuffer, fieldMetadata.getFieldInfo(), scratchTermState
-    );
+    termStatesReadBuffer.setPosition(
+        blockFirstLineStart
+            + blockHeader.getTermStatesBaseOffset()
+            + blockLine.getTermStateRelativeOffset());
+    return termState =
+        termStateSerializer.readTermState(
+            blockHeader.getBaseDocsFP(),
+            blockHeader.getBasePositionsFP(),
+            blockHeader.getBasePayloadsFP(),
+            termStatesReadBuffer,
+            fieldMetadata.getFieldInfo(),
+            scratchTermState);
   }
 
   @Override
@@ -538,7 +534,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   public long ramBytesUsed() {
     return BASE_RAM_USAGE
         + (blockLineReader == null ? 0 : blockLineReader.ramBytesUsed())
-        + (blockReadBuffer == null ? 0 : RamUsageUtil.ramBytesUsedByByteArrayOfLength(blockReadBuffer.length()))
+        + (blockReadBuffer == null
+            ? 0
+            : RamUsageUtil.ramBytesUsedByByteArrayOfLength(blockReadBuffer.length()))
         + (termStateSerializer == null ? 0 : termStateSerializer.ramBytesUsed())
         + (forcedTerm == null ? 0 : RamUsageUtil.ramBytesUsed(forcedTerm))
         + (blockHeader == null ? 0 : blockHeader.ramBytesUsed())
@@ -553,17 +551,19 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     return dictionaryBrowser;
   }
 
-  /**
-   * Called by the primary {@link TermsEnum} methods to clear the previous {@link TermState}.
-   */
+  /** Called by the primary {@link TermsEnum} methods to clear the previous {@link TermState}. */
   protected void clearTermState() {
     termState = null;
     termStateForced = false;
   }
 
   protected CorruptIndexException newCorruptIndexException(String msg, Long fp) {
-    return new CorruptIndexException(msg
-        + (fp == null ? "" : " at FP " + fp)
-        + " for field \"" + fieldMetadata.getFieldInfo().name + "\"", blockInput);
+    return new CorruptIndexException(
+        msg
+            + (fp == null ? "" : " at FP " + fp)
+            + " for field \""
+            + fieldMetadata.getFieldInfo().name
+            + "\"",
+        blockInput);
   }
 }
