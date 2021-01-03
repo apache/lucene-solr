@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.ja.TestJapaneseTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -33,23 +31,23 @@ public class UserDictionaryTest extends LuceneTestCase {
     int[][] dictionaryEntryResult = dictionary.lookup(s.toCharArray(), 0, s.length());
     // Length should be three 関西, 国際, 空港
     assertEquals(3, dictionaryEntryResult.length);
-    
+
     // Test positions
     assertEquals(0, dictionaryEntryResult[0][1]); // index of 関西
     assertEquals(2, dictionaryEntryResult[1][1]); // index of 国際
     assertEquals(4, dictionaryEntryResult[2][1]); // index of 空港
-    
+
     // Test lengths
     assertEquals(2, dictionaryEntryResult[0][2]); // length of 関西
     assertEquals(2, dictionaryEntryResult[1][2]); // length of 国際
     assertEquals(2, dictionaryEntryResult[2][2]); // length of 空港
-    
+
     s = "関西国際空港と関西国際空港に行った";
     int[][] dictionaryEntryResult2 = dictionary.lookup(s.toCharArray(), 0, s.length());
-    // Length should be six 
+    // Length should be six
     assertEquals(6, dictionaryEntryResult2.length);
   }
-  
+
   @Test
   public void testReadings() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
@@ -57,13 +55,13 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertEquals(3, result.length);
     int wordIdNihon = result[0][0]; // wordId of 日本 in 日本経済新聞
     assertEquals("ニホン", dictionary.getReading(wordIdNihon, "日本".toCharArray(), 0, 2));
-    
+
     result = dictionary.lookup("朝青龍".toCharArray(), 0, 3);
     assertEquals(1, result.length);
     int wordIdAsashoryu = result[0][0]; // wordId for 朝青龍
     assertEquals("アサショウリュウ", dictionary.getReading(wordIdAsashoryu, "朝青龍".toCharArray(), 0, 3));
   }
-  
+
   @Test
   public void testPartOfSpeech() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
@@ -72,7 +70,7 @@ public class UserDictionaryTest extends LuceneTestCase {
     int wordIdKeizai = result[1][0]; // wordId of 経済 in 日本経済新聞
     assertEquals("カスタム名詞", dictionary.getPartOfSpeech(wordIdKeizai));
   }
-  
+
   @Test
   public void testRead() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
@@ -83,9 +81,11 @@ public class UserDictionaryTest extends LuceneTestCase {
   public void testReadInvalid1() throws IOException {
     // the concatenated segment must be the same as the surface form
     String invalidEntry = "日経新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞";
-    RuntimeException e = expectThrows(RuntimeException.class,
-        "RuntimeException should be thrown when passed an invalid dictionary entry.",
-        () -> UserDictionary.open(new StringReader(invalidEntry)));
+    RuntimeException e =
+        expectThrows(
+            RuntimeException.class,
+            "RuntimeException should be thrown when passed an invalid dictionary entry.",
+            () -> UserDictionary.open(new StringReader(invalidEntry)));
     assertTrue(e.getMessage().contains("does not match the surface form"));
   }
 
@@ -93,9 +93,11 @@ public class UserDictionaryTest extends LuceneTestCase {
   public void testReadInvalid2() throws IOException {
     // the concatenated segment must be the same as the surface form
     String invalidEntry = "日本経済新聞,日経 新聞,ニッケイ シンブン,カスタム名詞";
-    RuntimeException e = expectThrows(RuntimeException.class,
-        "RuntimeException should be thrown when passed an invalid dictionary entry.",
-        () -> UserDictionary.open(new StringReader(invalidEntry)));
+    RuntimeException e =
+        expectThrows(
+            RuntimeException.class,
+            "RuntimeException should be thrown when passed an invalid dictionary entry.",
+            () -> UserDictionary.open(new StringReader(invalidEntry)));
     assertTrue(e.getMessage().contains("does not match the surface form"));
   }
 
@@ -104,11 +106,10 @@ public class UserDictionaryTest extends LuceneTestCase {
     String[] inputs = {"テスト#", "テスト#テスト"};
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
 
-    for (String input: inputs) {
+    for (String input : inputs) {
       System.out.println(input);
       int[][] result = dictionary.lookup(input.toCharArray(), 0, input.length());
       assertEquals("カスタム名刺", dictionary.getPartOfSpeech(result[0][0]));
     }
   }
-
 }

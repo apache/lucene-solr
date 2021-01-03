@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.blocktreeords;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
@@ -38,8 +36,9 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
   final IndexInput in;
 
   private OrdsIntersectTermsEnumFrame[] stack;
-      
-  @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<Output>[] arcs = new FST.Arc[5];
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private FST.Arc<Output>[] arcs = new FST.Arc[5];
 
   final RunAutomaton runAutomaton;
   final CompiledAutomaton compiledAutomaton;
@@ -53,22 +52,24 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
   final OrdsFieldReader fr;
 
   private BytesRef savedStartTerm;
-      
+
   // TODO: in some cases we can filter by length?  eg
   // regexp foo*bar must be at least length 6 bytes
-  public OrdsIntersectTermsEnum(OrdsFieldReader fr, CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+  public OrdsIntersectTermsEnum(OrdsFieldReader fr, CompiledAutomaton compiled, BytesRef startTerm)
+      throws IOException {
     // if (DEBUG) {
-    //   System.out.println("\nintEnum.init seg=" + segment + " commonSuffix=" + brToString(compiled.commonSuffixRef));
+    //   System.out.println("\nintEnum.init seg=" + segment + " commonSuffix=" +
+    // brToString(compiled.commonSuffixRef));
     // }
     this.fr = fr;
     runAutomaton = compiled.runAutomaton;
     compiledAutomaton = compiled;
     in = fr.parent.in.clone();
     stack = new OrdsIntersectTermsEnumFrame[5];
-    for(int idx=0;idx<stack.length;idx++) {
+    for (int idx = 0; idx < stack.length; idx++) {
       stack[idx] = new OrdsIntersectTermsEnumFrame(this, idx);
     }
-    for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
+    for (int arcIdx = 0; arcIdx < arcs.length; arcIdx++) {
       arcs[arcIdx] = new FST.Arc<>();
     }
 
@@ -121,9 +122,11 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
   private OrdsIntersectTermsEnumFrame getFrame(int ord) throws IOException {
     if (ord >= stack.length) {
-      final OrdsIntersectTermsEnumFrame[] next = new OrdsIntersectTermsEnumFrame[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      final OrdsIntersectTermsEnumFrame[] next =
+          new OrdsIntersectTermsEnumFrame
+              [ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(stack, 0, next, 0, stack.length);
-      for(int stackOrd=stack.length;stackOrd<next.length;stackOrd++) {
+      for (int stackOrd = stack.length; stackOrd < next.length; stackOrd++) {
         next[stackOrd] = new OrdsIntersectTermsEnumFrame(this, stackOrd);
       }
       stack = next;
@@ -134,10 +137,11 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
   private FST.Arc<Output> getArc(int ord) {
     if (ord >= arcs.length) {
-      @SuppressWarnings({"rawtypes","unchecked"}) final FST.Arc<Output>[] next =
-      new FST.Arc[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      final FST.Arc<Output>[] next =
+          new FST.Arc[ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(arcs, 0, next, 0, arcs.length);
-      for(int arcOrd=arcs.length;arcOrd<next.length;arcOrd++) {
+      for (int arcOrd = arcs.length; arcOrd < next.length; arcOrd++) {
         next[arcOrd] = new FST.Arc<>();
       }
       arcs = next;
@@ -146,8 +150,8 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
   }
 
   private OrdsIntersectTermsEnumFrame pushFrame(int state) throws IOException {
-    final OrdsIntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1+currentFrame.ord);
-        
+    final OrdsIntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1 + currentFrame.ord);
+
     f.fp = f.fpOrig = currentFrame.lastSubFP;
     f.prefix = currentFrame.prefix + currentFrame.suffix;
     // if (DEBUG) System.out.println("    pushFrame state=" + state + " prefix=" + f.prefix);
@@ -166,7 +170,7 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
       // TODO: we could be more efficient for the next()
       // case by using current arc as starting point,
       // passed to findTargetArc
-      arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
+      arc = fr.index.findTargetArc(target, arc, getArc(1 + idx), fstReader);
       assert arc != null;
       output = OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
       idx++;
@@ -188,9 +192,9 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
   @Override
   public int docFreq() throws IOException {
-    //if (DEBUG) System.out.println("BTIR.docFreq");
+    // if (DEBUG) System.out.println("BTIR.docFreq");
     currentFrame.decodeMetaData();
-    //if (DEBUG) System.out.println("  return " + currentFrame.termState.docFreq);
+    // if (DEBUG) System.out.println("  return " + currentFrame.termState.docFreq);
     return currentFrame.termState.docFreq;
   }
 
@@ -214,8 +218,10 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
   private int getState() {
     int state = currentFrame.state;
-    for(int idx=0;idx<currentFrame.suffix;idx++) {
-      state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
+    for (int idx = 0; idx < currentFrame.suffix; idx++) {
+      state =
+          runAutomaton.step(
+              state, currentFrame.suffixBytes[currentFrame.startBytePos + idx] & 0xff);
       assert state != -1;
     }
     return state;
@@ -226,7 +232,7 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
   // arbitrary seekExact/Ceil.  Note that this is a
   // seekFloor!
   private void seekToStartTerm(BytesRef target) throws IOException {
-    //if (DEBUG) System.out.println("seek to startTerm=" + target.utf8ToString());
+    // if (DEBUG) System.out.println("seek to startTerm=" + target.utf8ToString());
     assert currentFrame.ord == 0;
     if (term.length < target.length) {
       term.bytes = ArrayUtil.grow(term.bytes, target.length);
@@ -234,7 +240,7 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
     FST.Arc<Output> arc = arcs[0];
     assert arc == currentFrame.arc;
 
-    for(int idx=0;idx<=target.length;idx++) {
+    for (int idx = 0; idx <= target.length; idx++) {
 
       while (true) {
         final int savePos = currentFrame.suffixesReader.getPosition();
@@ -245,16 +251,24 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
         final boolean isSubBlock = currentFrame.next();
 
-        //if (DEBUG) System.out.println("    cycle ent=" + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" + currentFrame.suffix + " isBlock=" + isSubBlock + " firstLabel=" + (currentFrame.suffix == 0 ? "" : (currentFrame.suffixBytes[currentFrame.startBytePos])&0xff));
+        // if (DEBUG) System.out.println("    cycle ent=" + currentFrame.nextEnt + " (of " +
+        // currentFrame.entCount + ") prefix=" + currentFrame.prefix + " suffix=" +
+        // currentFrame.suffix + " isBlock=" + isSubBlock + " firstLabel=" + (currentFrame.suffix ==
+        // 0 ? "" : (currentFrame.suffixBytes[currentFrame.startBytePos])&0xff));
         term.length = currentFrame.prefix + currentFrame.suffix;
         if (term.bytes.length < term.length) {
           term.bytes = ArrayUtil.grow(term.bytes, term.length);
         }
-        System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+        System.arraycopy(
+            currentFrame.suffixBytes,
+            currentFrame.startBytePos,
+            term.bytes,
+            currentFrame.prefix,
+            currentFrame.suffix);
 
         if (isSubBlock && StringHelper.startsWith(target, term)) {
           // Recurse
-          //if (DEBUG) System.out.println("      recurse!");
+          // if (DEBUG) System.out.println("      recurse!");
           currentFrame = pushFrame(getState());
           break;
         } else {
@@ -262,17 +276,17 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
           if (cmp < 0) {
             if (currentFrame.nextEnt == currentFrame.entCount) {
               if (!currentFrame.isLastInFloor) {
-                //if (DEBUG) System.out.println("  load floorBlock");
+                // if (DEBUG) System.out.println("  load floorBlock");
                 currentFrame.loadNextFloorBlock();
                 continue;
               } else {
-                //if (DEBUG) System.out.println("  return term=" + brToString(term));
+                // if (DEBUG) System.out.println("  return term=" + brToString(term));
                 return;
               }
             }
             continue;
           } else if (cmp == 0) {
-            //if (DEBUG) System.out.println("  return term=" + brToString(term));
+            // if (DEBUG) System.out.println("  return term=" + brToString(term));
             return;
           } else {
             // Fallback to prior entry: the semantics of
@@ -285,7 +299,12 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
             currentFrame.suffix = saveSuffix;
             currentFrame.suffixesReader.setPosition(savePos);
             currentFrame.termState.termBlockOrd = saveTermBlockOrd;
-            System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+            System.arraycopy(
+                currentFrame.suffixBytes,
+                currentFrame.startBytePos,
+                term.bytes,
+                currentFrame.prefix,
+                currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
             // If the last entry was a block we don't
             // need to bother recursing and pushing to
@@ -305,26 +324,41 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
     // if (DEBUG) {
     //   System.out.println("\nintEnum.next seg=" + segment);
-    //   System.out.println("  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
+    //   System.out.println("  frame ord=" + currentFrame.ord + " prefix=" + brToString(new
+    // BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + "
+    // lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" +
+    // (currentFrame.transitions.length == 0 ? "n/a" :
+    // currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" +
+    // currentFrame.outputPrefix);
     // }
 
     nextTerm:
-    while(true) {
+    while (true) {
       // Pop finished frames
       while (currentFrame.nextEnt == currentFrame.entCount) {
         if (!currentFrame.isLastInFloor) {
-          //if (DEBUG) System.out.println("    next-floor-block");
+          // if (DEBUG) System.out.println("    next-floor-block");
           currentFrame.loadNextFloorBlock();
-          //if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
+          // if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" +
+          // brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" +
+          // currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" +
+          // currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" :
+          // currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" +
+          // currentFrame.outputPrefix);
         } else {
-          //if (DEBUG) System.out.println("  pop frame");
+          // if (DEBUG) System.out.println("  pop frame");
           if (currentFrame.ord == 0) {
             return null;
           }
           final long lastFP = currentFrame.fpOrig;
-          currentFrame = stack[currentFrame.ord-1];
+          currentFrame = stack[currentFrame.ord - 1];
           assert currentFrame.lastSubFP == lastFP;
-          //if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
+          // if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" +
+          // brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" +
+          // currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" +
+          // currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" :
+          // currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" +
+          // currentFrame.outputPrefix);
         }
       }
 
@@ -334,17 +368,21 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
       //   suffixRef.bytes = currentFrame.suffixBytes;
       //   suffixRef.offset = currentFrame.startBytePos;
       //   suffixRef.length = currentFrame.suffix;
-      //   System.out.println("    " + (isSubBlock ? "sub-block" : "term") + " " + currentFrame.nextEnt + " (of " + currentFrame.entCount + ") suffix=" + brToString(suffixRef));
+      //   System.out.println("    " + (isSubBlock ? "sub-block" : "term") + " " +
+      // currentFrame.nextEnt + " (of " + currentFrame.entCount + ") suffix=" +
+      // brToString(suffixRef));
       // }
 
       if (currentFrame.suffix != 0) {
         final int label = currentFrame.suffixBytes[currentFrame.startBytePos] & 0xff;
         while (label > currentFrame.curTransitionMax) {
-          if (currentFrame.transitionIndex >= currentFrame.transitionCount-1) {
+          if (currentFrame.transitionIndex >= currentFrame.transitionCount - 1) {
             // Stop processing this frame -- no further
             // matches are possible because we've moved
             // beyond what the max transition will allow
-            //if (DEBUG) System.out.println("      break: trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]));
+            // if (DEBUG) System.out.println("      break: trans=" +
+            // (currentFrame.transitions.length == 0 ? "n/a" :
+            // currentFrame.transitions[currentFrame.transitionIndex]));
 
             // sneaky!  forces a pop above
             currentFrame.isLastInFloor = true;
@@ -354,7 +392,8 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
           currentFrame.transitionIndex++;
           compiledAutomaton.automaton.getNextTransition(currentFrame.transition);
           currentFrame.curTransitionMax = currentFrame.transition.max;
-          //if (DEBUG) System.out.println("      next trans=" + currentFrame.transitions[currentFrame.transitionIndex]);
+          // if (DEBUG) System.out.println("      next trans=" +
+          // currentFrame.transitions[currentFrame.transitionIndex]);
         }
       }
 
@@ -395,7 +434,10 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
           }
           suffixBytesPos = currentFrame.startBytePos;
         } else {
-          suffixBytesPos = currentFrame.startBytePos + currentFrame.suffix - compiledAutomaton.commonSuffixRef.length;
+          suffixBytesPos =
+              currentFrame.startBytePos
+                  + currentFrame.suffix
+                  - compiledAutomaton.commonSuffixRef.length;
         }
 
         // Test overlapping suffix part:
@@ -418,41 +460,58 @@ final class OrdsIntersectTermsEnum extends BaseTermsEnum {
 
       // See if the term prefix matches the automaton:
       int state = currentFrame.state;
-      for (int idx=0;idx<currentFrame.suffix;idx++) {
-        state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
+      for (int idx = 0; idx < currentFrame.suffix; idx++) {
+        state =
+            runAutomaton.step(
+                state, currentFrame.suffixBytes[currentFrame.startBytePos + idx] & 0xff);
         if (state == -1) {
           // No match
-          //System.out.println("    no s=" + state);
+          // System.out.println("    no s=" + state);
           continue nextTerm;
         } else {
-          //System.out.println("    c s=" + state);
+          // System.out.println("    c s=" + state);
         }
       }
 
       if (isSubBlock) {
         // Match!  Recurse:
-        //if (DEBUG) System.out.println("      sub-block match to state=" + state + "; recurse fp=" + currentFrame.lastSubFP);
+        // if (DEBUG) System.out.println("      sub-block match to state=" + state + "; recurse fp="
+        // + currentFrame.lastSubFP);
         copyTerm();
         currentFrame = pushFrame(state);
-        //if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" + brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" + currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" + currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" : currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" + currentFrame.outputPrefix);
+        // if (DEBUG) System.out.println("\n  frame ord=" + currentFrame.ord + " prefix=" +
+        // brToString(new BytesRef(term.bytes, term.offset, currentFrame.prefix)) + " state=" +
+        // currentFrame.state + " lastInFloor?=" + currentFrame.isLastInFloor + " fp=" +
+        // currentFrame.fp + " trans=" + (currentFrame.transitions.length == 0 ? "n/a" :
+        // currentFrame.transitions[currentFrame.transitionIndex]) + " outputPrefix=" +
+        // currentFrame.outputPrefix);
       } else if (runAutomaton.isAccept(state)) {
         copyTerm();
-        //if (DEBUG) System.out.println("      term match to state=" + state + "; return term=" + brToString(term));
-        assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
+        // if (DEBUG) System.out.println("      term match to state=" + state + "; return term=" +
+        // brToString(term));
+        assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0
+            : "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
-        //System.out.println("    no s=" + state);
+        // System.out.println("    no s=" + state);
       }
     }
   }
 
   private void copyTerm() {
-    //System.out.println("      copyTerm cur.prefix=" + currentFrame.prefix + " cur.suffix=" + currentFrame.suffix + " first=" + (char) currentFrame.suffixBytes[currentFrame.startBytePos]);
+    // System.out.println("      copyTerm cur.prefix=" + currentFrame.prefix + " cur.suffix=" +
+    // currentFrame.suffix + " first=" + (char)
+    // currentFrame.suffixBytes[currentFrame.startBytePos]);
     final int len = currentFrame.prefix + currentFrame.suffix;
     if (term.bytes.length < len) {
       term.bytes = ArrayUtil.grow(term.bytes, len);
     }
-    System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+    System.arraycopy(
+        currentFrame.suffixBytes,
+        currentFrame.startBytePos,
+        term.bytes,
+        currentFrame.prefix,
+        currentFrame.suffix);
     term.length = len;
   }
 

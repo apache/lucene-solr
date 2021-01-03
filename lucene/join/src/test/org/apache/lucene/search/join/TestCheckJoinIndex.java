@@ -19,7 +19,6 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -83,7 +82,8 @@ public class TestCheckJoinIndex extends LuceneTestCase {
 
     final IndexReader reader = w.getReader();
     w.close();
-    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
+    BitSetProducer parentsFilter =
+        new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
       expectThrows(IllegalStateException.class, () -> CheckJoinIndex.check(reader, parentsFilter));
     } finally {
@@ -120,7 +120,8 @@ public class TestCheckJoinIndex extends LuceneTestCase {
     final IndexReader reader = w.getReader();
     w.close();
 
-    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
+    BitSetProducer parentsFilter =
+        new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
       expectThrows(IllegalStateException.class, () -> CheckJoinIndex.check(reader, parentsFilter));
     } finally {
@@ -128,5 +129,4 @@ public class TestCheckJoinIndex extends LuceneTestCase {
       dir.close();
     }
   }
-
 }

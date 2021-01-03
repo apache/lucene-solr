@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Japanese.
- */
+/** Analyzer for Japanese. */
 package org.apache.lucene.analysis.ja;

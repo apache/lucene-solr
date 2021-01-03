@@ -21,18 +21,15 @@ import org.apache.lucene.util.Attribute;
 
 /**
  * Attribute for Korean reading data
- * <p>
- * Note: in some cases this value may not be applicable, and will be null.
+ *
+ * <p>Note: in some cases this value may not be applicable, and will be null.
+ *
  * @lucene.experimental
  */
 public interface ReadingAttribute extends Attribute {
-  /**
-   * Get the reading of the token.
-   */
+  /** Get the reading of the token. */
   String getReading();
 
-  /**
-   * Set the current token.
-   */
+  /** Set the current token. */
   void setToken(Token token);
 }

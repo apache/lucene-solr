@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -45,19 +43,14 @@ import java.util.regex.Pattern;
 /**
  * Downloads/generates lucene/analysis/icu/src/data/utr30/*.txt
  *
- * ASSUMPTION: This class will be run with current directory set to
+ * <p>ASSUMPTION: This class will be run with current directory set to
  * lucene/analysis/icu/src/data/utr30/
  *
  * <ol>
- *   <li>
- *     Downloads nfc.txt, nfkc.txt and nfkc_cf.txt from icu-project.org,
- *     overwriting the versions in lucene/analysis/icu/src/data/utr30/.
- *   </li>
- *   <li>
- *     Converts round-trip mappings in nfc.txt (containing '=')
- *     that map to at least one [:Diacritic:] character
- *     into one-way mappings ('&gt;' instead of '=').
- *   </li>
+ *   <li>Downloads nfc.txt, nfkc.txt and nfkc_cf.txt from icu-project.org, overwriting the versions
+ *       in lucene/analysis/icu/src/data/utr30/.
+ *   <li>Converts round-trip mappings in nfc.txt (containing '=') that map to at least one
+ *       [:Diacritic:] character into one-way mappings ('&gt;' instead of '=').
  * </ol>
  */
 public class GenerateUTR30DataFiles {
@@ -68,16 +61,15 @@ public class GenerateUTR30DataFiles {
   private static final String NFKC_TXT = "nfkc.txt";
   private static final String NFKC_CF_TXT = "nfkc_cf.txt";
   private static byte[] DOWNLOAD_BUFFER = new byte[8192];
-  private static final Pattern ROUND_TRIP_MAPPING_LINE_PATTERN
-      = Pattern.compile("^\\s*([^=]+?)\\s*=\\s*(.*)$");
-  private static final Pattern VERBATIM_RULE_LINE_PATTERN
-      = Pattern.compile("^#\\s*Rule:\\s*verbatim\\s*$", Pattern.CASE_INSENSITIVE);
-  private static final Pattern RULE_LINE_PATTERN
-      = Pattern.compile("^#\\s*Rule:\\s*(.*)>(.*)", Pattern.CASE_INSENSITIVE);
-  private static final Pattern BLANK_OR_COMMENT_LINE_PATTERN
-      = Pattern.compile("^\\s*(?:#.*)?$");
-  private static final Pattern NUMERIC_VALUE_PATTERN
-      = Pattern.compile("Numeric[-\\s_]*Value", Pattern.CASE_INSENSITIVE);
+  private static final Pattern ROUND_TRIP_MAPPING_LINE_PATTERN =
+      Pattern.compile("^\\s*([^=]+?)\\s*=\\s*(.*)$");
+  private static final Pattern VERBATIM_RULE_LINE_PATTERN =
+      Pattern.compile("^#\\s*Rule:\\s*verbatim\\s*$", Pattern.CASE_INSENSITIVE);
+  private static final Pattern RULE_LINE_PATTERN =
+      Pattern.compile("^#\\s*Rule:\\s*(.*)>(.*)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern BLANK_OR_COMMENT_LINE_PATTERN = Pattern.compile("^\\s*(?:#.*)?$");
+  private static final Pattern NUMERIC_VALUE_PATTERN =
+      Pattern.compile("Numeric[-\\s_]*Value", Pattern.CASE_INSENSITIVE);
 
   public static void main(String args[]) {
     try {
@@ -90,15 +82,18 @@ public class GenerateUTR30DataFiles {
   }
 
   private static void expandRulesInUTR30DataFiles() throws IOException {
-    FileFilter filter = new FileFilter() {
-      @Override
-      public boolean accept(File pathname) {
-        String name = pathname.getName();
-        return pathname.isFile() && name.matches(".*\\.(?s:txt)")
-            && ! name.equals(NFC_TXT) && ! name.equals(NFKC_TXT)
-            && ! name.equals(NFKC_CF_TXT);
-      }
-    };
+    FileFilter filter =
+        new FileFilter() {
+          @Override
+          public boolean accept(File pathname) {
+            String name = pathname.getName();
+            return pathname.isFile()
+                && name.matches(".*\\.(?s:txt)")
+                && !name.equals(NFC_TXT)
+                && !name.equals(NFKC_TXT)
+                && !name.equals(NFKC_CF_TXT);
+          }
+        };
     for (File file : new File(".").listFiles(filter)) {
       expandDataFileRules(file);
     }
@@ -129,8 +124,7 @@ public class GenerateUTR30DataFiles {
               String rightHandSide = ruleMatcher.group(2).trim();
               expandSingleRule(builder, leftHandSide, rightHandSide);
             } catch (IllegalArgumentException e) {
-              System.err.println
-                  ("ERROR in " + file.getName() + " line #" + lineNum + ":");
+              System.err.println("ERROR in " + file.getName() + " line #" + lineNum + ":");
               e.printStackTrace(System.err);
               System.exit(1);
             }
@@ -177,8 +171,9 @@ public class GenerateUTR30DataFiles {
 
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
-    BufferedReader reader = new BufferedReader
-        (new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+    BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
     Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), StandardCharsets.UTF_8);
     try {
       String line;
@@ -197,7 +192,7 @@ public class GenerateUTR30DataFiles {
               diacritics.add(outputCodePoint);
             }
           }
-          if ( ! diacritics.isEmpty()) {
+          if (!diacritics.isEmpty()) {
             StringBuilder replacementLine = new StringBuilder();
             replacementLine.append(leftHandSide).append(">").append(rightHandSide);
             replacementLine.append("  # one-way: diacritic");
@@ -220,8 +215,7 @@ public class GenerateUTR30DataFiles {
     System.err.println("done.");
   }
 
-  private static void download(URL url, String outputFile)
-      throws IOException {
+  private static void download(URL url, String outputFile) throws IOException {
     final URLConnection connection = openConnection(url);
     final InputStream inputStream = connection.getInputStream();
     final OutputStream outputStream = new FileOutputStream(outputFile);
@@ -244,17 +238,18 @@ public class GenerateUTR30DataFiles {
     return connection;
   }
 
-  private static void expandSingleRule
-      (StringBuilder builder, String leftHandSide, String rightHandSide)
+  private static void expandSingleRule(
+      StringBuilder builder, String leftHandSide, String rightHandSide)
       throws IllegalArgumentException {
     UnicodeSet set = new UnicodeSet(leftHandSide, UnicodeSet.IGNORE_SPACE);
     boolean numericValue = NUMERIC_VALUE_PATTERN.matcher(rightHandSide).matches();
-    for (UnicodeSetIterator it = new UnicodeSetIterator(set) ; it.nextRange() ; ) {
+    for (UnicodeSetIterator it = new UnicodeSetIterator(set); it.nextRange(); ) {
       if (it.codepoint != UnicodeSetIterator.IS_STRING) {
         if (numericValue) {
-          for (int cp = it.codepoint ; cp <= it.codepointEnd ; ++cp) {
+          for (int cp = it.codepoint; cp <= it.codepointEnd; ++cp) {
             builder.append(String.format(Locale.ROOT, "%04X", cp)).append('>');
-            builder.append(String.format(Locale.ROOT, "%04X", 0x30 + UCharacter.getNumericValue(cp)));
+            builder.append(
+                String.format(Locale.ROOT, "%04X", 0x30 + UCharacter.getNumericValue(cp)));
             builder.append("   # ").append(UCharacter.getName(cp));
             builder.append("\n");
           }

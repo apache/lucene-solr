@@ -19,7 +19,6 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Paths;
-
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.store.Directory;
@@ -28,19 +27,20 @@ import org.apache.lucene.util.SuppressForbidden;
 
 /** Prints how many ords are under each dimension. */
 
-// java -cp ../build/core/classes/java:../build/facet/classes/java org.apache.lucene.facet.util.PrintTaxonomyStats -printTree /s2/scratch/indices/wikibig.trunk.noparents.facets.Lucene41.nd1M/facets
+// java -cp ../build/core/classes/java:../build/facet/classes/java
+// org.apache.lucene.facet.util.PrintTaxonomyStats -printTree
+// /s2/scratch/indices/wikibig.trunk.noparents.facets.Lucene41.nd1M/facets
 public class PrintTaxonomyStats {
 
   /** Sole constructor. */
-  public PrintTaxonomyStats() {
-  }
+  public PrintTaxonomyStats() {}
 
   /** Command-line tool. */
   @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws IOException {
     boolean printTree = false;
     String path = null;
-    for(int i=0;i<args.length;i++) {
+    for (int i = 0; i < args.length; i++) {
       if (args[i].equals("-printTree")) {
         printTree = true;
       } else {
@@ -48,7 +48,8 @@ public class PrintTaxonomyStats {
       }
     }
     if (args.length != (printTree ? 2 : 1)) {
-      System.out.println("\nUsage: java -classpath ... org.apache.lucene.facet.util.PrintTaxonomyStats [-printTree] /path/to/taxononmy/index\n");
+      System.out.println(
+          "\nUsage: java -classpath ... org.apache.lucene.facet.util.PrintTaxonomyStats [-printTree] /path/to/taxononmy/index\n");
       System.exit(1);
     }
     Directory dir = FSDirectory.open(Paths.get(path));
@@ -59,7 +60,8 @@ public class PrintTaxonomyStats {
   }
 
   /** Recursively prints stats for all ordinals. */
-  public static void printStats(TaxonomyReader r, PrintStream out, boolean printTree) throws IOException {
+  public static void printStats(TaxonomyReader r, PrintStream out, boolean printTree)
+      throws IOException {
     out.println(r.getSize() + " total categories.");
 
     ChildrenIterator it = r.getChildren(TaxonomyReader.ROOT_ORDINAL);
@@ -71,7 +73,14 @@ public class PrintTaxonomyStats {
         numImmediateChildren++;
       }
       FacetLabel cp = r.getPath(child);
-      out.println("/" + cp.components[0] + ": " + numImmediateChildren + " immediate children; " + (1+countAllChildren(r, child)) + " total categories");
+      out.println(
+          "/"
+              + cp.components[0]
+              + ": "
+              + numImmediateChildren
+              + " immediate children; "
+              + (1 + countAllChildren(r, child))
+              + " total categories");
       if (printTree) {
         printAllChildren(out, r, child, "  ", 1);
       }
@@ -88,12 +97,13 @@ public class PrintTaxonomyStats {
     return count;
   }
 
-  private static void printAllChildren(PrintStream out, TaxonomyReader r, int ord, String indent, int depth) throws IOException {
+  private static void printAllChildren(
+      PrintStream out, TaxonomyReader r, int ord, String indent, int depth) throws IOException {
     ChildrenIterator it = r.getChildren(ord);
     int child;
     while ((child = it.next()) != TaxonomyReader.INVALID_ORDINAL) {
       out.println(indent + "/" + r.getPath(child).components[depth]);
-      printAllChildren(out, r, child, indent + "  ", depth+1);
+      printAllChildren(out, r, child, indent + "  ", depth + 1);
     }
   }
 }

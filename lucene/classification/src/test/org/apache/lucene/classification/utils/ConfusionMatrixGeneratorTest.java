@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.classification.utils;
 
-
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.classification.BM25NBClassifier;
 import org.apache.lucene.classification.BooleanPerceptronClassifier;
@@ -34,9 +32,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Tests for {@link ConfusionMatrixGenerator}
- */
+/** Tests for {@link ConfusionMatrixGenerator} */
 public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object> {
 
   @Test
@@ -45,29 +41,33 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new Classifier<BytesRef>() {
-        @Override
-        public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
-          return new ClassificationResult<>(new BytesRef(), 1 / (1 + Math.exp(-random().nextInt())));
-        }
+      Classifier<BytesRef> classifier =
+          new Classifier<BytesRef>() {
+            @Override
+            public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
+              return new ClassificationResult<>(
+                  new BytesRef(), 1 / (1 + Math.exp(-random().nextInt())));
+            }
 
-        @Override
-        public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
-          return null;
-        }
+            @Override
+            public List<ClassificationResult<BytesRef>> getClasses(String text) throws IOException {
+              return null;
+            }
 
-        @Override
-        public List<ClassificationResult<BytesRef>> getClasses(String text, int max) throws IOException {
-          return null;
-        }
-      };
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+            @Override
+            public List<ClassificationResult<BytesRef>> getClasses(String text, int max)
+                throws IOException {
+              return null;
+            }
+          };
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
-      assertTrue(avgClassificationTime >= 0d );
+      assertTrue(avgClassificationTime >= 0d);
       double accuracy = confusionMatrix.getAccuracy();
       assertTrue(accuracy >= 0d);
       assertTrue(accuracy <= 1d);
@@ -93,9 +93,11 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new SimpleNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+      Classifier<BytesRef> classifier =
+          new SimpleNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
     } finally {
       if (reader != null) {
@@ -129,9 +131,11 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new BM25NBClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+      Classifier<BytesRef> classifier =
+          new BM25NBClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
     } finally {
       if (reader != null) {
@@ -146,9 +150,11 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new CachingNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+      Classifier<BytesRef> classifier =
+          new CachingNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
     } finally {
       if (reader != null) {
@@ -163,9 +169,12 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+      Classifier<BytesRef> classifier =
+          new KNearestNeighborClassifier(
+              reader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
     } finally {
       if (reader != null) {
@@ -180,9 +189,12 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new KNearestFuzzyClassifier(reader, null, analyzer, null, 1, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, categoryFieldName, textFieldName, -1);
+      Classifier<BytesRef> classifier =
+          new KNearestFuzzyClassifier(
+              reader, null, analyzer, null, 1, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, categoryFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
     } finally {
       if (reader != null) {
@@ -197,9 +209,12 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
-      Classifier<Boolean> classifier = new BooleanPerceptronClassifier(reader, analyzer, null, 1, null, booleanFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
-          classifier, booleanFieldName, textFieldName, -1);
+      Classifier<Boolean> classifier =
+          new BooleanPerceptronClassifier(
+              reader, analyzer, null, 1, null, booleanFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              reader, classifier, booleanFieldName, textFieldName, -1);
       checkCM(confusionMatrix);
       assertTrue(confusionMatrix.getPrecision("true") >= 0d);
       assertTrue(confusionMatrix.getPrecision("true") <= 1d);

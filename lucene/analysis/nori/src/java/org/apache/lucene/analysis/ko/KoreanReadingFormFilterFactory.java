@@ -17,12 +17,12 @@
 package org.apache.lucene.analysis.ko;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KoreanReadingFormFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -31,8 +31,8 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
- * @lucene.experimental
  *
+ * @lucene.experimental
  * @since 7.4.0
  * @lucene.spi {@value #NAME}
  */
@@ -42,13 +42,13 @@ public class KoreanReadingFormFilterFactory extends TokenFilterFactory {
   public static final String NAME = "koreanReadingForm";
 
   /** Creates a new KoreanReadingFilterFactory */
-  public KoreanReadingFormFilterFactory(Map<String,String> args) {
+  public KoreanReadingFormFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public KoreanReadingFormFilterFactory() {
     throw defaultCtorException();

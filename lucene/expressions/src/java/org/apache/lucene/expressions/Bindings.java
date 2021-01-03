@@ -20,21 +20,17 @@ import org.apache.lucene.search.DoubleValuesSource;
 
 /**
  * Binds variable names in expressions to actual data.
- * <p>
- * These are typically DocValues fields/FieldCache, the document's 
- * relevance score, or other ValueSources.
- * 
+ *
+ * <p>These are typically DocValues fields/FieldCache, the document's relevance score, or other
+ * ValueSources.
+ *
  * @lucene.experimental
  */
 public abstract class Bindings {
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected Bindings() {}
 
-  /**
-   * Returns a DoubleValuesSource bound to the variable name
-   */
+  /** Returns a DoubleValuesSource bound to the variable name */
   public abstract DoubleValuesSource getDoubleValuesSource(String name);
-
 }

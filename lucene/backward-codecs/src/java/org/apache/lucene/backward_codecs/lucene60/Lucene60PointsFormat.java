@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.backward_codecs.lucene60;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -27,65 +25,65 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Lucene 6.0 point format, which encodes dimensional values in a block KD-tree structure
- * for fast 1D range and N dimensional shape intersection filtering.
- * See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
+ * Lucene 6.0 point format, which encodes dimensional values in a block KD-tree structure for fast
+ * 1D range and N dimensional shape intersection filtering. See <a
+ * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for
+ * details.
  *
- * <p>This data structure is written as a series of blocks on disk, with an in-memory perfectly balanced
- * binary tree of split values referencing those blocks at the leaves.
+ * <p>This data structure is written as a series of blocks on disk, with an in-memory perfectly
+ * balanced binary tree of split values referencing those blocks at the leaves.
  *
- * <p>The <code>.dim</code> file has both blocks and the index split
- * values, for each field.  The file starts with {@link CodecUtil#writeIndexHeader}.
+ * <p>The <code>.dim</code> file has both blocks and the index split values, for each field. The
+ * file starts with {@link CodecUtil#writeIndexHeader}.
  *
  * <p>The blocks are written like this:
  *
  * <ul>
- *  <li> count (vInt)
- *  <li> delta-docID (vInt) <sup>count</sup> (delta coded docIDs, in sorted order)
- *  <li> packedValue<sup>count</sup> (the <code>byte[]</code> value of each dimension packed into a single <code>byte[]</code>)
+ *   <li>count (vInt)
+ *   <li>delta-docID (vInt) <sup>count</sup> (delta coded docIDs, in sorted order)
+ *   <li>packedValue<sup>count</sup> (the <code>byte[]</code> value of each dimension packed into a
+ *       single <code>byte[]</code>)
  * </ul>
  *
  * <p>After all blocks for a field are written, then the index is written:
- * <ul>
- *  <li> numDims (vInt)
- *  <li> maxPointsInLeafNode (vInt)
- *  <li> bytesPerDim (vInt)
- *  <li> count (vInt)
- *  <li> packed index (byte[])
- * </ul>
- *
- * <p>The packed index uses hierarchical delta and prefix coding to compactly encode the file pointer for
- * all leaf blocks, once the tree is traversed, as well as the split dimension and split value for each
- * inner node of the tree.
- *
- * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the checksum.
- *
- * <p>The <code>.dii</code> file records the file pointer in the <code>.dim</code> file where each field's
- * index data was written.  It starts with {@link CodecUtil#writeIndexHeader}, then has:
  *
  * <ul>
- *   <li> fieldCount (vInt)
- *   <li> (fieldNumber (vInt), fieldFilePointer (vLong))<sup>fieldCount</sup>
+ *   <li>numDims (vInt)
+ *   <li>maxPointsInLeafNode (vInt)
+ *   <li>bytesPerDim (vInt)
+ *   <li>count (vInt)
+ *   <li>packed index (byte[])
  * </ul>
  *
- * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the checksum.
+ * <p>The packed index uses hierarchical delta and prefix coding to compactly encode the file
+ * pointer for all leaf blocks, once the tree is traversed, as well as the split dimension and split
+ * value for each inner node of the tree.
+ *
+ * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the
+ * checksum.
+ *
+ * <p>The <code>.dii</code> file records the file pointer in the <code>.dim</code> file where each
+ * field's index data was written. It starts with {@link CodecUtil#writeIndexHeader}, then has:
+ *
+ * <ul>
+ *   <li>fieldCount (vInt)
+ *   <li>(fieldNumber (vInt), fieldFilePointer (vLong))<sup>fieldCount</sup>
+ * </ul>
+ *
+ * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the
+ * checksum.
  *
  * @lucene.experimental
  */
-
 public class Lucene60PointsFormat extends PointsFormat {
 
   static final String DATA_CODEC_NAME = "Lucene60PointsFormatData";
   static final String META_CODEC_NAME = "Lucene60PointsFormatMeta";
 
-  /**
-   * Filename extension for the leaf blocks
-   */
+  /** Filename extension for the leaf blocks */
   public static final String DATA_EXTENSION = "dim";
 
-  /**
-   * Filename extension for the index per field
-   */
+  /** Filename extension for the index per field */
   public static final String INDEX_EXTENSION = "dii";
 
   static final int DATA_VERSION_START = 0;
@@ -95,8 +93,7 @@ public class Lucene60PointsFormat extends PointsFormat {
   static final int INDEX_VERSION_CURRENT = INDEX_VERSION_START;
 
   /** Sole constructor */
-  public Lucene60PointsFormat() {
-  }
+  public Lucene60PointsFormat() {}
 
   @Override
   public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {

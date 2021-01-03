@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.expressions.js;
 
+import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
+import static org.apache.lucene.expressions.js.VariableContext.Type.MEMBER;
+import static org.apache.lucene.expressions.js.VariableContext.Type.METHOD;
+import static org.apache.lucene.expressions.js.VariableContext.Type.STR_INDEX;
 
 import org.apache.lucene.util.LuceneTestCase;
-
-import static org.apache.lucene.expressions.js.VariableContext.Type.MEMBER;
-import static org.apache.lucene.expressions.js.VariableContext.Type.STR_INDEX;
-import static org.apache.lucene.expressions.js.VariableContext.Type.INT_INDEX;
-import static org.apache.lucene.expressions.js.VariableContext.Type.METHOD;
 
 public class TestVariableContext extends LuceneTestCase {
 

@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
@@ -32,11 +31,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * {@link org.apache.lucene.index.TermsEnum} used when merging segments,
- * to enumerate the terms of an input segment and get all the fields {@link TermState}s
- * of each term.
- * <p>
- * It only supports calls to {@link #next()} and no seek method.
+ * {@link org.apache.lucene.index.TermsEnum} used when merging segments, to enumerate the terms of
+ * an input segment and get all the fields {@link TermState}s of each term.
+ *
+ * <p>It only supports calls to {@link #next()} and no seek method.
  *
  * @lucene.experimental
  */
@@ -48,8 +46,15 @@ public class STMergingBlockReader extends STBlockReader {
       PostingsReaderBase postingsReader,
       FieldMetadata fieldMetadata,
       BlockDecoder blockDecoder,
-      FieldInfos fieldInfos) throws IOException {
-    super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder, fieldInfos);
+      FieldInfos fieldInfos)
+      throws IOException {
+    super(
+        dictionaryBrowserSupplier,
+        blockInput,
+        postingsReader,
+        fieldMetadata,
+        blockDecoder,
+        fieldInfos);
   }
 
   @Override
@@ -84,27 +89,34 @@ public class STMergingBlockReader extends STBlockReader {
 
   /**
    * Creates a new {@link PostingsEnum} for the provided field and {@link BlockTermState}.
+   *
    * @param reuse Previous {@link PostingsEnum} to reuse; or null to create a new one.
    * @param flags Postings flags.
    */
-  public PostingsEnum postings(String fieldName, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(
+      String fieldName, BlockTermState termState, PostingsEnum reuse, int flags)
+      throws IOException {
     return postingsReader.postings(fieldInfos.fieldInfo(fieldName), termState, reuse, flags);
   }
 
   /**
-   * Reads all the fields {@link TermState}s of the current term and put them
-   * in the provided map. Clears the map first, before putting {@link TermState}s.
+   * Reads all the fields {@link TermState}s of the current term and put them in the provided map.
+   * Clears the map first, before putting {@link TermState}s.
    */
-  public void readFieldTermStatesMap(Map<String, BlockTermState> fieldTermStatesMap) throws IOException {
+  public void readFieldTermStatesMap(Map<String, BlockTermState> fieldTermStatesMap)
+      throws IOException {
     if (term() != null) {
-      termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-      ((STBlockLine.Serializer) blockLineReader).readFieldTermStatesMap(
-          termStatesReadBuffer,
-          termStateSerializer,
-          blockHeader,
-          fieldInfos,
-          fieldTermStatesMap
-      );
+      termStatesReadBuffer.setPosition(
+          blockFirstLineStart
+              + blockHeader.getTermStatesBaseOffset()
+              + blockLine.getTermStateRelativeOffset());
+      ((STBlockLine.Serializer) blockLineReader)
+          .readFieldTermStatesMap(
+              termStatesReadBuffer,
+              termStateSerializer,
+              blockHeader,
+              fieldInfos,
+              fieldTermStatesMap);
     }
   }
 }

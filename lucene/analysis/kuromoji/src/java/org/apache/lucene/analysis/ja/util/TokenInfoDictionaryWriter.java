@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.ja.util;
 
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.ja.dict.TokenInfoDictionary;
 import org.apache.lucene.util.fst.FST;
 
@@ -31,20 +29,20 @@ class TokenInfoDictionaryWriter extends BinaryDictionaryWriter {
   TokenInfoDictionaryWriter(int size) {
     super(TokenInfoDictionary.class, size);
   }
-  
+
   public void setFST(FST<Long> fst) {
     Objects.requireNonNull(fst, "dictionary must not be empty");
     this.fst = fst;
   }
-  
+
   @Override
   public void write(Path baseDir) throws IOException {
     super.write(baseDir);
     writeFST(baseDir.resolve(getBaseFileName() + TokenInfoDictionary.FST_FILENAME_SUFFIX));
   }
-  
+
   private void writeFST(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     fst.save(path);
-  }  
+  }
 }

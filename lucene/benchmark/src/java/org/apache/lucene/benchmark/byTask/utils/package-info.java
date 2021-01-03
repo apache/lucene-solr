@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utilities used for the benchmark, and for the reports.
- */
+/** Utilities used for the benchmark, and for the reports. */
 package org.apache.lucene.benchmark.byTask.utils;

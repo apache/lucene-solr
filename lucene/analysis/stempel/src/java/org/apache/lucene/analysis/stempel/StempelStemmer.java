@@ -21,20 +21,16 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
-
 import org.egothor.stemmer.Diff;
 import org.egothor.stemmer.Trie;
 
 /**
- * <p>
- * Stemmer class is a convenient facade for other stemmer-related classes. The
- * core stemming algorithm and its implementation is taken verbatim from the
- * Egothor project ( <a href="http://www.egothor.org">www.egothor.org </a>).
- * </p>
- * <p>
- * Even though the stemmer tables supplied in the distribution package are built
- * for Polish language, there is nothing language-specific here.
- * </p>
+ * Stemmer class is a convenient facade for other stemmer-related classes. The core stemming
+ * algorithm and its implementation is taken verbatim from the Egothor project ( <a
+ * href="http://www.egothor.org">www.egothor.org </a>).
+ *
+ * <p>Even though the stemmer tables supplied in the distribution package are built for Polish
+ * language, there is nothing language-specific here.
  */
 public class StempelStemmer {
   private Trie stemmer = null;
@@ -42,7 +38,7 @@ public class StempelStemmer {
 
   /**
    * Create a Stemmer using selected stemmer table
-   * 
+   *
    * @param stemmerTable stemmer table.
    */
   public StempelStemmer(InputStream stemmerTable) throws IOException {
@@ -51,16 +47,14 @@ public class StempelStemmer {
 
   /**
    * Create a Stemmer using pre-loaded stemmer table
-   * 
+   *
    * @param stemmer pre-loaded stemmer table
    */
   public StempelStemmer(Trie stemmer) {
     this.stemmer = stemmer;
   }
-  
-  /**
-   * Load a stemmer table from an inputstream.
-   */
+
+  /** Load a stemmer table from an inputstream. */
   public static Trie load(InputStream stemmerTable) throws IOException {
     DataInputStream in = null;
     try {
@@ -77,25 +71,22 @@ public class StempelStemmer {
   }
 
   /**
-   * Stem a word. 
-   * 
+   * Stem a word.
+   *
    * @param word input word to be stemmed.
    * @return stemmed word, or null if the stem could not be generated.
    */
   public StringBuilder stem(CharSequence word) {
     CharSequence cmd = stemmer.getLastOnPath(word);
-    
-    if (cmd == null)
-        return null;
-    
+
+    if (cmd == null) return null;
+
     buffer.setLength(0);
     buffer.append(word);
 
     Diff.apply(buffer, cmd);
-    
-    if (buffer.length() > 0)
-      return buffer;
-    else
-      return null;
+
+    if (buffer.length() > 0) return buffer;
+    else return null;
   }
 }
