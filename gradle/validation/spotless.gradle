@@ -68,6 +68,7 @@ allprojects { prj ->
           case ":lucene:backward-codecs":
           case ":lucene:codecs":
           case ":lucene:join":
+          case ":lucene:facet":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -78,12 +79,7 @@ allprojects { prj ->
                 "**/JavascriptVisitor.java"
             break
 
-            // Partially complete.
-
-          case ":lucene:facet":
-            target "src/**/*.java"
-            targetExclude "**/taxonomy.8.6.3-cfs.zip"
-            break
+          // Partially complete.
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:grouping":
