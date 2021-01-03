@@ -23,6 +23,8 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.apache.lucene.util.IOUtils;
+
 import jdk.incubator.foreign.MemoryHandles;
 import jdk.incubator.foreign.MemorySegment;
 
@@ -390,10 +392,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
       if (isClone) return;
 
-      // nocommit: use IOUtils#close() here to be safe that we try to close all segments, although some might fail!
-      for (MemorySegment b : bufs) {
-        b.close();
-      }
+      IOUtils.applyToAll(Arrays.asList(bufs), MemorySegment::close);
     } finally {
       unsetBuffers();
     }

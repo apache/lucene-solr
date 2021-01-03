@@ -22,11 +22,13 @@ import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.Future;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.IOUtils;
 
 import jdk.incubator.foreign.MappedMemorySegments;
 import jdk.incubator.foreign.MemorySegment;
@@ -250,24 +252,31 @@ public class MMapDirectory extends FSDirectory {
 
     final MemorySegment segments[] = new MemorySegment[nrSegments];
 
-    long startOffset = 0L;
-    for (int segNr = 0; segNr < nrSegments; segNr++) {
-      long segSize =
-          (length > (startOffset + chunkSize)) ? chunkSize : (length - startOffset);
-      final MemorySegment segment;
-      try {
-        segment = mapFileBugfix(path, startOffset, segSize, MapMode.READ_ONLY);
-      } catch (IOException ioe) {
-        throw convertMapFailedIOException(ioe, resourceDescription, segSize);
+    boolean success = false;
+    try {
+      long startOffset = 0L;
+      for (int segNr = 0; segNr < nrSegments; segNr++) {
+        long segSize =
+            (length > (startOffset + chunkSize)) ? chunkSize : (length - startOffset);
+        final MemorySegment segment;
+        try {
+          segment = mapFileBugfix(path, startOffset, segSize, MapMode.READ_ONLY);
+        } catch (IOException ioe) {
+          throw convertMapFailedIOException(ioe, resourceDescription, segSize);
+        }
+        if (preload && segSize > 0L) {
+          MappedMemorySegments.load(segment);
+        }
+        segments[segNr] = segment.share();
+        startOffset += segSize;
       }
-      if (preload && segSize > 0L) {
-        MappedMemorySegments.load(segment);
+      success = true;
+      return segments;
+    } finally {
+      if (success == false) {
+        IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
       }
-      segments[segNr] = segment.share();
-      startOffset += segSize;
     }
-
-    return segments;
   }
   
   private static MemorySegment mapFileBugfix(Path path, long bytesOffset, long bytesSize, MapMode mapMode) throws IOException {
@@ -286,7 +295,7 @@ public class MMapDirectory extends FSDirectory {
     final long mapBytesSize = bytesSize + pageOffset;
     final MemorySegment seg = MemorySegment.mapFile(path, mapBytesOffset, mapBytesSize, mapMode);
     assert (seg.address().toRawLongValue() % allocationGranularity == 0);
-    return seg.asSlice(pageOffset);
+    return (pageOffset == 0L) ? seg : seg.asSlice(pageOffset);
   }
 
   private static IOException convertMapFailedIOException(
