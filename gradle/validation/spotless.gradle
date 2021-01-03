@@ -77,6 +77,7 @@ allprojects { prj ->
           case ":lucene:classification":
           case ":lucene:backward-codecs":
           case ":lucene:codecs":
+          case ":lucene:join":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -96,7 +97,6 @@ allprojects { prj ->
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:grouping":
-          case ":lucene:join":
           case ":lucene:luke":
           case ":lucene:misc":
           case ":lucene:monitor":

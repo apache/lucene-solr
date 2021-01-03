@@ -19,7 +19,6 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -39,7 +38,8 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 class TermsIncludingScoreQuery extends Query implements Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermsIncludingScoreQuery.class);
+  protected static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(TermsIncludingScoreQuery.class);
 
   private final ScoreMode scoreMode;
   private final String toField;
@@ -51,13 +51,21 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
   // These fields are used for equals() and hashcode() only
   private final Query fromQuery;
   private final String fromField;
-  // id of the context rather than the context itself in order not to hold references to index readers
+  // id of the context rather than the context itself in order not to hold references to index
+  // readers
   private final Object topReaderContextId;
 
   private final long ramBytesUsed; // cache
 
-  TermsIncludingScoreQuery(ScoreMode scoreMode, String toField, boolean multipleValuesPerDocument, BytesRefHash terms, float[] scores,
-                           String fromField, Query fromQuery, Object indexReaderContextId) {
+  TermsIncludingScoreQuery(
+      ScoreMode scoreMode,
+      String toField,
+      boolean multipleValuesPerDocument,
+      BytesRefHash terms,
+      float[] scores,
+      String fromField,
+      Query fromQuery,
+      Object indexReaderContextId) {
     this.scoreMode = scoreMode;
     this.toField = toField;
     this.multipleValuesPerDocument = multipleValuesPerDocument;
@@ -69,18 +77,21 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
     this.fromQuery = fromQuery;
     this.topReaderContextId = indexReaderContextId;
 
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(fromField) +
-        RamUsageEstimator.sizeOfObject(fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(ords) +
-        RamUsageEstimator.sizeOfObject(scores) +
-        RamUsageEstimator.sizeOfObject(terms) +
-        RamUsageEstimator.sizeOfObject(toField);
+    this.ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(fromField)
+            + RamUsageEstimator.sizeOfObject(
+                fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.sizeOfObject(ords)
+            + RamUsageEstimator.sizeOfObject(scores)
+            + RamUsageEstimator.sizeOfObject(terms)
+            + RamUsageEstimator.sizeOfObject(toField);
   }
 
   @Override
   public String toString(String string) {
-    return String.format(Locale.ROOT, "TermsIncludingScoreQuery{field=%s;fromQuery=%s}", toField, fromQuery);
+    return String.format(
+        Locale.ROOT, "TermsIncludingScoreQuery{field=%s;fromQuery=%s}", toField, fromQuery);
   }
 
   @Override
@@ -92,16 +103,15 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(TermsIncludingScoreQuery other) {
-    return Objects.equals(scoreMode, other.scoreMode) &&
-        Objects.equals(toField, other.toField) &&
-        Objects.equals(fromField, other.fromField) &&
-        Objects.equals(fromQuery, other.fromQuery) &&
-        Objects.equals(topReaderContextId, other.topReaderContextId);
+    return Objects.equals(scoreMode, other.scoreMode)
+        && Objects.equals(toField, other.toField)
+        && Objects.equals(fromField, other.fromField)
+        && Objects.equals(fromQuery, other.fromQuery)
+        && Objects.equals(topReaderContextId, other.topReaderContextId);
   }
 
   @Override
@@ -115,11 +125,16 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(
+      IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
+      throws IOException {
     if (scoreMode.needsScores() == false) {
       // We don't need scores then quickly change the query:
-      TermsQuery termsQuery = new TermsQuery(toField, terms, fromField, fromQuery, topReaderContextId);
-      return searcher.rewrite(termsQuery).createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
+      TermsQuery termsQuery =
+          new TermsQuery(toField, terms, fromField, fromQuery, topReaderContextId);
+      return searcher
+          .rewrite(termsQuery)
+          .createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
     }
     return new Weight(TermsIncludingScoreQuery.this) {
 
@@ -131,11 +146,13 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
           BytesRef spare = new BytesRef();
           PostingsEnum postingsEnum = null;
           for (int i = 0; i < TermsIncludingScoreQuery.this.terms.size(); i++) {
-            if (segmentTermsEnum.seekExact(TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
+            if (segmentTermsEnum.seekExact(
+                TermsIncludingScoreQuery.this.terms.get(ords[i], spare))) {
               postingsEnum = segmentTermsEnum.postings(postingsEnum, PostingsEnum.NONE);
               if (postingsEnum.advance(doc) == doc) {
                 final float score = TermsIncludingScoreQuery.this.scores[ords[i]];
-                return Explanation.match(score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
+                return Explanation.match(
+                    score, "Score based on join value " + segmentTermsEnum.term().utf8ToString());
               }
             }
           }
@@ -149,7 +166,7 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
         if (terms == null) {
           return null;
         }
-        
+
         // what is the runtime...seems ok?
         final long cost = context.reader().maxDoc() * terms.size();
 
@@ -165,7 +182,6 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 
@@ -184,16 +200,20 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
       this.cost = cost;
     }
 
-    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum) throws IOException {
+    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum)
+        throws IOException {
       BytesRef spare = new BytesRef();
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
           postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
-          for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
+          for (int doc = postingsEnum.nextDoc();
+              doc != DocIdSetIterator.NO_MORE_DOCS;
+              doc = postingsEnum.nextDoc()) {
             matchingDocs.set(doc);
-            // In the case the same doc is also related to a another doc, a score might be overwritten. I think this
+            // In the case the same doc is also related to a another doc, a score might be
+            // overwritten. I think this
             // can only happen in a many-to-many relation
             scores[doc] = score;
           }
@@ -220,10 +240,10 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
     public DocIdSetIterator iterator() {
       return matchingDocsIterator;
     }
-
   }
 
-  // This scorer deals with the fact that a document can have more than one score from multiple related documents.
+  // This scorer deals with the fact that a document can have more than one score from multiple
+  // related documents.
   class MVInOrderScorer extends SVInOrderScorer {
 
     MVInOrderScorer(Weight weight, TermsEnum termsEnum, int maxDoc, long cost) throws IOException {
@@ -231,14 +251,17 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
     }
 
     @Override
-    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum) throws IOException {
+    protected void fillDocsAndScores(FixedBitSet matchingDocs, TermsEnum termsEnum)
+        throws IOException {
       BytesRef spare = new BytesRef();
       PostingsEnum postingsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare))) {
           postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
-          for (int doc = postingsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = postingsEnum.nextDoc()) {
+          for (int doc = postingsEnum.nextDoc();
+              doc != DocIdSetIterator.NO_MORE_DOCS;
+              doc = postingsEnum.nextDoc()) {
             // I prefer this:
             /*if (scores[doc] < score) {
               scores[doc] = score;
@@ -254,5 +277,4 @@ class TermsIncludingScoreQuery extends Query implements Accountable {
       }
     }
   }
-  
 }
