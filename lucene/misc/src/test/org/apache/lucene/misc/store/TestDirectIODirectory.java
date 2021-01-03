@@ -19,13 +19,20 @@ package org.apache.lucene.misc.store;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.BaseDirectoryTestCase;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.junit.BeforeClass;
 
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
-  
+
   @BeforeClass
   public static void checkSupported() {
     assumeTrue("This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
@@ -40,5 +47,23 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
         return true;
       }
     };
+  }
+
+  public void testIndexWriteRead() throws IOException {
+    try(Directory dir = getDirectory(createTempDir("testDirectIODirectory"))) {
+      try(RandomIndexWriter iw = new RandomIndexWriter(random(), dir)) {
+        Document doc = new Document();
+        Field field = newField("field", "foo bar", TextField.TYPE_STORED);
+        doc.add(field);
+
+        iw.addDocument(doc);
+        iw.commit();
+      }
+
+      try(IndexReader ir = DirectoryReader.open(dir)) {
+        IndexSearcher s = newSearcher(ir);
+        assertEquals(1, s.count(new PhraseQuery("field", "foo", "bar")));
+      }
+    }
   }
 }

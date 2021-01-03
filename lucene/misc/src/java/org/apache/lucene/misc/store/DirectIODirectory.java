@@ -26,6 +26,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.store.IOContext.Context;
@@ -175,6 +177,7 @@ public class DirectIODirectory extends FilterDirectory {
   private final static class DirectIOIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
+    private final Checksum digest;
 
     private long filePos;
     private boolean isOpen;
@@ -187,8 +190,9 @@ public class DirectIODirectory extends FilterDirectory {
     public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
-      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE, getDirectOpenOption());
+      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW, getDirectOpenOption());
       buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
+      digest = new BufferedChecksum(new CRC32());
 
       isOpen = true;
     }
@@ -196,6 +200,7 @@ public class DirectIODirectory extends FilterDirectory {
     @Override
     public void writeByte(byte b) throws IOException {
       buffer.put(b);
+      digest.update(b);
       if (!buffer.hasRemaining()) {
         dump();
       }
@@ -208,11 +213,13 @@ public class DirectIODirectory extends FilterDirectory {
         final int left = buffer.remaining();
         if (left <= toWrite) {
           buffer.put(src, offset, left);
+          digest.update(src, offset, left);
           toWrite -= left;
           offset += left;
           dump();
         } else {
           buffer.put(src, offset, toWrite);
+          digest.update(src, offset, toWrite);
           break;
         }
       }
@@ -237,7 +244,7 @@ public class DirectIODirectory extends FilterDirectory {
 
     @Override
     public long getChecksum() {
-      throw new UnsupportedOperationException("this directory currently does not work at all!");
+      return digest.getValue();
     }
 
     @Override
@@ -307,7 +314,14 @@ public class DirectIODirectory extends FilterDirectory {
 
     @Override
     public long getFilePointer() {
-      return filePos + buffer.position();
+      long filePointer = filePos + buffer.position();
+
+      // opening the input and immediately calling getFilePointer without calling readX (and thus refill) first,
+      // will result in negative value equal to bufferSize being returned,
+      // due to the initialization method filePos = -bufferSize used in constructor.
+      assert filePointer == -buffer.capacity() || filePointer >= 0 :
+        "filePointer should either be initial value equal to negative buffer capacity, or larger than or equal to 0";
+      return Math.max(filePointer, 0);
     }
 
     @Override
@@ -346,16 +360,20 @@ public class DirectIODirectory extends FilterDirectory {
 
     private void refill() throws IOException {
       filePos += buffer.capacity();
-      
+
+      // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
+      // hence throwing EOFException early to maintain buffer state (position in particular)
+      if(filePos >= channel.size()) {
+        throw new EOFException("read past EOF: " + this);
+      }
+
       buffer.clear();
       int n;
       try {
         n = channel.read(buffer, filePos);
+        assert n >= 0 : "read should not past EOF";
       } catch (IOException ioe) {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
-      }
-      if (n < 0 && filePos > channel.size()) {
-        throw new EOFException("read past EOF: " + this);
       }
       buffer.flip();
     }
