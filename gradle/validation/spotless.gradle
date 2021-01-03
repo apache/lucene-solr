@@ -80,7 +80,13 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
-          // Partially complete.
+          case ":lucene:expressions":
+            target "src/**/*.java"
+            targetExclude "**/resources/**", "**/JavascriptLexer.java", "**/JavascriptParser.java",
+                "**/JavascriptVisitor.java"
+            break
+
+            // Partially complete.
 
           case ":lucene:facet":
             target "src/**/*.java"
@@ -89,7 +95,6 @@ allprojects { prj ->
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:codecs":
-          case ":lucene:expressions":
           case ":lucene:grouping":
           case ":lucene:join":
           case ":lucene:luke":
