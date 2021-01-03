@@ -43,18 +43,6 @@ allprojects { prj ->
             targetExclude "**/resources/**", "**/StandardTokenizerImpl.java"
             break
 
-          case ":lucene:highlighter":
-            target "src/java/**/*.java",
-                   "src/test/**/*.java"
-            targetExclude "**/resources/**"
-            break
-
-          case ":lucene:queries":
-            target "src/java/**/*.java",
-                   "src/test/**/*.java"
-            targetExclude "**/resources/**"
-            break
-
           case ":lucene:analysis:common":
             target "src/**/*.java"
             targetExclude "**/resources/**",
@@ -63,6 +51,8 @@ allprojects { prj ->
                 "**/tartarus/**"
             break
 
+          case ":lucene:queries":
+          case ":lucene:highlighter":
           case ":lucene:demo":
           case ":lucene:analysis:morfologik":
           case ":lucene:analysis:icu":
