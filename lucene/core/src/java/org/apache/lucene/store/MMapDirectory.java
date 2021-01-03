@@ -248,11 +248,12 @@ public class MMapDirectory extends FSDirectory {
 
     // we always allocate one more segments, the last one may be a 0 byte one
     final int nrSegments = (int) (length >>> chunkSizePower) + 1;
-
+    
     final MemorySegment segments[] = new MemorySegment[nrSegments];
 
     boolean success = false;
     try {
+      path = unwrapPath(path);
       long startOffset = 0L;
       for (int segNr = 0; segNr < nrSegments; segNr++) {
         long segSize =
@@ -274,6 +275,23 @@ public class MMapDirectory extends FSDirectory {
     } finally {
       if (success == false) {
         IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
+      }
+    }
+  }
+  
+  /** Work around for JDK-8259028: we need to unwrap our test-only file system layers
+   * @see "https://bugs.openjdk.java.net/browse/JDK-8259028"
+   */
+  private static Path unwrapPath(Path path) {
+    for (;;) {
+      final Class<? extends Path> cls = path.getClass();
+      if (false == cls.getName().startsWith("org.apache.lucene.")) {
+        return path;
+      }
+      try {
+        path = (Path) cls.getMethod("getDelegate").invoke(path);
+      } catch (ReflectiveOperationException | ClassCastException e) {
+        return path;
       }
     }
   }
