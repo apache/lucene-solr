@@ -109,6 +109,12 @@ allprojects { prj ->
         }
       }
     }
+
+    spotlessJava {
+      doFirst {
+        project.mkdir("${buildDir}/spotless/spotlessJava")
+      }
+    }
   }
 }
 
