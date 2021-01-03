@@ -74,6 +74,7 @@ allprojects { prj ->
           case ":lucene:analysis:phonetic":
           case ":lucene:analysis:smartcn":
           case ":lucene:analysis:stempel":
+          case ":lucene:classification":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -87,7 +88,6 @@ allprojects { prj ->
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:backward-codecs":
-          case ":lucene:classification":
           case ":lucene:codecs":
           case ":lucene:expressions":
           case ":lucene:grouping":
