@@ -357,26 +357,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   MemorySegmentIndexInput buildSlice(String sliceDescription, long offset, long length) {
     ensureOpen();
     
-    final MemorySegment newsegments[] = buildSlice(segments, offset, length);
-    offset = offset & chunkSizeMask;
-    final String newResourceDescription = getFullSliceDescription(sliceDescription);
-    
-    if (newsegments.length == 1) {
-      return new SingleSegmentImpl(
-          newResourceDescription, newsegments[0].asSlice(offset, length), length, chunkSizePower, true);
-    } else {
-      return new MultiSegmentImpl(
-          newResourceDescription, newsegments, offset, length, chunkSizePower, true);
-    }
-  }
-
-  /**
-   * Returns a sliced view from a set of already-existing segments: the last segments size will be
-   * correct, but you must deal with offset separately (the first segment will not be adjusted)
-   */
-  private MemorySegment[] buildSlice(MemorySegment[] segments, long offset, long length) {
     final long sliceEnd = offset + length;
-
     final int startIndex = (int) (offset >>> chunkSizePower);
     final int endIndex = (int) (sliceEnd >>> chunkSizePower);
 
@@ -385,8 +366,17 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
     // set the last segment's limit for the sliced view.
     slices[slices.length - 1] = slices[slices.length - 1].asSlice(0L, sliceEnd & chunkSizeMask);
-
-    return slices;
+    
+    offset = offset & chunkSizeMask;
+    
+    final String newResourceDescription = getFullSliceDescription(sliceDescription);    
+    if (slices.length == 1) {
+      return new SingleSegmentImpl(
+          newResourceDescription, slices[0].asSlice(offset, length), length, chunkSizePower, true);
+    } else {
+      return new MultiSegmentImpl(
+          newResourceDescription, slices, offset, length, chunkSizePower, true);
+    }
   }
 
   @Override
