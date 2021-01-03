@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -35,9 +34,8 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A {@link ParallelTaxonomyArrays} that are initialized from the taxonomy
- * index.
- * 
+ * A {@link ParallelTaxonomyArrays} that are initialized from the taxonomy index.
+ *
  * @lucene.experimental
  */
 class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable {
@@ -50,7 +48,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
   // the arrays are returned.
   private volatile boolean initializedChildren = false;
   private int[] children, siblings;
-  
+
   /** Used by {@link #add(int, int)} after the array grew. */
   private TaxonomyIndexArrays(int[] parents) {
     this.parents = parents;
@@ -70,7 +68,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
       parents[0] = TaxonomyReader.INVALID_ORDINAL;
     }
   }
-  
+
   public TaxonomyIndexArrays(IndexReader reader, TaxonomyIndexArrays copyFrom) throws IOException {
     assert copyFrom != null;
 
@@ -103,7 +101,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
       initializedChildren = true;
     }
   }
-  
+
   private void computeChildrenSiblings(int first) {
     // reset the youngest child of all ordinals. while this should be done only
     // for the leaves, we don't know up front which are the leaves, so we reset
@@ -111,13 +109,13 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
     for (int i = first; i < parents.length; i++) {
       children[i] = TaxonomyReader.INVALID_ORDINAL;
     }
-    
+
     // the root category has no parent, and therefore no siblings
     if (first == 0) {
       first = 1;
       siblings[0] = TaxonomyReader.INVALID_ORDINAL;
     }
-    
+
     for (int i = first; i < parents.length; i++) {
       // note that parents[i] is always < i, so the right-hand-side of
       // the following line is already set when we get here
@@ -125,37 +123,40 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
       children[parents[i]] = i;
     }
   }
-  
+
   // Read the parents of the new categories
   private void initParents(IndexReader reader, int first) throws IOException {
     if (reader.maxDoc() == first) {
       return;
     }
-    
+
     // it's ok to use MultiTerms because we only iterate on one posting list.
     // breaking it to loop over the leaves() only complicates code for no
     // apparent gain.
-    PostingsEnum positions = MultiTerms.getTermPostingsEnum(reader,
-        Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
-        PostingsEnum.PAYLOADS);
+    PostingsEnum positions =
+        MultiTerms.getTermPostingsEnum(
+            reader, Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF, PostingsEnum.PAYLOADS);
 
     // shouldn't really happen, if it does, something's wrong
     if (positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) {
-      throw new CorruptIndexException("Missing parent data for category " + first, reader.toString());
+      throw new CorruptIndexException(
+          "Missing parent data for category " + first, reader.toString());
     }
-    
+
     int num = reader.maxDoc();
     for (int i = first; i < num; i++) {
       if (positions.docID() == i) {
         if (positions.freq() == 0) { // shouldn't happen
-          throw new CorruptIndexException("Missing parent data for category " + i, reader.toString());
+          throw new CorruptIndexException(
+              "Missing parent data for category " + i, reader.toString());
         }
-        
+
         parents[i] = positions.nextPosition();
-        
+
         if (positions.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
           if (i + 1 < num) {
-            throw new CorruptIndexException("Missing parent data for category "+ (i + 1), reader.toString());
+            throw new CorruptIndexException(
+                "Missing parent data for category " + (i + 1), reader.toString());
           }
           break;
         }
@@ -164,12 +165,12 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
       }
     }
   }
-  
+
   /**
-   * Adds the given ordinal/parent info and returns either a new instance if the
-   * underlying array had to grow, or this instance otherwise.
-   * <p>
-   * <b>NOTE:</b> you should call this method from a thread-safe code.
+   * Adds the given ordinal/parent info and returns either a new instance if the underlying array
+   * had to grow, or this instance otherwise.
+   *
+   * <p><b>NOTE:</b> you should call this method from a thread-safe code.
    */
   TaxonomyIndexArrays add(int ordinal, int parentOrdinal) {
     if (ordinal >= parents.length) {
@@ -180,50 +181,49 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
     parents[ordinal] = parentOrdinal;
     return this;
   }
-  
+
   /**
-   * Returns the parents array, where {@code parents[i]} denotes the parent of
-   * category ordinal {@code i}.
+   * Returns the parents array, where {@code parents[i]} denotes the parent of category ordinal
+   * {@code i}.
    */
   @Override
   public int[] parents() {
     return parents;
   }
-  
+
   /**
-   * Returns the children array, where {@code children[i]} denotes the youngest
-   * child of category ordinal {@code i}. The youngest child is defined as the
-   * category that was added last to the taxonomy as an immediate child of
-   * {@code i}.
+   * Returns the children array, where {@code children[i]} denotes the youngest child of category
+   * ordinal {@code i}. The youngest child is defined as the category that was added last to the
+   * taxonomy as an immediate child of {@code i}.
    */
   @Override
   public int[] children() {
     if (!initializedChildren) {
       initChildrenSiblings(null);
     }
-    
+
     // the array is guaranteed to be populated
     return children;
   }
-  
+
   /**
-   * Returns the siblings array, where {@code siblings[i]} denotes the sibling
-   * of category ordinal {@code i}. The sibling is defined as the previous
-   * youngest child of {@code parents[i]}.
+   * Returns the siblings array, where {@code siblings[i]} denotes the sibling of category ordinal
+   * {@code i}. The sibling is defined as the previous youngest child of {@code parents[i]}.
    */
   @Override
   public int[] siblings() {
     if (!initializedChildren) {
       initChildrenSiblings(null);
     }
-    
+
     // the array is guaranteed to be populated
     return siblings;
   }
 
   @Override
   public synchronized long ramBytesUsed() {
-    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 1;
+    long ramBytesUsed =
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 1;
     ramBytesUsed += RamUsageEstimator.shallowSizeOf(parents);
     if (children != null) {
       ramBytesUsed += RamUsageEstimator.shallowSizeOf(children);
@@ -237,12 +237,15 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
   @Override
   public synchronized Collection<Accountable> getChildResources() {
     final List<Accountable> resources = new ArrayList<>();
-    resources.add(Accountables.namedAccountable("parents", RamUsageEstimator.shallowSizeOf(parents)));
+    resources.add(
+        Accountables.namedAccountable("parents", RamUsageEstimator.shallowSizeOf(parents)));
     if (children != null) {
-      resources.add(Accountables.namedAccountable("children", RamUsageEstimator.shallowSizeOf(children)));
+      resources.add(
+          Accountables.namedAccountable("children", RamUsageEstimator.shallowSizeOf(children)));
     }
     if (siblings != null) {
-      resources.add(Accountables.namedAccountable("siblings", RamUsageEstimator.shallowSizeOf(siblings)));
+      resources.add(
+          Accountables.namedAccountable("siblings", RamUsageEstimator.shallowSizeOf(siblings)));
     }
     return Collections.unmodifiableList(resources);
   }

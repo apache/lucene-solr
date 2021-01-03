@@ -26,16 +26,14 @@ import java.util.Properties;
 
 /**
  * Manages analysis data configuration for SmartChineseAnalyzer
- * <p>
- * SmartChineseAnalyzer has a built-in dictionary and stopword list out-of-box.
- * </p>
+ *
+ * <p>SmartChineseAnalyzer has a built-in dictionary and stopword list out-of-box.
+ *
  * @lucene.experimental
  */
 public class AnalyzerProfile {
 
-  /**
-   * Global indicating the configured analysis data directory
-   */
+  /** Global indicating the configured analysis data directory */
   public static String ANALYSIS_DATA_DIR = "";
 
   static {
@@ -48,15 +46,15 @@ public class AnalyzerProfile {
 
     // Try the system property：-Danalysis.data.dir=/path/to/analysis-data
     ANALYSIS_DATA_DIR = System.getProperty("analysis.data.dir", "");
-    if (ANALYSIS_DATA_DIR.length() != 0)
-      return;
+    if (ANALYSIS_DATA_DIR.length() != 0) return;
 
-    Path[] candidateFiles = new Path[] {
-        Paths.get(dirName),
-        Paths.get("lib").resolve(dirName),
-        Paths.get(propName),
-        Paths.get("lib").resolve(propName)
-    };
+    Path[] candidateFiles =
+        new Path[] {
+          Paths.get(dirName),
+          Paths.get("lib").resolve(dirName),
+          Paths.get(propName),
+          Paths.get("lib").resolve(propName)
+        };
     for (Path file : candidateFiles) {
       if (Files.exists(file)) {
         if (Files.isDirectory(file)) {
@@ -70,11 +68,11 @@ public class AnalyzerProfile {
 
     if (ANALYSIS_DATA_DIR.length() == 0) {
       // Dictionary directory cannot be found.
-      throw new RuntimeException("WARNING: Can not find lexical dictionary directory!"
-       + " This will cause unpredictable exceptions in your application!"
-       + " Please refer to the manual to download the dictionaries.");
+      throw new RuntimeException(
+          "WARNING: Can not find lexical dictionary directory!"
+              + " This will cause unpredictable exceptions in your application!"
+              + " Please refer to the manual to download the dictionaries.");
     }
-
   }
 
   private static String getAnalysisDataDir(Path propFile) {
@@ -86,5 +84,4 @@ public class AnalyzerProfile {
       return "";
     }
   }
-
 }

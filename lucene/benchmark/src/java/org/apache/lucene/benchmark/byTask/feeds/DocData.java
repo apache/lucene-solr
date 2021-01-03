@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.util.Date;
 import java.util.Properties;
-
 import org.apache.lucene.document.DateTools;
 
 /** Output of parsing (e.g. HTML parsing) of an input document. */
 public class DocData {
-  
+
   private String name;
   private String body;
   private String title;
   private String date;
   private int id;
   private Properties props;
-  
+
   public void clear() {
     name = null;
     body = null;
@@ -40,16 +38,15 @@ public class DocData {
     props = null;
     id = -1;
   }
-  
+
   public String getBody() {
     return body;
   }
 
   /**
-   * @return the date. If the ctor with Date was called, then the String
-   *         returned is the output of
-   *         {@link DateTools#dateToString(Date, org.apache.lucene.document.DateTools.Resolution)}
-   *         . Otherwise it's the String passed to the other ctor.
+   * @return the date. If the ctor with Date was called, then the String returned is the output of
+   *     {@link DateTools#dateToString(Date, org.apache.lucene.document.DateTools.Resolution)} .
+   *     Otherwise it's the String passed to the other ctor.
    */
   public String getDate() {
     return date;
@@ -102,5 +99,4 @@ public class DocData {
   public void setTitle(String title) {
     this.title = title;
   }
-
 }

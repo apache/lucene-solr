@@ -16,13 +16,10 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseDocValuesFormatTestCase;
 
-/**
- * Tests SimpleTextDocValuesFormat
- */
+/** Tests SimpleTextDocValuesFormat */
 public class TestSimpleTextDocValuesFormat extends BaseDocValuesFormatTestCase {
   private final Codec codec = new SimpleTextCodec();
 

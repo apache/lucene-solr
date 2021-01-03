@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analysis components based on OpenNLP
- */
+/** Analysis components based on OpenNLP */
 package org.apache.lucene.analysis.opennlp;

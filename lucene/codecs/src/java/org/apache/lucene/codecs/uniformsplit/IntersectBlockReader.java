@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermsEnum;
@@ -34,13 +33,15 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 
 /**
- * The "intersect" {@link TermsEnum} response to {@link UniformSplitTerms#intersect(CompiledAutomaton, BytesRef)},
- * intersecting the terms with an automaton.
- * <p>
- * By design of the UniformSplit block keys, it is less efficient than
- * {@code org.apache.lucene.codecs.blocktree.IntersectTermsEnum} for {@link org.apache.lucene.search.FuzzyQuery} (-37%).
- * It is slightly slower for {@link org.apache.lucene.search.WildcardQuery} (-5%) and slightly faster for
- * {@link org.apache.lucene.search.PrefixQuery} (+5%).
+ * The "intersect" {@link TermsEnum} response to {@link
+ * UniformSplitTerms#intersect(CompiledAutomaton, BytesRef)}, intersecting the terms with an
+ * automaton.
+ *
+ * <p>By design of the UniformSplit block keys, it is less efficient than {@code
+ * org.apache.lucene.codecs.blocktree.IntersectTermsEnum} for {@link
+ * org.apache.lucene.search.FuzzyQuery} (-37%). It is slightly slower for {@link
+ * org.apache.lucene.search.WildcardQuery} (-5%) and slightly faster for {@link
+ * org.apache.lucene.search.PrefixQuery} (+5%).
  *
  * @lucene.experimental
  */
@@ -49,21 +50,25 @@ public class IntersectBlockReader extends BlockReader {
   /**
    * Block iteration order. Whether to move next block, jump to a block away, or end the iteration.
    */
-  protected enum BlockIteration {NEXT, SEEK, END}
+  protected enum BlockIteration {
+    NEXT,
+    SEEK,
+    END
+  }
 
   /**
    * Threshold that controls when to attempt to jump to a block away.
-   * <p>
-   * This counter is 0 when entering a block. It is incremented each time a term is rejected by the automaton.
-   * When the counter is greater than or equal to this threshold, then we compute the next term accepted by
-   * the automaton, with {@link AutomatonNextTermCalculator}, and we jump to a block away if the next term
-   * accepted is greater than the immediate next term in the block.
-   * <p>
-   * A low value, for example 1, improves the performance of automatons requiring many jumps, for example
-   * {@link org.apache.lucene.search.FuzzyQuery} and most {@link org.apache.lucene.search.WildcardQuery}.
-   * A higher value improves the performance of automatons with less or no jump, for example
-   * {@link org.apache.lucene.search.PrefixQuery}.
-   * A threshold of 4 seems to be a good balance.
+   *
+   * <p>This counter is 0 when entering a block. It is incremented each time a term is rejected by
+   * the automaton. When the counter is greater than or equal to this threshold, then we compute the
+   * next term accepted by the automaton, with {@link AutomatonNextTermCalculator}, and we jump to a
+   * block away if the next term accepted is greater than the immediate next term in the block.
+   *
+   * <p>A low value, for example 1, improves the performance of automatons requiring many jumps, for
+   * example {@link org.apache.lucene.search.FuzzyQuery} and most {@link
+   * org.apache.lucene.search.WildcardQuery}. A higher value improves the performance of automatons
+   * with less or no jump, for example {@link org.apache.lucene.search.PrefixQuery}. A threshold of
+   * 4 seems to be a good balance.
    */
   protected final int NUM_CONSECUTIVELY_REJECTED_TERMS_THRESHOLD = 4;
 
@@ -74,32 +79,32 @@ public class IntersectBlockReader extends BlockReader {
   protected final int minTermLength;
   protected final AutomatonNextTermCalculator nextStringCalculator;
 
-  /**
-   * Set this when our current mode is seeking to this term.  Set to null after.
-   */
+  /** Set this when our current mode is seeking to this term. Set to null after. */
   protected BytesRef seekTerm;
-  /**
-   * Number of bytes accepted by the automaton when validating the current term.
-   */
+  /** Number of bytes accepted by the automaton when validating the current term. */
   protected int numMatchedBytes;
   /**
-   * Automaton states reached when validating the current term, from 0 to {@link #numMatchedBytes} - 1.
+   * Automaton states reached when validating the current term, from 0 to {@link #numMatchedBytes} -
+   * 1.
    */
   protected int[] states;
-  /**
-   * Block iteration order determined when scanning the terms in the current block.
-   */
+  /** Block iteration order determined when scanning the terms in the current block. */
   protected BlockIteration blockIteration;
   /**
-   * Counter of the number of consecutively rejected terms.
-   * Depending on {@link #NUM_CONSECUTIVELY_REJECTED_TERMS_THRESHOLD}, this may trigger a jump to a block away.
+   * Counter of the number of consecutively rejected terms. Depending on {@link
+   * #NUM_CONSECUTIVELY_REJECTED_TERMS_THRESHOLD}, this may trigger a jump to a block away.
    */
   protected int numConsecutivelyRejectedTerms;
 
-  protected IntersectBlockReader(CompiledAutomaton compiled, BytesRef startTerm,
-                                 IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput,
-                                 PostingsReaderBase postingsReader, FieldMetadata fieldMetadata,
-                                 BlockDecoder blockDecoder) throws IOException {
+  protected IntersectBlockReader(
+      CompiledAutomaton compiled,
+      BytesRef startTerm,
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
+      IndexInput blockInput,
+      PostingsReaderBase postingsReader,
+      FieldMetadata fieldMetadata,
+      BlockDecoder blockDecoder)
+      throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
     automaton = compiled.automaton;
     runAutomaton = compiled.runAutomaton;
@@ -111,13 +116,16 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * Computes the minimal length of the terms accepted by the automaton.
-   * This speeds up the term scanning for automatons accepting a finite language.
+   * Computes the minimal length of the terms accepted by the automaton. This speeds up the term
+   * scanning for automatons accepting a finite language.
    */
   protected int getMinTermLength() {
-    // Automatons accepting infinite language (e.g. PrefixQuery and WildcardQuery) do not benefit much from
-    // min term length while it takes time to compute it. More precisely, by skipping this computation PrefixQuery
-    // is significantly boosted while WildcardQuery might be slightly degraded on average. This min term length
+    // Automatons accepting infinite language (e.g. PrefixQuery and WildcardQuery) do not benefit
+    // much from
+    // min term length while it takes time to compute it. More precisely, by skipping this
+    // computation PrefixQuery
+    // is significantly boosted while WildcardQuery might be slightly degraded on average. This min
+    // term length
     // mainly boosts FuzzyQuery.
     int commonSuffixLength = commonSuffix == null ? 0 : commonSuffix.length;
     if (!finite) {
@@ -185,7 +193,8 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * Finds the next block line that matches (accepted by the automaton), or null when at end of block.
+   * Finds the next block line that matches (accepted by the automaton), or null when at end of
+   * block.
    *
    * @return The next term in the current block that is accepted by the automaton; or null if none.
    */
@@ -210,16 +219,20 @@ public class IntersectBlockReader extends BlockReader {
       if (states.length <= lineTerm.length) {
         states = ArrayUtil.growExact(states, ArrayUtil.oversize(lineTerm.length + 1, Byte.BYTES));
       }
-      // Since terms are delta encoded, we may start the automaton steps from the last state reached by the previous term.
+      // Since terms are delta encoded, we may start the automaton steps from the last state reached
+      // by the previous term.
       int index = Math.min(lineTermBytes.getSuffixOffset(), numMatchedBytes);
-      // Skip this term early if it is shorter than the min term length, or if it does not end with the common suffix
+      // Skip this term early if it is shorter than the min term length, or if it does not end with
+      // the common suffix
       // accepted by the automaton.
-      if (lineTerm.length >= minTermLength && (commonSuffix == null || endsWithCommonSuffix(lineTerm.bytes, lineTerm.length))) {
+      if (lineTerm.length >= minTermLength
+          && (commonSuffix == null || endsWithCommonSuffix(lineTerm.bytes, lineTerm.length))) {
         int state = states[index];
         while (true) {
           if (index == lineTerm.length) {
             if (runAutomaton.isAccept(state)) {
-              // The automaton accepts the current term. Record the number of matched bytes and return the term.
+              // The automaton accepts the current term. Record the number of matched bytes and
+              // return the term.
               assert runAutomaton.run(lineTerm.bytes, 0, lineTerm.length);
               numMatchedBytes = index;
               if (numConsecutivelyRejectedTerms > 0) {
@@ -253,16 +266,19 @@ public class IntersectBlockReader extends BlockReader {
           blockIteration = BlockIteration.END;
           return null;
         }
-        // It is worthwhile to jump to a block away if the next term accepted is after the next term in the block.
+        // It is worthwhile to jump to a block away if the next term accepted is after the next term
+        // in the block.
         // Actually the block away may be the current block, but this is a good heuristic.
         readLineInBlock();
         if (seekTerm.compareTo(blockLine.getTermBytes().getTerm()) > 0) {
-          // Stop scanning this block terms and set the iteration order to jump to a block away by seeking seekTerm.
+          // Stop scanning this block terms and set the iteration order to jump to a block away by
+          // seeking seekTerm.
           blockIteration = BlockIteration.SEEK;
           return null;
         }
         seekTerm = null;
-        // If it is not worthwhile to jump to a block away, do not attempt anymore for the current block.
+        // If it is not worthwhile to jump to a block away, do not attempt anymore for the current
+        // block.
         numConsecutivelyRejectedTerms = Integer.MIN_VALUE;
       } else if (readLineInBlock() == null) {
         // No more terms in the block. The iteration order is to open the very next block.
@@ -273,8 +289,8 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * Indicates whether the given term ends with the automaton common suffix.
-   * This allows to quickly skip terms that the automaton would reject eventually.
+   * Indicates whether the given term ends with the automaton common suffix. This allows to quickly
+   * skip terms that the automaton would reject eventually.
    */
   protected boolean endsWithCommonSuffix(byte[] termBytes, int termLength) {
     byte[] suffixBytes = commonSuffix.bytes;
@@ -290,11 +306,11 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * Opens the next block.
-   * Depending on the {@link #blockIteration} order, it may be the very next block, or a block away that may contain
-   * {@link #seekTerm}.
+   * Opens the next block. Depending on the {@link #blockIteration} order, it may be the very next
+   * block, or a block away that may contain {@link #seekTerm}.
    *
-   * @return true if the next block is opened; false if there is no blocks anymore and the iteration is over.
+   * @return true if the next block is opened; false if there is no blocks anymore and the iteration
+   *     is over.
    */
   protected boolean nextBlock() throws IOException {
     long blockStartFP;
@@ -314,7 +330,8 @@ public class IntersectBlockReader extends BlockReader {
       case END:
         return false;
       default:
-        throw new UnsupportedOperationException("Unsupported " + BlockIteration.class.getSimpleName());
+        throw new UnsupportedOperationException(
+            "Unsupported " + BlockIteration.class.getSimpleName());
     }
     numMatchedBytes = 0;
     numConsecutivelyRejectedTerms = 0;
@@ -343,8 +360,8 @@ public class IntersectBlockReader extends BlockReader {
   }
 
   /**
-   * This is mostly a copy of AutomatonTermsEnum.  Since it's an inner class, the outer class can
-   * call methods that ATE does not expose.  It'd be nice if ATE's logic could be more extensible.
+   * This is mostly a copy of AutomatonTermsEnum. Since it's an inner class, the outer class can
+   * call methods that ATE does not expose. It'd be nice if ATE's logic could be more extensible.
    */
   protected class AutomatonNextTermCalculator {
     // for path tracking: each short records gen when we last
@@ -366,34 +383,26 @@ public class IntersectBlockReader extends BlockReader {
       visited = compiled.finite ? null : new short[runAutomaton.getSize()];
     }
 
-    /**
-     * Records the given state has been visited.
-     */
+    /** Records the given state has been visited. */
     protected void setVisited(int state) {
       if (!finite) {
         visited[state] = curGen;
       }
     }
 
-    /**
-     * Indicates whether the given state has been visited.
-     */
+    /** Indicates whether the given state has been visited. */
     protected boolean isVisited(int state) {
       return !finite && visited[state] == curGen;
     }
 
-    /**
-     * True if the current state of the automata is best iterated linearly (without seeking).
-     */
+    /** True if the current state of the automata is best iterated linearly (without seeking). */
     protected boolean isLinearState(BytesRef term) {
       return linear && term.compareTo(linearUpperBound) < 0;
     }
 
-    /**
-     * @see org.apache.lucene.index.FilteredTermsEnum#nextSeekTerm(BytesRef)
-     */
+    /** @see org.apache.lucene.index.FilteredTermsEnum#nextSeekTerm(BytesRef) */
     protected BytesRef nextSeekTerm(final BytesRef term) {
-      //System.out.println("ATE.nextSeekTerm term=" + term);
+      // System.out.println("ATE.nextSeekTerm term=" + term);
       if (term == null) {
         assert seekBytesRef.length() == 0;
         // return the empty term, as it's valid
@@ -406,23 +415,23 @@ public class IntersectBlockReader extends BlockReader {
 
       // seek to the next possible string;
       if (nextString()) {
-        return seekBytesRef.get();  // reposition
+        return seekBytesRef.get(); // reposition
       } else {
-        return null;          // no more possible strings can match
+        return null; // no more possible strings can match
       }
     }
 
     /**
-     * Sets the enum to operate in linear fashion, as we have found
-     * a looping transition at position: we set an upper bound and
-     * act like a TermRangeQuery for this portion of the term space.
+     * Sets the enum to operate in linear fashion, as we have found a looping transition at
+     * position: we set an upper bound and act like a TermRangeQuery for this portion of the term
+     * space.
      */
     protected void setLinear(int position) {
       assert linear == false;
 
       int state = 0;
       int maxInterval = 0xff;
-      //System.out.println("setLinear pos=" + position + " seekbytesRef=" + seekBytesRef);
+      // System.out.println("setLinear pos=" + position + " seekbytesRef=" + seekBytesRef);
       for (int i = 0; i < position; i++) {
         state = runAutomaton.step(state, seekBytesRef.byteAt(i) & 0xff);
         assert state >= 0 : "state=" + state;
@@ -431,15 +440,14 @@ public class IntersectBlockReader extends BlockReader {
       automaton.initTransition(state, transition);
       for (int i = 0; i < numTransitions; i++) {
         automaton.getNextTransition(transition);
-        if (transition.min <= (seekBytesRef.byteAt(position) & 0xff) &&
-            (seekBytesRef.byteAt(position) & 0xff) <= transition.max) {
+        if (transition.min <= (seekBytesRef.byteAt(position) & 0xff)
+            && (seekBytesRef.byteAt(position) & 0xff) <= transition.max) {
           maxInterval = transition.max;
           break;
         }
       }
       // 0xff terms don't get the optimization... not worth the trouble.
-      if (maxInterval != 0xff)
-        maxInterval++;
+      if (maxInterval != 0xff) maxInterval++;
       int length = position + 1; /* position + maxTransition */
       if (linearUpperBound.bytes.length < length) {
         linearUpperBound.bytes = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
@@ -452,12 +460,11 @@ public class IntersectBlockReader extends BlockReader {
     }
 
     /**
-     * Increments the byte buffer to the next String in binary order after s that will not put
-     * the machine into a reject state. If such a string does not exist, returns
-     * false.
-     * <p>
-     * The correctness of this method depends upon the automaton being deterministic,
-     * and having no transitions to dead states.
+     * Increments the byte buffer to the next String in binary order after s that will not put the
+     * machine into a reject state. If such a string does not exist, returns false.
+     *
+     * <p>The correctness of this method depends upon the automaton being deterministic, and having
+     * no transitions to dead states.
      *
      * @return true if more possible solutions exist for the DFA
      */
@@ -469,7 +476,8 @@ public class IntersectBlockReader extends BlockReader {
 
       while (true) {
         if (!finite && ++curGen == 0) {
-          // Clear the visited states every time curGen wraps (so very infrequently to not impact average perf).
+          // Clear the visited states every time curGen wraps (so very infrequently to not impact
+          // average perf).
           Arrays.fill(visited, (short) -1);
         }
         linear = false;
@@ -477,8 +485,7 @@ public class IntersectBlockReader extends BlockReader {
         for (state = savedStates.intAt(pos); pos < seekBytesRef.length(); pos++) {
           setVisited(state);
           int nextState = runAutomaton.step(state, seekBytesRef.byteAt(pos) & 0xff);
-          if (nextState == -1)
-            break;
+          if (nextState == -1) break;
           savedStates.setIntAt(pos + 1, nextState);
           // we found a loop, record it for faster enumeration
           if (!linear && isVisited(nextState)) {
@@ -491,10 +498,11 @@ public class IntersectBlockReader extends BlockReader {
         // append characters that will match.
         if (nextString(state, pos)) {
           return true;
-        } else { /* no more solutions exist from this useful portion, backtrack */
-          if ((pos = backtrack(pos)) < 0) /* no more solutions at all */
-            return false;
-          final int newState = runAutomaton.step(savedStates.intAt(pos), seekBytesRef.byteAt(pos) & 0xff);
+        } else {
+          /* no more solutions exist from this useful portion, backtrack */
+          if ((pos = backtrack(pos)) < 0) /* no more solutions at all */ return false;
+          final int newState =
+              runAutomaton.step(savedStates.intAt(pos), seekBytesRef.byteAt(pos) & 0xff);
           if (newState >= 0 && runAutomaton.isAccept(newState))
             /* String is good to go as-is */
             return true;
@@ -507,22 +515,21 @@ public class IntersectBlockReader extends BlockReader {
     }
 
     /**
-     * Returns the next String in lexicographic order that will not put
-     * the machine into a reject state.
-     * <p>
-     * This method traverses the DFA from the given position in the String,
-     * starting at the given state.
-     * <p>
-     * If this cannot satisfy the machine, returns false. This method will
-     * walk the minimal path, in lexicographic order, as long as possible.
-     * <p>
-     * If this method returns false, then there might still be more solutions,
-     * it is necessary to backtrack to find out.
+     * Returns the next String in lexicographic order that will not put the machine into a reject
+     * state.
      *
-     * @param state    current non-reject state
+     * <p>This method traverses the DFA from the given position in the String, starting at the given
+     * state.
+     *
+     * <p>If this cannot satisfy the machine, returns false. This method will walk the minimal path,
+     * in lexicographic order, as long as possible.
+     *
+     * <p>If this method returns false, then there might still be more solutions, it is necessary to
+     * backtrack to find out.
+     *
+     * @param state current non-reject state
      * @param position useful portion of the string
-     * @return true if more possible solutions exist for the DFA from this
-     * position
+     * @return true if more possible solutions exist for the DFA from this position
      */
     protected boolean nextString(int state, int position) {
       /*
@@ -535,8 +542,7 @@ public class IntersectBlockReader extends BlockReader {
         // if the next byte is 0xff and is not part of the useful portion,
         // then by definition it puts us in a reject state, and therefore this
         // path is dead. there cannot be any higher transitions. backtrack.
-        if (c++ == 0xff)
-          return false;
+        if (c++ == 0xff) return false;
       }
 
       seekBytesRef.setLength(position);
@@ -585,9 +591,8 @@ public class IntersectBlockReader extends BlockReader {
     }
 
     /**
-     * Attempts to backtrack thru the string after encountering a dead end
-     * at some given position. Returns false if no more possible strings
-     * can match.
+     * Attempts to backtrack thru the string after encountering a dead end at some given position.
+     * Returns false if no more possible strings can match.
      *
      * @param position current position in the input String
      * @return {@code position >= 0} if more possible solutions exist for the DFA

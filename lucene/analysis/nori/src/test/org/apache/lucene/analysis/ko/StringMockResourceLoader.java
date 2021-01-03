@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.ko;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.util.ResourceLoader;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */

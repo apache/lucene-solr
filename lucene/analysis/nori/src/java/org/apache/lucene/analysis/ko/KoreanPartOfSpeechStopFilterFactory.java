@@ -19,12 +19,12 @@ package org.apache.lucene.analysis.ko;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KoreanPartOfSpeechStopFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *    &lt;analyzer&gt;
@@ -35,13 +35,14 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  * &lt;/fieldType&gt;
  * </pre>
  *
- * <p>
- * Supports the following attributes:
- * <ul>
- *   <li>tags: List of stop tags. if not specified, {@link KoreanPartOfSpeechStopFilter#DEFAULT_STOP_TAGS} is used.</li>
- * </ul>
- * @lucene.experimental
+ * <p>Supports the following attributes:
  *
+ * <ul>
+ *   <li>tags: List of stop tags. if not specified, {@link
+ *       KoreanPartOfSpeechStopFilter#DEFAULT_STOP_TAGS} is used.
+ * </ul>
+ *
+ * @lucene.experimental
  * @since 7.4.0
  * @lucene.spi {@value #NAME}
  */
@@ -53,7 +54,7 @@ public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
   private Set<POS.Tag> stopTags;
 
   /** Creates a new KoreanPartOfSpeechStopFilterFactory */
-  public KoreanPartOfSpeechStopFilterFactory(Map<String,String> args) {
+  public KoreanPartOfSpeechStopFilterFactory(Map<String, String> args) {
     super(args);
     Set<String> stopTagStr = getSet(args, "tags");
     if (stopTagStr == null) {
@@ -65,7 +66,7 @@ public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public KoreanPartOfSpeechStopFilterFactory() {
     throw defaultCtorException();
@@ -73,6 +74,6 @@ public class KoreanPartOfSpeechStopFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream stream) {
-      return new KoreanPartOfSpeechStopFilter(stream, stopTags);
+    return new KoreanPartOfSpeechStopFilter(stream, stopTags);
   }
 }

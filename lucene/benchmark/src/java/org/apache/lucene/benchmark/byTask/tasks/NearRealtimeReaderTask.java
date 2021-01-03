@@ -16,21 +16,18 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * Spawns a BG thread that periodically (defaults to 3.0
- * seconds, but accepts param in seconds) wakes up and asks
- * IndexWriter for a near real-time reader.  Then runs a
- * single query (body: 1) sorted by docdate, and prints
- * time to reopen and time to run the search.
+ * Spawns a BG thread that periodically (defaults to 3.0 seconds, but accepts param in seconds)
+ * wakes up and asks IndexWriter for a near real-time reader. Then runs a single query (body: 1)
+ * sorted by docdate, and prints time to reopen and time to run the search.
  *
- * @lucene.experimental It's also not generally usable, eg
- * you cannot change which query is executed.
+ * @lucene.experimental It's also not generally usable, eg you cannot change which query is
+ *     executed.
  */
 public class NearRealtimeReaderTask extends PerfTask {
 
@@ -55,9 +52,10 @@ public class NearRealtimeReaderTask extends PerfTask {
     }
 
     if (runData.getIndexReader() != null) {
-      throw new RuntimeException("please close the existing reader before invoking NearRealtimeReader");
+      throw new RuntimeException(
+          "please close the existing reader before invoking NearRealtimeReader");
     }
-    
+
     long t = System.currentTimeMillis();
     DirectoryReader r = DirectoryReader.open(w);
     runData.setIndexReader(r);
@@ -69,19 +67,19 @@ public class NearRealtimeReaderTask extends PerfTask {
 
     // Parent sequence sets stopNow
     reopenCount = 0;
-    while(!stopNow) {
+    while (!stopNow) {
       long waitForMsec = (pauseMSec - (System.currentTimeMillis() - t));
       if (waitForMsec > 0) {
         Thread.sleep(waitForMsec);
-        //System.out.println("NRT wait: " + waitForMsec + " msec");
+        // System.out.println("NRT wait: " + waitForMsec + " msec");
       }
 
       t = System.currentTimeMillis();
       final DirectoryReader newReader = DirectoryReader.openIfChanged(r);
       if (newReader != null) {
-        final int delay = (int) (System.currentTimeMillis()-t);
+        final int delay = (int) (System.currentTimeMillis() - t);
         if (reopenTimes.length == reopenCount) {
-          reopenTimes = ArrayUtil.grow(reopenTimes, 1+reopenCount);
+          reopenTimes = ArrayUtil.grow(reopenTimes, 1 + reopenCount);
         }
         reopenTimes[reopenCount++] = delay;
         // TODO: somehow we need to enable warming, here
@@ -99,13 +97,13 @@ public class NearRealtimeReaderTask extends PerfTask {
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    pauseMSec = (long) (1000.0*Float.parseFloat(params));
+    pauseMSec = (long) (1000.0 * Float.parseFloat(params));
   }
 
   @Override
   public void close() {
     System.out.println("NRT reopen times:");
-    for(int i=0;i<reopenCount;i++) {
+    for (int i = 0; i < reopenCount; i++) {
       System.out.print(" " + reopenTimes[i]);
     }
     System.out.println();

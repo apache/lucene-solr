@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -55,34 +54,30 @@ import org.apache.lucene.util.automaton.Transition;
 //   - build depth-N prefix hash?
 //   - or: longer dense skip lists than just next byte?
 
-/** Wraps {@link Lucene84PostingsFormat} format for on-disk
- *  storage, but then at read time loads and stores all
- *  terms and postings directly in RAM as byte[], int[].
+/**
+ * Wraps {@link Lucene84PostingsFormat} format for on-disk storage, but then at read time loads and
+ * stores all terms and postings directly in RAM as byte[], int[].
  *
- *  <p><b>WARNING</b>: This is
- *  exceptionally RAM intensive: it makes no effort to
- *  compress the postings data, storing terms as separate
- *  byte[] and postings as separate int[], but as a result it
- *  gives substantial increase in search performance.
+ * <p><b>WARNING</b>: This is exceptionally RAM intensive: it makes no effort to compress the
+ * postings data, storing terms as separate byte[] and postings as separate int[], but as a result
+ * it gives substantial increase in search performance.
  *
- *  <p>This postings format supports {@link TermsEnum#ord}
- *  and {@link TermsEnum#seekExact(long)}.
-
- *  <p>Because this holds all term bytes as a single
- *  byte[], you cannot have more than 2.1GB worth of term
- *  bytes in a single segment.
+ * <p>This postings format supports {@link TermsEnum#ord} and {@link TermsEnum#seekExact(long)}.
  *
- * @lucene.experimental */
-
+ * <p>Because this holds all term bytes as a single byte[], you cannot have more than 2.1GB worth of
+ * term bytes in a single segment.
+ *
+ * @lucene.experimental
+ */
 public final class DirectPostingsFormat extends PostingsFormat {
 
   private final int minSkipCount;
   private final int lowFreqCutoff;
 
-  private final static int DEFAULT_MIN_SKIP_COUNT = 8;
-  private final static int DEFAULT_LOW_FREQ_CUTOFF = 32;
+  private static final int DEFAULT_MIN_SKIP_COUNT = 8;
+  private static final int DEFAULT_LOW_FREQ_CUTOFF = 32;
 
-  //private static final boolean DEBUG = true;
+  // private static final boolean DEBUG = true;
 
   // TODO: allow passing/wrapping arbitrary postings format?
 
@@ -90,11 +85,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
     this(DEFAULT_MIN_SKIP_COUNT, DEFAULT_LOW_FREQ_CUTOFF);
   }
 
-  /** minSkipCount is how many terms in a row must have the
-   *  same prefix before we put a skip pointer down.  Terms
-   *  with docFreq &lt;= lowFreqCutoff will use a single int[]
-   *  to hold all docs, freqs, position and offsets; terms
-   *  with higher docFreq will use separate arrays. */
+  /**
+   * minSkipCount is how many terms in a row must have the same prefix before we put a skip pointer
+   * down. Terms with docFreq &lt;= lowFreqCutoff will use a single int[] to hold all docs, freqs,
+   * position and offsets; terms with higher docFreq will use separate arrays.
+   */
   public DirectPostingsFormat(int minSkipCount, int lowFreqCutoff) {
     super("Direct");
     this.minSkipCount = minSkipCount;
@@ -125,11 +120,13 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   private static final class DirectFields extends FieldsProducer {
-    private final Map<String,DirectField> fields = new TreeMap<>();
+    private final Map<String, DirectField> fields = new TreeMap<>();
 
-    public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff) throws IOException {
+    public DirectFields(SegmentReadState state, Fields fields, int minSkipCount, int lowFreqCutoff)
+        throws IOException {
       for (String field : fields) {
-        this.fields.put(field, new DirectField(state, field, fields.terms(field), minSkipCount, lowFreqCutoff));
+        this.fields.put(
+            field, new DirectField(state, field, fields.terms(field), minSkipCount, lowFreqCutoff));
       }
     }
 
@@ -149,13 +146,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public long ramBytesUsed() {
       long sizeInBytes = 0;
-      for(Map.Entry<String,DirectField> entry: fields.entrySet()) {
+      for (Map.Entry<String, DirectField> entry : fields.entrySet()) {
         sizeInBytes += entry.getKey().length() * Character.BYTES;
         sizeInBytes += entry.getValue().ramBytesUsed();
       }
@@ -179,17 +175,19 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class DirectField extends Terms implements Accountable {
+  private static final class DirectField extends Terms implements Accountable {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DirectField.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(DirectField.class);
 
-    private static abstract class TermAndSkip implements Accountable {
+    private abstract static class TermAndSkip implements Accountable {
       public int[] skips;
     }
 
     private static final class LowFreqTerm extends TermAndSkip {
 
-      private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(HighFreqTerm.class);
+      private static final long BASE_RAM_BYTES_USED =
+          RamUsageEstimator.shallowSizeOfInstance(HighFreqTerm.class);
 
       public final int[] postings;
       public final byte[] payloads;
@@ -205,17 +203,17 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       @Override
       public long ramBytesUsed() {
-        return BASE_RAM_BYTES_USED +
-            ((postings!=null) ? RamUsageEstimator.sizeOf(postings) : 0) +
-            ((payloads!=null) ? RamUsageEstimator.sizeOf(payloads) : 0);
+        return BASE_RAM_BYTES_USED
+            + ((postings != null) ? RamUsageEstimator.sizeOf(postings) : 0)
+            + ((payloads != null) ? RamUsageEstimator.sizeOf(payloads) : 0);
       }
-
     }
 
     // TODO: maybe specialize into prx/no-prx/no-frq cases?
     private static final class HighFreqTerm extends TermAndSkip {
 
-      private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(HighFreqTerm.class);
+      private static final long BASE_RAM_BYTES_USED =
+          RamUsageEstimator.shallowSizeOfInstance(HighFreqTerm.class);
 
       public final long totalTermFreq;
       public final int[] docIDs;
@@ -223,7 +221,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public final int[][] positions;
       public final byte[][][] payloads;
 
-      public HighFreqTerm(int[] docIDs, int[] freqs, int[][] positions, byte[][][] payloads, long totalTermFreq) {
+      public HighFreqTerm(
+          int[] docIDs, int[] freqs, int[][] positions, byte[][][] payloads, long totalTermFreq) {
         this.docIDs = docIDs;
         this.freqs = freqs;
         this.positions = positions;
@@ -234,23 +233,23 @@ public final class DirectPostingsFormat extends PostingsFormat {
       @Override
       public long ramBytesUsed() {
         long sizeInBytes = BASE_RAM_BYTES_USED;
-        sizeInBytes += (docIDs!=null)? RamUsageEstimator.sizeOf(docIDs) : 0;
-        sizeInBytes += (freqs!=null)? RamUsageEstimator.sizeOf(freqs) : 0;
+        sizeInBytes += (docIDs != null) ? RamUsageEstimator.sizeOf(docIDs) : 0;
+        sizeInBytes += (freqs != null) ? RamUsageEstimator.sizeOf(freqs) : 0;
 
-        if(positions != null) {
+        if (positions != null) {
           sizeInBytes += RamUsageEstimator.shallowSizeOf(positions);
-          for(int[] position : positions) {
-            sizeInBytes += (position!=null) ? RamUsageEstimator.sizeOf(position) : 0;
+          for (int[] position : positions) {
+            sizeInBytes += (position != null) ? RamUsageEstimator.sizeOf(position) : 0;
           }
         }
 
         if (payloads != null) {
           sizeInBytes += RamUsageEstimator.shallowSizeOf(payloads);
-          for(byte[][] payload : payloads) {
-            if(payload != null) {
+          for (byte[][] payload : payloads) {
+            if (payload != null) {
               sizeInBytes += RamUsageEstimator.shallowSizeOf(payload);
-              for(byte[] pload : payload) {
-                sizeInBytes += (pload!=null) ? RamUsageEstimator.sizeOf(pload) : 0;
+              for (byte[] pload : payload) {
+                sizeInBytes += (pload != null) ? RamUsageEstimator.sizeOf(pload) : 0;
               }
             }
           }
@@ -258,7 +257,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
         return sizeInBytes;
       }
-
     }
 
     private final byte[] termBytes;
@@ -283,7 +281,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     private int[] sameCounts = new int[10];
     private final int minSkipCount;
 
-    private final static class IntArrayWriter {
+    private static final class IntArrayWriter {
       private int[] ints = new int[10];
       private int upto;
 
@@ -302,7 +300,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    public DirectField(SegmentReadState state, String field, Terms termsIn, int minSkipCount, int lowFreqCutoff) throws IOException {
+    public DirectField(
+        SegmentReadState state, String field, Terms termsIn, int minSkipCount, int lowFreqCutoff)
+        throws IOException {
       final FieldInfo fieldInfo = state.fieldInfos.fieldInfo(field);
 
       sumTotalTermFreq = termsIn.getSumTotalTermFreq();
@@ -314,7 +314,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         throw new IllegalArgumentException("codec does not provide Terms.size()");
       }
       terms = new TermAndSkip[numTerms];
-      termOffsets = new int[1+numTerms];
+      termOffsets = new int[1 + numTerms];
 
       byte[] termBytes = new byte[1024];
 
@@ -322,7 +322,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS) > 0;
       hasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) > 0;
-      hasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) > 0;
+      hasOffsets =
+          fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) > 0;
       hasPayloads = fieldInfo.hasPayloads();
 
       BytesRef term;
@@ -337,7 +338,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
       final ByteBuffersDataOutput ros = ByteBuffersDataOutput.newResettableInstance();
 
       // if (DEBUG) {
-      //   System.out.println("\nLOAD terms seg=" + state.segmentInfo.name + " field=" + field + " hasOffsets=" + hasOffsets + " hasFreq=" + hasFreq + " hasPos=" + hasPos + " hasPayloads=" + hasPayloads);
+      //   System.out.println("\nLOAD terms seg=" + state.segmentInfo.name + " field=" + field + "
+      // hasOffsets=" + hasOffsets + " hasFreq=" + hasFreq + " hasPos=" + hasPos + " hasPayloads=" +
+      // hasPayloads);
       // }
 
       while ((term = termsEnum.next()) != null) {
@@ -355,7 +358,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         }
         System.arraycopy(term.bytes, term.offset, termBytes, termOffset, term.length);
         termOffset += term.length;
-        termOffsets[count+1] = termOffset;
+        termOffsets[count + 1] = termOffset;
 
         if (hasPos) {
           docsAndPositionsEnum = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.ALL);
@@ -384,7 +387,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               final int freq = postingsEnum2.freq();
               scratch.add(freq);
               if (hasPos) {
-                for(int pos=0;pos<freq;pos++) {
+                for (int pos = 0; pos < freq; pos++) {
                   scratch.add(docsAndPositionsEnum.nextPosition());
                   if (hasOffsets) {
                     scratch.add(docsAndPositionsEnum.startOffset());
@@ -450,15 +453,16 @@ public final class DirectPostingsFormat extends PostingsFormat {
                 if (hasPayloads) {
                   payloads[upto] = new byte[freq][];
                 }
-                positions[upto] = new int[mult*freq];
+                positions[upto] = new int[mult * freq];
                 int posUpto = 0;
-                for(int pos=0;pos<freq;pos++) {
+                for (int pos = 0; pos < freq; pos++) {
                   positions[upto][posUpto] = docsAndPositionsEnum.nextPosition();
                   if (hasPayloads) {
                     BytesRef payload = docsAndPositionsEnum.getPayload();
                     if (payload != null) {
                       byte[] payloadBytes = new byte[payload.length];
-                      System.arraycopy(payload.bytes, payload.offset, payloadBytes, 0, payload.length);
+                      System.arraycopy(
+                          payload.bytes, payload.offset, payloadBytes, 0, payload.length);
                       payloads[upto][pos] = payloadBytes;
                     }
                   }
@@ -487,17 +491,17 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       finishSkips();
 
-      //System.out.println(skipCount + " skips: " + field);
+      // System.out.println(skipCount + " skips: " + field);
 
       this.termBytes = new byte[termOffset];
       System.arraycopy(termBytes, 0, this.termBytes, 0, termOffset);
 
       // Pack skips:
       this.skips = new int[skipCount];
-      this.skipOffsets = new int[1+numTerms];
+      this.skipOffsets = new int[1 + numTerms];
 
       int skipOffset = 0;
-      for(int i=0;i<numTerms;i++) {
+      for (int i = 0; i < numTerms; i++) {
         final int[] termSkips = terms[i].skips;
         skipOffsets[i] = skipOffset;
         if (termSkips != null) {
@@ -513,16 +517,16 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public long ramBytesUsed() {
       long sizeInBytes = BASE_RAM_BYTES_USED;
-      sizeInBytes += ((termBytes!=null) ? RamUsageEstimator.sizeOf(termBytes) : 0);
-      sizeInBytes += ((termOffsets!=null) ? RamUsageEstimator.sizeOf(termOffsets) : 0);
-      sizeInBytes += ((skips!=null) ? RamUsageEstimator.sizeOf(skips) : 0);
-      sizeInBytes += ((skipOffsets!=null) ? RamUsageEstimator.sizeOf(skipOffsets) : 0);
-      sizeInBytes += ((sameCounts!=null) ? RamUsageEstimator.sizeOf(sameCounts) : 0);
+      sizeInBytes += ((termBytes != null) ? RamUsageEstimator.sizeOf(termBytes) : 0);
+      sizeInBytes += ((termOffsets != null) ? RamUsageEstimator.sizeOf(termOffsets) : 0);
+      sizeInBytes += ((skips != null) ? RamUsageEstimator.sizeOf(skips) : 0);
+      sizeInBytes += ((skipOffsets != null) ? RamUsageEstimator.sizeOf(skipOffsets) : 0);
+      sizeInBytes += ((sameCounts != null) ? RamUsageEstimator.sizeOf(sameCounts) : 0);
 
-      if(terms!=null) {
+      if (terms != null) {
         sizeInBytes += RamUsageEstimator.shallowSizeOf(terms);
-        for(TermAndSkip termAndSkip : terms) {
-          sizeInBytes += (termAndSkip!=null) ? termAndSkip.ramBytesUsed() : 0;
+        for (TermAndSkip termAndSkip : terms) {
+          sizeInBytes += (termAndSkip != null) ? termAndSkip.ramBytesUsed() : 0;
         }
       }
 
@@ -531,7 +535,15 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public String toString() {
-      return "DirectTerms(terms=" + terms.length + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+      return "DirectTerms(terms="
+          + terms.length
+          + ",postings="
+          + sumDocFreq
+          + ",positions="
+          + sumTotalTermFreq
+          + ",docs="
+          + docCount
+          + ")";
     }
 
     // Compares in unicode (UTF8) order:
@@ -539,7 +551,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       final byte[] otherBytes = other.bytes;
 
       int upto = termOffsets[ord];
-      final int termLen = termOffsets[1+ord] - upto;
+      final int termLen = termOffsets[1 + ord] - upto;
       int otherUpto = other.offset;
 
       final int stop = upto + Math.min(termLen, other.length);
@@ -556,7 +568,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     private void setSkips(int termOrd, byte[] termBytes) {
 
-      final int termLength = termOffsets[termOrd+1] - termOffsets[termOrd];
+      final int termLength = termOffsets[termOrd + 1] - termOffsets[termOrd];
 
       if (sameCounts.length < termLength) {
         sameCounts = ArrayUtil.grow(sameCounts, termLength);
@@ -564,18 +576,18 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
       // Update skip pointers:
       if (termOrd > 0) {
-        final int lastTermLength = termOffsets[termOrd] - termOffsets[termOrd-1];
+        final int lastTermLength = termOffsets[termOrd] - termOffsets[termOrd - 1];
         final int limit = Math.min(termLength, lastTermLength);
 
-        int lastTermOffset = termOffsets[termOrd-1];
+        int lastTermOffset = termOffsets[termOrd - 1];
         int termOffset = termOffsets[termOrd];
 
         int i = 0;
-        for(;i<limit;i++) {
+        for (; i < limit; i++) {
           if (termBytes[lastTermOffset++] == termBytes[termOffset++]) {
             sameCounts[i]++;
           } else {
-            for(;i<limit;i++) {
+            for (; i < limit; i++) {
               if (sameCounts[i] >= minSkipCount) {
                 // Go back and add a skip pointer:
                 saveSkip(termOrd, sameCounts[i]);
@@ -586,18 +598,18 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
         }
 
-        for(;i<lastTermLength;i++) {
+        for (; i < lastTermLength; i++) {
           if (sameCounts[i] >= minSkipCount) {
             // Go back and add a skip pointer:
             saveSkip(termOrd, sameCounts[i]);
           }
           sameCounts[i] = 0;
         }
-        for(int j=limit;j<termLength;j++) {
+        for (int j = limit; j < termLength; j++) {
           sameCounts[j] = 1;
         }
       } else {
-        for(int i=0;i<termLength;i++) {
+        for (int i = 0; i < termLength; i++) {
           sameCounts[i]++;
         }
       }
@@ -605,10 +617,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     private void finishSkips() {
       assert count == terms.length;
-      int lastTermOffset = termOffsets[count-1];
+      int lastTermOffset = termOffsets[count - 1];
       int lastTermLength = termOffsets[count] - lastTermOffset;
 
-      for(int i=0;i<lastTermLength;i++) {
+      for (int i = 0; i < lastTermLength; i++) {
         if (sameCounts[i] >= minSkipCount) {
           // Go back and add a skip pointer:
           saveSkip(count, sameCounts[i]);
@@ -616,11 +628,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       // Reverse the skip pointers so they are "nested":
-      for(int termID=0;termID<terms.length;termID++) {
+      for (int termID = 0; termID < terms.length; termID++) {
         TermAndSkip term = terms[termID];
         if (term.skips != null && term.skips.length > 1) {
-          for(int pos=0;pos<term.skips.length/2;pos++) {
-            final int otherPos = term.skips.length-pos-1;
+          for (int pos = 0; pos < term.skips.length / 2; pos++) {
+            final int otherPos = term.skips.length - pos - 1;
 
             final int temp = term.skips[pos];
             term.skips[pos] = term.skips[otherPos];
@@ -640,10 +652,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
         // given that the skips themselves are already log(N)
         // we can grow by only 1 and still have amortized
         // linear time:
-        final int[] newSkips = new int[term.skips.length+1];
+        final int[] newSkips = new int[term.skips.length + 1];
         System.arraycopy(term.skips, 0, newSkips, 0, term.skips.length);
         term.skips = newSkips;
-        term.skips[term.skips.length-1] = ord;
+        term.skips[term.skips.length - 1] = ord;
       }
     }
 
@@ -712,7 +724,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       private BytesRef setTerm() {
         scratch.bytes = termBytes;
         scratch.offset = termOffsets[termOrd];
-        scratch.length = termOffsets[termOrd+1] - termOffsets[termOrd];
+        scratch.length = termOffsets[termOrd + 1] - termOffsets[termOrd];
         return scratch;
       }
 
@@ -740,7 +752,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         // Just do binary search: should be (constant factor)
         // faster than using the skip list:
         int low = 0;
-        int high = terms.length-1;
+        int high = terms.length - 1;
 
         while (low <= high) {
           int mid = (low + high) >>> 1;
@@ -754,7 +766,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
         }
 
-        return -(low + 1);  // key not found.
+        return -(low + 1); // key not found.
       }
 
       @Override
@@ -771,7 +783,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
           termOrd = ord;
           setTerm();
           return SeekStatus.FOUND;
-        } else if (ord == -terms.length-1) {
+        } else if (ord == -terms.length - 1) {
           return SeekStatus.END;
         } else {
           termOrd = -ord - 1;
@@ -857,7 +869,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               }
 
               return docsEnum.reset(postings);
-              
+
             } else if (hasPos == false) {
               LowFreqDocsEnumNoPos docsEnum;
               if (reuse instanceof LowFreqDocsEnumNoPos) {
@@ -875,7 +887,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             if (hasPos == false) {
               return new HighFreqDocsEnum().reset(term.docIDs, term.freqs);
             } else {
-              return new HighFreqPostingsEnum(hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+              return new HighFreqPostingsEnum(hasOffsets)
+                  .reset(term.docIDs, term.freqs, term.positions, term.payloads);
             }
           }
         }
@@ -934,7 +947,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             docsEnum = new HighFreqDocsEnum();
           }
 
-          //System.out.println("  DE for term=" + new BytesRef(terms[termOrd].term).utf8ToString() + ": " + term.docIDs.length + " docs");
+          // System.out.println("  DE for term=" + new BytesRef(terms[termOrd].term).utf8ToString()
+          // + ": " + term.docIDs.length + " docs");
           return docsEnum.reset(term.docIDs, term.freqs);
         }
       }
@@ -977,7 +991,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         states[0].transitionUpto = -1;
         states[0].transitionMax = -1;
 
-        //System.out.println("IE.init startTerm=" + startTerm);
+        // System.out.println("IE.init startTerm=" + startTerm);
 
         if (startTerm != null) {
           int skipUpto = 0;
@@ -989,8 +1003,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             termOrd++;
 
             nextLabel:
-            for(int i=0;i<startTerm.length;i++) {
-              final int label = startTerm.bytes[startTerm.offset+i] & 0xFF;
+            for (int i = 0; i < startTerm.length; i++) {
+              final int label = startTerm.bytes[startTerm.offset + i] & 0xFF;
 
               while (label > states[i].transitionMax) {
                 states[i].transitionUpto++;
@@ -1008,12 +1022,14 @@ public final class DirectPostingsFormat extends PostingsFormat {
               // the label at this position:
               while (termOrd < terms.length) {
                 final int skipOffset = skipOffsets[termOrd];
-                final int numSkips = skipOffsets[termOrd+1] - skipOffset;
+                final int numSkips = skipOffsets[termOrd + 1] - skipOffset;
                 final int termOffset = termOffsets[termOrd];
-                final int termLength = termOffsets[1+termOrd] - termOffset;
+                final int termLength = termOffsets[1 + termOrd] - termOffset;
 
                 // if (DEBUG) {
-                //   System.out.println("  check termOrd=" + termOrd + " term=" + new BytesRef(termBytes, termOffset, termLength).utf8ToString() + " skips=" + Arrays.toString(skips) + " i=" + i);
+                //   System.out.println("  check termOrd=" + termOrd + " term=" + new
+                // BytesRef(termBytes, termOffset, termLength).utf8ToString() + " skips=" +
+                // Arrays.toString(skips) + " i=" + i);
                 // }
 
                 if (termOrd == states[stateUpto].changeOrd) {
@@ -1031,7 +1047,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
                   // if (DEBUG) {
                   //   System.out.println("    term too short; next term");
                   // }
-                } else if (label < (termBytes[termOffset+i] & 0xFF)) {
+                } else if (label < (termBytes[termOffset + i] & 0xFF)) {
                   termOrd--;
                   // if (DEBUG) {
                   //   System.out.println("  no match; already beyond; return termOrd=" + termOrd);
@@ -1039,7 +1055,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
                   stateUpto -= skipUpto;
                   assert stateUpto >= 0;
                   return;
-                } else if (label == (termBytes[termOffset+i] & 0xFF)) {
+                } else if (label == (termBytes[termOffset + i] & 0xFF)) {
                   // if (DEBUG) {
                   //   System.out.println("    label[" + i + "] matches");
                   // }
@@ -1054,14 +1070,18 @@ public final class DirectPostingsFormat extends PostingsFormat {
                     stateUpto++;
                     states[stateUpto].changeOrd = skips[skipOffset + skipUpto++];
                     states[stateUpto].state = nextState;
-                    states[stateUpto].transitionCount = compiledAutomaton.automaton.getNumTransitions(nextState);
-                    compiledAutomaton.automaton.initTransition(states[stateUpto].state, states[stateUpto].transition);
+                    states[stateUpto].transitionCount =
+                        compiledAutomaton.automaton.getNumTransitions(nextState);
+                    compiledAutomaton.automaton.initTransition(
+                        states[stateUpto].state, states[stateUpto].transition);
                     states[stateUpto].transitionUpto = -1;
                     states[stateUpto].transitionMax = -1;
-                    //System.out.println("  push " + states[stateUpto].transitions.length + " trans");
+                    // System.out.println("  push " + states[stateUpto].transitions.length + "
+                    // trans");
 
                     // if (DEBUG) {
-                    //   System.out.println("    push skip; changeOrd=" + states[stateUpto].changeOrd);
+                    //   System.out.println("    push skip; changeOrd=" +
+                    // states[stateUpto].changeOrd);
                     // }
 
                     // Match next label at this same term:
@@ -1075,7 +1095,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
                     // than the minSkipCount):
                     final int startTermOrd = termOrd;
                     while (termOrd < terms.length && compare(termOrd, startTerm) <= 0) {
-                      assert termOrd == startTermOrd || skipOffsets[termOrd] == skipOffsets[termOrd+1];
+                      assert termOrd == startTermOrd
+                          || skipOffsets[termOrd] == skipOffsets[termOrd + 1];
                       termOrd++;
                     }
                     assert termOrd - startTermOrd < minSkipCount;
@@ -1113,21 +1134,22 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
 
           final int termOffset = termOffsets[termOrd];
-          final int termLen = termOffsets[1+termOrd] - termOffset;
+          final int termLen = termOffsets[1 + termOrd] - termOffset;
 
           if (termOrd >= 0 && !startTerm.equals(new BytesRef(termBytes, termOffset, termLen))) {
             stateUpto -= skipUpto;
             termOrd--;
           }
           // if (DEBUG) {
-          //   System.out.println("  loop end; return termOrd=" + termOrd + " stateUpto=" + stateUpto);
+          //   System.out.println("  loop end; return termOrd=" + termOrd + " stateUpto=" +
+          // stateUpto);
           // }
         }
       }
 
       private void grow() {
-        if (states.length == 1+stateUpto) {
-          final State[] newStates = new State[states.length+1];
+        if (states.length == 1 + stateUpto) {
+          final State[] newStates = new State[states.length + 1];
           System.arraycopy(states, 0, newStates, 0, states.length);
           newStates[states.length] = new State();
           states = newStates;
@@ -1159,10 +1181,10 @@ public final class DirectPostingsFormat extends PostingsFormat {
         }
 
         nextTerm:
-
         while (true) {
           // if (DEBUG) {
-          //   System.out.println("  cycle termOrd=" + termOrd + " stateUpto=" + stateUpto + " skipUpto=" + skipUpto);
+          //   System.out.println("  cycle termOrd=" + termOrd + " stateUpto=" + stateUpto + "
+          // skipUpto=" + skipUpto);
           // }
           if (termOrd == terms.length) {
             // if (DEBUG) {
@@ -1193,26 +1215,28 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
 
           final int termOffset = termOffsets[termOrd];
-          final int termLength = termOffsets[termOrd+1] - termOffset;
+          final int termLength = termOffsets[termOrd + 1] - termOffset;
           final int skipOffset = skipOffsets[termOrd];
-          final int numSkips = skipOffsets[termOrd+1] - skipOffset;
+          final int numSkips = skipOffsets[termOrd + 1] - skipOffset;
 
           // if (DEBUG) {
-          //   System.out.println("  term=" + new BytesRef(termBytes, termOffset, termLength).utf8ToString() + " skips=" + Arrays.toString(skips));
+          //   System.out.println("  term=" + new BytesRef(termBytes, termOffset,
+          // termLength).utf8ToString() + " skips=" + Arrays.toString(skips));
           // }
 
           assert termOrd < state.changeOrd;
 
-          assert stateUpto <= termLength: "term.length=" + termLength + "; stateUpto=" + stateUpto;
-          final int label = termBytes[termOffset+stateUpto] & 0xFF;
+          assert stateUpto <= termLength : "term.length=" + termLength + "; stateUpto=" + stateUpto;
+          final int label = termBytes[termOffset + stateUpto] & 0xFF;
 
           while (label > state.transitionMax) {
-            //System.out.println("  label=" + label + " vs max=" + state.transitionMax + " transUpto=" + state.transitionUpto + " vs " + state.transitions.length);
+            // System.out.println("  label=" + label + " vs max=" + state.transitionMax + "
+            // transUpto=" + state.transitionUpto + " vs " + state.transitions.length);
             state.transitionUpto++;
             if (state.transitionUpto == state.transitionCount) {
               // We've exhausted transitions leaving this
               // state; force pop+next/skip now:
-              //System.out.println("forcepop: stateUpto=" + stateUpto);
+              // System.out.println("forcepop: stateUpto=" + stateUpto);
               if (stateUpto == 0) {
                 termOrd = terms.length;
                 return null;
@@ -1221,7 +1245,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
                 // if (DEBUG) {
                 //   System.out.println("  jumpend " + (state.changeOrd - termOrd));
                 // }
-                //System.out.println("  jump to termOrd=" + states[stateUpto].changeOrd + " vs " + termOrd);
+                // System.out.println("  jump to termOrd=" + states[stateUpto].changeOrd + " vs " +
+                // termOrd);
                 termOrd = states[stateUpto].changeOrd;
                 skipUpto = 0;
                 stateUpto--;
@@ -1229,7 +1254,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
               continue nextTerm;
             }
             compiledAutomaton.automaton.getNextTransition(state.transition);
-            assert state.transitionUpto < state.transitionCount: " state.transitionUpto=" + state.transitionUpto + " vs " + state.transitionCount;
+            assert state.transitionUpto < state.transitionCount
+                : " state.transitionUpto=" + state.transitionUpto + " vs " + state.transitionCount;
             state.transitionMin = state.transition.min;
             state.transitionMax = state.transition.max;
             assert state.transitionMin >= 0;
@@ -1249,13 +1275,13 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
           final int targetLabel = state.transitionMin;
 
-          if ((termBytes[termOffset+stateUpto] & 0xFF) < targetLabel) {
+          if ((termBytes[termOffset + stateUpto] & 0xFF) < targetLabel) {
             // if (DEBUG) {
             //   System.out.println("    do bin search");
             // }
-            //int startTermOrd = termOrd;
-            int low = termOrd+1;
-            int high = state.changeOrd-1;
+            // int startTermOrd = termOrd;
+            int low = termOrd + 1;
+            int high = state.changeOrd - 1;
             while (true) {
               if (low > high) {
                 // Label not found
@@ -1263,30 +1289,32 @@ public final class DirectPostingsFormat extends PostingsFormat {
                 // if (DEBUG) {
                 //   System.out.println("      advanced by " + (termOrd - startTermOrd));
                 // }
-                //System.out.println("  jump " + (termOrd - startTermOrd));
+                // System.out.println("  jump " + (termOrd - startTermOrd));
                 skipUpto = 0;
                 continue nextTerm;
               }
               int mid = (low + high) >>> 1;
               int cmp = (termBytes[termOffsets[mid] + stateUpto] & 0xFF) - targetLabel;
               // if (DEBUG) {
-              //   System.out.println("      bin: check label=" + (char) (termBytes[termOffsets[low] + stateUpto] & 0xFF) + " ord=" + mid);
+              //   System.out.println("      bin: check label=" + (char) (termBytes[termOffsets[low]
+              // + stateUpto] & 0xFF) + " ord=" + mid);
               // }
               if (cmp < 0) {
-                low = mid+1;
+                low = mid + 1;
               } else if (cmp > 0) {
                 high = mid - 1;
               } else {
                 // Label found; walk backwards to first
                 // occurrence:
-                while (mid > termOrd && (termBytes[termOffsets[mid-1] + stateUpto] & 0xFF) == targetLabel) {
+                while (mid > termOrd
+                    && (termBytes[termOffsets[mid - 1] + stateUpto] & 0xFF) == targetLabel) {
                   mid--;
                 }
                 termOrd = mid;
                 // if (DEBUG) {
                 //   System.out.println("      advanced by " + (termOrd - startTermOrd));
                 // }
-                //System.out.println("  jump " + (termOrd - startTermOrd));
+                // System.out.println("  jump " + (termOrd - startTermOrd));
                 skipUpto = 0;
                 continue nextTerm;
               }
@@ -1304,7 +1332,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
               // if (DEBUG) {
               //   System.out.println("  jump " + (skips[skipOffset+skipUpto]-1 - termOrd));
               // }
-              termOrd = skips[skipOffset+skipUpto];
+              termOrd = skips[skipOffset + skipUpto];
             } else {
               termOrd++;
             }
@@ -1329,7 +1357,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             stateUpto++;
             states[stateUpto].state = nextState;
             states[stateUpto].changeOrd = skips[skipOffset + skipUpto++];
-            states[stateUpto].transitionCount = compiledAutomaton.automaton.getNumTransitions(nextState);
+            states[stateUpto].transitionCount =
+                compiledAutomaton.automaton.getNumTransitions(nextState);
             compiledAutomaton.automaton.initTransition(nextState, states[stateUpto].transition);
             states[stateUpto].transitionUpto = -1;
             states[stateUpto].transitionMax = -1;
@@ -1344,7 +1373,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
                 // }
                 scratch.bytes = termBytes;
                 scratch.offset = termOffsets[termOrd];
-                scratch.length = termOffsets[1+termOrd] - scratch.offset;
+                scratch.length = termOffsets[1 + termOrd] - scratch.offset;
                 // if (DEBUG) {
                 //   System.out.println("  ret " + scratch.utf8ToString());
                 // }
@@ -1363,7 +1392,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
             // TODO: add assert that we don't inc too many times
 
             if (compiledAutomaton.commonSuffixRef != null) {
-              //System.out.println("suffix " + compiledAutomaton.commonSuffixRef.utf8ToString());
+              // System.out.println("suffix " + compiledAutomaton.commonSuffixRef.utf8ToString());
               assert compiledAutomaton.commonSuffixRef.offset == 0;
               if (termLength < compiledAutomaton.commonSuffixRef.length) {
                 termOrd++;
@@ -1371,7 +1400,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
                 continue nextTerm;
               }
               int offset = termOffset + termLength - compiledAutomaton.commonSuffixRef.length;
-              for(int suffix=0;suffix<compiledAutomaton.commonSuffixRef.length;suffix++) {
+              for (int suffix = 0; suffix < compiledAutomaton.commonSuffixRef.length; suffix++) {
                 if (termBytes[offset + suffix] != compiledAutomaton.commonSuffixRef.bytes[suffix]) {
                   termOrd++;
                   skipUpto = 0;
@@ -1380,9 +1409,9 @@ public final class DirectPostingsFormat extends PostingsFormat {
               }
             }
 
-            int upto = stateUpto+1;
+            int upto = stateUpto + 1;
             while (upto < termLength) {
-              nextState = runAutomaton.step(nextState, termBytes[termOffset+upto] & 0xFF);
+              nextState = runAutomaton.step(nextState, termBytes[termOffset + upto] & 0xFF);
               if (nextState == -1) {
                 termOrd++;
                 skipUpto = 0;
@@ -1397,7 +1426,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
             if (runAutomaton.isAccept(nextState)) {
               scratch.bytes = termBytes;
               scratch.offset = termOffsets[termOrd];
-              scratch.length = termOffsets[1+termOrd] - scratch.offset;
+              scratch.length = termOffsets[1 + termOrd] - scratch.offset;
               // if (DEBUG) {
               //   System.out.println("  match tail; return " + scratch.utf8ToString());
               //   System.out.println("  ret2 " + scratch.utf8ToString());
@@ -1463,7 +1492,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
             return new LowFreqPostingsEnum(hasOffsets, hasPayloads).reset(postings, payloads);
           } else {
             final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
-            return new HighFreqPostingsEnum(hasOffsets).reset(term.docIDs, term.freqs, term.positions, term.payloads);
+            return new HighFreqPostingsEnum(hasOffsets)
+                .reset(term.docIDs, term.freqs, term.positions, term.payloads);
           }
         }
 
@@ -1489,7 +1519,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
           }
         } else {
           final HighFreqTerm term = (HighFreqTerm) terms[termOrd];
-          //  System.out.println("DE for term=" + new BytesRef(terms[termOrd].term).utf8ToString() + ": " + term.docIDs.length + " docs");
+          //  System.out.println("DE for term=" + new BytesRef(terms[termOrd].term).utf8ToString() +
+          // ": " + term.docIDs.length + " docs");
           return new HighFreqDocsEnum().reset(term.docIDs, term.freqs);
         }
       }
@@ -1508,12 +1539,11 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
-      
     }
   }
 
   // Docs only:
-  private final static class LowFreqDocsEnumNoTF extends PostingsEnum {
+  private static final class LowFreqDocsEnumNoTF extends PostingsEnum {
     private int[] postings;
     private int upto;
 
@@ -1584,7 +1614,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs:
-  private final static class LowFreqDocsEnumNoPos extends PostingsEnum {
+  private static final class LowFreqDocsEnumNoPos extends PostingsEnum {
     private int[] postings;
     private int upto;
 
@@ -1619,7 +1649,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
     @Override
     public int freq() {
-      return postings[upto+1];
+      return postings[upto + 1];
     }
 
     @Override
@@ -1656,7 +1686,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs + positions/offsets:
-  private final static class LowFreqDocsEnum extends PostingsEnum {
+  private static final class LowFreqDocsEnum extends PostingsEnum {
     private int[] postings;
     private final int posMult;
     private int upto;
@@ -1683,12 +1713,13 @@ public final class DirectPostingsFormat extends PostingsFormat {
     // TODO: can do this w/o setting members?
     @Override
     public int nextDoc() {
-      upto += 2 + freq*posMult;
+      upto += 2 + freq * posMult;
       // if (DEBUG) {
-      //   System.out.println("  nextDoc freq=" + freq + " upto=" + upto + " vs " + postings.length);
+      //   System.out.println("  nextDoc freq=" + freq + " upto=" + upto + " vs " +
+      // postings.length);
       // }
       if (upto < postings.length) {
-        freq = postings[upto+1];
+        freq = postings[upto + 1];
         assert freq > 0;
         return postings[upto];
       }
@@ -1747,7 +1778,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  private final static class LowFreqPostingsEnum extends PostingsEnum {
+  private static final class LowFreqPostingsEnum extends PostingsEnum {
     private int[] postings;
     private final int posMult;
     private final boolean hasOffsets;
@@ -1798,7 +1829,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     public int nextDoc() {
       pos = -1;
       if (hasPayloads) {
-        for(int i=0;i<skipPositions;i++) {
+        for (int i = 0; i < skipPositions; i++) {
           upto++;
           if (hasOffsets) {
             upto += 2;
@@ -1881,7 +1912,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // Docs + freqs:
-  private final static class HighFreqDocsEnum extends PostingsEnum {
+  private static final class HighFreqDocsEnum extends PostingsEnum {
     private int[] docIDs;
     private int[] freqs;
     private int upto;
@@ -1956,7 +1987,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       */
 
-      //System.out.println("  advance target=" + target + " cur=" + docID() + " upto=" + upto + " of " + docIDs.length);
+      // System.out.println("  advance target=" + target + " cur=" + docID() + " upto=" + upto + "
+      // of " + docIDs.length);
       // if (DEBUG) {
       //   System.out.println("advance target=" + target + " len=" + docIDs.length);
       // }
@@ -1968,20 +2000,20 @@ public final class DirectPostingsFormat extends PostingsFormat {
       // First "grow" outwards, since most advances are to
       // nearby docs:
       int inc = 10;
-      int nextUpto = upto+10;
+      int nextUpto = upto + 10;
       int low;
       int high;
       while (true) {
-        //System.out.println("  grow nextUpto=" + nextUpto + " inc=" + inc);
+        // System.out.println("  grow nextUpto=" + nextUpto + " inc=" + inc);
         if (nextUpto >= docIDs.length) {
-          low = nextUpto-inc;
-          high = docIDs.length-1;
+          low = nextUpto - inc;
+          high = docIDs.length - 1;
           break;
         }
-        //System.out.println("    docID=" + docIDs[nextUpto]);
+        // System.out.println("    docID=" + docIDs[nextUpto]);
 
         if (target <= docIDs[nextUpto]) {
-          low = nextUpto-inc;
+          low = nextUpto - inc;
           high = nextUpto;
           break;
         }
@@ -1990,20 +2022,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       // Now do normal binary search
-      //System.out.println("    after fwd: low=" + low + " high=" + high);
+      // System.out.println("    after fwd: low=" + low + " high=" + high);
 
       while (true) {
 
         if (low > high) {
           // Not exactly found
-          //System.out.println("    break: no match");
+          // System.out.println("    break: no match");
           upto = low;
           break;
         }
 
         int mid = (low + high) >>> 1;
         int cmp = docIDs[mid] - target;
-        //System.out.println("    bsearch low=" + low + " high=" + high+ ": docIDs[" + mid + "]=" + docIDs[mid]);
+        // System.out.println("    bsearch low=" + low + " high=" + high+ ": docIDs[" + mid + "]=" +
+        // docIDs[mid]);
 
         if (cmp < 0) {
           low = mid + 1;
@@ -2012,18 +2045,19 @@ public final class DirectPostingsFormat extends PostingsFormat {
         } else {
           // Found target
           upto = mid;
-          //System.out.println("    break: match");
+          // System.out.println("    break: match");
           break;
         }
       }
 
-      //System.out.println("    end upto=" + upto + " docID=" + (upto >= docIDs.length ? NO_MORE_DOCS : docIDs[upto]));
+      // System.out.println("    end upto=" + upto + " docID=" + (upto >= docIDs.length ?
+      // NO_MORE_DOCS : docIDs[upto]));
 
       if (upto == docIDs.length) {
-        //System.out.println("    return END");
+        // System.out.println("    return END");
         return docID = NO_MORE_DOCS;
       } else {
-        //System.out.println("    return docID=" + docIDs[upto] + " upto=" + upto);
+        // System.out.println("    return docID=" + docIDs[upto] + " upto=" + upto);
         return docID = docIDs[upto];
       }
     }
@@ -2055,7 +2089,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
   }
 
   // TODO: specialize offsets and not
-  private final static class HighFreqPostingsEnum extends PostingsEnum {
+  private static final class HighFreqPostingsEnum extends PostingsEnum {
     private int[] docIDs;
     private int[] freqs;
     private int[][] positions;
@@ -2125,7 +2159,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int startOffset() {
       if (hasOffsets) {
-        return curPositions[posUpto+1];
+        return curPositions[posUpto + 1];
       } else {
         return -1;
       }
@@ -2134,7 +2168,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     @Override
     public int endOffset() {
       if (hasOffsets) {
-        return curPositions[posUpto+2];
+        return curPositions[posUpto + 2];
       } else {
         return -1;
       }
@@ -2170,7 +2204,8 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
       */
 
-      //System.out.println("  advance target=" + target + " cur=" + docID() + " upto=" + upto + " of " + docIDs.length);
+      // System.out.println("  advance target=" + target + " cur=" + docID() + " upto=" + upto + "
+      // of " + docIDs.length);
       // if (DEBUG) {
       //   System.out.println("advance target=" + target + " len=" + docIDs.length);
       // }
@@ -2182,20 +2217,20 @@ public final class DirectPostingsFormat extends PostingsFormat {
       // First "grow" outwards, since most advances are to
       // nearby docs:
       int inc = 10;
-      int nextUpto = upto+10;
+      int nextUpto = upto + 10;
       int low;
       int high;
       while (true) {
-        //System.out.println("  grow nextUpto=" + nextUpto + " inc=" + inc);
+        // System.out.println("  grow nextUpto=" + nextUpto + " inc=" + inc);
         if (nextUpto >= docIDs.length) {
-          low = nextUpto-inc;
-          high = docIDs.length-1;
+          low = nextUpto - inc;
+          high = docIDs.length - 1;
           break;
         }
-        //System.out.println("    docID=" + docIDs[nextUpto]);
+        // System.out.println("    docID=" + docIDs[nextUpto]);
 
         if (target <= docIDs[nextUpto]) {
-          low = nextUpto-inc;
+          low = nextUpto - inc;
           high = nextUpto;
           break;
         }
@@ -2204,20 +2239,21 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
 
       // Now do normal binary search
-      //System.out.println("    after fwd: low=" + low + " high=" + high);
+      // System.out.println("    after fwd: low=" + low + " high=" + high);
 
       while (true) {
 
         if (low > high) {
           // Not exactly found
-          //System.out.println("    break: no match");
+          // System.out.println("    break: no match");
           upto = low;
           break;
         }
 
         int mid = (low + high) >>> 1;
         int cmp = docIDs[mid] - target;
-        //System.out.println("    bsearch low=" + low + " high=" + high+ ": docIDs[" + mid + "]=" + docIDs[mid]);
+        // System.out.println("    bsearch low=" + low + " high=" + high+ ": docIDs[" + mid + "]=" +
+        // docIDs[mid]);
 
         if (cmp < 0) {
           low = mid + 1;
@@ -2226,18 +2262,19 @@ public final class DirectPostingsFormat extends PostingsFormat {
         } else {
           // Found target
           upto = mid;
-          //System.out.println("    break: match");
+          // System.out.println("    break: match");
           break;
         }
       }
 
-      //System.out.println("    end upto=" + upto + " docID=" + (upto >= docIDs.length ? NO_MORE_DOCS : docIDs[upto]));
+      // System.out.println("    end upto=" + upto + " docID=" + (upto >= docIDs.length ?
+      // NO_MORE_DOCS : docIDs[upto]));
 
       if (upto == docIDs.length) {
-        //System.out.println("    return END");
+        // System.out.println("    return END");
         return docID = NO_MORE_DOCS;
       } else {
-        //System.out.println("    return docID=" + docIDs[upto] + " upto=" + upto);
+        // System.out.println("    return docID=" + docIDs[upto] + " upto=" + upto);
         posUpto = -posJump;
         curPositions = positions[upto];
         return docID = docIDs[upto];
@@ -2251,7 +2288,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       if (payloads == null) {
         return null;
       } else {
-        final byte[] payloadBytes = payloads[upto][posUpto/(hasOffsets ? 3:1)];
+        final byte[] payloadBytes = payloads[upto][posUpto / (hasOffsets ? 3 : 1)];
         if (payloadBytes == null) {
           return null;
         }

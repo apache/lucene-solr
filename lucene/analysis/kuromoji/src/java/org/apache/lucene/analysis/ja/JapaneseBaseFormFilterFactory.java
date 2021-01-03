@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseBaseFormFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -41,13 +41,13 @@ public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
   public static final String NAME = "japaneseBaseForm";
 
   /** Creates a new JapaneseBaseFormFilterFactory */
-  public JapaneseBaseFormFilterFactory(Map<String,String> args) {
+  public JapaneseBaseFormFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public JapaneseBaseFormFilterFactory() {
     throw defaultCtorException();

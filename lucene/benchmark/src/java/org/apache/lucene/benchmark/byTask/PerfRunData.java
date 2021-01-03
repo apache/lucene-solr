@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -51,39 +49,44 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Data maintained by a performance test run.
- * <p>
- * Data includes:
+ *
+ * <p>Data includes:
+ *
  * <ul>
- *  <li>Configuration.
- *  <li>Directory, Writer, Reader.
- *  <li>Taxonomy Directory, Writer, Reader.
- *  <li>DocMaker, FacetSource and a few instances of QueryMaker.
- *  <li>Named AnalysisFactories.
- *  <li>Analyzer.
- *  <li>Statistics data which updated during the run.
+ *   <li>Configuration.
+ *   <li>Directory, Writer, Reader.
+ *   <li>Taxonomy Directory, Writer, Reader.
+ *   <li>DocMaker, FacetSource and a few instances of QueryMaker.
+ *   <li>Named AnalysisFactories.
+ *   <li>Analyzer.
+ *   <li>Statistics data which updated during the run.
  * </ul>
+ *
  * Config properties:
+ *
  * <ul>
- *  <li><b>work.dir</b>=&lt;path to root of docs and index dirs| Default: work&gt;
- *  <li><b>analyzer</b>=&lt;class name for analyzer| Default: StandardAnalyzer&gt;
- *  <li><b>doc.maker</b>=&lt;class name for doc-maker| Default: DocMaker&gt;
- *  <li><b>facet.source</b>=&lt;class name for facet-source| Default: RandomFacetSource&gt;
- *  <li><b>query.maker</b>=&lt;class name for query-maker| Default: SimpleQueryMaker&gt;
- *  <li><b>log.queries</b>=&lt;whether queries should be printed| Default: false&gt;
- *  <li><b>directory</b>=&lt;type of directory to use for the index| Default: ByteBuffersDirectory&gt;
- *  <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default: ByteBuffersDirectory&gt;
+ *   <li><b>work.dir</b>=&lt;path to root of docs and index dirs| Default: work&gt;
+ *   <li><b>analyzer</b>=&lt;class name for analyzer| Default: StandardAnalyzer&gt;
+ *   <li><b>doc.maker</b>=&lt;class name for doc-maker| Default: DocMaker&gt;
+ *   <li><b>facet.source</b>=&lt;class name for facet-source| Default: RandomFacetSource&gt;
+ *   <li><b>query.maker</b>=&lt;class name for query-maker| Default: SimpleQueryMaker&gt;
+ *   <li><b>log.queries</b>=&lt;whether queries should be printed| Default: false&gt;
+ *   <li><b>directory</b>=&lt;type of directory to use for the index| Default:
+ *       ByteBuffersDirectory&gt;
+ *   <li><b>taxonomy.directory</b>=&lt;type of directory for taxonomy index| Default:
+ *       ByteBuffersDirectory&gt;
  * </ul>
  */
 public class PerfRunData implements Closeable {
 
   private static final String DEFAULT_DIRECTORY = "ByteBuffersDirectory";
   private Points points;
-  
+
   // objects used during performance test run
   // directory, analyzer, docMaker - created at startup.
-  // reader, writer, searcher - maintained by basic tasks. 
+  // reader, writer, searcher - maintained by basic tasks.
   private Directory directory;
-  private Map<String,AnalyzerFactory> analyzerFactories = new HashMap<>();
+  private Map<String, AnalyzerFactory> analyzerFactories = new HashMap<>();
   private Analyzer analyzer;
   private DocMaker docMaker;
   private ContentSource contentSource;
@@ -93,9 +96,10 @@ public class PerfRunData implements Closeable {
   private Directory taxonomyDir;
   private TaxonomyWriter taxonomyWriter;
   private TaxonomyReader taxonomyReader;
-  
-  // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
-  private HashMap<Class<? extends ReadTask>,QueryMaker> readTaskQueryMaker;
+
+  // we use separate (identical) instances for each "read" task type, so each can iterate the quries
+  // separately.
+  private HashMap<Class<? extends ReadTask>, QueryMaker> readTaskQueryMaker;
   private Class<? extends QueryMaker> qmkrClass;
 
   private DirectoryReader indexReader;
@@ -105,52 +109,73 @@ public class PerfRunData implements Closeable {
   private long startTimeMillis;
 
   private final HashMap<String, Object> perfObjects = new HashMap<>();
-  
+
   // constructor
-  public PerfRunData (Config config) throws Exception {
+  public PerfRunData(Config config) throws Exception {
     this.config = config;
     // analyzer (default is standard analyzer)
-    analyzer = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
-        "org.apache.lucene.analysis.standard.StandardAnalyzer"));
+    analyzer =
+        NewAnalyzerTask.createAnalyzer(
+            config.get("analyzer", "org.apache.lucene.analysis.standard.StandardAnalyzer"));
 
     // content source
-    String sourceClass = config.get("content.source", "org.apache.lucene.benchmark.byTask.feeds.SingleDocSource");
-    contentSource = Class.forName(sourceClass).asSubclass(ContentSource.class).getConstructor().newInstance();
+    String sourceClass =
+        config.get("content.source", "org.apache.lucene.benchmark.byTask.feeds.SingleDocSource");
+    contentSource =
+        Class.forName(sourceClass).asSubclass(ContentSource.class).getConstructor().newInstance();
     contentSource.setConfig(config);
 
     // doc maker
-    docMaker = Class.forName(config.get("doc.maker",
-        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).getConstructor().newInstance();
+    docMaker =
+        Class.forName(config.get("doc.maker", "org.apache.lucene.benchmark.byTask.feeds.DocMaker"))
+            .asSubclass(DocMaker.class)
+            .getConstructor()
+            .newInstance();
     docMaker.setConfig(config, contentSource);
     // facet source
-    facetSource = Class.forName(config.get("facet.source",
-        "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource")).asSubclass(FacetSource.class).getConstructor().newInstance();
+    facetSource =
+        Class.forName(
+                config.get(
+                    "facet.source", "org.apache.lucene.benchmark.byTask.feeds.RandomFacetSource"))
+            .asSubclass(FacetSource.class)
+            .getConstructor()
+            .newInstance();
     facetSource.setConfig(config);
     // query makers
     readTaskQueryMaker = new HashMap<>();
-    qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker")).asSubclass(QueryMaker.class);
+    qmkrClass =
+        Class.forName(
+                config.get(
+                    "query.maker", "org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"))
+            .asSubclass(QueryMaker.class);
 
     // index stuff
     reinit(false);
-    
+
     // statistic points
     points = new Points(config);
-    
-    if (Boolean.valueOf(config.get("log.queries","false")).booleanValue()) {
+
+    if (Boolean.valueOf(config.get("log.queries", "false")).booleanValue()) {
       System.out.println("------------> queries:");
       System.out.println(getQueryMaker(new SearchTask(this)).printQueries());
     }
   }
-  
+
   @Override
   public void close() throws IOException {
     if (indexWriter != null) {
       indexWriter.close();
     }
-    IOUtils.close(indexReader, directory, 
-                  taxonomyWriter, taxonomyReader, taxonomyDir, 
-                  docMaker, facetSource, contentSource);
-    
+    IOUtils.close(
+        indexReader,
+        directory,
+        taxonomyWriter,
+        taxonomyReader,
+        taxonomyDir,
+        docMaker,
+        facetSource,
+        contentSource);
+
     // close all perf objects that are closeable.
     ArrayList<Closeable> perfObjectsToClose = new ArrayList<>();
     for (Object obj : perfObjects.values()) {
@@ -161,7 +186,7 @@ public class PerfRunData implements Closeable {
     IOUtils.close(perfObjectsToClose);
   }
 
-  // clean old stuff, reopen 
+  // clean old stuff, reopen
   public void reinit(boolean eraseIndex) throws Exception {
 
     // cleanup index
@@ -175,14 +200,14 @@ public class PerfRunData implements Closeable {
     IOUtils.close(taxonomyWriter, taxonomyReader, taxonomyDir);
     taxonomyWriter = null;
     taxonomyReader = null;
-    
+
     // directory (default is ram-dir).
     directory = createDirectory(eraseIndex, "index", "directory");
     taxonomyDir = createDirectory(eraseIndex, "taxo", "taxonomy.directory");
 
     // inputs
     resetInputs();
-    
+
     // release unused stuff
     System.runFinalization();
     System.gc();
@@ -191,8 +216,8 @@ public class PerfRunData implements Closeable {
     setStartTimeMillis();
   }
 
-  private Directory createDirectory(boolean eraseIndex, String dirName,
-      String dirParam) throws IOException {
+  private Directory createDirectory(boolean eraseIndex, String dirName, String dirParam)
+      throws IOException {
     String dirImpl = config.get(dirParam, DEFAULT_DIRECTORY);
     if ("FSDirectory".equals(dirImpl)) {
       Path workDir = Paths.get(config.get("work.dir", "work"));
@@ -214,66 +239,55 @@ public class PerfRunData implements Closeable {
 
     throw new IOException("Directory type not supported: " + dirImpl);
   }
-  
+
   /** Returns an object that was previously set by {@link #setPerfObject(String, Object)}. */
   public synchronized Object getPerfObject(String key) {
     return perfObjects.get(key);
   }
-  
+
   /**
-   * Sets an object that is required by {@link PerfTask}s, keyed by the given
-   * {@code key}. If the object implements {@link Closeable}, it will be closed
-   * by {@link #close()}.
+   * Sets an object that is required by {@link PerfTask}s, keyed by the given {@code key}. If the
+   * object implements {@link Closeable}, it will be closed by {@link #close()}.
    */
   public synchronized void setPerfObject(String key, Object obj) {
     perfObjects.put(key, obj);
   }
-  
+
   public long setStartTimeMillis() {
     startTimeMillis = System.currentTimeMillis();
     return startTimeMillis;
   }
 
-  /**
-   * @return Start time in milliseconds
-   */
+  /** @return Start time in milliseconds */
   public long getStartTimeMillis() {
     return startTimeMillis;
   }
 
-  /**
-   * @return Returns the points.
-   */
+  /** @return Returns the points. */
   public Points getPoints() {
     return points;
   }
 
-  /**
-   * @return Returns the directory.
-   */
+  /** @return Returns the directory. */
   public Directory getDirectory() {
     return directory;
   }
 
-  /**
-   * @param directory The directory to set.
-   */
+  /** @param directory The directory to set. */
   public void setDirectory(Directory directory) {
     this.directory = directory;
   }
 
-  /**
-   * @return Returns the taxonomy directory
-   */
+  /** @return Returns the taxonomy directory */
   public Directory getTaxonomyDir() {
     return taxonomyDir;
   }
-  
+
   /**
-   * Set the taxonomy reader. Takes ownership of that taxonomy reader, that is,
-   * internally performs taxoReader.incRef() (If caller no longer needs that 
-   * reader it should decRef()/close() it after calling this method, otherwise, 
-   * the reader will remain open). 
+   * Set the taxonomy reader. Takes ownership of that taxonomy reader, that is, internally performs
+   * taxoReader.incRef() (If caller no longer needs that reader it should decRef()/close() it after
+   * calling this method, otherwise, the reader will remain open).
+   *
    * @param taxoReader The taxonomy reader to set.
    */
   public synchronized void setTaxonomyReader(TaxonomyReader taxoReader) throws IOException {
@@ -283,17 +297,16 @@ public class PerfRunData implements Closeable {
     if (taxonomyReader != null) {
       taxonomyReader.decRef();
     }
-    
+
     if (taxoReader != null) {
       taxoReader.incRef();
     }
     this.taxonomyReader = taxoReader;
   }
-  
+
   /**
-   * @return Returns the taxonomyReader.  NOTE: this returns a
-   * reference.  You must call TaxonomyReader.decRef() when
-   * you're done.
+   * @return Returns the taxonomyReader. NOTE: this returns a reference. You must call
+   *     TaxonomyReader.decRef() when you're done.
    */
   public synchronized TaxonomyReader getTaxonomyReader() {
     if (taxonomyReader != null) {
@@ -301,22 +314,19 @@ public class PerfRunData implements Closeable {
     }
     return taxonomyReader;
   }
-  
-  /**
-   * @param taxoWriter The taxonomy writer to set.
-   */
+
+  /** @param taxoWriter The taxonomy writer to set. */
   public void setTaxonomyWriter(TaxonomyWriter taxoWriter) {
     this.taxonomyWriter = taxoWriter;
   }
-  
+
   public TaxonomyWriter getTaxonomyWriter() {
     return taxonomyWriter;
   }
-  
+
   /**
-   * @return Returns the indexReader.  NOTE: this returns a
-   * reference.  You must call IndexReader.decRef() when
-   * you're done.
+   * @return Returns the indexReader. NOTE: this returns a reference. You must call
+   *     IndexReader.decRef() when you're done.
    */
   public synchronized DirectoryReader getIndexReader() {
     if (indexReader != null) {
@@ -326,9 +336,8 @@ public class PerfRunData implements Closeable {
   }
 
   /**
-   * @return Returns the indexSearcher.  NOTE: this returns
-   * a reference to the underlying IndexReader.  You must
-   * call IndexReader.decRef() when you're done.
+   * @return Returns the indexSearcher. NOTE: this returns a reference to the underlying
+   *     IndexReader. You must call IndexReader.decRef() when you're done.
    */
   public synchronized IndexSearcher getIndexSearcher() {
     if (indexReader != null) {
@@ -338,17 +347,17 @@ public class PerfRunData implements Closeable {
   }
 
   /**
-   * Set the index reader. Takes ownership of that index reader, that is,
-   * internally performs indexReader.incRef() (If caller no longer needs that 
-   * reader it should decRef()/close() it after calling this method, otherwise, 
-   * the reader will remain open). 
+   * Set the index reader. Takes ownership of that index reader, that is, internally performs
+   * indexReader.incRef() (If caller no longer needs that reader it should decRef()/close() it after
+   * calling this method, otherwise, the reader will remain open).
+   *
    * @param indexReader The indexReader to set.
    */
   public synchronized void setIndexReader(DirectoryReader indexReader) throws IOException {
     if (indexReader == this.indexReader) {
       return;
     }
-    
+
     if (this.indexReader != null) {
       // Release current IR
       this.indexReader.decRef();
@@ -359,34 +368,28 @@ public class PerfRunData implements Closeable {
       // Hold reference to new IR
       indexReader.incRef();
       indexSearcher = new IndexSearcher(indexReader);
-      // TODO Some day we should make the query cache in this module configurable and control clearing the cache
+      // TODO Some day we should make the query cache in this module configurable and control
+      // clearing the cache
       indexSearcher.setQueryCache(null);
     } else {
       indexSearcher = null;
     }
   }
 
-  /**
-   * @return Returns the indexWriter.
-   */
+  /** @return Returns the indexWriter. */
   public IndexWriter getIndexWriter() {
     return indexWriter;
   }
 
-  /**
-   * @param indexWriter The indexWriter to set.
-   */
+  /** @param indexWriter The indexWriter to set. */
   public void setIndexWriter(IndexWriter indexWriter) {
     this.indexWriter = indexWriter;
   }
 
-  /**
-   * @return Returns the analyzer.
-   */
+  /** @return Returns the analyzer. */
   public Analyzer getAnalyzer() {
     return analyzer;
   }
-
 
   public void setAnalyzer(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -396,7 +399,7 @@ public class PerfRunData implements Closeable {
   public ContentSource getContentSource() {
     return contentSource;
   }
-  
+
   /** Returns the DocMaker. */
   public DocMaker getDocMaker() {
     return docMaker;
@@ -407,23 +410,17 @@ public class PerfRunData implements Closeable {
     return facetSource;
   }
 
-  /**
-   * @return the locale
-   */
+  /** @return the locale */
   public Locale getLocale() {
     return locale;
   }
 
-  /**
-   * @param locale the locale to set
-   */
+  /** @param locale the locale to set */
   public void setLocale(Locale locale) {
     this.locale = locale;
   }
 
-  /**
-   * @return Returns the config.
-   */
+  /** @return Returns the config. */
   public Config getConfig() {
     return config;
   }
@@ -443,10 +440,8 @@ public class PerfRunData implements Closeable {
     }
   }
 
-  /**
-   * @return Returns the queryMaker by read task type (class)
-   */
-  synchronized public QueryMaker getQueryMaker(ReadTask readTask) {
+  /** @return Returns the queryMaker by read task type (class) */
+  public synchronized QueryMaker getQueryMaker(ReadTask readTask) {
     // mapping the query maker by task class allows extending/adding new search/read tasks
     // without needing to modify this class.
     Class<? extends ReadTask> readTaskClass = readTask.getClass();
@@ -458,12 +453,12 @@ public class PerfRunData implements Closeable {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
-      readTaskQueryMaker.put(readTaskClass,qm);
+      readTaskQueryMaker.put(readTaskClass, qm);
     }
     return qm;
   }
 
-  public Map<String,AnalyzerFactory> getAnalyzerFactories() {
+  public Map<String, AnalyzerFactory> getAnalyzerFactories() {
     return analyzerFactories;
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.ja.util;
 
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,16 +25,14 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-
+import org.apache.lucene.analysis.ja.dict.BinaryDictionary;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 
-import org.apache.lucene.analysis.ja.dict.BinaryDictionary;
-
 abstract class BinaryDictionaryWriter {
-  private final static int ID_LIMIT = 8192;
+  private static final int ID_LIMIT = 8192;
 
   private final Class<? extends BinaryDictionary> implClazz;
   protected ByteBuffer buffer;
@@ -48,18 +45,19 @@ abstract class BinaryDictionaryWriter {
     this.implClazz = implClazz;
     buffer = ByteBuffer.allocateDirect(size);
   }
-  
+
   /**
    * put the entry in map
+   *
    * @return current position of buffer, which will be wordId of next entry
    */
   public int put(String[] entry) {
     short leftId = Short.parseShort(entry[1]);
     short rightId = Short.parseShort(entry[2]);
     short wordCost = Short.parseShort(entry[3]);
-    
+
     StringBuilder sb = new StringBuilder();
-    
+
     // build up the POS string
     for (int i = 4; i < 8; i++) {
       String part = entry[i];
@@ -71,10 +69,10 @@ abstract class BinaryDictionaryWriter {
         sb.append(part);
       }
     }
-    
+
     String posData = sb.toString();
     if (posData.isEmpty()) {
-        throw new IllegalArgumentException("POS fields are empty");
+      throw new IllegalArgumentException("POS fields are empty");
     }
     sb.setLength(0);
     sb.append(CSVUtil.quoteEscape(posData));
@@ -87,17 +85,18 @@ abstract class BinaryDictionaryWriter {
       sb.append(CSVUtil.quoteEscape(entry[9]));
     }
     String fullPOSData = sb.toString();
-    
+
     String baseForm = entry[10];
     String reading = entry[11];
     String pronunciation = entry[12];
-    
+
     // extend buffer if necessary
     int left = buffer.remaining();
     // worst case: two short, 3 bytes, and features (all as utf-16)
-    int worstCase = 4 + 3 + 2*(baseForm.length() + reading.length() + pronunciation.length());
+    int worstCase = 4 + 3 + 2 * (baseForm.length() + reading.length() + pronunciation.length());
     if (worstCase > left) {
-      ByteBuffer newBuffer = ByteBuffer.allocateDirect(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
+      ByteBuffer newBuffer =
+          ByteBuffer.allocateDirect(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;
@@ -105,7 +104,7 @@ abstract class BinaryDictionaryWriter {
 
     int flags = 0;
     if (baseForm.isEmpty()) {
-        throw new IllegalArgumentException("base form is empty");
+      throw new IllegalArgumentException("base form is empty");
     }
     if (!("*".equals(baseForm) || baseForm.equals(entry[0]))) {
       flags |= BinaryDictionary.HAS_BASEFORM;
@@ -118,25 +117,25 @@ abstract class BinaryDictionaryWriter {
     }
 
     if (leftId != rightId) {
-        throw new IllegalArgumentException("rightId != leftId: " + rightId + " " +leftId);
+      throw new IllegalArgumentException("rightId != leftId: " + rightId + " " + leftId);
     }
     if (leftId >= ID_LIMIT) {
-        throw new IllegalArgumentException("leftId >= " + ID_LIMIT + ": " + leftId);
+      throw new IllegalArgumentException("leftId >= " + ID_LIMIT + ": " + leftId);
     }
     // add pos mapping
-    int toFill = 1+leftId - posDict.size();
+    int toFill = 1 + leftId - posDict.size();
     for (int i = 0; i < toFill; i++) {
       posDict.add(null);
     }
-    
+
     String existing = posDict.get(leftId);
     if (existing != null && existing.equals(fullPOSData) == false) {
-        // TODO: test me
-        throw new IllegalArgumentException("Multiple entries found for leftID=" + leftId);
+      // TODO: test me
+      throw new IllegalArgumentException("Multiple entries found for leftID=" + leftId);
     }
     posDict.set(leftId, fullPOSData);
-    
-    buffer.putShort((short)(leftId << 3 | flags));
+
+    buffer.putShort((short) (leftId << 3 | flags));
     buffer.putShort(wordCost);
 
     if ((flags & BinaryDictionary.HAS_BASEFORM) != 0) {
@@ -150,7 +149,7 @@ abstract class BinaryDictionaryWriter {
         buffer.putChar(baseForm.charAt(i));
       }
     }
-    
+
     if ((flags & BinaryDictionary.HAS_READING) != 0) {
       if (isKatakana(reading)) {
         buffer.put((byte) (reading.length() << 1 | 1));
@@ -162,7 +161,7 @@ abstract class BinaryDictionaryWriter {
         }
       }
     }
-    
+
     if ((flags & BinaryDictionary.HAS_PRONUNCIATION) != 0) {
       // we can save 150KB here, but it makes the reader a little complicated.
       // int shared = sharedPrefix(reading, pronunciation);
@@ -178,10 +177,10 @@ abstract class BinaryDictionaryWriter {
         }
       }
     }
-    
+
     return buffer.position();
   }
-  
+
   private boolean isKatakana(String s) {
     for (int i = 0; i < s.length(); i++) {
       char ch = s.charAt(i);
@@ -191,46 +190,49 @@ abstract class BinaryDictionaryWriter {
     }
     return true;
   }
-  
+
   private void writeKatakana(String s) {
     for (int i = 0; i < s.length(); i++) {
       buffer.put((byte) (s.charAt(i) - 0x30A0));
     }
   }
-  
+
   private String toKatakana(String s) {
     char[] text = new char[s.length()];
     for (int i = 0; i < s.length(); i++) {
       char ch = s.charAt(i);
       if (ch > 0x3040 && ch < 0x3097) {
-        text[i] = (char)(ch + 0x60);
+        text[i] = (char) (ch + 0x60);
       } else {
         text[i] = ch;
       }
     }
     return new String(text);
   }
-  
+
   private static int sharedPrefix(String left, String right) {
     int len = left.length() < right.length() ? left.length() : right.length();
-    for (int i = 0; i < len; i++)
-      if (left.charAt(i) != right.charAt(i))
-        return i;
+    for (int i = 0; i < len; i++) if (left.charAt(i) != right.charAt(i)) return i;
     return len;
   }
-  
+
   void addMapping(int sourceId, int wordId) {
     if (wordId <= lastWordId) {
-      throw new IllegalStateException("words out of order: " + wordId + " vs lastID: " + lastWordId);
+      throw new IllegalStateException(
+          "words out of order: " + wordId + " vs lastID: " + lastWordId);
     }
-    
+
     if (sourceId > lastSourceId) {
       targetMapOffsets = ArrayUtil.grow(targetMapOffsets, sourceId + 1);
       for (int i = lastSourceId + 1; i <= sourceId; i++) {
         targetMapOffsets[i] = targetMapEndOffset;
       }
     } else if (sourceId != lastSourceId) {
-      throw new IllegalStateException("source ids not in increasing order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId);
+      throw new IllegalStateException(
+          "source ids not in increasing order: lastSourceId="
+              + lastSourceId
+              + " vs sourceId="
+              + sourceId);
     }
 
     targetMap = ArrayUtil.grow(targetMap, targetMapEndOffset + 1);
@@ -244,11 +246,12 @@ abstract class BinaryDictionaryWriter {
   final String getBaseFileName() {
     return implClazz.getName().replace('.', '/');
   }
-  
+
   /**
-   * Write dictionary in file
-   * Dictionary format is:
-   * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
+   * Write dictionary in file Dictionary format is: [Size of dictionary(int)], [entry:{left
+   * id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}],
+   * [entry...], [entry...].....
+   *
    * @throws IOException if an I/O error occurs writing the dictionary files
    */
   public void write(Path baseDir) throws IOException {
@@ -257,15 +260,15 @@ abstract class BinaryDictionaryWriter {
     writeTargetMap(baseDir.resolve(baseName + BinaryDictionary.TARGETMAP_FILENAME_SUFFIX));
     writePosDict(baseDir.resolve(baseName + BinaryDictionary.POSDICT_FILENAME_SUFFIX));
   }
-  
+
   // TODO: maybe this int[] should instead be the output to the FST...
   private void writeTargetMap(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
-      
+
       final int numSourceIds = lastSourceId + 1;
       out.writeVInt(targetMapEndOffset); // <-- size of main array
       out.writeVInt(numSourceIds + 1); // <-- size of offset array (+ 1 more entry)
@@ -282,27 +285,29 @@ abstract class BinaryDictionaryWriter {
         prev += delta;
       }
       if (sourceId != numSourceIds) {
-        throw new IllegalStateException("sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
+        throw new IllegalStateException(
+            "sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
       }
     }
   }
-  
+
   private void writePosDict(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.POSDICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(posDict.size());
       for (String s : posDict) {
         if (s == null) {
-          out.writeByte((byte)0);
-          out.writeByte((byte)0);
-          out.writeByte((byte)0);
+          out.writeByte((byte) 0);
+          out.writeByte((byte) 0);
+          out.writeByte((byte) 0);
         } else {
           String[] data = CSVUtil.parse(s);
           if (data.length != 3) {
-            throw new IllegalArgumentException("Malformed pos/inflection: " + s + "; expected 3 characters");
+            throw new IllegalArgumentException(
+                "Malformed pos/inflection: " + s + "; expected 3 characters");
           }
           out.writeString(data[0]);
           out.writeString(data[1]);
@@ -311,17 +316,17 @@ abstract class BinaryDictionaryWriter {
       }
     }
   }
-  
+
   private void writeDictionary(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.DICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(buffer.position());
       final WritableByteChannel channel = Channels.newChannel(bos);
       // Write Buffer
-      buffer.flip();  // set position to 0, set limit to current position
+      buffer.flip(); // set position to 0, set limit to current position
       channel.write(buffer);
       assert buffer.remaining() == 0L;
     }

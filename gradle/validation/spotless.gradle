@@ -63,28 +63,41 @@ allprojects { prj ->
                 "**/tartarus/**"
             break
 
-          // Partially complete.
-
-          // All others - disable reformatting/ checks for now.
+          case ":lucene:demo":
+          case ":lucene:analysis:morfologik":
           case ":lucene:analysis:icu":
           case ":lucene:analysis:kuromoji":
-          case ":lucene:analysis:morfologik":
+          case ":lucene:memory":
+          case ":lucene:benchmark":
           case ":lucene:analysis:nori":
           case ":lucene:analysis:opennlp":
           case ":lucene:analysis:phonetic":
           case ":lucene:analysis:smartcn":
           case ":lucene:analysis:stempel":
-          case ":lucene:backward-codecs":
-          case ":lucene:benchmark":
           case ":lucene:classification":
+          case ":lucene:backward-codecs":
           case ":lucene:codecs":
-          case ":lucene:demo":
-          case ":lucene:expressions":
-          case ":lucene:facet":
-          case ":lucene:grouping":
           case ":lucene:join":
+            target "src/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+          case ":lucene:expressions":
+            target "src/**/*.java"
+            targetExclude "**/resources/**", "**/JavascriptLexer.java", "**/JavascriptParser.java",
+                "**/JavascriptVisitor.java"
+            break
+
+            // Partially complete.
+
+          case ":lucene:facet":
+            target "src/**/*.java"
+            targetExclude "**/taxonomy.8.6.3-cfs.zip"
+            break
+
+          // All others - disable reformatting/ checks for now.
+          case ":lucene:grouping":
           case ":lucene:luke":
-          case ":lucene:memory":
           case ":lucene:misc":
           case ":lucene:monitor":
           case ":lucene:queryparser":
@@ -99,6 +112,12 @@ allprojects { prj ->
             target 'non-existing/**'
             break
         }
+      }
+    }
+
+    spotlessJava {
+      doFirst {
+        project.mkdir("${buildDir}/spotless/spotlessJava")
       }
     }
   }

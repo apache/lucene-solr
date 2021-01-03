@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
 import java.util.Properties;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -33,5 +31,4 @@ public class TestConfig extends LuceneTestCase {
     assertEquals("c:\\temp", conf.get("work.dir1", ""));
     assertEquals("c:/temp", conf.get("work.dir2", ""));
   }
-
 }

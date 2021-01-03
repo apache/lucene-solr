@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.IndexWriter;
@@ -34,24 +33,26 @@ import org.apache.lucene.util.TestUtil;
 // LUCENE-7501
 public class TestManyPointsInOldIndex extends LuceneTestCase {
 
-// To regenerate the back index zip:
-//
-// Compile:
-//   1) temporarily remove 'extends LuceneTestCase' above (else java doesn't see our static void main)
-//   2) ant compile-test
-//
-// Run:
-//   1) java -cp ../build/backward-codecs/classes/test:../build/core/classes/java org.apache.lucene.backward_index.TestManyPointsInOldIndex
-//
-//  cd manypointsindex
-//  zip manypointsindex.zip *
+  // To regenerate the back index zip:
+  //
+  // Compile:
+  //   1) temporarily remove 'extends LuceneTestCase' above (else java doesn't see our static void
+  // main)
+  //   2) ant compile-test
+  //
+  // Run:
+  //   1) java -cp ../build/backward-codecs/classes/test:../build/core/classes/java
+  // org.apache.lucene.backward_index.TestManyPointsInOldIndex
+  //
+  //  cd manypointsindex
+  //  zip manypointsindex.zip *
 
   public static void main(String[] args) throws IOException {
     Directory dir = FSDirectory.open(Paths.get("manypointsindex"));
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig());
-    for(int i=0;i<1025;i++) {
+    for (int i = 0; i < 1025; i++) {
       Document doc = new Document();
-      doc.add(new IntPoint("intpoint", 1025-i));
+      doc.add(new IntPoint("intpoint", 1025 - i));
       w.addDocument(doc);
     }
     w.close();

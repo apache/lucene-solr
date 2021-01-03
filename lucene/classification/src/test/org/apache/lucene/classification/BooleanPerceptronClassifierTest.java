@@ -27,9 +27,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Testcase for {@link org.apache.lucene.classification.BooleanPerceptronClassifier}
- */
+/** Testcase for {@link org.apache.lucene.classification.BooleanPerceptronClassifier} */
 public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Boolean> {
 
   @Test
@@ -38,7 +36,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
+      BooleanPerceptronClassifier classifier =
+          new BooleanPerceptronClassifier(
+              leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
       checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
@@ -54,7 +54,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, 50d, booleanFieldName, textFieldName);
+      BooleanPerceptronClassifier classifier =
+          new BooleanPerceptronClassifier(
+              leafReader, analyzer, null, 1, 50d, booleanFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
       checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
@@ -71,7 +73,9 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName);
+      BooleanPerceptronClassifier classifier =
+          new BooleanPerceptronClassifier(
+              leafReader, analyzer, query, 1, null, booleanFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, false);
       checkCorrectClassification(classifier, POLITICS_INPUT, true);
     } finally {
@@ -87,10 +91,13 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
     int numDocs = atLeast(10);
     LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
-      BooleanPerceptronClassifier classifier = new BooleanPerceptronClassifier(leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
+      BooleanPerceptronClassifier classifier =
+          new BooleanPerceptronClassifier(
+              leafReader, analyzer, null, 1, null, booleanFieldName, textFieldName);
 
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          classifier, booleanFieldName, textFieldName, -1);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              leafReader, classifier, booleanFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
 
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
@@ -131,5 +138,4 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
       leafReader.close();
     }
   }
-
 }

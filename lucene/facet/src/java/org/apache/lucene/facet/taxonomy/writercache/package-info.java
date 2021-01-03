@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Improves indexing time by caching a map of CategoryPath to their Ordinal.  
- */
+/** Improves indexing time by caching a map of CategoryPath to their Ordinal. */
 package org.apache.lucene.facet.taxonomy.writercache;

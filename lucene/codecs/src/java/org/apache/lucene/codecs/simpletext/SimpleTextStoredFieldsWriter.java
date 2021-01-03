@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -33,36 +31,40 @@ import org.apache.lucene.util.IOUtils;
 
 /**
  * Writes plain-text stored fields.
- * <p>
- * <b>FOR RECREATIONAL USE ONLY</b>
+ *
+ * <p><b>FOR RECREATIONAL USE ONLY</b>
+ *
  * @lucene.experimental
  */
 public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   private int numDocsWritten = 0;
   private IndexOutput out;
-  
-  final static String FIELDS_EXTENSION = "fld";
-  
-  final static BytesRef TYPE_STRING = new BytesRef("string");
-  final static BytesRef TYPE_BINARY = new BytesRef("binary");
-  final static BytesRef TYPE_INT    = new BytesRef("int");
-  final static BytesRef TYPE_LONG   = new BytesRef("long");
-  final static BytesRef TYPE_FLOAT  = new BytesRef("float");
-  final static BytesRef TYPE_DOUBLE = new BytesRef("double");
 
-  final static BytesRef END      = new BytesRef("END");
-  final static BytesRef DOC      = new BytesRef("doc ");
-  final static BytesRef FIELD    = new BytesRef("  field ");
-  final static BytesRef NAME     = new BytesRef("    name ");
-  final static BytesRef TYPE     = new BytesRef("    type ");
-  final static BytesRef VALUE    = new BytesRef("    value ");
-  
+  static final String FIELDS_EXTENSION = "fld";
+
+  static final BytesRef TYPE_STRING = new BytesRef("string");
+  static final BytesRef TYPE_BINARY = new BytesRef("binary");
+  static final BytesRef TYPE_INT = new BytesRef("int");
+  static final BytesRef TYPE_LONG = new BytesRef("long");
+  static final BytesRef TYPE_FLOAT = new BytesRef("float");
+  static final BytesRef TYPE_DOUBLE = new BytesRef("double");
+
+  static final BytesRef END = new BytesRef("END");
+  static final BytesRef DOC = new BytesRef("doc ");
+  static final BytesRef FIELD = new BytesRef("  field ");
+  static final BytesRef NAME = new BytesRef("    name ");
+  static final BytesRef TYPE = new BytesRef("    type ");
+  static final BytesRef VALUE = new BytesRef("    value ");
+
   private final BytesRefBuilder scratch = new BytesRefBuilder();
-  
-  public SimpleTextStoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
+
+  public SimpleTextStoredFieldsWriter(Directory directory, String segment, IOContext context)
+      throws IOException {
     boolean success = false;
     try {
-      out = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
+      out =
+          directory.createOutput(
+              IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
       success = true;
     } finally {
       if (!success) {
@@ -76,7 +78,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     write(DOC);
     write(Integer.toString(numDocsWritten));
     newLine();
-    
+
     numDocsWritten++;
   }
 
@@ -85,11 +87,11 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
     write(FIELD);
     write(Integer.toString(info.number));
     newLine();
-    
+
     write(NAME);
     write(field.name());
     newLine();
-    
+
     write(TYPE);
     final Number n = field.numericValue();
 
@@ -97,7 +99,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
       if (n instanceof Byte || n instanceof Short || n instanceof Integer) {
         write(TYPE_INT);
         newLine();
-          
+
         write(VALUE);
         write(Integer.toString(n.intValue()));
         newLine();
@@ -111,31 +113,34 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
       } else if (n instanceof Float) {
         write(TYPE_FLOAT);
         newLine();
-          
+
         write(VALUE);
         write(Float.toString(n.floatValue()));
         newLine();
       } else if (n instanceof Double) {
         write(TYPE_DOUBLE);
         newLine();
-          
+
         write(VALUE);
         write(Double.toString(n.doubleValue()));
         newLine();
       } else {
         throw new IllegalArgumentException("cannot store numeric type " + n.getClass());
       }
-    } else { 
+    } else {
       BytesRef bytes = field.binaryValue();
       if (bytes != null) {
         write(TYPE_BINARY);
         newLine();
-        
+
         write(VALUE);
         write(bytes);
         newLine();
       } else if (field.stringValue() == null) {
-        throw new IllegalArgumentException("field " + field.name() + " is stored but does not have binaryValue, stringValue nor numericValue");
+        throw new IllegalArgumentException(
+            "field "
+                + field.name()
+                + " is stored but does not have binaryValue, stringValue nor numericValue");
       } else {
         write(TYPE_STRING);
         newLine();
@@ -149,8 +154,14 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
     if (numDocsWritten != numDocs) {
-      throw new RuntimeException("mergeFields produced an invalid result: docCount is " + numDocs 
-          + " but only saw " + numDocsWritten + " file=" + out.toString() + "; now aborting this merge to prevent index corruption");
+      throw new RuntimeException(
+          "mergeFields produced an invalid result: docCount is "
+              + numDocs
+              + " but only saw "
+              + numDocsWritten
+              + " file="
+              + out.toString()
+              + "; now aborting this merge to prevent index corruption");
     }
     write(END);
     newLine();
@@ -165,15 +176,15 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
       out = null;
     }
   }
-  
+
   private void write(String s) throws IOException {
     SimpleTextUtil.write(out, s, scratch);
   }
-  
+
   private void write(BytesRef bytes) throws IOException {
     SimpleTextUtil.write(out, bytes);
   }
-  
+
   private void newLine() throws IOException {
     SimpleTextUtil.writeNewline(out);
   }

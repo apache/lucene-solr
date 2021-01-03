@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.utils;
 
-
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.byTask.feeds.ContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource;
@@ -33,14 +31,12 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * Extract the downloaded Wikipedia dump into separate files for indexing.
- */
+/** Extract the downloaded Wikipedia dump into separate files for indexing. */
 public class ExtractWikipedia {
 
   private Path outputDir;
 
-  static public int count = 0;
+  public static int count = 0;
 
   static final int BASE = 10;
   protected DocMaker docMaker;
@@ -94,11 +90,14 @@ public class ExtractWikipedia {
     long start = System.currentTimeMillis();
     try {
       while ((doc = docMaker.makeDocument()) != null) {
-        create(doc.get(DocMaker.ID_FIELD), doc.get(DocMaker.TITLE_FIELD), doc
-            .get(DocMaker.DATE_FIELD), doc.get(DocMaker.BODY_FIELD));
+        create(
+            doc.get(DocMaker.ID_FIELD),
+            doc.get(DocMaker.TITLE_FIELD),
+            doc.get(DocMaker.DATE_FIELD),
+            doc.get(DocMaker.BODY_FIELD));
       }
     } catch (NoMoreDataException e) {
-      //continue
+      // continue
     }
     long finish = System.currentTimeMillis();
     System.out.println("Extraction took " + (finish - start) + " ms");
@@ -121,7 +120,7 @@ public class ExtractWikipedia {
         keepImageOnlyDocs = false;
       }
     }
-    
+
     Properties properties = new Properties();
     properties.setProperty("docs.file", wikipedia.toAbsolutePath().toString());
     properties.setProperty("content.source.forever", "false");
@@ -130,7 +129,7 @@ public class ExtractWikipedia {
 
     ContentSource source = new EnwikiContentSource();
     source.setConfig(config);
-    
+
     DocMaker docMaker = new DocMaker();
     docMaker.setConfig(config, source);
     docMaker.resetInputs();
@@ -145,9 +144,10 @@ public class ExtractWikipedia {
   }
 
   private static void printUsage() {
-    System.err.println("Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractWikipedia --input|-i <Path to Wikipedia XML file> " +
-            "[--output|-o <Output Path>] [--discardImageOnlyDocs|-d]");
-    System.err.println("--discardImageOnlyDocs tells the extractor to skip Wiki docs that contain only images");
+    System.err.println(
+        "Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractWikipedia --input|-i <Path to Wikipedia XML file> "
+            + "[--output|-o <Output Path>] [--discardImageOnlyDocs|-d]");
+    System.err.println(
+        "--discardImageOnlyDocs tells the extractor to skip Wiki docs that contain only images");
   }
-
 }

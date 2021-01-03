@@ -18,12 +18,10 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
-/**
- * Test Search task which counts number of searches.
- */
+/** Test Search task which counts number of searches. */
 public class CountingSearchTestTask extends SearchTask {
 
-  public static int numSearches = 0; 
+  public static int numSearches = 0;
   public static long startMillis;
   public static long lastMillis;
   public static long prevLastMillis;

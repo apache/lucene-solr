@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.analysis.ja.tokenattributes;
 
-
 import org.apache.lucene.analysis.ja.Token;
 import org.apache.lucene.util.Attribute;
 
 /**
  * Attribute for Kuromoji inflection data.
- * <p>
- * Note: in some cases this value may not be applicable,
- * and will be null.
+ *
+ * <p>Note: in some cases this value may not be applicable, and will be null.
  */
 public interface InflectionAttribute extends Attribute {
   public String getInflectionType();
+
   public String getInflectionForm();
+
   public void setToken(Token token);
 }

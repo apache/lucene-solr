@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.classification.utils;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -52,8 +50,10 @@ public class DatasetSplitter {
   /**
    * Create a {@link DatasetSplitter} by giving test and cross validation IDXs sizes
    *
-   * @param testRatio            the ratio of the original index to be used for the test IDX as a <code>double</code> between 0.0 and 1.0
-   * @param crossValidationRatio the ratio of the original index to be used for the c.v. IDX as a <code>double</code> between 0.0 and 1.0
+   * @param testRatio the ratio of the original index to be used for the test IDX as a <code>double
+   *     </code> between 0.0 and 1.0
+   * @param crossValidationRatio the ratio of the original index to be used for the c.v. IDX as a
+   *     <code>double</code> between 0.0 and 1.0
    */
   public DatasetSplitter(double testRatio, double crossValidationRatio) {
     this.crossValidationRatio = crossValidationRatio;
@@ -63,18 +63,28 @@ public class DatasetSplitter {
   /**
    * Split a given index into 3 indexes for training, test and cross validation tasks respectively
    *
-   * @param originalIndex        an {@link org.apache.lucene.index.LeafReader} on the source index
-   * @param trainingIndex        a {@link Directory} used to write the training index
-   * @param testIndex            a {@link Directory} used to write the test index
+   * @param originalIndex an {@link org.apache.lucene.index.LeafReader} on the source index
+   * @param trainingIndex a {@link Directory} used to write the training index
+   * @param testIndex a {@link Directory} used to write the test index
    * @param crossValidationIndex a {@link Directory} used to write the cross validation index
-   * @param analyzer             {@link Analyzer} used to create the new docs
-   * @param termVectors          {@code true} if term vectors should be kept
-   * @param classFieldName       name of the field used as the label for classification; this must be indexed with sorted doc values
-   * @param fieldNames           names of fields that need to be put in the new indexes or <code>null</code> if all should be used
+   * @param analyzer {@link Analyzer} used to create the new docs
+   * @param termVectors {@code true} if term vectors should be kept
+   * @param classFieldName name of the field used as the label for classification; this must be
+   *     indexed with sorted doc values
+   * @param fieldNames names of fields that need to be put in the new indexes or <code>null</code>
+   *     if all should be used
    * @throws IOException if any writing operation fails on any of the indexes
    */
-  public void split(IndexReader originalIndex, Directory trainingIndex, Directory testIndex, Directory crossValidationIndex,
-                    Analyzer analyzer, boolean termVectors, String classFieldName, String... fieldNames) throws IOException {
+  public void split(
+      IndexReader originalIndex,
+      Directory trainingIndex,
+      Directory testIndex,
+      Directory crossValidationIndex,
+      Analyzer analyzer,
+      boolean termVectors,
+      String classFieldName,
+      String... fieldNames)
+      throws IOException {
 
     // create IWs for train / test / cv IDXs
     IndexWriter testWriter = new IndexWriter(testIndex, new IndexWriterConfig(analyzer));
@@ -89,7 +99,8 @@ public class DatasetSplitter {
       if (classValues != null) {
         valueCount = classValues.getValueCount();
       } else {
-        SortedSetDocValues sortedSetDocValues = leave.reader().getSortedSetDocValues(classFieldName);
+        SortedSetDocValues sortedSetDocValues =
+            leave.reader().getSortedSetDocValues(classFieldName);
         if (sortedSetDocValues != null) {
           valueCount = sortedSetDocValues.getValueCount();
         }
@@ -109,7 +120,8 @@ public class DatasetSplitter {
       gs.setSortWithinGroup(Sort.INDEXORDER);
       gs.setAllGroups(true);
       gs.setGroupDocsLimit(originalIndex.maxDoc());
-      TopGroups<Object> topGroups = gs.search(indexSearcher, new MatchAllDocsQuery(), 0, noOfClasses);
+      TopGroups<Object> topGroups =
+          gs.search(indexSearcher, new MatchAllDocsQuery(), 0, noOfClasses);
 
       // set the type to be indexed, stored, with term vectors
       FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -167,7 +179,9 @@ public class DatasetSplitter {
     }
   }
 
-  private Document createNewDoc(IndexReader originalIndex, FieldType ft, ScoreDoc scoreDoc, String[] fieldNames) throws IOException {
+  private Document createNewDoc(
+      IndexReader originalIndex, FieldType ft, ScoreDoc scoreDoc, String[] fieldNames)
+      throws IOException {
     Document doc = new Document();
     Document document = originalIndex.document(scoreDoc.doc);
     if (fieldNames != null && fieldNames.length > 0) {
@@ -192,5 +206,4 @@ public class DatasetSplitter {
     }
     return doc;
   }
-
 }

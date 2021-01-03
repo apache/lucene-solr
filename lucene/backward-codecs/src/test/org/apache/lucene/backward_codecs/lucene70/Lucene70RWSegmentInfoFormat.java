@@ -19,7 +19,6 @@ package org.apache.lucene.backward_codecs.lucene70;
 
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -34,34 +33,35 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Version;
 
-/**
- * Writable version of Lucene70SegmentInfoFormat for testing
- */
+/** Writable version of Lucene70SegmentInfoFormat for testing */
 public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
 
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene70SegmentInfoFormat.SI_EXTENSION);
+    final String fileName =
+        IndexFileNames.segmentFileName(si.name, "", Lucene70SegmentInfoFormat.SI_EXTENSION);
 
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       // Only add the file once we've successfully created it, else IFD assert can trip:
       si.addFile(fileName);
-      CodecUtil.writeIndexHeader(output,
-              Lucene70SegmentInfoFormat.CODEC_NAME,
-              Lucene70SegmentInfoFormat.VERSION_CURRENT,
-              si.getId(),
-              "");
-     
+      CodecUtil.writeIndexHeader(
+          output,
+          Lucene70SegmentInfoFormat.CODEC_NAME,
+          Lucene70SegmentInfoFormat.VERSION_CURRENT,
+          si.getId(),
+          "");
+
       writeSegmentInfo(output, si);
 
       CodecUtil.writeFooter(output);
     }
   }
-  
+
   private void writeSegmentInfo(IndexOutput output, SegmentInfo si) throws IOException {
     Version version = si.getVersion();
     if (version.major < 7) {
-      throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
+      throw new IllegalArgumentException(
+          "invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
     }
     // Write the Lucene version that created this segment, since 3.1
     output.writeInt(version.major);
@@ -87,7 +87,8 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
     Set<String> files = si.files();
     for (String file : files) {
       if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
-        throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
+        throw new IllegalArgumentException(
+            "invalid files: expected segment=" + si.name + ", got=" + files);
       }
     }
     output.writeSetOfStrings(files);
@@ -143,7 +144,8 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
         } else if (ssf.getSelector() == SortedSetSelector.Type.MIDDLE_MAX) {
           output.writeByte((byte) 3);
         } else {
-          throw new IllegalStateException("Unexpected SortedSetSelector type: " + ssf.getSelector());
+          throw new IllegalStateException(
+              "Unexpected SortedSetSelector type: " + ssf.getSelector());
         }
       } else if (sortTypeID == 6) {
         SortedNumericSortField snsf = (SortedNumericSortField) sortField;
@@ -156,14 +158,16 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
         } else if (snsf.getNumericType() == SortField.Type.FLOAT) {
           output.writeByte((byte) 3);
         } else {
-          throw new IllegalStateException("Unexpected SortedNumericSelector type: " + snsf.getNumericType());
+          throw new IllegalStateException(
+              "Unexpected SortedNumericSelector type: " + snsf.getNumericType());
         }
         if (snsf.getSelector() == SortedNumericSelector.Type.MIN) {
           output.writeByte((byte) 0);
         } else if (snsf.getSelector() == SortedNumericSelector.Type.MAX) {
           output.writeByte((byte) 1);
         } else {
-          throw new IllegalStateException("Unexpected sorted numeric selector type: " + snsf.getSelector());
+          throw new IllegalStateException(
+              "Unexpected sorted numeric selector type: " + snsf.getSelector());
         }
       }
       output.writeByte((byte) (sortField.getReverse() ? 0 : 1));
@@ -173,14 +177,18 @@ public class Lucene70RWSegmentInfoFormat extends Lucene70SegmentInfoFormat {
       if (missingValue == null) {
         output.writeByte((byte) 0);
       } else {
-        switch(sortType) {
+        switch (sortType) {
           case STRING:
             if (missingValue == SortField.STRING_LAST) {
               output.writeByte((byte) 1);
             } else if (missingValue == SortField.STRING_FIRST) {
               output.writeByte((byte) 2);
             } else {
-              throw new AssertionError("unrecognized missing value for STRING field \"" + sortField.getField() + "\": " + missingValue);
+              throw new AssertionError(
+                  "unrecognized missing value for STRING field \""
+                      + sortField.getField()
+                      + "\": "
+                      + missingValue);
             }
             break;
           case LONG:
