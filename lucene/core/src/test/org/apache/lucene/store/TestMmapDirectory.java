@@ -40,7 +40,8 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
   }
 
   public void testAceWithThreads() throws Exception {
-    for (int iter = 0; iter < 10; iter++) {
+    final int iters = RANDOM_MULTIPLIER * (TEST_NIGHTLY ? 50 : 10);
+    for (int iter = 0; iter < iters; iter++) {
       Directory dir = getDirectory(createTempDir("testAceWithThreads"));
       IndexOutput out = dir.createOutput("test", IOContext.DEFAULT);
       Random random = random();
