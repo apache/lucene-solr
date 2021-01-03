@@ -19,34 +19,26 @@ package org.apache.lucene.monitor;
 
 import java.util.List;
 
-/**
- * For reporting events on a Monitor's query index
- */
+/** For reporting events on a Monitor's query index */
 public interface MonitorUpdateListener {
 
-  /**
-   * Called after a set of queries have been added to the Monitor's query index
-   */
-  default void afterUpdate(List<MonitorQuery> updates) {};
+  /** Called after a set of queries have been added to the Monitor's query index */
+  default void afterUpdate(List<MonitorQuery> updates) {}
+  ;
 
-  /**
-   * Called after a set of queries have been deleted from the Monitor's query index
-   */
-  default void afterDelete(List<String> queryIds) {};
+  /** Called after a set of queries have been deleted from the Monitor's query index */
+  default void afterDelete(List<String> queryIds) {}
+  ;
 
-  /**
-   * Called after all queries have been removed from the Monitor's query index
-   */
-  default void afterClear() {};
+  /** Called after all queries have been removed from the Monitor's query index */
+  default void afterClear() {}
+  ;
 
-  /**
-   * Called after the Monitor's query cache has been purged of deleted queries
-   */
-  default void onPurge() {};
+  /** Called after the Monitor's query cache has been purged of deleted queries */
+  default void onPurge() {}
+  ;
 
-  /**
-   * Called if there was an error removing deleted queries from the Monitor's query cache
-   */
-  default void onPurgeError(Throwable t) {};
-
+  /** Called if there was an error removing deleted queries from the Monitor's query cache */
+  default void onPurgeError(Throwable t) {}
+  ;
 }
