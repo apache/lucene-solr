@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-/**
- * Test the merge instance of the Lucene50 stored fields format.
- */
+/** Test the merge instance of the Lucene50 stored fields format. */
 public class TestLucene50StoredFieldsFormatMergeInstance extends TestLucene50StoredFieldsFormat {
 
   @Override
   protected boolean shouldTestMergeInstance() {
     return true;
   }
-
 }
