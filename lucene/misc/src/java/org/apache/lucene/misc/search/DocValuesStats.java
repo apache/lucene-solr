@@ -17,7 +17,6 @@
 package org.apache.lucene.misc.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -44,17 +43,17 @@ public abstract class DocValuesStats<T> {
   }
 
   /**
-   * Called after {@link #accumulate(int)} was processed and verified that the document has a value for
-   * the field. Implementations should update the statistics based on the value of the current document.
+   * Called after {@link #accumulate(int)} was processed and verified that the document has a value
+   * for the field. Implementations should update the statistics based on the value of the current
+   * document.
    *
-   * @param count
-   *          the updated number of documents with value for this field.
+   * @param count the updated number of documents with value for this field.
    */
   protected abstract void doAccumulate(int count) throws IOException;
 
   /**
-   * Initializes this object with the given reader context. Returns whether stats can be computed for this segment (i.e.
-   * it does have the requested DocValues field).
+   * Initializes this object with the given reader context. Returns whether stats can be computed
+   * for this segment (i.e. it does have the requested DocValues field).
    */
   protected abstract boolean init(LeafReaderContext context) throws IOException;
 
@@ -100,7 +99,7 @@ public abstract class DocValuesStats<T> {
   }
 
   /** Holds statistics for a numeric DocValues field. */
-  public static abstract class NumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
+  public abstract static class NumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
 
     protected double mean = 0.0;
     protected double variance = 0.0;
@@ -138,7 +137,10 @@ public abstract class DocValuesStats<T> {
       return Math.sqrt(variance());
     }
 
-    /** Returns the sum of values of the field. Note that if the values are large, the {@code sum} might overflow. */
+    /**
+     * Returns the sum of values of the field. Note that if the values are large, the {@code sum}
+     * might overflow.
+     */
     public abstract T sum();
   }
 
@@ -176,7 +178,8 @@ public abstract class DocValuesStats<T> {
   /** Holds DocValues statistics for a numeric field storing {@code double} values. */
   public static final class DoubleDocValuesStats extends NumericDocValuesStats<Double> {
 
-    // To avoid boxing 'double' to 'Double' while the sum is computed, declare it as private variable.
+    // To avoid boxing 'double' to 'Double' while the sum is computed, declare it as private
+    // variable.
     private double sum = 0;
 
     public DoubleDocValuesStats(String field) {
@@ -205,7 +208,8 @@ public abstract class DocValuesStats<T> {
   }
 
   /** Holds statistics for a sorted-numeric DocValues field. */
-  public static abstract class SortedNumericDocValuesStats<T extends Number> extends DocValuesStats<T> {
+  public abstract static class SortedNumericDocValuesStats<T extends Number>
+      extends DocValuesStats<T> {
 
     protected long valuesCount = 0;
     protected double mean = 0.0;
@@ -249,7 +253,10 @@ public abstract class DocValuesStats<T> {
       return valuesCount;
     }
 
-    /** Returns the sum of values of the field. Note that if the values are large, the {@code sum} might overflow. */
+    /**
+     * Returns the sum of values of the field. Note that if the values are large, the {@code sum}
+     * might overflow.
+     */
     public abstract T sum();
   }
 
@@ -276,7 +283,8 @@ public abstract class DocValuesStats<T> {
         }
         sum += val;
         double oldMean = mean;
-        // for correct "running average computation", increase valuesCount with each value, rather than once before the
+        // for correct "running average computation", increase valuesCount with each value, rather
+        // than once before the
         // loop stats.
         ++valuesCount;
         mean += (val - mean) / valuesCount;
@@ -293,7 +301,8 @@ public abstract class DocValuesStats<T> {
   /** Holds DocValues statistics for a sorted-numeric field storing {@code double} values. */
   public static final class SortedDoubleDocValuesStats extends SortedNumericDocValuesStats<Double> {
 
-    // To avoid boxing 'double' to 'Double' while the sum is computed, declare it as private variable.
+    // To avoid boxing 'double' to 'Double' while the sum is computed, declare it as private
+    // variable.
     private double sum = 0;
 
     public SortedDoubleDocValuesStats(String field) {
@@ -313,7 +322,8 @@ public abstract class DocValuesStats<T> {
         }
         sum += val;
         double oldMean = mean;
-        // for correct "running average computation", increase valuesCount with each value, rather than once before the
+        // for correct "running average computation", increase valuesCount with each value, rather
+        // than once before the
         // loop stats.
         ++valuesCount;
         mean += (val - mean) / valuesCount;
@@ -405,5 +415,4 @@ public abstract class DocValuesStats<T> {
       }
     }
   }
-
 }

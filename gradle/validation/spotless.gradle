@@ -69,6 +69,7 @@ allprojects { prj ->
           case ":lucene:codecs":
           case ":lucene:join":
           case ":lucene:facet":
+          case ":lucene:misc":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -84,7 +85,6 @@ allprojects { prj ->
           // All others - disable reformatting/ checks for now.
           case ":lucene:grouping":
           case ":lucene:luke":
-          case ":lucene:misc":
           case ":lucene:monitor":
           case ":lucene:queryparser":
           case ":lucene:replicator":

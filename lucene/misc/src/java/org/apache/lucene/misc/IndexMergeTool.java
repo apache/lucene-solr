@@ -16,34 +16,33 @@
  */
 package org.apache.lucene.misc;
 
+import java.nio.file.Paths;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.util.SuppressForbidden;
 
-import java.nio.file.Paths;
-
 /**
- * Merges indices specified on the command line into the index
- * specified as the first command line argument.
+ * Merges indices specified on the command line into the index specified as the first command line
+ * argument.
  */
 @SuppressForbidden(reason = "System.out required: command line tool")
 public class IndexMergeTool {
-  
+
   static final String USAGE =
-    "Usage: IndexMergeTool [OPTION...] <mergedIndex> <index1> <index2> [index3] ...\n" +
-    "Merges source indexes 'index1' .. 'indexN' into 'mergedIndex'\n" +
-    "\n" +
-    "OPTIONS:\n" +
-    " -merge-policy ClassName  specifies MergePolicy class (must be in CLASSPATH).The default is\n" +
-    "                          'org.apache.lucene.index.TieredMergePolicy.TieredMergePolicy'\n" +
-    " -max-segments N          force-merge's the index to a maximum of N segments. Default is\n" +
-    "                          to execute only the merges according to the merge policy.\n" +
-    " -verbose                 print additional details.\n";
+      "Usage: IndexMergeTool [OPTION...] <mergedIndex> <index1> <index2> [index3] ...\n"
+          + "Merges source indexes 'index1' .. 'indexN' into 'mergedIndex'\n"
+          + "\n"
+          + "OPTIONS:\n"
+          + " -merge-policy ClassName  specifies MergePolicy class (must be in CLASSPATH).The default is\n"
+          + "                          'org.apache.lucene.index.TieredMergePolicy.TieredMergePolicy'\n"
+          + " -max-segments N          force-merge's the index to a maximum of N segments. Default is\n"
+          + "                          to execute only the merges according to the merge policy.\n"
+          + " -verbose                 print additional details.\n";
 
   @SuppressForbidden(reason = "System.err required (verbose mode): command line tool")
   static class Options {
@@ -62,10 +61,11 @@ public class IndexMergeTool {
         if (args[index] == "--") {
           break;
         }
-        switch(args[index]) {
+        switch (args[index]) {
           case "-merge-policy":
             String clazzName = args[++index];
-            Class<? extends MergePolicy> clazz = Class.forName(clazzName).asSubclass(MergePolicy.class);
+            Class<? extends MergePolicy> clazz =
+                Class.forName(clazzName).asSubclass(MergePolicy.class);
             options.config.setMergePolicy(clazz.getConstructor().newInstance());
             break;
           case "-max-segments":
@@ -74,7 +74,9 @@ public class IndexMergeTool {
           case "-verbose":
             options.config.setInfoStream(System.err);
             break;
-          default: throw new IllegalArgumentException("unrecognized option: '" + args[index] + "'\n" + USAGE);
+          default:
+            throw new IllegalArgumentException(
+                "unrecognized option: '" + args[index] + "'\n" + USAGE);
         }
         index++;
       }
@@ -102,7 +104,8 @@ public class IndexMergeTool {
     }
 
     // Try to use hardlinks to source segments, if possible.
-    Directory mergedIndex = new HardlinkCopyDirectoryWrapper(FSDirectory.open(Paths.get(options.mergedIndexPath)));
+    Directory mergedIndex =
+        new HardlinkCopyDirectoryWrapper(FSDirectory.open(Paths.get(options.mergedIndexPath)));
 
     Directory[] indexes = new Directory[options.indexPaths.length];
     for (int i = 0; i < indexes.length; i++) {
@@ -121,5 +124,4 @@ public class IndexMergeTool {
     writer.close();
     System.out.println("Done.");
   }
-  
 }
