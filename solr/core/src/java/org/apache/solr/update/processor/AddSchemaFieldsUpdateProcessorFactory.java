@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
@@ -424,7 +425,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           }
           if (newFields.isEmpty() && newCopyFields.isEmpty()) {
             // nothing to do - no fields will be added - exit from the retry loop
-            log.debug("No fields or copyFields to add to the schema.");
+            if (log.isDebugEnabled()) log.debug("No fields or copyFields to add to the schema.");
             break;
           } else if (isImmutableConfigSet(core)) {
             final String message = "This ConfigSet is immutable.";
@@ -469,12 +470,18 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             }
           }
           if (null != newSchema) {
-            boolean success = ((ManagedIndexSchema) newSchema).persistManagedSchema(false);
-            if (log.isDebugEnabled()) log.debug("Successfully added field(s) and copyField(s) to the schema.");
-            if (success) {
-              core.setLatestSchema(newSchema);
-              cmd.getReq().updateSchemaToLatest();
-              break; // success - exit from the retry loop
+            ReentrantLock lock = ((ManagedIndexSchema) newSchema).getManagedIndexSchemaFactory().getSchemaUpdateLock();
+            lock.lock();
+            try {
+              boolean success = ((ManagedIndexSchema) newSchema).persistManagedSchema(false);
+              if (log.isDebugEnabled()) log.debug("Successfully added field(s) and copyField(s) to the schema.");
+              if (success) {
+                core.setLatestSchema(newSchema);
+                cmd.getReq().updateSchemaToLatest();
+                break; // success - exit from the retry loop
+              }
+            } finally {
+              lock.unlock();
             }
           } else {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to add fields and/or copyFields.");
@@ -485,25 +492,14 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
           log.info("Schema changed while processing request ...");
           try {
-             ((ManagedIndexSchema) newSchema).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema(null, -1);
+            ((ManagedIndexSchema) newSchema).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema(null, -1);
+            cmd.getReq().updateSchemaToLatest();
           } catch (KeeperException.SessionExpiredException keeperException) {
             throw new SolrException(SERVER_ERROR, keeperException);
           } catch (Exception e1) {
-            log.error("", e1);
+            log.error("Exception updating schema", e1);
+            throw new SolrException(SERVER_ERROR, e1);
           }
-//          if (newSchema != null) {
-//
-//            cmd.getReq().updateSchemaToLatest(newSchema);
-//            cmd.getReq().getCore().setLatestSchema(newSchema);
-//            newSchema.postReadInform();
-//            newSchema.refreshAnalyzers();
-//            break;
-//          } else {
-            cmd.getReq().updateSchemaToLatest();
-//          cmd.getReq().getSchema().refreshAnalyzers();
-//            cmd.getReq().getSchema().postReadInform();
-
-        //  }
         }
       }
 

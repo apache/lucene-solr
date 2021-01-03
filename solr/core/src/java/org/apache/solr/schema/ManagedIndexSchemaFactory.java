@@ -61,6 +61,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   private volatile SolrCore core;
 
+  private ReentrantLock schemaUpdateLock = new ReentrantLock();
+
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
   private volatile SolrConfig config;
   private volatile ResourceLoader loader;
@@ -397,8 +399,6 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
     }
   }
-
-  private ReentrantLock schemaUpdateLock = new ReentrantLock();
   public ReentrantLock getSchemaUpdateLock() { return schemaUpdateLock; }
 
   @Override

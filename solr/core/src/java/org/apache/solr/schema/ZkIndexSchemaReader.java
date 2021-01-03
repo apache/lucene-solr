@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /** Keeps a ManagedIndexSchema up-to-date when changes are made to the serialized managed schema in ZooKeeper */
 public class ZkIndexSchemaReader implements OnReconnect {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private volatile ManagedIndexSchemaFactory managedIndexSchemaFactory;
+  private final ManagedIndexSchemaFactory managedIndexSchemaFactory;
   private volatile SolrZkClient zkClient;
   private final String managedSchemaPath;
   private final String uniqueCoreId; // used in equals impl to uniquely identify the core that we're dependent on
@@ -148,35 +148,32 @@ public class ZkIndexSchemaReader implements OnReconnect {
 
   // package visibility for test purposes
   public IndexSchema updateSchema(Watcher watcher, int version) throws KeeperException, InterruptedException {
-    ManagedIndexSchema newSchema = null;
-    ReentrantLock lock = null;
+    ManagedIndexSchema newSchema;
+    ReentrantLock  lock = getSchemaUpdateLock();
+    lock.lock();
     try {
-      lock = getSchemaUpdateLock();
-      lock.lock();
       Stat stat = new Stat();
-
+      createSchemaWatcher();
       Stat exists = zkClient.exists(managedSchemaPath, schemaWatcher, true);
       if (exists == null) {
         log.info("{} does not exist yet, watching ...}", managedSchemaPath);
         return null;
-      } else {
-        createSchemaWatcher();
       }
 
       int existsVersion = exists.getVersion();
 
       int v = managedIndexSchemaFactory.getSchema().getSchemaZkVersion();
 
+      if (version > -1) {
+        v = version;
+      }
+
       log.info("Retrieved schema version {} from Zookeeper, existing={}", existsVersion, v);
 
       if (v >= existsVersion) {
         log.info("Old schema version {} is >= found version {}", v, existsVersion);
-        exists = zkClient.exists(managedSchemaPath, this.schemaWatcher, true);
-        if (v >= exists.getVersion()) {
-          return null;
-        } else {
-          createSchemaWatcher();
-        }
+
+        return null;
       }
 
       long start = System.nanoTime();
@@ -190,13 +187,11 @@ public class ZkIndexSchemaReader implements OnReconnect {
 
       long stop = System.nanoTime();
       log.info("Finished refreshing schema in {} ms", TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS));
-    } catch (NullPointerException e) {
-      throw new AlreadyClosedException();
     } catch (Exception e) {
       log.error("Exception updating schema", e);
       return null;
     } finally {
-      if (lock != null) lock.unlock();
+      if (lock != null && lock.isHeldByCurrentThread()) lock.unlock();
     }
     return newSchema;
   }
@@ -208,8 +203,6 @@ public class ZkIndexSchemaReader implements OnReconnect {
   @Override
   public void command() {
     try {
-      // setup a new watcher to get notified when the managed schema changes
-      createSchemaWatcher();
       // force update now as the schema may have changed while our zk session was expired
       updateSchema(schemaWatcher, -1);
     } catch (Exception exc) {
