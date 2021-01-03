@@ -17,7 +17,6 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
@@ -198,7 +197,7 @@ public class MMapDirectory extends FSDirectory {
    * Set to {@code true} to ask mapped pages to be loaded into physical memory on init. The behavior
    * is best-effort and operating system dependent.
    *
-   * @see MappedByteBuffer#load
+   * @see MappedMemorySegments#load
    */
   public void setPreload(boolean preload) {
     this.preload = preload;

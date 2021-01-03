@@ -388,8 +388,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       // check impl (we must check size < chunksize: currently, if size==chunkSize, we get 2
       // buffers, the second one empty:
       assertSame((size < chunkSize)
-              ? MemorySegmentIndexInput.SingleBufferImpl.class
-              : MemorySegmentIndexInput.MultiBufferImpl.class,
+              ? MemorySegmentIndexInput.SingleSegmentImpl.class
+              : MemorySegmentIndexInput.MultiSegmentImpl.class,
               ii.getClass());
 
       // clone tests:
@@ -399,8 +399,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       int sliceSize = random().nextInt(size);
       IndexInput slice = ii.slice("slice", 0, sliceSize);
       assertSame((sliceSize < chunkSize)
-              ? MemorySegmentIndexInput.SingleBufferImpl.class
-              : MemorySegmentIndexInput.MultiBufferImpl.class,
+              ? MemorySegmentIndexInput.SingleSegmentImpl.class
+              : MemorySegmentIndexInput.MultiSegmentImpl.class,
               slice.getClass());
 
       // slice test (offset > 0 )
@@ -410,9 +410,9 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       // System.out.println(offset + "/" + sliceSize + " chunkSize=" + chunkSize + " " +
       // slice.getClass());
       if (offset % chunkSize + sliceSize < chunkSize) {
-        assertSame(MemorySegmentIndexInput.SingleBufferImpl.class, slice.getClass());
+        assertSame(MemorySegmentIndexInput.SingleSegmentImpl.class, slice.getClass());
       } else {
-        assertSame(MemorySegmentIndexInput.MultiBufferImpl.class, slice.getClass());
+        assertSame(MemorySegmentIndexInput.MultiSegmentImpl.class, slice.getClass());
       }
 
       ii.close();

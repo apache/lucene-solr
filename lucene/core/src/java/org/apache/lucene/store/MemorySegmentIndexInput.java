@@ -31,7 +31,7 @@ import jdk.incubator.foreign.MemorySegment;
 /**
  * Base IndexInput implementation that uses an array of MemorySegments to represent a file.
  *
- * <p>For efficiency, this class requires that the buffers are a power-of-two
+ * <p>For efficiency, this class requires that the segment size are a power-of-two
  * (<code>chunkSizePower</code>).
  */
 public abstract class MemorySegmentIndexInput extends IndexInput implements RandomAccessInput {
@@ -41,16 +41,15 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   static final VarHandle VH_getInt = MemoryHandles.varHandle(int.class, 1L, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
   static final VarHandle VH_getLong = MemoryHandles.varHandle(long.class, 1L, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
   
+  final boolean isClone;
   final long length;
   final long chunkSizeMask;
   final int chunkSizePower;
-
-  MemorySegment[] buffers;
-  int curBufIndex = -1;
-  MemorySegment curBuf; // redundant for speed: buffers[curBufIndex]
-  long curPosition;
-
-  final boolean isClone;
+  final MemorySegment[] segments;
+  
+  int curSegmentIndex = -1;
+  MemorySegment curSegment; // redundant for speed: segments[curSegmentIndex], also marker if closed!
+  long curPosition; // relative to curSegment, not globally
 
   public static MemorySegmentIndexInput newInstance(
       String resourceDescription,
@@ -58,20 +57,20 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       long length,
       int chunkSizePower) {
     if (segments.length == 1) {
-      return new SingleBufferImpl(resourceDescription, segments[0], length, chunkSizePower, false);
+      return new SingleSegmentImpl(resourceDescription, segments[0], length, chunkSizePower, false);
     } else {
-      return new MultiBufferImpl(resourceDescription, segments, 0, length, chunkSizePower, false);
+      return new MultiSegmentImpl(resourceDescription, segments, 0, length, chunkSizePower, false);
     }
   }
 
   private MemorySegmentIndexInput(
       String resourceDescription,
-      MemorySegment[] buffers,
+      MemorySegment[] segments,
       long length,
       int chunkSizePower,
       boolean isClone) {
     super(resourceDescription);
-    this.buffers = buffers;
+    this.segments = segments;
     this.length = length;
     this.chunkSizePower = chunkSizePower;
     this.chunkSizeMask = (1L << chunkSizePower) - 1L;
@@ -79,7 +78,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   }
   
   void ensureOpen() {
-    if (this.buffers == null) {
+    if (curSegment == null) {
       throw alreadyClosed();
     }
   }
@@ -96,6 +95,15 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     return e;
   }
   
+  // return value only for compiler!
+  byte handlePositionalIOOBE(String action, long pos) throws IOException {
+    if (pos < 0L) {
+      throw new IllegalArgumentException(action + " negative position: " + this);
+    } else {
+      throw new EOFException(action + " past EOF: " + this);
+    }
+  }
+  
   private AlreadyClosedException alreadyClosed() {
     return new AlreadyClosedException("Already closed: " + this);
   }
@@ -103,19 +111,19 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public final byte readByte() throws IOException {
     try {
-      final byte v = (byte) VH_getByte.get(curBuf, curPosition);
+      final byte v = (byte) VH_getByte.get(curSegment, curPosition);
       curPosition++;
       return v;
     } catch (IndexOutOfBoundsException e) {
       do {
-        curBufIndex++;
-        if (curBufIndex >= buffers.length) {
+        curSegmentIndex++;
+        if (curSegmentIndex >= segments.length) {
           throw new EOFException("read past EOF: " + this);
         }
-        curBuf = buffers[curBufIndex];
+        curSegment = segments[curSegmentIndex];
         curPosition = 0L;
-      } while (curBuf.byteSize() == 0L);
-      final byte v = (byte) VH_getByte.get(curBuf, curPosition);
+      } while (curSegment.byteSize() == 0L);
+      final byte v = (byte) VH_getByte.get(curSegment, curPosition);
       curPosition++;
       return v;
     } catch (NullPointerException | IllegalStateException e) {
@@ -129,24 +137,24 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     try (final MemorySegment arraySegment = MemorySegment.ofArray(b)) {
       MemorySegment targetSlice = arraySegment.asSlice(offset, len);
       try {
-        targetSlice.copyFrom(curBuf.asSlice(curPosition, len));
+        targetSlice.copyFrom(curSegment.asSlice(curPosition, len));
         curPosition += len;
       } catch (IndexOutOfBoundsException e) {
-        long curAvail = curBuf.byteSize() - curPosition;
+        long curAvail = curSegment.byteSize() - curPosition;
         while (len > curAvail) {
-          targetSlice.copyFrom(curBuf.asSlice(curPosition, curAvail));
+          targetSlice.copyFrom(curSegment.asSlice(curPosition, curAvail));
           len -= curAvail;
           offset += curAvail;
-          curBufIndex++;
-          if (curBufIndex >= buffers.length) {
+          curSegmentIndex++;
+          if (curSegmentIndex >= segments.length) {
             throw new EOFException("read past EOF: " + this);
           }
-          curBuf = buffers[curBufIndex];
+          curSegment = segments[curSegmentIndex];
           curPosition = 0L;
-          curAvail = curBuf.byteSize();
+          curAvail = curSegment.byteSize();
           targetSlice = arraySegment.asSlice(offset, len);
         }
-        targetSlice.copyFrom(curBuf.asSlice(curPosition, len));
+        targetSlice.copyFrom(curSegment.asSlice(curPosition, len));
         curPosition += len;
       }
     } catch (NullPointerException | IllegalStateException e) {
@@ -162,7 +170,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     }
     try (final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
         .asSlice((long) offset << 3, (long) length << 3)) {
-      targetSlice.copyFrom(curBuf.asSlice(curPosition, targetSlice.byteSize()));
+      targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
       curPosition += targetSlice.byteSize();
     } catch (IndexOutOfBoundsException iobe) {
       super.readLELongs(dst, offset, length);
@@ -174,7 +182,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public final short readShort() throws IOException {
     try {
-      final short v = (short) VH_getShort.get(curBuf, curPosition);
+      final short v = (short) VH_getShort.get(curSegment, curPosition);
       curPosition += Short.BYTES;
       return v;
     } catch (IndexOutOfBoundsException e) {
@@ -187,7 +195,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public final int readInt() throws IOException {
     try {
-      final int v = (int) VH_getInt.get(curBuf, curPosition);
+      final int v = (int) VH_getInt.get(curSegment, curPosition);
       curPosition += Integer.BYTES;
       return v;
     } catch (IndexOutOfBoundsException e) {
@@ -200,7 +208,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public final long readLong() throws IOException {
     try {
-      final long v = (long) VH_getLong.get(curBuf, curPosition);
+      final long v = (long) VH_getLong.get(curSegment, curPosition);
       curPosition += Long.BYTES;
       return v;
     } catch (IndexOutOfBoundsException e) {
@@ -213,24 +221,24 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public long getFilePointer() {
     ensureOpen();
-    return (((long) curBufIndex) << chunkSizePower) + curPosition;
+    return (((long) curSegmentIndex) << chunkSizePower) + curPosition;
   }
 
   @Override
   public void seek(long pos) throws IOException {
     // we use >> here to preserve negative, so we will catch AIOOBE,
     // in case pos + offset overflows.
-    final int bi = (int) (pos >> chunkSizePower);
+    final int si = (int) (pos >> chunkSizePower);
     try {
-      if (bi != curBufIndex) {
-        final MemorySegment b = buffers[bi];
+      if (si != curSegmentIndex) {
+        final MemorySegment seg = segments[si];
         // write values, on exception all is unchanged
-        this.curBufIndex = bi;
-        this.curBuf = b;
+        this.curSegmentIndex = si;
+        this.curSegment = seg;
       }
-      this.curPosition = Objects.checkIndex(pos & chunkSizeMask, curBuf.byteSize() + 1);
+      this.curPosition = Objects.checkIndex(pos & chunkSizeMask, curSegment.byteSize() + 1);
     } catch (IndexOutOfBoundsException e) {
-      throw new EOFException("seek past EOF: " + this);
+      handlePositionalIOOBE("seek", pos);
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
@@ -239,25 +247,25 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   @Override
   public byte readByte(long pos) throws IOException {
     try {
-      final int bi = (int) (pos >> chunkSizePower);
-      return (byte) VH_getByte.get(buffers[bi], pos & chunkSizeMask);
+      final int si = (int) (pos >> chunkSizePower);
+      return (byte) VH_getByte.get(segments[si], pos & chunkSizeMask);
     } catch (IndexOutOfBoundsException ioobe) {
-      throw new EOFException("seek past EOF: " + this);
+      return handlePositionalIOOBE("read", pos);
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
   }
 
   // used only by random access methods to handle reads across boundaries
-  private void setPos(long pos, int bi) throws IOException {
+  private void setPos(long pos, int si) throws IOException {
     try {
-      final MemorySegment b = buffers[bi];
+      final MemorySegment seg = segments[si];
       // write values, on exception above all is unchanged
       this.curPosition = pos & chunkSizeMask;
-      this.curBufIndex = bi;
-      this.curBuf = b;
+      this.curSegmentIndex = si;
+      this.curSegment = seg;
     } catch (IndexOutOfBoundsException ioobe) {
-      throw new EOFException("seek past EOF: " + this);
+      handlePositionalIOOBE("read", pos);
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
@@ -265,12 +273,12 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public short readShort(long pos) throws IOException {
-    final int bi = (int) (pos >> chunkSizePower);
+    final int si = (int) (pos >> chunkSizePower);
     try {
-      return (short) VH_getShort.get(buffers[bi], pos & chunkSizeMask);
+      return (short) VH_getShort.get(segments[si], pos & chunkSizeMask);
     } catch (IndexOutOfBoundsException ioobe) {
       // either it's a boundary, or read past EOF, fall back:
-      setPos(pos, bi);
+      setPos(pos, si);
       return readShort();
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
@@ -279,12 +287,12 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public int readInt(long pos) throws IOException {
-    final int bi = (int) (pos >> chunkSizePower);
+    final int si = (int) (pos >> chunkSizePower);
     try {
-      return (int) VH_getInt.get(buffers[bi], pos & chunkSizeMask);
+      return (int) VH_getInt.get(segments[si], pos & chunkSizeMask);
     } catch (IndexOutOfBoundsException ioobe) {
       // either it's a boundary, or read past EOF, fall back:
-      setPos(pos, bi);
+      setPos(pos, si);
       return readInt();
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
@@ -293,12 +301,12 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public long readLong(long pos) throws IOException {
-    final int bi = (int) (pos >> chunkSizePower);
+    final int si = (int) (pos >> chunkSizePower);
     try {
-      return (long) VH_getLong.get(buffers[bi], pos & chunkSizeMask);
+      return (long) VH_getLong.get(segments[si], pos & chunkSizeMask);
     } catch (IndexOutOfBoundsException ioobe) {
       // either it's a boundary, or read past EOF, fall back:
-      setPos(pos, bi);
+      setPos(pos, si);
       return readLong();
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
@@ -349,33 +357,33 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   MemorySegmentIndexInput buildSlice(String sliceDescription, long offset, long length) {
     ensureOpen();
     
-    final MemorySegment newBuffers[] = buildSlice(buffers, offset, length);
+    final MemorySegment newsegments[] = buildSlice(segments, offset, length);
     offset = offset & chunkSizeMask;
     final String newResourceDescription = getFullSliceDescription(sliceDescription);
     
-    if (newBuffers.length == 1) {
-      return new SingleBufferImpl(
-          newResourceDescription, newBuffers[0].asSlice(offset, length), length, chunkSizePower, true);
+    if (newsegments.length == 1) {
+      return new SingleSegmentImpl(
+          newResourceDescription, newsegments[0].asSlice(offset, length), length, chunkSizePower, true);
     } else {
-      return new MultiBufferImpl(
-          newResourceDescription, newBuffers, offset, length, chunkSizePower, true);
+      return new MultiSegmentImpl(
+          newResourceDescription, newsegments, offset, length, chunkSizePower, true);
     }
   }
 
   /**
-   * Returns a sliced view from a set of already-existing buffers: the last segments size will be
+   * Returns a sliced view from a set of already-existing segments: the last segments size will be
    * correct, but you must deal with offset separately (the first segment will not be adjusted)
    */
-  private MemorySegment[] buildSlice(MemorySegment[] buffers, long offset, long length) {
+  private MemorySegment[] buildSlice(MemorySegment[] segments, long offset, long length) {
     final long sliceEnd = offset + length;
 
     final int startIndex = (int) (offset >>> chunkSizePower);
     final int endIndex = (int) (sliceEnd >>> chunkSizePower);
 
     // we always allocate one more slice, the last one may be a 0 byte one after truncating with asSlice():
-    final MemorySegment slices[] = Arrays.copyOfRange(buffers, startIndex, endIndex + 1);
+    final MemorySegment slices[] = Arrays.copyOfRange(segments, startIndex, endIndex + 1);
 
-    // set the last buffer's limit for the sliced view.
+    // set the last segment's limit for the sliced view.
     slices[slices.length - 1] = slices[slices.length - 1].asSlice(0L, sliceEnd & chunkSizeMask);
 
     return slices;
@@ -383,40 +391,28 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public final void close() throws IOException {
-    try {
-      if (buffers == null) return;
+    if (curSegment == null) return;
+    
+    curSegment = null;
+    curSegmentIndex = 0;
+    
+    if (isClone) return;
 
-      // make local copy, then un-set early
-      final MemorySegment[] bufs = buffers;
-      unsetBuffers();
-
-      if (isClone) return;
-
-      IOUtils.applyToAll(Arrays.asList(bufs), MemorySegment::close);
-    } finally {
-      unsetBuffers();
-    }
+    IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
   }
 
-  /** Called to remove all references to byte buffers, so we can throw AlreadyClosed on NPE. */
-  private void unsetBuffers() {
-    buffers = null;
-    curBuf = null;
-    curBufIndex = 0;
-  }
+  /** Optimization of MemorySegmentIndexInput for when there is only one segment. */
+  static final class SingleSegmentImpl extends MemorySegmentIndexInput {
 
-  /** Optimization of MemorySegmentIndexInput for when there is only one buffer */
-  static final class SingleBufferImpl extends MemorySegmentIndexInput {
-
-    SingleBufferImpl(
+    SingleSegmentImpl(
         String resourceDescription,
-        MemorySegment buffer,
+        MemorySegment segment,
         long length,
         int chunkSizePower,
         boolean isClone) {
-      super(resourceDescription, new MemorySegment[] {buffer}, length, chunkSizePower, isClone);
-      this.curBufIndex = 0;
-      this.curBuf = buffer;
+      super(resourceDescription, new MemorySegment[] {segment}, length, chunkSizePower, isClone);
+      this.curSegmentIndex = 0;
+      this.curSegment = segment;
     }
 
     @Override
@@ -425,11 +421,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         curPosition = Objects.checkIndex(pos, length + 1);
       } catch (IndexOutOfBoundsException e) {
-        if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
-          throw new EOFException("seek past EOF: " + this);
-        }
+        handlePositionalIOOBE("seek", pos);
       }
     }
 
@@ -442,13 +434,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     @Override
     public byte readByte(long pos) throws IOException {
       try {
-        return (byte) VH_getByte.get(curBuf, pos);
+        return (byte) VH_getByte.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
-          throw new EOFException("seek past EOF: " + this);
-        }
+        return handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -457,13 +445,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     @Override
     public short readShort(long pos) throws IOException {
       try {
-        return (short) VH_getShort.get(curBuf, pos);
+        return (short) VH_getShort.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
-          throw new EOFException("seek past EOF: " + this);
-        }
+        return handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -472,13 +456,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     @Override
     public int readInt(long pos) throws IOException {
       try {
-        return (int) VH_getInt.get(curBuf, pos);
+        return (int) VH_getInt.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
-          throw new EOFException("seek past EOF: " + this);
-        }
+        return handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -487,13 +467,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     @Override
     public long readLong(long pos) throws IOException {
       try {
-        return (long) VH_getLong.get(curBuf, pos);
+        return (long) VH_getLong.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
-          throw new EOFException("seek past EOF: " + this);
-        }
+        return handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -501,23 +477,24 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   }
 
   /** This class adds offset support to MemorySegmentIndexInput, which is needed for slices. */
-  static final class MultiBufferImpl extends MemorySegmentIndexInput {
+  static final class MultiSegmentImpl extends MemorySegmentIndexInput {
     private final long offset;
 
-    MultiBufferImpl(
+    MultiSegmentImpl(
         String resourceDescription,
-        MemorySegment[] buffers,
+        MemorySegment[] segments,
         long offset,
         long length,
         int chunkSizePower,
         boolean isClone) {
-      super(resourceDescription, buffers, length, chunkSizePower, isClone);
+      super(resourceDescription, segments, length, chunkSizePower, isClone);
       this.offset = offset;
       try {
         seek(0L);
       } catch (IOException ioe) {
         throw new AssertionError(ioe);
       }
+      assert curSegment != null && curSegmentIndex >= 0;
     }
 
     @Override
