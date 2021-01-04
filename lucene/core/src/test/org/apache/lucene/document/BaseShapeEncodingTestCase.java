@@ -496,7 +496,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     verifyEncoding(ay, ax, by, bx, cy, cx);
   }
 
-  private void verifyEncoding(double ay, double ax, double by, double bx, double cy, double cx) {
+  protected void verifyEncoding(double ay, double ax, double by, double bx, double cy, double cx) {
     // encode triangle
     int[] original =
         new int[] {encodeX(ax), encodeY(ay), encodeX(bx), encodeY(by), encodeX(cx), encodeY(cy)};
