@@ -230,6 +230,8 @@ Improvements
 
 * SOLR-14413: Allow timeAllowed and cursorMark parameters together. (John Gallagher via Mike Drob)
 
+* SOLR-15062: /api/cluster/zk/ls should give the stat of the current node (noble)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
