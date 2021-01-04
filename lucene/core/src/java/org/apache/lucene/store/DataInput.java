@@ -193,7 +193,7 @@ public abstract class DataInput implements Cloneable {
    * @param offset the offset in the array to start storing floats
    * @param len the number of floats to read
    */
-  public void readFloats(float[] floats, int offset, int len) throws IOException {
+  public void readLEFloats(float[] floats, int offset, int len) throws IOException {
     Objects.checkFromIndexSize(offset, len, floats.length);
     for (int i = 0; i < len; i++) {
       floats[offset + i] = Float.intBitsToFloat(Integer.reverseBytes(readInt()));

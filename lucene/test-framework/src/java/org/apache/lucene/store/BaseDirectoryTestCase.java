@@ -246,7 +246,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
         assertEquals(12, input.length());
         float[] ff = new float[4];
-        input.readFloats(ff, 1, 3);
+        input.readLEFloats(ff, 1, 3);
         assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
         assertEquals(12, input.getFilePointer());
       }
@@ -270,7 +270,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           assertEquals(2, input.readByte());
         }
         float[] ff = new float[4];
-        input.readFloats(ff, 1, 3);
+        input.readLEFloats(ff, 1, 3);
         assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
         assertEquals(12 + padding, input.getFilePointer());
       }
@@ -289,7 +289,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
         input.seek(offset);
         expectThrows(EOFException.class,
-            () -> input.readFloats(new float[length], 0, length));
+            () -> input.readLEFloats(new float[length], 0, length));
       }
     }
   }

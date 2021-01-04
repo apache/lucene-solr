@@ -202,7 +202,7 @@ public final class ByteBuffersDataInput extends DataInput
   }
 
   @Override
-  public void readFloats(float[] arr, int off, int len) throws EOFException {
+  public void readLEFloats(float[] arr, int off, int len) throws EOFException {
     try {
       while (len > 0) {
         FloatBuffer floatBuffer = getFloatBuffer(pos);

@@ -359,7 +359,7 @@ public final class Lucene90VectorReader extends VectorReader {
     @Override
     public float[] vectorValue() throws IOException {
       dataIn.seek(ord * byteSize);
-      dataIn.readFloats(value, 0, value.length);
+      dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 
@@ -430,7 +430,7 @@ public final class Lucene90VectorReader extends VectorReader {
     @Override
     public float[] vectorValue(int targetOrd) throws IOException {
       dataIn.seek(targetOrd * byteSize);
-      dataIn.readFloats(value, 0, value.length);
+      dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 

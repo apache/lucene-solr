@@ -165,7 +165,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
-  public final void readFloats(float[] floats, int offset, int len) throws IOException {
+  public final void readLEFloats(float[] floats, int offset, int len) throws IOException {
     // See notes about readELongs above
     if (curFloatBufferViews == null) {
       curFloatBufferViews = new FloatBuffer[Float.BYTES];
@@ -188,7 +188,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       // if the above call succeeded, then we know the below sum cannot overflow
       curBuf.position(position + (len << 2));
     } catch (BufferUnderflowException e) {
-      super.readFloats(floats, offset, len);
+      super.readLEFloats(floats, offset, len);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
