@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Extendable QueryParser provides a simple and flexible extension mechanism by overloading query field names.
+
+/**
+ * Extendable QueryParser provides a simple and flexible extension mechanism by overloading query
+ * field names.
  */
 package org.apache.lucene.queryparser.ext;
-

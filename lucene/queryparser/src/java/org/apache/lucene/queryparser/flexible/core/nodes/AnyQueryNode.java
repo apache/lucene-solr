@@ -16,25 +16,16 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
+import java.util.List;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-import java.util.List;
-
-
-/**
- * A {@link AnyQueryNode} represents an ANY operator performed on a list of
- * nodes.
- */
+/** A {@link AnyQueryNode} represents an ANY operator performed on a list of nodes. */
 public class AnyQueryNode extends AndQueryNode {
   private CharSequence field = null;
   private int minimumMatchingmElements = 0;
 
-  /**
-   * @param clauses
-   *          - the query nodes to be or'ed
-   */
-  public AnyQueryNode(List<QueryNode> clauses, CharSequence field,
-      int minimumMatchingElements) {
+  /** @param clauses - the query nodes to be or'ed */
+  public AnyQueryNode(List<QueryNode> clauses, CharSequence field, int minimumMatchingElements) {
     super(clauses);
     this.field = field;
     this.minimumMatchingmElements = minimumMatchingElements;
@@ -52,12 +43,9 @@ public class AnyQueryNode extends AndQueryNode {
           if (clause instanceof FieldableNode) {
             ((FieldableNode) clause).setField(field);
           }
-
         }
       }
-
     }
-
   }
 
   public int getMinimumMatchingElements() {
@@ -66,7 +54,7 @@ public class AnyQueryNode extends AndQueryNode {
 
   /**
    * returns null if the field was not specified
-   * 
+   *
    * @return the field
    */
   public CharSequence getField() {
@@ -75,20 +63,15 @@ public class AnyQueryNode extends AndQueryNode {
 
   /**
    * returns - null if the field was not specified
-   * 
+   *
    * @return the field as a String
    */
   public String getFieldAsString() {
-    if (this.field == null)
-      return null;
-    else
-      return this.field.toString();
+    if (this.field == null) return null;
+    else return this.field.toString();
   }
 
-  /**
-   * @param field
-   *          - the field to set
-   */
+  /** @param field - the field to set */
   public void setField(CharSequence field) {
     this.field = field;
   }
@@ -106,10 +89,17 @@ public class AnyQueryNode extends AndQueryNode {
   @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
-      return "<any field='" + this.field + "'  matchelements="
-          + this.minimumMatchingmElements + "/>";
+      return "<any field='"
+          + this.field
+          + "'  matchelements="
+          + this.minimumMatchingmElements
+          + "/>";
     StringBuilder sb = new StringBuilder();
-    sb.append("<any field='").append(this.field).append("'  matchelements=").append(this.minimumMatchingmElements).append('>');
+    sb.append("<any field='")
+        .append(this.field)
+        .append("'  matchelements=")
+        .append(this.minimumMatchingmElements)
+        .append('>');
     for (QueryNode clause : getChildren()) {
       sb.append("\n");
       sb.append(clause.toString());
@@ -139,5 +129,4 @@ public class AnyQueryNode extends AndQueryNode {
       return this.field + ":(( " + sb.toString() + " ) " + anySTR + ")";
     }
   }
-
 }

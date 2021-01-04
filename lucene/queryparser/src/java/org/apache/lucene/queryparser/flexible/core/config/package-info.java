@@ -14,22 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Base classes used to configure the query processing.
- * 
+ *
  * <h2>Query Configuration Interfaces</h2>
- * <p>
- * The package <code>org.apache.lucene.queryparser.flexible.config</code> contains query configuration handler
- * abstract class that all config handlers should extend.
- * <p>
- * See {@link org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler} for a reference
- * implementation.
- * <p>
- * The {@link org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler} and {@link org.apache.lucene.queryparser.flexible.core.config.FieldConfig} are used in the processors to access config
- * information in a flexible and independent way.
- * See {@link org.apache.lucene.queryparser.flexible.standard.processors.TermRangeQueryNodeProcessor} for a 
+ *
+ * <p>The package <code>org.apache.lucene.queryparser.flexible.config</code> contains query
+ * configuration handler abstract class that all config handlers should extend.
+ *
+ * <p>See {@link org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler}
+ * for a reference implementation.
+ *
+ * <p>The {@link org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler} and {@link
+ * org.apache.lucene.queryparser.flexible.core.config.FieldConfig} are used in the processors to
+ * access config information in a flexible and independent way. See {@link
+ * org.apache.lucene.queryparser.flexible.standard.processors.TermRangeQueryNodeProcessor} for a
  * reference implementation.
  */
 package org.apache.lucene.queryparser.flexible.core.config;
-

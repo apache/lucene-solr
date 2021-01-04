@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
-import java.io.IOException; /* subclass to be usable from within Query.rewrite() */
 
-/**
- * Exception thrown when {@link BasicQueryFactory} would exceed the limit
- * of query clauses.
- */
+import java.io.IOException;
+
+/* subclass to be usable from within Query.rewrite() */
+
+/** Exception thrown when {@link BasicQueryFactory} would exceed the limit of query clauses. */
 public class TooManyBasicQueries extends IOException {
   public TooManyBasicQueries(int maxBasicQueries) {
     super("Exceeded maximum of " + maxBasicQueries + " basic queries.");
   }
 }
-  
-

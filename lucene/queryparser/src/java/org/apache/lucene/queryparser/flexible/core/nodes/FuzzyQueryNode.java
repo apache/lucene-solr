@@ -18,10 +18,7 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-/**
- * A {@link FuzzyQueryNode} represents a element that contains
- * field/text/similarity tuple
- */
+/** A {@link FuzzyQueryNode} represents a element that contains field/text/similarity tuple */
 public class FuzzyQueryNode extends FieldQueryNode {
 
   private float similarity;
@@ -29,25 +26,18 @@ public class FuzzyQueryNode extends FieldQueryNode {
   private int prefixLength;
 
   /**
-   * @param field
-   *          Name of the field query will use.
-   * @param termStr
-   *          Term token to use for building term for the query
+   * @param field Name of the field query will use.
+   * @param termStr Term token to use for building term for the query
    */
   /**
-   * @param field
-   *          - Field name
-   * @param term
-   *          - Value
-   * @param minSimilarity
-   *          - similarity value
-   * @param begin
-   *          - position in the query string
-   * @param end
-   *          - position in the query string
+   * @param field - Field name
+   * @param term - Value
+   * @param minSimilarity - similarity value
+   * @param begin - position in the query string
+   * @param end - position in the query string
    */
-  public FuzzyQueryNode(CharSequence field, CharSequence term,
-      float minSimilarity, int begin, int end) {
+  public FuzzyQueryNode(
+      CharSequence field, CharSequence term, float minSimilarity, int begin, int end) {
     super(field, term, begin, end);
     this.similarity = minSimilarity;
     setLeaf(true);
@@ -72,8 +62,13 @@ public class FuzzyQueryNode extends FieldQueryNode {
 
   @Override
   public String toString() {
-    return "<fuzzy field='" + this.field + "' similarity='" + this.similarity
-        + "' term='" + this.text + "'/>";
+    return "<fuzzy field='"
+        + this.field
+        + "' similarity='"
+        + this.similarity
+        + "' term='"
+        + this.text
+        + "'/>";
   }
 
   public void setSimilarity(float similarity) {
@@ -89,9 +84,7 @@ public class FuzzyQueryNode extends FieldQueryNode {
     return clone;
   }
 
-  /**
-   * @return the similarity
-   */
+  /** @return the similarity */
   public float getSimilarity() {
     return this.similarity;
   }

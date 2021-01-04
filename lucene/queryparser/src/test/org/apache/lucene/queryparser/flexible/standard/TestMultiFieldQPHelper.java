@@ -20,7 +20,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,8 +28,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -40,16 +39,16 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * This test case is a copy of the core Lucene query parser test, it was adapted
- * to use new QueryParserHelper instead of the old query parser.
- * 
- * Tests QueryParser.
+ * This test case is a copy of the core Lucene query parser test, it was adapted to use new
+ * QueryParserHelper instead of the old query parser.
+ *
+ * <p>Tests QueryParser.
  */
 public class TestMultiFieldQPHelper extends LuceneTestCase {
 
   /**
-   * test stop words parsing for both the non static form, and for the
-   * corresponding static form (qtxt, fields[]).
+   * test stop words parsing for both the non static form, and for the corresponding static form
+   * (qtxt, fields[]).
    */
   public void testStopwordsParsing() throws Exception {
     assertStopQueryEquals("one", "b:one t:one");
@@ -63,8 +62,8 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
   // verify parsing of query using a stopping analyzer
   private void assertStopQueryIsMatchNoDocsQuery(String qtxt) throws Exception {
-    String[] fields = { "b", "t" };
-    Occur occur[] = { Occur.SHOULD, Occur.SHOULD };
+    String[] fields = {"b", "t"};
+    Occur occur[] = {Occur.SHOULD, Occur.SHOULD};
     TestQPHelper.QPTestAnalyzer a = new TestQPHelper.QPTestAnalyzer();
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
@@ -75,10 +74,9 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   }
 
   // verify parsing of query using a stopping analyzer
-  private void assertStopQueryEquals(String qtxt, String expectedRes)
-      throws Exception {
-    String[] fields = { "b", "t" };
-    Occur occur[] = { Occur.SHOULD, Occur.SHOULD };
+  private void assertStopQueryEquals(String qtxt, String expectedRes) throws Exception {
+    String[] fields = {"b", "t"};
+    Occur occur[] = {Occur.SHOULD, Occur.SHOULD};
     TestQPHelper.QPTestAnalyzer a = new TestQPHelper.QPTestAnalyzer();
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
@@ -92,7 +90,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   }
 
   public void testSimple() throws Exception {
-    String[] fields = { "b", "t" };
+    String[] fields = {"b", "t"};
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
     mfqp.setAnalyzer(new MockAnalyzer(random()));
@@ -107,8 +105,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
 
     q = mfqp.parse("+one -two -three", null);
-    assertEquals("+(b:one t:one) -(b:two t:two) -(b:three t:three)", q
-        .toString());
+    assertEquals("+(b:one t:one) -(b:two t:two) -(b:three t:three)", q.toString());
 
     q = mfqp.parse("one^2 two", null);
     assertEquals("(b:one t:one)^2.0 (b:two t:two)", q.toString());
@@ -132,8 +129,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertEquals("b:\"foo bar\" t:\"foo bar\"", q.toString());
 
     q = mfqp.parse("\"aa bb cc\" \"dd ee\"", null);
-    assertEquals("(b:\"aa bb cc\" t:\"aa bb cc\") (b:\"dd ee\" t:\"dd ee\")", q
-        .toString());
+    assertEquals("(b:\"aa bb cc\" t:\"aa bb cc\") (b:\"dd ee\" t:\"dd ee\")", q.toString());
 
     q = mfqp.parse("\"foo bar\"~4", null);
     assertEquals("b:\"foo bar\"~4 t:\"foo bar\"~4", q.toString());
@@ -152,16 +148,14 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     q = mfqp.parse("one two", null);
     assertEquals("+(b:one t:one) +(b:two t:two)", q.toString());
     q = mfqp.parse("\"aa bb cc\" \"dd ee\"", null);
-    assertEquals("+(b:\"aa bb cc\" t:\"aa bb cc\") +(b:\"dd ee\" t:\"dd ee\")",
-        q.toString());
-
+    assertEquals("+(b:\"aa bb cc\" t:\"aa bb cc\") +(b:\"dd ee\" t:\"dd ee\")", q.toString());
   }
 
   public void testBoostsSimple() throws Exception {
-    Map<String,Float> boosts = new HashMap<>();
+    Map<String, Float> boosts = new HashMap<>();
     boosts.put("b", Float.valueOf(5));
     boosts.put("t", Float.valueOf(10));
-    String[] fields = { "b", "t" };
+    String[] fields = {"b", "t"};
     StandardQueryParser mfqp = new StandardQueryParser();
     mfqp.setMultiFields(fields);
     mfqp.setFieldsBoost(boosts);
@@ -173,8 +167,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     // Check for AND
     q = mfqp.parse("one AND two", null);
-    assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0)", q
-        .toString());
+    assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0)", q.toString());
 
     // Check for OR
     q = mfqp.parse("one OR two", null);
@@ -182,79 +175,79 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     // Check for AND and a field
     q = mfqp.parse("one AND two AND foo:test", null);
-    assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0) +foo:test", q
-        .toString());
+    assertEquals("+((b:one)^5.0 (t:one)^10.0) +((b:two)^5.0 (t:two)^10.0) +foo:test", q.toString());
 
     q = mfqp.parse("one^3 AND two^4", null);
-    assertEquals("+((b:one)^5.0 (t:one)^10.0)^3.0 +((b:two)^5.0 (t:two)^10.0)^4.0",
-        q.toString());
+    assertEquals("+((b:one)^5.0 (t:one)^10.0)^3.0 +((b:two)^5.0 (t:two)^10.0)^4.0", q.toString());
   }
 
   public void testStaticMethod1() throws QueryNodeException {
-    String[] fields = { "b", "t" };
-    String[] queries = { "one", "two" };
+    String[] fields = {"b", "t"};
+    String[] queries = {"one", "two"};
     Query q = QueryParserUtil.parse(queries, fields, new MockAnalyzer(random()));
     assertEquals("b:one t:two", q.toString());
 
-    String[] queries2 = { "+one", "+two" };
+    String[] queries2 = {"+one", "+two"};
     q = QueryParserUtil.parse(queries2, fields, new MockAnalyzer(random()));
     assertEquals("b:one t:two", q.toString());
 
-    String[] queries3 = { "one", "+two" };
+    String[] queries3 = {"one", "+two"};
     q = QueryParserUtil.parse(queries3, fields, new MockAnalyzer(random()));
     assertEquals("b:one t:two", q.toString());
 
-    String[] queries4 = { "one +more", "+two" };
+    String[] queries4 = {"one +more", "+two"};
     q = QueryParserUtil.parse(queries4, fields, new MockAnalyzer(random()));
     assertEquals("(b:one +b:more) t:two", q.toString());
 
-    String[] queries5 = { "blah" };
+    String[] queries5 = {"blah"};
     // expected exception, array length differs
-    expectThrows(IllegalArgumentException.class, () -> {
-      QueryParserUtil.parse(queries5, fields, new MockAnalyzer(random()));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          QueryParserUtil.parse(queries5, fields, new MockAnalyzer(random()));
+        });
 
     // check also with stop words for this static form (qtxts[], fields[]).
     TestQPHelper.QPTestAnalyzer stopA = new TestQPHelper.QPTestAnalyzer();
 
-    String[] queries6 = { "((+stop))", "+((stop))" };
+    String[] queries6 = {"((+stop))", "+((stop))"};
     q = QueryParserUtil.parse(queries6, fields, stopA);
     assertEquals("MatchNoDocsQuery(\"\") MatchNoDocsQuery(\"\")", q.toString());
-    //assertEquals(" ", q.toString());
+    // assertEquals(" ", q.toString());
 
-    String[] queries7 = { "one ((+stop)) +more", "+((stop)) +two" };
+    String[] queries7 = {"one ((+stop)) +more", "+((stop)) +two"};
     q = QueryParserUtil.parse(queries7, fields, stopA);
     assertEquals("(b:one +b:more) (+t:two)", q.toString());
   }
 
   public void testStaticMethod2() throws QueryNodeException {
-    String[] fields = { "b", "t" };
-    BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
-        BooleanClause.Occur.MUST_NOT };
-    Query q = QueryParserUtil.parse("one", fields, flags,
-        new MockAnalyzer(random()));
+    String[] fields = {"b", "t"};
+    BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
+    Query q = QueryParserUtil.parse("one", fields, flags, new MockAnalyzer(random()));
     assertEquals("+b:one -t:one", q.toString());
 
     q = QueryParserUtil.parse("one two", fields, flags, new MockAnalyzer(random()));
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     // expected exception, array length differs
-    expectThrows(IllegalArgumentException.class, () -> {
-      BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+          QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
+        });
   }
 
   public void testStaticMethod2Old() throws QueryNodeException {
-    String[] fields = { "b", "t" };
-    BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
-        BooleanClause.Occur.MUST_NOT };
+    String[] fields = {"b", "t"};
+    BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
     StandardQueryParser parser = new StandardQueryParser();
     parser.setMultiFields(fields);
     parser.setAnalyzer(new MockAnalyzer(random()));
 
-    Query q = QueryParserUtil.parse("one", fields, flags,
-        new MockAnalyzer(random()));// , fields, flags, new
+    Query q =
+        QueryParserUtil.parse(
+            "one", fields, flags, new MockAnalyzer(random())); // , fields, flags, new
     // MockAnalyzer());
     assertEquals("+b:one -t:one", q.toString());
 
@@ -262,48 +255,50 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     // expected exception, array length differs
-    expectThrows(IllegalArgumentException.class, () -> {
-      BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+          QueryParserUtil.parse("blah", fields, flags2, new MockAnalyzer(random()));
+        });
   }
 
   public void testStaticMethod3() throws QueryNodeException {
-    String[] queries = { "one", "two", "three" };
-    String[] fields = { "f1", "f2", "f3" };
-    BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
-        BooleanClause.Occur.MUST_NOT, BooleanClause.Occur.SHOULD };
-    Query q = QueryParserUtil.parse(queries, fields, flags,
-        new MockAnalyzer(random()));
+    String[] queries = {"one", "two", "three"};
+    String[] fields = {"f1", "f2", "f3"};
+    BooleanClause.Occur[] flags = {
+      BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT, BooleanClause.Occur.SHOULD
+    };
+    Query q = QueryParserUtil.parse(queries, fields, flags, new MockAnalyzer(random()));
     assertEquals("+f1:one -f2:two f3:three", q.toString());
 
     // expected exception, array length differs
-    expectThrows(IllegalArgumentException.class, () -> {
-      BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      QueryParserUtil
-          .parse(queries, fields, flags2, new MockAnalyzer(random()));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+          QueryParserUtil.parse(queries, fields, flags2, new MockAnalyzer(random()));
+        });
   }
 
   public void testStaticMethod3Old() throws QueryNodeException {
-    String[] queries = { "one", "two" };
-    String[] fields = { "b", "t" };
-    BooleanClause.Occur[] flags = { BooleanClause.Occur.MUST,
-        BooleanClause.Occur.MUST_NOT };
-    Query q = QueryParserUtil.parse(queries, fields, flags,
-        new MockAnalyzer(random()));
+    String[] queries = {"one", "two"};
+    String[] fields = {"b", "t"};
+    BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
+    Query q = QueryParserUtil.parse(queries, fields, flags, new MockAnalyzer(random()));
     assertEquals("+b:one -t:two", q.toString());
 
     // expected exception, array length differs
-    expectThrows(IllegalArgumentException.class, () -> {
-      BooleanClause.Occur[] flags2 = { BooleanClause.Occur.MUST };
-      QueryParserUtil
-          .parse(queries, fields, flags2, new MockAnalyzer(random()));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
+          QueryParserUtil.parse(queries, fields, flags2, new MockAnalyzer(random()));
+        });
   }
 
   public void testAnalyzerReturningNull() throws QueryNodeException {
-    String[] fields = new String[] { "f1", "f2", "f3" };
+    String[] fields = new String[] {"f1", "f2", "f3"};
     StandardQueryParser parser = new StandardQueryParser();
     parser.setMultiFields(fields);
     parser.setAnalyzer(new AnalyzerReturningNull());
@@ -331,7 +326,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
     StandardQueryParser mfqp = new StandardQueryParser();
 
-    mfqp.setMultiFields(new String[] { "body" });
+    mfqp.setMultiFields(new String[] {"body"});
     mfqp.setAnalyzer(analyzer);
     mfqp.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
     Query q = mfqp.parse("the footest", null);
@@ -343,9 +338,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     ramDir.close();
   }
 
-  /**
-   * Return no tokens for field "f1".
-   */
+  /** Return no tokens for field "f1". */
   private static class AnalyzerReturningNull extends Analyzer {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
 
@@ -370,5 +363,4 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
       return stdAnalyzer.createComponents(fieldName);
     }
   }
-
 }

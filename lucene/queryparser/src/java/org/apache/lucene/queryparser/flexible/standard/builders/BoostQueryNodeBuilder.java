@@ -24,10 +24,9 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 
 /**
- * This builder basically reads the {@link Query} object set on the
- * {@link BoostQueryNode} child using
- * {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} and applies the boost value
- * defined in the {@link BoostQueryNode}.
+ * This builder basically reads the {@link Query} object set on the {@link BoostQueryNode} child
+ * using {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} and applies the boost value defined in
+ * the {@link BoostQueryNode}.
  */
 public class BoostQueryNodeBuilder implements StandardQueryBuilder {
 
@@ -44,11 +43,8 @@ public class BoostQueryNodeBuilder implements StandardQueryBuilder {
       return null;
     }
 
-    Query query = (Query) child
-        .getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
+    Query query = (Query) child.getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
 
     return new BoostQuery(query, boostNode.getValue());
-
   }
-
 }

@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-
 /**
- * This package contains reusable parts for javacc-generated
- * grammars (query parsers).
+ * This package contains reusable parts for javacc-generated grammars (query parsers).
  *
  * @see org.apache.lucene.queryparser.charstream.CharStream
  * @see org.apache.lucene.queryparser.charstream.FastCharStream

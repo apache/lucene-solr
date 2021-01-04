@@ -86,11 +86,33 @@ allprojects { prj ->
             target "src/**/*.java"
             break
 
-        // Partially complete.
+          case ":lucene:queryparser":
+            target "src/**/*.java"
+            targetExclude "**/resources/**",
+              "**/classic/ParseException.java",
+              "**/classic/QueryParser.java",
+              "**/classic/QueryParserConstants.java",
+              "**/classic/QueryParserTokenManager.java",
+              "**/classic/Token.java",
+              "**/classic/TokenMgrError.java",
+              "**/standard/parser/ParseException.java",
+              "**/standard/parser/StandardSyntaxParser.java",
+              "**/standard/parser/StandardSyntaxParserConstants.java",
+              "**/standard/parser/StandardSyntaxParserTokenManager.java",
+              "**/standard/parser/Token.java",
+              "**/standard/parser/TokenMgrError.java",
+              "**/surround/parser/ParseException.java",
+              "**/surround/parser/QueryParser.java",
+              "**/surround/parser/QueryParserConstants.java",
+              "**/surround/parser/QueryParserTokenManager.java",
+              "**/surround/parser/Token.java",
+              "**/surround/parser/TokenMgrError.java"
+            break
+
+            // Partially complete.
 
           // All others - disable reformatting/ checks for now.
           case ":lucene:luke":
-          case ":lucene:queryparser":
           case ":lucene:sandbox":
           case ":lucene:spatial3d":
           case ":lucene:spatial-extras":

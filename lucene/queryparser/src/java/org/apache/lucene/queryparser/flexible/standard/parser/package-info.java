@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
+ *
+ *
  * <h2>Lucene Query Parser</h2>
- * <p>
- * The package org.apache.lucene.queryparser.flexible.standard.parser contains the query parser.
- * <p>
- * This text parser only performs the syntax validation and creates an QueryNode tree
- * from a query string.
+ *
+ * <p>The package org.apache.lucene.queryparser.flexible.standard.parser contains the query parser.
+ *
+ * <p>This text parser only performs the syntax validation and creates an QueryNode tree from a
+ * query string.
  */
 package org.apache.lucene.queryparser.flexible.standard.parser;
-
