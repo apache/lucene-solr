@@ -25,7 +25,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -42,7 +41,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -317,16 +315,18 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void doRecovery(SolrCore core) {
+
     log.info("Do recovery for core {}", core.getName());
     CoreContainer corecontainer = core.getCoreContainer();
-    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+
     Runnable recoveryTask = () -> {
       try {
         if (SKIP_AUTO_RECOVERY) {
           log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
           return;
         }
-
+        CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+        MDCLoggingContext.setCoreDescriptor(corecontainer, coreDescriptor);
         if (log.isDebugEnabled()) log.debug("Going to create and run RecoveryStrategy");
 
 //        try {
@@ -405,6 +405,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         if (recoveryLock.isHeldByCurrentThread()) {
           recoveryLock.unlock();
         }
+        MDCLoggingContext.clear();
       }
     };
     boolean success = false;

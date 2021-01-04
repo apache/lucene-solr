@@ -102,15 +102,15 @@ public class SyncStrategy implements Closeable {
     }
     try {
       
-      if (success) {
-        log.info("Sync Success - now sync replicas to me");
-        
-        syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor(), core.getUpdateHandler().getUpdateLog().getNumRecordsToKeep());
-        
-      } else {
-        log.info("Leader's attempt to sync with shard failed, moving to the next candidate");
-        // lets see who seems ahead...
-      }
+//      if (success) {
+//        log.info("Sync Success - now sync replicas to me");
+//
+//        syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor(), core.getUpdateHandler().getUpdateLog().getNumRecordsToKeep());
+//
+//      } else {
+//        log.info("Leader's attempt to sync with shard failed, moving to the next candidate");
+//        // lets see who seems ahead...
+//      }
       
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);

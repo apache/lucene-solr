@@ -77,7 +77,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
@@ -93,8 +92,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   volatile String managedSchemaResourceName;
 
   volatile int schemaZkVersion;
-  
-  final ReentrantLock schemaUpdateLock;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -111,9 +108,12 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.collection = collection;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
-    this.schemaUpdateLock = new ReentrantLock();
   }
-  
+
+
+  public IndexSchemaFactory getSchemaFactory() {
+    return managedIndexSchemaFactory;
+  }
   
   /**
    * Persist the schema to local storage or to ZooKeeper
@@ -187,18 +187,19 @@ public final class ManagedIndexSchema extends IndexSchema {
         try {
           zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
+          schemaZkVersion = 0;
         } catch (KeeperException.NodeExistsException e) {
           // This is okay - do nothing and fall through
         }
-        schemaZkVersion = 0;
       } else {
         try {
           // Assumption: the path exists
 
-          ver = schemaZkVersion;
+          ver = getSchemaZkVersion();
 
           Stat managedSchemaStat = zkClient.setData(managedSchemaPath, data, ver, true);
           log.info("Persisted managed schema version {} at {}", managedSchemaStat.getVersion(), managedSchemaPath);
+          schemaZkVersion = managedSchemaStat.getVersion();
         } catch (KeeperException.BadVersionException e) {
           // try again with latest schemaZkVersion value
           Stat stat = zkClient.exists(managedSchemaPath, null, true);
@@ -206,7 +207,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           if (stat != null) {
             found = stat.getVersion();
           }
-          log.info("Bad version when trying to persist schema using {} found {}", ver, found);
+          log.info("Bad version when trying to persist schema using {} found {} schema {}", ver, found, this);
 
           schemaChangedInZk = true;
         }
@@ -1385,8 +1386,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.isMutable = isMutable;
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
-    this.schemaUpdateLock = new ReentrantLock();
     this.collection = collection;
+    log.info("Copy to new ManagedIndexSchemaFactory with version {}", schemaZkVersion);
   }
 
   /**
@@ -1436,9 +1437,4 @@ public final class ManagedIndexSchema extends IndexSchema {
      newSchema.decoders = decoders;
      return newSchema;
    }
-
-  @Override
-  public ReentrantLock getSchemaUpdateLock() {
-    return schemaUpdateLock;
-  }
 }

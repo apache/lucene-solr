@@ -57,11 +57,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private volatile String managedSchemaResourceName = DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
   private volatile String collection;
-  private CoreContainer cc;
+  private volatile CoreContainer cc;
 
   private volatile SolrCore core;
 
-  private ReentrantLock schemaUpdateLock = new ReentrantLock();
+  private final ReentrantLock schemaUpdateLock = new ReentrantLock();
 
   public String getManagedSchemaResourceName() { return managedSchemaResourceName; }
   private volatile SolrConfig config;
@@ -337,8 +337,27 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
     final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
     final SolrZkClient zkClient = zkLoader.getZkClient();
+
+
+    // Rename the non-managed schema znode in ZooKeeper
+    final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
+    final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
+    String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + managedSchemaResourceName;
+
+    try {
+      if (zkClient.exists(managedSchemaPath)) {
+        return;
+      }
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    } catch (InterruptedException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+
     final String lockPath = zkLoader.getConfigSetZkPath() + "/schemaUpgrade.lock";
     boolean locked = false;
+    ReentrantLock lock = getSchemaUpdateLock();
+    lock.lock();
     try {
       try {
         zkClient.makePath(lockPath, null, CreateMode.EPHEMERAL, null, true, true);
@@ -347,18 +366,16 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         // some other node already started the upgrade, or an error occurred - bail out
         return;
       }
-      schema.persistManagedSchemaToZooKeeper(true); // Only create, don't update it if it already exists
 
+      schema.persistManagedSchemaToZooKeeper(true); // Only create, don't update it if it already exists
       // After successfully persisting the managed schema, rename the non-managed
       // schema znode by appending UPGRADED_SCHEMA_EXTENSION to its name.
 
-      // Rename the non-managed schema znode in ZooKeeper
-      final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
       try {
         if (zkClient.exists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
           byte[] bytes = zkClient.getData(nonManagedSchemaPath, null, null);
-          final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
+
           zkClient.mkdir(upgradedSchemaPath);
           Stat stat = zkClient.setData(upgradedSchemaPath, bytes, true);
           // Then delete the non-managed schema znode
@@ -387,15 +404,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         log.warn(msg, e); // Log as warning and suppress the exception
       }
     } finally {
-      if (locked) {
-        // unlock
-        try {
-          zkClient.delete(lockPath, -1);
-        } catch (KeeperException.NoNodeException nne) {
-          // ignore - someone else deleted it
-        } catch (Exception e) {
-          log.warn("Unable to delete schema upgrade lock file {}", lockPath, e);
+      try {
+        if (locked) {
+          // unlock
+          try {
+            zkClient.delete(lockPath, -1);
+          } catch (KeeperException.NoNodeException nne) {
+            // ignore - someone else deleted it
+          } catch (Exception e) {
+            log.warn("Unable to delete schema upgrade lock file {}", lockPath, e);
+          }
         }
+      } finally {
+        lock.unlock();
       }
     }
   }
@@ -429,8 +450,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   }
 
   public void setSchema(ManagedIndexSchema schema) {
-    this.schema = schema;
     core.setLatestSchema(schema);
+    this.schema = schema;
   }
   
   public boolean isMutable() {

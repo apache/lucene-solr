@@ -211,18 +211,20 @@ public class LeaderElector implements Closeable {
           if (oldWatcher != null) {
             IOUtils.closeQuietly(oldWatcher);
           }
-          if (context.leaderSeqPath == null) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Election has been cancelled");
-          }
+
           watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
           zkClient.exists(watchedNode, watcher);
           state = WAITING_IN_ELECTION;
           if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
+
+          log.info("Start recovery for core {}", context.leaderProps.getName());
           try (SolrCore core = zkController.getCoreContainer().getCore(context.leaderProps.getName())) {
             if (core != null) {
              // if (!core.getSolrCoreState().isRecoverying()) {
                 core.getSolrCoreState().doRecovery(core);
              // }
+            } else {
+              log.warn("No core found to start recovery with {}", context.leaderProps.getName());
             }
           }
           return false;

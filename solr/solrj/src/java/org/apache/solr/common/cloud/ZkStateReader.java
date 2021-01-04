@@ -1515,10 +1515,10 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
                     replicasMap.put(r.getName(), newReplica);
                   }
                 }
-              } else if (state != null) {
+              } else if (state != null && !properties.get(ZkStateReader.STATE_PROP).equals(state.toString())) {
                 if (log.isDebugEnabled()) log.debug("std state, set to {}", state);
                 properties.put(ZkStateReader.STATE_PROP, state.toString());
-                if (state != Replica.State.ACTIVE && "true".equals(properties.get(LEADER_PROP))) {
+                if ("true".equals(properties.get(LEADER_PROP))) {
                   properties.remove(LEADER_PROP);
                 }
               }

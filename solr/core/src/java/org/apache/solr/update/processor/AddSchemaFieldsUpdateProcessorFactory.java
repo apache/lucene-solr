@@ -397,15 +397,19 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       // use the cmd's schema rather than the latest, because the schema
       // can be updated during processing.  Using the cmd's schema guarantees
       // this will be detected and the cmd's schema updated.
-      IndexSchema oldSchema = cmd.getReq().getSchema();;
+      IndexSchema oldSchema;
       IndexSchema newSchema = null;
-      for (; ; ) {
+      for (int cnt = 0; ; cnt++) {
+
         List<SchemaField> newFields = new ArrayList<>();
         // Group copyField defs per field and then per maxChar, to adapt to IndexSchema API
         // build a selector each time through the loop b/c the schema we are
         // processing may have changed
         try {
-          oldSchema = cmd.getReq().getSchema();
+
+          // use latest schema
+          oldSchema = cmd.getReq().getCore().getLatestSchema();
+
           FieldNameSelector selector = buildSelector(oldSchema);
           Map<String,List<SolrInputField>> unknownFields = new HashMap<>();
           getUnknownFields(selector, doc, unknownFields);
@@ -462,6 +466,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           }
 
           newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
+
+          log.info("Old schema version for request is {} version for latest on core is {} new schema version={}", ((ManagedIndexSchema) oldSchema).getSchemaZkVersion(), ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion(), ((ManagedIndexSchema) newSchema).getSchemaZkVersion());
+
           // Add copyFields
           for (Map.Entry<String,Map<Integer,List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
             String srcField = entry.getKey();
@@ -490,10 +497,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           log.error("At least one field to be added already exists in the schema - retrying.");
           cmd.getReq().updateSchemaToLatest();
         } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
-          log.info("Schema changed while processing request ...");
           try {
-            ((ManagedIndexSchema) newSchema).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema(null, -1);
+            ((ManagedIndexSchema) cmd.getReq().getSchema()).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema(null, -1, cmd.getReq().getCore());
             cmd.getReq().updateSchemaToLatest();
+
+            log.info("Schema changed while processing request ... current latest version {} try={}", ((ManagedIndexSchema) cmd.getReq().getSchema()).getSchemaZkVersion(), cnt);
           } catch (KeeperException.SessionExpiredException keeperException) {
             throw new SolrException(SERVER_ERROR, keeperException);
           } catch (Exception e1) {

@@ -173,7 +173,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -362,6 +361,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (this.schema == replacementSchema) {
       return;
     }
+
+    log.info("Set latest schema for core={} schema={}", getName(), replacementSchema);
+
     this.schema = replacementSchema;
 
     final SimilarityFactory similarityFactory = replacementSchema.getSimilarityFactory();

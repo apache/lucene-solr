@@ -87,6 +87,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +134,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     super.setUp();
 //    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     // For manual testing only
-    // useFactory(null); // force an FS factory.
+    useFactory(null); // force an FS factory.
     master = new SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     masterJetty = createAndStartJetty(master);
@@ -291,7 +292,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private Http2SolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
+    String adminUrl = ((Http2SolrClient)client).getBaseURL().replace("/collection1", "");
     return getHttpSolrClient(adminUrl);
   }
 
@@ -506,6 +507,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit
   public void doTestIndexAndConfigReplication() throws Exception {
 
     TestInjection.delayBeforeSlaveCommitRefresh = random().nextInt(10);
@@ -1041,6 +1043,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
+  @Ignore // nocommit
   public void doTestRepeater() throws Exception {
     // no polling
     slave.setTestPort(masterJetty.getLocalPort());
@@ -1648,7 +1651,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     @Override
     public void run() {
-      final int totalDocs = TestUtil.nextInt(random(), 1, 10);
+      final int totalDocs = TestUtil.nextInt(LuceneTestCase.random(), 1, 10);
       for (int i = 0; i < totalDocs; i++) {
         try {
           index(masterClient, "id", i + startId, "name", TestUtil.randomSimpleString(random(), 1000 , 5000));

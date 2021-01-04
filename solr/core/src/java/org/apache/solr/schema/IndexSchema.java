@@ -79,7 +79,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1642,8 +1641,6 @@ public class IndexSchema {
 
   /**
    * Copies this schema, adds the given field to the copy
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param newField the SchemaField to add 
    * @param persist to persist the schema or not
@@ -1660,8 +1657,6 @@ public class IndexSchema {
 
   /**
    * Copies this schema, adds the given field to the copy
-   *  Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param newField the SchemaField to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The targets must already exist.
@@ -1674,8 +1669,6 @@ public class IndexSchema {
 
   /**
    * Copies this schema, adds the given fields to the copy.
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param newFields the SchemaFields to add
    * @return a new IndexSchema based on this schema with newFields added
@@ -1687,8 +1680,6 @@ public class IndexSchema {
 
   /**
    * Copies this schema, adds the given fields to the copy
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param newFields the SchemaFields to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
@@ -1708,8 +1699,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param names the names of the fields to delete
    * @return a new IndexSchema based on this schema with the named fields deleted
@@ -1728,7 +1717,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *
    * @param fieldName The name of the field to be replaced
    * @param replacementFieldType  The field type of the replacement field                                   
@@ -1744,7 +1732,6 @@ public class IndexSchema {
   /**
    * Copies this schema, adds the given dynamic fields to the copy,
    * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param newDynamicFields the SchemaFields to add
    * @param copyFieldNames 0 or more names of targets to copy this field to.  The target fields must already exist.
@@ -1767,7 +1754,6 @@ public class IndexSchema {
    * The schema will not be persisted.
    * <p>
    * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
    *
    * @param fieldNamePatterns the names of the dynamic fields to delete
    * @return a new IndexSchema based on this schema with the named dynamic fields deleted
@@ -1786,7 +1772,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *
    * @param fieldNamePattern The glob for the dynamic field to be replaced
    * @param replacementFieldType  The field type of the replacement dynamic field                                   
@@ -1802,9 +1787,6 @@ public class IndexSchema {
 
     /**
      * Copies this schema and adds the new copy fields to the copy
-     * Requires synchronizing on the object returned by
-     * {@link #getSchemaUpdateLock()}.
-     *
      * @see #addCopyFields(String,Collection,int) to limit the number of copied characters.
      *
      * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
@@ -1819,9 +1801,6 @@ public class IndexSchema {
 
   /**
    * Copies this schema and adds the new copy fields to the copy.
-   * 
-   * Requires synchronizing on the object returned by 
-   * {@link #getSchemaUpdateLock()}
    * 
    * @param source source field name
    * @param destinations collection of target field names
@@ -1841,9 +1820,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
-   *
    * @param copyFields Key is the name of the source field name, value is a collection of target field names. 
    *                   Each corresponding copy field directives must exist.
    * @return The new Schema with the copy fields deleted
@@ -1892,21 +1868,7 @@ public class IndexSchema {
   }
 
   /**
-   * Returns the schema update lock that should be synchronized on
-   * to update the schema.  Only applicable to mutable schemas.
-   *
-   * @return the schema update lock object to synchronize on
-   */
-  public ReentrantLock getSchemaUpdateLock() {
-    String msg = "This IndexSchema is not mutable.";
-    log.error(msg);
-    throw new SolrException(ErrorCode.SERVER_ERROR, msg);
-  }
-
-  /**
-   * Copies this schema, adds the given field type to the copy,
-   * Requires synchronizing on the object returned by
-   * {@link #getSchemaUpdateLock()}.
+   * Copies this schema, adds the given field type to the copy
    *
    * @param fieldTypeList a list of FieldTypes to add
    * @param persist to persist the schema or not
@@ -1924,7 +1886,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *
    * @param names the names of the field types to delete
    * @return a new IndexSchema based on this schema with the named field types deleted
@@ -1943,7 +1904,6 @@ public class IndexSchema {
    * <p>
    * The schema will not be persisted.
    * <p>
-   * Requires synchronizing on the object returned by {@link #getSchemaUpdateLock()}.
    *  
    * @param typeName The name of the field type to be replaced
    * @param replacementClassName The class name of the replacement field type

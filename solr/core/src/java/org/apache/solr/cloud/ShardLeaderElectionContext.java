@@ -153,7 +153,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           return;
         }
         result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
-        log.warn("Sync strategy result {}", result);
+        log.info("Sync strategy sync result {}", result);
         success = result.isSuccess();
 
         if (!success) {

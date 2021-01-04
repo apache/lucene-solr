@@ -121,7 +121,7 @@ public class ZkShardTerms implements Closeable {
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) throws KeeperException, InterruptedException {
     if (log.isDebugEnabled()) log.debug("ensureTermsIsHigher leader={} replicasNeedingRecvoery={}", leader, replicasNeedingRecovery);
     if (replicasNeedingRecovery.isEmpty()) return;
-
+    registerTerm(leader);
     ShardTerms newTerms;
     while( (newTerms = terms.get().increaseTerms(leader, replicasNeedingRecovery)) != null) {
       if (forceSaveTerms(newTerms)) return;

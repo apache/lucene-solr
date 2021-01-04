@@ -589,35 +589,37 @@ public class IndexFetcher {
 
         try {
 
-          log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
-          successfulInstall = false;
-          long bytesDownloaded;
-          try {
-             bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
-          } catch (CheckSumFailException e) {
-            isFullCopyNeeded = true;
-            bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
-          }
-
           // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
           if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+          }
+
+          log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
+          successfulInstall = true;
+          boolean downloadFailed = false;
+          long bytesDownloaded = 0;
+          try {
+             bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir, tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+          } catch (CheckSumFailException e) {
+            downloadFailed = true;
+            successfulInstall = false;
           }
 
           final long timeTakenSeconds = getReplicationTimeElapsed();
           final Long bytesDownloadedPerSecond = (timeTakenSeconds != 0 ? Long.valueOf(bytesDownloaded / timeTakenSeconds) : null);
           log.info("Total time taken for download (fullCopy={},bytesDownloaded={}) : {} secs ({} bytes/sec) to {}",
               isFullCopyNeeded, bytesDownloaded, timeTakenSeconds, bytesDownloadedPerSecond, tmpIndexDir);
-          successfulInstall = true;
+    
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
-          if (!modifiedConfFiles.isEmpty()) {
+          if (!modifiedConfFiles.isEmpty() && !downloadFailed) {
             reloadCore = true;
             downloadConfFiles(confFilesToDownload, latestGeneration);
             if (isFullCopyNeeded && successfulInstall) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;
             } else {
-              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+              terminateAndWaitFsyncService();
+              moveIndexFiles(tmpIndexDir, indexDir);
             }
             if (successfulInstall) {
               if (isFullCopyNeeded) {
@@ -637,19 +639,21 @@ public class IndexFetcher {
                   successfulInstall);// write to a file time of replication and
                                      // conf files.
             }
-          } else {
-            terminateAndWaitFsyncService();
+          } else if (!downloadFailed) {
             if (isFullCopyNeeded && successfulInstall) {
+              terminateAndWaitFsyncService();
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (!successfulInstall) {
                 log.error("Modify index props failed");
               }
               if (successfulInstall) deleteTmpIdxDir = false;
             } else if (successfulInstall) {
-              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
+              terminateAndWaitFsyncService();
+              moveIndexFiles(tmpIndexDir, indexDir);
 
               if (!successfulInstall) {
                 log.error("Move index files failed");
+                throw new SolrException(ErrorCode.SERVER_ERROR, "Move index files failed");
               }
             }
             if (successfulInstall) {
@@ -660,7 +664,7 @@ public class IndexFetcher {
         } finally {
           solrCore.searchEnabled = true;
           solrCore.indexEnabled = true;
-          if (!isFullCopyNeeded && successfulInstall) {
+          if (!isFullCopyNeeded) {
             solrCore.getUpdateHandler().getSolrCoreState().openIndexWriter(solrCore);
           }
         }
@@ -680,7 +684,12 @@ public class IndexFetcher {
             if (indexDir != null) {
               log.info("removing old index directory {}", indexDir);
               solrCore.getDirectoryFactory().doneWithDirectory(indexDir);
-              solrCore.getDirectoryFactory().remove(indexDir);
+              try {
+                solrCore.getDirectoryFactory().remove(indexDir);
+              } catch (IllegalArgumentException e) {
+                if (log.isDebugEnabled()) log.debug("Error removing directory in IndexFetcher", e);
+                // could already be removed
+              }
             }
           }
           if (isFullCopyNeeded) {
@@ -690,9 +699,7 @@ public class IndexFetcher {
           openNewSearcherAndUpdateCommitPoint();
         }
 
-        if (!isFullCopyNeeded && !forceReplication && !successfulInstall) {
-          cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
-          cleanupDone = true;
+        if (!isFullCopyNeeded && !forceReplication && !successfulInstall && !abort) {
           // we try with a full copy of the index
           log.warn(
               "Replication attempt was not successful - trying a full index replication reloadCore={}",
@@ -711,9 +718,7 @@ public class IndexFetcher {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       }
     } finally {
-      if (!cleanupDone) {
-        cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
-      }
+      cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
     }
   }
 
@@ -735,11 +740,11 @@ public class IndexFetcher {
           // this can happen on shutdown, a fetch may be running in a thread after DirectoryFactory is closed
           log.warn("Could not log failed replication details", e);
         }
-      }
-
-      if (core.getCoreContainer().isZooKeeperAware()) {
-        // we only track replication success in SolrCloud mode
-        core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      } else {
+        if (core.getCoreContainer().isZooKeeperAware()) {
+          // we only track replication success in SolrCloud mode
+          core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+        }
       }
     } finally {
 
@@ -949,6 +954,7 @@ public class IndexFetcher {
           waitSearcher[0].get();
         } catch (InterruptedException | ExecutionException e) {
           ParWork.propagateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
       commitPoint = searcher.get().getIndexReader().getIndexCommit();
@@ -1109,6 +1115,7 @@ public class IndexFetcher {
               if (stop) {
                 throw new AlreadyClosedException();
               }
+              log.info("Downloaded {}", tmpIndexDir, file.get(NAME));
               filesDownloaded.add(Collections.unmodifiableMap(file));
             } else {
               if (log.isDebugEnabled()) {
@@ -1320,12 +1327,12 @@ public class IndexFetcher {
    * <p/>
    */
   private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname) {
-    if (log.isDebugEnabled()) log.debug("Moving file: {}", fname);
     boolean success = false;
     try {
+      if (log.isDebugEnabled()) log.debug("Moving file: {} size={}", fname, tmpIdxDir.fileLength(fname));
       if (slowFileExists(indexDir, fname)) {
         log.warn("Cannot complete replication attempt because file already exists: {}", fname);
-        
+
         // we fail - we downloaded the files we need, if we can't move one in, we can't
         // count on the correct index
         return false;
@@ -1709,13 +1716,17 @@ public class IndexFetcher {
             }
           }
         }
+      } catch (Exception e) {
+        log.error("Problem fetching file", e);
+        throw e;
       } finally {
-        cleanup();
+        cleanup(null);
         //if cleanup succeeds . The file is downloaded fully. do an fsync
         fsyncServiceFuture = fsyncService.submit(() -> {
           try {
+            log.info("Sync and close fetched file", file);
             file.sync();
-          } catch (IOException e) {
+          } catch (Exception e) {
             fsyncException = e;
           }
         });
@@ -1767,13 +1778,17 @@ public class IndexFetcher {
           }
           //if everything is fine, write down the packet to the file
           file.write(buf, packetSize);
+
           bytesDownloaded += packetSize;
           // nocommit
           log.info("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
           //errorCount is always set to zero after a successful packet
           errorCount = 0;
-          if (bytesDownloaded >= size)
+          if (bytesDownloaded >= size) {
             return 0;
+          } else {
+            return 1;
+          }
         }
       } catch (CheckSumFailException e) {
         throw e;
@@ -1819,8 +1834,9 @@ public class IndexFetcher {
 
     /**
      * cleanup everything
+     * @param ex exception if failed
      */
-    private void cleanup() {
+    private void cleanup(Exception ex) {
       try {
         file.close();
       } catch (Exception e) {/* no-op */
@@ -1835,10 +1851,12 @@ public class IndexFetcher {
           log.error("Error deleting file: {}", this.saveAs, e);
         }
         //if the failure is due to a user abort it is returned normally else an exception is thrown
-        if (!stop)
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Unable to download " + fileName + " completely. Downloaded "
-                  + bytesDownloaded + "!=" + size);
+        SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to download " + fileName + " completely. Downloaded " + bytesDownloaded + "!=" + size);
+        if (ex != null) {
+          ex.addSuppressed(exp);
+        } else {
+          throw exp;
+        }
       }
     }
 
@@ -2022,9 +2040,9 @@ public class IndexFetcher {
     return masterUrl;
   }
 
-  private static final int MAX_RETRIES = 5;
+  private static final int MAX_RETRIES = 2;
 
-  private static final int NO_CONTENT = 1;
+  private static final int NO_CONTENT = 0;
 
   private static final int ERR = 2;
 

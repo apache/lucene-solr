@@ -1437,12 +1437,9 @@ public class Http2SolrClient extends SolrClient {
 
   private static class MyInputStreamResponseListener extends InputStreamResponseListener {
     private final AsyncListener<InputStream> asyncListener;
-    private final HttpClient httpClient;
-    private volatile InputStream stream;
 
     public MyInputStreamResponseListener(HttpClient httpClient, AsyncListener<InputStream> asyncListener) {
       this.asyncListener = asyncListener;
-      this.httpClient = httpClient;
     }
 
     @Override

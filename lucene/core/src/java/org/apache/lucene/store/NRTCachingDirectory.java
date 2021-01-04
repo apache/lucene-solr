@@ -174,9 +174,9 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String fileName : fileNames) {
       unCache(fileName);
     }
-    if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit
+    //if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit
       in.sync(fileNames);
-    }
+    //}
   }
 
   @Override
