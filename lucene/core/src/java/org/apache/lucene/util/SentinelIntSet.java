@@ -16,17 +16,18 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 
 /**
- * A native int hash-based set where one value is reserved to mean "EMPTY" internally. The space overhead is fairly low
- * as there is only one power-of-two sized int[] to hold the values.  The set is re-hashed when adding a value that
- * would make it &gt;= 75% full.  Consider extending and over-riding {@link #hash(int)} if the values might be poor
- * hash keys; Lucene docids should be fine.
- * The internal fields are exposed publicly to enable more efficient use at the expense of better O-O principles.
- * <p>
- * To iterate over the integers held in this set, simply use code like this:
+ * A native int hash-based set where one value is reserved to mean "EMPTY" internally. The space
+ * overhead is fairly low as there is only one power-of-two sized int[] to hold the values. The set
+ * is re-hashed when adding a value that would make it &gt;= 75% full. Consider extending and
+ * over-riding {@link #hash(int)} if the values might be poor hash keys; Lucene docids should be
+ * fine. The internal fields are exposed publicly to enable more efficient use at the expense of
+ * better O-O principles.
+ *
+ * <p>To iterate over the integers held in this set, simply use code like this:
+ *
  * <pre class="prettyprint">
  * SentinelIntSet set = ...
  * for (int v : set.keys) {
@@ -40,28 +41,27 @@ import java.util.Arrays;
 public class SentinelIntSet {
   /** A power-of-2 over-sized array holding the integers in the set along with empty values. */
   public int[] keys;
+
   public int count;
   public final int emptyVal;
   /** the count at which a rehash should be done */
   public int rehashCount;
 
   /**
-   *
-   * @param size  The minimum number of elements this set should be able to hold without rehashing
-   *              (i.e. the slots are guaranteed not to change)
+   * @param size The minimum number of elements this set should be able to hold without rehashing
+   *     (i.e. the slots are guaranteed not to change)
    * @param emptyVal The integer value to use for EMPTY
    */
   public SentinelIntSet(int size, int emptyVal) {
     this.emptyVal = emptyVal;
     int tsize = Math.max(org.apache.lucene.util.BitUtil.nextHighestPowerOfTwo(size), 1);
-    rehashCount = tsize - (tsize>>2);
-    if (size >= rehashCount) {  // should be able to hold "size" w/o re-hashing
+    rehashCount = tsize - (tsize >> 2);
+    if (size >= rehashCount) { // should be able to hold "size" w/o re-hashing
       tsize <<= 1;
-      rehashCount = tsize - (tsize>>2);
+      rehashCount = tsize - (tsize >> 2);
     }
     keys = new int[tsize];
-    if (emptyVal != 0)
-      clear();
+    if (emptyVal != 0) clear();
   }
 
   public void clear() {
@@ -69,26 +69,29 @@ public class SentinelIntSet {
     count = 0;
   }
 
-  /** (internal) Return the hash for the key. The default implementation just returns the key,
-   * which is not appropriate for general purpose use.
+  /**
+   * (internal) Return the hash for the key. The default implementation just returns the key, which
+   * is not appropriate for general purpose use.
    */
   public int hash(int key) {
     return key;
   }
 
   /** The number of integers in this set. */
-  public int size() { return count; }
+  public int size() {
+    return count;
+  }
 
   /** (internal) Returns the slot for this key */
   public int getSlot(int key) {
     assert key != emptyVal;
     int h = hash(key);
-    int s = h & (keys.length-1);
-    if (keys[s] == key || keys[s]== emptyVal) return s;
+    int s = h & (keys.length - 1);
+    if (keys[s] == key || keys[s] == emptyVal) return s;
 
-    int increment = (h>>7)|1;
+    int increment = (h >> 7) | 1;
     do {
-      s = (s + increment) & (keys.length-1);
+      s = (s + increment) & (keys.length - 1);
     } while (keys[s] != key && keys[s] != emptyVal);
     return s;
   }
@@ -97,15 +100,15 @@ public class SentinelIntSet {
   public int find(int key) {
     assert key != emptyVal;
     int h = hash(key);
-    int s = h & (keys.length-1);
+    int s = h & (keys.length - 1);
     if (keys[s] == key) return s;
-    if (keys[s] == emptyVal) return -s-1;
+    if (keys[s] == emptyVal) return -s - 1;
 
-    int increment = (h>>7)|1;
-    for(;;) {
-      s = (s + increment) & (keys.length-1);
+    int increment = (h >> 7) | 1;
+    for (; ; ) {
+      s = (s + increment) & (keys.length - 1);
       if (keys[s] == key) return s;
-      if (keys[s] == emptyVal) return -s-1;
+      if (keys[s] == emptyVal) return -s - 1;
     }
   }
 
@@ -114,8 +117,10 @@ public class SentinelIntSet {
     return find(key) >= 0;
   }
 
-  /** Puts this integer (key) in the set, and returns the slot index it was added to.
-   * It rehashes if adding it would make the set more than 75% full. */
+  /**
+   * Puts this integer (key) in the set, and returns the slot index it was added to. It rehashes if
+   * adding it would make the set more than 75% full.
+   */
   public int put(int key) {
     int s = find(key);
     if (s < 0) {
@@ -124,7 +129,7 @@ public class SentinelIntSet {
         rehash();
         s = getSlot(key);
       } else {
-        s = -s-1;
+        s = -s - 1;
       }
       keys[s] = key;
     }
@@ -143,14 +148,13 @@ public class SentinelIntSet {
       int newSlot = getSlot(key);
       keys[newSlot] = key;
     }
-    rehashCount = newSize - (newSize>>2);
+    rehashCount = newSize - (newSize >> 2);
   }
 
   /** Return the memory footprint of this class in bytes. */
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
-          Integer.BYTES * 3
-        + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+            Integer.BYTES * 3 + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
         + RamUsageEstimator.sizeOf(keys);
   }
 }

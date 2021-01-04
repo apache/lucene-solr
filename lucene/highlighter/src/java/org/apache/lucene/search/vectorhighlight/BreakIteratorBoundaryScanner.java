@@ -19,22 +19,23 @@ package org.apache.lucene.search.vectorhighlight;
 import java.text.BreakIterator;
 
 /**
- * A {@link BoundaryScanner} implementation that uses {@link BreakIterator} to find
- * boundaries in the text.
+ * A {@link BoundaryScanner} implementation that uses {@link BreakIterator} to find boundaries in
+ * the text.
+ *
  * @see BreakIterator
  */
 public class BreakIteratorBoundaryScanner implements BoundaryScanner {
-  
+
   final BreakIterator bi;
 
-  public BreakIteratorBoundaryScanner(BreakIterator bi){
+  public BreakIteratorBoundaryScanner(BreakIterator bi) {
     this.bi = bi;
   }
 
   @Override
   public int findStartOffset(StringBuilder buffer, int start) {
     // avoid illegal start offset
-    if( start > buffer.length() || start < 1 ) return start;
+    if (start > buffer.length() || start < 1) return start;
     bi.setText(buffer.substring(0, start));
     bi.last();
     return bi.previous();
@@ -43,7 +44,7 @@ public class BreakIteratorBoundaryScanner implements BoundaryScanner {
   @Override
   public int findEndOffset(StringBuilder buffer, int start) {
     // avoid illegal start offset
-    if( start > buffer.length() || start < 0 ) return start;
+    if (start > buffer.length() || start < 0) return start;
     bi.setText(buffer.substring(start));
     return bi.next() + start;
   }

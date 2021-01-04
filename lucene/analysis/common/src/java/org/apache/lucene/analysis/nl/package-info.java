@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Dutch.
- */
+/** Analyzer for Dutch. */
 package org.apache.lucene.analysis.nl;

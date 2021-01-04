@@ -16,13 +16,9 @@
  */
 package org.apache.lucene.search.highlight;
 
-/**
- * Simple {@link Encoder} implementation that does not modify the output
- *
- */
+/** Simple {@link Encoder} implementation that does not modify the output */
 public class DefaultEncoder implements Encoder {
-  public DefaultEncoder() {
-  }
+  public DefaultEncoder() {}
 
   @Override
   public String encodeText(String originalText) {

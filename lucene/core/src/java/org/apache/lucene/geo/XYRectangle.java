@@ -32,10 +32,12 @@ public final class XYRectangle extends XYGeometry {
   /** Constructs a bounding box by first validating the provided x and y coordinates */
   public XYRectangle(float minX, float maxX, float minY, float maxY) {
     if (minX > maxX) {
-      throw new IllegalArgumentException("minX must be lower than maxX, got " + minX + " > " + maxX);
+      throw new IllegalArgumentException(
+          "minX must be lower than maxX, got " + minX + " > " + maxX);
     }
     if (minY > maxY) {
-      throw new IllegalArgumentException("minY must be lower than maxY, got " + minY + " > " + maxY);
+      throw new IllegalArgumentException(
+          "minY must be lower than maxY, got " + minY + " > " + maxY);
     }
     this.minX = checkVal(minX);
     this.maxX = checkVal(maxX);
@@ -59,7 +61,6 @@ public final class XYRectangle extends XYGeometry {
     if (Float.compare(rectangle.minY, minY) != 0) return false;
     if (Float.compare(rectangle.maxX, maxX) != 0) return false;
     return Float.compare(rectangle.maxY, maxY) == 0;
-
   }
 
   /** Compute Bounding Box for a circle in cartesian geometry */

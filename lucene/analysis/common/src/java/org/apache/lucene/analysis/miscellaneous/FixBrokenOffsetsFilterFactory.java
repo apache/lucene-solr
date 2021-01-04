@@ -18,12 +18,12 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link FixBrokenOffsetsFilter}.
+ *
  * @since 7.0.0
  * @lucene.spi {@value #NAME}
  */
@@ -34,7 +34,7 @@ public class FixBrokenOffsetsFilterFactory extends TokenFilterFactory {
   public static final String NAME = "fixBrokenOffsets";
 
   /** Sole constructor */
-  public FixBrokenOffsetsFilterFactory(Map<String,String> args) {
+  public FixBrokenOffsetsFilterFactory(Map<String, String> args) {
     super(args);
   }
 

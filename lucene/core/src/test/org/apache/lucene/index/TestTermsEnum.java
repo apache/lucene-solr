@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +28,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -46,7 +44,7 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
-@SuppressCodecs({ "SimpleText", "Direct" })
+@SuppressCodecs({"SimpleText", "Direct"})
 public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
@@ -57,7 +55,7 @@ public class TestTermsEnum extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, analyzer);
     final int numDocs = atLeast(10);
-    for(int docCount=0;docCount<numDocs;docCount++) {
+    for (int docCount = 0; docCount < numDocs; docCount++) {
       w.addDocument(docs.nextDoc());
     }
     final IndexReader r = w.getReader();
@@ -66,7 +64,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final List<BytesRef> terms = new ArrayList<>();
     final TermsEnum termsEnum = MultiTerms.getTerms(r, "body").iterator();
     BytesRef term;
-    while((term = termsEnum.next()) != null) {
+    while ((term = termsEnum.next()) != null) {
       terms.add(BytesRef.deepCopyOf(term));
     }
     if (VERBOSE) {
@@ -75,7 +73,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     int upto = -1;
     final int iters = atLeast(200);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       final boolean isEnd;
       if (upto != -1 && random().nextBoolean()) {
         // next
@@ -92,7 +90,11 @@ public class TestTermsEnum extends LuceneTestCase {
           upto = -1;
         } else {
           if (VERBOSE) {
-            System.out.println("  got term=" + termsEnum.term().utf8ToString() + " expected=" + terms.get(upto).utf8ToString());
+            System.out.println(
+                "  got term="
+                    + termsEnum.term().utf8ToString()
+                    + " expected="
+                    + terms.get(upto).utf8ToString());
           }
           assertTrue(upto < terms.size());
           assertEquals(terms.get(upto), termsEnum.term());
@@ -119,16 +121,17 @@ public class TestTermsEnum extends LuceneTestCase {
 
         if (random().nextBoolean()) {
           if (VERBOSE) {
-            System.out.println("TEST: iter seekCeil target=" + target.utf8ToString() + " exists=" + exists);
+            System.out.println(
+                "TEST: iter seekCeil target=" + target.utf8ToString() + " exists=" + exists);
           }
           // seekCeil
           final TermsEnum.SeekStatus status = termsEnum.seekCeil(target);
           if (VERBOSE) {
             System.out.println("  got " + status);
           }
-          
+
           if (upto < 0) {
-            upto = -(upto+1);
+            upto = -(upto + 1);
             if (upto >= terms.size()) {
               assertEquals(TermsEnum.SeekStatus.END, status);
               upto = -1;
@@ -142,7 +145,8 @@ public class TestTermsEnum extends LuceneTestCase {
           }
         } else {
           if (VERBOSE) {
-            System.out.println("TEST: iter seekExact target=" + target.utf8ToString() + " exists=" + exists);
+            System.out.println(
+                "TEST: iter seekExact target=" + target.utf8ToString() + " exists=" + exists);
           }
           // seekExact
           final boolean result = termsEnum.seekExact(target);
@@ -165,7 +169,9 @@ public class TestTermsEnum extends LuceneTestCase {
     docs.close();
   }
 
-  private void addDoc(RandomIndexWriter w, Collection<String> terms, Map<BytesRef,Integer> termToID, int id) throws IOException {
+  private void addDoc(
+      RandomIndexWriter w, Collection<String> terms, Map<BytesRef, Integer> termToID, int id)
+      throws IOException {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("id", id));
     if (VERBOSE) {
@@ -181,9 +187,9 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private boolean accepts(CompiledAutomaton c, BytesRef b) {
     int state = 0;
-    for(int idx=0;idx<b.length;idx++) {
+    for (int idx = 0; idx < b.length; idx++) {
       assertTrue(state != -1);
-      state = c.runAutomaton.step(state, b.bytes[b.offset+idx] & 0xff);
+      state = c.runAutomaton.step(state, b.bytes[b.offset + idx] & 0xff);
     }
     return c.runAutomaton.isAccept(state);
   }
@@ -194,13 +200,13 @@ public class TestTermsEnum extends LuceneTestCase {
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     final int numTerms = atLeast(300);
-    //final int numTerms = 50;
+    // final int numTerms = 50;
 
     final Set<String> terms = new HashSet<>();
     final Collection<String> pendingTerms = new ArrayList<>();
-    final Map<BytesRef,Integer> termToID = new HashMap<>();
+    final Map<BytesRef, Integer> termToID = new HashMap<>();
     int id = 0;
-    while(terms.size() != numTerms) {
+    while (terms.size() != numTerms) {
       final String s = getRandomString();
       if (!terms.contains(s)) {
         terms.add(s);
@@ -216,7 +222,7 @@ public class TestTermsEnum extends LuceneTestCase {
     final Set<BytesRef> termsSet = new HashSet<>();
     {
       int upto = 0;
-      for(String s : terms) {
+      for (String s : terms) {
         final BytesRef b = new BytesRef(s);
         termsArray[upto++] = b;
         termsSet.add(b);
@@ -226,7 +232,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     if (VERBOSE) {
       System.out.println("\nTEST: indexed terms (unicode order):");
-      for(BytesRef t : termsArray) {
+      for (BytesRef t : termsArray) {
         System.out.println("  " + t.utf8ToString() + " -> id:" + termToID.get(t));
       }
     }
@@ -236,13 +242,13 @@ public class TestTermsEnum extends LuceneTestCase {
 
     int[] docIDToID = new int[r.maxDoc()];
     NumericDocValues values = MultiDocValues.getNumericValues(r, "id");
-    for(int i=0;i<r.maxDoc();i++) {
+    for (int i = 0; i < r.maxDoc(); i++) {
       assertEquals(i, values.nextDoc());
       docIDToID[i] = (int) values.longValue();
     }
 
     int numIterations = atLeast(3);
-    for(int iter=0;iter<numIterations;iter++) {
+    for (int iter = 0; iter < numIterations; iter++) {
 
       // TODO: can we also test infinite As here...?
 
@@ -273,13 +279,13 @@ public class TestTermsEnum extends LuceneTestCase {
         }
         a = Automata.makeStringUnion(sortedAcceptTerms);
       }
-      
+
       final CompiledAutomaton c = new CompiledAutomaton(a, true, false, 1000000, false);
 
       final BytesRef[] acceptTermsArray = new BytesRef[acceptTerms.size()];
       final Set<BytesRef> acceptTermsSet = new HashSet<>();
       int upto = 0;
-      for(String s : acceptTerms) {
+      for (String s : acceptTerms) {
         final BytesRef b = new BytesRef(s);
         acceptTermsArray[upto++] = b;
         acceptTermsSet.add(b);
@@ -289,22 +295,29 @@ public class TestTermsEnum extends LuceneTestCase {
 
       if (VERBOSE) {
         System.out.println("\nTEST: accept terms (unicode order):");
-        for(BytesRef t : acceptTermsArray) {
+        for (BytesRef t : acceptTermsArray) {
           System.out.println("  " + t.utf8ToString() + (termsSet.contains(t) ? " (exists)" : ""));
         }
         System.out.println(a.toDot());
       }
 
-      for(int iter2=0;iter2<100;iter2++) {
-        final BytesRef startTerm = acceptTermsArray.length == 0 || random().nextBoolean() ? null : acceptTermsArray[random().nextInt(acceptTermsArray.length)];
+      for (int iter2 = 0; iter2 < 100; iter2++) {
+        final BytesRef startTerm =
+            acceptTermsArray.length == 0 || random().nextBoolean()
+                ? null
+                : acceptTermsArray[random().nextInt(acceptTermsArray.length)];
 
         if (VERBOSE) {
-          System.out.println("\nTEST: iter2=" + iter2 + " startTerm=" + (startTerm == null ? "<null>" : startTerm.utf8ToString()));
+          System.out.println(
+              "\nTEST: iter2="
+                  + iter2
+                  + " startTerm="
+                  + (startTerm == null ? "<null>" : startTerm.utf8ToString()));
 
           if (startTerm != null) {
             int state = 0;
-            for(int idx=0;idx<startTerm.length;idx++) {
-              final int label = startTerm.bytes[startTerm.offset+idx] & 0xff;
+            for (int idx = 0; idx < startTerm.length; idx++) {
+              final int label = startTerm.bytes[startTerm.offset + idx] & 0xff;
               System.out.println("  state=" + state + " label=" + label);
               state = c.runAutomaton.step(state, label);
               assertTrue(state != -1);
@@ -321,13 +334,13 @@ public class TestTermsEnum extends LuceneTestCase {
         } else {
           loc = Arrays.binarySearch(termsArray, BytesRef.deepCopyOf(startTerm));
           if (loc < 0) {
-            loc = -(loc+1);
+            loc = -(loc + 1);
           } else {
             // startTerm exists in index
             loc++;
           }
         }
-        while(loc < termsArray.length && !acceptTermsSet.contains(termsArray[loc])) {
+        while (loc < termsArray.length && !acceptTermsSet.contains(termsArray[loc])) {
           loc++;
         }
 
@@ -336,7 +349,11 @@ public class TestTermsEnum extends LuceneTestCase {
           final BytesRef expected = termsArray[loc];
           final BytesRef actual = te.next();
           if (VERBOSE) {
-            System.out.println("TEST:   next() expected=" + expected.utf8ToString() + " actual=" + (actual == null ? "null" : actual.utf8ToString()));
+            System.out.println(
+                "TEST:   next() expected="
+                    + expected.utf8ToString()
+                    + " actual="
+                    + (actual == null ? "null" : actual.utf8ToString()));
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
@@ -370,7 +387,7 @@ public class TestTermsEnum extends LuceneTestCase {
     */
 
     final RandomIndexWriter w = new RandomIndexWriter(random(), d, iwc);
-    for(String term : terms) {
+    for (String term : terms) {
       Document doc = new Document();
       Field f = newStringField(FIELD, term, Field.Store.NO);
       doc.add(f);
@@ -423,7 +440,6 @@ public class TestTermsEnum extends LuceneTestCase {
     // Found, rewind:
     assertEquals(1, docFreq(r, "aa0"));
 
-
     // First term in block:
     assertEquals(1, docFreq(r, "bb0"));
 
@@ -452,13 +468,17 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   // tests:
-  //   - test same prefix has non-floor block and floor block (ie, has 2 long outputs on same term prefix)
+  //   - test same prefix has non-floor block and floor block (ie, has 2 long outputs on same term
+  // prefix)
   //   - term that's entirely in the index
 
   public void testFloorBlocks() throws Exception {
-    final String[] terms = new String[] {"aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9", "aa", "xx"};
+    final String[] terms =
+        new String[] {
+          "aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9", "aa", "xx"
+        };
     r = makeIndex(terms);
-    //r = makeIndex("aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9");
+    // r = makeIndex("aa0", "aa1", "aa2", "aa3", "aa4", "aa5", "aa6", "aa7", "aa8", "aa9");
 
     // First term in first block:
     assertEquals(1, docFreq(r, "aa0"));
@@ -493,8 +513,8 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(1, docFreq(r, "aa4"));
 
     final TermsEnum te = MultiTerms.getTerms(r, FIELD).iterator();
-    while(te.next() != null) {
-      //System.out.println("TEST: next term=" + te.term().utf8ToString());
+    while (te.next() != null) {
+      // System.out.println("TEST: next term=" + te.term().utf8ToString());
     }
 
     assertTrue(seekExact(te, "aa1"));
@@ -531,7 +551,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   private String getRandomString() {
-    //return _TestUtil.randomSimpleString(random());
+    // return _TestUtil.randomSimpleString(random());
     return TestUtil.randomRealisticUnicodeString(random());
   }
 
@@ -543,10 +563,10 @@ public class TestTermsEnum extends LuceneTestCase {
 
     if (random().nextInt(10) == 7 && terms.length > 2) {
       // Sometimes add a bunch of terms sharing a longish common prefix:
-      final int numTermsSamePrefix = random().nextInt(terms.length/2);
+      final int numTermsSamePrefix = random().nextInt(terms.length / 2);
       if (numTermsSamePrefix > 0) {
         String prefix;
-        while(true) {
+        while (true) {
           prefix = getRandomString();
           if (prefix.length() < 5) {
             continue;
@@ -554,7 +574,7 @@ public class TestTermsEnum extends LuceneTestCase {
             break;
           }
         }
-        while(seen.size() < numTermsSamePrefix) {
+        while (seen.size() < numTermsSamePrefix) {
           final String t = prefix + getRandomString();
           if (!seen.contains(t)) {
             terms[seen.size()] = t;
@@ -564,7 +584,7 @@ public class TestTermsEnum extends LuceneTestCase {
       }
     }
 
-    while(seen.size() < terms.length) {
+    while (seen.size() < terms.length) {
       final String t = getRandomString();
       if (!seen.contains(t) && (allowEmptyString || t.length() != 0)) {
         terms[seen.size()] = t;
@@ -593,7 +613,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private BytesRef getNonExistTerm(BytesRef[] terms) {
     BytesRef t = null;
-    while(true) {
+    while (true) {
       final String ts = getRandomString();
       t = new BytesRef(ts);
       if (Arrays.binarySearch(terms, t) < 0) {
@@ -614,23 +634,23 @@ public class TestTermsEnum extends LuceneTestCase {
 
   private void testRandomSeeks(IndexReader r, String... validTermStrings) throws IOException {
     final BytesRef[] validTerms = new BytesRef[validTermStrings.length];
-    for(int termIDX=0;termIDX<validTermStrings.length;termIDX++) {
+    for (int termIDX = 0; termIDX < validTermStrings.length; termIDX++) {
       validTerms[termIDX] = new BytesRef(validTermStrings[termIDX]);
     }
     Arrays.sort(validTerms);
     if (VERBOSE) {
       System.out.println("TEST: " + validTerms.length + " terms:");
-      for(BytesRef t : validTerms) {
+      for (BytesRef t : validTerms) {
         System.out.println("  " + t.utf8ToString() + " " + t);
       }
     }
     final TermsEnum te = MultiTerms.getTerms(r, FIELD).iterator();
 
-    final int END_LOC = -validTerms.length-1;
-    
+    final int END_LOC = -validTerms.length - 1;
+
     final List<TermAndState> termStates = new ArrayList<>();
 
-    for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
+    for (int iter = 0; iter < 100 * RANDOM_MULTIPLIER; iter++) {
 
       final BytesRef t;
       int loc;
@@ -702,14 +722,14 @@ public class TestTermsEnum extends LuceneTestCase {
       } else if (loc == END_LOC) {
         continue;
       } else {
-        loc = -loc-1;
+        loc = -loc - 1;
         assertEquals(validTerms[loc], te.term());
       }
 
       // Do a bunch of next's after the seek
       final int numNext = random().nextInt(validTerms.length);
 
-      for(int nextCount=0;nextCount<numNext;nextCount++) {
+      for (int nextCount = 0; nextCount < numNext; nextCount++) {
         if (VERBOSE) {
           System.out.println("\nTEST: next loc=" + loc + " of " + validTerms.length);
         }
@@ -751,7 +771,7 @@ public class TestTermsEnum extends LuceneTestCase {
     LeafReader sub = getOnlyLeafReader(r);
     Terms terms = sub.terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
-    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
+    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
     assertEquals(0, te.postings(null, PostingsEnum.NONE).nextDoc());
@@ -778,6 +798,7 @@ public class TestTermsEnum extends LuceneTestCase {
     r.close();
     dir.close();
   }
+
   public void testIntersectStartTerm() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -806,9 +827,9 @@ public class TestTermsEnum extends LuceneTestCase {
     Terms terms = sub.terms("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
-    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
+    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);
     TermsEnum te;
-    
+
     // should seek to startTerm
     te = terms.intersect(ca, new BytesRef("aad"));
     assertEquals("abd", te.next().utf8ToString());
@@ -819,7 +840,7 @@ public class TestTermsEnum extends LuceneTestCase {
     assertEquals(3, te.postings(null, PostingsEnum.NONE).nextDoc());
     assertNull(te.next());
 
-    // should fail to find ceil label on second arc, rewind 
+    // should fail to find ceil label on second arc, rewind
     te = terms.intersect(ca, new BytesRef("add"));
     assertEquals("bcd", te.next().utf8ToString());
     assertEquals(3, te.postings(null, PostingsEnum.NONE).nextDoc());
@@ -847,7 +868,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
     doc = new Document();
     // add empty string to both documents, so that singletonDocID == -1.
-    // For a FST-based term dict, we'll expect to see the first arc is 
+    // For a FST-based term dict, we'll expect to see the first arc is
     // flaged with HAS_FINAL_OUTPUT
     doc.add(newStringField("field", "abc", Field.Store.NO));
     doc.add(newStringField("field", "", Field.Store.NO));
@@ -859,8 +880,8 @@ public class TestTermsEnum extends LuceneTestCase {
     LeafReader sub = getOnlyLeafReader(r);
     Terms terms = sub.terms("field");
 
-    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL
-    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
+    Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton(); // accept ALL
+    CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);
 
     TermsEnum te = terms.intersect(ca, null);
     PostingsEnum de;
@@ -896,17 +917,17 @@ public class TestTermsEnum extends LuceneTestCase {
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Set<String> terms = new HashSet<String>();
-    //String prefix = TestUtil.randomSimpleString(random(), 1, 20);
+    // String prefix = TestUtil.randomSimpleString(random(), 1, 20);
     String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
     int numTerms = atLeast(100);
     if (VERBOSE) {
       System.out.println("TEST: " + numTerms + " terms; prefix=" + prefix);
     }
     while (terms.size() < numTerms) {
-      //terms.add(prefix + TestUtil.randomSimpleString(random(), 1, 20));
+      // terms.add(prefix + TestUtil.randomSimpleString(random(), 1, 20));
       terms.add(prefix + TestUtil.randomRealisticUnicodeString(random(), 1, 20));
     }
-    for(String term : terms) {
+    for (String term : terms) {
       Document doc = new Document();
       doc.add(newStringField("id", term, Field.Store.YES));
       w.addDocument(doc);
@@ -920,9 +941,9 @@ public class TestTermsEnum extends LuceneTestCase {
     PostingsEnum postingsEnum = null;
     PerThreadPKLookup pkLookup = new PerThreadPKLookup(r, "id");
 
-    int iters = atLeast(numTerms*3);
+    int iters = atLeast(numTerms * 3);
     List<String> termsList = new ArrayList<>(terms);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       String term;
       boolean shouldExist;
       if (random().nextBoolean()) {
@@ -983,9 +1004,13 @@ public class TestTermsEnum extends LuceneTestCase {
     }
     List<BytesRef> termsList = new ArrayList<>(terms);
     StringBuilder sb = new StringBuilder();
-    for(int termCount=0;termCount<MAX_TERMS;termCount++) {
+    for (int termCount = 0; termCount < MAX_TERMS; termCount++) {
       if (VERBOSE) {
-        System.out.println("\nTEST: termCount=" + termCount + " add term=" + termsList.get(termCount).utf8ToString());
+        System.out.println(
+            "\nTEST: termCount="
+                + termCount
+                + " add term="
+                + termsList.get(termCount).utf8ToString());
       }
       sb.append(' ');
       sb.append(termsList.get(termCount).utf8ToString());
@@ -998,11 +1023,15 @@ public class TestTermsEnum extends LuceneTestCase {
       IndexReader r = w.getReader();
       assertEquals(1, r.leaves().size());
       TermsEnum te = r.leaves().get(0).reader().terms("field").iterator();
-      for(int i=0;i<=termCount;i++) {
-        assertTrue("term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't", te.seekExact(termsList.get(i)));
+      for (int i = 0; i <= termCount; i++) {
+        assertTrue(
+            "term '" + termsList.get(i).utf8ToString() + "' should exist but doesn't",
+            te.seekExact(termsList.get(i)));
       }
-      for(int i=termCount+1;i<termsList.size();i++) {
-        assertFalse("term '" + termsList.get(i) + "' shouldn't exist but does", te.seekExact(termsList.get(i)));
+      for (int i = termCount + 1; i < termsList.size(); i++) {
+        assertFalse(
+            "term '" + termsList.get(i) + "' shouldn't exist but does",
+            te.seekExact(termsList.get(i)));
       }
       r.close();
       w.close();
@@ -1019,8 +1048,15 @@ public class TestTermsEnum extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = w.getReader();
     Terms terms = MultiTerms.getTerms(r, "field");
-    CompiledAutomaton automaton = new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
-    String message = expectThrows(IllegalArgumentException.class, () -> {terms.intersect(automaton, null);}).getMessage();
+    CompiledAutomaton automaton =
+        new CompiledAutomaton(new RegExp("do_not_match_anything").toAutomaton());
+    String message =
+        expectThrows(
+                IllegalArgumentException.class,
+                () -> {
+                  terms.intersect(automaton, null);
+                })
+            .getMessage();
     assertEquals("please use CompiledAutomaton.getTermsEnum instead", message);
     r.close();
     w.close();
@@ -1029,9 +1065,11 @@ public class TestTermsEnum extends LuceneTestCase {
 
   // LUCENE-7576
   public void testInvalidAutomatonTermsEnum() throws Exception {
-    expectThrows(IllegalArgumentException.class,
-                 () -> {
-                   new AutomatonTermsEnum(TermsEnum.EMPTY, new CompiledAutomaton(Automata.makeString("foo")));
-                 });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AutomatonTermsEnum(
+              TermsEnum.EMPTY, new CompiledAutomaton(Automata.makeString("foo")));
+        });
   }
 }

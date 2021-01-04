@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Set of components for pattern-based (regex) analysis.
- */
+/** Set of components for pattern-based (regex) analysis. */
 package org.apache.lucene.analysis.pattern;

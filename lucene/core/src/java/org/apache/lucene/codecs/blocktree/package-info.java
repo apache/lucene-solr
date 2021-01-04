@@ -17,18 +17,12 @@
 
 /**
  * BlockTree terms dictionary.
- * 
- * <p>
- * This terms dictionary organizes all terms into blocks according to
- * shared prefix, such that each block has enough terms, and then stores
- * the prefix trie in memory as an FST as the index structure.  It allows
- * you to plug in your own {@link
- * org.apache.lucene.codecs.PostingsWriterBase} to implement the
- * postings.
- * </p>
- * 
- * <p>See {@link org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter}
- *   for the file format.
- * </p>
+ *
+ * <p>This terms dictionary organizes all terms into blocks according to shared prefix, such that
+ * each block has enough terms, and then stores the prefix trie in memory as an FST as the index
+ * structure. It allows you to plug in your own {@link org.apache.lucene.codecs.PostingsWriterBase}
+ * to implement the postings.
+ *
+ * <p>See {@link org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter} for the file format.
  */
 package org.apache.lucene.codecs.blocktree;

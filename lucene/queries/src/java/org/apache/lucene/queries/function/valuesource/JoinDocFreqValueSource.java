@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -33,15 +32,15 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Use a field value and find the Document Frequency within another field.
- * 
+ *
  * @since solr 4.0
  */
 public class JoinDocFreqValueSource extends FieldCacheSource {
 
   public static final String NAME = "joindf";
-  
+
   protected final String qfield;
-  
+
   public JoinDocFreqValueSource(String field, String qfield) {
     super(field);
     this.qfield = qfield;
@@ -49,17 +48,17 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
 
   @Override
   public String description() {
-    return NAME + "(" + field +":("+qfield+"))";
+    return NAME + "(" + field + ":(" + qfield + "))";
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException
-  {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final BinaryDocValues terms = DocValues.getBinary(readerContext.reader(), field);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
     Terms t = MultiTerms.getTerms(top, qfield);
     final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator();
-    
+
     return new IntDocValues(this) {
 
       int lastDocID = -1;
@@ -67,7 +66,8 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       @Override
       public int intVal(int doc) throws IOException {
         if (doc < lastDocID) {
-          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          throw new IllegalArgumentException(
+              "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
         }
         lastDocID = doc;
         int curDocID = terms.docID();
@@ -84,12 +84,12 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       }
     };
   }
-  
+
   @Override
   public boolean equals(Object o) {
     if (o.getClass() != JoinDocFreqValueSource.class) return false;
-    JoinDocFreqValueSource other = (JoinDocFreqValueSource)o;
-    if( !qfield.equals( other.qfield ) ) return false;
+    JoinDocFreqValueSource other = (JoinDocFreqValueSource) o;
+    if (!qfield.equals(other.qfield)) return false;
     return super.equals(other);
   }
 

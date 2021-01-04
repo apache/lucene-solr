@@ -21,14 +21,18 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.IndexOptions;
 
-/** Add an instance of this to your Document for every facet
- *  label to be indexed via SortedSetDocValues. */
+/**
+ * Add an instance of this to your Document for every facet label to be indexed via
+ * SortedSetDocValues.
+ */
 public class SortedSetDocValuesFacetField extends Field {
-  
+
   /** Indexed {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
+
   static {
-    // NOTE: we don't actually use these index options, because this field is "processed" by FacetsConfig.build()
+    // NOTE: we don't actually use these index options, because this field is "processed" by
+    // FacetsConfig.build()
     TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     TYPE.freeze();
   }

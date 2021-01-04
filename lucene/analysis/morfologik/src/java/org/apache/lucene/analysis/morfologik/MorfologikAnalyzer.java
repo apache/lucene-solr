@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.morfologik;
 
 import java.io.Reader;
-
 import morfologik.stemming.Dictionary;
 import morfologik.stemming.polish.PolishStemmer;
 import org.apache.lucene.analysis.Analyzer;
@@ -27,8 +26,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
  * {@link org.apache.lucene.analysis.Analyzer} using Morfologik library.
- * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  *
+ * @see <a href="http://morfologik.blogspot.com/">Morfologik project page</a>
  * @since 4.0.0
  */
 public class MorfologikAnalyzer extends Analyzer {
@@ -36,38 +35,31 @@ public class MorfologikAnalyzer extends Analyzer {
 
   /**
    * Builds an analyzer with an explicit {@link Dictionary} resource.
-   * 
+   *
    * @param dictionary A prebuilt automaton with inflected and base word forms.
    * @see <a href="https://github.com/morfologik/">https://github.com/morfologik/</a>
    */
   public MorfologikAnalyzer(final Dictionary dictionary) {
     this.dictionary = dictionary;
   }
-  
-  /**
-   * Builds an analyzer with the default Morfologik's Polish dictionary.
-   */
+
+  /** Builds an analyzer with the default Morfologik's Polish dictionary. */
   public MorfologikAnalyzer() {
     this(new PolishStemmer().getDictionary());
   }
 
   /**
-   * Creates a
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * which tokenizes all the text in the provided {@link Reader}.
-   * 
+   * Creates a {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} which tokenizes all
+   * the text in the provided {@link Reader}.
+   *
    * @param field ignored field name
-   * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from an {@link StandardTokenizer} filtered with
-   *         {@link MorfologikFilter}.
+   * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
+   *     {@link StandardTokenizer} filtered with {@link MorfologikFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(final String field) {
     final Tokenizer src = new StandardTokenizer();
-    
-    return new TokenStreamComponents(
-        src, 
-        new MorfologikFilter(src, dictionary));
-  }
 
+    return new TokenStreamComponents(src, new MorfologikFilter(src, dictionary));
+  }
 }

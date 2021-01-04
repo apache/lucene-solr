@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -30,9 +29,8 @@ public class TestClassLoaderUtils extends LuceneTestCase {
     assertTrue(checkNoPerms(parent, child));
     assertFalse(checkNoPerms(child, parent));
   }
-  
+
   private boolean checkNoPerms(ClassLoader parent, ClassLoader child) throws Exception {
     return runWithRestrictedPermissions(() -> ClassLoaderUtils.isParentClassLoader(parent, child));
   }
-  
 }

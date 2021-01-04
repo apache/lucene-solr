@@ -16,34 +16,29 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
+import java.io.Reader;
+import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * Simple tests to ensure the miscellaneous lucene factories are working.
- */
+/** Simple tests to ensure the miscellaneous lucene factories are working. */
 public class TestMiscellaneousFactories extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the ASCIIFoldingFilterFactory works
-   */
+  /** Ensure the ASCIIFoldingFilterFactory works */
   public void testASCIIFolding() throws Exception {
     Reader reader = new StringReader("Česká");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("ASCIIFolding").create(stream);
-    assertTokenStreamContents(stream, new String[]{"Ceska"});
+    assertTokenStreamContents(stream, new String[] {"Ceska"});
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("ASCIIFolding", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("ASCIIFolding", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

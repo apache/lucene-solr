@@ -18,7 +18,6 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.ConjunctionDISI;
@@ -29,37 +28,40 @@ import org.apache.lucene.util.BytesRef;
 
 class ToParentDocValues extends DocIdSetIterator {
 
-  interface Accumulator{
+  interface Accumulator {
     void reset() throws IOException;
+
     void increment() throws IOException;
   }
 
-  private static final class SortedDVs extends SortedDocValues implements Accumulator{
+  private static final class SortedDVs extends SortedDocValues implements Accumulator {
     private final SortedDocValues values;
     private final BlockJoinSelector.Type selection;
     private int ord = -1;
     private final ToParentDocValues iter;
-  
-    private SortedDVs(SortedDocValues values, BlockJoinSelector.Type selection, BitSet parents, DocIdSetIterator children) {
+
+    private SortedDVs(
+        SortedDocValues values,
+        BlockJoinSelector.Type selection,
+        BitSet parents,
+        DocIdSetIterator children) {
       this.values = values;
       this.selection = selection;
-      this.iter = new ToParentDocValues(values,parents, children, this);
+      this.iter = new ToParentDocValues(values, parents, children, this);
     }
-  
+
     @Override
     public int docID() {
       return iter.docID();
     }
-  
+
     @Override
-    public
-    void reset() throws IOException {
+    public void reset() throws IOException {
       ord = values.ordValue();
     }
-  
+
     @Override
-    public
-    void increment() throws IOException {
+    public void increment() throws IOException {
       if (selection == BlockJoinSelector.Type.MIN) {
         ord = Math.min(ord, values.ordValue());
       } else if (selection == BlockJoinSelector.Type.MAX) {
@@ -68,61 +70,65 @@ class ToParentDocValues extends DocIdSetIterator {
         throw new AssertionError();
       }
     }
-  
+
     @Override
     public int nextDoc() throws IOException {
       return iter.nextDoc();
     }
-  
+
     @Override
     public int advance(int target) throws IOException {
       return iter.advance(target);
     }
-  
+
     @Override
     public boolean advanceExact(int targetParentDocID) throws IOException {
       return iter.advanceExact(targetParentDocID);
     }
-  
+
     @Override
     public int ordValue() {
       return ord;
     }
-  
+
     @Override
     public BytesRef lookupOrd(int ord) throws IOException {
       return values.lookupOrd(ord);
     }
-  
+
     @Override
     public int getValueCount() {
       return values.getValueCount();
     }
-  
+
     @Override
     public long cost() {
       return values.cost();
     }
   }
 
-  static private final class NumDV extends NumericDocValues implements Accumulator{
+  private static final class NumDV extends NumericDocValues implements Accumulator {
     private final NumericDocValues values;
     private long value;
     private final BlockJoinSelector.Type selection;
-  
+
     private final ToParentDocValues iter;
-  
-    private NumDV(NumericDocValues values, BlockJoinSelector.Type selection, BitSet parents, DocIdSetIterator children) {
+
+    private NumDV(
+        NumericDocValues values,
+        BlockJoinSelector.Type selection,
+        BitSet parents,
+        DocIdSetIterator children) {
       this.values = values;
       this.selection = selection;
       iter = new ToParentDocValues(values, parents, children, this);
     }
-  
+
     @Override
     public void reset() throws IOException {
       value = values.longValue();
     }
-    
+
     @Override
     public void increment() throws IOException {
       switch (selection) {
@@ -134,51 +140,51 @@ class ToParentDocValues extends DocIdSetIterator {
           break;
         default:
           throw new AssertionError();
-        }
+      }
     }
-    
+
     @Override
     public int nextDoc() throws IOException {
       return iter.nextDoc();
     }
-  
+
     @Override
     public int advance(int targetParentDocID) throws IOException {
       return iter.advance(targetParentDocID);
     }
-  
+
     @Override
     public boolean advanceExact(int targetParentDocID) throws IOException {
       return iter.advanceExact(targetParentDocID);
     }
-  
+
     @Override
     public long longValue() {
       return value;
     }
-  
+
     @Override
     public int docID() {
       return iter.docID();
     }
-  
+
     @Override
     public long cost() {
       return values.cost();
     }
   }
 
-  private ToParentDocValues(DocIdSetIterator values, BitSet parents, DocIdSetIterator children, Accumulator collect) {
+  private ToParentDocValues(
+      DocIdSetIterator values, BitSet parents, DocIdSetIterator children, Accumulator collect) {
     this.parents = parents;
     childWithValues = ConjunctionDISI.intersectIterators(Arrays.asList(children, values));
     this.collector = collect;
   }
 
-  
-  final private BitSet parents;
+  private final BitSet parents;
   private int docID = -1;
-  final private Accumulator collector;
-  boolean seen=false;
+  private final Accumulator collector;
+  boolean seen = false;
   private DocIdSetIterator childWithValues;
 
   @Override
@@ -189,23 +195,22 @@ class ToParentDocValues extends DocIdSetIterator {
   @Override
   public int nextDoc() throws IOException {
     assert docID != NO_MORE_DOCS;
-    
-    assert childWithValues.docID()!=docID || docID==-1;
-    if (childWithValues.docID()<docID || docID==-1) {
+
+    assert childWithValues.docID() != docID || docID == -1;
+    if (childWithValues.docID() < docID || docID == -1) {
       childWithValues.nextDoc();
     }
     if (childWithValues.docID() == NO_MORE_DOCS) {
       docID = NO_MORE_DOCS;
       return docID;
     }
-    
 
     assert parents.get(childWithValues.docID()) == false;
-    
+
     int nextParentDocID = parents.nextSetBit(childWithValues.docID());
     collector.reset();
-    seen=true;
-    
+    seen = true;
+
     while (true) {
       int childDocID = childWithValues.nextDoc();
       assert childDocID != nextParentDocID;
@@ -230,26 +235,30 @@ class ToParentDocValues extends DocIdSetIterator {
       assert docID() == -1;
       return nextDoc();
     }
-    int prevParentDocID = parents.prevSetBit(target-1);
+    int prevParentDocID = parents.prevSetBit(target - 1);
     if (childWithValues.docID() <= prevParentDocID) {
-      childWithValues.advance(prevParentDocID+1);
+      childWithValues.advance(prevParentDocID + 1);
     }
     return nextDoc();
   }
 
-  //@Override
+  // @Override
   public boolean advanceExact(int targetParentDocID) throws IOException {
     if (targetParentDocID < docID) {
-      throw new IllegalArgumentException("target must be after the current document: current=" + docID + " target=" + targetParentDocID);
+      throw new IllegalArgumentException(
+          "target must be after the current document: current="
+              + docID
+              + " target="
+              + targetParentDocID);
     }
     int previousDocId = docID;
     docID = targetParentDocID;
     if (targetParentDocID == previousDocId) {
-      return seen;//ord != -1; rlly???
+      return seen; // ord != -1; rlly???
     }
     docID = targetParentDocID;
-    seen =false;
-    //ord = -1;
+    seen = false;
+    // ord = -1;
     if (parents.get(targetParentDocID) == false) {
       return false;
     }
@@ -261,19 +270,19 @@ class ToParentDocValues extends DocIdSetIterator {
     if (childDoc >= docID) {
       return false;
     }
-    
+
     if (childWithValues.docID() < docID) {
       collector.reset();
-      seen=true;
+      seen = true;
       childWithValues.nextDoc();
     }
-    
+
     if (seen == false) {
       return false;
     }
 
     for (int doc = childWithValues.docID(); doc < docID; doc = childWithValues.nextDoc()) {
-        collector.increment();
+      collector.increment();
     }
     return true;
   }
@@ -283,14 +292,13 @@ class ToParentDocValues extends DocIdSetIterator {
     return 0;
   }
 
-  static NumericDocValues wrap(NumericDocValues values, Type selection, BitSet parents2,
-      DocIdSetIterator children) {
-    return new ToParentDocValues.NumDV(values,selection, parents2, children);
+  static NumericDocValues wrap(
+      NumericDocValues values, Type selection, BitSet parents2, DocIdSetIterator children) {
+    return new ToParentDocValues.NumDV(values, selection, parents2, children);
   }
 
-  static SortedDocValues wrap(SortedDocValues values, Type selection, BitSet parents2,
-      DocIdSetIterator children) {
+  static SortedDocValues wrap(
+      SortedDocValues values, Type selection, BitSet parents2, DocIdSetIterator children) {
     return new ToParentDocValues.SortedDVs(values, selection, parents2, children);
   }
-
 }

@@ -20,9 +20,11 @@ package org.apache.lucene.analysis.tokenattributes;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.Attribute;
 
-/** Sets the custom term frequency of a term within one document.  If this attribute
- *  is present in your analysis chain for a given field, that field must be indexed with
- *  {@link IndexOptions#DOCS_AND_FREQS}. */
+/**
+ * Sets the custom term frequency of a term within one document. If this attribute is present in
+ * your analysis chain for a given field, that field must be indexed with {@link
+ * IndexOptions#DOCS_AND_FREQS}.
+ */
 public interface TermFrequencyAttribute extends Attribute {
 
   /** Set the custom term frequency of the current term within one document. */

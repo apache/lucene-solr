@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Filters and Queries that add to core Lucene.
- */
+/** Filters and Queries that add to core Lucene. */
 package org.apache.lucene.queries;

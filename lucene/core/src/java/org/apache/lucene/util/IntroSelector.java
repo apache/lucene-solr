@@ -18,11 +18,15 @@ package org.apache.lucene.util;
 
 import java.util.Comparator;
 
-/** Implementation of the quick select algorithm.
- *  <p>It uses the median of the first, middle and last values as a pivot and
- *  falls back to a median of medians when the number of recursion levels exceeds
- *  {@code 2 lg(n)}, as a consequence it runs in linear time on average.</p>
- *  @lucene.internal */
+/**
+ * Implementation of the quick select algorithm.
+ *
+ * <p>It uses the median of the first, middle and last values as a pivot and falls back to a median
+ * of medians when the number of recursion levels exceeds {@code 2 lg(n)}, as a consequence it runs
+ * in linear time on average.
+ *
+ * @lucene.internal
+ */
 public abstract class IntroSelector extends Selector {
 
   @Override
@@ -33,7 +37,7 @@ public abstract class IntroSelector extends Selector {
   }
 
   int slowSelect(int from, int to, int k) {
-    return medianOfMediansSelect(from, to-1, k);
+    return medianOfMediansSelect(from, to - 1, k);
   }
 
   int medianOfMediansSelect(int left, int right, int k) {
@@ -49,9 +53,9 @@ public abstract class IntroSelector extends Selector {
       if (k == pivotIndex) {
         return k;
       } else if (k < pivotIndex) {
-        right = pivotIndex-1;
+        right = pivotIndex - 1;
       } else {
-        left = pivotIndex+1;
+        left = pivotIndex + 1;
       }
     } while (left != right);
     return left;
@@ -89,16 +93,16 @@ public abstract class IntroSelector extends Selector {
       return pivotIndex;
     }
 
-    for (int i = left; i <= right; i=i+5) {
+    for (int i = left; i <= right; i = i + 5) {
       int subRight = i + 4;
       if (subRight > right) {
         subRight = right;
       }
       int median5 = partition5(i, subRight);
-      swap(median5, left + ((i-left)/5));
+      swap(median5, left + ((i - left) / 5));
     }
     int mid = ((right - left) / 10) + left + 1;
-    int to = left + ((right - left)/5);
+    int to = left + ((right - left) / 5);
     return medianOfMediansSelect(left, to, mid);
   }
 
@@ -107,10 +111,10 @@ public abstract class IntroSelector extends Selector {
   // bounded nature of data set.
   private int partition5(int left, int right) {
     int i = left + 1;
-    while( i <= right) {
+    while (i <= right) {
       int j = i;
-      while (j > left && compare(j-1,j)>0) {
-        swap(j-1, j);
+      while (j > left && compare(j - 1, j) > 0) {
+        swap(j - 1, j);
         j--;
       }
       i++;
@@ -146,7 +150,7 @@ public abstract class IntroSelector extends Selector {
     int left = from + 1;
     int right = to - 2;
 
-    for (;;) {
+    for (; ; ) {
       while (comparePivot(left) > 0) {
         ++left;
       }
@@ -173,19 +177,24 @@ public abstract class IntroSelector extends Selector {
     }
   }
 
-  /** Compare entries found in slots <code>i</code> and <code>j</code>.
-   *  The contract for the returned value is the same as
-   *  {@link Comparator#compare(Object, Object)}. */
+  /**
+   * Compare entries found in slots <code>i</code> and <code>j</code>. The contract for the returned
+   * value is the same as {@link Comparator#compare(Object, Object)}.
+   */
   protected int compare(int i, int j) {
     setPivot(i);
     return comparePivot(j);
   }
 
-  /** Save the value at slot <code>i</code> so that it can later be used as a
-   * pivot, see {@link #comparePivot(int)}. */
+  /**
+   * Save the value at slot <code>i</code> so that it can later be used as a pivot, see {@link
+   * #comparePivot(int)}.
+   */
   protected abstract void setPivot(int i);
 
-  /** Compare the pivot with the slot at <code>j</code>, similarly to
-   *  {@link #compare(int, int) compare(i, j)}. */
+  /**
+   * Compare the pivot with the slot at <code>j</code>, similarly to {@link #compare(int, int)
+   * compare(i, j)}.
+   */
   protected abstract int comparePivot(int j);
 }

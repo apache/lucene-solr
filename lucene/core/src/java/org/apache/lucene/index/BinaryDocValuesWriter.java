@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
@@ -32,17 +32,14 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/** Buffers up pending byte[] per doc, then flushes when
- *  segment flushes. */
+/** Buffers up pending byte[] per doc, then flushes when segment flushes. */
 class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
   /** Maximum length for a binary field. */
   private static final int MAX_LENGTH = ArrayUtil.MAX_ARRAY_LENGTH;
 
   // 32 KB block sizes for PagedBytes storage:
-  private final static int BLOCK_BITS = 15;
+  private static final int BLOCK_BITS = 15;
 
   private final PagedBytes bytes;
   private final DataOutput bytesOut;
@@ -70,13 +67,18 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
   public void addValue(int docID, BytesRef value) {
     if (docID <= lastDocID) {
-      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+      throw new IllegalArgumentException(
+          "DocValuesField \""
+              + fieldInfo.name
+              + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
-      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\": null value not allowed");
+      throw new IllegalArgumentException(
+          "field=\"" + fieldInfo.name + "\": null value not allowed");
     }
     if (value.length > MAX_LENGTH) {
-      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + MAX_LENGTH);
+      throw new IllegalArgumentException(
+          "DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + MAX_LENGTH);
     }
 
     maxLength = Math.max(value.length, maxLength);
@@ -94,7 +96,8 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithField.ramBytesUsed();
+    final long newBytesUsed =
+        lengths.ramBytesUsed() + bytes.ramBytesUsed() + docsWithField.ramBytesUsed();
     iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
@@ -104,36 +107,44 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     if (finalLengths == null) {
       finalLengths = this.lengths.build();
     }
-    return new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
+    return new BufferedBinaryDocValues(
+        finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
   }
 
   @Override
-  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer)
+      throws IOException {
     bytes.freeze(false);
     if (finalLengths == null) {
       finalLengths = this.lengths.build();
     }
     final BinaryDVs sorted;
     if (sortMap != null) {
-      sorted = new BinaryDVs(state.segmentInfo.maxDoc(), sortMap,
-          new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
+      sorted =
+          new BinaryDVs(
+              state.segmentInfo.maxDoc(),
+              sortMap,
+              new BufferedBinaryDocValues(
+                  finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator()));
     } else {
       sorted = null;
     }
-    dvConsumer.addBinaryField(fieldInfo,
-                              new EmptyDocValuesProducer() {
-                                @Override
-                                public BinaryDocValues getBinary(FieldInfo fieldInfoIn) {
-                                  if (fieldInfoIn != fieldInfo) {
-                                    throw new IllegalArgumentException("wrong fieldInfo");
-                                  }
-                                  if (sorted == null) {
-                                    return new BufferedBinaryDocValues(finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
-                                  } else {
-                                    return new SortingBinaryDocValues(sorted);
-                                  }
-                                }
-                              });
+    dvConsumer.addBinaryField(
+        fieldInfo,
+        new EmptyDocValuesProducer() {
+          @Override
+          public BinaryDocValues getBinary(FieldInfo fieldInfoIn) {
+            if (fieldInfoIn != fieldInfo) {
+              throw new IllegalArgumentException("wrong fieldInfo");
+            }
+            if (sorted == null) {
+              return new BufferedBinaryDocValues(
+                  finalLengths, maxLength, bytes.getDataInput(), docsWithField.iterator());
+            } else {
+              return new SortingBinaryDocValues(sorted);
+            }
+          }
+        });
   }
 
   // iterates over the values we have in ram
@@ -142,8 +153,12 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
     final PackedLongValues.Iterator lengthsIterator;
     final DocIdSetIterator docsWithField;
     final DataInput bytesIterator;
-    
-    BufferedBinaryDocValues(PackedLongValues lengths, int maxLength, DataInput bytesIterator, DocIdSetIterator docsWithFields) {
+
+    BufferedBinaryDocValues(
+        PackedLongValues lengths,
+        int maxLength,
+        DataInput bytesIterator,
+        DocIdSetIterator docsWithFields) {
       this.value = new BytesRefBuilder();
       this.value.grow(maxLength);
       this.lengthsIterator = lengths.iterator();
@@ -225,7 +240,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
 
     @Override
     public BytesRef binaryValue() {
-      dvs.values.get(spare, dvs.offsets[docID]-1);
+      dvs.values.get(spare, dvs.offsets[docID] - 1);
       return spare.get();
     }
 
@@ -238,6 +253,7 @@ class BinaryDocValuesWriter extends DocValuesWriter<BinaryDocValues> {
   static final class BinaryDVs {
     final int[] offsets;
     final BytesRefArray values;
+
     BinaryDVs(int maxDoc, Sorter.DocMap sortMap, BinaryDocValues oldValues) throws IOException {
       offsets = new int[maxDoc];
       values = new BytesRefArray(Counter.newCounter());

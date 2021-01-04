@@ -16,28 +16,26 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Tests that &gt; 64k affixes actually works and doesnt overflow some internal int */
 public class Test64kAffixes extends LuceneTestCase {
-  
+
   public void test() throws Exception {
     Path tempDir = createTempDir("64kaffixes");
     Path affix = tempDir.resolve("64kaffixes.aff");
     Path dict = tempDir.resolve("64kaffixes.dic");
-    
+
     BufferedWriter affixWriter = Files.newBufferedWriter(affix, StandardCharsets.UTF_8);
-    
+
     // 65k affixes with flag 1, then an affix with flag 2
     affixWriter.write("SET UTF-8\nFLAG num\nSFX 1 Y 65536\n");
     for (int i = 0; i < 65536; i++) {
@@ -45,14 +43,16 @@ public class Test64kAffixes extends LuceneTestCase {
     }
     affixWriter.write("SFX 2 Y 1\nSFX 2 0 s\n");
     affixWriter.close();
-    
+
     BufferedWriter dictWriter = Files.newBufferedWriter(dict, StandardCharsets.UTF_8);
-    
+
     // drink signed with affix 2 (takes -s)
     dictWriter.write("1\ndrink/2\n");
     dictWriter.close();
-    
-    try (InputStream affStream = Files.newInputStream(affix); InputStream dictStream = Files.newInputStream(dict); Directory tempDir2 = newDirectory()) {
+
+    try (InputStream affStream = Files.newInputStream(affix);
+        InputStream dictStream = Files.newInputStream(dict);
+        Directory tempDir2 = newDirectory()) {
       Dictionary dictionary = new Dictionary(tempDir2, "dictionary", affStream, dictStream);
       Stemmer stemmer = new Stemmer(dictionary);
       // drinks should still stem to drink

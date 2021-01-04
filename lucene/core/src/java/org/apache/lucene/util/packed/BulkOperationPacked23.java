@@ -18,9 +18,7 @@
  */
 package org.apache.lucene.util.packed;
 
-/**
- * Efficient sequential read/write of packed integers.
- */
+/** Efficient sequential read/write of packed integers. */
 final class BulkOperationPacked23 extends BulkOperationPacked {
 
   public BulkOperationPacked23() {
@@ -28,7 +26,8 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
       values[valuesOffset++] = (int) (block0 >>> 41);
@@ -121,7 +120,8 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final int byte0 = blocks[blocksOffset++] & 0xFF;
       final int byte1 = blocks[blocksOffset++] & 0xFF;
@@ -142,15 +142,18 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
       final int byte12 = blocks[blocksOffset++] & 0xFF;
       final int byte13 = blocks[blocksOffset++] & 0xFF;
       final int byte14 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte11 & 15) << 19) | (byte12 << 11) | (byte13 << 3) | (byte14 >>> 5);
+      values[valuesOffset++] =
+          ((byte11 & 15) << 19) | (byte12 << 11) | (byte13 << 3) | (byte14 >>> 5);
       final int byte15 = blocks[blocksOffset++] & 0xFF;
       final int byte16 = blocks[blocksOffset++] & 0xFF;
       final int byte17 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte14 & 31) << 18) | (byte15 << 10) | (byte16 << 2) | (byte17 >>> 6);
+      values[valuesOffset++] =
+          ((byte14 & 31) << 18) | (byte15 << 10) | (byte16 << 2) | (byte17 >>> 6);
       final int byte18 = blocks[blocksOffset++] & 0xFF;
       final int byte19 = blocks[blocksOffset++] & 0xFF;
       final int byte20 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte17 & 63) << 17) | (byte18 << 9) | (byte19 << 1) | (byte20 >>> 7);
+      values[valuesOffset++] =
+          ((byte17 & 63) << 17) | (byte18 << 9) | (byte19 << 1) | (byte20 >>> 7);
       final int byte21 = blocks[blocksOffset++] & 0xFF;
       final int byte22 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = ((byte20 & 127) << 16) | (byte21 << 8) | byte22;
@@ -158,7 +161,8 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block0 = blocks[blocksOffset++];
       values[valuesOffset++] = block0 >>> 41;
@@ -251,7 +255,8 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long byte0 = blocks[blocksOffset++] & 0xFF;
       final long byte1 = blocks[blocksOffset++] & 0xFF;
@@ -272,19 +277,21 @@ final class BulkOperationPacked23 extends BulkOperationPacked {
       final long byte12 = blocks[blocksOffset++] & 0xFF;
       final long byte13 = blocks[blocksOffset++] & 0xFF;
       final long byte14 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte11 & 15) << 19) | (byte12 << 11) | (byte13 << 3) | (byte14 >>> 5);
+      values[valuesOffset++] =
+          ((byte11 & 15) << 19) | (byte12 << 11) | (byte13 << 3) | (byte14 >>> 5);
       final long byte15 = blocks[blocksOffset++] & 0xFF;
       final long byte16 = blocks[blocksOffset++] & 0xFF;
       final long byte17 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte14 & 31) << 18) | (byte15 << 10) | (byte16 << 2) | (byte17 >>> 6);
+      values[valuesOffset++] =
+          ((byte14 & 31) << 18) | (byte15 << 10) | (byte16 << 2) | (byte17 >>> 6);
       final long byte18 = blocks[blocksOffset++] & 0xFF;
       final long byte19 = blocks[blocksOffset++] & 0xFF;
       final long byte20 = blocks[blocksOffset++] & 0xFF;
-      values[valuesOffset++] = ((byte17 & 63) << 17) | (byte18 << 9) | (byte19 << 1) | (byte20 >>> 7);
+      values[valuesOffset++] =
+          ((byte17 & 63) << 17) | (byte18 << 9) | (byte19 << 1) | (byte20 >>> 7);
       final long byte21 = blocks[blocksOffset++] & 0xFF;
       final long byte22 = blocks[blocksOffset++] & 0xFF;
       values[valuesOffset++] = ((byte20 & 127) << 16) | (byte21 << 8) | byte22;
     }
   }
-
 }

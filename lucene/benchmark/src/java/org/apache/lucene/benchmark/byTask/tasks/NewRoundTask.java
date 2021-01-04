@@ -18,11 +18,9 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
-
-
 /**
- * Increment the counter for properties maintained by Round Number.
- * <br>Other side effects: if there are props by round number, log value change.
+ * Increment the counter for properties maintained by Round Number. <br>
+ * Other side effects: if there are props by round number, log value change.
  */
 public class NewRoundTask extends PerfTask {
 

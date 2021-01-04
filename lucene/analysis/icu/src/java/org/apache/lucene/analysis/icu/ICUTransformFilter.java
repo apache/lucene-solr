@@ -16,42 +16,43 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 import com.ibm.icu.text.Replaceable;
 import com.ibm.icu.text.Transliterator;
 import com.ibm.icu.text.UTF16;
 import com.ibm.icu.text.UnicodeSet;
+import java.io.IOException;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenFilter} that transforms text with ICU.
- * <p>
- * ICU provides text-transformation functionality via its Transliteration API.
- * Although script conversion is its most common use, a Transliterator can
- * actually perform a more general class of tasks. In fact, Transliterator
- * defines a very general API which specifies only that a segment of the input
- * text is replaced by new text. The particulars of this conversion are
- * determined entirely by subclasses of Transliterator.
- * </p>
- * <p>
- * Some useful transformations for search are built-in:
+ *
+ * <p>ICU provides text-transformation functionality via its Transliteration API. Although script
+ * conversion is its most common use, a Transliterator can actually perform a more general class of
+ * tasks. In fact, Transliterator defines a very general API which specifies only that a segment of
+ * the input text is replaced by new text. The particulars of this conversion are determined
+ * entirely by subclasses of Transliterator.
+ *
+ * <p>Some useful transformations for search are built-in:
+ *
  * <ul>
- * <li>Conversion from Traditional to Simplified Chinese characters
- * <li>Conversion from Hiragana to Katakana
- * <li>Conversion from Fullwidth to Halfwidth forms.
- * <li>Script conversions, for example Serbian Cyrillic to Latin
+ *   <li>Conversion from Traditional to Simplified Chinese characters
+ *   <li>Conversion from Hiragana to Katakana
+ *   <li>Conversion from Fullwidth to Halfwidth forms.
+ *   <li>Script conversions, for example Serbian Cyrillic to Latin
  * </ul>
- * <p>
- * Example usage: <blockquote>stream = new ICUTransformFilter(stream,
- * Transliterator.getInstance("Traditional-Simplified"));</blockquote>
+ *
+ * <p>Example usage:
+ *
+ * <blockquote>
+ *
+ * stream = new ICUTransformFilter(stream, Transliterator.getInstance("Traditional-Simplified"));
+ *
+ * </blockquote>
+ *
  * <br>
- * For more details, see the <a
- * href="http://userguide.icu-project.org/transforms/general">ICU User
+ * For more details, see the <a href="http://userguide.icu-project.org/transforms/general">ICU User
  * Guide</a>.
  */
 public final class ICUTransformFilter extends TokenFilter {
@@ -69,7 +70,7 @@ public final class ICUTransformFilter extends TokenFilter {
 
   /**
    * Create a new ICUTransformFilter that transforms text on the given stream.
-   * 
+   *
    * @param input {@link TokenStream} to filter.
    * @param transform Transliterator to transform the text.
    */
@@ -78,14 +79,14 @@ public final class ICUTransformFilter extends TokenFilter {
     super(input);
     this.transform = transform;
 
-    /* 
+    /*
      * This is cheating, but speeds things up a lot.
      * If we wanted to use pkg-private APIs we could probably do better.
      */
-    if (transform.getFilter() == null && transform instanceof com.ibm.icu.text.RuleBasedTransliterator) {
+    if (transform.getFilter() == null
+        && transform instanceof com.ibm.icu.text.RuleBasedTransliterator) {
       final UnicodeSet sourceSet = transform.getSourceSet();
-      if (sourceSet != null && !sourceSet.isEmpty())
-        transform.setFilter(sourceSet);
+      if (sourceSet != null && !sourceSet.isEmpty()) transform.setFilter(sourceSet);
     }
   }
 
@@ -96,8 +97,8 @@ public final class ICUTransformFilter extends TokenFilter {
      */
     if (input.incrementToken()) {
       replaceableAttribute.setText(termAtt);
-      
-      final int length = termAtt.length(); 
+
+      final int length = termAtt.length();
       position.start = 0;
       position.limit = length;
       position.contextStart = 0;
@@ -109,10 +110,8 @@ public final class ICUTransformFilter extends TokenFilter {
       return false;
     }
   }
-  
-  /**
-   * Wrap a {@link CharTermAttribute} with the Replaceable API.
-   */
+
+  /** Wrap a {@link CharTermAttribute} with the Replaceable API. */
   static final class ReplaceableTermAttribute implements Replaceable {
     private char buffer[];
     private int length;
@@ -166,8 +165,7 @@ public final class ICUTransformFilter extends TokenFilter {
     }
 
     @Override
-    public void replace(int start, int limit, char[] text, int charsStart,
-        int charsLen) {
+    public void replace(int start, int limit, char[] text, int charsStart, int charsLen) {
       // shift text if necessary for the replacement
       final int newLength = shiftForReplace(start, limit, charsLen);
       // insert the replacement text
@@ -180,8 +178,7 @@ public final class ICUTransformFilter extends TokenFilter {
       final int replacementLength = limit - start;
       final int newLength = length - replacementLength + charsLen;
       // resize if necessary
-      if (newLength > length)
-        buffer = token.resizeBuffer(newLength);
+      if (newLength > length) buffer = token.resizeBuffer(newLength);
       // if the substring being replaced is longer or shorter than the
       // replacement, need to shift things around
       if (replacementLength != charsLen && limit < length)

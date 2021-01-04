@@ -18,20 +18,17 @@ package org.apache.lucene.index;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * tests basic {@link IntBlockPool} functionality
- */
+/** tests basic {@link IntBlockPool} functionality */
 public class TestIntBlockPool extends LuceneTestCase {
-  
+
   public void testSingleWriterReader() {
     Counter bytesUsed = Counter.newCounter();
     IntBlockPool pool = new IntBlockPool(new ByteTrackingAllocator(bytesUsed));
-    
+
     for (int j = 0; j < 2; j++) {
       IntBlockPool.SliceWriter writer = new IntBlockPool.SliceWriter(pool);
       int start = writer.startNewSlice();
@@ -39,7 +36,7 @@ public class TestIntBlockPool extends LuceneTestCase {
       for (int i = 0; i < num; i++) {
         writer.writeInt(i);
       }
-      
+
       int upto = writer.getCurrentOffset();
       IntBlockPool.SliceReader reader = new IntBlockPool.SliceReader(pool);
       reader.reset(start, upto);
@@ -56,7 +53,7 @@ public class TestIntBlockPool extends LuceneTestCase {
       }
     }
   }
-  
+
   public void testMultipleWriterReader() {
     Counter bytesUsed = Counter.newCounter();
     IntBlockPool pool = new IntBlockPool(new ByteTrackingAllocator(bytesUsed));
@@ -68,11 +65,10 @@ public class TestIntBlockPool extends LuceneTestCase {
       }
       IntBlockPool.SliceWriter writer = new IntBlockPool.SliceWriter(pool);
       IntBlockPool.SliceReader reader = new IntBlockPool.SliceReader(pool);
-      
+
       int numValuesToWrite = atLeast(10000);
       for (int i = 0; i < numValuesToWrite; i++) {
-        StartEndAndValues values = holders
-            .get(random().nextInt(holders.size()));
+        StartEndAndValues values = holders.get(random().nextInt(holders.size()));
         if (values.valueCount == 0) {
           values.start = writer.startNewSlice();
         } else {
@@ -85,10 +81,9 @@ public class TestIntBlockPool extends LuceneTestCase {
           assertReader(reader, holders.get(random().nextInt(holders.size())));
         }
       }
-      
+
       while (!holders.isEmpty()) {
-        StartEndAndValues values = holders.remove(random().nextInt(
-            holders.size()));
+        StartEndAndValues values = holders.remove(random().nextInt(holders.size()));
         assertReader(reader, values);
       }
       if (random().nextBoolean()) {
@@ -100,56 +95,51 @@ public class TestIntBlockPool extends LuceneTestCase {
       }
     }
   }
-  
+
   private static class ByteTrackingAllocator extends IntBlockPool.Allocator {
     private final Counter bytesUsed;
-    
+
     public ByteTrackingAllocator(Counter bytesUsed) {
       this(IntBlockPool.INT_BLOCK_SIZE, bytesUsed);
     }
-    
+
     public ByteTrackingAllocator(int blockSize, Counter bytesUsed) {
       super(blockSize);
       this.bytesUsed = bytesUsed;
     }
-    
+
     @Override
     public int[] getIntBlock() {
       bytesUsed.addAndGet(blockSize * Integer.BYTES);
       return new int[blockSize];
     }
-    
+
     @Override
     public void recycleIntBlocks(int[][] blocks, int start, int end) {
-      bytesUsed
-          .addAndGet(-((end - start) * blockSize * Integer.BYTES));
+      bytesUsed.addAndGet(-((end - start) * blockSize * Integer.BYTES));
     }
-    
   }
-  
-  private void assertReader(IntBlockPool.SliceReader reader,
-      StartEndAndValues values) {
+
+  private void assertReader(IntBlockPool.SliceReader reader, StartEndAndValues values) {
     reader.reset(values.start, values.end);
     for (int i = 0; i < values.valueCount; i++) {
       assertEquals(values.valueOffset + i, reader.readInt());
     }
     assertTrue(reader.endOfSlice());
   }
-  
+
   private static class StartEndAndValues {
     int valueOffset;
     int valueCount;
     int start;
     int end;
-    
+
     public StartEndAndValues(int valueOffset) {
       this.valueOffset = valueOffset;
     }
-    
+
     public int nextValue() {
       return valueOffset + valueCount++;
     }
-    
   }
-  
 }

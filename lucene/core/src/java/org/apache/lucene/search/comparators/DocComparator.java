@@ -17,17 +17,14 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorable;
 
-import java.io.IOException;
-
-/**
- * Comparator that sorts by asc _doc
- */
+/** Comparator that sorts by asc _doc */
 public class DocComparator extends FieldComparator<Integer> {
   private final int[] docIDs;
   private final boolean enableSkipping; // if skipping functionality should be enabled
@@ -37,9 +34,7 @@ public class DocComparator extends FieldComparator<Integer> {
   private boolean bottomValueSet;
   private boolean hitsThresholdReached;
 
-  /**
-   * Creates a new comparator based on document ids for {@code numHits}
-   */
+  /** Creates a new comparator based on document ids for {@code numHits} */
   public DocComparator(int numHits, boolean reverse, int sortPost) {
     this.docIDs = new int[numHits];
     // skipping functionality is enabled if we are sorting by _doc in asc order as a primary sort
@@ -51,7 +46,6 @@ public class DocComparator extends FieldComparator<Integer> {
     // No overflow risk because docIDs are non-negative
     return docIDs[slot1] - docIDs[slot2];
   }
-
 
   @Override
   public LeafFieldComparator getLeafComparator(LeafReaderContext context) {
@@ -72,13 +66,11 @@ public class DocComparator extends FieldComparator<Integer> {
     return Integer.valueOf(docIDs[slot]);
   }
 
-
   /**
-   * DocLeafComparator with skipping functionality.
-   * When sort by _doc asc, after collecting top N matches and enough hits, the comparator
-   * can skip all the following documents.
-   * When sort by _doc asc and "top" document is set after which search should start,
-   * the comparator provides an iterator that can quickly skip to the desired "top" document.
+   * DocLeafComparator with skipping functionality. When sort by _doc asc, after collecting top N
+   * matches and enough hits, the comparator can skip all the following documents. When sort by _doc
+   * asc and "top" document is set after which search should start, the comparator provides an
+   * iterator that can quickly skip to the desired "top" document.
    */
   private class DocLeafComparator implements LeafFieldComparator {
     private final int docBase;
@@ -170,7 +162,8 @@ public class DocComparator extends FieldComparator<Integer> {
       if (enableSkipping == false || hitsThresholdReached == false) return;
       if (bottomValueSet) {
         // since we've collected top N matches, we can early terminate
-        // Currently early termination on _doc is also implemented in TopFieldCollector, but this will be removed
+        // Currently early termination on _doc is also implemented in TopFieldCollector, but this
+        // will be removed
         // once all bulk scores uses collectors' iterators
         competitiveIterator = DocIdSetIterator.empty();
       } else if (topValueSet) {

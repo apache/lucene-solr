@@ -19,12 +19,11 @@ package org.apache.lucene.analysis.opennlp;
 
 import java.io.IOException;
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link OpenNLPPOSFilter}.
@@ -36,6 +35,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.OpenNLPPOSFilterFactory" posTaggerModel="filename"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 7.3.0
  * @lucene.spi {@value #NAME}
  */
@@ -48,7 +48,7 @@ public class OpenNLPPOSFilterFactory extends TokenFilterFactory implements Resou
 
   private final String posTaggerModelFile;
 
-  public OpenNLPPOSFilterFactory(Map<String,String> args) {
+  public OpenNLPPOSFilterFactory(Map<String, String> args) {
     super(args);
     posTaggerModelFile = require(args, POS_TAGGER_MODEL);
     if (!args.isEmpty()) {

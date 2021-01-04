@@ -27,17 +27,97 @@ allprojects { prj ->
 
     spotless {
       java {
-        licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+        // TODO: work out how to have multiple different header files (we have
+        // classes in the codebase that have original headers).
+        // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
 
         switch (project.path) {
-          // Disable for everything else for now.
+          // These modules are complete - all sources scanned.
+          case ":lucene:core":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**", "**/StandardTokenizerImpl.java"
+            break
+
+          case ":lucene:highlighter":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+          case ":lucene:queries":
+            target "src/java/**/*.java",
+                   "src/test/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+          case ":lucene:analysis:common":
+            target "src/**/*.java"
+            targetExclude "**/resources/**",
+                "**/HTMLStripCharFilter.java",
+                "**/UAX29URLEmailTokenizerImpl.java",
+                "**/tartarus/**"
+            break
+
+          case ":lucene:demo":
+          case ":lucene:analysis:morfologik":
+          case ":lucene:analysis:icu":
+          case ":lucene:analysis:kuromoji":
+          case ":lucene:memory":
+          case ":lucene:benchmark":
+          case ":lucene:analysis:nori":
+          case ":lucene:analysis:opennlp":
+          case ":lucene:analysis:phonetic":
+          case ":lucene:analysis:smartcn":
+          case ":lucene:analysis:stempel":
+          case ":lucene:classification":
+          case ":lucene:backward-codecs":
+          case ":lucene:codecs":
+          case ":lucene:join":
+            target "src/**/*.java"
+            targetExclude "**/resources/**"
+            break
+
+          case ":lucene:expressions":
+            target "src/**/*.java"
+            targetExclude "**/resources/**", "**/JavascriptLexer.java", "**/JavascriptParser.java",
+                "**/JavascriptVisitor.java"
+            break
+
+            // Partially complete.
+
+          case ":lucene:facet":
+            target "src/**/*.java"
+            targetExclude "**/taxonomy.8.6.3-cfs.zip"
+            break
+
+          // All others - disable reformatting/ checks for now.
+          case ":lucene:grouping":
+          case ":lucene:luke":
+          case ":lucene:misc":
+          case ":lucene:monitor":
+          case ":lucene:queryparser":
+          case ":lucene:replicator":
+          case ":lucene:sandbox":
+          case ":lucene:spatial3d":
+          case ":lucene:spatial-extras":
+          case ":lucene:suggest":
+          case ":lucene:test-framework":
+
           default:
             target 'non-existing/**'
             break
         }
+      }
+    }
+
+    spotlessJava {
+      doFirst {
+        project.mkdir("${buildDir}/spotless/spotlessJava")
       }
     }
   }

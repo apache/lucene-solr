@@ -17,7 +17,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -43,19 +42,20 @@ abstract class TermsCollector<DV> extends DocValuesTermsCollector<DV> {
   /**
    * Chooses the right {@link TermsCollector} implementation.
    *
-   * @param field                     The field to collect terms for
-   * @param multipleValuesPerDocument Whether the field to collect terms for has multiple values per document.
+   * @param field The field to collect terms for
+   * @param multipleValuesPerDocument Whether the field to collect terms for has multiple values per
+   *     document.
    * @return a {@link TermsCollector} instance
    */
   static TermsCollector<?> create(String field, boolean multipleValuesPerDocument) {
-    return multipleValuesPerDocument 
+    return multipleValuesPerDocument
         ? new MV(sortedSetDocValues(field))
         : new SV(binaryDocValues(field));
   }
-  
+
   // impl that works with multiple values per document
   static class MV extends TermsCollector<SortedSetDocValues> {
-    
+
     MV(Function<SortedSetDocValues> docValuesCall) {
       super(docValuesCall);
     }

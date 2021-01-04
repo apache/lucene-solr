@@ -20,19 +20,13 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.util.BytesRef;
 
-
-/**
- *  Does nothing other than convert the char array to a byte array using the specified encoding.
- *
- **/
-public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder{
+/** Does nothing other than convert the char array to a byte array using the specified encoding. */
+public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder {
   protected Charset charset = StandardCharsets.UTF_8;
-  
-  public IdentityEncoder() {
-  }
+
+  public IdentityEncoder() {}
 
   public IdentityEncoder(Charset charset) {
     this.charset = charset;

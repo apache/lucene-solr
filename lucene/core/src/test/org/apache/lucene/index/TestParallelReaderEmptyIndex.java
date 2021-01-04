@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,14 +28,12 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Some tests for {@link ParallelLeafReader}s with empty indexes
- */
+/** Some tests for {@link ParallelLeafReader}s with empty indexes */
 public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
   /**
-   * Creates two empty indexes and wraps a ParallelReader around. Adding this
-   * reader to a new index should not throw any exception.
+   * Creates two empty indexes and wraps a ParallelReader around. Adding this reader to a new index
+   * should not throw any exception.
    */
   public void testEmptyIndex() throws IOException {
     Directory rd1 = newDirectory();
@@ -49,23 +45,23 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     Directory rdOut = newDirectory();
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
-    
+
     // add a readerless parallel reader
     iwOut.addIndexes(SlowCodecReaderWrapper.wrap(new ParallelLeafReader()));
     iwOut.forceMerge(1);
 
-    ParallelCompositeReader cpr = new ParallelCompositeReader(
-        DirectoryReader.open(rd1),
-        DirectoryReader.open(rd2));
-    
-    // When unpatched, Lucene crashes here with a NoSuchElementException (caused by ParallelTermEnum)
+    ParallelCompositeReader cpr =
+        new ParallelCompositeReader(DirectoryReader.open(rd1), DirectoryReader.open(rd2));
+
+    // When unpatched, Lucene crashes here with a NoSuchElementException (caused by
+    // ParallelTermEnum)
     List<CodecReader> leaves = new ArrayList<>();
     for (LeafReaderContext leaf : cpr.leaves()) {
       leaves.add(SlowCodecReaderWrapper.wrap(leaf.reader()));
     }
     iwOut.addIndexes(leaves.toArray(new CodecReader[0]));
     iwOut.forceMerge(1);
-    
+
     iwOut.close();
     rdOut.close();
     rd1.close();
@@ -73,9 +69,8 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
   }
 
   /**
-   * This method creates an empty index (numFields=0, numDocs=0) but is marked
-   * to have TermVectors. Adding this index to another index should not throw
-   * any exception.
+   * This method creates an empty index (numFields=0, numDocs=0) but is marked to have TermVectors.
+   * Adding this index to another index should not throw any exception.
    */
   public void testEmptyIndexWithVectors() throws IOException {
     Directory rd1 = newDirectory();
@@ -97,13 +92,13 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.addDocument(doc);
       iw.close();
 
-      IndexWriterConfig dontMergeConfig = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(NoMergePolicy.INSTANCE);
+      IndexWriterConfig dontMergeConfig =
+          new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE);
       if (VERBOSE) {
         System.out.println("\nTEST: make 2nd writer");
       }
       IndexWriter writer = new IndexWriter(rd1, dontMergeConfig);
-      
+
       writer.deleteDocuments(new Term("id", "1"));
       writer.close();
       IndexReader ir = DirectoryReader.open(rd1);
@@ -111,8 +106,9 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       assertEquals(1, ir.numDocs());
       ir.close();
 
-      iw = new IndexWriter(rd1, newIndexWriterConfig(new MockAnalyzer(random()))
-                                  .setOpenMode(OpenMode.APPEND));
+      iw =
+          new IndexWriter(
+              rd1, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
       iw.forceMerge(1);
       iw.close();
     }
@@ -130,17 +126,17 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(new MockAnalyzer(random())));
     DirectoryReader reader1 = DirectoryReader.open(rd1);
     DirectoryReader reader2 = DirectoryReader.open(rd2);
-    ParallelLeafReader pr = new ParallelLeafReader(false,
-                                                   getOnlyLeafReader(reader1),
-                                                   getOnlyLeafReader(reader2));
+    ParallelLeafReader pr =
+        new ParallelLeafReader(false, getOnlyLeafReader(reader1), getOnlyLeafReader(reader2));
 
-    // When unpatched, Lucene crashes here with an ArrayIndexOutOfBoundsException (caused by TermVectorsWriter)
+    // When unpatched, Lucene crashes here with an ArrayIndexOutOfBoundsException (caused by
+    // TermVectorsWriter)
     iwOut.addIndexes(SlowCodecReaderWrapper.wrap(pr));
 
     pr.close();
     reader1.close();
     reader2.close();
-    
+
     // assert subreaders were closed
     assertEquals(0, reader1.getRefCount());
     assertEquals(0, reader2.getRefCount());
@@ -150,7 +146,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     iwOut.forceMerge(1);
     iwOut.close();
-    
+
     rdOut.close();
   }
 }

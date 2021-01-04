@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,37 +35,40 @@ public class TestNeverDelete extends LuceneTestCase {
     final Path tmpDir = createTempDir("TestNeverDelete");
     final BaseDirectoryWrapper d = newFSDirectory(tmpDir);
 
-    final RandomIndexWriter w = new RandomIndexWriter(random(),
-                                                      d,
-                                                      newIndexWriterConfig(new MockAnalyzer(random()))
-                                                        .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    final RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            d,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     w.w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 5, 30));
 
     w.commit();
     Thread[] indexThreads = new Thread[random().nextInt(4)];
     final long stopTime = System.currentTimeMillis() + atLeast(1000);
-    for (int x=0; x < indexThreads.length; x++) {
-      indexThreads[x] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              int docCount = 0;
-              while (System.currentTimeMillis() < stopTime) {
-                final Document doc = new Document();
-                doc.add(newStringField("dc", ""+docCount, Field.Store.YES));
-                doc.add(newTextField("field", "here is some text", Field.Store.YES));
-                w.addDocument(doc);
+    for (int x = 0; x < indexThreads.length; x++) {
+      indexThreads[x] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                int docCount = 0;
+                while (System.currentTimeMillis() < stopTime) {
+                  final Document doc = new Document();
+                  doc.add(newStringField("dc", "" + docCount, Field.Store.YES));
+                  doc.add(newTextField("field", "here is some text", Field.Store.YES));
+                  w.addDocument(doc);
 
-                if (docCount % 13 == 0) {
-                  w.commit();
+                  if (docCount % 13 == 0) {
+                    w.commit();
+                  }
+                  docCount++;
                 }
-                docCount++;
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       indexThreads[x].setName("Thread " + x);
       indexThreads[x].start();
     }
@@ -75,14 +76,14 @@ public class TestNeverDelete extends LuceneTestCase {
     final Set<String> allFiles = new HashSet<>();
 
     DirectoryReader r = DirectoryReader.open(d);
-    while(System.currentTimeMillis() < stopTime) {
+    while (System.currentTimeMillis() < stopTime) {
       final IndexCommit ic = r.getIndexCommit();
       if (VERBOSE) {
         System.out.println("TEST: check files: " + ic.getFileNames());
       }
       allFiles.addAll(ic.getFileNames());
       // Make sure no old files were removed
-      for(String fileName : allFiles) {
+      for (String fileName : allFiles) {
         assertTrue("file " + fileName + " does not exist", slowFileExists(d, fileName));
       }
       DirectoryReader r2 = DirectoryReader.openIfChanged(r);
@@ -94,7 +95,7 @@ public class TestNeverDelete extends LuceneTestCase {
     }
     r.close();
 
-    for(Thread t : indexThreads) {
+    for (Thread t : indexThreads) {
       t.join();
     }
     w.close();

@@ -128,7 +128,7 @@ final class MultiNormsLeafSimScorer {
       for (int i = 0; i < normsArr.length; i++) {
         boolean found = normsArr[i].advanceExact(target);
         assert found;
-        normValue += weightArr[i] * LENGTH_TABLE[(byte) normsArr[i].longValue()];
+        normValue += weightArr[i] * LENGTH_TABLE[Byte.toUnsignedInt((byte) normsArr[i].longValue())];
       }
       current = SmallFloat.intToByte4(Math.round(normValue));
       return true;

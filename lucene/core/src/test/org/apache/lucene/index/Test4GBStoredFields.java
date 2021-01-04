@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.document.Document;
@@ -26,24 +27,20 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.TimeUnits;
 
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
-/**
- * This test creates an index with one segment that is a little larger than 4GB.
- */
-@SuppressCodecs({ "SimpleText", "Compressing" })
+/** This test creates an index with one segment that is a little larger than 4GB. */
+@SuppressCodecs({"SimpleText", "Compressing"})
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test4GBStoredFields extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
     assumeWorkingMMapOnWindows();
-    
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("4GBStoredFields")));
+
+    MockDirectoryWrapper dir =
+        new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("4GBStoredFields")));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -53,8 +50,10 @@ public class Test4GBStoredFields extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy(false, 10));
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
-    // TODO: we disable "Compressing" since it likes to pick very extreme values which will be too slow for this test.
-    // maybe we should factor out crazy cases to ExtremeCompressing? then annotations can handle this stuff...
+    // TODO: we disable "Compressing" since it likes to pick very extreme values which will be too
+    // slow for this test.
+    // maybe we should factor out crazy cases to ExtremeCompressing? then annotations can handle
+    // this stuff...
     if (random().nextBoolean()) {
       iwc.setCodec(CompressingCodec.reasonableInstance(random()));
     }
@@ -63,8 +62,8 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
     MergePolicy mp = w.getConfig().getMergePolicy();
     if (mp instanceof LogByteSizeMergePolicy) {
-     // 1 petabyte:
-     ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
+      // 1 petabyte:
+      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024 * 1024 * 1024);
     }
 
     final Document doc = new Document();
@@ -116,5 +115,4 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
     dir.close();
   }
-
 }

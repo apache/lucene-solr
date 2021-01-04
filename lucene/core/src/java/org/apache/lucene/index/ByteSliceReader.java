@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ByteBlockPool;
@@ -41,7 +39,7 @@ final class ByteSliceReader extends DataInput {
 
   public void init(ByteBlockPool pool, int startIndex, int endIndex) {
 
-    assert endIndex-startIndex >= 0;
+    assert endIndex - startIndex >= 0;
     assert startIndex >= 0;
     assert endIndex >= 0;
 
@@ -56,11 +54,10 @@ final class ByteSliceReader extends DataInput {
 
     final int firstSize = ByteBlockPool.LEVEL_SIZE_ARRAY[0];
 
-    if (startIndex+firstSize >= endIndex) {
+    if (startIndex + firstSize >= endIndex) {
       // There is only this one slice to read
       limit = endIndex & ByteBlockPool.BYTE_BLOCK_MASK;
-    } else
-      limit = upto+firstSize-4;
+    } else limit = upto + firstSize - 4;
   }
 
   public boolean eof() {
@@ -72,22 +69,21 @@ final class ByteSliceReader extends DataInput {
   public byte readByte() {
     assert !eof();
     assert upto <= limit;
-    if (upto == limit)
-      nextSlice();
+    if (upto == limit) nextSlice();
     return buffer[upto++];
   }
 
   public long writeTo(DataOutput out) throws IOException {
     long size = 0;
-    while(true) {
+    while (true) {
       if (limit + bufferOffset == endIndex) {
         assert endIndex - bufferOffset >= upto;
-        out.writeBytes(buffer, upto, limit-upto);
-        size += limit-upto;
+        out.writeBytes(buffer, upto, limit - upto);
+        size += limit - upto;
         break;
       } else {
-        out.writeBytes(buffer, upto, limit-upto);
-        size += limit-upto;
+        out.writeBytes(buffer, upto, limit - upto);
+        size += limit - upto;
         nextSlice();
       }
     }
@@ -98,7 +94,11 @@ final class ByteSliceReader extends DataInput {
   public void nextSlice() {
 
     // Skip to our next slice
-    final int nextIndex = ((buffer[limit]&0xff)<<24) + ((buffer[1+limit]&0xff)<<16) + ((buffer[2+limit]&0xff)<<8) + (buffer[3+limit]&0xff);
+    final int nextIndex =
+        ((buffer[limit] & 0xff) << 24)
+            + ((buffer[1 + limit] & 0xff) << 16)
+            + ((buffer[2 + limit] & 0xff) << 8)
+            + (buffer[3 + limit] & 0xff);
 
     level = ByteBlockPool.NEXT_LEVEL_ARRAY[level];
     final int newSize = ByteBlockPool.LEVEL_SIZE_ARRAY[level];
@@ -116,14 +116,14 @@ final class ByteSliceReader extends DataInput {
     } else {
       // This is not the final slice (subtract 4 for the
       // forwarding address at the end of this new slice)
-      limit = upto+newSize-4;
+      limit = upto + newSize - 4;
     }
   }
 
   @Override
   public void readBytes(byte[] b, int offset, int len) {
-    while(len > 0) {
-      final int numLeft = limit-upto;
+    while (len > 0) {
+      final int numLeft = limit - upto;
       if (numLeft < len) {
         // Read entire slice
         System.arraycopy(buffer, upto, b, offset, numLeft);

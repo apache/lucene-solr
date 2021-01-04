@@ -16,36 +16,35 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 
-/** 
- * Abstract base class for input from a file in a {@link Directory}.  A
- * random-access input stream.  Used for all Lucene index input operations.
+/**
+ * Abstract base class for input from a file in a {@link Directory}. A random-access input stream.
+ * Used for all Lucene index input operations.
  *
- * <p>{@code IndexInput} may only be used from one thread, because it is not
- * thread safe (it keeps internal state like file position). To allow
- * multithreaded use, every {@code IndexInput} instance must be cloned before
- * it is used in another thread. Subclasses must therefore implement {@link #clone()},
- * returning a new {@code IndexInput} which operates on the same underlying
- * resource, but positioned independently. 
- * 
- * <p><b>Warning:</b> Lucene never closes cloned
- * {@code IndexInput}s, it will only call {@link #close()} on the original object.
- * 
- * <p>If you access the cloned IndexInput after closing the original object,
- * any <code>readXXX</code> methods will throw {@link AlreadyClosedException}.
+ * <p>{@code IndexInput} may only be used from one thread, because it is not thread safe (it keeps
+ * internal state like file position). To allow multithreaded use, every {@code IndexInput} instance
+ * must be cloned before it is used in another thread. Subclasses must therefore implement {@link
+ * #clone()}, returning a new {@code IndexInput} which operates on the same underlying resource, but
+ * positioned independently.
+ *
+ * <p><b>Warning:</b> Lucene never closes cloned {@code IndexInput}s, it will only call {@link
+ * #close()} on the original object.
+ *
+ * <p>If you access the cloned IndexInput after closing the original object, any <code>readXXX
+ * </code> methods will throw {@link AlreadyClosedException}.
  *
  * @see Directory
  */
-public abstract class IndexInput extends DataInput implements Cloneable,Closeable {
+public abstract class IndexInput extends DataInput implements Cloneable, Closeable {
 
   private final String resourceDescription;
 
-  /** resourceDescription should be a non-null, opaque string
-   *  describing this resource; it's returned from
-   *  {@link #toString}. */
+  /**
+   * resourceDescription should be a non-null, opaque string describing this resource; it's returned
+   * from {@link #toString}.
+   */
   protected IndexInput(String resourceDescription) {
     if (resourceDescription == null) {
       throw new IllegalArgumentException("resourceDescription must not be null");
@@ -57,15 +56,17 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   @Override
   public abstract void close() throws IOException;
 
-  /** Returns the current position in this file, where the next read will
-   * occur.
+  /**
+   * Returns the current position in this file, where the next read will occur.
+   *
    * @see #seek(long)
    */
   public abstract long getFilePointer();
 
-  /** Sets current position in this file, where the next read will occur.  If this is
-   *  beyond the end of the file then this will throw {@code EOFException} and then the
-   *  stream is in an undetermined state.
+  /**
+   * Sets current position in this file, where the next read will occur. If this is beyond the end
+   * of the file then this will throw {@code EOFException} and then the stream is in an undetermined
+   * state.
    *
    * @see #getFilePointer()
    */
@@ -78,31 +79,35 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   public String toString() {
     return resourceDescription;
   }
-  
-  /** {@inheritDoc}
-   * 
-   * <p><b>Warning:</b> Lucene never closes cloned
-   * {@code IndexInput}s, it will only call {@link #close()} on the original object.
-   * 
-   * <p>If you access the cloned IndexInput after closing the original object,
-   * any <code>readXXX</code> methods will throw {@link AlreadyClosedException}.
+
+  /**
+   * {@inheritDoc}
    *
-   * <p>This method is NOT thread safe, so if the current {@code IndexInput}
-   * is being used by one thread while {@code clone} is called by another,
-   * disaster could strike.
+   * <p><b>Warning:</b> Lucene never closes cloned {@code IndexInput}s, it will only call {@link
+   * #close()} on the original object.
+   *
+   * <p>If you access the cloned IndexInput after closing the original object, any <code>readXXX
+   * </code> methods will throw {@link AlreadyClosedException}.
+   *
+   * <p>This method is NOT thread safe, so if the current {@code IndexInput} is being used by one
+   * thread while {@code clone} is called by another, disaster could strike.
    */
   @Override
   public IndexInput clone() {
     return (IndexInput) super.clone();
   }
-  
-  /**
-   * Creates a slice of this index input, with the given description, offset, and length. 
-   * The slice is sought to the beginning.
-   */
-  public abstract IndexInput slice(String sliceDescription, long offset, long length) throws IOException;
 
-  /** Subclasses call this to get the String for resourceDescription of a slice of this {@code IndexInput}. */
+  /**
+   * Creates a slice of this index input, with the given description, offset, and length. The slice
+   * is sought to the beginning.
+   */
+  public abstract IndexInput slice(String sliceDescription, long offset, long length)
+      throws IOException;
+
+  /**
+   * Subclasses call this to get the String for resourceDescription of a slice of this {@code
+   * IndexInput}.
+   */
   protected String getFullSliceDescription(String sliceDescription) {
     if (sliceDescription == null) {
       // Clones pass null sliceDescription:
@@ -113,10 +118,10 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   }
 
   /**
-   * Creates a random-access slice of this index input, with the given offset and length. 
-   * <p>
-   * The default implementation calls {@link #slice}, and it doesn't support random access,
-   * it implements absolute reads as seek+read.
+   * Creates a random-access slice of this index input, with the given offset and length.
+   *
+   * <p>The default implementation calls {@link #slice}, and it doesn't support random access, it
+   * implements absolute reads as seek+read.
    */
   public RandomAccessInput randomAccessSlice(long offset, long length) throws IOException {
     final IndexInput slice = slice("randomaccess", offset, length);
@@ -131,19 +136,19 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
           slice.seek(pos);
           return slice.readByte();
         }
-        
+
         @Override
         public short readShort(long pos) throws IOException {
           slice.seek(pos);
           return slice.readShort();
         }
-        
+
         @Override
         public int readInt(long pos) throws IOException {
           slice.seek(pos);
           return slice.readInt();
         }
-        
+
         @Override
         public long readLong(long pos) throws IOException {
           slice.seek(pos);

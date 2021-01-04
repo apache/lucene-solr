@@ -16,43 +16,44 @@
  */
 package org.apache.lucene.analysis.phonetic;
 
+import java.io.IOException;
 import org.apache.commons.codec.Encoder;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-import java.io.IOException;
-
 /**
  * Create tokens for phonetic matches.
- * @see <a href="http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html">
- * Apache Commons Codec</a>
+ *
+ * @see <a
+ *     href="http://commons.apache.org/codec/api-release/org/apache/commons/codec/language/package-summary.html">
+ *     Apache Commons Codec</a>
  */
-public final class PhoneticFilter extends TokenFilter 
-{
+public final class PhoneticFilter extends TokenFilter {
   /** true if encoded tokens should be added as synonyms */
-  protected boolean inject = true; 
+  protected boolean inject = true;
   /** phonetic encoder */
   protected Encoder encoder = null;
   /** captured state, non-null when <code>inject=true</code> and a token is buffered */
   protected State save = null;
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
-  /** Creates a PhoneticFilter with the specified encoder, and either
-   *  adding encoded forms as synonyms (<code>inject=true</code>) or
-   *  replacing them.
+  /**
+   * Creates a PhoneticFilter with the specified encoder, and either adding encoded forms as
+   * synonyms (<code>inject=true</code>) or replacing them.
    */
   public PhoneticFilter(TokenStream in, Encoder encoder, boolean inject) {
     super(in);
     this.encoder = encoder;
-    this.inject = inject;   
+    this.inject = inject;
   }
 
   @Override
   public boolean incrementToken() throws IOException {
-    if( save != null ) {
+    if (save != null) {
       // clearAttributes();  // not currently necessary
       restoreState(save);
       save = null;
@@ -67,9 +68,10 @@ public final class PhoneticFilter extends TokenFilter
     String value = termAtt.toString();
     String phonetic = null;
     try {
-     String v = encoder.encode(value).toString();
-     if (v.length() > 0 && !value.equals(v)) phonetic = v;
-    } catch (Exception ignored) {} // just use the direct text
+      String v = encoder.encode(value).toString();
+      if (v.length() > 0 && !value.equals(v)) phonetic = v;
+    } catch (Exception ignored) {
+    } // just use the direct text
 
     if (phonetic == null) return true;
 

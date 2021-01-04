@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
 import org.apache.lucene.index.DocValues;
@@ -30,8 +29,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.Accountable;
@@ -50,18 +49,19 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   /** {@link IndexReader} passed to the constructor. */
   public final IndexReader reader;
 
-  private final Map<String,OrdinalMap> cachedOrdMaps = new HashMap<>();
+  private final Map<String, OrdinalMap> cachedOrdMaps = new HashMap<>();
 
-  private final Map<String,OrdRange> prefixToOrdRange = new HashMap<>();
+  private final Map<String, OrdRange> prefixToOrdRange = new HashMap<>();
 
-  /** Creates this, pulling doc values from the default {@link
-   *  FacetsConfig#DEFAULT_INDEX_FIELD_NAME}. */ 
+  /**
+   * Creates this, pulling doc values from the default {@link
+   * FacetsConfig#DEFAULT_INDEX_FIELD_NAME}.
+   */
   public DefaultSortedSetDocValuesReaderState(IndexReader reader) throws IOException {
     this(reader, FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
   }
 
-  /** Creates this, pulling doc values from the specified
-   *  field. */
+  /** Creates this, pulling doc values from the specified field. */
   public DefaultSortedSetDocValuesReaderState(IndexReader reader, String field) throws IOException {
     this.field = field;
     this.reader = reader;
@@ -70,10 +70,12 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     // per collector:
     SortedSetDocValues dv = getDocValues();
     if (dv == null) {
-      throw new IllegalArgumentException("field \"" + field + "\" was not indexed with SortedSetDocValues");
+      throw new IllegalArgumentException(
+          "field \"" + field + "\" was not indexed with SortedSetDocValues");
     }
     if (dv.getValueCount() > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("can only handle valueCount < Integer.MAX_VALUE; got " + dv.getValueCount());
+      throw new IllegalArgumentException(
+          "can only handle valueCount < Integer.MAX_VALUE; got " + dv.getValueCount());
     }
     valueCount = (int) dv.getValueCount();
 
@@ -87,15 +89,19 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     // TaxoReader can't do this since ords are not in
     // "sorted order" ... but we should generalize this to
     // support arbitrary hierarchy:
-    for(int ord=0;ord<valueCount;ord++) {
+    for (int ord = 0; ord < valueCount; ord++) {
       final BytesRef term = dv.lookupOrd(ord);
       String[] components = FacetsConfig.stringToPath(term.utf8ToString());
       if (components.length != 2) {
-        throw new IllegalArgumentException("this class can only handle 2 level hierarchy (dim/value); got: " + Arrays.toString(components) + " " + term.utf8ToString());
+        throw new IllegalArgumentException(
+            "this class can only handle 2 level hierarchy (dim/value); got: "
+                + Arrays.toString(components)
+                + " "
+                + term.utf8ToString());
       }
       if (!components[0].equals(lastDim)) {
         if (lastDim != null) {
-          prefixToOrdRange.put(lastDim, new OrdRange(startOrd, ord-1));
+          prefixToOrdRange.put(lastDim, new OrdRange(startOrd, ord - 1));
         }
         startOrd = ord;
         lastDim = components[0];
@@ -103,13 +109,11 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
     }
 
     if (lastDim != null) {
-      prefixToOrdRange.put(lastDim, new OrdRange(startOrd, valueCount-1));
+      prefixToOrdRange.put(lastDim, new OrdRange(startOrd, valueCount - 1));
     }
   }
 
-  /**
-   * Return the memory usage of this object in bytes. Negative values are illegal.
-   */
+  /** Return the memory usage of this object in bytes. Negative values are illegal. */
   @Override
   public long ramBytesUsed() {
     synchronized (cachedOrdMaps) {
@@ -123,8 +127,9 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   }
 
   /**
-   * Returns nested resources of this class. 
-   * The result should be a point-in-time snapshot (to avoid race conditions).
+   * Returns nested resources of this class. The result should be a point-in-time snapshot (to avoid
+   * race conditions).
+   *
    * @see Accountables
    */
   @Override
@@ -138,14 +143,16 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   public String toString() {
     return "DefaultSortedSetDocValuesReaderState(field=" + field + " reader=" + reader + ")";
   }
-  
+
   /** Return top-level doc values. */
   @Override
   public SortedSetDocValues getDocValues() throws IOException {
     // TODO: this is dup'd from slow composite reader wrapper ... can we factor it out to share?
     OrdinalMap map = null;
-    // TODO: why are we lazy about this?  It's better if ctor pays the cost, not first query?  Oh, but we
-    // call this method from ctor, ok.  Also, we only ever store one entry in the map (for key=field) so
+    // TODO: why are we lazy about this?  It's better if ctor pays the cost, not first query?  Oh,
+    // but we
+    // call this method from ctor, ok.  Also, we only ever store one entry in the map (for
+    // key=field) so
     // why are we using a map?
     synchronized (cachedOrdMaps) {
       map = cachedOrdMaps.get(field);
@@ -153,7 +160,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
         // uncached, or not a multi dv
         SortedSetDocValues dv = MultiDocValues.getSortedSetValues(reader, field);
         if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
-          map = ((MultiDocValues.MultiSortedSetDocValues)dv).mapping;
+          map = ((MultiDocValues.MultiSortedSetDocValues) dv).mapping;
           IndexReader.CacheHelper cacheHelper = reader.getReaderCacheHelper();
           if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
             cachedOrdMaps.put(field, map);
@@ -162,11 +169,11 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
         return dv;
       }
     }
-   
+
     assert map != null;
     int size = reader.leaves().size();
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
-    final int[] starts = new int[size+1];
+    final int[] starts = new int[size + 1];
     long cost = 0;
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = reader.leaves().get(i);
@@ -189,7 +196,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
 
   /** Returns mapping from prefix to {@link OrdRange}. */
   @Override
-  public Map<String,OrdRange> getPrefixToOrdRange() {
+  public Map<String, OrdRange> getPrefixToOrdRange() {
     return prefixToOrdRange;
   }
 
@@ -204,7 +211,7 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   public String getField() {
     return field;
   }
-  
+
   @Override
   public IndexReader getReader() {
     return reader;
@@ -215,5 +222,4 @@ public class DefaultSortedSetDocValuesReaderState extends SortedSetDocValuesRead
   public int getSize() {
     return valueCount;
   }
-
 }

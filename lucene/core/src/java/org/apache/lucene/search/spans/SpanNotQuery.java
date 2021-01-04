@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -33,8 +31,9 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 
-/** Removes matches which overlap with another SpanQuery or which are
- * within x tokens before or y tokens after another SpanQuery.
+/**
+ * Removes matches which overlap with another SpanQuery or which are within x tokens before or y
+ * tokens after another SpanQuery.
  */
 public final class SpanNotQuery extends SpanQuery {
   private SpanQuery include;
@@ -42,45 +41,56 @@ public final class SpanNotQuery extends SpanQuery {
   private final int pre;
   private final int post;
 
-  /** Construct a SpanNotQuery matching spans from <code>include</code> which
-   * have no overlap with spans from <code>exclude</code>.*/
+  /**
+   * Construct a SpanNotQuery matching spans from <code>include</code> which have no overlap with
+   * spans from <code>exclude</code>.
+   */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude) {
-     this(include, exclude, 0, 0);
+    this(include, exclude, 0, 0);
   }
 
-
-  /** Construct a SpanNotQuery matching spans from <code>include</code> which
-   * have no overlap with spans from <code>exclude</code> within
-   * <code>dist</code> tokens of <code>include</code>. Inversely, a negative
-   * <code>dist</code> value may be used to specify a certain amount of allowable
-   * overlap. */
+  /**
+   * Construct a SpanNotQuery matching spans from <code>include</code> which have no overlap with
+   * spans from <code>exclude</code> within <code>dist</code> tokens of <code>include</code>.
+   * Inversely, a negative <code>dist</code> value may be used to specify a certain amount of
+   * allowable overlap.
+   */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int dist) {
-     this(include, exclude, dist, dist);
+    this(include, exclude, dist, dist);
   }
 
-  /** Construct a SpanNotQuery matching spans from <code>include</code> which
-   * have no overlap with spans from <code>exclude</code> within
-   * <code>pre</code> tokens before or <code>post</code> tokens of
-   * <code>include</code>. Inversely, negative values for <code>pre</code> and/or
-   * <code>post</code> allow a certain amount of overlap to occur. */
+  /**
+   * Construct a SpanNotQuery matching spans from <code>include</code> which have no overlap with
+   * spans from <code>exclude</code> within <code>pre</code> tokens before or <code>post</code>
+   * tokens of <code>include</code>. Inversely, negative values for <code>pre</code> and/or <code>
+   * post</code> allow a certain amount of overlap to occur.
+   */
   public SpanNotQuery(SpanQuery include, SpanQuery exclude, int pre, int post) {
     this.include = Objects.requireNonNull(include);
     this.exclude = Objects.requireNonNull(exclude);
     this.pre = pre;
     this.post = post;
 
-    if (include.getField() != null && exclude.getField() != null && !include.getField().equals(exclude.getField()))
+    if (include.getField() != null
+        && exclude.getField() != null
+        && !include.getField().equals(exclude.getField()))
       throw new IllegalArgumentException("Clauses must have same field.");
   }
 
   /** Return the SpanQuery whose matches are filtered. */
-  public SpanQuery getInclude() { return include; }
+  public SpanQuery getInclude() {
+    return include;
+  }
 
   /** Return the SpanQuery whose matches must not overlap those returned. */
-  public SpanQuery getExclude() { return exclude; }
+  public SpanQuery getExclude() {
+    return exclude;
+  }
 
   @Override
-  public String getField() { return include.getField(); }
+  public String getField() {
+    return include.getField();
+  }
 
   @Override
   public String toString(String field) {
@@ -97,17 +107,22 @@ public final class SpanNotQuery extends SpanQuery {
     return buffer.toString();
   }
 
-
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     SpanWeight includeWeight = include.createWeight(searcher, scoreMode, boost);
     SpanWeight excludeWeight = exclude.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
-    return new SpanNotWeight(searcher, scoreMode.needsScores() ? getTermStates(includeWeight) : null,
-                                  includeWeight, excludeWeight, boost);
+    return new SpanNotWeight(
+        searcher,
+        scoreMode.needsScores() ? getTermStates(includeWeight) : null,
+        includeWeight,
+        excludeWeight,
+        boost);
   }
 
   /**
    * Creates SpanNotQuery scorer instances
+   *
    * @lucene.internal
    */
   public class SpanNotWeight extends SpanWeight {
@@ -115,8 +130,13 @@ public final class SpanNotQuery extends SpanQuery {
     final SpanWeight includeWeight;
     final SpanWeight excludeWeight;
 
-    public SpanNotWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
-                         SpanWeight includeWeight, SpanWeight excludeWeight, float boost) throws IOException {
+    public SpanNotWeight(
+        IndexSearcher searcher,
+        Map<Term, TermStates> terms,
+        SpanWeight includeWeight,
+        SpanWeight excludeWeight,
+        float boost)
+        throws IOException {
       super(SpanNotQuery.this, searcher, terms, boost);
       this.includeWeight = includeWeight;
       this.excludeWeight = excludeWeight;
@@ -128,7 +148,8 @@ public final class SpanNotQuery extends SpanQuery {
     }
 
     @Override
-    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
+        throws IOException {
       Spans includeSpans = includeWeight.getSpans(context, requiredPostings);
       if (includeSpans == null) {
         return null;
@@ -140,7 +161,8 @@ public final class SpanNotQuery extends SpanQuery {
       }
 
       TwoPhaseIterator excludeTwoPhase = excludeSpans.asTwoPhaseIterator();
-      DocIdSetIterator excludeApproximation = excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
+      DocIdSetIterator excludeApproximation =
+          excludeTwoPhase == null ? null : excludeTwoPhase.approximation();
 
       return new FilterSpans(includeSpans) {
         // last document we have checked matches() against for the exclusion, and failed
@@ -162,7 +184,9 @@ public final class SpanNotQuery extends SpanQuery {
             } else {
               excludeSpans.advance(doc);
             }
-          } else if (excludeTwoPhase != null && doc == excludeSpans.docID() && doc != lastApproxDoc) {
+          } else if (excludeTwoPhase != null
+              && doc == excludeSpans.docID()
+              && doc != lastApproxDoc) {
             // excludeSpans already sitting on our candidate doc, but matches not called yet.
             lastApproxDoc = doc;
             lastApproxResult = excludeTwoPhase.matches();
@@ -197,7 +221,6 @@ public final class SpanNotQuery extends SpanQuery {
     public boolean isCacheable(LeafReaderContext ctx) {
       return includeWeight.isCacheable(ctx) && excludeWeight.isCacheable(ctx);
     }
-
   }
 
   @Override
@@ -221,15 +244,14 @@ public final class SpanNotQuery extends SpanQuery {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
-  } 
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
+  }
 
-  private boolean equalsTo(SpanNotQuery other) { 
-    return include.equals(other.include) && 
-           exclude.equals(other.exclude) && 
-           pre == other.pre && 
-           post == other.post;
+  private boolean equalsTo(SpanNotQuery other) {
+    return include.equals(other.include)
+        && exclude.equals(other.exclude)
+        && pre == other.pre
+        && post == other.post;
   }
 
   @Override
@@ -245,5 +267,4 @@ public final class SpanNotQuery extends SpanQuery {
     h ^= post;
     return h;
   }
-
 }

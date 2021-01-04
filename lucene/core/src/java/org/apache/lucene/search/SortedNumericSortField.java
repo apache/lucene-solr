@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexSorter;
 import org.apache.lucene.index.LeafReader;
@@ -34,38 +32,39 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.NumericUtils;
 
-/** 
+/**
  * SortField for {@link SortedNumericDocValues}.
- * <p>
- * A SortedNumericDocValues contains multiple values for a field, so sorting with
- * this technique "selects" a value as the representative sort value for the document.
- * <p>
- * By default, the minimum value in the list is selected as the sort value, but
- * this can be customized.
- * <p>
- * Like sorting by string, this also supports sorting missing values as first or last,
- * via {@link #setMissingValue(Object)}.
+ *
+ * <p>A SortedNumericDocValues contains multiple values for a field, so sorting with this technique
+ * "selects" a value as the representative sort value for the document.
+ *
+ * <p>By default, the minimum value in the list is selected as the sort value, but this can be
+ * customized.
+ *
+ * <p>Like sorting by string, this also supports sorting missing values as first or last, via {@link
+ * #setMissingValue(Object)}.
+ *
  * @see SortedNumericSelector
  */
 public class SortedNumericSortField extends SortField {
-  
+
   private final SortedNumericSelector.Type selector;
   private final SortField.Type type;
-  
+
   /**
-   * Creates a sort, by the minimum value in the set 
-   * for the document.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, by the minimum value in the set for the document.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param type Type of values
    */
   public SortedNumericSortField(String field, SortField.Type type) {
     this(field, type, false);
   }
-  
+
   /**
-   * Creates a sort, possibly in reverse, by the minimum value in the set 
-   * for the document.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, by the minimum value in the set for the document.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param type Type of values
    * @param reverse True if natural order should be reversed.
    */
@@ -74,14 +73,16 @@ public class SortedNumericSortField extends SortField {
   }
 
   /**
-   * Creates a sort, possibly in reverse, specifying how the sort value from 
-   * the document's set is selected.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, specifying how the sort value from the document's set is
+   * selected.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param type Type of values
    * @param reverse True if natural order should be reversed.
    * @param selector custom selector type for choosing the sort value from the set.
    */
-  public SortedNumericSortField(String field, SortField.Type type, boolean reverse, SortedNumericSelector.Type selector) {
+  public SortedNumericSortField(
+      String field, SortField.Type type, boolean reverse, SortedNumericSelector.Type selector) {
     super(field, SortField.Type.CUSTOM, reverse);
     if (selector == null) {
       throw new NullPointerException();
@@ -106,7 +107,9 @@ public class SortedNumericSortField extends SortField {
 
     @Override
     public SortField readSortField(DataInput in) throws IOException {
-      SortedNumericSortField sf = new SortedNumericSortField(in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
+      SortedNumericSortField sf =
+          new SortedNumericSortField(
+              in.readString(), readType(in), in.readInt() == 1, readSelectorType(in));
       if (in.readInt() == 1) {
         switch (sf.type) {
           case INT:
@@ -131,14 +134,15 @@ public class SortedNumericSortField extends SortField {
     @Override
     public void writeSortField(SortField sf, DataOutput out) throws IOException {
       assert sf instanceof SortedNumericSortField;
-      ((SortedNumericSortField)sf).serialize(out);
+      ((SortedNumericSortField) sf).serialize(out);
     }
   }
 
   private static SortedNumericSelector.Type readSelectorType(DataInput in) throws IOException {
     int selectorType = in.readInt();
     if (selectorType >= SortedNumericSelector.Type.values().length) {
-      throw new IllegalArgumentException("Can't deserialize SortedNumericSortField - unknown selector type " + selectorType);
+      throw new IllegalArgumentException(
+          "Can't deserialize SortedNumericSortField - unknown selector type " + selectorType);
     }
     return SortedNumericSelector.Type.values()[selectorType];
   }
@@ -150,22 +154,21 @@ public class SortedNumericSortField extends SortField {
     out.writeInt(selector.ordinal());
     if (missingValue == null) {
       out.writeInt(0);
-    }
-    else {
+    } else {
       out.writeInt(1);
       // oh for switch expressions...
       switch (type) {
         case INT:
-          out.writeInt((int)missingValue);
+          out.writeInt((int) missingValue);
           break;
         case LONG:
-          out.writeLong((long)missingValue);
+          out.writeLong((long) missingValue);
           break;
         case FLOAT:
-          out.writeInt(NumericUtils.floatToSortableInt((float)missingValue));
+          out.writeInt(NumericUtils.floatToSortableInt((float) missingValue));
           break;
         case DOUBLE:
-          out.writeLong(NumericUtils.doubleToSortableLong((double)missingValue));
+          out.writeLong(NumericUtils.doubleToSortableLong((double) missingValue));
           break;
         default:
           throw new AssertionError();
@@ -177,12 +180,12 @@ public class SortedNumericSortField extends SortField {
   public SortField.Type getNumericType() {
     return type;
   }
-  
+
   /** Returns the selector in use for this sort */
   public SortedNumericSelector.Type getSelector() {
     return selector;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -219,23 +222,26 @@ public class SortedNumericSortField extends SortField {
 
     return buffer.toString();
   }
-  
+
   @Override
   public void setMissingValue(Object missingValue) {
     this.missingValue = missingValue;
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    switch(type) {
+    switch (type) {
       case INT:
         return new IntComparator(numHits, getField(), (Integer) missingValue, reverse, sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new IntLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return SortedNumericSelector.wrap(
+                    DocValues.getSortedNumeric(context.reader(), field), selector, type);
               }
             };
           }
@@ -243,11 +249,14 @@ public class SortedNumericSortField extends SortField {
       case FLOAT:
         return new FloatComparator(numHits, getField(), (Float) missingValue, reverse, sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new FloatLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return SortedNumericSelector.wrap(
+                    DocValues.getSortedNumeric(context.reader(), field), selector, type);
               }
             };
           }
@@ -255,11 +264,14 @@ public class SortedNumericSortField extends SortField {
       case LONG:
         return new LongComparator(numHits, getField(), (Long) missingValue, reverse, sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new LongLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return SortedNumericSelector.wrap(
+                    DocValues.getSortedNumeric(context.reader(), field), selector, type);
               }
             };
           }
@@ -267,11 +279,14 @@ public class SortedNumericSortField extends SortField {
       case DOUBLE:
         return new DoubleComparator(numHits, getField(), (Double) missingValue, reverse, sortPos) {
           @Override
-          public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+          public LeafFieldComparator getLeafComparator(LeafReaderContext context)
+              throws IOException {
             return new DoubleLeafComparator(context) {
               @Override
-              protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-                return SortedNumericSelector.wrap(DocValues.getSortedNumeric(context.reader(), field), selector, type);
+              protected NumericDocValues getNumericDocValues(
+                  LeafReaderContext context, String field) throws IOException {
+                return SortedNumericSelector.wrap(
+                    DocValues.getSortedNumeric(context.reader(), field), selector, type);
               }
             };
           }
@@ -282,20 +297,25 @@ public class SortedNumericSortField extends SortField {
   }
 
   private NumericDocValues getValue(LeafReader reader) throws IOException {
-    return SortedNumericSelector.wrap(DocValues.getSortedNumeric(reader, getField()), selector, type);
+    return SortedNumericSelector.wrap(
+        DocValues.getSortedNumeric(reader, getField()), selector, type);
   }
 
   @Override
   public IndexSorter getIndexSorter() {
-    switch(type) {
+    switch (type) {
       case INT:
-        return new IndexSorter.IntSorter(Provider.NAME, (Integer)missingValue, reverse, this::getValue);
+        return new IndexSorter.IntSorter(
+            Provider.NAME, (Integer) missingValue, reverse, this::getValue);
       case LONG:
-        return new IndexSorter.LongSorter(Provider.NAME, (Long)missingValue, reverse, this::getValue);
+        return new IndexSorter.LongSorter(
+            Provider.NAME, (Long) missingValue, reverse, this::getValue);
       case DOUBLE:
-        return new IndexSorter.DoubleSorter(Provider.NAME, (Double)missingValue, reverse, this::getValue);
+        return new IndexSorter.DoubleSorter(
+            Provider.NAME, (Double) missingValue, reverse, this::getValue);
       case FLOAT:
-        return new IndexSorter.FloatSorter(Provider.NAME, (Float)missingValue, reverse, this::getValue);
+        return new IndexSorter.FloatSorter(
+            Provider.NAME, (Float) missingValue, reverse, this::getValue);
       default:
         throw new AssertionError();
     }

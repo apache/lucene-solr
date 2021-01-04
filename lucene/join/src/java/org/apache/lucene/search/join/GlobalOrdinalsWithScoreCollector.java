@@ -18,7 +18,6 @@ package org.apache.lucene.search.join;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
@@ -41,7 +40,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   protected final Scores scores;
   protected final Occurrences occurrences;
 
-  GlobalOrdinalsWithScoreCollector(String field, OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
+  GlobalOrdinalsWithScoreCollector(
+      String field, OrdinalMap ordinalMap, long valueCount, ScoreMode scoreMode, int min, int max) {
     if (valueCount > Integer.MAX_VALUE) {
       // We simply don't support more than
       throw new IllegalStateException("Can't collect more than [" + Integer.MAX_VALUE + "] ids");
@@ -49,7 +49,8 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     this.field = field;
     this.doMinMax = min > 1 || max < Integer.MAX_VALUE;
     this.min = min;
-    this.max = max;;
+    this.max = max;
+    ;
     this.ordinalMap = ordinalMap;
     this.collectedOrds = new LongBitSet(valueCount);
     if (scoreMode != ScoreMode.None) {
@@ -247,8 +248,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
         return new LeafCollector() {
 
           @Override
-          public void setScorer(Scorable scorer) throws IOException {
-          }
+          public void setScorer(Scorable scorer) throws IOException {}
 
           @Override
           public void collect(int doc) throws IOException {
@@ -262,8 +262,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       } else {
         return new LeafCollector() {
           @Override
-          public void setScorer(Scorable scorer) throws IOException {
-          }
+          public void setScorer(Scorable scorer) throws IOException {}
 
           @Override
           public void collect(int doc) throws IOException {
@@ -278,8 +277,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
 
     @Override
-    protected void doScore(int globalOrd, float existingScore, float newScore) {
-    }
+    protected void doScore(int globalOrd, float existingScore, float newScore) {}
 
     @Override
     public float score(int globalOrdinal) {
@@ -297,11 +295,14 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
   }
 
-  // Because the global ordinal is directly used as a key to a score we should be somewhat smart about allocation
-  // the scores array. Most of the times not all docs match so splitting the scores array up in blocks can prevent creation of huge arrays.
+  // Because the global ordinal is directly used as a key to a score we should be somewhat smart
+  // about allocation
+  // the scores array. Most of the times not all docs match so splitting the scores array up in
+  // blocks can prevent creation of huge arrays.
   // Also working with smaller arrays is supposed to be more gc friendly
   //
-  // At first a hash map implementation would make sense, but in the case that more than half of docs match this becomes more expensive
+  // At first a hash map implementation would make sense, but in the case that more than half of
+  // docs match this becomes more expensive
   // then just using an array.
 
   // Maybe this should become a method parameter?
@@ -343,7 +344,6 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       }
       return score;
     }
-
   }
 
   static final class Occurrences {
@@ -371,7 +371,5 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       int[] occurrences = blocks[block];
       return occurrences[offset];
     }
-
   }
-
 }

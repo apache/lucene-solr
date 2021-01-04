@@ -16,40 +16,42 @@
  */
 package org.apache.lucene.util;
 
-/** Floating point numbers smaller than 32 bits.
+/**
+ * Floating point numbers smaller than 32 bits.
  *
  * @lucene.internal
  */
 public class SmallFloat {
-  
+
   /** No instance */
   private SmallFloat() {}
 
-  /** Converts a 32 bit float to an 8 bit float.
-   * <br>Values less than zero are all mapped to zero.
-   * <br>Values are truncated (rounded down) to the nearest 8 bit value.
-   * <br>Values between zero and the smallest representable value
-   *  are rounded up.
+  /**
+   * Converts a 32 bit float to an 8 bit float. <br>
+   * Values less than zero are all mapped to zero. <br>
+   * Values are truncated (rounded down) to the nearest 8 bit value. <br>
+   * Values between zero and the smallest representable value are rounded up.
    *
    * @param f the 32 bit float to be converted to an 8 bit float (byte)
-   * @param numMantissaBits the number of mantissa bits to use in the byte, with the remainder to be used in the exponent
+   * @param numMantissaBits the number of mantissa bits to use in the byte, with the remainder to be
+   *     used in the exponent
    * @param zeroExp the zero-point in the range of exponent values
    * @return the 8 bit float representation
    */
   public static byte floatToByte(float f, int numMantissaBits, int zeroExp) {
     // Adjustment from a float zero exponent to our zero exponent,
     // shifted over to our exponent position.
-    int fzero = (63-zeroExp)<<numMantissaBits;
+    int fzero = (63 - zeroExp) << numMantissaBits;
     int bits = Float.floatToRawIntBits(f);
-    int smallfloat = bits >> (24-numMantissaBits);
+    int smallfloat = bits >> (24 - numMantissaBits);
     if (smallfloat <= fzero) {
-      return (bits<=0) ?
-        (byte)0   // negative numbers and zero both map to 0 byte
-       :(byte)1;  // underflow is mapped to smallest non-zero number.
+      return (bits <= 0)
+          ? (byte) 0 // negative numbers and zero both map to 0 byte
+          : (byte) 1; // underflow is mapped to smallest non-zero number.
     } else if (smallfloat >= fzero + 0x100) {
-      return -1;  // overflow maps to largest number
+      return -1; // overflow maps to largest number
     } else {
-      return (byte)(smallfloat - fzero);
+      return (byte) (smallfloat - fzero);
     }
   }
 
@@ -58,11 +60,10 @@ public class SmallFloat {
     // on Java1.5 & 1.6 JVMs, prebuilding a decoding array and doing a lookup
     // is only a little bit faster (anywhere from 0% to 7%)
     if (b == 0) return 0.0f;
-    int bits = (b&0xff) << (24-numMantissaBits);
-    bits += (63-zeroExp) << 24;
+    int bits = (b & 0xff) << (24 - numMantissaBits);
+    bits += (63 - zeroExp) << 24;
     return Float.intBitsToFloat(bits);
   }
-
 
   //
   // Some specializations of the generic functions follow.
@@ -70,30 +71,31 @@ public class SmallFloat {
   // -server JVMs, but still slower with client JVMs.
   //
 
-  /** floatToByte(b, mantissaBits=3, zeroExponent=15)
-   * <br>smallest non-zero value = 5.820766E-10
-   * <br>largest value = 7.5161928E9
-   * <br>epsilon = 0.125
+  /**
+   * floatToByte(b, mantissaBits=3, zeroExponent=15) <br>
+   * smallest non-zero value = 5.820766E-10 <br>
+   * largest value = 7.5161928E9 <br>
+   * epsilon = 0.125
    */
   public static byte floatToByte315(float f) {
     int bits = Float.floatToRawIntBits(f);
-    int smallfloat = bits >> (24-3);
-    if (smallfloat <= ((63-15)<<3)) {
-      return (bits<=0) ? (byte)0 : (byte)1;
+    int smallfloat = bits >> (24 - 3);
+    if (smallfloat <= ((63 - 15) << 3)) {
+      return (bits <= 0) ? (byte) 0 : (byte) 1;
     }
-    if (smallfloat >= ((63-15)<<3) + 0x100) {
+    if (smallfloat >= ((63 - 15) << 3) + 0x100) {
       return -1;
     }
-    return (byte)(smallfloat - ((63-15)<<3));
- }
+    return (byte) (smallfloat - ((63 - 15) << 3));
+  }
 
   /** byteToFloat(b, mantissaBits=3, zeroExponent=15) */
   public static float byte315ToFloat(byte b) {
     // on Java1.5 & 1.6 JVMs, prebuilding a decoding array and doing a lookup
     // is only a little bit faster (anywhere from 0% to 7%)
     if (b == 0) return 0.0f;
-    int bits = (b&0xff) << (24-3);
-    bits += (63-15) << 24;
+    int bits = (b & 0xff) << (24 - 3);
+    bits += (63 - 15) << 24;
     return Float.intBitsToFloat(bits);
   }
 
@@ -119,9 +121,7 @@ public class SmallFloat {
     }
   }
 
-  /**
-   * Decode values encoded with {@link #longToInt4(long)}.
-   */
+  /** Decode values encoded with {@link #longToInt4(long)}. */
   public static final long int4ToLong(int i) {
     long bits = i & 0x07;
     int shift = (i >>> 3) - 1;
@@ -140,9 +140,9 @@ public class SmallFloat {
   private static final int NUM_FREE_VALUES = 255 - MAX_INT4;
 
   /**
-   * Encode an integer to a byte. It is built upon {@link #longToInt4(long)}
-   * and leverages the fact that {@code longToInt4(Integer.MAX_VALUE)} is
-   * less than 255 to encode low values more accurately.
+   * Encode an integer to a byte. It is built upon {@link #longToInt4(long)} and leverages the fact
+   * that {@code longToInt4(Integer.MAX_VALUE)} is less than 255 to encode low values more
+   * accurately.
    */
   public static byte intToByte4(int i) {
     if (i < 0) {
@@ -155,9 +155,7 @@ public class SmallFloat {
     }
   }
 
-  /**
-   * Decode values that have been encoded with {@link #intToByte4(int)}.
-   */
+  /** Decode values that have been encoded with {@link #intToByte4(int)}. */
   public static int byte4ToInt(byte b) {
     int i = Byte.toUnsignedInt(b);
     if (i < NUM_FREE_VALUES) {

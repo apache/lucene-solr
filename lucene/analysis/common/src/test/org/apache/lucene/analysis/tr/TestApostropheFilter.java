@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-
 
 public class TestApostropheFilter extends BaseTokenStreamTestCase {
 
@@ -27,6 +25,6 @@ public class TestApostropheFilter extends BaseTokenStreamTestCase {
     TokenStream stream = whitespaceMockTokenizer("Türkiye'de 2003'te Van Gölü'nü gördüm");
     stream = new TurkishLowerCaseFilter(stream);
     stream = new ApostropheFilter(stream);
-    assertTokenStreamContents(stream, new String[]{"türkiye", "2003", "van", "gölü", "gördüm"});
+    assertTokenStreamContents(stream, new String[] {"türkiye", "2003", "van", "gölü", "gördüm"});
   }
 }

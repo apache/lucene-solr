@@ -16,24 +16,21 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
-/** 
- * A {@code FilterScorer} contains another {@code Scorer}, which it
- * uses as its basic source of data, possibly transforming the data along the
- * way or providing additional functionality. The class
- * {@code FilterScorer} itself simply implements all abstract methods
- * of {@code Scorer} with versions that pass all requests to the
- * contained scorer. Subclasses of {@code FilterScorer} may
- * further override some of these methods and may also provide additional
- * methods and fields.
+/**
+ * A {@code FilterScorer} contains another {@code Scorer}, which it uses as its basic source of
+ * data, possibly transforming the data along the way or providing additional functionality. The
+ * class {@code FilterScorer} itself simply implements all abstract methods of {@code Scorer} with
+ * versions that pass all requests to the contained scorer. Subclasses of {@code FilterScorer} may
+ * further override some of these methods and may also provide additional methods and fields.
  */
 public abstract class FilterScorer extends Scorer {
   protected final Scorer in;
 
   /**
    * Create a new FilterScorer
+   *
    * @param in the {@link Scorer} to wrap
    */
   public FilterScorer(Scorer in) {
@@ -43,6 +40,7 @@ public abstract class FilterScorer extends Scorer {
 
   /**
    * Create a new FilterScorer with a specific weight
+   *
    * @param in the {@link Scorer} to wrap
    * @param weight a {@link Weight}
    */
@@ -53,7 +51,7 @@ public abstract class FilterScorer extends Scorer {
     }
     this.in = in;
   }
-  
+
   @Override
   public float score() throws IOException {
     return in.score();
@@ -71,7 +69,7 @@ public abstract class FilterScorer extends Scorer {
   public final DocIdSetIterator iterator() {
     return in.iterator();
   }
-  
+
   @Override
   public final TwoPhaseIterator twoPhaseIterator() {
     return in.twoPhaseIterator();

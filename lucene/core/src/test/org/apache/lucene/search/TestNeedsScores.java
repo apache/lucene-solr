@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -35,7 +33,7 @@ public class TestNeedsScores extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   IndexSearcher searcher;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -63,44 +61,48 @@ public class TestNeedsScores extends LuceneTestCase {
     Query prohibited = new TermQuery(new Term("field", "3"));
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new AssertNeedsScores(required, ScoreMode.TOP_SCORES), BooleanClause.Occur.MUST);
-    bq.add(new AssertNeedsScores(prohibited, ScoreMode.COMPLETE_NO_SCORES), BooleanClause.Occur.MUST_NOT);
+    bq.add(
+        new AssertNeedsScores(prohibited, ScoreMode.COMPLETE_NO_SCORES),
+        BooleanClause.Occur.MUST_NOT);
     assertEquals(4, searcher.search(bq.build(), 5).totalHits.value); // we exclude 3
   }
-  
+
   /** nested inside constant score query */
   public void testConstantScoreQuery() throws Exception {
     Query term = new TermQuery(new Term("field", "this"));
-    Query constantScore = new ConstantScoreQuery(new AssertNeedsScores(term, ScoreMode.COMPLETE_NO_SCORES));
+    Query constantScore =
+        new ConstantScoreQuery(new AssertNeedsScores(term, ScoreMode.COMPLETE_NO_SCORES));
     assertEquals(5, searcher.search(constantScore, 5).totalHits.value);
   }
-  
+
   /** when not sorting by score */
   public void testSortByField() throws Exception {
     Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.TOP_DOCS);
     assertEquals(5, searcher.search(query, 5, Sort.INDEXORDER).totalHits.value);
   }
-  
+
   /** when sorting by score */
   public void testSortByScore() throws Exception {
     Query query = new AssertNeedsScores(new MatchAllDocsQuery(), ScoreMode.TOP_SCORES);
     assertEquals(5, searcher.search(query, 5, Sort.RELEVANCE).totalHits.value);
   }
 
-  /** 
-   * Wraps a query, checking that the needsScores param 
-   * passed to Weight.scorer is the expected value.
+  /**
+   * Wraps a query, checking that the needsScores param passed to Weight.scorer is the expected
+   * value.
    */
   static class AssertNeedsScores extends Query {
     final Query in;
     final ScoreMode value;
-    
+
     AssertNeedsScores(Query in, ScoreMode value) {
       this.in = Objects.requireNonNull(in);
       this.value = value;
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       final Weight w = in.createWeight(searcher, scoreMode, boost);
       return new FilterWeight(w) {
         @Override
@@ -137,13 +139,11 @@ public class TestNeedsScores extends LuceneTestCase {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
-    
+
     private boolean equalsTo(AssertNeedsScores other) {
-      return in.equals(other.in) && 
-             value == other.value;
+      return in.equals(other.in) && value == other.value;
     }
 
     @Override

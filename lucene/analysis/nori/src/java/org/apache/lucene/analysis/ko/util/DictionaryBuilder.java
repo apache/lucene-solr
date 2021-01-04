@@ -20,28 +20,21 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/**
- * Tool to build dictionaries.
- */
+/** Tool to build dictionaries. */
 public class DictionaryBuilder {
 
-  private DictionaryBuilder() {
-  }
+  private DictionaryBuilder() {}
 
-  public static void build(Path inputDir, Path outputDir, String encoding, boolean normalizeEntry) throws IOException {
+  public static void build(Path inputDir, Path outputDir, String encoding, boolean normalizeEntry)
+      throws IOException {
     // Build TokenInfo Dictionary
-    new TokenInfoDictionaryBuilder(encoding, normalizeEntry)
-        .build(inputDir)
-        .write(outputDir);
+    new TokenInfoDictionaryBuilder(encoding, normalizeEntry).build(inputDir).write(outputDir);
 
     // Build Unknown Word Dictionary
-    new UnknownDictionaryBuilder(encoding)
-        .build(inputDir)
-        .write(outputDir);
+    new UnknownDictionaryBuilder(encoding).build(inputDir).write(outputDir);
 
     // Build Connection Cost
-    ConnectionCostsBuilder.build(inputDir.resolve("matrix.def"))
-        .write(outputDir);
+    ConnectionCostsBuilder.build(inputDir.resolve("matrix.def")).write(outputDir);
   }
 
   public static void main(String[] args) throws IOException {
@@ -49,6 +42,7 @@ public class DictionaryBuilder {
     String outputDirname = args[1];
     String inputEncoding = args[2];
     boolean normalizeEntries = Boolean.parseBoolean(args[3]);
-    DictionaryBuilder.build(Paths.get(inputDirname), Paths.get(outputDirname), inputEncoding, normalizeEntries);
+    DictionaryBuilder.build(
+        Paths.get(inputDirname), Paths.get(outputDirname), inputEncoding, normalizeEntries);
   }
 }

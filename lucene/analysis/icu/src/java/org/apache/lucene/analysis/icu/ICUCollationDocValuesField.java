@@ -16,40 +16,37 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
+import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.RawCollationKey;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.util.BytesRef;
 
-import com.ibm.icu.text.Collator;
-import com.ibm.icu.text.RawCollationKey;
-
 /**
  * Indexes collation keys as a single-valued {@link SortedDocValuesField}.
- * <p>
- * This is more efficient that {@link ICUCollationKeyAnalyzer} if the field 
- * only has one value: no uninversion is necessary to sort on the field, 
- * locale-sensitive range queries can still work via {@code DocValuesRangeQuery}, 
- * and the underlying data structures built at index-time are likely more efficient 
- * and use less memory than FieldCache.
+ *
+ * <p>This is more efficient that {@link ICUCollationKeyAnalyzer} if the field only has one value:
+ * no uninversion is necessary to sort on the field, locale-sensitive range queries can still work
+ * via {@code DocValuesRangeQuery}, and the underlying data structures built at index-time are
+ * likely more efficient and use less memory than FieldCache.
  */
 public final class ICUCollationDocValuesField extends Field {
   private final String name;
   private final Collator collator;
   private final BytesRef bytes = new BytesRef();
   private final RawCollationKey key = new RawCollationKey();
-  
+
   /**
    * Create a new ICUCollationDocValuesField.
-   * <p>
-   * NOTE: you should not create a new one for each document, instead
-   * just make one and reuse it during your indexing process, setting
-   * the value via {@link #setStringValue(String)}.
+   *
+   * <p>NOTE: you should not create a new one for each document, instead just make one and reuse it
+   * during your indexing process, setting the value via {@link #setStringValue(String)}.
+   *
    * @param name field name
    * @param collator Collator for generating collation keys.
    */
   // TODO: can we make this trap-free? maybe just synchronize on the collator
-  // instead? 
+  // instead?
   public ICUCollationDocValuesField(String name, Collator collator) {
     super(name, SortedDocValuesField.TYPE);
     this.name = name;
@@ -65,7 +62,7 @@ public final class ICUCollationDocValuesField extends Field {
   public String name() {
     return name;
   }
-  
+
   @Override
   public void setStringValue(String value) {
     collator.getRawCollationKey(value, key);

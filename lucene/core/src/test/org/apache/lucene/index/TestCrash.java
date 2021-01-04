@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,26 +32,33 @@ public class TestCrash extends LuceneTestCase {
     return initIndex(random, newMockDirectory(random, NoLockFactory.INSTANCE), initialCommit, true);
   }
 
-  private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit, boolean commitOnClose) throws IOException {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
-        .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()).setCommitOnClose(commitOnClose));
+  private IndexWriter initIndex(
+      Random random, MockDirectoryWrapper dir, boolean initialCommit, boolean commitOnClose)
+      throws IOException {
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random))
+                .setMaxBufferedDocs(10)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setCommitOnClose(commitOnClose));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     if (initialCommit) {
       writer.commit();
     }
-    
+
     Document doc = new Document();
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(newTextField("id", "0", Field.Store.NO));
-    for(int i=0;i<157;i++)
-      writer.addDocument(doc);
+    for (int i = 0; i < 157; i++) writer.addDocument(doc);
 
     return writer;
   }
 
   private void crash(final IndexWriter writer) throws IOException {
     final MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
-    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
+    ConcurrentMergeScheduler cms =
+        (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
     cms.sync();
     dir.crash();
     cms.sync();
@@ -162,7 +167,7 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashAfterClose() throws IOException {
-    
+
     IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 

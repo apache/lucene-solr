@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.BytesRef;
 
 /**
- * This attribute can be used if you have the raw term bytes to be indexed.
- * It can be used as replacement for {@link CharTermAttribute}, if binary
- * terms should be indexed.
+ * This attribute can be used if you have the raw term bytes to be indexed. It can be used as
+ * replacement for {@link CharTermAttribute}, if binary terms should be indexed.
+ *
  * @lucene.internal
  */
 public interface BytesTermAttribute extends TermToBytesRefAttribute {

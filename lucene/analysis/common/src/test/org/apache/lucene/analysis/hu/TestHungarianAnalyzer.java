@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.hu;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new HungarianAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new HungarianAnalyzer();
@@ -40,17 +37,16 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "által", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("babakocsi"), false);
-    Analyzer a = new HungarianAnalyzer( 
-        HungarianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("babakocsi"), false);
+    Analyzer a = new HungarianAnalyzer(HungarianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "babakocsi", "babakocsi");
     checkOneTerm(a, "babakocsijáért", "babakocs");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new HungarianAnalyzer();

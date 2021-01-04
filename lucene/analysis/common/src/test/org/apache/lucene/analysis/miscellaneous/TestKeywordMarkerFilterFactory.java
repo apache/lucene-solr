@@ -16,86 +16,110 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 
-/**
- * Simple tests to ensure the keyword marker filter factory is working.
- */
+/** Simple tests to ensure the keyword marker filter factory is working. */
 public class TestKeywordMarkerFilterFactory extends BaseTokenStreamFactoryTestCase {
-  
+
   public void testKeywords() throws Exception {
     Reader reader = new StringReader("dogs cats");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker", Version.LATEST,
-        new StringMockResourceLoader("cats"),
-        "protected", "protwords.txt").create(stream);
+    stream =
+        tokenFilterFactory(
+                "KeywordMarker",
+                Version.LATEST,
+                new StringMockResourceLoader("cats"),
+                "protected",
+                "protwords.txt")
+            .create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dog", "cats" });
+    assertTokenStreamContents(stream, new String[] {"dog", "cats"});
   }
-  
+
   public void testKeywords2() throws Exception {
     Reader reader = new StringReader("dogs cats");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker",
-        "pattern", "cats|Dogs").create(stream);
+    stream = tokenFilterFactory("KeywordMarker", "pattern", "cats|Dogs").create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dog", "cats" });
+    assertTokenStreamContents(stream, new String[] {"dog", "cats"});
   }
-  
+
   public void testKeywordsMixed() throws Exception {
     Reader reader = new StringReader("dogs cats birds");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker", Version.LATEST, new StringMockResourceLoader("cats"),
-        "protected", "protwords.txt",
-        "pattern", "birds|Dogs").create(stream);
+    stream =
+        tokenFilterFactory(
+                "KeywordMarker",
+                Version.LATEST,
+                new StringMockResourceLoader("cats"),
+                "protected",
+                "protwords.txt",
+                "pattern",
+                "birds|Dogs")
+            .create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dog", "cats", "birds" });
+    assertTokenStreamContents(stream, new String[] {"dog", "cats", "birds"});
   }
-  
+
   public void testKeywordsCaseInsensitive() throws Exception {
     Reader reader = new StringReader("dogs cats Cats");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker", Version.LATEST, new StringMockResourceLoader("cats"),
-        "protected", "protwords.txt",
-        "ignoreCase", "true").create(stream);
+    stream =
+        tokenFilterFactory(
+                "KeywordMarker",
+                Version.LATEST,
+                new StringMockResourceLoader("cats"),
+                "protected",
+                "protwords.txt",
+                "ignoreCase",
+                "true")
+            .create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dog", "cats", "Cats" });
+    assertTokenStreamContents(stream, new String[] {"dog", "cats", "Cats"});
   }
-  
+
   public void testKeywordsCaseInsensitive2() throws Exception {
     Reader reader = new StringReader("dogs cats Cats");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker",
-        "pattern", "Cats",
-        "ignoreCase", "true").create(stream);
-    stream = tokenFilterFactory("PorterStem").create(stream);;
-    assertTokenStreamContents(stream, new String[] { "dog", "cats", "Cats" });
+    stream =
+        tokenFilterFactory("KeywordMarker", "pattern", "Cats", "ignoreCase", "true").create(stream);
+    stream = tokenFilterFactory("PorterStem").create(stream);
+    ;
+    assertTokenStreamContents(stream, new String[] {"dog", "cats", "Cats"});
   }
-  
+
   public void testKeywordsCaseInsensitiveMixed() throws Exception {
     Reader reader = new StringReader("dogs cats Cats Birds birds");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("KeywordMarker", Version.LATEST,
-        new StringMockResourceLoader("cats"),
-        "protected", "protwords.txt",
-        "pattern", "birds",
-        "ignoreCase", "true").create(stream);
+    stream =
+        tokenFilterFactory(
+                "KeywordMarker",
+                Version.LATEST,
+                new StringMockResourceLoader("cats"),
+                "protected",
+                "protwords.txt",
+                "pattern",
+                "birds",
+                "ignoreCase",
+                "true")
+            .create(stream);
     stream = tokenFilterFactory("PorterStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dog", "cats", "Cats", "Birds", "birds" });
+    assertTokenStreamContents(stream, new String[] {"dog", "cats", "Cats", "Birds", "birds"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("KeywordMarker", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("KeywordMarker", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

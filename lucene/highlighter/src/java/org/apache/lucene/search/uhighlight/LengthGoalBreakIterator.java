@@ -21,11 +21,12 @@ import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
 /**
- * Wraps another {@link BreakIterator} to skip past breaks that would result in passages that are too
- * short.  It's still possible to get a short passage but only at the very end of the input text.
- * <p>
- * Important: This is not a general purpose {@link BreakIterator}; it's only designed to work in a way
- * compatible with the {@link UnifiedHighlighter}.  Some assumptions are checked with Java assertions.
+ * Wraps another {@link BreakIterator} to skip past breaks that would result in passages that are
+ * too short. It's still possible to get a short passage but only at the very end of the input text.
+ *
+ * <p>Important: This is not a general purpose {@link BreakIterator}; it's only designed to work in
+ * a way compatible with the {@link UnifiedHighlighter}. Some assumptions are checked with Java
+ * assertions.
  *
  * @lucene.experimental
  */
@@ -33,42 +34,56 @@ public class LengthGoalBreakIterator extends BreakIterator {
 
   private final BreakIterator baseIter;
   private final int lengthGoal;
-  private final float fragmentAlignment; // how much text to align before match-fragment, valid in range [0, 1]
-  private final boolean isMinimumLength; // if false then is "closest to" length
+  // how much text to align before match-fragment, valid in range [0, 1]
+  private final float fragmentAlignment;
+  // if false then is "closest to" length
+  private final boolean isMinimumLength;
   private int currentCache;
 
   /**
-   * Breaks will be at least {@code minLength} apart (to the extent possible),
-   * while trying to position the match inside the fragment according to {@code fragmentAlignment}.
+   * Breaks will be at least {@code minLength} apart (to the extent possible), while trying to
+   * position the match inside the fragment according to {@code fragmentAlignment}.
    */
-  public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength,
-                                                        float fragmentAlignment) {
-    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment, true, baseIter.current());
+  public static LengthGoalBreakIterator createMinLength(
+      BreakIterator baseIter, int minLength, float fragmentAlignment) {
+    return new LengthGoalBreakIterator(
+        baseIter, minLength, fragmentAlignment, true, baseIter.current());
   }
 
-  /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  /**
+   * For backwards compatibility you can initialise the break iterator without fragmentAlignment.
+   */
   @Deprecated
   public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength) {
     return createMinLength(baseIter, minLength, 0.f);
   }
 
   /**
-   * Breaks will be on average {@code targetLength} apart; the closest break to this target (before or after)
-   * is chosen. The match will be positioned according to {@code fragmentAlignment} as much as possible.
+   * Breaks will be on average {@code targetLength} apart; the closest break to this target (before
+   * or after) is chosen. The match will be positioned according to {@code fragmentAlignment} as
+   * much as possible.
    */
-  public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength,
-                                                              float fragmentAlignment) {
-    return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false, baseIter.current());
+  public static LengthGoalBreakIterator createClosestToLength(
+      BreakIterator baseIter, int targetLength, float fragmentAlignment) {
+    return new LengthGoalBreakIterator(
+        baseIter, targetLength, fragmentAlignment, false, baseIter.current());
   }
 
-  /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  /**
+   * For backwards compatibility you can initialise the break iterator without fragmentAlignment.
+   */
   @Deprecated
-  public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength) {
+  public static LengthGoalBreakIterator createClosestToLength(
+      BreakIterator baseIter, int targetLength) {
     return createClosestToLength(baseIter, targetLength, 0.f);
   }
 
-  private LengthGoalBreakIterator(BreakIterator baseIter, int lengthGoal, float fragmentAlignment,
-                                  boolean isMinimumLength, int currentCache) {
+  private LengthGoalBreakIterator(
+      BreakIterator baseIter,
+      int lengthGoal,
+      float fragmentAlignment,
+      boolean isMinimumLength,
+      int currentCache) {
     this.baseIter = baseIter;
     this.currentCache = currentCache;
     this.lengthGoal = lengthGoal;
@@ -87,15 +102,26 @@ public class LengthGoalBreakIterator extends BreakIterator {
   @Override
   public String toString() {
     String goalDesc = isMinimumLength ? "minLen" : "targetLen";
-    return getClass().getSimpleName() + "{" + goalDesc + "=" + lengthGoal + ", fragAlign=" + fragmentAlignment +
-        ", baseIter=" + baseIter + "}";
+    return getClass().getSimpleName()
+        + "{"
+        + goalDesc
+        + "="
+        + lengthGoal
+        + ", fragAlign="
+        + fragmentAlignment
+        + ", baseIter="
+        + baseIter
+        + "}";
   }
 
   @Override
   public Object clone() {
     return new LengthGoalBreakIterator(
-        (BreakIterator) baseIter.clone(), lengthGoal, fragmentAlignment, isMinimumLength, currentCache
-    );
+        (BreakIterator) baseIter.clone(),
+        lengthGoal,
+        fragmentAlignment,
+        isMinimumLength,
+        currentCache);
   }
 
   @Override
@@ -150,7 +176,8 @@ public class LengthGoalBreakIterator extends BreakIterator {
 
   @Override
   public int following(int matchEndIndex) {
-    return following(matchEndIndex, (matchEndIndex + 1) + (int)(lengthGoal * (1.f - fragmentAlignment)));
+    return following(
+        matchEndIndex, (matchEndIndex + 1) + (int) (lengthGoal * (1.f - fragmentAlignment)));
   }
 
   private int following(int matchEndIndex, int targetIdx) {
@@ -185,7 +212,7 @@ public class LengthGoalBreakIterator extends BreakIterator {
   // called at start of new Passage given first word start offset
   @Override
   public int preceding(int matchStartIndex) {
-    final int targetIdx = (matchStartIndex - 1) - (int)(lengthGoal * fragmentAlignment);
+    final int targetIdx = (matchStartIndex - 1) - (int) (lengthGoal * fragmentAlignment);
     if (targetIdx <= 0) {
       if (currentCache == baseIter.first()) {
         return DONE;

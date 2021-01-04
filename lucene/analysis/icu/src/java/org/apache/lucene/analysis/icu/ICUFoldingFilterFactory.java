@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
-import java.util.Map;
-
 import com.ibm.icu.text.FilteredNormalizer2;
 import com.ibm.icu.text.Normalizer2;
 import com.ibm.icu.text.UnicodeSet;
-import org.apache.lucene.analysis.TokenStream;
+import java.util.Map;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link ICUFoldingFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_folded" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -34,6 +33,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.ICUFoldingFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -45,7 +45,7 @@ public class ICUFoldingFilterFactory extends TokenFilterFactory {
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUFoldingFilterFactory */
-  public ICUFoldingFilterFactory(Map<String,String> args) {
+  public ICUFoldingFilterFactory(Map<String, String> args) {
     super(args);
 
     Normalizer2 normalizer = ICUFoldingFilter.NORMALIZER;

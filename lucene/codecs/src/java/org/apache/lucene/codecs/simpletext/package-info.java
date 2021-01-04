@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Simpletext Codec: writes human readable postings.
- */
+/** Simpletext Codec: writes human readable postings. */
 package org.apache.lucene.codecs.simpletext;

@@ -17,12 +17,13 @@
 
 package org.apache.lucene.index;
 
+import static org.apache.lucene.index.VectorValues.SearchStrategy.NONE;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,8 +38,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
-import static org.apache.lucene.index.VectorValues.SearchStrategy.NONE;
-
 public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   @Override
@@ -48,24 +47,27 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testHardDeleteSoftDeleted() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
-        .setSoftDeletesField("_soft_deletes")
-        // make sure all docs will end up in the same segment
-        .setMaxBufferedDocs(10)
-        .setMergePolicy(NoMergePolicy.INSTANCE)
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                .setSoftDeletesField("_soft_deletes")
+                // make sure all docs will end up in the same segment
+                .setMaxBufferedDocs(10)
+                .setMergePolicy(NoMergePolicy.INSTANCE)
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
@@ -88,24 +90,27 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testDeleteSoft() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
-        .setSoftDeletesField("_soft_deletes")
-        // make sure all docs will end up in the same segment
-        .setMaxBufferedDocs(10)
-        .setMergePolicy(NoMergePolicy.INSTANCE)
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                .setSoftDeletesField("_soft_deletes")
+                // make sure all docs will end up in the same segment
+                .setMaxBufferedDocs(10)
+                .setMergePolicy(NoMergePolicy.INSTANCE)
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
@@ -150,9 +155,21 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testApplyUpdates() throws IOException {
     Directory dir = new ByteBuffersDirectory();
-    SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "test", 10, false, Codec.getDefault(),
-        Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
-    SegmentCommitInfo commitInfo = new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
+    SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "test",
+            10,
+            false,
+            Codec.getDefault(),
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            null);
+    SegmentCommitInfo commitInfo =
+        new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
     for (int i = 0; i < si.maxDoc(); i++) {
       writer.addDocument(new Document());
@@ -166,7 +183,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     deletes.onNewReader(segmentReader, commitInfo);
     reader.close();
     writer.close();
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
+    FieldInfo fieldInfo =
+        new FieldInfo(
+            "_soft_deletes",
+            1,
+            false,
+            false,
+            false,
+            IndexOptions.NONE,
+            DocValuesType.NUMERIC,
+            0,
+            Collections.emptyMap(),
+            0,
+            0,
+            0,
+            0,
+            NONE,
+            true);
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
     for (DocValuesFieldUpdates update : updates) {
@@ -187,7 +220,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
     docsDeleted = Arrays.asList(1, 2, DocIdSetIterator.NO_MORE_DOCS);
     updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
-    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
+    fieldInfo =
+        new FieldInfo(
+            "_soft_deletes",
+            1,
+            false,
+            false,
+            false,
+            IndexOptions.NONE,
+            DocValuesType.NUMERIC,
+            1,
+            Collections.emptyMap(),
+            0,
+            0,
+            0,
+            0,
+            NONE,
+            true);
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
@@ -207,22 +256,25 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testUpdateAppliedOnlyOnce() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
-        .setSoftDeletesField("_soft_deletes")
-        .setMaxBufferedDocs(3) // make sure we write one segment
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                .setSoftDeletesField("_soft_deletes")
+                .setMaxBufferedDocs(3) // make sure we write one segment
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
@@ -230,7 +282,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
     PendingDeletes deletes = newPendingDeletes(segmentInfo);
     deletes.onNewReader(segmentReader, segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
+    FieldInfo fieldInfo =
+        new FieldInfo(
+            "_soft_deletes",
+            1,
+            false,
+            false,
+            false,
+            IndexOptions.NONE,
+            DocValuesType.NUMERIC,
+            segmentInfo.getNextDocValuesGen(),
+            Collections.emptyMap(),
+            0,
+            0,
+            0,
+            0,
+            NONE,
+            true);
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3, true));
     for (DocValuesFieldUpdates update : updates) {
@@ -255,22 +323,25 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   public void testResetOnUpdate() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig()
-        .setSoftDeletesField("_soft_deletes")
-        .setMaxBufferedDocs(3) // make sure we write one segment
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                .setSoftDeletesField("_soft_deletes")
+                .setMaxBufferedDocs(3) // make sure we write one segment
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     doc = new Document();
     doc.add(new StringField("id", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "2"), doc,
-        new NumericDocValuesField("_soft_deletes", 1));
+    writer.softUpdateDocument(
+        new Term("id", "2"), doc, new NumericDocValuesField("_soft_deletes", 1));
     writer.commit();
     DirectoryReader reader = DirectoryReader.open(dir);
     assertEquals(1, reader.leaves().size());
@@ -278,8 +349,25 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
     PendingDeletes deletes = newPendingDeletes(segmentInfo);
     deletes.onNewReader(segmentReader, segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
-    List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(Arrays.asList(0, 1, DocIdSetIterator.NO_MORE_DOCS), 3, false));
+    FieldInfo fieldInfo =
+        new FieldInfo(
+            "_soft_deletes",
+            1,
+            false,
+            false,
+            false,
+            IndexOptions.NONE,
+            DocValuesType.NUMERIC,
+            segmentInfo.getNextDocValuesGen(),
+            Collections.emptyMap(),
+            0,
+            0,
+            0,
+            0,
+            NONE,
+            true);
+    List<DocValuesFieldUpdates> updates =
+        Arrays.asList(singleUpdate(Arrays.asList(0, 1, DocIdSetIterator.NO_MORE_DOCS), 3, false));
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
@@ -297,7 +385,23 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertEquals(0, deletes.numPendingDeletes());
 
     segmentInfo.advanceDocValuesGen();
-    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
+    fieldInfo =
+        new FieldInfo(
+            "_soft_deletes",
+            1,
+            false,
+            false,
+            false,
+            IndexOptions.NONE,
+            DocValuesType.NUMERIC,
+            segmentInfo.getNextDocValuesGen(),
+            Collections.emptyMap(),
+            0,
+            0,
+            0,
+            0,
+            NONE,
+            true);
     updates = Arrays.asList(singleUpdate(Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS), 3, true));
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
@@ -310,10 +414,10 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertEquals(0, deletes.numPendingDeletes());
     assertEquals(1, deletes.getDelCount());
     IOUtils.close(reader, writer, dir);
-
   }
 
-  private DocValuesFieldUpdates singleUpdate(List<Integer> docsChanged, int maxDoc, boolean hasValue) {
+  private DocValuesFieldUpdates singleUpdate(
+      List<Integer> docsChanged, int maxDoc, boolean hasValue) {
     return new DocValuesFieldUpdates(maxDoc, 0, "_soft_deletes", DocValuesType.NUMERIC) {
       @Override
       public void add(int doc, long value) {

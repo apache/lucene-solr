@@ -16,19 +16,17 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * {@link BulkScorer} that is used for pure disjunctions and disjunctions
- * that have low values of {@link BooleanQuery.Builder#setMinimumNumberShouldMatch(int)}
- * and dense clauses. This scorer scores documents by batches of 2048 docs.
+ * {@link BulkScorer} that is used for pure disjunctions and disjunctions that have low values of
+ * {@link BooleanQuery.Builder#setMinimumNumberShouldMatch(int)} and dense clauses. This scorer
+ * scores documents by batches of 2048 docs.
  */
 final class BooleanScorer extends BulkScorer {
 
@@ -65,12 +63,13 @@ final class BooleanScorer extends BulkScorer {
 
   // See MinShouldMatchSumScorer for an explanation
   private static long cost(Collection<BulkScorer> scorers, int minShouldMatch) {
-    final PriorityQueue<BulkScorer> pq = new PriorityQueue<BulkScorer>(scorers.size() - minShouldMatch + 1) {
-      @Override
-      protected boolean lessThan(BulkScorer a, BulkScorer b) {
-        return a.cost() > b.cost();
-      }
-    };
+    final PriorityQueue<BulkScorer> pq =
+        new PriorityQueue<BulkScorer>(scorers.size() - minShouldMatch + 1) {
+          @Override
+          protected boolean lessThan(BulkScorer a, BulkScorer b) {
+            return a.cost() > b.cost();
+          }
+        };
     for (BulkScorer scorer : scorers) {
       pq.insertWithOverflow(scorer);
     }
@@ -91,7 +90,6 @@ final class BooleanScorer extends BulkScorer {
     protected boolean lessThan(BulkScorerAndDoc a, BulkScorerAndDoc b) {
       return a.next < b.next;
     }
-
   }
 
   static final class TailPriorityQueue extends PriorityQueue<BulkScorerAndDoc> {
@@ -109,7 +107,6 @@ final class BooleanScorer extends BulkScorer {
       Objects.checkIndex(i, size());
       return (BulkScorerAndDoc) getHeapArray()[1 + i];
     }
-
   }
 
   final Bucket[] buckets = new Bucket[SIZE];
@@ -144,12 +141,18 @@ final class BooleanScorer extends BulkScorer {
 
   final OrCollector orCollector = new OrCollector();
 
-  BooleanScorer(BooleanWeight weight, Collection<BulkScorer> scorers, int minShouldMatch, boolean needsScores) {
+  BooleanScorer(
+      BooleanWeight weight,
+      Collection<BulkScorer> scorers,
+      int minShouldMatch,
+      boolean needsScores) {
     if (minShouldMatch < 1 || minShouldMatch > scorers.size()) {
-      throw new IllegalArgumentException("minShouldMatch should be within 1..num_scorers. Got " + minShouldMatch);
+      throw new IllegalArgumentException(
+          "minShouldMatch should be within 1..num_scorers. Got " + minShouldMatch);
     }
     if (scorers.size() <= 1) {
-      throw new IllegalArgumentException("This scorer can only be used with two scorers or more, got " + scorers.size());
+      throw new IllegalArgumentException(
+          "This scorer can only be used with two scorers or more, got " + scorers.size());
     }
     for (int i = 0; i < buckets.length; i++) {
       buckets[i] = new Bucket();
@@ -203,8 +206,15 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private void scoreWindowIntoBitSetAndReplay(LeafCollector collector, Bits acceptDocs,
-      int base, int min, int max, BulkScorerAndDoc[] scorers, int numScorers) throws IOException {
+  private void scoreWindowIntoBitSetAndReplay(
+      LeafCollector collector,
+      Bits acceptDocs,
+      int base,
+      int min,
+      int max,
+      BulkScorerAndDoc[] scorers,
+      int numScorers)
+      throws IOException {
     for (int i = 0; i < numScorers; ++i) {
       final BulkScorerAndDoc scorer = scorers[i];
       assert scorer.next < max;
@@ -236,7 +246,14 @@ final class BooleanScorer extends BulkScorer {
     return headTop;
   }
 
-  private void scoreWindowMultipleScorers(LeafCollector collector, Bits acceptDocs, int windowBase, int windowMin, int windowMax, int maxFreq) throws IOException {
+  private void scoreWindowMultipleScorers(
+      LeafCollector collector,
+      Bits acceptDocs,
+      int windowBase,
+      int windowMin,
+      int windowMax,
+      int maxFreq)
+      throws IOException {
     while (maxFreq < minShouldMatch && maxFreq + tail.size() >= minShouldMatch) {
       // a match is still possible
       final BulkScorerAndDoc candidate = tail.pop();
@@ -255,7 +272,8 @@ final class BooleanScorer extends BulkScorer {
       }
       tail.clear();
 
-      scoreWindowIntoBitSetAndReplay(collector, acceptDocs, windowBase, windowMin, windowMax, leads, maxFreq);
+      scoreWindowIntoBitSetAndReplay(
+          collector, acceptDocs, windowBase, windowMin, windowMax, leads, maxFreq);
     }
 
     // Push back scorers into head and tail
@@ -267,8 +285,14 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  private void scoreWindowSingleScorer(BulkScorerAndDoc bulkScorer, LeafCollector collector,
-      Bits acceptDocs, int windowMin, int windowMax, int max) throws IOException {
+  private void scoreWindowSingleScorer(
+      BulkScorerAndDoc bulkScorer,
+      LeafCollector collector,
+      Bits acceptDocs,
+      int windowMin,
+      int windowMax,
+      int max)
+      throws IOException {
     assert tail.size() == 0;
     final int nextWindowBase = head.top().next & ~MASK;
     final int end = Math.max(windowMax, Math.min(max, nextWindowBase));
@@ -279,8 +303,9 @@ final class BooleanScorer extends BulkScorer {
     collector.setScorer(scoreAndDoc);
   }
 
-  private BulkScorerAndDoc scoreWindow(BulkScorerAndDoc top, LeafCollector collector,
-      Bits acceptDocs, int min, int max) throws IOException {
+  private BulkScorerAndDoc scoreWindow(
+      BulkScorerAndDoc top, LeafCollector collector, Bits acceptDocs, int min, int max)
+      throws IOException {
     final int windowBase = top.next & ~MASK; // find the window that the next match belongs to
     final int windowMin = Math.max(min, windowBase);
     final int windowMax = Math.min(max, windowBase + SIZE);
@@ -317,5 +342,4 @@ final class BooleanScorer extends BulkScorer {
 
     return top.next;
   }
-
 }

@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -45,9 +44,12 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
   private final boolean lowerInclusive;
   private final boolean upperInclusive;
 
-  SortedSetDocValuesRangeQuery(String field,
-      BytesRef lowerValue, BytesRef upperValue,
-      boolean lowerInclusive, boolean upperInclusive) {
+  SortedSetDocValuesRangeQuery(
+      String field,
+      BytesRef lowerValue,
+      BytesRef upperValue,
+      boolean lowerInclusive,
+      boolean upperInclusive) {
     this.field = Objects.requireNonNull(field);
     this.lowerValue = lowerValue;
     this.upperValue = upperValue;
@@ -92,8 +94,7 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
     if (this.field.equals(field) == false) {
       b.append(this.field).append(":");
     }
-    return b
-        .append(lowerInclusive ? "[" : "{")
+    return b.append(lowerInclusive ? "[" : "{")
         .append(lowerValue == null ? "*" : lowerValue)
         .append(" TO ")
         .append(upperValue == null ? "*" : upperValue)
@@ -112,7 +113,8 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
   abstract SortedSetDocValues getValues(LeafReader reader, String field) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -156,37 +158,41 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
         final SortedDocValues singleton = DocValues.unwrapSingleton(values);
         final TwoPhaseIterator iterator;
         if (singleton != null) {
-          iterator = new TwoPhaseIterator(singleton) {
-            @Override
-            public boolean matches() throws IOException {
-              final long ord = singleton.ordValue();
-              return ord >= minOrd && ord <= maxOrd;
-            }
-
-            @Override
-            public float matchCost() {
-              return 2; // 2 comparisons
-            }
-          };
-        } else {
-          iterator = new TwoPhaseIterator(values) {
-            @Override
-            public boolean matches() throws IOException {
-              for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-                if (ord < minOrd) {
-                  continue;
+          iterator =
+              new TwoPhaseIterator(singleton) {
+                @Override
+                public boolean matches() throws IOException {
+                  final long ord = singleton.ordValue();
+                  return ord >= minOrd && ord <= maxOrd;
                 }
-                // Values are sorted, so the first ord that is >= minOrd is our best candidate
-                return ord <= maxOrd;
-              }
-              return false; // all ords were < minOrd
-            }
 
-            @Override
-            public float matchCost() {
-              return 2; // 2 comparisons
-            }
-          };
+                @Override
+                public float matchCost() {
+                  return 2; // 2 comparisons
+                }
+              };
+        } else {
+          iterator =
+              new TwoPhaseIterator(values) {
+                @Override
+                public boolean matches() throws IOException {
+                  for (long ord = values.nextOrd();
+                      ord != SortedSetDocValues.NO_MORE_ORDS;
+                      ord = values.nextOrd()) {
+                    if (ord < minOrd) {
+                      continue;
+                    }
+                    // Values are sorted, so the first ord that is >= minOrd is our best candidate
+                    return ord <= maxOrd;
+                  }
+                  return false; // all ords were < minOrd
+                }
+
+                @Override
+                public float matchCost() {
+                  return 2; // 2 comparisons
+                }
+              };
         }
         return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
@@ -195,8 +201,6 @@ abstract class SortedSetDocValuesRangeQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
-
 }

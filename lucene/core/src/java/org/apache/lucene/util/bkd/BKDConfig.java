@@ -19,9 +19,7 @@ package org.apache.lucene.util.bkd;
 
 import org.apache.lucene.util.ArrayUtil;
 
-/**
- * Basic parameters for indexing points on the BKD tree.
- */
+/** Basic parameters for indexing points on the BKD tree. */
 public final class BKDConfig {
 
   /** Default maximum number of point in each leaf block */
@@ -54,7 +52,11 @@ public final class BKDConfig {
   /** packedBytesLength plus docID size */
   public final int bytesPerDoc;
 
-  public BKDConfig(final int numDims, final int numIndexDims, final int bytesPerDim, final int maxPointsInLeafNode) {
+  public BKDConfig(
+      final int numDims,
+      final int numIndexDims,
+      final int bytesPerDim,
+      final int maxPointsInLeafNode) {
     verifyParams(numDims, numIndexDims, bytesPerDim, maxPointsInLeafNode);
     this.numDims = numDims;
     this.numIndexDims = numIndexDims;
@@ -66,25 +68,37 @@ public final class BKDConfig {
     this.bytesPerDoc = this.packedBytesLength + Integer.BYTES;
   }
 
-  private static void verifyParams(final int numDims, final int numIndexDims, final int bytesPerDim, final int maxPointsInLeafNode) {
+  private static void verifyParams(
+      final int numDims,
+      final int numIndexDims,
+      final int bytesPerDim,
+      final int maxPointsInLeafNode) {
     // Check inputs are on bounds
     if (numDims < 1 || numDims > MAX_DIMS) {
-      throw new IllegalArgumentException("numDims must be 1 .. " + MAX_DIMS + " (got: " + numDims + ")");
+      throw new IllegalArgumentException(
+          "numDims must be 1 .. " + MAX_DIMS + " (got: " + numDims + ")");
     }
     if (numIndexDims < 1 || numIndexDims > MAX_INDEX_DIMS) {
-      throw new IllegalArgumentException("numIndexDims must be 1 .. " + MAX_INDEX_DIMS + " (got: " + numIndexDims + ")");
+      throw new IllegalArgumentException(
+          "numIndexDims must be 1 .. " + MAX_INDEX_DIMS + " (got: " + numIndexDims + ")");
     }
     if (numIndexDims > numDims) {
-      throw new IllegalArgumentException("numIndexDims cannot exceed numDims (" + numDims + ") (got: " + numIndexDims + ")");
+      throw new IllegalArgumentException(
+          "numIndexDims cannot exceed numDims (" + numDims + ") (got: " + numIndexDims + ")");
     }
     if (bytesPerDim <= 0) {
       throw new IllegalArgumentException("bytesPerDim must be > 0; got " + bytesPerDim);
     }
     if (maxPointsInLeafNode <= 0) {
-      throw new IllegalArgumentException("maxPointsInLeafNode must be > 0; got " + maxPointsInLeafNode);
+      throw new IllegalArgumentException(
+          "maxPointsInLeafNode must be > 0; got " + maxPointsInLeafNode);
     }
     if (maxPointsInLeafNode > ArrayUtil.MAX_ARRAY_LENGTH) {
-      throw new IllegalArgumentException("maxPointsInLeafNode must be <= ArrayUtil.MAX_ARRAY_LENGTH (= " + ArrayUtil.MAX_ARRAY_LENGTH + "); got " + maxPointsInLeafNode);
+      throw new IllegalArgumentException(
+          "maxPointsInLeafNode must be <= ArrayUtil.MAX_ARRAY_LENGTH (= "
+              + ArrayUtil.MAX_ARRAY_LENGTH
+              + "); got "
+              + maxPointsInLeafNode);
     }
   }
 }

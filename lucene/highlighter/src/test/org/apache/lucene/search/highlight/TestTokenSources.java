@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.search.highlight;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.io.IOException;
 import java.util.Arrays;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -54,9 +52,9 @@ import org.apache.lucene.util.TestUtil;
 
 // LUCENE-2874
 
-/** Tests {@link org.apache.lucene.search.highlight.TokenSources} and
- *  {@link org.apache.lucene.search.highlight.TokenStreamFromTermVector}
- * indirectly from that.
+/**
+ * Tests {@link org.apache.lucene.search.highlight.TokenSources} and {@link
+ * org.apache.lucene.search.highlight.TokenStreamFromTermVector} indirectly from that.
  */
 public class TestTokenSources extends BaseTokenStreamTestCase {
   private static final String FIELD = "text";
@@ -68,7 +66,8 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
 
     private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-    private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute positionIncrementAttribute =
+        addAttribute(PositionIncrementAttribute.class);
 
     @Override
     public boolean incrementToken() {
@@ -78,23 +77,23 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       }
       clearAttributes();
       termAttribute.setEmpty().append(this.tokens[i]);
-      offsetAttribute.setOffset(this.tokens[i].startOffset(),
-          this.tokens[i].endOffset());
-      positionIncrementAttribute.setPositionIncrement(this.tokens[i]
-          .getPositionIncrement());
+      offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i].endOffset());
+      positionIncrementAttribute.setPositionIncrement(this.tokens[i].getPositionIncrement());
       return true;
     }
 
     @Override
     public void reset() {
       this.i = -1;
-      this.tokens = new Token[] {
-          new Token("the", 0, 3),
-          new Token("{fox}", 0, 7),
-          new Token("fox", 4, 7),
-          new Token("did", 8, 11),
-          new Token("not", 12, 15),
-          new Token("jump", 16, 20)};
+      this.tokens =
+          new Token[] {
+            new Token("the", 0, 3),
+            new Token("{fox}", 0, 7),
+            new Token("fox", 4, 7),
+            new Token("did", 8, 11),
+            new Token("not", 12, 15),
+            new Token("jump", 16, 20)
+          };
       this.tokens[1].setPositionIncrement(0);
     }
   }
@@ -102,8 +101,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
   public void testOverlapWithOffset() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(null));
+    final IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -119,36 +117,34 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     assertEquals(1, indexReader.numDocs());
     final IndexSearcher indexSearcher = newSearcher(indexReader);
     try {
-      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(
-          Arrays.asList(
-              new SpanTermQuery(new Term(FIELD, "{fox}")),
-              new SpanTermQuery(new Term(FIELD, "fox"))),
-          1);
-        // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-        // new SpanTermQuery(new Term(FIELD, "{fox}")),
-        // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
+      final DisjunctionMaxQuery query =
+          new DisjunctionMaxQuery(
+              Arrays.asList(
+                  new SpanTermQuery(new Term(FIELD, "{fox}")),
+                  new SpanTermQuery(new Term(FIELD, "fox"))),
+              1);
+      // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
+      // new SpanTermQuery(new Term(FIELD, "{fox}")),
+      // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
 
       TopDocs hits = indexSearcher.search(query, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(query));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(query));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals("<B>the fox</B> did not jump",
-          highlighter.getBestFragment(tokenStream, TEXT));
+      assertEquals("<B>the fox</B> did not jump", highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
     }
   }
 
-  public void testOverlapWithPositionsAndOffset()
-      throws IOException, InvalidTokenOffsetsException {
+  public void testOverlapWithPositionsAndOffset() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(null));
+    final IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -164,36 +160,34 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     try {
       assertEquals(1, indexReader.numDocs());
       final IndexSearcher indexSearcher = newSearcher(indexReader);
-      final DisjunctionMaxQuery query = new DisjunctionMaxQuery(
-          Arrays.asList(
-              new SpanTermQuery(new Term(FIELD, "{fox}")),
-              new SpanTermQuery(new Term(FIELD, "fox"))),
-          1);
+      final DisjunctionMaxQuery query =
+          new DisjunctionMaxQuery(
+              Arrays.asList(
+                  new SpanTermQuery(new Term(FIELD, "{fox}")),
+                  new SpanTermQuery(new Term(FIELD, "fox"))),
+              1);
       // final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
       // new SpanTermQuery(new Term(FIELD, "{fox}")),
       // new SpanTermQuery(new Term(FIELD, "fox")) }, 0, true);
 
       TopDocs hits = indexSearcher.search(query, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(query));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(query));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals("<B>the fox</B> did not jump",
-          highlighter.getBestFragment(tokenStream, TEXT));
+      assertEquals("<B>the fox</B> did not jump", highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
     }
   }
 
-  public void testOverlapWithOffsetExactPhrase()
-      throws IOException, InvalidTokenOffsetsException {
+  public void testOverlapWithOffsetExactPhrase() throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(null));
+    final IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -212,19 +206,22 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
       // query.add(new SpanTermQuery(new Term(FIELD, "{fox}")));
       // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
-      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-          new SpanTermQuery(new Term(FIELD, "the")),
-          new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+      final Query phraseQuery =
+          new SpanNearQuery(
+              new SpanQuery[] {
+                new SpanTermQuery(new Term(FIELD, "the")), new SpanTermQuery(new Term(FIELD, "fox"))
+              },
+              0,
+              true);
 
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals("<B>the fox</B> did not jump",
-          highlighter.getBestFragment(tokenStream, TEXT));
+      assertEquals("<B>the fox</B> did not jump", highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -235,8 +232,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       throws IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(null));
+    final IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -255,19 +251,22 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       // final DisjunctionMaxQuery query = new DisjunctionMaxQuery(1);
       // query.add(new SpanTermQuery(new Term(FIELD, "the")));
       // query.add(new SpanTermQuery(new Term(FIELD, "fox")));
-      final Query phraseQuery = new SpanNearQuery(new SpanQuery[] {
-          new SpanTermQuery(new Term(FIELD, "the")),
-          new SpanTermQuery(new Term(FIELD, "fox"))}, 0, true);
+      final Query phraseQuery =
+          new SpanNearQuery(
+              new SpanQuery[] {
+                new SpanTermQuery(new Term(FIELD, "the")), new SpanTermQuery(new Term(FIELD, "fox"))
+              },
+              0,
+              true);
 
       TopDocs hits = indexSearcher.search(phraseQuery, 1);
       assertEquals(1, hits.totalHits.value);
-      final Highlighter highlighter = new Highlighter(
-          new SimpleHTMLFormatter(), new SimpleHTMLEncoder(),
-          new QueryScorer(phraseQuery));
+      final Highlighter highlighter =
+          new Highlighter(
+              new SimpleHTMLFormatter(), new SimpleHTMLEncoder(), new QueryScorer(phraseQuery));
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
-      assertEquals("<B>the fox</B> did not jump",
-          highlighter.getBestFragment(tokenStream, TEXT));
+      assertEquals("<B>the fox</B> did not jump", highlighter.getBestFragment(tokenStream, TEXT));
     } finally {
       indexReader.close();
       directory.close();
@@ -277,8 +276,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
   public void testTermVectorWithoutOffsetsDoesntWork()
       throws IOException, InvalidTokenOffsetsException {
     final Directory directory = newDirectory();
-    final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(null));
+    final IndexWriter indexWriter = new IndexWriter(directory, newIndexWriterConfig(null));
     try {
       final Document document = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -296,8 +294,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       final TokenStream tokenStream =
           TokenSources.getTermVectorTokenStreamOrNull(FIELD, indexReader.getTermVectors(0), -1);
       assertNull(tokenStream);
-    }
-    finally {
+    } finally {
       indexReader.close();
       directory.close();
     }
@@ -305,10 +302,12 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
 
   int curOffset;
 
-  /** Just make a token with the text, and set the payload
-   *  to the text as well.  Offsets increment "naturally". */
+  /**
+   * Just make a token with the text, and set the payload to the text as well. Offsets increment
+   * "naturally".
+   */
   private Token getToken(String text) {
-    Token t = new Token(text, curOffset, curOffset+text.length());
+    Token t = new Token(text, curOffset, curOffset + text.length());
     t.setPayload(new BytesRef(text));
     curOffset++;
     return t;
@@ -326,22 +325,19 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
 
     curOffset = 0;
 
-    Token[] tokens = new Token[] {
-      getToken("foxes"),
-      getToken("can"),
-      getToken("jump"),
-      getToken("high")
-    };
+    Token[] tokens =
+        new Token[] {getToken("foxes"), getToken("can"), getToken("jump"), getToken("high")};
 
     Document doc = new Document();
     doc.add(new Field("field", new CannedTokenStream(tokens), myFieldType));
     writer.addDocument(doc);
-  
+
     IndexReader reader = writer.getReader();
     writer.close();
     assertEquals(1, reader.numDocs());
 
-    TokenStream ts = TokenSources.getTermVectorTokenStreamOrNull("field", reader.getTermVectors(0), -1);
+    TokenStream ts =
+        TokenSources.getTermVectorTokenStreamOrNull("field", reader.getTermVectors(0), -1);
 
     CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncAtt = ts.getAttribute(PositionIncrementAttribute.class);
@@ -349,7 +345,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
 
     ts.reset();
-    for(Token token : tokens) {
+    for (Token token : tokens) {
       assertTrue(ts.incrementToken());
       assertEquals(token.toString(), termAtt.toString());
       assertEquals(token.getPositionIncrement(), posIncAtt.getPositionIncrement());
@@ -365,7 +361,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
   }
 
   @Repeat(iterations = 10)
-  //@Seed("947083AB20AB2D4F")
+  // @Seed("947083AB20AB2D4F")
   public void testRandomizedRoundTrip() throws Exception {
     final int distinct = TestUtil.nextInt(random(), 1, 10);
 
@@ -377,8 +373,9 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     }
 
     final BaseTermVectorsFormatTestCase.RandomTokenStream rTokenStream =
-        new BaseTermVectorsFormatTestCase.RandomTokenStream(TestUtil.nextInt(random(), 1, 10), terms, termBytes);
-    //check to see if the token streams might have non-deterministic testable result
+        new BaseTermVectorsFormatTestCase.RandomTokenStream(
+            TestUtil.nextInt(random(), 1, 10), terms, termBytes);
+    // check to see if the token streams might have non-deterministic testable result
     final boolean storeTermVectorPositions = random().nextBoolean();
     final int[] startOffsets = rTokenStream.getStartOffsets();
     final int[] positionsIncrements = rTokenStream.getPositionsIncrements();
@@ -386,19 +383,24 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
       if (storeTermVectorPositions && positionsIncrements[i] != 0) {
         continue;
       }
-      //TODO should RandomTokenStream ensure endOffsets for tokens at same position and same startOffset are greater
+      // TODO should RandomTokenStream ensure endOffsets for tokens at same position and same
+      // startOffset are greater
       // than previous token's endOffset?  That would increase the testable possibilities.
-      if (startOffsets[i] == startOffsets[i-1]) {
+      if (startOffsets[i] == startOffsets[i - 1]) {
         if (VERBOSE)
-          System.out.println("Skipping test because can't easily validate random token-stream is correct.");
+          System.out.println(
+              "Skipping test because can't easily validate random token-stream is correct.");
         rTokenStream.close();
         return;
       }
     }
 
-    //sanity check itself
-    assertTokenStreamContents(rTokenStream,
-        rTokenStream.getTerms(), rTokenStream.getStartOffsets(), rTokenStream.getEndOffsets(),
+    // sanity check itself
+    assertTokenStreamContents(
+        rTokenStream,
+        rTokenStream.getTerms(),
+        rTokenStream.getStartOffsets(),
+        rTokenStream.getEndOffsets(),
         rTokenStream.getPositionsIncrements());
 
     Directory dir = newDirectory();
@@ -407,7 +409,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     myFieldType.setStoreTermVectors(true);
     myFieldType.setStoreTermVectorOffsets(true);
     myFieldType.setStoreTermVectorPositions(storeTermVectorPositions);
-    //payloads require positions; it will throw an error otherwise
+    // payloads require positions; it will throw an error otherwise
     myFieldType.setStoreTermVectorPayloads(storeTermVectorPositions && random().nextBoolean());
 
     Document doc = new Document();
@@ -421,15 +423,18 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     TokenStream vectorTokenStream =
         TokenSources.getTermVectorTokenStreamOrNull("field", reader.getTermVectors(0), -1);
 
-    //sometimes check payloads
+    // sometimes check payloads
     PayloadAttribute payloadAttribute = null;
     if (myFieldType.storeTermVectorPayloads() && usually()) {
       payloadAttribute = vectorTokenStream.addAttribute(PayloadAttribute.class);
     }
-    assertTokenStreamContents(vectorTokenStream,
-        rTokenStream.getTerms(), rTokenStream.getStartOffsets(), rTokenStream.getEndOffsets(),
+    assertTokenStreamContents(
+        vectorTokenStream,
+        rTokenStream.getTerms(),
+        rTokenStream.getStartOffsets(),
+        rTokenStream.getEndOffsets(),
         myFieldType.storeTermVectorPositions() ? rTokenStream.getPositionsIncrements() : null);
-    //test payloads
+    // test payloads
     if (payloadAttribute != null) {
       vectorTokenStream.reset();
       for (int i = 0; vectorTokenStream.incrementToken(); i++) {
@@ -451,7 +456,8 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     Directory dir = newDirectory();
 
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    analyzer.setEnableChecks(false);//we don't necessarily consume the whole stream because of limiting by startOffset
+    analyzer.setEnableChecks(
+        false); // we don't necessarily consume the whole stream because of limiting by startOffset
     Document doc = new Document();
     final String TEXT = " f gg h";
     doc.add(new Field("fld_tv", analyzer.tokenStream("fooFld", TEXT), tvFieldType));
@@ -465,10 +471,12 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     try {
       Fields tvFields = reader.getTermVectors(0);
       for (int maxStartOffset = -1; maxStartOffset <= TEXT.length(); maxStartOffset++) {
-        TokenStream tvStream = TokenSources.getTokenStream("fld_tv", tvFields, TEXT, analyzer, maxStartOffset);
-        TokenStream anaStream = TokenSources.getTokenStream("fld_notv", tvFields, TEXT, analyzer, maxStartOffset);
+        TokenStream tvStream =
+            TokenSources.getTokenStream("fld_tv", tvFields, TEXT, analyzer, maxStartOffset);
+        TokenStream anaStream =
+            TokenSources.getTokenStream("fld_notv", tvFields, TEXT, analyzer, maxStartOffset);
 
-        //assert have same tokens, none of which has a start offset > maxStartOffset
+        // assert have same tokens, none of which has a start offset > maxStartOffset
         final OffsetAttribute tvOffAtt = tvStream.addAttribute(OffsetAttribute.class);
         final OffsetAttribute anaOffAtt = anaStream.addAttribute(OffsetAttribute.class);
         tvStream.reset();
@@ -476,8 +484,7 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
         while (tvStream.incrementToken()) {
           assertTrue(anaStream.incrementToken());
           assertEquals(tvOffAtt.startOffset(), anaOffAtt.startOffset());
-          if (maxStartOffset >= 0)
-            assertTrue(tvOffAtt.startOffset() <= maxStartOffset);
+          if (maxStartOffset >= 0) assertTrue(tvOffAtt.startOffset() <= maxStartOffset);
         }
         assertTrue(anaStream.incrementToken() == false);
         tvStream.end();
@@ -489,8 +496,6 @@ public class TestTokenSources extends BaseTokenStreamTestCase {
     } finally {
       reader.close();
     }
-
-
 
     dir.close();
   }

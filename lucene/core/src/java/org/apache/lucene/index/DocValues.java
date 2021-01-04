@@ -16,48 +16,42 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.util.BytesRef;
 
-/** 
- * This class contains utility methods and constants for DocValues
- */
+/** This class contains utility methods and constants for DocValues */
 public final class DocValues {
 
   /* no instantiation */
   private DocValues() {}
 
-  /** 
-   * An empty {@link BinaryDocValues} which returns no documents
-   */
+  /** An empty {@link BinaryDocValues} which returns no documents */
   public static final BinaryDocValues emptyBinary() {
     return new BinaryDocValues() {
       private int doc = -1;
-      
+
       @Override
       public int advance(int target) {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
         return false;
       }
-      
+
       @Override
       public int docID() {
         return doc;
       }
-      
+
       @Override
       public int nextDoc() {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public long cost() {
         return 0;
@@ -71,34 +65,32 @@ public final class DocValues {
     };
   }
 
-  /** 
-   * An empty NumericDocValues which returns no documents
-   */
+  /** An empty NumericDocValues which returns no documents */
   public static final NumericDocValues emptyNumeric() {
     return new NumericDocValues() {
       private int doc = -1;
-      
+
       @Override
       public int advance(int target) {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
         return false;
       }
-      
+
       @Override
       public int docID() {
         return doc;
       }
-      
+
       @Override
       public int nextDoc() {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public long cost() {
         return 0;
@@ -112,36 +104,34 @@ public final class DocValues {
     };
   }
 
-  /** 
-   * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document
-   */
+  /** An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document */
   public static final SortedDocValues emptySorted() {
     final BytesRef empty = new BytesRef();
     return new SortedDocValues() {
-      
+
       private int doc = -1;
-      
+
       @Override
       public int advance(int target) {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
         return false;
       }
-      
+
       @Override
       public int docID() {
         return doc;
       }
-      
+
       @Override
       public int nextDoc() {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public long cost() {
         return 0;
@@ -165,35 +155,33 @@ public final class DocValues {
     };
   }
 
-  /**
-   * An empty SortedNumericDocValues which returns zero values for every document 
-   */
+  /** An empty SortedNumericDocValues which returns zero values for every document */
   public static final SortedNumericDocValues emptySortedNumeric() {
     return new SortedNumericDocValues() {
-      
+
       private int doc = -1;
-      
+
       @Override
       public int advance(int target) {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
         return false;
       }
-      
+
       @Override
       public int docID() {
         return doc;
       }
-      
+
       @Override
       public int nextDoc() {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public long cost() {
         return 0;
@@ -211,36 +199,34 @@ public final class DocValues {
     };
   }
 
-  /** 
-   * An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document
-   */
+  /** An empty SortedDocValues which returns {@link BytesRef#EMPTY_BYTES} for every document */
   public static final SortedSetDocValues emptySortedSet() {
     final BytesRef empty = new BytesRef();
     return new SortedSetDocValues() {
-      
+
       private int doc = -1;
-      
+
       @Override
       public int advance(int target) {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public boolean advanceExact(int target) throws IOException {
         doc = target;
         return false;
       }
-      
+
       @Override
       public int docID() {
         return doc;
       }
-      
+
       @Override
       public int nextDoc() {
         return doc = NO_MORE_DOCS;
       }
-      
+
       @Override
       public long cost() {
         return 0;
@@ -264,66 +250,70 @@ public final class DocValues {
     };
   }
 
-  /** 
-   * Returns a multi-valued view over the provided SortedDocValues
-   */
+  /** Returns a multi-valued view over the provided SortedDocValues */
   public static SortedSetDocValues singleton(SortedDocValues dv) {
     return new SingletonSortedSetDocValues(dv);
   }
-  
-  /** 
-   * Returns a single-valued view of the SortedSetDocValues, if it was previously
-   * wrapped with {@link #singleton(SortedDocValues)}, or null.
+
+  /**
+   * Returns a single-valued view of the SortedSetDocValues, if it was previously wrapped with
+   * {@link #singleton(SortedDocValues)}, or null.
    */
   public static SortedDocValues unwrapSingleton(SortedSetDocValues dv) {
     if (dv instanceof SingletonSortedSetDocValues) {
-      return ((SingletonSortedSetDocValues)dv).getSortedDocValues();
+      return ((SingletonSortedSetDocValues) dv).getSortedDocValues();
     } else {
       return null;
     }
   }
-  
-  /** 
-   * Returns a single-valued view of the SortedNumericDocValues, if it was previously
-   * wrapped with {@link #singleton(NumericDocValues)}, or null.
+
+  /**
+   * Returns a single-valued view of the SortedNumericDocValues, if it was previously wrapped with
+   * {@link #singleton(NumericDocValues)}, or null.
    */
   public static NumericDocValues unwrapSingleton(SortedNumericDocValues dv) {
     if (dv instanceof SingletonSortedNumericDocValues) {
-      return ((SingletonSortedNumericDocValues)dv).getNumericDocValues();
+      return ((SingletonSortedNumericDocValues) dv).getNumericDocValues();
     } else {
       return null;
     }
   }
-  
-  /**
-   * Returns a multi-valued view over the provided NumericDocValues
-   */
+
+  /** Returns a multi-valued view over the provided NumericDocValues */
   public static SortedNumericDocValues singleton(NumericDocValues dv) {
     return new SingletonSortedNumericDocValues(dv);
   }
-  
+
   // some helpers, for transition from fieldcache apis.
   // as opposed to the LeafReader apis (which must be strict for consistency), these are lenient
-  
+
   // helper method: to give a nice error when LeafReader.getXXXDocValues returns null.
   private static void checkField(LeafReader in, String field, DocValuesType... expected) {
     FieldInfo fi = in.getFieldInfos().fieldInfo(field);
     if (fi != null) {
       DocValuesType actual = fi.getDocValuesType();
-      throw new IllegalStateException("unexpected docvalues type " + actual + 
-                                        " for field '" + field + "' " +
-                                        (expected.length == 1 
-                                        ? "(expected=" + expected[0]
-                                        : "(expected one of " + Arrays.toString(expected)) + "). " +
-                                        "Re-index with correct docvalues type.");
+      throw new IllegalStateException(
+          "unexpected docvalues type "
+              + actual
+              + " for field '"
+              + field
+              + "' "
+              + (expected.length == 1
+                  ? "(expected=" + expected[0]
+                  : "(expected one of " + Arrays.toString(expected))
+              + "). "
+              + "Re-index with correct docvalues type.");
     }
   }
-  
+
   /**
    * Returns NumericDocValues for the field, or {@link #emptyNumeric()} if it has none.
-   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   *
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this
+   *     reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#NUMERIC}.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link
+   *     DocValuesType#NUMERIC}.
    * @throws IOException if an I/O error occurs.
    */
   public static NumericDocValues getNumeric(LeafReader reader, String field) throws IOException {
@@ -335,13 +325,15 @@ public final class DocValues {
       return dv;
     }
   }
-  
+
   /**
    * Returns BinaryDocValues for the field, or {@link #emptyBinary} if it has none.
-   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   *
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this
+   *     reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#BINARY}
-   *                               or {@link DocValuesType#SORTED}.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link
+   *     DocValuesType#BINARY} or {@link DocValuesType#SORTED}.
    * @throws IOException if an I/O error occurs.
    */
   public static BinaryDocValues getBinary(LeafReader reader, String field) throws IOException {
@@ -355,12 +347,15 @@ public final class DocValues {
     }
     return dv;
   }
-  
+
   /**
    * Returns SortedDocValues for the field, or {@link #emptySorted} if it has none.
-   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   *
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this
+   *     reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED}.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link
+   *     DocValuesType#SORTED}.
    * @throws IOException if an I/O error occurs.
    */
   public static SortedDocValues getSorted(LeafReader reader, String field) throws IOException {
@@ -372,16 +367,19 @@ public final class DocValues {
       return dv;
     }
   }
-  
+
   /**
    * Returns SortedNumericDocValues for the field, or {@link #emptySortedNumeric} if it has none.
-   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   *
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this
+   *     reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED_NUMERIC}
-   *                               or {@link DocValuesType#NUMERIC}.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link
+   *     DocValuesType#SORTED_NUMERIC} or {@link DocValuesType#NUMERIC}.
    * @throws IOException if an I/O error occurs.
    */
-  public static SortedNumericDocValues getSortedNumeric(LeafReader reader, String field) throws IOException {
+  public static SortedNumericDocValues getSortedNumeric(LeafReader reader, String field)
+      throws IOException {
     SortedNumericDocValues dv = reader.getSortedNumericDocValues(field);
     if (dv == null) {
       NumericDocValues single = reader.getNumericDocValues(field);
@@ -393,16 +391,19 @@ public final class DocValues {
     }
     return dv;
   }
-  
+
   /**
-   * Returns SortedSetDocValues for the field, or {@link #emptySortedSet} if it has none. 
-   * @return docvalues instance, or an empty instance if {@code field} does not exist in this reader.
+   * Returns SortedSetDocValues for the field, or {@link #emptySortedSet} if it has none.
+   *
+   * @return docvalues instance, or an empty instance if {@code field} does not exist in this
+   *     reader.
    * @throws IllegalStateException if {@code field} exists, but was not indexed with docvalues.
-   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link DocValuesType#SORTED_SET}
-   *                               or {@link DocValuesType#SORTED}.
+   * @throws IllegalStateException if {@code field} has docvalues, but the type is not {@link
+   *     DocValuesType#SORTED_SET} or {@link DocValuesType#SORTED}.
    * @throws IOException if an I/O error occurs.
    */
-  public static SortedSetDocValues getSortedSet(LeafReader reader, String field) throws IOException {
+  public static SortedSetDocValues getSortedSet(LeafReader reader, String field)
+      throws IOException {
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv == null) {
       SortedDocValues sorted = reader.getSortedDocValues(field);
@@ -415,14 +416,11 @@ public final class DocValues {
     return dv;
   }
 
-  /**
-   * Returns {@code true} if the specified docvalues fields have not been updated
-   */
+  /** Returns {@code true} if the specified docvalues fields have not been updated */
   public static boolean isCacheable(LeafReaderContext ctx, String... fields) {
     for (String field : fields) {
       FieldInfo fi = ctx.reader().getFieldInfos().fieldInfo(field);
-      if (fi != null && fi.getDocValuesGen() > -1)
-        return false;
+      if (fi != null && fi.getDocValuesGen() > -1) return false;
     }
     return true;
   }

@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.util.automaton;
 
-import java.util.TreeMap;
 import java.util.Map;
+import java.util.TreeMap;
 import org.apache.lucene.util.ArrayUtil;
 
 // Just holds a set of int[] states, plus a corresponding
@@ -30,9 +30,9 @@ final class SortedIntSet extends IntSet {
 
   // If we hold more than this many states, we switch from
   // O(N^2) linear ops to O(N log(N)) TreeMap
-  private final static int TREE_MAP_CUTOVER = 30;
+  private static final int TREE_MAP_CUTOVER = 30;
 
-  private final Map<Integer,Integer> map = new TreeMap<>();
+  private final Map<Integer, Integer> map = new TreeMap<>();
 
   private boolean useTreeMap;
 
@@ -49,20 +49,20 @@ final class SortedIntSet extends IntSet {
     }
 
     if (upto == values.length) {
-      values = ArrayUtil.grow(values, 1+upto);
-      counts = ArrayUtil.grow(counts, 1+upto);
+      values = ArrayUtil.grow(values, 1 + upto);
+      counts = ArrayUtil.grow(counts, 1 + upto);
     }
 
-    for(int i=0;i<upto;i++) {
+    for (int i = 0; i < upto; i++) {
       if (values[i] == num) {
         counts[i]++;
         return;
       } else if (num < values[i]) {
         // insert here
-        int j = upto-1;
+        int j = upto - 1;
         while (j >= i) {
-          values[1+j] = values[j];
-          counts[1+j] = counts[j];
+          values[1 + j] = values[j];
+          counts[1 + j] = counts[j];
           j--;
         }
         values[i] = num;
@@ -79,7 +79,7 @@ final class SortedIntSet extends IntSet {
 
     if (upto == TREE_MAP_CUTOVER) {
       useTreeMap = true;
-      for(int i=0;i<upto;i++) {
+      for (int i = 0; i < upto; i++) {
         map.put(values[i], counts[i]);
       }
     }
@@ -93,7 +93,7 @@ final class SortedIntSet extends IntSet {
       if (count == 1) {
         map.remove(num);
       } else {
-        map.put(num, count-1);
+        map.put(num, count - 1);
       }
       // Fall back to simple arrays once we touch zero again
       if (map.size() == 0) {
@@ -103,14 +103,14 @@ final class SortedIntSet extends IntSet {
       return;
     }
 
-    for(int i=0;i<upto;i++) {
+    for (int i = 0; i < upto; i++) {
       if (values[i] == num) {
         counts[i]--;
         if (counts[i] == 0) {
-          final int limit = upto-1;
-          while(i < limit) {
-            values[i] = values[i+1];
-            counts[i] = counts[i+1];
+          final int limit = upto - 1;
+          while (i < limit) {
+            values[i] = values[i + 1];
+            counts[i] = counts[i + 1];
             i++;
           }
           upto = limit;
@@ -130,23 +130,25 @@ final class SortedIntSet extends IntSet {
       }
       hashCode = map.size();
       upto = 0;
-      for(int state : map.keySet()) {
-        hashCode = 683*hashCode + state;
+      for (int state : map.keySet()) {
+        hashCode = 683 * hashCode + state;
         values[upto++] = state;
       }
     } else {
       hashCode = upto;
-      for(int i=0;i<upto;i++) {
-        hashCode = 683*hashCode + values[i];
+      for (int i = 0; i < upto; i++) {
+        hashCode = 683 * hashCode + values[i];
       }
     }
   }
 
   /**
-   * Create a snapshot of this int set associated with a given state. The snapshot will not retain any frequency
-   * information about the elements of this set, only existence.
-   * <p>
-   * It is the caller's responsibility to ensure that the hashCode and data are up to date via the {@link #computeHash()} method before calling this method.
+   * Create a snapshot of this int set associated with a given state. The snapshot will not retain
+   * any frequency information about the elements of this set, only existence.
+   *
+   * <p>It is the caller's responsibility to ensure that the hashCode and data are up to date via
+   * the {@link #computeHash()} method before calling this method.
+   *
    * @param state the state to associate with the frozen set.
    * @return A new FrozenIntSet with the same values as this set.
    */
@@ -157,7 +159,7 @@ final class SortedIntSet extends IntSet {
 
   @Override
   int[] getArray() {
-      return values;
+    return values;
   }
 
   @Override
@@ -173,7 +175,7 @@ final class SortedIntSet extends IntSet {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder().append('[');
-    for(int i=0;i<upto;i++) {
+    for (int i = 0; i < upto; i++) {
       if (i > 0) {
         sb.append(' ');
       }
@@ -182,6 +184,4 @@ final class SortedIntSet extends IntSet {
     sb.append(']');
     return sb.toString();
   }
-
 }
-  

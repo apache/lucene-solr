@@ -20,10 +20,10 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.Query;
 
 /**
- * DocValues field for LongRange. This is a single valued field per document
- * due to being an extension of BinaryDocValuesField.
+ * DocValues field for LongRange. This is a single valued field per document due to being an
+ * extension of BinaryDocValuesField.
  */
-public class LongRangeDocValuesField extends BinaryRangeDocValuesField{
+public class LongRangeDocValuesField extends BinaryRangeDocValuesField {
   final String field;
   final long[] min;
   final long[] max;
@@ -55,22 +55,23 @@ public class LongRangeDocValuesField extends BinaryRangeDocValuesField{
     return max[dimension];
   }
 
-  private static Query newSlowRangeQuery(String field, final long[] min, final long[] max,
-                                        RangeFieldQuery.QueryType queryType) {
+  private static Query newSlowRangeQuery(
+      String field, final long[] min, final long[] max, RangeFieldQuery.QueryType queryType) {
     checkArgs(min, max);
     return new LongRangeSlowRangeQuery(field, min, max, queryType);
   }
 
-  /** Create a new range query that finds all ranges that intersect using doc values.
-   *  NOTE: This doesn't leverage indexing and may be slow.
-   *  @see LongRange#newIntersectsQuery */
+  /**
+   * Create a new range query that finds all ranges that intersect using doc values. NOTE: This
+   * doesn't leverage indexing and may be slow.
+   *
+   * @see LongRange#newIntersectsQuery
+   */
   public static Query newSlowIntersectsQuery(String field, final long[] min, final long[] max) {
     return newSlowRangeQuery(field, min, max, RangeFieldQuery.QueryType.INTERSECTS);
   }
 
-  /**
-   * validate the arguments
-   */
+  /** validate the arguments */
   private static void checkArgs(final long[] min, final long[] max) {
     if (min == null || max == null || min.length == 0 || max.length == 0) {
       throw new IllegalArgumentException("min/max range values cannot be null or empty");

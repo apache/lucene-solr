@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
 import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
@@ -51,72 +50,54 @@ import org.apache.lucene.util.fst.FST;
 
 /**
  * Tokenizer for Japanese that uses morphological analysis.
- * <p>
- * This tokenizer sets a number of additional attributes:
+ *
+ * <p>This tokenizer sets a number of additional attributes:
+ *
  * <ul>
- *   <li>{@link BaseFormAttribute} containing base form for inflected
- *       adjectives and verbs.
+ *   <li>{@link BaseFormAttribute} containing base form for inflected adjectives and verbs.
  *   <li>{@link PartOfSpeechAttribute} containing part-of-speech.
  *   <li>{@link ReadingAttribute} containing reading and pronunciation.
- *   <li>{@link InflectionAttribute} containing additional part-of-speech
- *       information for inflected forms.
+ *   <li>{@link InflectionAttribute} containing additional part-of-speech information for inflected
+ *       forms.
  * </ul>
- * <p>
- * This tokenizer uses a rolling Viterbi search to find the
- * least cost segmentation (path) of the incoming characters.
- * For tokens that appear to be compound (&gt; length 2 for all
- * Kanji, or &gt; length 7 for non-Kanji), we see if there is a
- * 2nd best segmentation of that token after applying
- * penalties to the long tokens.  If so, and the Mode is
- * {@link Mode#SEARCH}, we output the alternate segmentation
- * as well.
+ *
+ * <p>This tokenizer uses a rolling Viterbi search to find the least cost segmentation (path) of the
+ * incoming characters. For tokens that appear to be compound (&gt; length 2 for all Kanji, or &gt;
+ * length 7 for non-Kanji), we see if there is a 2nd best segmentation of that token after applying
+ * penalties to the long tokens. If so, and the Mode is {@link Mode#SEARCH}, we output the alternate
+ * segmentation as well.
  */
 public final class JapaneseTokenizer extends Tokenizer {
 
-  /**
-   * Tokenization mode: this determines how the tokenizer handles
-   * compound and unknown words.
-   */
+  /** Tokenization mode: this determines how the tokenizer handles compound and unknown words. */
   public static enum Mode {
-    /**
-     * Ordinary segmentation: no decomposition for compounds,
-     */
+    /** Ordinary segmentation: no decomposition for compounds, */
     NORMAL,
 
     /**
-     * Segmentation geared towards search: this includes a
-     * decompounding process for long nouns, also including
-     * the full compound token as a synonym.
+     * Segmentation geared towards search: this includes a decompounding process for long nouns,
+     * also including the full compound token as a synonym.
      */
     SEARCH,
 
     /**
      * Extended mode outputs unigrams for unknown words.
+     *
      * @lucene.experimental
      */
     EXTENDED
   }
 
-  /**
-   * Default tokenization mode. Currently this is {@link Mode#SEARCH}.
-   */
+  /** Default tokenization mode. Currently this is {@link Mode#SEARCH}. */
   public static final Mode DEFAULT_MODE = Mode.SEARCH;
 
-  /**
-   * Token type reflecting the original source of this token
-   */
+  /** Token type reflecting the original source of this token */
   public enum Type {
-    /**
-     * Known words from the system dictionary.
-     */
+    /** Known words from the system dictionary. */
     KNOWN,
-    /**
-     * Unknown words (heuristically segmented).
-     */
+    /** Unknown words (heuristically segmented). */
     UNKNOWN,
-    /**
-     * Known words from the user dictionary.
-     */
+    /** Known words from the user dictionary. */
     USER
   }
 
@@ -181,7 +162,8 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final BaseFormAttribute basicFormAtt = addAttribute(BaseFormAttribute.class);
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
@@ -190,8 +172,8 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   /**
    * Create a new JapaneseTokenizer.
-   * <p>
-   * Uses the default AttributeFactory.
+   *
+   * <p>Uses the default AttributeFactory.
    *
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
@@ -203,16 +185,26 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   /**
    * Create a new JapaneseTokenizer.
-   * <p>
-   * Uses the default AttributeFactory.
+   *
+   * <p>Uses the default AttributeFactory.
    *
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
-   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when
+   *     tokenization mode is not NORMAL.
    * @param mode tokenization mode.
    */
-  public JapaneseTokenizer(UserDictionary userDictionary, boolean discardPunctuation, boolean discardCompoundToken, Mode mode) {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDictionary, discardPunctuation, discardCompoundToken, mode);
+  public JapaneseTokenizer(
+      UserDictionary userDictionary,
+      boolean discardPunctuation,
+      boolean discardCompoundToken,
+      Mode mode) {
+    this(
+        DEFAULT_TOKEN_ATTRIBUTE_FACTORY,
+        userDictionary,
+        discardPunctuation,
+        discardCompoundToken,
+        mode);
   }
 
   /**
@@ -223,37 +215,54 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @param mode tokenization mode.
    */
-  public JapaneseTokenizer
-      (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, Mode mode) {
-    this(factory,
-         TokenInfoDictionary.getInstance(),
-         UnknownDictionary.getInstance(),
-         ConnectionCosts.getInstance(),
-         userDictionary, discardPunctuation, true, mode);
-  }
-
-  /**
-   * Create a new JapaneseTokenizer using the system and unknown dictionaries shipped with Lucene.
-   *
-   * @param factory the AttributeFactory to use
-   * @param userDictionary Optional: if non-null, user dictionary.
-   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
-   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
-   * @param mode tokenization mode.
-   */
-  public JapaneseTokenizer
-  (AttributeFactory factory, UserDictionary userDictionary, boolean discardPunctuation, boolean discardCompoundToken, Mode mode) {
-    this(factory,
+  public JapaneseTokenizer(
+      AttributeFactory factory,
+      UserDictionary userDictionary,
+      boolean discardPunctuation,
+      Mode mode) {
+    this(
+        factory,
         TokenInfoDictionary.getInstance(),
         UnknownDictionary.getInstance(),
         ConnectionCosts.getInstance(),
-        userDictionary, discardPunctuation, discardCompoundToken, mode);
+        userDictionary,
+        discardPunctuation,
+        true,
+        mode);
   }
 
   /**
-   * <p>Create a new JapaneseTokenizer, supplying a custom system dictionary and unknown dictionary.
-   * This constructor provides an entry point for users that want to construct custom language models
-   * that can be used as input to {@link org.apache.lucene.analysis.ja.util.DictionaryBuilder}.</p>
+   * Create a new JapaneseTokenizer using the system and unknown dictionaries shipped with Lucene.
+   *
+   * @param factory the AttributeFactory to use
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when
+   *     tokenization mode is not NORMAL.
+   * @param mode tokenization mode.
+   */
+  public JapaneseTokenizer(
+      AttributeFactory factory,
+      UserDictionary userDictionary,
+      boolean discardPunctuation,
+      boolean discardCompoundToken,
+      Mode mode) {
+    this(
+        factory,
+        TokenInfoDictionary.getInstance(),
+        UnknownDictionary.getInstance(),
+        ConnectionCosts.getInstance(),
+        userDictionary,
+        discardPunctuation,
+        discardCompoundToken,
+        mode);
+  }
+
+  /**
+   * Create a new JapaneseTokenizer, supplying a custom system dictionary and unknown dictionary.
+   * This constructor provides an entry point for users that want to construct custom language
+   * models that can be used as input to {@link
+   * org.apache.lucene.analysis.ja.util.DictionaryBuilder}.
    *
    * @param factory the AttributeFactory to use
    * @param systemDictionary a custom known token dictionary
@@ -261,18 +270,20 @@ public final class JapaneseTokenizer extends Tokenizer {
    * @param connectionCosts custom token transition costs
    * @param userDictionary Optional: if non-null, user dictionary.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
-   * @param discardCompoundToken true if compound tokens should be dropped from the output when tokenization mode is not NORMAL.
+   * @param discardCompoundToken true if compound tokens should be dropped from the output when
+   *     tokenization mode is not NORMAL.
    * @param mode tokenization mode.
    * @lucene.experimental
    */
-  public JapaneseTokenizer(AttributeFactory factory,
-                           TokenInfoDictionary systemDictionary,
-                           UnknownDictionary unkDictionary,
-                           ConnectionCosts connectionCosts,
-                           UserDictionary userDictionary,
-                           boolean discardPunctuation,
-                           boolean discardCompoundToken,
-                           Mode mode) {
+  public JapaneseTokenizer(
+      AttributeFactory factory,
+      TokenInfoDictionary systemDictionary,
+      UnknownDictionary unkDictionary,
+      ConnectionCosts connectionCosts,
+      UserDictionary userDictionary,
+      boolean discardPunctuation,
+      boolean discardCompoundToken,
+      Mode mode) {
     super(factory);
     this.dictionary = systemDictionary;
     this.fst = dictionary.getFST();
@@ -289,7 +300,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       userFSTReader = null;
     }
     this.discardPunctuation = discardPunctuation;
-    switch(mode){
+    switch (mode) {
       case SEARCH:
         searchMode = true;
         extendedMode = false;
@@ -317,8 +328,7 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   private GraphvizFormatter dotOut;
 
-  /** Expert: set this to produce graphviz (dot) output of
-   *  the Viterbi lattice */
+  /** Expert: set this to produce graphviz (dot) output of the Viterbi lattice */
   public void setGraphvizFormatter(GraphvizFormatter dotOut) {
     this.dotOut = dotOut;
   }
@@ -380,7 +390,7 @@ public final class JapaneseTokenizer extends Tokenizer {
           break;
         }
       }
-      if (allKanji) {  // Process only Kanji keywords
+      if (allKanji) { // Process only Kanji keywords
         return (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
       } else if (length > SEARCH_MODE_OTHER_LENGTH) {
         return (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;
@@ -390,7 +400,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   // Holds all back pointers arriving to this position:
-  final static class Position {
+  static final class Position {
 
     int pos;
 
@@ -413,11 +423,11 @@ public final class JapaneseTokenizer extends Tokenizer {
     Type[] forwardType = new Type[8];
 
     public void grow() {
-      costs = ArrayUtil.grow(costs, 1+count);
-      lastRightID = ArrayUtil.grow(lastRightID, 1+count);
-      backPos = ArrayUtil.grow(backPos, 1+count);
-      backIndex = ArrayUtil.grow(backIndex, 1+count);
-      backID = ArrayUtil.grow(backID, 1+count);
+      costs = ArrayUtil.grow(costs, 1 + count);
+      lastRightID = ArrayUtil.grow(lastRightID, 1 + count);
+      backPos = ArrayUtil.grow(backPos, 1 + count);
+      backIndex = ArrayUtil.grow(backIndex, 1 + count);
+      backID = ArrayUtil.grow(backID, 1 + count);
 
       // NOTE: sneaky: grow separately because
       // ArrayUtil.grow will otherwise pick a different
@@ -428,9 +438,9 @@ public final class JapaneseTokenizer extends Tokenizer {
     }
 
     public void growForward() {
-      forwardPos = ArrayUtil.grow(forwardPos, 1+forwardCount);
-      forwardID = ArrayUtil.grow(forwardID, 1+forwardCount);
-      forwardIndex = ArrayUtil.grow(forwardIndex, 1+forwardCount);
+      forwardPos = ArrayUtil.grow(forwardPos, 1 + forwardCount);
+      forwardID = ArrayUtil.grow(forwardID, 1 + forwardCount);
+      forwardIndex = ArrayUtil.grow(forwardIndex, 1 + forwardCount);
 
       // NOTE: sneaky: grow separately because
       // ArrayUtil.grow will otherwise pick a different
@@ -440,7 +450,8 @@ public final class JapaneseTokenizer extends Tokenizer {
       forwardType = newForwardType;
     }
 
-    public void add(int cost, int lastRightID, int backPos, int backIndex, int backID, Type backType) {
+    public void add(
+        int cost, int lastRightID, int backPos, int backIndex, int backID, Type backType) {
       // NOTE: this isn't quite a true Viterbi search,
       // because we should check if lastRightID is
       // already present here, and only update if the new
@@ -475,22 +486,37 @@ public final class JapaneseTokenizer extends Tokenizer {
     public void reset() {
       count = 0;
       // forwardCount naturally resets after it runs:
-      assert forwardCount == 0: "pos=" + pos + " forwardCount=" + forwardCount;
+      assert forwardCount == 0 : "pos=" + pos + " forwardCount=" + forwardCount;
     }
   }
 
-  private void add(Dictionary dict, Position fromPosData, int endPos, int wordID, Type type, boolean addPenalty) throws IOException {
+  private void add(
+      Dictionary dict, Position fromPosData, int endPos, int wordID, Type type, boolean addPenalty)
+      throws IOException {
     final int wordCost = dict.getWordCost(wordID);
     final int leftID = dict.getLeftId(wordID);
     int leastCost = Integer.MAX_VALUE;
     int leastIDX = -1;
     assert fromPosData.count > 0;
-    for(int idx=0;idx<fromPosData.count;idx++) {
+    for (int idx = 0; idx < fromPosData.count; idx++) {
       // Cost is path cost so far, plus word cost (added at
       // end of loop), plus bigram cost:
       final int cost = fromPosData.costs[idx] + costs.get(fromPosData.lastRightID[idx], leftID);
       if (VERBOSE) {
-        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.lastRightID[idx], leftID) + " leftID=" + leftID + ")");
+        System.out.println(
+            "      fromIDX="
+                + idx
+                + ": cost="
+                + cost
+                + " (prevCost="
+                + fromPosData.costs[idx]
+                + " wordCost="
+                + wordCost
+                + " bgCost="
+                + costs.get(fromPosData.lastRightID[idx], leftID)
+                + " leftID="
+                + leftID
+                + ")");
       }
       if (cost < leastCost) {
         leastCost = cost;
@@ -504,20 +530,33 @@ public final class JapaneseTokenizer extends Tokenizer {
     leastCost += wordCost;
 
     if (VERBOSE) {
-      System.out.println("      + cost=" + leastCost + " wordID=" + wordID + " leftID=" + leftID + " leastIDX=" + leastIDX + " toPos=" + endPos + " toPos.idx=" + positions.get(endPos).count);
+      System.out.println(
+          "      + cost="
+              + leastCost
+              + " wordID="
+              + wordID
+              + " leftID="
+              + leftID
+              + " leastIDX="
+              + leastIDX
+              + " toPos="
+              + endPos
+              + " toPos.idx="
+              + positions.get(endPos).count);
     }
 
     if (addPenalty && type != Type.USER) {
       final int penalty = computePenalty(fromPosData.pos, endPos - fromPosData.pos);
       if (VERBOSE) {
         if (penalty > 0) {
-          System.out.println("        + penalty=" + penalty + " cost=" + (leastCost+penalty));
+          System.out.println("        + penalty=" + penalty + " cost=" + (leastCost + penalty));
         }
       }
       leastCost += penalty;
     }
 
-    //positions.get(endPos).add(leastCost, dict.getRightId(wordID), fromPosData.pos, leastIDX, wordID, type);
+    // positions.get(endPos).add(leastCost, dict.getRightId(wordID), fromPosData.pos, leastIDX,
+    // wordID, type);
     assert leftID == dict.getRightId(wordID);
     positions.get(endPos).add(leastCost, leftID, fromPosData.pos, leastIDX, wordID, type);
   }
@@ -538,15 +577,16 @@ public final class JapaneseTokenizer extends Tokenizer {
       parse();
     }
 
-    final Token token = pending.remove(pending.size()-1);
+    final Token token = pending.remove(pending.size() - 1);
 
     int position = token.getPosition();
     int length = token.getLength();
     clearAttributes();
     assert length > 0;
-    //System.out.println("off=" + token.getOffset() + " len=" + length + " vs " + token.getSurfaceForm().length);
+    // System.out.println("off=" + token.getOffset() + " len=" + length + " vs " +
+    // token.getSurfaceForm().length);
     termAtt.copyBuffer(token.getSurfaceForm(), token.getOffset(), length);
-    offsetAtt.setOffset(correctOffset(position), correctOffset(position+length));
+    offsetAtt.setOffset(correctOffset(position), correctOffset(position + length));
     basicFormAtt.setToken(token);
     posAtt.setToken(token);
     readingAtt.setToken(token);
@@ -578,7 +618,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     private Position[] positions = new Position[8];
 
     public WrappedPositionArray() {
-      for(int i=0;i<positions.length;i++) {
+      for (int i = 0; i < positions.length; i++) {
         positions[i] = new Position();
       }
     }
@@ -595,7 +635,7 @@ public final class JapaneseTokenizer extends Tokenizer {
 
     public void reset() {
       nextWrite--;
-      while(count > 0) {
+      while (count > 0) {
         if (nextWrite == -1) {
           nextWrite = positions.length - 1;
         }
@@ -607,18 +647,20 @@ public final class JapaneseTokenizer extends Tokenizer {
       count = 0;
     }
 
-    /** Get Position instance for this absolute position;
-     *  this is allowed to be arbitrarily far "in the
-     *  future" but cannot be before the last freeBefore. */
+    /**
+     * Get Position instance for this absolute position; this is allowed to be arbitrarily far "in
+     * the future" but cannot be before the last freeBefore.
+     */
     public Position get(int pos) {
-      while(pos >= nextPos) {
-        //System.out.println("count=" + count + " vs len=" + positions.length);
+      while (pos >= nextPos) {
+        // System.out.println("count=" + count + " vs len=" + positions.length);
         if (count == positions.length) {
-          Position[] newPositions = new Position[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-          //System.out.println("grow positions " + newPositions.length);
-          System.arraycopy(positions, nextWrite, newPositions, 0, positions.length-nextWrite);
-          System.arraycopy(positions, 0, newPositions, positions.length-nextWrite, nextWrite);
-          for(int i=positions.length;i<newPositions.length;i++) {
+          Position[] newPositions =
+              new Position[ArrayUtil.oversize(1 + count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+          // System.out.println("grow positions " + newPositions.length);
+          System.arraycopy(positions, nextWrite, newPositions, 0, positions.length - nextWrite);
+          System.arraycopy(positions, 0, newPositions, positions.length - nextWrite, nextWrite);
+          for (int i = positions.length; i < newPositions.length; i++) {
             newPositions[i] = new Position();
           }
           nextWrite = positions.length;
@@ -663,11 +705,11 @@ public final class JapaneseTokenizer extends Tokenizer {
       if (index < 0) {
         index += positions.length;
       }
-      for(int i=0;i<toFree;i++) {
+      for (int i = 0; i < toFree; i++) {
         if (index == positions.length) {
           index = 0;
         }
-        //System.out.println("  fb idx=" + index);
+        // System.out.println("  fb idx=" + index);
         positions[index].reset();
         index++;
       }
@@ -699,7 +741,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       }
 
       final Position posData = positions.get(pos);
-      final boolean isFrontier = positions.getNextPos() == pos+1;
+      final boolean isFrontier = positions.getNextPos() == pos + 1;
 
       if (posData.count == 0) {
         // No arcs arrive here; move to next position:
@@ -751,10 +793,10 @@ public final class JapaneseTokenizer extends Tokenizer {
         int leastIDX = -1;
         int leastCost = Integer.MAX_VALUE;
         Position leastPosData = null;
-        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+        for (int pos2 = pos; pos2 < positions.getNextPos(); pos2++) {
           final Position posData2 = positions.get(pos2);
-          for(int idx=0;idx<posData2.count;idx++) {
-            //System.out.println("    idx=" + idx + " cost=" + cost);
+          for (int idx = 0; idx < posData2.count; idx++) {
+            // System.out.println("    idx=" + idx + " cost=" + cost);
             final int cost = posData2.costs[idx];
             if (cost < leastCost) {
               leastCost = cost;
@@ -772,7 +814,7 @@ public final class JapaneseTokenizer extends Tokenizer {
         }
 
         // Second pass: prune all but the best path:
-        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+        for (int pos2 = pos; pos2 < positions.getNextPos(); pos2++) {
           final Position posData2 = positions.get(pos2);
           if (posData2 != leastPosData) {
             posData2.reset();
@@ -813,7 +855,13 @@ public final class JapaneseTokenizer extends Tokenizer {
       }
 
       if (VERBOSE) {
-        System.out.println("\n  extend @ pos=" + pos + " char=" + (char) buffer.get(pos) + " hex=" + Integer.toHexString(buffer.get(pos)));
+        System.out.println(
+            "\n  extend @ pos="
+                + pos
+                + " char="
+                + (char) buffer.get(pos)
+                + " hex="
+                + Integer.toHexString(buffer.get(pos)));
       }
 
       if (VERBOSE) {
@@ -826,7 +874,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       if (userFST != null) {
         userFST.getFirstArc(arc);
         int output = 0;
-        for(int posAhead=posData.pos;;posAhead++) {
+        for (int posAhead = posData.pos; ; posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
             break;
@@ -837,9 +885,19 @@ public final class JapaneseTokenizer extends Tokenizer {
           output += arc.output().intValue();
           if (arc.isFinal()) {
             if (VERBOSE) {
-              System.out.println("    USER word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1));
+              System.out.println(
+                  "    USER word "
+                      + new String(buffer.get(pos, posAhead - pos + 1))
+                      + " toPos="
+                      + (posAhead + 1));
             }
-            add(userDictionary, posData, posAhead+1, output + arc.nextFinalOutput().intValue(), Type.USER, false);
+            add(
+                userDictionary,
+                posData,
+                posAhead + 1,
+                output + arc.nextFinalOutput().intValue(),
+                Type.USER,
+                false);
             anyMatches = true;
           }
         }
@@ -854,12 +912,12 @@ public final class JapaneseTokenizer extends Tokenizer {
         fst.getFirstArc(arc);
         int output = 0;
 
-        for(int posAhead=posData.pos;;posAhead++) {
+        for (int posAhead = posData.pos; ; posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
             break;
           }
-          //System.out.println("    match " + (char) ch + " posAhead=" + posAhead);
+          // System.out.println("    match " + (char) ch + " posAhead=" + posAhead);
 
           if (fst.findTargetArc(ch, arc, arc, posAhead == posData.pos, fstReader) == null) {
             break;
@@ -876,10 +934,23 @@ public final class JapaneseTokenizer extends Tokenizer {
           if (arc.isFinal()) {
             dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
-              System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
+              System.out.println(
+                  "    KNOWN word "
+                      + new String(buffer.get(pos, posAhead - pos + 1))
+                      + " toPos="
+                      + (posAhead + 1)
+                      + " "
+                      + wordIdRef.length
+                      + " wordIDs");
             }
             for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-              add(dictionary, posData, posAhead+1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN, false);
+              add(
+                  dictionary,
+                  posData,
+                  posAhead + 1,
+                  wordIdRef.ints[wordIdRef.offset + ofs],
+                  Type.KNOWN,
+                  false);
               anyMatches = true;
             }
           }
@@ -905,15 +976,16 @@ public final class JapaneseTokenizer extends Tokenizer {
         if (!characterDefinition.isGroup(firstCharacter)) {
           unknownWordLength = 1;
         } else {
-          // Extract unknown word. Characters with the same character class are considered to be part of unknown word
+          // Extract unknown word. Characters with the same character class are considered to be
+          // part of unknown word
           unknownWordLength = 1;
-          for (int posAhead=pos+1;unknownWordLength<MAX_UNKNOWN_WORD_LENGTH;posAhead++) {
+          for (int posAhead = pos + 1; unknownWordLength < MAX_UNKNOWN_WORD_LENGTH; posAhead++) {
             final int ch = buffer.get(posAhead);
             if (ch == -1) {
               break;
             }
-            if (characterId == characterDefinition.getCharacterClass((char) ch) &&
-                isPunctuation((char) ch) == isPunct) {
+            if (characterId == characterDefinition.getCharacterClass((char) ch)
+                && isPunctuation((char) ch) == isPunct) {
               unknownWordLength++;
             } else {
               break;
@@ -921,12 +993,20 @@ public final class JapaneseTokenizer extends Tokenizer {
           }
         }
 
-        unkDictionary.lookupWordIds(characterId, wordIdRef); // characters in input text are supposed to be the same
+        unkDictionary.lookupWordIds(
+            characterId, wordIdRef); // characters in input text are supposed to be the same
         if (VERBOSE) {
-          System.out.println("    UNKNOWN word len=" + unknownWordLength + " " + wordIdRef.length + " wordIDs");
+          System.out.println(
+              "    UNKNOWN word len=" + unknownWordLength + " " + wordIdRef.length + " wordIDs");
         }
         for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-          add(unkDictionary, posData, posData.pos + unknownWordLength, wordIdRef.ints[wordIdRef.offset + ofs], Type.UNKNOWN, false);
+          add(
+              unkDictionary,
+              posData,
+              posData.pos + unknownWordLength,
+              wordIdRef.ints[wordIdRef.offset + ofs],
+              Type.UNKNOWN,
+              false);
         }
 
         unknownWordEndIndex = posData.pos + unknownWordLength;
@@ -945,10 +1025,12 @@ public final class JapaneseTokenizer extends Tokenizer {
       if (VERBOSE) {
         System.out.println("  end: " + endPosData.count + " nodes");
       }
-      for(int idx=0;idx<endPosData.count;idx++) {
+      for (int idx = 0; idx < endPosData.count; idx++) {
         // Add EOS cost:
         final int cost = endPosData.costs[idx] + costs.get(endPosData.lastRightID[idx], 0);
-        //System.out.println("    idx=" + idx + " cost=" + cost + " (pathCost=" + endPosData.costs[idx] + " bgCost=" + costs.get(endPosData.lastRightID[idx], 0) + ") backPos=" + endPosData.backPos[idx]);
+        // System.out.println("    idx=" + idx + " cost=" + cost + " (pathCost=" +
+        // endPosData.costs[idx] + " bgCost=" + costs.get(endPosData.lastRightID[idx], 0) + ")
+        // backPos=" + endPosData.backPos[idx]);
         if (cost < leastCost) {
           leastCost = cost;
           leastIDX = idx;
@@ -976,25 +1058,30 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   private void pruneAndRescore(int startPos, int endPos, int bestStartIDX) throws IOException {
     if (VERBOSE) {
-      System.out.println("  pruneAndRescore startPos=" + startPos + " endPos=" + endPos + " bestStartIDX=" + bestStartIDX);
+      System.out.println(
+          "  pruneAndRescore startPos="
+              + startPos
+              + " endPos="
+              + endPos
+              + " bestStartIDX="
+              + bestStartIDX);
     }
 
     // First pass: walk backwards, building up the forward
     // arcs and pruning inadmissible arcs:
-    for(int pos=endPos; pos > startPos; pos--) {
+    for (int pos = endPos; pos > startPos; pos--) {
       final Position posData = positions.get(pos);
       if (VERBOSE) {
         System.out.println("    back pos=" + pos);
       }
-      for(int arcIDX=0;arcIDX<posData.count;arcIDX++) {
+      for (int arcIDX = 0; arcIDX < posData.count; arcIDX++) {
         final int backPos = posData.backPos[arcIDX];
         if (backPos >= startPos) {
           // Keep this arc:
-          //System.out.println("      keep backPos=" + backPos);
-          positions.get(backPos).addForward(pos,
-                                            arcIDX,
-                                            posData.backID[arcIDX],
-                                            posData.backType[arcIDX]);
+          // System.out.println("      keep backPos=" + backPos);
+          positions
+              .get(backPos)
+              .addForward(pos, arcIDX, posData.backID[arcIDX], posData.backType[arcIDX]);
         } else {
           if (VERBOSE) {
             System.out.println("      prune");
@@ -1007,7 +1094,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     }
 
     // Second pass: walk forward, re-scoring:
-    for(int pos=startPos; pos < endPos; pos++) {
+    for (int pos = startPos; pos < endPos; pos++) {
       final Position posData = positions.get(pos);
       if (VERBOSE) {
         System.out.println("    forward pos=" + pos + " count=" + posData.forwardCount);
@@ -1030,37 +1117,56 @@ public final class JapaneseTokenizer extends Tokenizer {
         if (startPos == 0) {
           rightID = 0;
         } else {
-          rightID = getDict(posData.backType[bestStartIDX]).getRightId(posData.backID[bestStartIDX]);
+          rightID =
+              getDict(posData.backType[bestStartIDX]).getRightId(posData.backID[bestStartIDX]);
         }
         final int pathCost = posData.costs[bestStartIDX];
-        for(int forwardArcIDX=0;forwardArcIDX<posData.forwardCount;forwardArcIDX++) {
+        for (int forwardArcIDX = 0; forwardArcIDX < posData.forwardCount; forwardArcIDX++) {
           final Type forwardType = posData.forwardType[forwardArcIDX];
           final Dictionary dict2 = getDict(forwardType);
           final int wordID = posData.forwardID[forwardArcIDX];
           final int toPos = posData.forwardPos[forwardArcIDX];
-          final int newCost = pathCost + dict2.getWordCost(wordID) +
-            costs.get(rightID, dict2.getLeftId(wordID)) +
-            computePenalty(pos, toPos-pos);
+          final int newCost =
+              pathCost
+                  + dict2.getWordCost(wordID)
+                  + costs.get(rightID, dict2.getLeftId(wordID))
+                  + computePenalty(pos, toPos - pos);
           if (VERBOSE) {
-            System.out.println("      + " + forwardType + " word " + new String(buffer.get(pos, toPos-pos)) + " toPos=" + toPos + " cost=" + newCost + " penalty=" + computePenalty(pos, toPos-pos) + " toPos.idx=" + positions.get(toPos).count);
+            System.out.println(
+                "      + "
+                    + forwardType
+                    + " word "
+                    + new String(buffer.get(pos, toPos - pos))
+                    + " toPos="
+                    + toPos
+                    + " cost="
+                    + newCost
+                    + " penalty="
+                    + computePenalty(pos, toPos - pos)
+                    + " toPos.idx="
+                    + positions.get(toPos).count);
           }
-          positions.get(toPos).add(newCost,
-                                   dict2.getRightId(wordID),
-                                   pos,
-                                   bestStartIDX,
-                                   wordID,
-                                   forwardType);
+          positions
+              .get(toPos)
+              .add(newCost, dict2.getRightId(wordID), pos, bestStartIDX, wordID, forwardType);
         }
       } else {
         // On non-initial positions, we maximize score
         // across all arriving lastRightIDs:
-        for(int forwardArcIDX=0;forwardArcIDX<posData.forwardCount;forwardArcIDX++) {
+        for (int forwardArcIDX = 0; forwardArcIDX < posData.forwardCount; forwardArcIDX++) {
           final Type forwardType = posData.forwardType[forwardArcIDX];
           final int toPos = posData.forwardPos[forwardArcIDX];
           if (VERBOSE) {
-            System.out.println("      + " + forwardType + " word " + new String(buffer.get(pos, toPos-pos)) + " toPos=" + toPos);
+            System.out.println(
+                "      + "
+                    + forwardType
+                    + " word "
+                    + new String(buffer.get(pos, toPos - pos))
+                    + " toPos="
+                    + toPos);
           }
-          add(getDict(forwardType),
+          add(
+              getDict(forwardType),
               posData,
               toPos,
               posData.forwardID[forwardArcIDX],
@@ -1073,7 +1179,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   // yet another lattice data structure
-  private final static class Lattice {
+  private static final class Lattice {
     char[] fragment;
     EnumMap<Type, Dictionary> dictionaryMap;
     boolean useEOS;
@@ -1157,9 +1263,13 @@ public final class JapaneseTokenizer extends Tokenizer {
 
     private int addNode(Type dicType, int wordID, int left, int right) {
       if (VERBOSE) {
-        System.out.printf("DEBUG: addNode: dicType=%s, wordID=%d, left=%d, right=%d, str=%s\n",
-                          dicType.toString(), wordID, left, right,
-                          left == -1 ? "BOS" : right == -1 ? "EOS" : new String(fragment, left, right - left));
+        System.out.printf(
+            "DEBUG: addNode: dicType=%s, wordID=%d, left=%d, right=%d, str=%s\n",
+            dicType.toString(),
+            wordID,
+            left,
+            right,
+            left == -1 ? "BOS" : right == -1 ? "EOS" : new String(fragment, left, right - left));
       }
       assert nodeCount < capacity;
       assert left == -1 || right == -1 || left < right;
@@ -1190,8 +1300,9 @@ public final class JapaneseTokenizer extends Tokenizer {
       }
 
       if (VERBOSE) {
-        System.out.printf("DEBUG: addNode: wordCost=%d, leftID=%d, rightID=%d\n",
-                          nodeWordCost[node], nodeLeftID[node], nodeRightID[node]);
+        System.out.printf(
+            "DEBUG: addNode: wordCost=%d, leftID=%d, rightID=%d\n",
+            nodeWordCost[node], nodeLeftID[node], nodeRightID[node]);
       }
 
       nodeLeft[node] = left;
@@ -1222,10 +1333,13 @@ public final class JapaneseTokenizer extends Tokenizer {
       return count;
     }
 
-
-    void setup(char[] fragment,
-          EnumMap<Type, Dictionary> dictionaryMap,
-          WrappedPositionArray positions, int prevOffset, int endOffset, boolean useEOS) {
+    void setup(
+        char[] fragment,
+        EnumMap<Type, Dictionary> dictionaryMap,
+        WrappedPositionArray positions,
+        int prevOffset,
+        int endOffset,
+        boolean useEOS) {
       assert positions.get(prevOffset).count == 1;
       if (VERBOSE) {
         System.out.printf("DEBUG: setup: prevOffset=%d, endOffset=%d\n", prevOffset, endOffset);
@@ -1291,7 +1405,10 @@ public final class JapaneseTokenizer extends Tokenizer {
             int leastCost = Integer.MAX_VALUE;
             for (int leftNode = rRoot[index]; 0 <= leftNode; leftNode = nodeRightChain[leftNode]) {
               if (0 <= nodeMark[leftNode]) {
-                int cost = nodeLeftCost[leftNode] + nodeWordCost[leftNode] + connectionCost(costs, leftNode, node);
+                int cost =
+                    nodeLeftCost[leftNode]
+                        + nodeWordCost[leftNode]
+                        + connectionCost(costs, leftNode, node);
                 if (cost < leastCost) {
                   leastCost = cost;
                   leastNode = leftNode;
@@ -1302,8 +1419,9 @@ public final class JapaneseTokenizer extends Tokenizer {
             nodeLeftNode[node] = leastNode;
             nodeLeftCost[node] = leastCost;
             if (VERBOSE) {
-              System.out.printf("DEBUG: calcLeftCost: node=%d, leftNode=%d, leftCost=%d\n",
-                                node, nodeLeftNode[node], nodeLeftCost[node]);
+              System.out.printf(
+                  "DEBUG: calcLeftCost: node=%d, leftNode=%d, leftCost=%d\n",
+                  node, nodeLeftNode[node], nodeLeftCost[node]);
             }
           }
         }
@@ -1316,9 +1434,14 @@ public final class JapaneseTokenizer extends Tokenizer {
           if (0 <= nodeMark[node]) {
             int leastNode = -1;
             int leastCost = Integer.MAX_VALUE;
-            for (int rightNode = lRoot[index]; 0 <= rightNode; rightNode = nodeLeftChain[rightNode]) {
+            for (int rightNode = lRoot[index];
+                0 <= rightNode;
+                rightNode = nodeLeftChain[rightNode]) {
               if (0 <= nodeMark[rightNode]) {
-                int cost = nodeRightCost[rightNode] + nodeWordCost[rightNode] + connectionCost(costs, node, rightNode);
+                int cost =
+                    nodeRightCost[rightNode]
+                        + nodeWordCost[rightNode]
+                        + connectionCost(costs, node, rightNode);
                 if (cost < leastCost) {
                   leastCost = cost;
                   leastNode = rightNode;
@@ -1329,8 +1452,9 @@ public final class JapaneseTokenizer extends Tokenizer {
             nodeRightNode[node] = leastNode;
             nodeRightCost[node] = leastCost;
             if (VERBOSE) {
-              System.out.printf("DEBUG: calcRightCost: node=%d, rightNode=%d, rightCost=%d\n",
-                                node, nodeRightNode[node], nodeRightCost[node]);
+              System.out.printf(
+                  "DEBUG: calcRightCost: node=%d, rightNode=%d, rightCost=%d\n",
+                  node, nodeRightNode[node], nodeRightCost[node]);
             }
           }
         }
@@ -1375,7 +1499,8 @@ public final class JapaneseTokenizer extends Tokenizer {
             leastRight = nodeRight[node];
             list.clear();
             list.add(node);
-          } else if (cost == leastCost && (nodeLeft[node] != leastLeft || nodeRight[node] != leastRight)) {
+          } else if (cost == leastCost
+              && (nodeLeft[node] != leastLeft || nodeRight[node] != leastRight)) {
             list.add(node);
           }
         }
@@ -1408,8 +1533,9 @@ public final class JapaneseTokenizer extends Tokenizer {
     void debugPrint() {
       if (VERBOSE) {
         for (int node = 0; node < nodeCount; ++node) {
-          System.out.printf("DEBUG NODE: node=%d, mark=%d, cost=%d, left=%d, right=%d\n",
-                            node, nodeMark[node], cost(node), nodeLeft[node], nodeRight[node]);
+          System.out.printf(
+              "DEBUG NODE: node=%d, mark=%d, cost=%d, left=%d, right=%d\n",
+              node, nodeMark[node], cost(node), nodeLeft[node], nodeRight[node]);
         }
       }
     }
@@ -1428,36 +1554,42 @@ public final class JapaneseTokenizer extends Tokenizer {
         // Expand the phraseID we recorded into the actual segmentation:
         final int[] wordIDAndLength = userDictionary.lookupSegmentation(lattice.nodeWordID[node]);
         int wordID = wordIDAndLength[0];
-        pending.add(new Token(wordID,
-                              fragment,
-                              left,
-                              right - left,
-                              Type.USER,
-                              lattice.rootBase + left,
-                              userDictionary));
+        pending.add(
+            new Token(
+                wordID,
+                fragment,
+                left,
+                right - left,
+                Type.USER,
+                lattice.rootBase + left,
+                userDictionary));
         // Output compound
         int current = 0;
         for (int j = 1; j < wordIDAndLength.length; j++) {
           final int len = wordIDAndLength[j];
           if (len < right - left) {
-            pending.add(new Token(wordID + j - 1,
-                                  fragment,
-                                  current + left,
-                                  len,
-                                  Type.USER,
-                                  lattice.rootBase + current + left,
-                                  userDictionary));
+            pending.add(
+                new Token(
+                    wordID + j - 1,
+                    fragment,
+                    current + left,
+                    len,
+                    Type.USER,
+                    lattice.rootBase + current + left,
+                    userDictionary));
           }
           current += len;
         }
       } else {
-        pending.add(new Token(lattice.nodeWordID[node],
-                              fragment,
-                              left,
-                              right - left,
-                              type,
-                              lattice.rootBase + left,
-                              getDict(type)));
+        pending.add(
+            new Token(
+                lattice.nodeWordID[node],
+                fragment,
+                left,
+                right - left,
+                type,
+                lattice.rootBase + left,
+                getDict(type)));
       }
     }
   }
@@ -1466,25 +1598,26 @@ public final class JapaneseTokenizer extends Tokenizer {
   private void fixupPendingList() {
     // Sort for removing same tokens.
     // USER token should be ahead from normal one.
-    Collections.sort(pending,
-                     new Comparator<Token>() {
-                       @Override
-                       public int compare(Token a, Token b) {
-                         int aOff = a.getOffset();
-                         int bOff = b.getOffset();
-                         if (aOff != bOff) {
-                           return aOff - bOff;
-                         }
-                         int aLen = a.getLength();
-                         int bLen = b.getLength();
-                         if (aLen != bLen) {
-                           return aLen - bLen;
-                         }
-                         // order of Type is KNOWN, UNKNOWN, USER,
-                         // so we use reversed comparison here.
-                         return b.getType().ordinal() - a.getType().ordinal();
-                       }
-                     });
+    Collections.sort(
+        pending,
+        new Comparator<Token>() {
+          @Override
+          public int compare(Token a, Token b) {
+            int aOff = a.getOffset();
+            int bOff = b.getOffset();
+            if (aOff != bOff) {
+              return aOff - bOff;
+            }
+            int aLen = a.getLength();
+            int bLen = b.getLength();
+            if (aLen != bLen) {
+              return aLen - bLen;
+            }
+            // order of Type is KNOWN, UNKNOWN, USER,
+            // so we use reversed comparison here.
+            return b.getType().ordinal() - a.getType().ordinal();
+          }
+        });
 
     // Remove same token.
     for (int i = 1; i < pending.size(); ++i) {
@@ -1569,7 +1702,8 @@ public final class JapaneseTokenizer extends Tokenizer {
           try {
             maxDelta = Math.max(maxDelta, probeDelta(pair[0], pair[1]));
           } catch (IOException e) {
-            throw new RuntimeException("Internal error calculating best costs from examples. Got ", e);
+            throw new RuntimeException(
+                "Internal error calculating best costs from examples. Got ", e);
           }
         }
       }
@@ -1602,7 +1736,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       registerNode(node, fragment);
     }
 
-    for (int n = 2;; ++n) {
+    for (int n = 2; ; ++n) {
       List<Integer> nbest = lattice.nBestNodeList(n);
       if (nbest.isEmpty()) {
         break;
@@ -1631,10 +1765,20 @@ public final class JapaneseTokenizer extends Tokenizer {
     final int endPos = endPosData.pos;
 
     if (VERBOSE) {
-      System.out.println("\n  backtrace: endPos=" + endPos + " pos=" + pos + "; " + (pos - lastBackTracePos) + " characters; last=" + lastBackTracePos + " cost=" + endPosData.costs[fromIDX]);
+      System.out.println(
+          "\n  backtrace: endPos="
+              + endPos
+              + " pos="
+              + pos
+              + "; "
+              + (pos - lastBackTracePos)
+              + " characters; last="
+              + lastBackTracePos
+              + " cost="
+              + endPosData.costs[fromIDX]);
     }
 
-    final char[] fragment = buffer.get(lastBackTracePos, endPos-lastBackTracePos);
+    final char[] fragment = buffer.get(lastBackTracePos, endPos - lastBackTracePos);
 
     if (dotOut != null) {
       dotOut.onBacktrace(this, positions, lastBackTracePos, endPosData, fromIDX, fragment, end);
@@ -1659,12 +1803,13 @@ public final class JapaneseTokenizer extends Tokenizer {
     // incrementToken.
 
     while (pos > lastBackTracePos) {
-      //System.out.println("BT: back pos=" + pos + " bestIDX=" + bestIDX);
+      // System.out.println("BT: back pos=" + pos + " bestIDX=" + bestIDX);
       final Position posData = positions.get(pos);
       assert bestIDX < posData.count;
 
       int backPos = posData.backPos[bestIDX];
-      assert backPos >= lastBackTracePos: "backPos=" + backPos + " vs lastBackTracePos=" + lastBackTracePos;
+      assert backPos >= lastBackTracePos
+          : "backPos=" + backPos + " vs lastBackTracePos=" + lastBackTracePos;
       int length = pos - backPos;
       Type backType = posData.backType[bestIDX];
       int backID = posData.backID[bestIDX];
@@ -1678,13 +1823,27 @@ public final class JapaneseTokenizer extends Tokenizer {
         // alternate back trace with cost below that
         // threshold, we pursue it instead (but also output
         // the long token).
-        //System.out.println("    2nd best backPos=" + backPos + " pos=" + pos);
+        // System.out.println("    2nd best backPos=" + backPos + " pos=" + pos);
 
-        final int penalty = computeSecondBestThreshold(backPos, pos-backPos);
+        final int penalty = computeSecondBestThreshold(backPos, pos - backPos);
 
         if (penalty > 0) {
           if (VERBOSE) {
-            System.out.println("  compound=" + new String(buffer.get(backPos, pos-backPos)) + " backPos=" + backPos + " pos=" + pos + " penalty=" + penalty + " cost=" + posData.costs[bestIDX] + " bestIDX=" + bestIDX + " lastLeftID=" + lastLeftWordID);
+            System.out.println(
+                "  compound="
+                    + new String(buffer.get(backPos, pos - backPos))
+                    + " backPos="
+                    + backPos
+                    + " pos="
+                    + pos
+                    + " penalty="
+                    + penalty
+                    + " cost="
+                    + posData.costs[bestIDX]
+                    + " bestIDX="
+                    + bestIDX
+                    + " lastLeftID="
+                    + lastLeftWordID);
           }
 
           // Use the penalty to set maxCost on the 2nd best
@@ -1695,35 +1854,45 @@ public final class JapaneseTokenizer extends Tokenizer {
           }
 
           // Now, prune all too-long tokens from the graph:
-          pruneAndRescore(backPos, pos,
-                          posData.backIndex[bestIDX]);
+          pruneAndRescore(backPos, pos, posData.backIndex[bestIDX]);
 
           // Finally, find 2nd best back-trace and resume
           // backtrace there:
           int leastCost = Integer.MAX_VALUE;
           int leastIDX = -1;
-          for(int idx=0;idx<posData.count;idx++) {
+          for (int idx = 0; idx < posData.count; idx++) {
             int cost = posData.costs[idx];
-            //System.out.println("    idx=" + idx + " prevCost=" + cost);
+            // System.out.println("    idx=" + idx + " prevCost=" + cost);
 
             if (lastLeftWordID != -1) {
-              cost += costs.get(getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
-                                lastLeftWordID);
-              //System.out.println("      += bgCost=" + costs.get(getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
-              //lastLeftWordID) + " -> " + cost);
+              cost +=
+                  costs.get(
+                      getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
+                      lastLeftWordID);
+              // System.out.println("      += bgCost=" +
+              // costs.get(getDict(posData.backType[idx]).getRightId(posData.backID[idx]),
+              // lastLeftWordID) + " -> " + cost);
             }
-            //System.out.println("penalty " + posData.backPos[idx] + " to " + pos);
-            //cost += computePenalty(posData.backPos[idx], pos - posData.backPos[idx]);
+            // System.out.println("penalty " + posData.backPos[idx] + " to " + pos);
+            // cost += computePenalty(posData.backPos[idx], pos - posData.backPos[idx]);
             if (cost < leastCost) {
-              //System.out.println("      ** ");
+              // System.out.println("      ** ");
               leastCost = cost;
               leastIDX = idx;
             }
           }
-          //System.out.println("  leastIDX=" + leastIDX);
+          // System.out.println("  leastIDX=" + leastIDX);
 
           if (VERBOSE) {
-            System.out.println("  afterPrune: " + posData.count + " arcs arriving; leastCost=" + leastCost + " vs threshold=" + maxCost + " lastLeftWordID=" + lastLeftWordID);
+            System.out.println(
+                "  afterPrune: "
+                    + posData.count
+                    + " arcs arriving; leastCost="
+                    + leastCost
+                    + " vs threshold="
+                    + maxCost
+                    + " lastLeftWordID="
+                    + lastLeftWordID);
           }
 
           if (leastIDX != -1 && leastCost <= maxCost && posData.backPos[leastIDX] != backPos) {
@@ -1732,13 +1901,15 @@ public final class JapaneseTokenizer extends Tokenizer {
 
             // Save the current compound token, to output when
             // this alternate path joins back:
-            altToken = new Token(backID,
-                                 fragment,
-                                 backPos - lastBackTracePos,
-                                 length,
-                                 backType,
-                                 backPos,
-                                 getDict(backType));
+            altToken =
+                new Token(
+                    backID,
+                    fragment,
+                    backPos - lastBackTracePos,
+                    length,
+                    backType,
+                    backPos,
+                    getDict(backType));
 
             // Redirect our backtrace to 2nd best:
             bestIDX = leastIDX;
@@ -1749,13 +1920,13 @@ public final class JapaneseTokenizer extends Tokenizer {
             backType = posData.backType[bestIDX];
             backID = posData.backID[bestIDX];
             backCount = 0;
-            //System.out.println("  do alt token!");
+            // System.out.println("  do alt token!");
 
           } else {
             // I think in theory it's possible there is no
             // 2nd best path, which is fine; in this case we
             // only output the compound token:
-            //System.out.println("  no alt token! bestIDX=" + bestIDX);
+            // System.out.println("  no alt token! bestIDX=" + bestIDX);
           }
         }
       }
@@ -1806,18 +1977,20 @@ public final class JapaneseTokenizer extends Tokenizer {
         final int[] wordIDAndLength = userDictionary.lookupSegmentation(backID);
         int wordID = wordIDAndLength[0];
         int current = 0;
-        for(int j=1; j < wordIDAndLength.length; j++) {
+        for (int j = 1; j < wordIDAndLength.length; j++) {
           final int len = wordIDAndLength[j];
-          //System.out.println("    add user: len=" + len);
-          pending.add(new Token(wordID+j-1,
-                                fragment,
-                                current + offset,
-                                len,
-                                Type.USER,
-                                current + backPos,
-                                dict));
+          // System.out.println("    add user: len=" + len);
+          pending.add(
+              new Token(
+                  wordID + j - 1,
+                  fragment,
+                  current + offset,
+                  len,
+                  Type.USER,
+                  current + backPos,
+                  dict));
           if (VERBOSE) {
-            System.out.println("    add USER token=" + pending.get(pending.size()-1));
+            System.out.println("    add USER token=" + pending.get(pending.size() - 1));
           }
           current += len;
         }
@@ -1825,52 +1998,49 @@ public final class JapaneseTokenizer extends Tokenizer {
         // Reverse the tokens we just added, because when we
         // serve them up from incrementToken we serve in
         // reverse:
-        Collections.reverse(pending.subList(pending.size() - (wordIDAndLength.length - 1),
-                                            pending.size()));
+        Collections.reverse(
+            pending.subList(pending.size() - (wordIDAndLength.length - 1), pending.size()));
 
-        backCount += wordIDAndLength.length-1;
+        backCount += wordIDAndLength.length - 1;
       } else {
 
         if (extendedMode && backType == Type.UNKNOWN) {
           // In EXTENDED mode we convert unknown word into
           // unigrams:
           int unigramTokenCount = 0;
-          for(int i=length-1;i>=0;i--) {
+          for (int i = length - 1; i >= 0; i--) {
             int charLen = 1;
-            if (i > 0 && Character.isLowSurrogate(fragment[offset+i])) {
+            if (i > 0 && Character.isLowSurrogate(fragment[offset + i])) {
               i--;
               charLen = 2;
             }
-            //System.out.println("    extended tok offset="
-            //+ (offset + i));
-            if (!discardPunctuation || !isPunctuation(fragment[offset+i])) {
-              pending.add(new Token(CharacterDefinition.NGRAM,
-                                    fragment,
-                                    offset + i,
-                                    charLen,
-                                    Type.UNKNOWN,
-                                    backPos + i,
-                                    unkDictionary));
+            // System.out.println("    extended tok offset="
+            // + (offset + i));
+            if (!discardPunctuation || !isPunctuation(fragment[offset + i])) {
+              pending.add(
+                  new Token(
+                      CharacterDefinition.NGRAM,
+                      fragment,
+                      offset + i,
+                      charLen,
+                      Type.UNKNOWN,
+                      backPos + i,
+                      unkDictionary));
               unigramTokenCount++;
             }
           }
           backCount += unigramTokenCount;
 
         } else if (!discardPunctuation || length == 0 || !isPunctuation(fragment[offset])) {
-          pending.add(new Token(backID,
-                                fragment,
-                                offset,
-                                length,
-                                backType,
-                                backPos,
-                                dict));
+          pending.add(new Token(backID, fragment, offset, length, backType, backPos, dict));
           if (VERBOSE) {
-            System.out.println("    add token=" + pending.get(pending.size()-1));
+            System.out.println("    add token=" + pending.get(pending.size() - 1));
           }
           backCount++;
         } else {
           if (VERBOSE) {
-            System.out.println("    skip punctuation token=" + new String(fragment, offset, length));
+            System.out.println(
+                "    skip punctuation token=" + new String(fragment, offset, length));
           }
         }
       }
@@ -1896,7 +2066,7 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   private static boolean isPunctuation(char ch) {
-    switch(Character.getType(ch)) {
+    switch (Character.getType(ch)) {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:
       case Character.PARAGRAPH_SEPARATOR:

@@ -16,27 +16,27 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * Tokenizes the input into n-grams of the given size(s).
- * As of Lucene 4.4, this token filter:<ul>
- * <li>handles supplementary characters correctly,</li>
- * <li>emits all n-grams for the same token at the same position,</li>
- * <li>does not modify offsets,</li>
- * <li>sorts n-grams by their offset in the original token first, then
- * increasing length (meaning that "abc" will give "a", "ab", "abc", "b", "bc",
- * "c").</li></ul>
- * <p>If you were using this {@link TokenFilter} to perform partial highlighting,
- * this won't work anymore since this filter doesn't update offsets. You should
- * modify your analysis chain to use {@link NGramTokenizer}, and potentially
- * override {@link NGramTokenizer#isTokenChar(int)} to perform pre-tokenization.
+ * Tokenizes the input into n-grams of the given size(s). As of Lucene 4.4, this token filter:
+ *
+ * <ul>
+ *   <li>handles supplementary characters correctly,
+ *   <li>emits all n-grams for the same token at the same position,
+ *   <li>does not modify offsets,
+ *   <li>sorts n-grams by their offset in the original token first, then increasing length (meaning
+ *       that "abc" will give "a", "ab", "abc", "b", "bc", "c").
+ * </ul>
+ *
+ * <p>If you were using this {@link TokenFilter} to perform partial highlighting, this won't work
+ * anymore since this filter doesn't update offsets. You should modify your analysis chain to use
+ * {@link NGramTokenizer}, and potentially override {@link NGramTokenizer#isTokenChar(int)} to
+ * perform pre-tokenization.
  */
 public final class NGramTokenFilter extends TokenFilter {
   public static final boolean DEFAULT_PRESERVE_ORIGINAL = false;
@@ -54,23 +54,22 @@ public final class NGramTokenFilter extends TokenFilter {
   private State state;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Creates an NGramTokenFilter that, for a given input term, produces all
-   * contained n-grams with lengths &gt;= minGram and &lt;= maxGram. Will
-   * optionally preserve the original term when its length is outside of the
-   * defined range.
-   * 
-   * Note: Care must be taken when choosing minGram and maxGram; depending
-   * on the input token size, this filter potentially produces a huge number
-   * of terms.
-   * 
+   * Creates an NGramTokenFilter that, for a given input term, produces all contained n-grams with
+   * lengths &gt;= minGram and &lt;= maxGram. Will optionally preserve the original term when its
+   * length is outside of the defined range.
+   *
+   * <p>Note: Care must be taken when choosing minGram and maxGram; depending on the input token
+   * size, this filter potentially produces a huge number of terms.
+   *
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the minimum length of the generated n-grams
    * @param maxGram the maximum length of the generated n-grams
-   * @param preserveOriginal Whether or not to keep the original term when it
-   * is shorter than minGram or longer than maxGram
+   * @param preserveOriginal Whether or not to keep the original term when it is shorter than
+   *     minGram or longer than maxGram
    */
   public NGramTokenFilter(TokenStream input, int minGram, int maxGram, boolean preserveOriginal) {
     super(input);
@@ -84,10 +83,10 @@ public final class NGramTokenFilter extends TokenFilter {
     this.maxGram = maxGram;
     this.preserveOriginal = preserveOriginal;
   }
-  
+
   /**
    * Creates an NGramTokenFilter that produces n-grams of the indicated size.
-   * 
+   *
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param gramSize the size of n-grams to generate.
    */
@@ -103,19 +102,19 @@ public final class NGramTokenFilter extends TokenFilter {
           return false;
         }
         state = captureState();
-        
+
         curTermLength = termAtt.length();
         curTermCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
         curPosIncr += posIncrAtt.getPositionIncrement();
         curPos = 0;
-        
+
         if (preserveOriginal && curTermCodePointCount < minGram) {
           // Token is shorter than minGram, but we'd still like to keep it.
           posIncrAtt.setPositionIncrement(curPosIncr);
           curPosIncr = 0;
           return true;
         }
-        
+
         curTermBuffer = termAtt.buffer().clone();
         curGramSize = minGram;
       }
@@ -127,14 +126,14 @@ public final class NGramTokenFilter extends TokenFilter {
       if ((curPos + curGramSize) <= curTermCodePointCount) {
         restoreState(state);
         final int start = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
-        final int end = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
+        final int end =
+            Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
         termAtt.copyBuffer(curTermBuffer, start, end - start);
         posIncrAtt.setPositionIncrement(curPosIncr);
         curPosIncr = 0;
         curGramSize++;
         return true;
-      }
-      else if (preserveOriginal && curTermCodePointCount > maxGram) {
+      } else if (preserveOriginal && curTermCodePointCount > maxGram) {
         // Token is longer than maxGram, but we'd still like to keep it.
         restoreState(state);
         posIncrAtt.setPositionIncrement(0);
@@ -142,9 +141,9 @@ public final class NGramTokenFilter extends TokenFilter {
         curTermBuffer = null;
         return true;
       }
-      
+
       // Done with this input token, get next token on next iteration.
-      curTermBuffer = null;  
+      curTermBuffer = null;
     }
   }
 

@@ -40,5 +40,4 @@ class DisiWrapper {
     this.approximation = iterator;
     this.matchCost = iterator.matchCost();
   }
-
 }

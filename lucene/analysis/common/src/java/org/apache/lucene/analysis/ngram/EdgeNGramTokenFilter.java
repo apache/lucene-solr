@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -26,10 +24,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
- * <p>
- * This {@link TokenFilter} create n-grams from the beginning edge of a input token.
- * <p><a id="match_version"></a>As of Lucene 4.4, this filter handles correctly
- * supplementary characters.
+ *
+ * <p>This {@link TokenFilter} create n-grams from the beginning edge of a input token.
+ *
+ * <p><a id="match_version"></a>As of Lucene 4.4, this filter handles correctly supplementary
+ * characters.
  */
 public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final boolean DEFAULT_PRESERVE_ORIGINAL = false;
@@ -44,21 +43,21 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int curGramSize;
   private int curPosIncr;
   private State state;
-  
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Creates an EdgeNGramTokenFilter that, for a given input term, produces all
-   * edge n-grams with lengths &gt;= minGram and &lt;= maxGram. Will
-   * optionally preserve the original term when its length is outside of the
-   * defined range.
-   * 
+   * Creates an EdgeNGramTokenFilter that, for a given input term, produces all edge n-grams with
+   * lengths &gt;= minGram and &lt;= maxGram. Will optionally preserve the original term when its
+   * length is outside of the defined range.
+   *
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the minimum length of the generated n-grams
    * @param maxGram the maximum length of the generated n-grams
-   * @param preserveOriginal Whether or not to keep the original term when it
-   * is outside the min/max size range.
+   * @param preserveOriginal Whether or not to keep the original term when it is outside the min/max
+   *     size range.
    */
   public EdgeNGramTokenFilter(
       TokenStream input, int minGram, int maxGram, boolean preserveOriginal) {
@@ -78,8 +77,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   }
 
   /**
-   * Creates an EdgeNGramTokenFilter that produces edge n-grams of the given
-   * size.
+   * Creates an EdgeNGramTokenFilter that produces edge n-grams of the given size.
    *
    * @param input {@link TokenStream} holding the input to be tokenized
    * @param gramSize the n-gram size to generate.
@@ -96,7 +94,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           return false;
         }
         state = captureState();
-        
+
         curTermLength = termAtt.length();
         curTermCodePointCount = Character.codePointCount(termAtt, 0, curTermLength);
         curPosIncr += posIncrAtt.getPositionIncrement();
@@ -107,7 +105,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           curPosIncr = 0;
           return true;
         }
-        
+
         curTermBuffer = termAtt.buffer().clone();
         curGramSize = minGram;
       }
@@ -119,12 +117,12 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           posIncrAtt.setPositionIncrement(curPosIncr);
           curPosIncr = 0;
 
-          final int charLength = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
+          final int charLength =
+              Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
           termAtt.copyBuffer(curTermBuffer, 0, charLength);
           curGramSize++;
           return true;
-        }
-        else if (preserveOriginal) {
+        } else if (preserveOriginal) {
           // Token is longer than maxGram, but we'd still like to keep it.
           restoreState(state);
           posIncrAtt.setPositionIncrement(0);

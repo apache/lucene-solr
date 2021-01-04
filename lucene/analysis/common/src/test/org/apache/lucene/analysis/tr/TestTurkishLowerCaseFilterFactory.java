@@ -16,35 +16,32 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the Turkish lowercase filter factory is working.
- */
+/** Simple tests to ensure the Turkish lowercase filter factory is working. */
 public class TestTurkishLowerCaseFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually lowercases text.
-   */
+  /** Ensure the filter actually lowercases text. */
   public void testCasing() throws Exception {
     Reader reader = new StringReader("AĞACI");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("TurkishLowerCase").create(stream);
-    assertTokenStreamContents(stream, new String[] { "ağacı" });
+    assertTokenStreamContents(stream, new String[] {"ağacı"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("TurkishLowerCase", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("TurkishLowerCase", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

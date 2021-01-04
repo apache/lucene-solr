@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,17 +28,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
  * A {@link ContentSource} reading from the Reuters collection.
- * <p>
- * Config properties:
+ *
+ * <p>Config properties:
+ *
  * <ul>
- * <li><b>work.dir</b> - path to the root of docs and indexes dirs (default
- * <b>work</b>).
- * <li><b>docs.dir</b> - path to the docs dir (default <b>reuters-out</b>).
+ *   <li><b>work.dir</b> - path to the root of docs and indexes dirs (default <b>work</b>).
+ *   <li><b>docs.dir</b> - path to the docs dir (default <b>reuters-out</b>).
  * </ul>
  */
 public class ReutersContentSource extends ContentSource {
@@ -54,7 +52,7 @@ public class ReutersContentSource extends ContentSource {
   private ArrayList<Path> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   private int iteration = 0;
-  
+
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
@@ -71,7 +69,7 @@ public class ReutersContentSource extends ContentSource {
       throw new RuntimeException(e);
     }
     if (inputFiles.size() == 0) {
-      throw new RuntimeException("No txt files in dataDir: "+dataDir.toAbsolutePath());
+      throw new RuntimeException("No txt files in dataDir: " + dataDir.toAbsolutePath());
     }
   }
 
@@ -80,14 +78,14 @@ public class ReutersContentSource extends ContentSource {
     if (dfi == null) {
       dfi = new DateFormatInfo();
       // date format: 30-MAR-1987 14:22:36.87
-      dfi.df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.ENGLISH);
+      dfi.df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS", Locale.ENGLISH);
       dfi.df.setLenient(true);
       dfi.pos = new ParsePosition(0);
       dateFormat.set(dfi);
     }
     return dfi;
   }
-  
+
   private Date parseDate(String dateStr) {
     DateFormatInfo dfi = getDateFormatInfo();
     dfi.pos.setIndex(0);
@@ -95,12 +93,11 @@ public class ReutersContentSource extends ContentSource {
     return dfi.df.parse(dateStr.trim(), dfi.pos);
   }
 
-
   @Override
   public void close() throws IOException {
     // TODO implement?
   }
-  
+
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     Path f = null;
@@ -121,19 +118,19 @@ public class ReutersContentSource extends ContentSource {
     try (BufferedReader reader = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
       // First line is the date, 3rd is the title, rest is body
       String dateStr = reader.readLine();
-      reader.readLine();// skip an empty line
+      reader.readLine(); // skip an empty line
       String title = reader.readLine();
-      reader.readLine();// skip an empty line
+      reader.readLine(); // skip an empty line
       StringBuilder bodyBuf = new StringBuilder(1024);
       String line = null;
       while ((line = reader.readLine()) != null) {
         bodyBuf.append(line).append(' ');
       }
-      
+
       addBytes(Files.size(f));
-      
+
       Date date = parseDate(dateStr.trim());
-      
+
       docData.clear();
       docData.setName(name);
       docData.setBody(bodyBuf.toString());
@@ -149,5 +146,4 @@ public class ReutersContentSource extends ContentSource {
     nextFile = 0;
     iteration = 0;
   }
-
 }

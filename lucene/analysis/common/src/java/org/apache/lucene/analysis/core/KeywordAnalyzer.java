@@ -16,18 +16,16 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import org.apache.lucene.analysis.Analyzer;
 
 /**
- * "Tokenizes" the entire stream as a single token. This is useful
- * for data like zip codes, ids, and some product names.
+ * "Tokenizes" the entire stream as a single token. This is useful for data like zip codes, ids, and
+ * some product names.
  *
  * @since 3.1
  */
 public final class KeywordAnalyzer extends Analyzer {
-  public KeywordAnalyzer() {
-  }
+  public KeywordAnalyzer() {}
 
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
