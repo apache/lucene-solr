@@ -136,6 +136,39 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
       {505});
   }
 
+  public void testInequalityPayloadChecks() throws Exception {
+    System.err.println("TEST UNORDERED!################################################");
+    //Test some greater thans...
+    // TODO: how do i know what should match?
+    SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
+    BytesRef pay = new BytesRef("pos: " + 1);
+    BytesRef payZero = new BytesRef("pos: " + 0);
+    // Greater than for a float?
+    SpanQuery floatGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "gt");
+    SpanQuery floatGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "gte");
+    SpanQuery floatLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "lt");
+    SpanQuery floatLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "lte");
+    
+    SpanQuery intGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "gt");
+    SpanQuery intGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "gte");
+    SpanQuery intLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "lt");
+    SpanQuery intLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "lte");
+
+    SpanQuery stringGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "gt");
+    SpanQuery stringGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "gte");
+    SpanQuery stringLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "lt");
+    SpanQuery stringLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(payZero), SpanPayloadCheckQuery.PayloadType.STRING, "lte");
+
+    checkHits(stringLT, new int[] {5, 25, 35, 45, 55, 65, 75, 85, 95, 105, 125, 135, 145, 155, 165, 175, 185, 195, 205, 225, 235, 245, 255, 265, 275, 597, 598, 599, 605, 625, 635, 645, 655, 665, 675, 685, 695, 705, 725, 735, 745, 755, 765, 775, 785, 795, 805, 825, 835, 845, 855, 865, 875});
+    checkHits(stringLTE, new int[] {5, 25, 35, 45, 55, 65, 75, 85, 95, 105, 125, 135, 145, 155, 165, 175, 185, 195, 205, 225, 235, 245, 255, 265, 275, 597, 598, 599, 605, 625, 635, 645, 655, 665, 675, 685, 695, 705, 725, 735, 745, 755, 765, 775, 785, 795, 805, 825, 835, 845, 855, 865, 875});
+    //checkHits(stringGTE, new int[] {});
+    //checkHits(stringGTE, new int[] {});
+    //checkHits(stringGTE, new int[] {});
+    //checkHits(stringGTE, new int[] {});
+    
+    
+  }
+  
   public void testUnorderedPayloadChecks() throws Exception {
 
     SpanTermQuery term5 = new SpanTermQuery(new Term("field", "five"));
