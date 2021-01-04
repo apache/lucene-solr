@@ -14,31 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Node;
-
-import java.util.Optional;
-
-public interface AttributeValues {
-  /**
-   * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
-   */
-  Optional<String> getSystemProperty(Node node, String name);
+/**
+ * Metric-related attribute of a node or replica. It defines a short symbolic name of the metric, the corresponding
+ * internal metric name and the desired format/unit conversion. Generic type
+ * specifies the type of converted values of this attribute.
+ */
+public interface Metric<T> {
 
   /**
-   * For the given node: environment variable value
+   * Return the short-hand name that identifies this attribute.
    */
-  Optional<String> getEnvironmentVariable(Node node, String name);
+  String getName();
 
   /**
-   * For the given node: metric identified by an instance of {@link NodeMetric}
+   * Return the internal name of a Solr metric associated with this attribute.
    */
-  <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
+  String getInternalName();
 
   /**
-   * Get collection metrics.
+   * Convert raw value. This may involve changing raw value type or units.
+   * @param value raw value
+   * @return converted value
    */
-  Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
+  T convert(Object value);
 }

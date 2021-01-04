@@ -14,31 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Node;
-
-import java.util.Optional;
-
-public interface AttributeValues {
-  /**
-   * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
-   */
-  Optional<String> getSystemProperty(Node node, String name);
-
-  /**
-   * For the given node: environment variable value
-   */
-  Optional<String> getEnvironmentVariable(Node node, String name);
-
-  /**
-   * For the given node: metric identified by an instance of {@link NodeMetric}
-   */
-  <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
-
-  /**
-   * Get collection metrics.
-   */
-  Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
+/**
+ * Replica metric identifier, corresponding to one of the
+ * internal replica-level metric names (as reported in <code>solr.core.[collection].[replica]</code> registry)
+ */
+public interface ReplicaMetric<T> extends Metric<T> {
 }

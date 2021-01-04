@@ -21,6 +21,10 @@ New Features
   Improve support for arbitrary container-level plugins. Add ClusterSingleton
   support for plugins that require only one active instance in the cluster. (ab, noble)
 
+* SOLR-14613: Autoscaling replacement using placement plugins (ilan, ab, noble)
+
+* SOLR-15019: Replica placement API needs a way to fetch existing replica metrics. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)

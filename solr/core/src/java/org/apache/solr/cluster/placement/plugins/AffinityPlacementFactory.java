@@ -21,6 +21,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -194,7 +195,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // Request all needed attributes
       attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
-      attributeFetcher.requestNodeCoreCount().requestNodeFreeDisk();
+      attributeFetcher
+          .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+          .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
       attributeFetcher.fetchFrom(nodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
@@ -306,21 +309,21 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       for (Node node : nodes) {
         // Exclude nodes with unknown or too small disk free space
-        if (attrValues.getFreeDisk(node).isEmpty()) {
+        if (attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).isEmpty()) {
           if (log.isWarnEnabled()) {
             log.warn("Unknown free disk on node {}, excluding it from placement decisions.", node.getName());
           }
           // We rely later on the fact that the free disk optional is present (see CoresAndDiskComparator), be careful it you change anything here.
           continue;
         }
-        if (attrValues.getFreeDisk(node).get() < minimalFreeDiskGB) {
+        if (attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).get() < minimalFreeDiskGB) {
           if (log.isWarnEnabled()) {
-            log.warn("Node {} free disk ({}GB) lower than configured minimum {}GB, excluding it from placement decisions.", node.getName(), attrValues.getFreeDisk(node).get(), minimalFreeDiskGB);
+            log.warn("Node {} free disk ({}GB) lower than configured minimum {}GB, excluding it from placement decisions.", node.getName(), attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).get(), minimalFreeDiskGB);
           }
           continue;
         }
 
-        if (attrValues.getCoresCount(node).isEmpty()) {
+        if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
           if (log.isWarnEnabled()) {
             log.warn("Unknown number of cores on node {}, excluding it from placement decisions.", node.getName());
           }
@@ -328,7 +331,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           continue;
         }
 
-        Integer coresCount = attrValues.getCoresCount(node).get();
+        Integer coresCount = attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get();
         coresOnNodes.put(node, coresCount);
 
         String supportedReplicaTypes = attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).get() : null;
@@ -552,8 +555,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       @Override
       public int compare(Node a, Node b) {
         // Note all nodes do have free disk defined. This has been verified earlier.
-        boolean aHasLowFreeSpace = attrValues.getFreeDisk(a).get() < prioritizedFreeDiskGB;
-        boolean bHasLowFreeSpace = attrValues.getFreeDisk(b).get() < prioritizedFreeDiskGB;
+        boolean aHasLowFreeSpace = attrValues.getNodeMetric(a, NodeMetricImpl.FREE_DISK_GB).get() < prioritizedFreeDiskGB;
+        boolean bHasLowFreeSpace = attrValues.getNodeMetric(b, NodeMetricImpl.FREE_DISK_GB).get() < prioritizedFreeDiskGB;
         if (aHasLowFreeSpace != bHasLowFreeSpace) {
           // A node with low free space should be considered > node with high free space since it needs to come later in sort order
           return Boolean.compare(aHasLowFreeSpace, bHasLowFreeSpace);
