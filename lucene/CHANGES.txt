@@ -284,6 +284,9 @@ Bug Fixes
 * LUCENE-9617: Fix per-field memory leak in IndexWriter.deleteAll(). Reset next available internal
   field number to 0 on FieldInfos.clear(), to avoid wasting FieldInfo references. (Michael Froh)
 
+* LUCENE-9642: When encoding triangles in ShapeField, make sure generated triangles are CCW by rotating 
+  triangle points before checking triangle orientation. (Ignacio Vera)  
+
 Other
 ---------------------
 
