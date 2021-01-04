@@ -65,44 +65,44 @@ public final class ShapeField {
 
     /** constructor for points and lines */
     Triangle(
-            String name,
-            int aXencoded,
-            int aYencoded,
-            int bXencoded,
-            int bYencoded,
-            int cXencoded,
-            int cYencoded) {
+        String name,
+        int aXencoded,
+        int aYencoded,
+        int bXencoded,
+        int bYencoded,
+        int cXencoded,
+        int cYencoded) {
       super(name, TYPE);
       setTriangleValue(
-              aXencoded, aYencoded, true, bXencoded, bYencoded, true, cXencoded, cYencoded, true);
+          aXencoded, aYencoded, true, bXencoded, bYencoded, true, cXencoded, cYencoded, true);
     }
 
     /** xtor from a given Tessellated Triangle object */
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
       setTriangleValue(
-              t.getEncodedX(0),
-              t.getEncodedY(0),
-              t.isEdgefromPolygon(0),
-              t.getEncodedX(1),
-              t.getEncodedY(1),
-              t.isEdgefromPolygon(1),
-              t.getEncodedX(2),
-              t.getEncodedY(2),
-              t.isEdgefromPolygon(2));
+          t.getEncodedX(0),
+          t.getEncodedY(0),
+          t.isEdgefromPolygon(0),
+          t.getEncodedX(1),
+          t.getEncodedY(1),
+          t.isEdgefromPolygon(1),
+          t.getEncodedX(2),
+          t.getEncodedY(2),
+          t.isEdgefromPolygon(2));
     }
 
     /** sets the vertices of the triangle as integer encoded values */
     protected void setTriangleValue(
-            int aX,
-            int aY,
-            boolean abFromShape,
-            int bX,
-            int bY,
-            boolean bcFromShape,
-            int cX,
-            int cY,
-            boolean caFromShape) {
+        int aX,
+        int aY,
+        boolean abFromShape,
+        int bX,
+        int bY,
+        boolean bcFromShape,
+        int cX,
+        int cY,
+        boolean caFromShape) {
       final byte[] bytes;
 
       if (fieldsData == null) {
@@ -143,16 +143,16 @@ public final class ShapeField {
    * east.
    */
   public static void encodeTriangle(
-          byte[] bytes,
-          int aY,
-          int aX,
-          boolean ab,
-          int bY,
-          int bX,
-          boolean bc,
-          int cY,
-          int cX,
-          boolean ca) {
+      byte[] bytes,
+      int aY,
+      int aX,
+      boolean ab,
+      int bY,
+      int bX,
+      boolean bc,
+      int cY,
+      int cX,
+      boolean ca) {
     assert bytes.length == 7 * BYTES;
     // rotate edges and place minX at the beginning
     if (bX < aX || cX < aX) {
@@ -431,7 +431,7 @@ public final class ShapeField {
     public DecodedTriangle() {}
 
     private void setValues(
-            int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
+        int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
       this.aX = aX;
       this.aY = aY;
       this.ab = ab;
@@ -452,20 +452,20 @@ public final class ShapeField {
     public boolean equals(Object o) {
       DecodedTriangle other = (DecodedTriangle) o;
       return (aX == other.aX && bX == other.bX && cX == other.cX)
-              && (aY == other.aY && bY == other.bY && cY == other.cY)
-              && (ab == other.ab && bc == other.bc && ca == other.ca);
+          && (aY == other.aY && bY == other.bY && cY == other.cY)
+          && (ab == other.ab && bc == other.bc && ca == other.ca);
     }
 
     /** pretty print the triangle vertices */
     public String toString() {
       String result =
-              (aX + ", " + aY)
-                      + " "
-                      + (bX + ", " + bY)
-                      + " "
-                      + (cX + ", " + cY)
-                      + " "
-                      + ("[" + ab + "," + bc + "," + ca + "]");
+          (aX + ", " + aY)
+              + " "
+              + (bX + ", " + bY)
+              + " "
+              + (cX + ", " + cY)
+              + " "
+              + ("[" + ab + "," + bc + "," + ca + "]");
       return result;
     }
   }
