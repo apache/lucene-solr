@@ -46,7 +46,7 @@ public interface AttributeFetcher {
 
   /**
    * Request collection-level metrics. To get the values use {@link AttributeValues#getCollectionMetrics(String)}.
-   * Note that this request will fetch information from nodes relevant to the collection
+   * Note that this request will fetch information from nodes that are relevant to the collection
    * replicas and not the ones specified in {@link #fetchFrom(Set)} (though they may overlap).
    * @param solrCollection request metrics for this collection
    * @param metrics metrics to retrieve (see {@link ReplicaMetric})

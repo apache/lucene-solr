@@ -25,7 +25,7 @@ public interface NodeMetric<T> extends Metric<T> {
 
   /**
    * Metric registry. If this metric identifier uses a fully-qualified
-   * metric key instead, then this method will return null.
+   * metric key instead, then this method will return {@link Registry#UNSPECIFIED}.
    */
   Registry getRegistry();
 

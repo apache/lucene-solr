@@ -83,6 +83,9 @@ public class CollectionMetricsBuilder {
         if (replicaBuilder.leader) {
           if (leaderMetricsBuilder == null) {
             leaderMetricsBuilder = replicaBuilder;
+          } else if (!leaderMetricsBuilder.replicaName.equals(replicaBuilder.replicaName)) {
+            throw new RuntimeException("two replicas claim to be the shard leader! existing=" +
+                leaderMetricsBuilder + " and current " + replicaBuilder);
           }
         }
       });
