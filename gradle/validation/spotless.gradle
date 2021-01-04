@@ -74,6 +74,7 @@ allprojects { prj ->
           case ":lucene:monitor":
           case ":lucene:replicator":
           case ":lucene:sandbox":
+          case ":lucene:suggest":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -112,7 +113,6 @@ allprojects { prj ->
           case ":lucene:luke":
           case ":lucene:spatial3d":
           case ":lucene:spatial-extras":
-          case ":lucene:suggest":
           case ":lucene:test-framework":
 
           default:

@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,10 +32,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
 
 public class TestRegexCompletionQuery extends LuceneTestCase {
   public Directory dir;
@@ -49,7 +49,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   @Test
   public void testRegexQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new SuggestField("suggest_field", "suggestion", 1));
@@ -67,10 +68,15 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    RegexCompletionQuery query = new RegexCompletionQuery(new Term("suggest_field", "[a|w|s]s?ugg"));
+    RegexCompletionQuery query =
+        new RegexCompletionQuery(new Term("suggest_field", "[a|w|s]s?ugg"));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
-    assertSuggestions(suggest, new Entry("wsuggestion", 4), new Entry("ssuggestion", 3),
-        new Entry("asuggestion", 2), new Entry("suggestion", 1));
+    assertSuggestions(
+        suggest,
+        new Entry("wsuggestion", 4),
+        new Entry("ssuggestion", 3),
+        new Entry("asuggestion", 2),
+        new Entry("suggestion", 1));
 
     reader.close();
     iw.close();
@@ -79,7 +85,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   @Test
   public void testEmptyRegexQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
     document.add(new SuggestField("suggest_field", "suggestion1", 1));
     iw.addDocument(document);
@@ -102,7 +109,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   @Test
   public void testSimpleRegexContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "sduggestion", 5, "type1"));
@@ -121,9 +129,11 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    CompletionQuery query = new RegexCompletionQuery(new Term("suggest_field", "[a|s][d|u|s][u|d|g]"));
+    CompletionQuery query =
+        new RegexCompletionQuery(new Term("suggest_field", "[a|s][d|u|s][u|d|g]"));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("sduggestion", "type1", 5),
         new Entry("sudggestion", "type2", 4),
         new Entry("sugdgestion", "type3", 3),
@@ -137,7 +147,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   @Test
   public void testRegexContextQueryWithBoost() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "sduggestion", 5, "type1"));
@@ -156,13 +167,15 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    CompletionQuery query = new RegexCompletionQuery(new Term("suggest_field", "[a|s][d|u|s][u|g]"));
+    CompletionQuery query =
+        new RegexCompletionQuery(new Term("suggest_field", "[a|s][d|u|s][u|g]"));
     ContextQuery contextQuery = new ContextQuery(query);
     contextQuery.addContext("type1", 6);
     contextQuery.addContext("type3", 7);
     contextQuery.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(contextQuery, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("sduggestion", "type1", 5 * 6),
         new Entry("sugdgestion", "type3", 3 * 7),
         new Entry("suggdestion", "type4", 2),
@@ -175,7 +188,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
   @Test
   public void testEmptyRegexContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
     document.add(new ContextSuggestField("suggest_field", "suggestion", 1, "type"));
     iw.addDocument(document);
@@ -190,8 +204,8 @@ public class TestRegexCompletionQuery extends LuceneTestCase {
     query.addContext("type", 1);
 
     // Ensure that context queries optimize an empty regex to a fully empty automaton.
-    CompletionWeight weight = (CompletionWeight) query.createWeight(
-        suggestIndexSearcher, ScoreMode.COMPLETE, 1.0F);
+    CompletionWeight weight =
+        (CompletionWeight) query.createWeight(suggestIndexSearcher, ScoreMode.COMPLETE, 1.0F);
     assertEquals(0, weight.getAutomaton().getNumStates());
 
     // Check that there are no suggestions.

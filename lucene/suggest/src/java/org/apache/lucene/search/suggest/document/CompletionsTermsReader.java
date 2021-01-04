@@ -19,14 +19,12 @@ package org.apache.lucene.search.suggest.document;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.search.suggest.document.CompletionPostingsFormat.FSTLoadMode;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 
 /**
- * Holder for suggester and field-level info
- * for a suggest field
+ * Holder for suggester and field-level info for a suggest field
  *
  * @lucene.experimental
  */
@@ -37,6 +35,7 @@ public final class CompletionsTermsReader implements Accountable {
   public final long maxWeight;
   /** type of suggester (context-enabled or not) */
   public final byte type;
+
   private final IndexInput dictIn;
   private final long offset;
 
@@ -45,10 +44,16 @@ public final class CompletionsTermsReader implements Accountable {
   private NRTSuggester suggester;
 
   /**
-   * Creates a CompletionTermsReader to load a field-specific suggester
-   * from the index <code>dictIn</code> with <code>offset</code>
+   * Creates a CompletionTermsReader to load a field-specific suggester from the index <code>dictIn
+   * </code> with <code>offset</code>
    */
-  CompletionsTermsReader(IndexInput dictIn, long offset, long minWeight, long maxWeight, byte type, FSTLoadMode fstLoadMode) {
+  CompletionsTermsReader(
+      IndexInput dictIn,
+      long offset,
+      long minWeight,
+      long maxWeight,
+      byte type,
+      FSTLoadMode fstLoadMode) {
     assert minWeight <= maxWeight;
     assert offset >= 0l && offset < dictIn.length();
     this.dictIn = dictIn;
@@ -60,8 +65,8 @@ public final class CompletionsTermsReader implements Accountable {
   }
 
   /**
-   * Returns the suggester for a field, if not loaded already, loads
-   * the appropriate suggester from CompletionDictionary
+   * Returns the suggester for a field, if not loaded already, loads the appropriate suggester from
+   * CompletionDictionary
    */
   public synchronized NRTSuggester suggester() throws IOException {
     if (suggester == null) {

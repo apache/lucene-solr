@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.LeafCollector;
@@ -25,15 +24,13 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.automaton.Automaton;
 
 /**
- * Expert: Responsible for executing the query against an
- * appropriate suggester and collecting the results
- * via a collector.
+ * Expert: Responsible for executing the query against an appropriate suggester and collecting the
+ * results via a collector.
  *
- * {@link #score(LeafCollector, Bits, int, int)} is called
- * for each leaf reader.
+ * <p>{@link #score(LeafCollector, Bits, int, int)} is called for each leaf reader.
  *
- * {@link #accept(int,Bits)} and {@link #score(float, float)}
- * is called for every matched completion (i.e. document)
+ * <p>{@link #accept(int,Bits)} and {@link #score(float, float)} is called for every matched
+ * completion (i.e. document)
  *
  * @lucene.experimental
  */
@@ -44,6 +41,7 @@ public class CompletionScorer extends BulkScorer {
   // values accessed by suggester
   /** weight that created this scorer */
   protected final CompletionWeight weight;
+
   final LeafReader reader;
   final boolean filtered;
   final Automaton automaton;
@@ -51,9 +49,14 @@ public class CompletionScorer extends BulkScorer {
   /**
    * Creates a scorer for a field-specific <code>suggester</code> scoped by <code>acceptDocs</code>
    */
-  protected CompletionScorer(final CompletionWeight weight, final NRTSuggester suggester,
-                             final LeafReader reader, final Bits filterDocs,
-                             final boolean filtered, final Automaton automaton) throws IOException {
+  protected CompletionScorer(
+      final CompletionWeight weight,
+      final NRTSuggester suggester,
+      final LeafReader reader,
+      final Bits filterDocs,
+      final boolean filtered,
+      final Automaton automaton)
+      throws IOException {
     this.weight = weight;
     this.suggester = suggester;
     this.reader = reader;
@@ -77,11 +80,11 @@ public class CompletionScorer extends BulkScorer {
   }
 
   /**
-   * Returns true if a document with <code>docID</code> is accepted,
-   * false if the docID maps to a deleted
-   * document or has been filtered out
-   * @param liveDocs the {@link Bits} representing live docs, or possibly
-   *                 {@code null} if all docs are live
+   * Returns true if a document with <code>docID</code> is accepted, false if the docID maps to a
+   * deleted document or has been filtered out
+   *
+   * @param liveDocs the {@link Bits} representing live docs, or possibly {@code null} if all docs
+   *     are live
    */
   public final boolean accept(int docID, Bits liveDocs) {
     return (filterDocs == null || filterDocs.get(docID))
@@ -89,9 +92,8 @@ public class CompletionScorer extends BulkScorer {
   }
 
   /**
-   * Returns the score for a matched completion
-   * based on the query time boost and the
-   * index time weight.
+   * Returns the score for a matched completion based on the query time boost and the index time
+   * weight.
    */
   public float score(float weight, float boost) {
     if (boost == 0f) {

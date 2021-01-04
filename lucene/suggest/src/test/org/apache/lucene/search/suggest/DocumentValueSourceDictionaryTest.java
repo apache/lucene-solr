@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -51,14 +50,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
-  
+
   static final String FIELD_NAME = "f1";
   static final String WEIGHT_FIELD_NAME_1 = "w1";
   static final String WEIGHT_FIELD_NAME_2 = "w2";
   static final String WEIGHT_FIELD_NAME_3 = "w3";
   static final String PAYLOAD_FIELD_NAME = "p1";
   static final String CONTEXTS_FIELD_NAME = "c1";
-  
+
   @Test
   public void testValueSourceEmptyReader() throws IOException {
     Directory dir = newDirectory();
@@ -70,7 +69,9 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     writer.commit();
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
@@ -91,7 +92,9 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     writer.commit();
     writer.close();
     IndexReader ir = DirectoryReader.open(dir);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
 
     assertNull(inputIterator.next());
@@ -100,7 +103,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
     IOUtils.close(ir, analyzer, dir);
   }
-  
+
   @Test
   public void testValueSourceBasic() throws IOException {
     Directory dir = newDirectory();
@@ -109,7 +112,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -117,10 +120,11 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
     IndexReader ir = DirectoryReader.open(dir);
     LongValuesSource s = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2, WEIGHT_FIELD_NAME_3);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -208,18 +212,20 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    LongValuesSource sumValueSource = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2, WEIGHT_FIELD_NAME_3);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValueSource, PAYLOAD_FIELD_NAME);
+    LongValuesSource sumValueSource =
+        sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2, WEIGHT_FIELD_NAME_3);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValueSource, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -233,7 +239,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     assertTrue(docs.isEmpty());
     IOUtils.close(ir, analyzer, dir);
   }
-  
+
   @Test
   public void testValueSourceWithContext() throws IOException {
     Directory dir = newDirectory();
@@ -242,7 +248,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -250,10 +256,12 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
     IndexReader ir = DirectoryReader.open(dir);
     LongValuesSource s = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2, WEIGHT_FIELD_NAME_3);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME, CONTEXTS_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME, CONTEXTS_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -264,7 +272,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
       Set<BytesRef> originalCtxs = new HashSet<>();
-      for (IndexableField ctxf: doc.getFields(CONTEXTS_FIELD_NAME)) {
+      for (IndexableField ctxf : doc.getFields(CONTEXTS_FIELD_NAME)) {
         originalCtxs.add(ctxf.binaryValue());
       }
       assertEquals(originalCtxs, inputIterator.contexts());
@@ -281,7 +289,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -289,10 +297,12 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
     IndexReader ir = DirectoryReader.open(dir);
     LongValuesSource sumValues = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2, WEIGHT_FIELD_NAME_3);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValues, PAYLOAD_FIELD_NAME, CONTEXTS_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, sumValues, PAYLOAD_FIELD_NAME, CONTEXTS_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -303,7 +313,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
       Set<BytesRef> originalCtxs = new HashSet<>();
-      for (IndexableField ctxf: doc.getFields(CONTEXTS_FIELD_NAME)) {
+      for (IndexableField ctxf : doc.getFields(CONTEXTS_FIELD_NAME)) {
         originalCtxs.add(ctxf.binaryValue());
       }
       assertEquals(originalCtxs, inputIterator.contexts());
@@ -320,7 +330,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -331,7 +341,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, s);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -352,7 +362,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -363,7 +373,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValues);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
@@ -375,7 +385,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     assertTrue(docs.isEmpty());
     IOUtils.close(ir, analyzer, dir);
   }
-  
+
   @Test
   public void testValueSourceWithDeletions() throws IOException {
     Directory dir = newDirectory();
@@ -386,42 +396,43 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
-    for(Document doc : docs.values()) {
-      if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
+    for (Document doc : docs.values()) {
+      if (rand.nextBoolean() && termsToDel.size() < docs.size() - 1) {
         termsToDel.add(doc.get(FIELD_NAME));
       }
       writer.addDocument(doc);
     }
     writer.commit();
-    
+
     Term[] delTerms = new Term[termsToDel.size()];
-    for(int i=0; i < termsToDel.size() ; i++) {
+    for (int i = 0; i < termsToDel.size(); i++) {
       delTerms[i] = new Term(FIELD_NAME, termsToDel.get(i));
     }
-    
-    for(Term delTerm: delTerms) {
-      writer.deleteDocuments(delTerm);  
+
+    for (Term delTerm : delTerms) {
+      writer.deleteDocuments(delTerm);
     }
     writer.commit();
     writer.close();
-    
-    for(String termToDel: termsToDel) {
-      assertTrue(null!=docs.remove(termToDel));
+
+    for (String termToDel : termsToDel) {
+      assertTrue(null != docs.remove(termToDel));
     }
-    
+
     IndexReader ir = DirectoryReader.open(dir);
     assertTrue("NumDocs should be > 0 but was " + ir.numDocs(), ir.numDocs() > 0);
     assertEquals(ir.numDocs(), docs.size());
     LongValuesSource s = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(ir, FIELD_NAME, s, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), w2+w1);
+      assertEquals(inputIterator.weight(), w2 + w1);
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -440,8 +451,8 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
     Random rand = random();
     List<String> termsToDel = new ArrayList<>();
-    for(Document doc : docs.values()) {
-      if(rand.nextBoolean() && termsToDel.size() < docs.size()-1) {
+    for (Document doc : docs.values()) {
+      if (rand.nextBoolean() && termsToDel.size() < docs.size() - 1) {
         termsToDel.add(doc.get(FIELD_NAME));
       }
       writer.addDocument(doc);
@@ -449,33 +460,34 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     writer.commit();
 
     Term[] delTerms = new Term[termsToDel.size()];
-    for(int i=0; i < termsToDel.size() ; i++) {
+    for (int i = 0; i < termsToDel.size(); i++) {
       delTerms[i] = new Term(FIELD_NAME, termsToDel.get(i));
     }
 
-    for(Term delTerm: delTerms) {
+    for (Term delTerm : delTerms) {
       writer.deleteDocuments(delTerm);
     }
     writer.commit();
     writer.close();
 
-    for(String termToDel: termsToDel) {
-      assertTrue(null!=docs.remove(termToDel));
+    for (String termToDel : termsToDel) {
+      assertTrue(null != docs.remove(termToDel));
     }
 
     IndexReader ir = DirectoryReader.open(dir);
     assertTrue("NumDocs should be > 0 but was " + ir.numDocs(), ir.numDocs() > 0);
     assertEquals(ir.numDocs(), docs.size());
     LongValuesSource sumValues = sum(WEIGHT_FIELD_NAME_1, WEIGHT_FIELD_NAME_2);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValues, PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(ir, FIELD_NAME, sumValues, PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       long w1 = doc.getField(WEIGHT_FIELD_NAME_1).numericValue().longValue();
       long w2 = doc.getField(WEIGHT_FIELD_NAME_2).numericValue().longValue();
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
-      assertEquals(inputIterator.weight(), w2+w1);
+      assertEquals(inputIterator.weight(), w2 + w1);
       IndexableField payloadField = doc.getField(PAYLOAD_FIELD_NAME);
       if (payloadField == null) assertTrue(inputIterator.payload().length == 0);
       else assertEquals(inputIterator.payload(), payloadField.binaryValue());
@@ -483,7 +495,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     assertTrue(docs.isEmpty());
     IOUtils.close(ir, analyzer, dir);
   }
-  
+
   @Test
   public void testWithValueSource() throws IOException {
     Directory dir = newDirectory();
@@ -492,17 +504,19 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       assertEquals(inputIterator.weight(), 10);
@@ -522,17 +536,19 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
     Map<String, Document> docs = generateIndexDocuments(atLeast(100));
-    for(Document doc: docs.values()) {
+    for (Document doc : docs.values()) {
       writer.addDocument(doc);
     }
     writer.commit();
     writer.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Dictionary dictionary = new DocumentValueSourceDictionary(ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
+    Dictionary dictionary =
+        new DocumentValueSourceDictionary(
+            ir, FIELD_NAME, LongValuesSource.constant(10), PAYLOAD_FIELD_NAME);
     InputIterator inputIterator = dictionary.getEntryIterator();
     BytesRef f;
-    while((f = inputIterator.next())!=null) {
+    while ((f = inputIterator.next()) != null) {
       Document doc = docs.remove(f.utf8ToString());
       assertTrue(f.equals(new BytesRef(doc.get(FIELD_NAME))));
       assertEquals(inputIterator.weight(), 10);
@@ -546,12 +562,12 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
 
   private Map<String, Document> generateIndexDocuments(int ndocs) {
     Map<String, Document> docs = new HashMap<>();
-    for(int i = 0; i < ndocs ; i++) {
+    for (int i = 0; i < ndocs; i++) {
       Field field = new TextField(FIELD_NAME, "field_" + i, Field.Store.YES);
       Field weight1 = new NumericDocValuesField(WEIGHT_FIELD_NAME_1, 10 + i);
       Field weight2 = new NumericDocValuesField(WEIGHT_FIELD_NAME_2, 20 + i);
       Field weight3 = new NumericDocValuesField(WEIGHT_FIELD_NAME_3, 30 + i);
-      Field contexts = new StoredField(CONTEXTS_FIELD_NAME, new BytesRef("ctx_"  + i + "_0"));
+      Field contexts = new StoredField(CONTEXTS_FIELD_NAME, new BytesRef("ctx_" + i + "_0"));
       Document doc = new Document();
       doc.add(field);
       // even if payload is not required usually have it
@@ -563,7 +579,7 @@ public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
       doc.add(weight2);
       doc.add(weight3);
       doc.add(contexts);
-      for(int j = 1; j < atLeast(3); j++) {
+      for (int j = 1; j < atLeast(3); j++) {
         contexts.setBytesValue(new BytesRef("ctx_" + i + "_" + j));
         doc.add(contexts);
       }

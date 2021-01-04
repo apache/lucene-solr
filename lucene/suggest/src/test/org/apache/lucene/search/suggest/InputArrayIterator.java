@@ -19,13 +19,10 @@ package org.apache.lucene.search.suggest;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-/**
- * A {@link InputIterator} over a sequence of {@link Input}s.
- */
+/** A {@link InputIterator} over a sequence of {@link Input}s. */
 public final class InputArrayIterator implements InputIterator {
   private final Iterator<Input> i;
   private final boolean hasPayloads;
@@ -50,10 +47,11 @@ public final class InputArrayIterator implements InputIterator {
   public InputArrayIterator(Input[] i) {
     this(Arrays.asList(i));
   }
+
   public InputArrayIterator(Iterable<Input> i) {
     this(i.iterator());
   }
-  
+
   @Override
   public long weight() {
     return current.v;
@@ -61,7 +59,7 @@ public final class InputArrayIterator implements InputIterator {
 
   @Override
   public BytesRef next() {
-    if (i.hasNext() || (first && current!=null)) {
+    if (i.hasNext() || (first && current != null)) {
       if (first) {
         first = false;
       } else {

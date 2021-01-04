@@ -16,8 +16,10 @@
  */
 package org.apache.lucene.search.suggest.document;
 
-import java.io.IOException;
+import static org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter.SEP_LABEL;
+import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.HOLE_CHARACTER;
 
+import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -26,42 +28,36 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.suggest.BitsProducer;
 
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.HOLE_CHARACTER;
-import static org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter.SEP_LABEL;
-
 /**
- * Abstract {@link Query} that match documents containing terms with a specified prefix
- * filtered by {@link BitsProducer}. This should be used to query against any {@link SuggestField}s
- * or {@link ContextSuggestField}s of documents.
- * <p>
- * Use {@link SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)} to execute any query
- * that provides a concrete implementation of this query. Example below shows using this query
- * to retrieve the top 5 documents.
+ * Abstract {@link Query} that match documents containing terms with a specified prefix filtered by
+ * {@link BitsProducer}. This should be used to query against any {@link SuggestField}s or {@link
+ * ContextSuggestField}s of documents.
+ *
+ * <p>Use {@link SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)} to execute any query
+ * that provides a concrete implementation of this query. Example below shows using this query to
+ * retrieve the top 5 documents.
  *
  * <pre class="prettyprint">
  *  SuggestIndexSearcher searcher = new SuggestIndexSearcher(reader);
  *  TopSuggestDocs suggestDocs = searcher.suggest(query, 5);
  * </pre>
- * This query rewrites to an appropriate {@link CompletionQuery} depending on the
- * type ({@link SuggestField} or {@link ContextSuggestField}) of the field the query is run against.
+ *
+ * This query rewrites to an appropriate {@link CompletionQuery} depending on the type ({@link
+ * SuggestField} or {@link ContextSuggestField}) of the field the query is run against.
  *
  * @lucene.experimental
  */
 public abstract class CompletionQuery extends Query {
 
-  /**
-   * Term to query against
-   */
+  /** Term to query against */
   private final Term term;
 
-  /**
-   * {@link BitsProducer} which is used to filter the document scope.
-   */
+  /** {@link BitsProducer} which is used to filter the document scope. */
   private final BitsProducer filter;
 
   /**
-   * Creates a base Completion query against a <code>term</code>
-   * with a <code>filter</code> to scope the documents
+   * Creates a base Completion query against a <code>term</code> with a <code>filter</code> to scope
+   * the documents
    */
   protected CompletionQuery(Term term, BitsProducer filter) {
     validate(term.text());
@@ -70,24 +66,18 @@ public abstract class CompletionQuery extends Query {
   }
 
   /**
-   * Returns a {@link BitsProducer}. Only suggestions matching the returned
-   * bits will be returned.
+   * Returns a {@link BitsProducer}. Only suggestions matching the returned bits will be returned.
    */
   public BitsProducer getFilter() {
     return filter;
   }
 
-  /**
-   * Returns the field name this query should
-   * be run against
-   */
+  /** Returns the field name this query should be run against */
   public String getField() {
     return term.field();
   }
 
-  /**
-   * Returns the term to be queried against
-   */
+  /** Returns the term to be queried against */
   public Term getTerm() {
     return term;
   }
@@ -121,9 +111,10 @@ public abstract class CompletionQuery extends Query {
     if (first == false) {
       if (this instanceof ContextQuery) {
         if (type == SuggestField.TYPE) {
-          throw new IllegalStateException(this.getClass().getSimpleName()
-              + " can not be executed against a non context-enabled SuggestField: "
-              + getField());
+          throw new IllegalStateException(
+              this.getClass().getSimpleName()
+                  + " can not be executed against a non context-enabled SuggestField: "
+                  + getField());
         }
       } else {
         if (type == ContextSuggestField.TYPE) {
