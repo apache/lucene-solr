@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.blocktree;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -37,6 +36,7 @@ import org.apache.lucene.util.fst.OffHeapFSTStore;
 
 /**
  * BlockTree's implementation of {@link Terms}.
+ *
  * @lucene.internal
  */
 public final class FieldReader extends Terms implements Accountable {
@@ -45,7 +45,7 @@ public final class FieldReader extends Terms implements Accountable {
 
   private static final long BASE_RAM_BYTES_USED =
       RamUsageEstimator.shallowSizeOfInstance(FieldReader.class)
-      + 3 * RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
+          + 3 * RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
 
   final long numTerms;
   final FieldInfo fieldInfo;
@@ -59,13 +59,25 @@ public final class FieldReader extends Terms implements Accountable {
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
-  //private boolean DEBUG;
+  // private boolean DEBUG;
 
-  FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, IndexInput metaIn, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+  FieldReader(
+      BlockTreeTermsReader parent,
+      FieldInfo fieldInfo,
+      long numTerms,
+      BytesRef rootCode,
+      long sumTotalTermFreq,
+      long sumDocFreq,
+      int docCount,
+      long indexStartFP,
+      IndexInput metaIn,
+      IndexInput indexIn,
+      BytesRef minTerm,
+      BytesRef maxTerm)
+      throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
-    //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
+    // DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
     this.parent = parent;
     this.numTerms = numTerms;
     this.sumTotalTermFreq = sumTotalTermFreq;
@@ -75,9 +87,12 @@ public final class FieldReader extends Terms implements Accountable {
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {
-    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
+    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode="
+    // + rootCode + " divisor=" + indexDivisor);
     // }
-    rootBlockFP = (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong() >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
+    rootBlockFP =
+        (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong()
+            >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     // Initialize FST always off-heap.
     final IndexInput clone = indexIn.clone();
     clone.seek(indexStartFP);
@@ -87,14 +102,14 @@ public final class FieldReader extends Terms implements Accountable {
       index = new FST<>(metaIn, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     }
     /*
-      if (false) {
-      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
-      Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
-      Util.toDot(index, w, false, false);
-      System.out.println("FST INDEX: SAVED to " + dotFileName);
-      w.close();
-      }
-     */
+     if (false) {
+     final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
+     Writer w = new OutputStreamWriter(new FileOutputStream(dotFileName));
+     Util.toDot(index, w, false, false);
+     System.out.println("FST INDEX: SAVED to " + dotFileName);
+     w.close();
+     }
+    */
   }
 
   @Override
@@ -117,7 +132,7 @@ public final class FieldReader extends Terms implements Accountable {
     }
   }
 
-  /** For debugging -- used by CheckIndex too*/
+  /** For debugging -- used by CheckIndex too */
   @Override
   public Stats getStats() throws IOException {
     return new SegmentTermsEnum(this).computeBlockStats();
@@ -130,14 +145,17 @@ public final class FieldReader extends Terms implements Accountable {
 
   @Override
   public boolean hasOffsets() {
-    return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    return fieldInfo
+            .getIndexOptions()
+            .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+        >= 0;
   }
 
   @Override
   public boolean hasPositions() {
     return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
   }
-    
+
   @Override
   public boolean hasPayloads() {
     return fieldInfo.hasPayloads();
@@ -170,19 +188,21 @@ public final class FieldReader extends Terms implements Accountable {
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-    // if (DEBUG) System.out.println("  FieldReader.intersect startTerm=" + BlockTreeTermsWriter.brToString(startTerm));
-    //System.out.println("intersect: " + compiled.type + " a=" + compiled.automaton);
+    // if (DEBUG) System.out.println("  FieldReader.intersect startTerm=" +
+    // BlockTreeTermsWriter.brToString(startTerm));
+    // System.out.println("intersect: " + compiled.type + " a=" + compiled.automaton);
     // TODO: we could push "it's a range" or "it's a prefix" down into IntersectTermsEnum?
     // can we optimize knowing that...?
     if (compiled.type != CompiledAutomaton.AUTOMATON_TYPE.NORMAL) {
       throw new IllegalArgumentException("please use CompiledAutomaton.getTermsEnum instead");
     }
-    return new IntersectTermsEnum(this, compiled.automaton, compiled.runAutomaton, compiled.commonSuffixRef, startTerm);
+    return new IntersectTermsEnum(
+        this, compiled.automaton, compiled.runAutomaton, compiled.commonSuffixRef, startTerm);
   }
-    
+
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + ((index!=null)? index.ramBytesUsed() : 0);
+    return BASE_RAM_BYTES_USED + ((index != null) ? index.ramBytesUsed() : 0);
   }
 
   @Override
@@ -196,6 +216,16 @@ public final class FieldReader extends Terms implements Accountable {
 
   @Override
   public String toString() {
-    return "BlockTreeTerms(seg=" + parent.segment +" terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+    return "BlockTreeTerms(seg="
+        + parent.segment
+        + " terms="
+        + numTerms
+        + ",postings="
+        + sumDocFreq
+        + ",positions="
+        + sumTotalTermFreq
+        + ",docs="
+        + docCount
+        + ")";
   }
 }

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
@@ -36,19 +35,22 @@ public class TestMergePolicy extends LuceneTestCase {
 
   public void testWaitForOneMerge() throws IOException, InterruptedException {
     try (Directory dir = newDirectory()) {
-      MergePolicy.MergeSpecification ms = createRandomMergeSpecification(dir, 1 + random().nextInt(10));
+      MergePolicy.MergeSpecification ms =
+          createRandomMergeSpecification(dir, 1 + random().nextInt(10));
       for (MergePolicy.OneMerge m : ms.merges) {
         assertFalse(m.hasCompletedSuccessfully().isPresent());
       }
-      Thread t = new Thread(() -> {
-        try {
-          for (MergePolicy.OneMerge m : ms.merges) {
-            m.close(true, false,  mr -> {});
-          }
-        } catch (IOException e) {
-          throw new AssertionError(e);
-        }
-      });
+      Thread t =
+          new Thread(
+              () -> {
+                try {
+                  for (MergePolicy.OneMerge m : ms.merges) {
+                    m.close(true, false, mr -> {});
+                  }
+                } catch (IOException e) {
+                  throw new AssertionError(e);
+                }
+              });
       t.start();
       assertTrue(ms.await(100, TimeUnit.HOURS));
       for (MergePolicy.OneMerge m : ms.merges) {
@@ -64,13 +66,15 @@ public class TestMergePolicy extends LuceneTestCase {
       for (MergePolicy.OneMerge m : ms.merges) {
         assertFalse(m.hasCompletedSuccessfully().isPresent());
       }
-      Thread t = new Thread(() -> {
-        try {
-          ms.merges.get(0).close(true, false,  mr -> {});
-        } catch (IOException e) {
-          throw new AssertionError(e);
-        }
-      });
+      Thread t =
+          new Thread(
+              () -> {
+                try {
+                  ms.merges.get(0).close(true, false, mr -> {});
+                } catch (IOException e) {
+                  throw new AssertionError(e);
+                }
+              });
       t.start();
       assertFalse(ms.await(10, TimeUnit.MILLISECONDS));
       assertFalse(ms.merges.get(1).hasCompletedSuccessfully().isPresent());
@@ -86,16 +90,18 @@ public class TestMergePolicy extends LuceneTestCase {
       }
       AtomicInteger i = new AtomicInteger(0);
       AtomicBoolean stop = new AtomicBoolean(false);
-      Thread t = new Thread(() -> {
-        while (stop.get() == false) {
-          try {
-            ms.merges.get(i.getAndIncrement()).close(true, false, mr -> {});
-            Thread.sleep(1);
-          } catch (IOException | InterruptedException e) {
-            throw new AssertionError(e);
-          }
-        }
-      });
+      Thread t =
+          new Thread(
+              () -> {
+                while (stop.get() == false) {
+                  try {
+                    ms.merges.get(i.getAndIncrement()).close(true, false, mr -> {});
+                    Thread.sleep(1);
+                  } catch (IOException | InterruptedException e) {
+                    throw new AssertionError(e);
+                  }
+                }
+              });
       t.start();
       assertFalse(ms.await(10, TimeUnit.MILLISECONDS));
       stop.set(true);
@@ -131,28 +137,29 @@ public class TestMergePolicy extends LuceneTestCase {
     }
   }
 
-  private static MergePolicy.MergeSpecification createRandomMergeSpecification(Directory dir, int numMerges) {
+  private static MergePolicy.MergeSpecification createRandomMergeSpecification(
+      Directory dir, int numMerges) {
     MergePolicy.MergeSpecification ms = new MergePolicy.MergeSpecification();
-      for (int ii = 0; ii < numMerges; ++ii) {
-        final SegmentInfo si = new SegmentInfo(
-            dir, // dir
-            Version.LATEST, // version
-            Version.LATEST, // min version
-            TestUtil.randomSimpleString(random()), // name
-            random().nextInt(1000), // maxDoc
-            random().nextBoolean(), // isCompoundFile
-            null, // codec
-            Collections.emptyMap(), // diagnostics
-            TestUtil.randomSimpleString(// id
-                random(),
-                StringHelper.ID_LENGTH,
-                StringHelper.ID_LENGTH).getBytes(StandardCharsets.US_ASCII),
-            Collections.emptyMap(), // attributes
-            null /* indexSort */);
-        final List<SegmentCommitInfo> segments = new LinkedList<SegmentCommitInfo>();
-        segments.add(new SegmentCommitInfo(si, 0, 0, 0, 0, 0, StringHelper.randomId()));
-        ms.add(new MergePolicy.OneMerge(segments));
-      }
-      return ms;
+    for (int ii = 0; ii < numMerges; ++ii) {
+      final SegmentInfo si =
+          new SegmentInfo(
+              dir, // dir
+              Version.LATEST, // version
+              Version.LATEST, // min version
+              TestUtil.randomSimpleString(random()), // name
+              random().nextInt(1000), // maxDoc
+              random().nextBoolean(), // isCompoundFile
+              null, // codec
+              Collections.emptyMap(), // diagnostics
+              TestUtil.randomSimpleString( // id
+                      random(), StringHelper.ID_LENGTH, StringHelper.ID_LENGTH)
+                  .getBytes(StandardCharsets.US_ASCII),
+              Collections.emptyMap(), // attributes
+              null /* indexSort */);
+      final List<SegmentCommitInfo> segments = new LinkedList<SegmentCommitInfo>();
+      segments.add(new SegmentCommitInfo(si, 0, 0, 0, 0, 0, StringHelper.randomId()));
+      ms.add(new MergePolicy.OneMerge(segments));
+    }
+    return ms;
   }
 }

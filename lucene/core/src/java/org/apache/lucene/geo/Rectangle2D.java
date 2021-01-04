@@ -16,22 +16,19 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Objects;
-
-import org.apache.lucene.index.PointValues;
-
+import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
-import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
 
-/**
- * 2D rectangle implementation containing cartesian spatial logic.
- */
+import java.util.Objects;
+import org.apache.lucene.index.PointValues;
+
+/** 2D rectangle implementation containing cartesian spatial logic. */
 final class Rectangle2D implements Component2D {
 
   private final double minX;
@@ -40,10 +37,10 @@ final class Rectangle2D implements Component2D {
   private final double maxY;
 
   private Rectangle2D(double minX, double maxX, double minY, double maxY) {
-    this.minX =  minX;
-    this.maxX =  maxX;
-    this.minY =  minY;
-    this.maxY =  maxY;
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
   }
 
   @Override
@@ -83,8 +80,15 @@ final class Rectangle2D implements Component2D {
   }
 
   @Override
-  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
@@ -92,27 +96,55 @@ final class Rectangle2D implements Component2D {
   }
 
   @Override
-  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
-        Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,aX, aY, bX, bY, cX, cY) ||
-        edgesIntersect(aX, aY, bX, bY) ||
-        edgesIntersect(bX, bY, cX, cY) ||
-        edgesIntersect(cX, cY, aX, aY);
+    return contains(aX, aY)
+        || contains(bX, bY)
+        || contains(cX, cY)
+        || Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)
+        || edgesIntersect(aX, aY, bX, bY)
+        || edgesIntersect(bX, bY, cX, cY)
+        || edgesIntersect(cX, cY, aX, aY);
   }
 
   @Override
-  public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
   }
 
   @Override
-  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     return Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY);
   }
 
@@ -122,18 +154,40 @@ final class Rectangle2D implements Component2D {
   }
 
   @Override
-  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
-                                   double aX, double aY, boolean ab, double bX, double bY) {
-    if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) == false &&
-        edgesIntersect(aX, aY, bX, bY)) {
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    if (ab == true
+        && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)
+            == false
+        && edgesIntersect(aX, aY, bX, bY)) {
       return WithinRelation.NOTWITHIN;
     }
     return WithinRelation.DISJOINT;
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                       double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     // Bounding boxes disjoint?
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
@@ -173,7 +227,8 @@ final class Rectangle2D implements Component2D {
       return WithinRelation.CANDIDATE;
     }
     // Check if shape is within the triangle
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)) {
+    if (Component2D.pointInTriangle(
+        minX, maxX, minY, maxY, this.minX, this.minY, aX, aY, bX, bY, cX, cY)) {
       return WithinRelation.CANDIDATE;
     }
     return relation;
@@ -181,13 +236,19 @@ final class Rectangle2D implements Component2D {
 
   private boolean edgesIntersect(double aX, double aY, double bX, double bY) {
     // shortcut: check bboxes of edges are disjoint
-    if (Math.max(aX, bX) < minX || Math.min(aX, bX) > maxX || Math.min(aY, bY) > maxY || Math.max(aY, bY) < minY) {
+    if (Math.max(aX, bX) < minX
+        || Math.min(aX, bX) > maxX
+        || Math.min(aY, bY) > maxY
+        || Math.max(aY, bY) < minY) {
       return false;
     }
-    return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY,  maxX, maxY) || // top
-           GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY,  maxX, minY) || // bottom
-           GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY,  minX, minY) || // left
-           GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY,  minX, maxY);   // right
+    return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY, maxX, maxY)
+        || // top
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY, maxX, minY)
+        || // bottom
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY, minX, minY)
+        || // left
+        GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY, minX, maxY); // right
   }
 
   @Override
@@ -195,10 +256,7 @@ final class Rectangle2D implements Component2D {
     if (this == o) return true;
     if (!(o instanceof Rectangle2D)) return false;
     Rectangle2D that = (Rectangle2D) o;
-    return minX == that.minX &&
-        maxX == that.maxX &&
-        minY == that.minY &&
-        maxY == that.maxY;
+    return minX == that.minX && maxX == that.maxX && minY == that.minY && maxY == that.maxY;
   }
 
   @Override

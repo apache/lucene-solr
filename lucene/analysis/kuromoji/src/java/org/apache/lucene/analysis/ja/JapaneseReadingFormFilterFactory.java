@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseReadingFormFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -33,6 +32,7 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -43,9 +43,9 @@ public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
 
   private static final String ROMAJI_PARAM = "useRomaji";
   private final boolean useRomaji;
-  
+
   /** Creates a new JapaneseReadingFormFilterFactory */
-  public JapaneseReadingFormFilterFactory(Map<String,String> args) {
+  public JapaneseReadingFormFilterFactory(Map<String, String> args) {
     super(args);
     useRomaji = getBoolean(args, ROMAJI_PARAM, false);
     if (!args.isEmpty()) {

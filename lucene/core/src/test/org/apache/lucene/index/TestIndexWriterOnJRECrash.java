@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.SeedUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,28 +32,26 @@ import java.nio.file.SimpleFileVisitor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.SeedUtils;
-
 /**
- * Runs TestNRTThreads in a separate process, crashes the JRE in the middle
- * of execution, then runs checkindex to make sure it's not corrupt.
+ * Runs TestNRTThreads in a separate process, crashes the JRE in the middle of execution, then runs
+ * checkindex to make sure it's not corrupt.
  */
 public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   private Path tempDir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     tempDir = createTempDir("jrecrash");
   }
-  
-  @Override @Nightly
+
+  @Override
+  @Nightly
   public void testNRTThreads() throws Exception {
     // if we are not the fork
     if (System.getProperty("tests.crashmode") == null) {
@@ -60,27 +59,28 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       for (int i = 0; i < 10; i++) {
         forkTest();
         // if we succeeded in finding an index, we are done.
-        if (checkIndexes(tempDir))
-          return;
+        if (checkIndexes(tempDir)) return;
       }
     } else {
       // note: re-enable this if we create a 4.x impersonator,
       // and if its format is actually different than the real 4.x (unlikely)
       // TODO: the non-fork code could simply enable impersonation?
-      // assumeFalse("does not support PreFlex, see LUCENE-3992", 
+      // assumeFalse("does not support PreFlex, see LUCENE-3992",
       //    Codec.getDefault().getName().equals("Lucene4x"));
-      
+
       // we are the fork, setup a crashing thread
       final int crashTime = TestUtil.nextInt(random(), 3000, 4000);
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          try {
-            Thread.sleep(crashTime);
-          } catch (InterruptedException e) {}
-          crashJRE();
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                Thread.sleep(crashTime);
+              } catch (InterruptedException e) {
+              }
+              crashJRE();
+            }
+          };
       t.setPriority(Thread.MAX_PRIORITY);
       t.start();
       // run the test until we crash.
@@ -89,7 +89,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       }
     }
   }
-  
+
   /** fork ourselves in a new jvm. sets -Dtests.crashmode=true */
   @SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
   public void forkTest() throws Exception {
@@ -106,14 +106,15 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
     cmd.add(System.getProperty("java.class.path"));
     cmd.add("org.junit.runner.JUnitCore");
     cmd.add(getClass().getName());
-    ProcessBuilder pb = new ProcessBuilder(cmd)
-      .directory(tempDir.toFile())
-      .redirectInput(Redirect.INHERIT)
-      .redirectErrorStream(true);
+    ProcessBuilder pb =
+        new ProcessBuilder(cmd)
+            .directory(tempDir.toFile())
+            .redirectInput(Redirect.INHERIT)
+            .redirectErrorStream(true);
     Process p = pb.start();
 
     // We pump everything to stderr.
-    PrintStream childOut = System.err; 
+    PrintStream childOut = System.err;
     Thread stdoutPumper = ThreadPumper.start(p.getInputStream(), childOut);
     if (VERBOSE) childOut.println(">>> Begin subprocess output");
     p.waitFor();
@@ -124,72 +125,72 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
   /** A pipe thread. It'd be nice to reuse guava's implementation for this... */
   static class ThreadPumper {
     public static Thread start(final InputStream from, final OutputStream to) {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          try {
-            byte[] buffer = new byte [1024];
-            int len;
-            while ((len = from.read(buffer)) != -1) {
-              if (VERBOSE) {
-                to.write(buffer, 0, len);
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = from.read(buffer)) != -1) {
+                  if (VERBOSE) {
+                    to.write(buffer, 0, len);
+                  }
+                }
+              } catch (IOException e) {
+                System.err.println("Couldn't pipe from the forked process: " + e.toString());
               }
             }
-          } catch (IOException e) {
-            System.err.println("Couldn't pipe from the forked process: " + e.toString());
-          }
-        }
-      };
+          };
       t.start();
       return t;
     }
   }
-  
+
   /**
-   * Recursively looks for indexes underneath <code>file</code>,
-   * and runs checkindex on them. returns true if it found any indexes.
+   * Recursively looks for indexes underneath <code>file</code>, and runs checkindex on them.
+   * returns true if it found any indexes.
    */
   public boolean checkIndexes(Path path) throws IOException {
     final AtomicBoolean found = new AtomicBoolean();
-    Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult postVisitDirectory(Path dirPath, IOException exc) throws IOException {
-        if (exc != null) {
-          throw exc;
-        } else {
-          try (BaseDirectoryWrapper dir = newFSDirectory(dirPath)) {
-            dir.setCheckIndexOnClose(false); // don't double-checkindex
-            if (DirectoryReader.indexExists(dir)) {
-              if (VERBOSE) {
-                System.err.println("Checking index: " + dirPath);
+    Files.walkFileTree(
+        path,
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult postVisitDirectory(Path dirPath, IOException exc)
+              throws IOException {
+            if (exc != null) {
+              throw exc;
+            } else {
+              try (BaseDirectoryWrapper dir = newFSDirectory(dirPath)) {
+                dir.setCheckIndexOnClose(false); // don't double-checkindex
+                if (DirectoryReader.indexExists(dir)) {
+                  if (VERBOSE) {
+                    System.err.println("Checking index: " + dirPath);
+                  }
+                  // LUCENE-4738: if we crashed while writing first
+                  // commit it's possible index will be corrupt (by
+                  // design we don't try to be smart about this case
+                  // since that too risky):
+                  if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
+                    TestUtil.checkIndex(dir);
+                  }
+                  found.set(true);
+                }
               }
-              // LUCENE-4738: if we crashed while writing first
-              // commit it's possible index will be corrupt (by
-              // design we don't try to be smart about this case
-              // since that too risky):
-              if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
-                TestUtil.checkIndex(dir);
-              }
-              found.set(true);
+              return FileVisitResult.CONTINUE;
             }
           }
-          return FileVisitResult.CONTINUE;
-        }
-      }
-    });
+        });
     return found.get();
   }
 
-  /**
-   * currently, this only works/tested on Sun and IBM.
-   */
+  /** currently, this only works/tested on Sun and IBM. */
   @SuppressForbidden(reason = "We need Unsafe to actually crush :-)")
   public void crashJRE() {
     final String vendor = Constants.JAVA_VENDOR;
-    final boolean supportsUnsafeNpeDereference = 
-        vendor.startsWith("Oracle") || 
-        vendor.startsWith("Sun") || 
-        vendor.startsWith("Apple");
+    final boolean supportsUnsafeNpeDereference =
+        vendor.startsWith("Oracle") || vendor.startsWith("Sun") || vendor.startsWith("Apple");
 
     try {
       if (supportsUnsafeNpeDereference) {
@@ -202,7 +203,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
           m.invoke(o, 0L, 0L);
         } catch (Throwable e) {
           System.out.println("Couldn't kill the JVM via Unsafe.");
-          e.printStackTrace(System.out); 
+          e.printStackTrace(System.out);
         }
       }
 
@@ -210,7 +211,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
       Runtime.getRuntime().halt(-1);
     } catch (Exception e) {
       System.out.println("Couldn't kill the JVM.");
-      e.printStackTrace(System.out); 
+      e.printStackTrace(System.out);
     }
 
     // We couldn't get the JVM to crash for some reason.

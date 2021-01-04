@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.blocktreeords;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -26,9 +24,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.fst.Outputs;
 
-/** A custom FST outputs implementation that stores block data
- *  (BytesRef), long ordStart, long numTerms. */
-
+/**
+ * A custom FST outputs implementation that stores block data (BytesRef), long ordStart, long
+ * numTerms.
+ */
 final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
 
   public static final Output NO_OUTPUT = new Output(new BytesRef(), 0, 0);
@@ -43,8 +42,8 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
     public final long endOrd;
 
     public Output(BytesRef bytes, long startOrd, long endOrd) {
-      assert startOrd >= 0: "startOrd=" + startOrd;
-      assert endOrd >= 0: "endOrd=" + endOrd;
+      assert startOrd >= 0 : "startOrd=" + startOrd;
+      assert endOrd >= 0 : "endOrd=" + endOrd;
       this.bytes = bytes;
       this.startOrd = startOrd;
       this.endOrd = endOrd;
@@ -53,8 +52,8 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
     @Override
     public String toString() {
       long x;
-      if (endOrd > Long.MAX_VALUE/2) {
-        x = Long.MAX_VALUE-endOrd;
+      if (endOrd > Long.MAX_VALUE / 2) {
+        x = Long.MAX_VALUE - endOrd;
       } else {
         assert endOrd >= 0;
         x = -endOrd;
@@ -92,7 +91,7 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
     int pos1 = bytes1.offset;
     int pos2 = bytes2.offset;
     int stopAt1 = pos1 + Math.min(bytes1.length, bytes2.length);
-    while(pos1 < stopAt1) {
+    while (pos1 < stopAt1) {
       if (bytes1.bytes[pos1] != bytes2.bytes[pos2]) {
         break;
       }
@@ -112,12 +111,13 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
       // bytes2 is a prefix of bytes1
       prefixBytes = bytes2;
     } else {
-      prefixBytes = new BytesRef(bytes1.bytes, bytes1.offset, pos1-bytes1.offset);
+      prefixBytes = new BytesRef(bytes1.bytes, bytes1.offset, pos1 - bytes1.offset);
     }
 
-    return newOutput(prefixBytes,
-                     Math.min(output1.startOrd, output2.startOrd),
-                     Math.min(output1.endOrd, output2.endOrd));
+    return newOutput(
+        prefixBytes,
+        Math.min(output1.startOrd, output2.startOrd),
+        Math.min(output1.endOrd, output2.endOrd));
   }
 
   @Override
@@ -136,13 +136,18 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
       } else if (inc.bytes.length == 0) {
         suffix = output.bytes;
       } else {
-        assert inc.bytes.length < output.bytes.length: "inc.length=" + inc.bytes.length + " vs output.length=" + output.bytes.length;
+        assert inc.bytes.length < output.bytes.length
+            : "inc.length=" + inc.bytes.length + " vs output.length=" + output.bytes.length;
         assert inc.bytes.length > 0;
-        suffix = new BytesRef(output.bytes.bytes, output.bytes.offset + inc.bytes.length, output.bytes.length-inc.bytes.length);
+        suffix =
+            new BytesRef(
+                output.bytes.bytes,
+                output.bytes.offset + inc.bytes.length,
+                output.bytes.length - inc.bytes.length);
       }
       assert output.startOrd >= inc.startOrd;
       assert output.endOrd >= inc.endOrd;
-      return newOutput(suffix, output.startOrd-inc.startOrd, output.endOrd - inc.endOrd);
+      return newOutput(suffix, output.startOrd - inc.startOrd, output.endOrd - inc.endOrd);
     }
   }
 
@@ -156,8 +161,14 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
       return prefix;
     } else {
       BytesRef bytes = new BytesRef(prefix.bytes.length + output.bytes.length);
-      System.arraycopy(prefix.bytes.bytes, prefix.bytes.offset, bytes.bytes, 0, prefix.bytes.length);
-      System.arraycopy(output.bytes.bytes, output.bytes.offset, bytes.bytes, prefix.bytes.length, output.bytes.length);
+      System.arraycopy(
+          prefix.bytes.bytes, prefix.bytes.offset, bytes.bytes, 0, prefix.bytes.length);
+      System.arraycopy(
+          output.bytes.bytes,
+          output.bytes.offset,
+          bytes.bytes,
+          prefix.bytes.length,
+          output.bytes.length);
       bytes.length = prefix.bytes.length + output.bytes.length;
       return newOutput(bytes, prefix.startOrd + output.startOrd, prefix.endOrd + output.endOrd);
     }
@@ -228,6 +239,11 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
 
   @Override
   public long ramBytesUsed(Output output) {
-    return 2 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2 * Long.BYTES + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 2 * Integer.BYTES + output.bytes.length;
+    return 2 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * Long.BYTES
+        + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
+        + 2 * Integer.BYTES
+        + output.bytes.length;
   }
 }

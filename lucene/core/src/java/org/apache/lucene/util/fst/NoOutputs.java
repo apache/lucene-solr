@@ -16,37 +16,34 @@
  */
 package org.apache.lucene.util.fst;
 
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
- * A null FST {@link Outputs} implementation; use this if
- * you just want to build an FSA.
+ * A null FST {@link Outputs} implementation; use this if you just want to build an FSA.
  *
  * @lucene.experimental
  */
-
 public final class NoOutputs extends Outputs<Object> {
 
-  static final Object NO_OUTPUT = new Object() {
-    // NodeHash calls hashCode for this output; we fix this
-    // so we get deterministic hashing.
-    @Override
-    public int hashCode() {
-      return 42;
-    }
+  static final Object NO_OUTPUT =
+      new Object() {
+        // NodeHash calls hashCode for this output; we fix this
+        // so we get deterministic hashing.
+        @Override
+        public int hashCode() {
+          return 42;
+        }
 
-    @Override
-    public boolean equals(Object other) {
-      return other == this;
-    }
-  };
+        @Override
+        public boolean equals(Object other) {
+          return other == this;
+        }
+      };
 
   private static final NoOutputs singleton = new NoOutputs();
 
-  private NoOutputs() {
-  }
+  private NoOutputs() {}
 
   public static NoOutputs getSingleton() {
     return singleton;
@@ -68,7 +65,7 @@ public final class NoOutputs extends Outputs<Object> {
 
   @Override
   public Object add(Object prefix, Object output) {
-    assert prefix == NO_OUTPUT: "got " + prefix;
+    assert prefix == NO_OUTPUT : "got " + prefix;
     assert output == NO_OUTPUT;
     return NO_OUTPUT;
   }
@@ -82,13 +79,13 @@ public final class NoOutputs extends Outputs<Object> {
 
   @Override
   public void write(Object prefix, DataOutput out) {
-    //assert false;
+    // assert false;
   }
 
   @Override
   public Object read(DataInput in) {
-    //assert false;
-    //return null;
+    // assert false;
+    // return null;
     return NO_OUTPUT;
   }
 

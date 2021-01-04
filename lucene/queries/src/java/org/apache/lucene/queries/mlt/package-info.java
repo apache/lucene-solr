@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Document similarity query generators.
- */
+/** Document similarity query generators. */
 package org.apache.lucene.queries.mlt;

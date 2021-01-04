@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.analysis.boost;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link DelimitedBoostTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_dlmtd" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -35,18 +35,15 @@ import java.util.Map;
  */
 public class DelimitedBoostTokenFilterFactory extends TokenFilterFactory {
 
-  /**
-   * SPI name
-   */
+  /** SPI name */
   public static final String NAME = "delimitedBoost";
+
   public static final String DELIMITER_ATTR = "delimiter";
   public static final char DEFAULT_DELIMITER = '|';
 
   private final char delimiter;
 
-  /**
-   * Creates a new DelimitedPayloadTokenFilterFactory
-   */
+  /** Creates a new DelimitedPayloadTokenFilterFactory */
   public DelimitedBoostTokenFilterFactory(Map<String, String> args) {
     super(args);
     delimiter = getChar(args, DELIMITER_ATTR, DEFAULT_DELIMITER);
@@ -64,5 +61,4 @@ public class DelimitedBoostTokenFilterFactory extends TokenFilterFactory {
   public DelimitedBoostTokenFilter create(TokenStream input) {
     return new DelimitedBoostTokenFilter(input, delimiter);
   }
-
 }

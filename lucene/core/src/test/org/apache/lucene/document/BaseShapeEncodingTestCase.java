@@ -20,23 +20,29 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** base shape encoding class for testing encoding of tessellated {@link org.apache.lucene.document.XYShape} and
- * {@link LatLonShape}
-  */
+/**
+ * base shape encoding class for testing encoding of tessellated {@link
+ * org.apache.lucene.document.XYShape} and {@link LatLonShape}
+ */
 public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
   protected abstract int encodeX(double x);
+
   protected abstract double decodeX(int x);
+
   protected abstract int encodeY(double y);
+
   protected abstract double decodeY(int y);
 
   protected abstract double nextX();
+
   protected abstract double nextY();
 
   protected abstract Object nextPolygon();
+
   protected abstract Component2D createPolygon2D(Object polygon);
 
-  //One shared point with MBR -> MinY, MinX
+  // One shared point with MBR -> MinY, MinX
   public void testPolygonEncodingMinLatMinLon() {
     double ay = 0.0;
     double ax = 0.0;
@@ -63,7 +69,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //One shared point with MBR -> MinLat, MaxLon
+  // One shared point with MBR -> MinLat, MaxLon
   public void testPolygonEncodingMinLatMaxLon() {
     double ay = 1.0;
     double ax = 0.0;
@@ -90,7 +96,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //One shared point with MBR -> MaxLat, MaxLon
+  // One shared point with MBR -> MaxLat, MaxLon
   public void testPolygonEncodingMaxLatMaxLon() {
     double ay = 1.0;
     double ax = 0.0;
@@ -117,7 +123,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //One shared point with MBR -> MaxLat, MinLon
+  // One shared point with MBR -> MaxLat, MinLon
   public void testPolygonEncodingMaxLatMinLon() {
     double ay = 2.0;
     double ax = 0.0;
@@ -144,7 +150,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //Two shared point with MBR -> [MinLat, MinLon], [MaxLat, MaxLon], third point below
+  // Two shared point with MBR -> [MinLat, MinLon], [MaxLat, MaxLon], third point below
   public void testPolygonEncodingMinLatMinLonMaxLatMaxLonBelow() {
     double ay = 0.0;
     double ax = 0.0;
@@ -171,7 +177,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //Two shared point with MBR -> [MinLat, MinLon], [MaxLat, MaxLon], third point above
+  // Two shared point with MBR -> [MinLat, MinLon], [MaxLat, MaxLon], third point above
   public void testPolygonEncodingMinLatMinLonMaxLatMaxLonAbove() {
     double ay = 0.0;
     double ax = 0.0;
@@ -198,7 +204,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //Two shared point with MBR -> [MinLat, MaxLon], [MaxLat, MinLon], third point below
+  // Two shared point with MBR -> [MinLat, MaxLon], [MaxLat, MinLon], third point below
   public void testPolygonEncodingMinLatMaxLonMaxLatMinLonBelow() {
     double ay = 8.0;
     double ax = 6.0;
@@ -225,7 +231,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //Two shared point with MBR -> [MinLat, MaxLon], [MaxLat, MinLon], third point above
+  // Two shared point with MBR -> [MinLat, MaxLon], [MaxLat, MinLon], third point above
   public void testPolygonEncodingMinLatMaxLonMaxLatMinLonAbove() {
     double ay = 2.0;
     double ax = 0.0;
@@ -252,7 +258,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //all points shared with MBR
+  // all points shared with MBR
   public void testPolygonEncodingAllSharedAbove() {
     double ay = 0.0;
     double ax = 0.0;
@@ -279,7 +285,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //all points shared with MBR
+  // all points shared with MBR
   public void testPolygonEncodingAllSharedBelow() {
     double ay = 2.0;
     double ax = 0.0;
@@ -305,38 +311,39 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     assertEquals(encoded.cX, cxEnc);
   }
 
-  //[a,b,c] == [c,a,b] == [b,c,a] == [c,b,a] == [b,a,c] == [a,c,b]
-  public void verifyEncodingPermutations(int ayEnc, int axEnc, int byEnc, int bxEnc, int cyEnc, int cxEnc) {
-    //this is only valid when points are not co-planar
+  // [a,b,c] == [c,a,b] == [b,c,a] == [c,b,a] == [b,a,c] == [a,c,b]
+  public void verifyEncodingPermutations(
+      int ayEnc, int axEnc, int byEnc, int bxEnc, int cyEnc, int cxEnc) {
+    // this is only valid when points are not co-planar
     assertTrue(GeoUtils.orient(ayEnc, axEnc, byEnc, bxEnc, cyEnc, cxEnc) != 0);
     byte[] b = new byte[7 * ShapeField.BYTES];
-    //[a,b,c]
+    // [a,b,c]
     ShapeField.encodeTriangle(b, ayEnc, axEnc, true, byEnc, bxEnc, true, cyEnc, cxEnc, false);
     ShapeField.DecodedTriangle encodedABC = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedABC);
-    //[c,a,b]
+    // [c,a,b]
     ShapeField.encodeTriangle(b, cyEnc, cxEnc, false, ayEnc, axEnc, true, byEnc, bxEnc, true);
     ShapeField.DecodedTriangle encodedCAB = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedCAB);
     assertEquals(encodedABC, encodedCAB);
-    //[b,c,a]
+    // [b,c,a]
     ShapeField.encodeTriangle(b, byEnc, bxEnc, true, cyEnc, cxEnc, false, ayEnc, axEnc, true);
     ShapeField.DecodedTriangle encodedBCA = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedBCA);
     assertEquals(encodedABC, encodedBCA);
-    //[c,b,a]
+    // [c,b,a]
     ShapeField.encodeTriangle(b, cyEnc, cxEnc, true, byEnc, bxEnc, true, ayEnc, axEnc, false);
-    ShapeField.DecodedTriangle encodedCBA= new ShapeField.DecodedTriangle();
+    ShapeField.DecodedTriangle encodedCBA = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedCBA);
     assertEquals(encodedABC, encodedCBA);
-    //[b,a,c]
+    // [b,a,c]
     ShapeField.encodeTriangle(b, byEnc, bxEnc, true, ayEnc, axEnc, false, cyEnc, cxEnc, true);
-    ShapeField.DecodedTriangle encodedBAC= new ShapeField.DecodedTriangle();
+    ShapeField.DecodedTriangle encodedBAC = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedBAC);
     assertEquals(encodedABC, encodedBAC);
-    //[a,c,b]
+    // [a,c,b]
     ShapeField.encodeTriangle(b, ayEnc, axEnc, false, cyEnc, cxEnc, true, byEnc, bxEnc, true);
-    ShapeField.DecodedTriangle encodedACB= new ShapeField.DecodedTriangle();
+    ShapeField.DecodedTriangle encodedACB = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encodedACB);
     assertEquals(encodedABC, encodedACB);
   }
@@ -489,19 +496,39 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     verifyEncoding(ay, ax, by, bx, cy, cx);
   }
 
-  private void verifyEncoding(double ay, double ax, double by, double bx, double cy, double cx) {
+  protected void verifyEncoding(double ay, double ax, double by, double bx, double cy, double cx) {
     // encode triangle
-    int[] original = new int[]{encodeX(ax), encodeY(ay), encodeX(bx), encodeY(by), encodeX(cx), encodeY(cy)};
+    int[] original =
+        new int[] {encodeX(ax), encodeY(ay), encodeX(bx), encodeY(by), encodeX(cx), encodeY(cy)};
     byte[] b = new byte[7 * ShapeField.BYTES];
-    ShapeField.encodeTriangle(b, original[1], original[0], true, original[3], original[2], true, original[5], original[4], true);
+    ShapeField.encodeTriangle(
+        b,
+        original[1],
+        original[0],
+        true,
+        original[3],
+        original[2],
+        true,
+        original[5],
+        original[4],
+        true);
     ShapeField.DecodedTriangle encoded = new ShapeField.DecodedTriangle();
     ShapeField.decodeTriangle(b, encoded);
     // quantize decoded triangle
-    double[] encodedQuantize = new double[] {decodeX(encoded.aX), decodeY(encoded.aY), decodeX(encoded.bX), decodeY(encoded.bY), decodeX(encoded.cX), decodeY(encoded.cY)};
+    double[] encodedQuantize =
+        new double[] {
+          decodeX(encoded.aX),
+          decodeY(encoded.aY),
+          decodeX(encoded.bX),
+          decodeY(encoded.bY),
+          decodeX(encoded.cX),
+          decodeY(encoded.cY)
+        };
     // quantize original and order it to reflect encoding
-    double[] originalQuantize  = orderTriangle(original[0], original[1], original[2], original[3], original[4], original[5]);
+    double[] originalQuantize =
+        orderTriangle(original[0], original[1], original[2], original[3], original[4], original[5]);
     // check spatial property
-    for (int i =0; i < 100; i ++) {
+    for (int i = 0; i < 100; i++) {
       Component2D polygon2D = createPolygon2D(nextPolygon());
       boolean originalIntersects = false;
       boolean encodedIntersects = false;
@@ -515,16 +542,58 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
           encodedContains = polygon2D.contains(encodedQuantize[0], encodedQuantize[1]);
           break;
         case LINE:
-          originalIntersects = polygon2D.intersectsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
-          encodedIntersects = polygon2D.intersectsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
-          originalContains = polygon2D.containsLine(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3]);
-          encodedContains = polygon2D.containsLine(encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
+          originalIntersects =
+              polygon2D.intersectsLine(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3]);
+          encodedIntersects =
+              polygon2D.intersectsLine(
+                  encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
+          originalContains =
+              polygon2D.containsLine(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3]);
+          encodedContains =
+              polygon2D.containsLine(
+                  encodedQuantize[0], encodedQuantize[1], encodedQuantize[2], encodedQuantize[3]);
           break;
         case TRIANGLE:
-          originalIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          encodedIntersects = polygon2D.intersectsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          originalContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
-          encodedContains = polygon2D.containsTriangle(originalQuantize[0], originalQuantize[1], originalQuantize[2], originalQuantize[3], originalQuantize[4], originalQuantize[5]);
+          originalIntersects =
+              polygon2D.intersectsTriangle(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3],
+                  originalQuantize[4],
+                  originalQuantize[5]);
+          encodedIntersects =
+              polygon2D.intersectsTriangle(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3],
+                  originalQuantize[4],
+                  originalQuantize[5]);
+          originalContains =
+              polygon2D.containsTriangle(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3],
+                  originalQuantize[4],
+                  originalQuantize[5]);
+          encodedContains =
+              polygon2D.containsTriangle(
+                  originalQuantize[0],
+                  originalQuantize[1],
+                  originalQuantize[2],
+                  originalQuantize[3],
+                  originalQuantize[4],
+                  originalQuantize[5]);
           break;
       }
       assertTrue(originalIntersects == encodedIntersects);
@@ -538,23 +607,35 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
 
     if (orientation == -1) {
       // we need to change the orientation if CW for triangles
-     return  new double[]{decodeX(cX), decodeY(cY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
+      return new double[] {
+        decodeX(cX), decodeY(cY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)
+      };
     } else if (aX == bX && aY == bY) {
       if (aX != cX || aY != cY) { // not a point
         if (aX < cX) {
-          return new double[]{decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY)};
+          return new double[] {
+            decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY)
+          };
         } else {
-          return new double[]{decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY)};
+          return new double[] {
+            decodeX(cX), decodeY(cY), decodeX(aX), decodeY(aY), decodeX(cX), decodeY(cY)
+          };
         }
       }
     } else if ((aX == cX && aY == cY) || (bX == cX && bY == cY)) {
       if (aX < bX) {
-        return new double[]{decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)};
+        return new double[] {
+          decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY)
+        };
       } else {
-        return new double[]{decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY)};
+        return new double[] {
+          decodeX(bX), decodeY(bY), decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY)
+        };
       }
     }
-    return new double[]{decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(cX), decodeY(cY)};
+    return new double[] {
+      decodeX(aX), decodeY(aY), decodeX(bX), decodeY(bY), decodeX(cX), decodeY(cY)
+    };
   }
 
   public void testDegeneratedTriangle() {

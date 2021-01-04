@@ -16,51 +16,46 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
+import com.ibm.icu.text.Transliterator;
+import com.ibm.icu.text.UnicodeSet;
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.TokenStream;
 
-import com.ibm.icu.text.Transliterator;
-import com.ibm.icu.text.UnicodeSet;
-
-
-/**
- * Test the ICUTransformFilter with some basic examples.
- */
+/** Test the ICUTransformFilter with some basic examples. */
 public class TestICUTransformFilter extends BaseTokenStreamTestCase {
-  
+
   public void testBasicFunctionality() throws Exception {
-    checkToken(Transliterator.getInstance("Traditional-Simplified"), 
-        "簡化字", "简化字"); 
-    checkToken(Transliterator.getInstance("Katakana-Hiragana"), 
-        "ヒラガナ", "ひらがな");
-    checkToken(Transliterator.getInstance("Fullwidth-Halfwidth"), 
-        "アルアノリウ", "ｱﾙｱﾉﾘｳ");
-    checkToken(Transliterator.getInstance("Any-Latin"), 
-        "Αλφαβητικός Κατάλογος", "Alphabētikós Katálogos");
-    checkToken(Transliterator.getInstance("NFD; [:Nonspacing Mark:] Remove"), 
-        "Alphabētikós Katálogos", "Alphabetikos Katalogos");
-    checkToken(Transliterator.getInstance("Han-Latin"),
-        "中国", "zhōng guó");
+    checkToken(Transliterator.getInstance("Traditional-Simplified"), "簡化字", "简化字");
+    checkToken(Transliterator.getInstance("Katakana-Hiragana"), "ヒラガナ", "ひらがな");
+    checkToken(Transliterator.getInstance("Fullwidth-Halfwidth"), "アルアノリウ", "ｱﾙｱﾉﾘｳ");
+    checkToken(
+        Transliterator.getInstance("Any-Latin"), "Αλφαβητικός Κατάλογος", "Alphabētikós Katálogos");
+    checkToken(
+        Transliterator.getInstance("NFD; [:Nonspacing Mark:] Remove"),
+        "Alphabētikós Katálogos",
+        "Alphabetikos Katalogos");
+    checkToken(Transliterator.getInstance("Han-Latin"), "中国", "zhōng guó");
   }
-  
+
   public void testCustomFunctionality() throws Exception {
     String rules = "a > b; b > c;"; // convert a's to b's and b's to c's
-    checkToken(Transliterator.createFromRules("test", rules, Transliterator.FORWARD), "abacadaba", "bcbcbdbcb");
+    checkToken(
+        Transliterator.createFromRules("test", rules, Transliterator.FORWARD),
+        "abacadaba",
+        "bcbcbdbcb");
   }
-  
+
   public void testCustomFunctionality2() throws Exception {
     String rules = "c { a > b; a > d;"; // convert a's to b's and b's to c's
     checkToken(Transliterator.createFromRules("test", rules, Transliterator.FORWARD), "caa", "cbd");
   }
-  
+
   public void testOptimizer() throws Exception {
     String rules = "a > b; b > c;"; // convert a's to b's and b's to c's
     Transliterator custom = Transliterator.createFromRules("test", rules, Transliterator.FORWARD);
@@ -70,12 +65,11 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     new ICUTransformFilter(input, custom);
     assertTrue(custom.getFilter().equals(new UnicodeSet("[ab]")));
   }
-  
+
   public void testOptimizer2() throws Exception {
-    checkToken(Transliterator.getInstance("Traditional-Simplified; CaseFold"), 
-        "ABCDE", "abcde");
+    checkToken(Transliterator.getInstance("Traditional-Simplified; CaseFold"), "ABCDE", "abcde");
   }
-  
+
   public void testOptimizerSurrogate() throws Exception {
     String rules = "\\U00020087 > x;"; // convert CJK UNIFIED IDEOGRAPH-20087 to an x
     Transliterator custom = Transliterator.createFromRules("test", rules, Transliterator.FORWARD);
@@ -86,35 +80,41 @@ public class TestICUTransformFilter extends BaseTokenStreamTestCase {
     assertTrue(custom.getFilter().equals(new UnicodeSet("[\\U00020087]")));
   }
 
-  private void checkToken(Transliterator transform, String input, String expected) throws IOException {
+  private void checkToken(Transliterator transform, String input, String expected)
+      throws IOException {
     final KeywordTokenizer input1 = new KeywordTokenizer();
     input1.setReader(new StringReader(input));
     TokenStream ts = new ICUTransformFilter(input1, transform);
-    assertTokenStreamContents(ts, new String[] { expected });
+    assertTokenStreamContents(ts, new String[] {expected});
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     final Transliterator transform = Transliterator.getInstance("Any-Latin");
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, transform));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(
+                tokenizer, new ICUTransformFilter(tokenizer, transform));
+          }
+        };
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new ICUTransformFilter(tokenizer, Transliterator.getInstance("Any-Latin")));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(
+                tokenizer,
+                new ICUTransformFilter(tokenizer, Transliterator.getInstance("Any-Latin")));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestZeroAffix2 extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("zeroaffix2.aff", "zeroaffix2.dic");
   }
-  
+
   public void testStemming() {
     assertStemsTo("b", "beer");
   }

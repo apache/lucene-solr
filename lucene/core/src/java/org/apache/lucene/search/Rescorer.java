@@ -16,43 +16,33 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 /**
- * Re-scores the topN results ({@link TopDocs}) from an original
- * query.  See {@link QueryRescorer} for an actual
- * implementation.  Typically, you run a low-cost
- * first-pass query across the entire index, collecting the
- * top few hundred hits perhaps, and then use this class to
- * mix in a more costly second pass scoring.
+ * Re-scores the topN results ({@link TopDocs}) from an original query. See {@link QueryRescorer}
+ * for an actual implementation. Typically, you run a low-cost first-pass query across the entire
+ * index, collecting the top few hundred hits perhaps, and then use this class to mix in a more
+ * costly second pass scoring.
  *
- * <p>See {@link
- * QueryRescorer#rescore(IndexSearcher,TopDocs,Query,double,int)}
- * for a simple static method to call to rescore using a 2nd
- * pass {@link Query}.
+ * <p>See {@link QueryRescorer#rescore(IndexSearcher,TopDocs,Query,double,int)} for a simple static
+ * method to call to rescore using a 2nd pass {@link Query}.
  *
  * @lucene.experimental
  */
-
 public abstract class Rescorer {
 
-  /** 
+  /**
    * Rescore an initial first-pass {@link TopDocs}.
    *
-   * @param searcher {@link IndexSearcher} used to produce the
-   *   first pass topDocs
-   * @param firstPassTopDocs Hits from the first pass
-   *   search.  It's very important that these hits were
-   *   produced by the provided searcher; otherwise the doc
-   *   IDs will not match!
+   * @param searcher {@link IndexSearcher} used to produce the first pass topDocs
+   * @param firstPassTopDocs Hits from the first pass search. It's very important that these hits
+   *     were produced by the provided searcher; otherwise the doc IDs will not match!
    * @param topN How many re-scored hits to return
-   */ 
-  public abstract TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) throws IOException;
-
-  /**
-   * Explains how the score for the specified document was
-   * computed.
    */
-  public abstract Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException;
+  public abstract TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+      throws IOException;
+
+  /** Explains how the score for the specified document was computed. */
+  public abstract Explanation explain(
+      IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException;
 }

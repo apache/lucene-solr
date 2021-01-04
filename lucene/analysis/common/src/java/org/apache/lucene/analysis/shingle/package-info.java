@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Word n-gram filters.
- */
+/** Word n-gram filters. */
 package org.apache.lucene.analysis.shingle;

@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.path;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -26,8 +25,8 @@ import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizer for path-like hierarchies.
- * <p>
- * Take something like:
+ *
+ * <p>Take something like:
  *
  * <pre>
  *  /something/something/else
@@ -44,15 +43,15 @@ import org.apache.lucene.util.AttributeFactory;
 public class PathHierarchyTokenizer extends Tokenizer {
 
   public PathHierarchyTokenizer() {
-    this( DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, DEFAULT_SKIP);
+    this(DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, DEFAULT_SKIP);
   }
 
-  public PathHierarchyTokenizer( int skip) {
-    this( DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, skip);
+  public PathHierarchyTokenizer(int skip) {
+    this(DEFAULT_BUFFER_SIZE, DEFAULT_DELIMITER, DEFAULT_DELIMITER, skip);
   }
 
-  public PathHierarchyTokenizer( int bufferSize, char delimiter) {
-    this( bufferSize, delimiter, delimiter, DEFAULT_SKIP);
+  public PathHierarchyTokenizer(int bufferSize, char delimiter) {
+    this(bufferSize, delimiter, delimiter, DEFAULT_SKIP);
   }
 
   public PathHierarchyTokenizer(char delimiter, char replacement) {
@@ -63,7 +62,8 @@ public class PathHierarchyTokenizer extends Tokenizer {
     this(DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public PathHierarchyTokenizer(AttributeFactory factory, char delimiter, char replacement, int skip) {
+  public PathHierarchyTokenizer(
+      AttributeFactory factory, char delimiter, char replacement, int skip) {
     this(factory, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
@@ -71,8 +71,8 @@ public class PathHierarchyTokenizer extends Tokenizer {
     this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
   }
 
-  public PathHierarchyTokenizer
-      (AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {
+  public PathHierarchyTokenizer(
+      AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {
     super(factory);
     if (bufferSize < 0) {
       throw new IllegalArgumentException("bufferSize cannot be negative");
@@ -103,23 +103,21 @@ public class PathHierarchyTokenizer extends Tokenizer {
   private int skipped = 0;
   private boolean endDelimiter = false;
   private StringBuilder resultToken;
-  
-  private int charsRead = 0;
 
+  private int charsRead = 0;
 
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
-    termAtt.append( resultToken );
-    if(resultToken.length() == 0){
+    termAtt.append(resultToken);
+    if (resultToken.length() == 0) {
       posAtt.setPositionIncrement(1);
-    }
-    else{
+    } else {
       posAtt.setPositionIncrement(0);
     }
     int length = 0;
     boolean added = false;
-    if( endDelimiter ){
+    if (endDelimiter) {
       termAtt.append(replacement);
       length++;
       endDelimiter = false;
@@ -131,52 +129,46 @@ public class PathHierarchyTokenizer extends Tokenizer {
       if (c >= 0) {
         charsRead++;
       } else {
-        if( skipped > skip ) {
+        if (skipped > skip) {
           length += resultToken.length();
           termAtt.setLength(length);
-           offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition + length));
-          if( added ){
+          offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition + length));
+          if (added) {
             resultToken.setLength(0);
             resultToken.append(termAtt.buffer(), 0, length);
           }
           return added;
-        }
-        else{
+        } else {
           return false;
         }
       }
-      if( !added ){
+      if (!added) {
         added = true;
         skipped++;
-        if( skipped > skip ){
-          termAtt.append(c == delimiter ? replacement : (char)c);
+        if (skipped > skip) {
+          termAtt.append(c == delimiter ? replacement : (char) c);
           length++;
-        }
-        else {
+        } else {
           startPosition++;
         }
-      }
-      else {
-        if( c == delimiter ){
-          if( skipped > skip ){
+      } else {
+        if (c == delimiter) {
+          if (skipped > skip) {
             endDelimiter = true;
             break;
           }
           skipped++;
-          if( skipped > skip ){
+          if (skipped > skip) {
             termAtt.append(replacement);
             length++;
-          }
-          else {
+          } else {
             startPosition++;
           }
-        }
-        else {
-          if( skipped > skip ){
-            termAtt.append((char)c);
+        } else {
+          if (skipped > skip) {
+            termAtt.append((char) c);
             length++;
-          }
-          else {
+          } else {
             startPosition++;
           }
         }
@@ -184,7 +176,7 @@ public class PathHierarchyTokenizer extends Tokenizer {
     }
     length += resultToken.length();
     termAtt.setLength(length);
-    offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition+length));
+    offsetAtt.setOffset(correctOffset(startPosition), correctOffset(startPosition + length));
     resultToken.setLength(0);
     resultToken.append(termAtt.buffer(), 0, length);
     return true;

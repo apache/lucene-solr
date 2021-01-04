@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.packed.PackedInts;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 @Nightly
 public class TestTimSorterWorstCase extends LuceneTestCase {
@@ -93,28 +90,28 @@ public class TestTimSorterWorstCase extends LuceneTestCase {
   }
 
   //
-  // Code below is borrowed from https://github.com/abstools/java-timsort-bug/blob/master/TestTimSort.java
+  // Code below is borrowed from
+  // https://github.com/abstools/java-timsort-bug/blob/master/TestTimSort.java
   //
 
   /**
    * Fills <code>runs</code> with a sequence of run lengths of the form<br>
-   * Y_n     x_{n,1}   x_{n,2}   ... x_{n,l_n} <br>
+   * Y_n x_{n,1} x_{n,2} ... x_{n,l_n} <br>
    * Y_{n-1} x_{n-1,1} x_{n-1,2} ... x_{n-1,l_{n-1}} <br>
    * ... <br>
-   * Y_1     x_{1,1}   x_{1,2}   ... x_{1,l_1}<br>
-   * The Y_i's are chosen to satisfy the invariant throughout execution,
-   * but the x_{i,j}'s are merged (by <code>TimSort.mergeCollapse</code>)
-   * into an X_i that violates the invariant.
+   * Y_1 x_{1,1} x_{1,2} ... x_{1,l_1}<br>
+   * The Y_i's are chosen to satisfy the invariant throughout execution, but the x_{i,j}'s are
+   * merged (by <code>TimSort.mergeCollapse</code>) into an X_i that violates the invariant.
    */
   private static List<Integer> runsWorstCase(int length, int minRun) {
     List<Integer> runs = new LinkedList<>();
 
-    int runningTotal = 0, Y=minRun+4, X=minRun;
+    int runningTotal = 0, Y = minRun + 4, X = minRun;
 
-    while((long) runningTotal+Y+X <= length) {
+    while ((long) runningTotal + Y + X <= length) {
       runningTotal += X + Y;
       generateWrongElem(X, minRun, runs);
-      runs.add(0,Y);
+      runs.add(0, Y);
 
       // X_{i+1} = Y_i + x_{i,1} + 1, since runs.get(1) = x_{i,1}
       X = Y + runs.get(1) + 1;
@@ -123,12 +120,12 @@ public class TestTimSorterWorstCase extends LuceneTestCase {
       Y += X + 1;
     }
 
-    if((long) runningTotal + X <= length) {
+    if ((long) runningTotal + X <= length) {
       runningTotal += X;
       generateWrongElem(X, minRun, runs);
     }
 
-    runs.add(length-runningTotal);
+    runs.add(length - runningTotal);
     return runs;
   }
 
@@ -136,33 +133,33 @@ public class TestTimSorterWorstCase extends LuceneTestCase {
    * Adds a sequence x_1, ..., x_n of run lengths to <code>runs</code> such that:<br>
    * 1. X = x_1 + ... + x_n <br>
    * 2. x_j >= minRun for all j <br>
-   * 3. x_1 + ... + x_{j-2}  <  x_j  <  x_1 + ... + x_{j-1} for all j <br>
-   * These conditions guarantee that TimSort merges all x_j's one by one
-   * (resulting in X) using only merges on the second-to-last element.
-   * @param X  The sum of the sequence that should be added to runs.
+   * 3. x_1 + ... + x_{j-2} < x_j < x_1 + ... + x_{j-1} for all j <br>
+   * These conditions guarantee that TimSort merges all x_j's one by one (resulting in X) using only
+   * merges on the second-to-last element.
+   *
+   * @param X The sum of the sequence that should be added to runs.
    */
   private static void generateWrongElem(int X, int minRun, List<Integer> runs) {
-    for(int newTotal; X >= 2*minRun+1; X = newTotal) {
-      //Default strategy
-      newTotal = X/2 + 1;
+    for (int newTotal; X >= 2 * minRun + 1; X = newTotal) {
+      // Default strategy
+      newTotal = X / 2 + 1;
 
-      //Specialized strategies
-      if(3*minRun+3 <= X && X <= 4*minRun+1) {
+      // Specialized strategies
+      if (3 * minRun + 3 <= X && X <= 4 * minRun + 1) {
         // add x_1=MIN+1, x_2=MIN, x_3=X-newTotal  to runs
-        newTotal = 2*minRun+1;
-      } else if(5*minRun+5 <= X && X <= 6*minRun+5) {
+        newTotal = 2 * minRun + 1;
+      } else if (5 * minRun + 5 <= X && X <= 6 * minRun + 5) {
         // add x_1=MIN+1, x_2=MIN, x_3=MIN+2, x_4=X-newTotal  to runs
-        newTotal = 3*minRun+3;
-      } else if(8*minRun+9 <= X && X <= 10*minRun+9) {
+        newTotal = 3 * minRun + 3;
+      } else if (8 * minRun + 9 <= X && X <= 10 * minRun + 9) {
         // add x_1=MIN+1, x_2=MIN, x_3=MIN+2, x_4=2MIN+2, x_5=X-newTotal  to runs
-        newTotal = 5*minRun+5;
-      } else if(13*minRun+15 <= X && X <= 16*minRun+17) {
+        newTotal = 5 * minRun + 5;
+      } else if (13 * minRun + 15 <= X && X <= 16 * minRun + 17) {
         // add x_1=MIN+1, x_2=MIN, x_3=MIN+2, x_4=2MIN+2, x_5=3MIN+4, x_6=X-newTotal  to runs
-        newTotal = 8*minRun+9;
+        newTotal = 8 * minRun + 9;
       }
-      runs.add(0, X-newTotal);
+      runs.add(0, X - newTotal);
     }
     runs.add(0, X);
   }
-
 }

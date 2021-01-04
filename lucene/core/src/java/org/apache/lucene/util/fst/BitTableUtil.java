@@ -27,12 +27,13 @@ import java.io.IOException;
 class BitTableUtil {
 
   /**
-   * Returns whether the bit at given zero-based index is set.
-   * <br>Example: bitIndex 10 means the third bit on the right of the second byte.
+   * Returns whether the bit at given zero-based index is set. <br>
+   * Example: bitIndex 10 means the third bit on the right of the second byte.
    *
-   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0, and strictly less than
-   *                 {@code number of bit-table bytes * Byte.SIZE}.
-   * @param reader   The {@link FST.BytesReader} to read. It must be positioned at the beginning of the bit-table.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0, and strictly
+   *     less than {@code number of bit-table bytes * Byte.SIZE}.
+   * @param reader The {@link FST.BytesReader} to read. It must be positioned at the beginning of
+   *     the bit-table.
    */
   static boolean isBitSet(int bitIndex, FST.BytesReader reader) throws IOException {
     assert bitIndex >= 0 : "bitIndex=" + bitIndex;
@@ -40,12 +41,12 @@ class BitTableUtil {
     return (readByte(reader) & (1L << (bitIndex & (Byte.SIZE - 1)))) != 0;
   }
 
-
   /**
    * Counts all bits set in the bit-table.
    *
    * @param bitTableBytes The number of bytes in the bit-table.
-   * @param reader        The {@link FST.BytesReader} to read. It must be positioned at the beginning of the bit-table.
+   * @param reader The {@link FST.BytesReader} to read. It must be positioned at the beginning of
+   *     the bit-table.
    */
   static int countBits(int bitTableBytes, FST.BytesReader reader) throws IOException {
     assert bitTableBytes >= 0 : "bitTableBytes=" + bitTableBytes;
@@ -62,13 +63,14 @@ class BitTableUtil {
   }
 
   /**
-   * Counts the bits set up to the given bit zero-based index, exclusive.
-   * <br>In other words, how many 1s there are up to the bit at the given index excluded.
-   * <br>Example: bitIndex 10 means the third bit on the right of the second byte.
+   * Counts the bits set up to the given bit zero-based index, exclusive. <br>
+   * In other words, how many 1s there are up to the bit at the given index excluded. <br>
+   * Example: bitIndex 10 means the third bit on the right of the second byte.
    *
-   * @param bitIndex The bit zero-based index, exclusive. It must be greater than or equal to 0, and less than or equal
-   *                 to {@code number of bit-table bytes * Byte.SIZE}.
-   * @param reader   The {@link FST.BytesReader} to read. It must be positioned at the beginning of the bit-table.
+   * @param bitIndex The bit zero-based index, exclusive. It must be greater than or equal to 0, and
+   *     less than or equal to {@code number of bit-table bytes * Byte.SIZE}.
+   * @param reader The {@link FST.BytesReader} to read. It must be positioned at the beginning of
+   *     the bit-table.
    */
   static int countBitsUpTo(int bitIndex, FST.BytesReader reader) throws IOException {
     assert bitIndex >= 0 : "bitIndex=" + bitIndex;
@@ -89,21 +91,23 @@ class BitTableUtil {
   }
 
   /**
-   * Returns the index of the next bit set following the given bit zero-based index.
-   * <br>For example with bits 100011:
-   * the next bit set after index=-1 is at index=0;
-   * the next bit set after index=0 is at index=1;
-   * the next bit set after index=1 is at index=5;
-   * there is no next bit set after index=5.
+   * Returns the index of the next bit set following the given bit zero-based index. <br>
+   * For example with bits 100011: the next bit set after index=-1 is at index=0; the next bit set
+   * after index=0 is at index=1; the next bit set after index=1 is at index=5; there is no next bit
+   * set after index=5.
    *
-   * @param bitIndex      The bit zero-based index. It must be greater than or equal to -1, and strictly less than
-   *                      {@code number of bit-table bytes * Byte.SIZE}.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to -1, and strictly
+   *     less than {@code number of bit-table bytes * Byte.SIZE}.
    * @param bitTableBytes The number of bytes in the bit-table.
-   * @param reader        The {@link FST.BytesReader} to read. It must be positioned at the beginning of the bit-table.
-   * @return The zero-based index of the next bit set after the provided {@code bitIndex}; or -1 if none.
+   * @param reader The {@link FST.BytesReader} to read. It must be positioned at the beginning of
+   *     the bit-table.
+   * @return The zero-based index of the next bit set after the provided {@code bitIndex}; or -1 if
+   *     none.
    */
-  static int nextBitSet(int bitIndex, int bitTableBytes, FST.BytesReader reader) throws IOException {
-    assert bitIndex >= -1 && bitIndex < bitTableBytes * Byte.SIZE : "bitIndex=" + bitIndex + " bitTableBytes=" + bitTableBytes;
+  static int nextBitSet(int bitIndex, int bitTableBytes, FST.BytesReader reader)
+      throws IOException {
+    assert bitIndex >= -1 && bitIndex < bitTableBytes * Byte.SIZE
+        : "bitIndex=" + bitIndex + " bitTableBytes=" + bitTableBytes;
     int byteIndex = bitIndex / Byte.SIZE;
     int mask = -1 << ((bitIndex + 1) & (Byte.SIZE - 1));
     int i;
@@ -124,17 +128,17 @@ class BitTableUtil {
   }
 
   /**
-   * Returns the index of the previous bit set preceding the given bit zero-based index.
-   * <br>For example with bits 100011:
-   * there is no previous bit set before index=0.
-   * the previous bit set before index=1 is at index=0;
-   * the previous bit set before index=5 is at index=1;
-   * the previous bit set before index=64 is at index=5;
+   * Returns the index of the previous bit set preceding the given bit zero-based index. <br>
+   * For example with bits 100011: there is no previous bit set before index=0. the previous bit set
+   * before index=1 is at index=0; the previous bit set before index=5 is at index=1; the previous
+   * bit set before index=64 is at index=5;
    *
-   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0, and less than or equal to
-   *                 {@code number of bit-table bytes * Byte.SIZE}.
-   * @param reader   The {@link FST.BytesReader} to read. It must be positioned at the beginning of the bit-table.
-   * @return The zero-based index of the previous bit set before the provided {@code bitIndex}; or -1 if none.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0, and less than
+   *     or equal to {@code number of bit-table bytes * Byte.SIZE}.
+   * @param reader The {@link FST.BytesReader} to read. It must be positioned at the beginning of
+   *     the bit-table.
+   * @return The zero-based index of the previous bit set before the provided {@code bitIndex}; or
+   *     -1 if none.
    */
   static int previousBitSet(int bitIndex, FST.BytesReader reader) throws IOException {
     assert bitIndex >= 0 : "bitIndex=" + bitIndex;

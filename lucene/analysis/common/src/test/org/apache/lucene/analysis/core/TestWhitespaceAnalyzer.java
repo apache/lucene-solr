@@ -18,32 +18,34 @@
 package org.apache.lucene.analysis.core;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 public class TestWhitespaceAnalyzer extends BaseTokenStreamTestCase {
 
   private static final String LONGTOKEN =
-            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+      "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
           + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
           + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
 
   public void testDefaultMaximumTokenLength() throws IOException {
     try (Analyzer a = new WhitespaceAnalyzer()) {
-      assertAnalyzesTo(a, LONGTOKEN + " extra", new String[]{
-          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
-          + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
-          + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstu",
-          "vwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz", "extra"
-      });
+      assertAnalyzesTo(
+          a,
+          LONGTOKEN + " extra",
+          new String[] {
+            "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+                + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+                + "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstu",
+            "vwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+            "extra"
+          });
     }
   }
 
   public void testCustomMaximumTokenLength() throws IOException {
     try (Analyzer a = new WhitespaceAnalyzer(1024)) {
-      assertAnalyzesTo(a, LONGTOKEN + " extra", new String[] { LONGTOKEN, "extra" });
+      assertAnalyzesTo(a, LONGTOKEN + " extra", new String[] {LONGTOKEN, "extra"});
     }
   }
-
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Hindi.
- */
+/** Analyzer for Hindi. */
 package org.apache.lucene.analysis.hi;

@@ -16,35 +16,32 @@
  */
 package org.apache.lucene.analysis.br;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the Brazilian stem filter factory is working.
- */
+/** Simple tests to ensure the Brazilian stem filter factory is working. */
 public class TestBrazilianStemFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually stems and normalizes text.
-   */
+  /** Ensure the filter actually stems and normalizes text. */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("Brasília");
     Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenizer.setReader(reader);
     TokenStream stream = tokenFilterFactory("BrazilianStem").create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "brasil" });
+    assertTokenStreamContents(stream, new String[] {"brasil"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
-      tokenFilterFactory("BrazilianStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("BrazilianStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

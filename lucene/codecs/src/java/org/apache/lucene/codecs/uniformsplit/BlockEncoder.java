@@ -18,14 +18,13 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 
 /**
  * Encodes the raw bytes of a block when the index is written.
- * <p>
- * For example, implementations may compress or encrypt.
+ *
+ * <p>For example, implementations may compress or encrypt.
  *
  * @see BlockDecoder
  * @lucene.experimental
@@ -34,6 +33,7 @@ public interface BlockEncoder {
 
   /**
    * Encodes all the bytes of one block in a single operation. The encoding is per block.
+   *
    * @param blockBytes The input block bytes to read.
    * @param length The number of bytes to read from the input.
    * @return The encoded block bytes.
@@ -41,19 +41,13 @@ public interface BlockEncoder {
    */
   WritableBytes encode(DataInput blockBytes, long length) throws IOException;
 
-  /**
-   * Writable byte buffer.
-   */
+  /** Writable byte buffer. */
   interface WritableBytes {
 
-    /**
-     * Gets the number of bytes.
-     */
+    /** Gets the number of bytes. */
     long size();
 
-    /**
-     * Writes the bytes to the provided {@link DataOutput}.
-     */
+    /** Writes the bytes to the provided {@link DataOutput}. */
     void writeTo(DataOutput dataOutput) throws IOException;
   }
 }

@@ -16,30 +16,29 @@
  */
 package org.apache.lucene.analysis.ckb;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Sorani normalization factory is working.
- */
+/** Simple tests to ensure the Sorani normalization factory is working. */
 public class TestSoraniNormalizationFilterFactory extends BaseTokenStreamFactoryTestCase {
-  
+
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("پیــــاوەکان");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("SoraniNormalization").create(stream);
-    assertTokenStreamContents(stream, new String[] { "پیاوەکان" });
+    assertTokenStreamContents(stream, new String[] {"پیاوەکان"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
-      tokenFilterFactory("SoraniNormalization", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("SoraniNormalization", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

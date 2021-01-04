@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks.alt;
 
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.Benchmark;
 
@@ -25,9 +24,11 @@ public class AltPackageTaskTest extends BenchmarkTestCase {
 
   /** Benchmark should fail loading the algorithm when alt is not specified */
   public void testWithoutAlt() throws Exception {
-    expectThrows(Exception.class, () -> {
-      execBenchmark(altAlg(false));
-    });
+    expectThrows(
+        Exception.class,
+        () -> {
+          execBenchmark(altAlg(false));
+        });
   }
 
   /** Benchmark should be able to load the algorithm when alt is specified */
@@ -36,17 +37,14 @@ public class AltPackageTaskTest extends BenchmarkTestCase {
     assertNotNull(bm);
     assertNotNull(bm.getRunData().getPoints());
   }
-  
+
   private String[] altAlg(boolean allowAlt) {
     String altTask = "{ AltTest }";
     if (allowAlt) {
       return new String[] {
-          "alt.tasks.packages = " +this.getClass().getPackage().getName(),
-          altTask
+        "alt.tasks.packages = " + this.getClass().getPackage().getName(), altTask
       };
     }
-    return new String[] {
-        altTask
-    };
+    return new String[] {altTask};
   }
 }

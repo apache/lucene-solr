@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.el;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
- * Factory for {@link GreekStemFilter}. 
+/**
+ * Factory for {@link GreekStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_gstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.GreekStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -41,13 +41,13 @@ public class GreekStemFilterFactory extends TokenFilterFactory {
   public static final String NAME = "greekStem";
 
   /** Creates a new GreekStemFilterFactory */
-  public GreekStemFilterFactory(Map<String,String> args) {
+  public GreekStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public GreekStemFilterFactory() {
     throw defaultCtorException();

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Estonian.
- */
+/** Analyzer for Estonian. */
 package org.apache.lucene.analysis.et;

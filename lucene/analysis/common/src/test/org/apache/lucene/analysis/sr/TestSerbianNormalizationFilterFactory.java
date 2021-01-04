@@ -16,41 +16,39 @@
  */
 package org.apache.lucene.analysis.sr;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the Serbian normalization factory is working.
- */
+/** Simple tests to ensure the Serbian normalization factory is working. */
 public class TestSerbianNormalizationFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("đura");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("SerbianNormalization").create(stream);
-    assertTokenStreamContents(stream, new String[] { "djura" });
+    assertTokenStreamContents(stream, new String[] {"djura"});
   }
 
   public void testRegularStemming() throws Exception {
     Reader reader = new StringReader("ђура");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("SerbianNormalization", "haircut", "regular").create(stream);
-    assertTokenStreamContents(stream, new String[] { "đura" });
-  }
-   
-  /** Test that bogus arguments result in exception */
-  public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("SerbianNormalization", "bogusArg", "bogusValue");
-    });
-    assertTrue(expected.getMessage().contains("Unknown parameters"));
+    assertTokenStreamContents(stream, new String[] {"đura"});
   }
 
+  /** Test that bogus arguments result in exception */
+  public void testBogusArguments() throws Exception {
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("SerbianNormalization", "bogusArg", "bogusValue");
+            });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
+  }
 }

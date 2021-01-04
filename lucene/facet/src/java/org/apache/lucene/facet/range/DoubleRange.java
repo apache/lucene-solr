@@ -18,7 +18,6 @@ package org.apache.lucene.facet.range;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -35,9 +34,11 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.NumericUtils;
 
-/** Represents a range over double values.
+/**
+ * Represents a range over double values.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public final class DoubleRange extends Range {
   /** Minimum (inclusive). */
   public final double min;
@@ -46,13 +47,14 @@ public final class DoubleRange extends Range {
   public final double max;
 
   /** Create a DoubleRange. */
-  public DoubleRange(String label, double minIn, boolean minInclusive, double maxIn, boolean maxInclusive) {
+  public DoubleRange(
+      String label, double minIn, boolean minInclusive, double maxIn, boolean maxInclusive) {
     super(label);
 
     // TODO: if DoubleDocValuesField used
     // NumericUtils.doubleToSortableLong format (instead of
     // Double.doubleToRawLongBits) we could do comparisons
-    // in long space 
+    // in long space
 
     if (Double.isNaN(minIn)) {
       throw new IllegalArgumentException("min cannot be NaN");
@@ -83,9 +85,12 @@ public final class DoubleRange extends Range {
   }
 
   LongRange toLongRange() {
-    return new LongRange(label,
-                         NumericUtils.doubleToSortableLong(min), true,
-                         NumericUtils.doubleToSortableLong(max), true);
+    return new LongRange(
+        label,
+        NumericUtils.doubleToSortableLong(min),
+        true,
+        NumericUtils.doubleToSortableLong(max),
+        true);
   }
 
   @Override
@@ -99,9 +104,9 @@ public final class DoubleRange extends Range {
       return false;
     }
     DoubleRange that = (DoubleRange) _that;
-    return that.label.equals(this.label) &&
-      Double.compare(that.min, this.min) == 0 &&
-      Double.compare(that.max, this.max) == 0;
+    return that.label.equals(this.label)
+        && Double.compare(that.min, this.min) == 0
+        && Double.compare(that.max, this.max) == 0;
   }
 
   @Override
@@ -122,14 +127,13 @@ public final class DoubleRange extends Range {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(ValueSourceQuery other) {
-      return range.equals(other.range) && 
-             Objects.equals(fastMatchQuery, other.fastMatchQuery) && 
-             valueSource.equals(other.valueSource);
+      return range.equals(other.range)
+          && Objects.equals(fastMatchQuery, other.fastMatchQuery)
+          && valueSource.equals(other.valueSource);
     }
 
     @Override
@@ -159,10 +163,12 @@ public final class DoubleRange extends Range {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-      final Weight fastMatchWeight = fastMatchQuery == null
-          ? null
-          : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
+      final Weight fastMatchWeight =
+          fastMatchQuery == null
+              ? null
+              : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
 
       return new ConstantScoreWeight(this, boost) {
         @Override
@@ -181,17 +187,19 @@ public final class DoubleRange extends Range {
           }
 
           final DoubleValues values = valueSource.getValues(context, null);
-          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
-            @Override
-            public boolean matches() throws IOException {
-              return values.advanceExact(approximation.docID()) && range.accept(values.doubleValue());
-            }
+          final TwoPhaseIterator twoPhase =
+              new TwoPhaseIterator(approximation) {
+                @Override
+                public boolean matches() throws IOException {
+                  return values.advanceExact(approximation.docID())
+                      && range.accept(values.doubleValue());
+                }
 
-            @Override
-            public float matchCost() {
-              return 100; // TODO: use cost of range.accept()
-            }
-          };
+                @Override
+                public float matchCost() {
+                  return 100; // TODO: use cost of range.accept()
+                }
+              };
           return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
@@ -199,26 +207,23 @@ public final class DoubleRange extends Range {
         public boolean isCacheable(LeafReaderContext ctx) {
           return valueSource.isCacheable(ctx);
         }
-
       };
     }
-
   }
 
   /**
    * Create a Query that matches documents in this range
    *
-   * The query will check all documents that match the provided match query,
-   * or every document in the index if the match query is null.
+   * <p>The query will check all documents that match the provided match query, or every document in
+   * the index if the match query is null.
    *
-   * If the value source is static, eg an indexed numeric field, it may be
-   * faster to use {@link org.apache.lucene.search.PointRangeQuery}
+   * <p>If the value source is static, eg an indexed numeric field, it may be faster to use {@link
+   * org.apache.lucene.search.PointRangeQuery}
    *
    * @param fastMatchQuery a query to use as a filter
-   * @param valueSource    the source of values for the range check
+   * @param valueSource the source of values for the range check
    */
   public Query getQuery(Query fastMatchQuery, DoubleValuesSource valueSource) {
     return new ValueSourceQuery(this, fastMatchQuery, valueSource);
   }
 }
-

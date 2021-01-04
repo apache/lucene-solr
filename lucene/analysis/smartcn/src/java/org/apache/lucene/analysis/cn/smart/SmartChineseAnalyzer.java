@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.cn.smart;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -31,46 +30,43 @@ import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * <p>
- * SmartChineseAnalyzer is an analyzer for Chinese or mixed Chinese-English text.
- * The analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text.
- * The text is first broken into sentences, then each sentence is segmented into words.
- * </p>
- * <p>
- * Segmentation is based upon the <a href="http://en.wikipedia.org/wiki/Hidden_Markov_Model">Hidden Markov Model</a>. 
- * A large training corpus was used to calculate Chinese word frequency probability.
- * </p>
- * <p>
- * This analyzer requires a dictionary to provide statistical data. 
- * SmartChineseAnalyzer has an included dictionary out-of-box.
- * </p>
- * <p>
- * The included dictionary data is from <a href="http://www.ictclas.org">ICTCLAS1.0</a>.
- * Thanks to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
- * </p>
- * @lucene.experimental
+ * SmartChineseAnalyzer is an analyzer for Chinese or mixed Chinese-English text. The analyzer uses
+ * probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text. The
+ * text is first broken into sentences, then each sentence is segmented into words.
  *
+ * <p>Segmentation is based upon the <a
+ * href="http://en.wikipedia.org/wiki/Hidden_Markov_Model">Hidden Markov Model</a>. A large training
+ * corpus was used to calculate Chinese word frequency probability.
+ *
+ * <p>This analyzer requires a dictionary to provide statistical data. SmartChineseAnalyzer has an
+ * included dictionary out-of-box.
+ *
+ * <p>The included dictionary data is from <a href="http://www.ictclas.org">ICTCLAS1.0</a>. Thanks
+ * to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
+ *
+ * @lucene.experimental
  * @since 3.1
  */
 public final class SmartChineseAnalyzer extends Analyzer {
 
   private final CharArraySet stopWords;
-  
+
   private static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
-  
+
   private static final String STOPWORD_FILE_COMMENT = "//";
-  
+
   /**
    * Returns an unmodifiable instance of the default stop-words set.
+   *
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static CharArraySet getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
+
   /**
-   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
-   * accesses the static final set the first time.;
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class accesses the
+   * static final set the first time.;
    */
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
@@ -87,42 +83,36 @@ public final class SmartChineseAnalyzer extends Analyzer {
 
     static CharArraySet loadDefaultStopWordSet() throws IOException {
       // make sure it is unmodifiable as we expose it in the outer class
-      return CharArraySet.unmodifiableSet(WordlistLoader.getWordSet(IOUtils
-          .getDecodingReader(SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE,
-              StandardCharsets.UTF_8), STOPWORD_FILE_COMMENT));
+      return CharArraySet.unmodifiableSet(
+          WordlistLoader.getWordSet(
+              IOUtils.getDecodingReader(
+                  SmartChineseAnalyzer.class, DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8),
+              STOPWORD_FILE_COMMENT));
     }
   }
 
-  /**
-   * Create a new SmartChineseAnalyzer, using the default stopword list.
-   */
+  /** Create a new SmartChineseAnalyzer, using the default stopword list. */
   public SmartChineseAnalyzer() {
     this(true);
   }
 
   /**
-   * <p>
    * Create a new SmartChineseAnalyzer, optionally using the default stopword list.
-   * </p>
-   * <p>
-   * The included default stopword list is simply a list of punctuation.
-   * If you do not use this list, punctuation will not be removed from the text!
-   * </p>
-   * 
+   *
+   * <p>The included default stopword list is simply a list of punctuation. If you do not use this
+   * list, punctuation will not be removed from the text!
+   *
    * @param useDefaultStopWords true to use the default stopword list.
    */
   public SmartChineseAnalyzer(boolean useDefaultStopWords) {
-    stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
-      : CharArraySet.EMPTY_SET;
+    stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET : CharArraySet.EMPTY_SET;
   }
 
   /**
-   * <p>
    * Create a new SmartChineseAnalyzer, using the provided {@link Set} of stopwords.
-   * </p>
-   * <p>
-   * Note: the set should include punctuation, unless you want to index punctuation!
-   * </p>
+   *
+   * <p>Note: the set should include punctuation, unless you want to index punctuation!
+   *
    * @param stopWords {@link Set} of stopwords to use.
    */
   public SmartChineseAnalyzer(CharArraySet stopWords) {

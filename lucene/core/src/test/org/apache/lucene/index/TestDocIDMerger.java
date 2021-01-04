@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestDocIDMerger extends LuceneTestCase {
 
@@ -58,15 +57,19 @@ public class TestDocIDMerger extends LuceneTestCase {
     int subCount = TestUtil.nextInt(random(), 1, 20);
     List<TestSubUnsorted> subs = new ArrayList<>();
     int valueStart = 0;
-    for(int i=0;i<subCount;i++) {
+    for (int i = 0; i < subCount; i++) {
       int maxDoc = TestUtil.nextInt(random(), 1, 1000);
       final int docBase = valueStart;
-      subs.add(new TestSubUnsorted(new MergeState.DocMap() {
-          @Override
-          public int get(int docID) {
-            return docBase + docID;
-          }
-        }, maxDoc, valueStart));
+      subs.add(
+          new TestSubUnsorted(
+              new MergeState.DocMap() {
+                @Override
+                public int get(int docID) {
+                  return docBase + docID;
+                }
+              },
+              maxDoc,
+              valueStart));
       valueStart += maxDoc;
     }
 
@@ -109,7 +112,7 @@ public class TestDocIDMerger extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "TestSubSorted(index=" + index + ", mappedDocID=" + mappedDocID+ ")";
+      return "TestSubSorted(index=" + index + ", mappedDocID=" + mappedDocID + ")";
     }
   }
 
@@ -120,7 +123,7 @@ public class TestDocIDMerger extends LuceneTestCase {
     // how many docs we've written to each sub:
     List<Integer> uptos = new ArrayList<>();
     int totDocCount = 0;
-    for(int i=0;i<subCount;i++) {
+    for (int i = 0; i < subCount; i++) {
       int maxDoc = TestUtil.nextInt(random(), 1, 1000);
       uptos.add(0);
       oldToNew.add(new int[maxDoc]);
@@ -130,7 +133,7 @@ public class TestDocIDMerger extends LuceneTestCase {
     List<int[]> completedSubs = new ArrayList<>();
 
     // randomly distribute target docIDs into the segments:
-    for(int docID=0;docID<totDocCount;docID++) {
+    for (int docID = 0; docID < totDocCount; docID++) {
       int sub = random().nextInt(oldToNew.size());
       int upto = uptos.get(sub);
       int[] subDocs = oldToNew.get(sub);
@@ -152,7 +155,7 @@ public class TestDocIDMerger extends LuceneTestCase {
       liveDocs = new FixedBitSet(totDocCount);
       liveDocs.set(0, totDocCount);
       int deleteAttemptCount = TestUtil.nextInt(random(), 1, totDocCount);
-      for(int i=0;i<deleteAttemptCount;i++) {
+      for (int i = 0; i < deleteAttemptCount; i++) {
         liveDocs.clear(random().nextInt(totDocCount));
       }
     } else {
@@ -160,19 +163,23 @@ public class TestDocIDMerger extends LuceneTestCase {
     }
 
     List<TestSubSorted> subs = new ArrayList<>();
-    for(int i=0;i<subCount;i++) {
+    for (int i = 0; i < subCount; i++) {
       final int[] docMap = completedSubs.get(i);
-      subs.add(new TestSubSorted(new MergeState.DocMap() {
-          @Override
-          public int get(int docID) {
-            int mapped = docMap[docID];
-            if (liveDocs == null || liveDocs.get(mapped)) {
-              return mapped;
-            } else {
-              return -1;
-            }
-          }
-        }, docMap.length, i));
+      subs.add(
+          new TestSubSorted(
+              new MergeState.DocMap() {
+                @Override
+                public int get(int docID) {
+                  int mapped = docMap[docID];
+                  if (liveDocs == null || liveDocs.get(mapped)) {
+                    return mapped;
+                  } else {
+                    return -1;
+                  }
+                }
+              },
+              docMap.length,
+              i));
     }
 
     DocIDMerger<TestSubSorted> merger = DocIDMerger.of(subs, true);

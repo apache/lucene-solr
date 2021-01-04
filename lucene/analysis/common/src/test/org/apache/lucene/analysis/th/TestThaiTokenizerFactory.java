@@ -16,33 +16,32 @@
  */
 package org.apache.lucene.analysis.th;
 
-
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.Tokenizer;
 
-/**
- * Simple tests to ensure the Thai word filter factory is working.
- */
+/** Simple tests to ensure the Thai word filter factory is working. */
 public class TestThaiTokenizerFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually decomposes text.
-   */
+  /** Ensure the filter actually decomposes text. */
   public void testWordBreak() throws Exception {
-    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
+    assumeTrue(
+        "JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
     Tokenizer tokenizer = tokenizerFactory("Thai").create(newAttributeFactory());
     tokenizer.setReader(new StringReader("การที่ได้ต้องแสดงว่างานดี"));
-    assertTokenStreamContents(tokenizer, new String[] {"การ", "ที่", "ได้",
-        "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
+    assertTokenStreamContents(
+        tokenizer, new String[] {"การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Thai", "bogusArg", "bogusValue");
-    });
+    assumeTrue(
+        "JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Thai", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

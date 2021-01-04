@@ -17,15 +17,14 @@
 package org.apache.lucene.util.compress;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Utility class that can efficiently compress arrays that mostly contain
- * characters in the [0x1F,0x3F) or [0x5F,0x7F) ranges, which notably
- * include all digits, lowercase characters, '.', '-' and '_'.
+ * Utility class that can efficiently compress arrays that mostly contain characters in the
+ * [0x1F,0x3F) or [0x5F,0x7F) ranges, which notably include all digits, lowercase characters, '.',
+ * '-' and '_'.
  */
 public final class LowercaseAsciiCompression {
 
@@ -37,11 +36,11 @@ public final class LowercaseAsciiCompression {
   private LowercaseAsciiCompression() {}
 
   /**
-   * Compress {@code in[0:len]} into {@code out}.
-   * This returns {@code false} if the content cannot be compressed. The number
-   * of bytes written is guaranteed to be less than {@code len} otherwise.
+   * Compress {@code in[0:len]} into {@code out}. This returns {@code false} if the content cannot
+   * be compressed. The number of bytes written is guaranteed to be less than {@code len} otherwise.
    */
-  public static boolean compress(byte[] in, int len, byte[] tmp, DataOutput out) throws IOException {
+  public static boolean compress(byte[] in, int len, byte[] tmp, DataOutput out)
+      throws IOException {
     if (len < 8) {
       return false;
     }
@@ -65,7 +64,8 @@ public final class LowercaseAsciiCompression {
     }
     assert numExceptions <= maxExceptions;
 
-    // 2. Now move all bytes to the [0,0x40) range (6 bits). This loop gets auto-vectorized on JDK13+.
+    // 2. Now move all bytes to the [0,0x40) range (6 bits). This loop gets auto-vectorized on
+    // JDK13+.
     final int compressedLen = len - (len >>> 2); // ignores exceptions
     assert compressedLen < len;
     for (int i = 0; i < len; ++i) {
@@ -112,7 +112,13 @@ public final class LowercaseAsciiCompression {
         }
       }
       if (numExceptions != numExceptions2) {
-        throw new IllegalStateException("" + numExceptions + " <> " + numExceptions2 + " " + new BytesRef(in, 0, len).utf8ToString());
+        throw new IllegalStateException(
+            ""
+                + numExceptions
+                + " <> "
+                + numExceptions2
+                + " "
+                + new BytesRef(in, 0, len).utf8ToString());
       }
     }
 
@@ -120,8 +126,8 @@ public final class LowercaseAsciiCompression {
   }
 
   /**
-   * Decompress data that has been compressed with {@link #compress(byte[], int, byte[], DataOutput)}.
-   * {@code len} must be the original length, not the compressed length.
+   * Decompress data that has been compressed with {@link #compress(byte[], int, byte[],
+   * DataOutput)}. {@code len} must be the original length, not the compressed length.
    */
   public static void decompress(DataInput in, byte[] out, int len) throws IOException {
     final int saved = len >>> 2;
@@ -132,7 +138,11 @@ public final class LowercaseAsciiCompression {
 
     // 2. Restore the leading 2 bits of each packed byte into whole bytes
     for (int i = 0; i < saved; ++i) {
-      out[compressedLen + i] = (byte) (((out[i] & 0xC0) >>> 2) | ((out[saved + i] & 0xC0) >>> 4) | ((out[(saved<<1) + i] & 0xC0) >>> 6));
+      out[compressedLen + i] =
+          (byte)
+              (((out[i] & 0xC0) >>> 2)
+                  | ((out[saved + i] & 0xC0) >>> 4)
+                  | ((out[(saved << 1) + i] & 0xC0) >>> 6));
     }
 
     // 3. Move back to the original range. This loop gets auto-vectorized on JDK13+.

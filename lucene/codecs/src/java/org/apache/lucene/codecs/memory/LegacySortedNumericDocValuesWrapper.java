@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.SortedNumericDocValues;
 
 /**
@@ -32,7 +31,7 @@ final class LegacySortedNumericDocValuesWrapper extends SortedNumericDocValues {
   private final int maxDoc;
   private int docID = -1;
   private int upto;
-  
+
   public LegacySortedNumericDocValuesWrapper(LegacySortedNumericDocValues values, int maxDoc) {
     this.values = values;
     this.maxDoc = maxDoc;
@@ -64,12 +63,13 @@ final class LegacySortedNumericDocValuesWrapper extends SortedNumericDocValues {
   @Override
   public int advance(int target) {
     if (target < docID) {
-      throw new IllegalArgumentException("cannot advance backwards: docID=" + docID + " target=" + target);
+      throw new IllegalArgumentException(
+          "cannot advance backwards: docID=" + docID + " target=" + target);
     }
     if (target >= maxDoc) {
       docID = NO_MORE_DOCS;
     } else {
-      docID = target-1;
+      docID = target - 1;
       nextDoc();
     }
     return docID;

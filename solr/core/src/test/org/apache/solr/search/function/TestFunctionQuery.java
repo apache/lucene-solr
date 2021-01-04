@@ -43,11 +43,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     initCore("solrconfig-functionquery.xml","schema11.xml");
   }
 
-  
+
   String base = "external_foo_extf";
 
   static long start = System.nanoTime();
-  
+
   void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
@@ -85,7 +85,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  // replace \0 with the field name and create a parsable string 
+  // replace \0 with the field name and create a parsable string
   public String func(String field, String template) {
     StringBuilder sb = new StringBuilder("{!func}");
     for (char ch : template.toCharArray()) {
@@ -102,7 +102,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // NOTE: we're abusing the "results" float[] here ...
     // - even elements are ids which must be valid 'ints'
     // - odd elements are the expected score values
-    
+
     String parseableQuery = func(field, funcTemplate);
 
     List<String> nargs = new ArrayList<>(Arrays.asList("q", parseableQuery
@@ -121,8 +121,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     for (int i=0; i<results.length; i+=2) {
       final int id = (int) results[i];
       assert ((float) id) == results[i];
-        
-      String xpath = "//doc[./str[@name='id']='" + id + "' " 
+
+      String xpath = "//doc[./str[@name='id']='" + id + "' "
         + " and ./float[@name='score']='" + results[i+1] + "']";
       tests.add(xpath);
     }
@@ -185,7 +185,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // test use of an ValueSourceParser plugin: nvl function
     singleTest(field,"nvl(\0,1)", 0, 1, 100, 100);
-    
+
     // compose the ValueSourceParser plugin function with another function
     singleTest(field, "nvl(sum(0,\0),1)", 0, 1, 100, 100);
 
@@ -261,7 +261,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       // make and write the external file
       StringBuilder sb = new StringBuilder();
       for (int j=0; j<len; j++) {
-        sb.append("" + ids[j] + "=" + vals[j]+"\n");        
+        sb.append("" + ids[j] + "=" + vals[j]+"\n");
       }
       makeExternalFile(field, sb.toString());
 
@@ -281,7 +281,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
       singleTest(field, "\0", answers);
       // System.out.println("Done test "+i);
-    }  
+    }
   }
 
   @Test
@@ -311,7 +311,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     makeExternalFile(extField, "91=543210\n92=-8\n93=250\n=67");
     singleTest(extField,"\0",991,543210,992,0,993,250);
   }
-  
+
   @Test
   public void testOrdAndRordOverPointsField() throws Exception {
     assumeTrue("Skipping test when points=false", Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
@@ -333,7 +333,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   @Test
   public void testGeneral() throws Exception {
     clearIndex();
-    
+
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2", "a_t","how now brown cow"));
     assertU(commit()); // create more than one segment
@@ -355,7 +355,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // make sure it doesn't get a NPE if no terms are present in a field.
     assertQ(req("fl","*,score","q", "{!func}termfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
     assertQ(req("fl","*,score","q", "{!func}docfreq(nofield_t,cow)", "fq","id:6"), "//float[@name='score']='0.0'");
-    
+
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)
     assertQ(req("fl","*,score","q", "{!func}ord(id)", "fq","id:6"), "//float[@name='score']='5.0'");
@@ -387,7 +387,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // superman has a higher df (thus lower idf) in one segment, but reversed in the complete index
     String q ="{!func}query($qq)";
-    String fq="id:120"; 
+    String fq="id:120";
     assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'0.6'");
     assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'0.6'");
 
@@ -487,7 +487,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
                  sim instanceof TFIDFSimilarity);
       similarity = (TFIDFSimilarity) sim;
     }
-     
+
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2", "a_tfidf","how now brown cow"));
     assertU(commit()); // create more than one segment
@@ -503,25 +503,25 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
             "//float[@name='score']='" + similarity.idf(0,6)  + "'");
     assertQ(req("fl","*,score","q", "{!func}tf(nofield_tfidf,cow)", "fq","id:6"),
             "//float[@name='score']='" + similarity.tf(0)  + "'");
-    
+
     // fields with real values
     assertQ(req("fl","*,score","q", "{!func}idf(a_tfidf,cow)", "fq","id:6"),
             "//float[@name='score']='" + similarity.idf(3,6)  + "'");
     assertQ(req("fl","*,score","q", "{!func}tf(a_tfidf,cow)", "fq","id:6"),
             "//float[@name='score']='" + similarity.tf(5)  + "'");
-    
+
     assertQ(req("fl","*,score","q", "{!func}norm(a_tfidf)", "fq","id:2"),
         "//float[@name='score']='0.5'");  // 1/sqrt(4)==1/2==0.5
-    
+
   }
-  
+
   /**
    * test collection-level term stats (new in 4.x indexes)
    */
   @Test
-  public void testTotalTermFreq() throws Exception {  
+  public void testTotalTermFreq() throws Exception {
     clearIndex();
-    
+
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2", "a_t","how now brown cow"));
     assertU(commit()); // create more than one segment
@@ -531,7 +531,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(adoc("id","5"));
     assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
     assertU(commit());
-    assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");    
+    assertQ(req("fl","*,score","q", "{!func}totaltermfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='7.0'");
     assertQ(req("fl","*,score","q", "{!func}ttf(a_t,'cow')", "fq","id:6"), "//float[@name='score']='7.0'");
     assertQ(req("fl","*,score","q", "{!func}sumtotaltermfreq('a_t')", "fq","id:6"), "//float[@name='score']='11.0'");
     assertQ(req("fl","*,score","q", "{!func}sttf(a_t)", "fq","id:6"), "//float[@name='score']='11.0'");
@@ -599,13 +599,13 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   public void testSortByFunc() throws Exception {
     clearIndex();
 
-    assertU(adoc("id",    "1",   "const_s", "xx", 
+    assertU(adoc("id",    "1",   "const_s", "xx",
                  "x_i",   "100", "1_s", "a",
                  "x:x_i", "100", "1-1_s", "a"));
-    assertU(adoc("id",    "2",   "const_s", "xx", 
+    assertU(adoc("id",    "2",   "const_s", "xx",
                  "x_i",   "300", "1_s", "c",
                  "x:x_i", "300", "1-1_s", "c"));
-    assertU(adoc("id",    "3",   "const_s", "xx", 
+    assertU(adoc("id",    "3",   "const_s", "xx",
                  "x_i",   "200", "1_s", "b",
                  "x:x_i", "200", "1-1_s", "b"));
     assertU(commit());
@@ -636,11 +636,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
 
     // test function w/ local params + func inline
-    assertJQ(req("q",q,  "fl","x_i", 
+    assertJQ(req("q",q,  "fl","x_i",
                  "sort", "const_s asc, {!key=foo}add(x_i,x_i) desc")
              ,desc
     );
-    assertJQ(req("q",q,  "fl","x_i", 
+    assertJQ(req("q",q,  "fl","x_i",
                  "sort", "{!key=foo}add(x_i,x_i) desc, const_s asc")
              ,desc
     );
@@ -660,7 +660,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       ,desc
     );
 
-    // field name that isn't a legal java Identifier 
+    // field name that isn't a legal java Identifier
     // and starts with a number to trick function parser
     assertJQ(req("q",q,  "fl","x_i", "sort", "1_s asc")
              ,asc
@@ -672,14 +672,14 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
              ,asc
     );
 
-    // really ugly field name that isn't a java Id, and can't be 
+    // really ugly field name that isn't a java Id, and can't be
     // parsed as a func, but sorted fine in Solr 1.4
-    assertJQ(req("q",q,  "fl","x_i", 
+    assertJQ(req("q",q,  "fl","x_i",
                  "sort", "[]_s asc, {!key=foo}add(x_i,x_i) desc")
              ,desc
     );
     // use localparms to sort by a lucene query, then a function
-    assertJQ(req("q",q,  "fl","x_i", 
+    assertJQ(req("q",q,  "fl","x_i",
                  "sort", "{!lucene v='id:3'}desc, {!key=foo}add(x_i,x_i) asc")
              ,threeonetwo
     );
@@ -716,12 +716,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', jw)", "fq", "id:1"), "//float[@name='score']='0.8833333'");
     assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', ngram, 2)", "fq", "id:1"), "//float[@name='score']='0.875'");
 
-    // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter 
+    // strdist on a missing valuesource should itself by missing, so the ValueSourceAugmenter
     // should supress it...
     assertQ(req("q", "id:1",
-                "fl", "good:strdist(x_s, 'toil', edit)", 
-                "fl", "bad1:strdist(missing1_s, missing2_s, edit)", 
-                "fl", "bad2:strdist(missing1_s, 'something', edit)", 
+                "fl", "good:strdist(x_s, 'toil', edit)",
+                "fl", "bad1:strdist(missing1_s, missing2_s, edit)",
+                "fl", "bad2:strdist(missing1_s, 'something', edit)",
                 "fl", "bad3:strdist(missing1_s, x_s, edit)")
             , "//float[@name='good']='0.75'"
             , "count(//float[starts-with(@name,'bad')])=0"
@@ -730,13 +730,13 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // in a query context, there is always a number...
     //
     // if a ValueSource is missing, it is maximally distant from every other
-    // value source *except* for another missing value source 
+    // value source *except* for another missing value source
     // ie: strdist(null,null)==1 but strdist(null,anything)==0
-    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, missing2_s, edit)"), 
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, missing2_s, edit)"),
             "//float[@name='score']='1.0'");
-    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, x_s, edit)"), 
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, x_s, edit)"),
             "//float[@name='score']='0.0'");
-    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, 'const', edit)"), 
+    assertQ(req("fl","score","fq", "id:1", "q", "{!func}strdist(missing1_s, 'const', edit)"),
             "//float[@name='score']='0.0'");
   }
 
@@ -753,7 +753,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     clearIndex();
 
     assertU(adoc("id", "1", "foo_d", "9"));
-    assertU(commit());    
+    assertU(commit());
 
     dofunc("1.0", 1.0);
     dofunc("e()", Math.E);
@@ -789,7 +789,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   /**
-   * verify that both the field("...") value source parser as well as 
+   * verify that both the field("...") value source parser as well as
    * ExternalFileField work with esoteric field names
    */
   @Test
@@ -816,14 +816,14 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     makeExternalFile(field, "0=1");
     assertU(adoc("id", "10000")); // will get same reader if no index change
-    assertU(commit());   
+    assertU(commit());
     singleTest(fieldAsFunc, "sqrt(\0)");
-    assertTrue(orig != FileFloatSource.onlyForTesting);  
+    assertTrue(orig != FileFloatSource.onlyForTesting);
   }
 
   /**
-   * some platforms don't allow quote characters in filenames, so 
-   * in addition to testExternalFieldValueSourceParser above, test a field 
+   * some platforms don't allow quote characters in filenames, so
+   * in addition to testExternalFieldValueSourceParser above, test a field
    * name with quotes in it that does NOT use ExternalFileField
    * @see #testExternalFieldValueSourceParser
    */
@@ -839,11 +839,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(field, ids);
 
     // test identity (straight field value)
-    singleTest(fieldAsFunc, "\0", 
+    singleTest(fieldAsFunc, "\0",
                100,100,  -4,0,  0,0,  10,10,  25,25,  5,5,  77,77,  1,1);
-    singleTest(fieldAsFunc, "sqrt(\0)", 
+    singleTest(fieldAsFunc, "sqrt(\0)",
                100,10,  25,5,  0,0,   1,1);
-    singleTest(fieldAsFunc, "log(\0)",  1,0); 
+    singleTest(fieldAsFunc, "log(\0)",  1,0);
   }
 
   @Test
@@ -889,7 +889,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
         , "/response/docs/[0]=={'a':true, 'b':'TT', 'c':true}");
     assertJQ(req("q", "id:2", "fl", "a:not(foo_ti), b:if(foo_tf,'TT','FF'), c:and(true,foo_tf)")
         , "/response/docs/[0]=={'a':false, 'b':'FF', 'c':false}");
-    
+
 
     // def(), the default function that returns the first value that exists
     assertJQ(req("q", "id:1", "fl", "x:def(id,testfunc(123)), y:def(foo_f,234.0)")
@@ -906,19 +906,19 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   @Test
   public void testConcatFunction() {
     clearIndex();
-  
+
     assertU(adoc("id", "1", "field1_t", "buzz", "field2_t", "word"));
     assertU(adoc("id", "2", "field1_t", "1", "field2_t", "2","field4_t", "4"));
     assertU(commit());
-  
+
     assertQ(req("q","id:1",
         "fl","field:concat(field1_t,field2_t)"),
         " //str[@name='field']='buzzword'");
-  
+
     assertQ(req("q","id:2",
         "fl","field:concat(field1_t,field2_t,field4_t)"),
         " //str[@name='field']='124'");
-  
+
     assertQ(req("q","id:1",
         "fl","field:def(concat(field3_t, field4_t), 'defValue')"),
         " //str[@name='field']='defValue'");
@@ -933,11 +933,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(commit());
 
     // if exists() is false, no pseudo-field should be added
-    assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")  
+    assertJQ(req("q", "id:1", "fl", "a:1,b:2.0,c:'X',d:{!func}foo_s,e:{!func}bar_s")
              , "/response/docs/[0]=={'a':1, 'b':2.0,'c':'X','d':'A'}");
-    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,bog_i),b:mul(yak_i,bog_i),c:min(yak_i,bog_i)")  
+    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,bog_i),b:mul(yak_i,bog_i),c:min(yak_i,bog_i)")
              , "/response/docs/[0]=={ 'c':32.0 }");
-    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,def(bog_i,42)), b:max(yak_i,bog_i)")  
+    assertJQ(req("q", "id:1", "fl", "a:sum(yak_i,def(bog_i,42)), b:max(yak_i,bog_i)")
              , "/response/docs/[0]=={ 'a': 74.0, 'b':32.0 }");
   }
 
@@ -952,9 +952,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // our doc has no values for, but also that no other doc ever added
     // to the index might have ever had a value for, so that the segment
     // term metadata doesn't exist
-    
+
     for (String suffix : new String[] {"s", "b", "dt", "tdt",
-                                       "i", "l", "f", "d", 
+                                       "i", "l", "f", "d",
                                        "ti", "tl", "tf", "td"    }) {
       final String field = "no__vals____" + suffix;
       assertQ(req("q","id:1",
@@ -1147,5 +1147,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     singleTest("field_s", "if(eq(def(field_s,'5'),5),5,2)",
         /*id*/1, /*score*/2,
         /*id*/2, /*score*/2);
+  }
+
+  /**
+   * Tests a specific (edge) case where a subQuery is null, because no terms are
+   * found in the query. Below such subQuery is created from a field query on a
+   * query text containing only stopwords. Feeding the resulting null-subQuery
+   * into a QueryValueSource (and then using it in for example an if function)
+   * may not produce NullPointerExceptions.
+   */
+  @Test
+  public void testNullSubQuery() throws Exception {
+    clearIndex();
+    assertJQ(req("q", "{!func}if($subQuery,1,0)", "subQuery", "{!field f=text v='stopworda'}"));
   }
 }

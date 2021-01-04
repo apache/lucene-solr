@@ -16,12 +16,14 @@
  */
 package org.apache.lucene.document;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoUtils;
@@ -46,22 +48,22 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-
 /**
  * Base test case for testing spherical and cartesian geometry indexing and search functionality
- * <p>
- * This class is implemented by {@link BaseXYShapeTestCase} for testing XY cartesian geometry
- * and {@link BaseLatLonShapeTestCase} for testing Lat Lon geospatial geometry
- **/
+ *
+ * <p>This class is implemented by {@link BaseXYShapeTestCase} for testing XY cartesian geometry and
+ * {@link BaseLatLonShapeTestCase} for testing Lat Lon geospatial geometry
+ */
 public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   /** name of the LatLonShape indexed field */
   protected static final String FIELD_NAME = "shape";
+
   public final Encoder ENCODER;
   public final Validator VALIDATOR;
-  protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
+  protected static final QueryRelation[] POINT_LINE_RELATIONS = {
+    QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS
+  };
 
   public BaseShapeTestCase() {
     ENCODER = getEncoder();
@@ -94,7 +96,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     Object[] shapes = new Object[numShapes];
     for (int i = 0; i < numShapes; i++) {
-      shapes[i] =  diffShapes[random().nextInt(cardinality)];
+      shapes[i] = diffShapes[random().nextInt(cardinality)];
     }
 
     verify(shapes);
@@ -140,6 +142,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   }
 
   protected abstract Object getShapeType();
+
   protected abstract Object nextShape();
 
   protected abstract Encoder getEncoder();
@@ -155,7 +158,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
   }
 
-  /** return a semi-random line used for queries **/
+  /** return a semi-random line used for queries * */
   protected abstract Object nextLine();
 
   protected abstract Object nextPolygon();
@@ -167,16 +170,20 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected abstract Object nextCircle();
 
   protected abstract double rectMinX(Object rect);
+
   protected abstract double rectMaxX(Object rect);
+
   protected abstract double rectMinY(Object rect);
+
   protected abstract double rectMaxY(Object rect);
+
   protected abstract boolean rectCrossesDateline(Object rect);
 
   /**
    * return a semi-random line used for queries
    *
-   * note: shapes parameter may be used to ensure some queries intersect indexed shapes
-   **/
+   * <p>note: shapes parameter may be used to ensure some queries intersect indexed shapes
+   */
   protected Object randomQueryLine(Object... shapes) {
     return nextLine();
   }
@@ -190,19 +197,28 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   }
 
   /** factory method to create a new bounding box query */
-  protected abstract Query newRectQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY);
+  protected abstract Query newRectQuery(
+      String field,
+      QueryRelation queryRelation,
+      double minX,
+      double maxX,
+      double minY,
+      double maxY);
 
   /** factory method to create a new line query */
   protected abstract Query newLineQuery(String field, QueryRelation queryRelation, Object... lines);
 
   /** factory method to create a new polygon query */
-  protected abstract Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons);
+  protected abstract Query newPolygonQuery(
+      String field, QueryRelation queryRelation, Object... polygons);
 
   /** factory method to create a new point query */
-  protected abstract Query newPointsQuery(String field, QueryRelation queryRelation, Object... points);
+  protected abstract Query newPointsQuery(
+      String field, QueryRelation queryRelation, Object... points);
 
   /** factory method to create a new distance query */
-  protected abstract Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle);
+  protected abstract Query newDistanceQuery(
+      String field, QueryRelation queryRelation, Object circle);
 
   protected abstract Component2D toLine2D(Object... line);
 
@@ -211,6 +227,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected abstract Component2D toPoint2D(Object... points);
 
   protected abstract Component2D toCircle2D(Object circle);
+
+  protected abstract Component2D toRectangle2D(double minX, double maxX, double minY, double maxY);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -237,7 +255,6 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     IOUtils.close(w, reader, dir);
   }
 
-
   protected void indexRandomShapes(IndexWriter w, Object... shapes) throws Exception {
     Set<Integer> deleted = new HashSet<>();
     for (int id = 0; id < shapes.length; ++id) {
@@ -250,7 +267,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
       w.addDocument(doc);
       if (id > 0 && random().nextInt(100) == 42) {
         int idToDelete = random().nextInt(id);
-        w.deleteDocuments(new Term("id", ""+idToDelete));
+        w.deleteDocuments(new Term("id", "" + idToDelete));
         deleted.add(idToDelete);
         if (VERBOSE) {
           System.out.println("   delete id=" + idToDelete);
@@ -287,38 +304,26 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     for (int iter = 0; iter < iters; ++iter) {
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
+        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
       }
 
       // BBox
       Object rect = randomQueryBox();
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      Query query = newRectQuery(FIELD_NAME, queryRelation, rectMinX(rect), rectMaxX(rect), rectMinY(rect), rectMaxY(rect));
+      Query query =
+          newRectQuery(
+              FIELD_NAME,
+              queryRelation,
+              rectMinX(rect),
+              rectMaxX(rect),
+              rectMinY(rect),
+              rectMaxY(rect));
 
       if (VERBOSE) {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -326,10 +331,10 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
-        double minLon = rectMinX(rect);
-        double maxLon = rectMaxX(rect);
-        double minLat = rectMinY(rect);
-        double maxLat = rectMaxY(rect);
+        double minX = rectMinX(rect);
+        double maxX = rectMaxX(rect);
+        double minY = rectMinY(rect);
+        double maxY = rectMaxY(rect);
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
@@ -337,12 +342,17 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
           expected = false;
         } else {
           if (queryRelation == QueryRelation.CONTAINS && rectCrossesDateline(rect)) {
-            // For contains we need to call the validator for each section. 
+            // For contains we need to call the validator for each section.
             // It is only expected if both sides are contained.
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL, shapes[id]) &&
-                    VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon, shapes[id]);
+            Component2D left = toRectangle2D(minX, GeoUtils.MAX_LON_INCL, minY, maxY);
+            Component2D right = toRectangle2D(GeoUtils.MIN_LON_INCL, maxX, minY, maxY);
+            expected =
+                VALIDATOR.setRelation(queryRelation).testComponentQuery(left, shapes[id])
+                    && VALIDATOR.setRelation(queryRelation).testComponentQuery(right, shapes[id]);
           } else {
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(minLat, maxLat, minLon, maxLon, shapes[id]);
+            Component2D component2D = toRectangle2D(minX, maxX, minY, maxY);
+            expected =
+                VALIDATOR.setRelation(queryRelation).testComponentQuery(component2D, shapes[id]);
           }
         }
 
@@ -362,7 +372,16 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(lat=" + ENCODER.quantizeYCeil(rectMinY(rect)) + " TO " + ENCODER.quantizeY(rectMaxY(rect)) + " lon=" + minLon + " TO " + ENCODER.quantizeX(rectMaxX(rect)) + ")\n");
+          b.append(
+              "  rect=Rectangle(lat="
+                  + ENCODER.quantizeYCeil(rectMinY(rect))
+                  + " TO "
+                  + ENCODER.quantizeY(rectMaxY(rect))
+                  + " lon="
+                  + minX
+                  + " TO "
+                  + ENCODER.quantizeX(rectMaxX(rect))
+                  + ")\n");
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -401,26 +420,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -434,7 +434,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryLine2D, shapes[id]);
+          expected =
+              VALIDATOR.setRelation(queryRelation).testComponentQuery(queryLine2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -492,26 +493,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -525,7 +507,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
+          expected =
+              VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -570,7 +553,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     for (int iter = 0; iter < iters; ++iter) {
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
+        System.out.println("\nTEST: iter=" + (iter + 1) + " of " + iters + " s=" + s);
       }
 
       Object[] queryPoints = nextPoints();
@@ -589,26 +572,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -623,7 +587,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
+          expected =
+              VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -658,7 +623,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   }
 
   /** test random generated circles */
-  protected void verifyRandomDistanceQueries(IndexReader reader, Object... shapes) throws Exception {
+  protected void verifyRandomDistanceQueries(IndexReader reader, Object... shapes)
+      throws Exception {
     IndexSearcher s = newSearcher(reader);
 
     final int iters = scaledIterationCount(shapes.length);
@@ -681,26 +647,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
       }
 
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-        private int docBase;
-
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) throws IOException {
-          docBase = context.docBase;
-        }
-
-        @Override
-        public void collect(int doc) throws IOException {
-          hits.set(docBase+doc);
-        }
-      });
+      final FixedBitSet hits = searchIndex(s, query, maxDoc);
 
       boolean fail = false;
       NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
@@ -714,7 +661,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryCircle2D, shapes[id]);
+          expected =
+              VALIDATOR.setRelation(queryRelation).testComponentQuery(queryCircle2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -748,18 +696,46 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
   }
 
+  private FixedBitSet searchIndex(IndexSearcher s, Query query, int maxDoc) throws IOException {
+    final FixedBitSet hits = new FixedBitSet(maxDoc);
+    s.search(
+        query,
+        new SimpleCollector() {
+
+          private int docBase;
+
+          @Override
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) {
+            docBase = context.docBase;
+          }
+
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase + doc);
+          }
+        });
+    return hits;
+  }
 
   protected abstract Validator getValidator();
 
-  protected static abstract class Encoder {
+  protected abstract static class Encoder {
     abstract double decodeX(int encoded);
+
     abstract double decodeY(int encoded);
+
     abstract double quantizeX(double raw);
+
     abstract double quantizeXCeil(double raw);
+
     abstract double quantizeY(double raw);
+
     abstract double quantizeYCeil(double raw);
-    abstract double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
-    abstract ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
   }
 
   private int scaledIterationCount(int shapes) {
@@ -775,7 +751,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   }
 
   /** validator class used to test query results against "ground truth" */
-  protected static abstract class Validator {
+  protected abstract static class Validator {
     Encoder encoder;
 
     Validator(Encoder encoder) {
@@ -783,8 +759,6 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     }
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
-
-    public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
 
     public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
@@ -800,35 +774,39 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         boolean contains;
         ShapeField.decodeTriangle(field.binaryValue().bytes, decodedTriangle);
         switch (decodedTriangle.type) {
-          case POINT: {
-            double y = encoder.decodeY(decodedTriangle.aY);
-            double x = encoder.decodeX(decodedTriangle.aX);
-            intersects = query.contains(x, y);
-            contains = intersects;
-            break;
-          }
-          case LINE: {
-            double aY = encoder.decodeY(decodedTriangle.aY);
-            double aX = encoder.decodeX(decodedTriangle.aX);
-            double bY = encoder.decodeY(decodedTriangle.bY);
-            double bX = encoder.decodeX(decodedTriangle.bX);
-            intersects = query.intersectsLine(aX, aY, bX, bY);
-            contains = query.containsLine(aX, aY, bX, bY);
-            break;
-          }
-          case TRIANGLE: {
-            double aY = encoder.decodeY(decodedTriangle.aY);
-            double aX = encoder.decodeX(decodedTriangle.aX);
-            double bY = encoder.decodeY(decodedTriangle.bY);
-            double bX = encoder.decodeX(decodedTriangle.bX);
-            double cY = encoder.decodeY(decodedTriangle.cY);
-            double cX = encoder.decodeX(decodedTriangle.cX);
-            intersects = query.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-            contains = query.containsTriangle(aX, aY, bX, bY, cX, cY);
-            break;
-          }
+          case POINT:
+            {
+              double y = encoder.decodeY(decodedTriangle.aY);
+              double x = encoder.decodeX(decodedTriangle.aX);
+              intersects = query.contains(x, y);
+              contains = intersects;
+              break;
+            }
+          case LINE:
+            {
+              double aY = encoder.decodeY(decodedTriangle.aY);
+              double aX = encoder.decodeX(decodedTriangle.aX);
+              double bY = encoder.decodeY(decodedTriangle.bY);
+              double bX = encoder.decodeX(decodedTriangle.bX);
+              intersects = query.intersectsLine(aX, aY, bX, bY);
+              contains = query.containsLine(aX, aY, bX, bY);
+              break;
+            }
+          case TRIANGLE:
+            {
+              double aY = encoder.decodeY(decodedTriangle.aY);
+              double aX = encoder.decodeX(decodedTriangle.aX);
+              double bY = encoder.decodeY(decodedTriangle.bY);
+              double bX = encoder.decodeX(decodedTriangle.bX);
+              double cY = encoder.decodeY(decodedTriangle.cY);
+              double cX = encoder.decodeX(decodedTriangle.cX);
+              intersects = query.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+              contains = query.containsTriangle(aX, aY, bX, bY, cX, cY);
+              break;
+            }
           default:
-            throw new IllegalArgumentException("Unsupported triangle type :[" + decodedTriangle.type + "]");
+            throw new IllegalArgumentException(
+                "Unsupported triangle type :[" + decodedTriangle.type + "]");
         }
         assertTrue((contains == intersects) || (contains == false && intersects == true));
         if (queryRelation == QueryRelation.DISJOINT && intersects) {
@@ -849,32 +827,46 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         ShapeField.decodeTriangle(field.binaryValue().bytes, decodedTriangle);
         Component2D.WithinRelation relation;
         switch (decodedTriangle.type) {
-          case POINT: {
-            double y = encoder.decodeY(decodedTriangle.aY);
-            double x = encoder.decodeX(decodedTriangle.aX);
-            relation = query.withinPoint(x, y);
-            break;
-          }
-          case LINE: {
-            double aY = encoder.decodeY(decodedTriangle.aY);
-            double aX = encoder.decodeX(decodedTriangle.aX);
-            double bY = encoder.decodeY(decodedTriangle.bY);
-            double bX = encoder.decodeX(decodedTriangle.bX);
-            relation = query.withinLine(aX, aY, decodedTriangle.ab, bX, bY);
-            break;
-          }
-          case TRIANGLE: {
-            double aY = encoder.decodeY(decodedTriangle.aY);
-            double aX = encoder.decodeX(decodedTriangle.aX);
-            double bY = encoder.decodeY(decodedTriangle.bY);
-            double bX = encoder.decodeX(decodedTriangle.bX);
-            double cY = encoder.decodeY(decodedTriangle.cY);
-            double cX = encoder.decodeX(decodedTriangle.cX);
-            relation = query.withinTriangle(aX, aY, decodedTriangle.ab, bX, bY, decodedTriangle.bc, cX, cY, decodedTriangle.ca);
-            break;
-          }
+          case POINT:
+            {
+              double y = encoder.decodeY(decodedTriangle.aY);
+              double x = encoder.decodeX(decodedTriangle.aX);
+              relation = query.withinPoint(x, y);
+              break;
+            }
+          case LINE:
+            {
+              double aY = encoder.decodeY(decodedTriangle.aY);
+              double aX = encoder.decodeX(decodedTriangle.aX);
+              double bY = encoder.decodeY(decodedTriangle.bY);
+              double bX = encoder.decodeX(decodedTriangle.bX);
+              relation = query.withinLine(aX, aY, decodedTriangle.ab, bX, bY);
+              break;
+            }
+          case TRIANGLE:
+            {
+              double aY = encoder.decodeY(decodedTriangle.aY);
+              double aX = encoder.decodeX(decodedTriangle.aX);
+              double bY = encoder.decodeY(decodedTriangle.bY);
+              double bX = encoder.decodeX(decodedTriangle.bX);
+              double cY = encoder.decodeY(decodedTriangle.cY);
+              double cX = encoder.decodeX(decodedTriangle.cX);
+              relation =
+                  query.withinTriangle(
+                      aX,
+                      aY,
+                      decodedTriangle.ab,
+                      bX,
+                      bY,
+                      decodedTriangle.bc,
+                      cX,
+                      cY,
+                      decodedTriangle.ca);
+              break;
+            }
           default:
-            throw new IllegalArgumentException("Unsupported triangle type :[" + decodedTriangle.type + "]");
+            throw new IllegalArgumentException(
+                "Unsupported triangle type :[" + decodedTriangle.type + "]");
         }
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
           return relation;

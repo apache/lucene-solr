@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -40,16 +38,20 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     final Document doc = new Document();
     doc.add(newStringField("content", "aaa", Field.Store.NO));
     final int incrMin = TEST_NIGHTLY ? 15 : 40;
-    for(int numDocs=10;numDocs<500;numDocs += TestUtil.nextInt(random(), incrMin, 5 * incrMin)) {
+    for (int numDocs = 10;
+        numDocs < 500;
+        numDocs += TestUtil.nextInt(random(), incrMin, 5 * incrMin)) {
       LogDocMergePolicy ldmp = new LogDocMergePolicy();
       ldmp.setMinMergeDocs(1);
       ldmp.setMergeFactor(5);
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                  .setOpenMode(OpenMode.CREATE)
-                                                  .setMaxBufferedDocs(2)
-                                                  .setMergePolicy(ldmp));
-      for(int j=0;j<numDocs;j++)
-        writer.addDocument(doc);
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setOpenMode(OpenMode.CREATE)
+                  .setMaxBufferedDocs(2)
+                  .setMergePolicy(ldmp));
+      for (int j = 0; j < numDocs; j++) writer.addDocument(doc);
       writer.close();
 
       SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
@@ -57,18 +59,17 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
 
       ldmp = new LogDocMergePolicy();
       ldmp.setMergeFactor(5);
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                      .setMergePolicy(ldmp));
+      writer =
+          new IndexWriter(
+              dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(ldmp));
       writer.forceMerge(3);
       writer.close();
 
       sis = SegmentInfos.readLatestCommit(dir);
       final int optSegCount = sis.size();
 
-      if (segCount < 3)
-        assertEquals(segCount, optSegCount);
-      else
-        assertEquals(3, optSegCount);
+      if (segCount < 3) assertEquals(segCount, optSegCount);
+      else assertEquals(3, optSegCount);
     }
     dir.close();
   }
@@ -82,14 +83,16 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMinMergeDocs(1);
     ldmp.setMergeFactor(4);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                .setMaxBufferedDocs(2)
-                                                .setMergePolicy(ldmp)
-                                                .setMergeScheduler(new ConcurrentMergeScheduler()));
-    
-    for(int iter=0;iter<10;iter++) {
-      for(int i=0;i<19;i++)
-        writer.addDocument(doc);
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(ldmp)
+                .setMergeScheduler(new ConcurrentMergeScheduler()));
+
+    for (int iter = 0; iter < 10; iter++) {
+      for (int i = 0; i < 19; i++) writer.addDocument(doc);
 
       writer.commit();
       writer.waitForMerges();
@@ -105,19 +108,16 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
       sis = SegmentInfos.readLatestCommit(dir);
       final int optSegCount = sis.size();
 
-      if (segCount < 7)
-        assertEquals(segCount, optSegCount);
-      else
-        assertEquals("seg: " + segCount, 7, optSegCount);
+      if (segCount < 7) assertEquals(segCount, optSegCount);
+      else assertEquals("seg: " + segCount, 7, optSegCount);
     }
     writer.close();
     dir.close();
   }
 
   /**
-   * Make sure forceMerge doesn't use any more than 1X
-   * starting index size as its temporary free space
-   * required.
+   * Make sure forceMerge doesn't use any more than 1X starting index size as its temporary free
+   * space required.
    */
   public void testForceMergeTempSpaceUsage() throws IOException {
 
@@ -125,21 +125,25 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     // don't use MockAnalyzer, variable length payloads can cause merge to make things bigger,
     // since things are optimized for fixed length case. this is a problem for MemoryPF's encoding.
     // (it might have other problems too)
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
-      }
-    };
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(analyzer)
-                                                 .setMaxBufferedDocs(10)
-                                                 .setMergePolicy(newLogMergePolicy()));
-    
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, true));
+          }
+        };
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(10)
+                .setMergePolicy(newLogMergePolicy()));
+
     if (VERBOSE) {
       System.out.println("TEST: config1=" + writer.getConfig());
     }
 
-    for(int j=0;j<500;j++) {
+    for (int j = 0; j < 500; j++) {
       TestIndexWriter.addDocWithIndex(writer, j);
     }
     // force one extra segment w/ different doc store so
@@ -163,10 +167,13 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     dir.resetMaxUsedSizeInBytes();
     dir.setTrackDiskUsage(true);
 
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                    .setOpenMode(OpenMode.APPEND)
-                                    .setMergePolicy(newLogMergePolicy()));
-    
+    writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setOpenMode(OpenMode.APPEND)
+                .setMergePolicy(newLogMergePolicy()));
+
     if (VERBOSE) {
       System.out.println("TEST: config2=" + writer.getConfig());
     }
@@ -191,14 +198,23 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     // size
     long maxStartFinalDiskUsage = Math.max(startDiskUsage, finalDiskUsage);
     long maxDiskUsage = dir.getMaxUsedSizeInBytes();
-    assertTrue("forceMerge used too much temporary space: starting usage was "
-        + startDiskUsage + " bytes; final usage was " + finalDiskUsage
-        + " bytes; max temp usage was " + maxDiskUsage
-        + " but should have been at most " + (4 * maxStartFinalDiskUsage)
-        + " (= 4X starting usage), BEFORE=" + startListing + "AFTER=" + listFiles(dir), maxDiskUsage <= 4 * maxStartFinalDiskUsage);
+    assertTrue(
+        "forceMerge used too much temporary space: starting usage was "
+            + startDiskUsage
+            + " bytes; final usage was "
+            + finalDiskUsage
+            + " bytes; max temp usage was "
+            + maxDiskUsage
+            + " but should have been at most "
+            + (4 * maxStartFinalDiskUsage)
+            + " (= 4X starting usage), BEFORE="
+            + startListing
+            + "AFTER="
+            + listFiles(dir),
+        maxDiskUsage <= 4 * maxStartFinalDiskUsage);
     dir.close();
   }
-  
+
   // print out listing of files and sizes, but recurse into CFS to debug nested files there.
   private String listFiles(Directory dir) throws IOException {
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
@@ -209,9 +225,18 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
         sb.append(String.format(Locale.ROOT, "%-20s%d%n", file, dir.fileLength(file)));
       }
       if (info.info.getUseCompoundFile()) {
-        try (Directory cfs = info.info.getCodec().compoundFormat().getCompoundReader(dir, info.info, IOContext.DEFAULT)) {
+        try (Directory cfs =
+            info.info
+                .getCodec()
+                .compoundFormat()
+                .getCompoundReader(dir, info.info, IOContext.DEFAULT)) {
           for (String file : cfs.listAll()) {
-            sb.append(String.format(Locale.ROOT, " |- (inside compound file) %-20s%d%n", file, cfs.fileLength(file)));
+            sb.append(
+                String.format(
+                    Locale.ROOT,
+                    " |- (inside compound file) %-20s%d%n",
+                    file,
+                    cfs.fileLength(file)));
           }
         }
       }
@@ -219,25 +244,26 @@ public class TestIndexWriterForceMerge extends LuceneTestCase {
     sb.append(System.lineSeparator());
     return sb.toString();
   }
-  
+
   // Test calling forceMerge(1, false) whereby forceMerge is kicked
   // off but we don't wait for it to finish (but
   // writer.close()) does wait
   public void testBackgroundForceMerge() throws IOException {
 
     Directory dir = newDirectory();
-    for(int pass=0;pass<2;pass++) {
-      IndexWriter writer = new IndexWriter(
-          dir,
-          newIndexWriterConfig(new MockAnalyzer(random()))
-              .setOpenMode(OpenMode.CREATE)
-              .setMaxBufferedDocs(2)
-              .setMergePolicy(newLogMergePolicy(51))
-      );
+    for (int pass = 0; pass < 2; pass++) {
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setOpenMode(OpenMode.CREATE)
+                  .setMaxBufferedDocs(2)
+                  .setMergePolicy(newLogMergePolicy(51)));
       Document doc = new Document();
       doc.add(newStringField("field", "aaa", Field.Store.NO));
-      for(int i=0;i<100;i++)
+      for (int i = 0; i < 100; i++) {
         writer.addDocument(doc);
+      }
       writer.forceMerge(1, false);
 
       if (0 == pass) {

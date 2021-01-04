@@ -22,17 +22,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.QueryVisitor;
 
-/**
- * An IntervalsSource that filters the intervals from another IntervalsSource
- */
+/** An IntervalsSource that filters the intervals from another IntervalsSource */
 public abstract class FilteredIntervalsSource extends IntervalsSource {
 
   public static IntervalsSource maxGaps(IntervalsSource in, int maxGaps) {
-    return Intervals.or(in.pullUpDisjunctions().stream().map(s -> new MaxGaps(s, maxGaps)).collect(Collectors.toList()));
+    return Intervals.or(
+        in.pullUpDisjunctions().stream()
+            .map(s -> new MaxGaps(s, maxGaps))
+            .collect(Collectors.toList()));
   }
 
   private static class MaxGaps extends FilteredIntervalsSource {
@@ -79,17 +79,16 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
 
   /**
    * Create a new FilteredIntervalsSource
-   * @param name  the name of the filter
-   * @param in    the source to filter
+   *
+   * @param name the name of the filter
+   * @param in the source to filter
    */
   public FilteredIntervalsSource(String name, IntervalsSource in) {
     this.name = name;
     this.in = in;
   }
 
-  /**
-   * @return {@code false} if the current interval should be filtered out
-   */
+  /** @return {@code false} if the current interval should be filtered out */
   protected abstract boolean accept(IntervalIterator it);
 
   @Override
@@ -107,17 +106,19 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     IntervalMatchesIterator mi = in.matches(field, ctx, doc);
     if (mi == null) {
       return null;
     }
-    IntervalIterator filtered = new IntervalFilter(IntervalMatches.wrapMatches(mi, doc)) {
-      @Override
-      protected boolean accept() {
-        return FilteredIntervalsSource.this.accept(in);
-      }
-    };
+    IntervalIterator filtered =
+        new IntervalFilter(IntervalMatches.wrapMatches(mi, doc)) {
+          @Override
+          protected boolean accept() {
+            return FilteredIntervalsSource.this.accept(in);
+          }
+        };
     return IntervalMatches.asMatches(filtered, mi, doc);
   }
 
@@ -141,8 +142,7 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
     if (this == o) return true;
     if (o == null || o instanceof FilteredIntervalsSource == false) return false;
     FilteredIntervalsSource that = (FilteredIntervalsSource) o;
-    return Objects.equals(name, that.name) &&
-        Objects.equals(in, that.in);
+    return Objects.equals(name, that.name) && Objects.equals(in, that.in);
   }
 
   @Override

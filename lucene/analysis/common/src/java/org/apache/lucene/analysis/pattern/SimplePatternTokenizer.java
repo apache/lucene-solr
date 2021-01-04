@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -29,20 +28,28 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * This tokenizer uses a Lucene {@link RegExp} or (expert usage) a pre-built determinized {@link Automaton}, to locate tokens.
- * The regexp syntax is more limited than {@link PatternTokenizer}, but the tokenization is quite a bit faster.  The provided
- * regex should match valid token characters (not token separator characters, like {@code String.split}).  The matching is greedy:
- * the longest match at a given start point will be the next token.  Empty string tokens are never produced.
+ * This tokenizer uses a Lucene {@link RegExp} or (expert usage) a pre-built determinized {@link
+ * Automaton}, to locate tokens. The regexp syntax is more limited than {@link PatternTokenizer},
+ * but the tokenization is quite a bit faster. The provided regex should match valid token
+ * characters (not token separator characters, like {@code String.split}). The matching is greedy:
+ * the longest match at a given start point will be the next token. Empty string tokens are never
+ * produced.
  *
  * @lucene.experimental
  */
 
-// TODO: the matcher here is naive and does have N^2 adversarial cases that are unlikely to arise in practice, e.g. if the pattern is
-// aaaaaaaaaab and the input is aaaaaaaaaaa, the work we do here is N^2 where N is the number of a's.  This is because on failing to match
-// a token, we skip one character forward and try again.  A better approach would be to compile something like this regexp
-// instead: .* | <pattern>, because that automaton would not "forget" all the as it had already seen, and would be a single pass
-// through the input.  I think this is the same thing as Aho/Corasick's algorithm (http://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_string_matching_algorithm).
-// But we cannot implement this (I think?) until/unless Lucene regexps support sub-group capture, so we could know
+// TODO: the matcher here is naive and does have N^2 adversarial cases that are unlikely to arise in
+// practice, e.g. if the pattern is
+// aaaaaaaaaab and the input is aaaaaaaaaaa, the work we do here is N^2 where N is the number of
+// a's.  This is because on failing to match
+// a token, we skip one character forward and try again.  A better approach would be to compile
+// something like this regexp
+// instead: .* | <pattern>, because that automaton would not "forget" all the as it had already
+// seen, and would be a single pass
+// through the input.  I think this is the same thing as Aho/Corasick's algorithm
+// (http://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_string_matching_algorithm).
+// But we cannot implement this (I think?) until/unless Lucene regexps support sub-group capture, so
+// we could know
 // which specific characters the pattern matched.  SynonymFilter has this same limitation.
 
 public final class SimplePatternTokenizer extends Tokenizer {
@@ -52,7 +59,8 @@ public final class SimplePatternTokenizer extends Tokenizer {
 
   private final CharacterRunAutomaton runDFA;
 
-  // TODO: we could likely use a single rolling buffer instead of two separate char buffers here.  We could also use PushBackReader but I
+  // TODO: we could likely use a single rolling buffer instead of two separate char buffers here.
+  // We could also use PushBackReader but I
   // suspect it's slowish:
 
   private char[] pendingChars = new char[8];
@@ -75,7 +83,8 @@ public final class SimplePatternTokenizer extends Tokenizer {
   }
 
   /** See {@link RegExp} for the accepted syntax. */
-  public SimplePatternTokenizer(AttributeFactory factory, String regexp, int maxDeterminizedStates) {
+  public SimplePatternTokenizer(
+      AttributeFactory factory, String regexp, int maxDeterminizedStates) {
     this(factory, new RegExp(regexp).toAutomaton());
   }
 
@@ -83,7 +92,8 @@ public final class SimplePatternTokenizer extends Tokenizer {
   public SimplePatternTokenizer(AttributeFactory factory, Automaton dfa) {
     super(factory);
 
-    // we require user to do this up front because it is a possibly very costly operation, and user may be creating us frequently, not
+    // we require user to do this up front because it is a possibly very costly operation, and user
+    // may be creating us frequently, not
     // realizing this ctor is otherwise trappy
     if (dfa.isDeterministic() == false) {
       throw new IllegalArgumentException("please determinize the incoming automaton first");
@@ -117,7 +127,8 @@ public final class SimplePatternTokenizer extends Tokenizer {
         do {
 
           if (runDFA.isAccept(state)) {
-            // record that the token matches here, but keep scanning in case a longer match also works (greedy):
+            // record that the token matches here, but keep scanning in case a longer match also
+            // works (greedy):
             lastAcceptLength = tokenUpto;
           }
 
@@ -127,7 +138,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
           }
           state = runDFA.step(state, ch);
         } while (state != -1);
-        
+
         if (lastAcceptLength != -1) {
           // we found a token
           int extra = tokenUpto - lastAcceptLength;
@@ -135,13 +146,14 @@ public final class SimplePatternTokenizer extends Tokenizer {
             pushBack(extra);
           }
           termAtt.setLength(lastAcceptLength);
-          offsetAtt.setOffset(correctOffset(offsetStart), correctOffset(offsetStart+lastAcceptLength));
+          offsetAtt.setOffset(
+              correctOffset(offsetStart), correctOffset(offsetStart + lastAcceptLength));
           return true;
         } else if (ch == -1) {
           return false;
         } else {
           // false alarm: there was no token here; push back all but the first character we scanned
-          pushBack(tokenUpto-1);
+          pushBack(tokenUpto - 1);
           tokenUpto = 0;
         }
       } else {
@@ -170,7 +182,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
 
   /** Pushes back the last {@code count} characters in current token's buffer. */
   private void pushBack(int count) {
-    
+
     if (pendingLimit == 0) {
       if (bufferLimit != -1 && bufferNextRead >= count) {
         // optimize common case when the chars we are pushing back are still in the buffer
@@ -212,7 +224,8 @@ public final class SimplePatternTokenizer extends Tokenizer {
     } else if (bufferLimit == -1) {
       return -1;
     } else {
-      assert bufferNextRead <= bufferLimit: "bufferNextRead=" + bufferNextRead + " bufferLimit=" + bufferLimit;
+      assert bufferNextRead <= bufferLimit
+          : "bufferNextRead=" + bufferNextRead + " bufferLimit=" + bufferLimit;
       if (bufferNextRead == bufferLimit) {
         bufferLimit = input.read(buffer, 0, buffer.length);
         if (bufferLimit == -1) {
@@ -226,7 +239,7 @@ public final class SimplePatternTokenizer extends Tokenizer {
     }
     return result;
   }
-  
+
   private int nextCodePoint() throws IOException {
 
     int ch = nextCodeUnit();

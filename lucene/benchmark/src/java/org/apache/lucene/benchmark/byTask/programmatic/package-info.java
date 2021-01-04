@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Sample performance test written programmatically - no algorithm file is needed here.
- */
+/** Sample performance test written programmatically - no algorithm file is needed here. */
 package org.apache.lucene.benchmark.byTask.programmatic;

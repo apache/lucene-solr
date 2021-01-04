@@ -18,13 +18,15 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.XYGeometry;
-import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.XYPoint;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code
+ * x, y} points
+ */
 public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
@@ -32,21 +34,21 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   }
 
   @Override
-  protected Point[] nextShape() {
+  protected XYPoint[] nextShape() {
     int n = random().nextInt(4) + 1;
-    Point[] points = new Point[n];
-    for (int i =0; i < n; i++) {
-      points[i] = (Point)ShapeType.POINT.nextShape();
+    XYPoint[] points = new XYPoint[n];
+    for (int i = 0; i < n; i++) {
+      points[i] = ShapeTestUtil.nextPoint();
     }
     return points;
   }
 
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
-    Point[] points = (Point[]) o;
+    XYPoint[] points = (XYPoint[]) o;
     List<Field> allFields = new ArrayList<>();
-    for (Point point : points) {
-      Field[] fields = XYShape.createIndexableFields(name, point.x, point.y);
+    for (XYPoint point : points) {
+      Field[] fields = XYShape.createIndexableFields(name, point.getX(), point.getY());
       for (Field field : fields) {
         allFields.add(field);
       }
@@ -61,6 +63,7 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
   protected class MultiPointValidator extends Validator {
     TestXYPointShapeQueries.PointValidator POINTVALIDATOR;
+
     MultiPointValidator(Encoder encoder) {
       super(encoder);
       POINTVALIDATOR = new TestXYPointShapeQueries.PointValidator(encoder);
@@ -74,15 +77,9 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      Point[] points = (Point[]) shape;
-      for (Point p : points) {
+      XYPoint[] points = (XYPoint[]) shape;
+      for (XYPoint p : points) {
         boolean b = POINTVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;

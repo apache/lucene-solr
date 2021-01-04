@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.compressing;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.util.Accountable;
 
 abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
@@ -31,5 +30,4 @@ abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
 
   @Override
   public abstract FieldsIndex clone();
-
 }

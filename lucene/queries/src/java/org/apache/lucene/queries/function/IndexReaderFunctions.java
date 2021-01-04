@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -33,8 +32,8 @@ import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 
 /**
- * Class exposing static helper methods for generating DoubleValuesSource instances
- * over some IndexReader statistics
+ * Class exposing static helper methods for generating DoubleValuesSource instances over some
+ * IndexReader statistics
  */
 public final class IndexReaderFunctions {
 
@@ -47,7 +46,8 @@ public final class IndexReaderFunctions {
    * @see IndexReader#docFreq(Term)
    */
   public static DoubleValuesSource docFreq(Term term) {
-    return new IndexReaderDoubleValuesSource(r -> (double) r.docFreq(term), "docFreq(" + term.toString() + ")");
+    return new IndexReaderDoubleValuesSource(
+        r -> (double) r.docFreq(term), "docFreq(" + term.toString() + ")");
   }
 
   /**
@@ -119,7 +119,8 @@ public final class IndexReaderFunctions {
 
     @Override
     public LongValuesSource rewrite(IndexSearcher searcher) throws IOException {
-      return new NoCacheConstantLongValuesSource(searcher.getIndexReader().getSumTotalTermFreq(field), this);
+      return new NoCacheConstantLongValuesSource(
+          searcher.getIndexReader().getSumTotalTermFreq(field), this);
     }
 
     @Override
@@ -173,8 +174,7 @@ public final class IndexReaderFunctions {
       if (this == o) return true;
       if (!(o instanceof NoCacheConstantLongValuesSource)) return false;
       NoCacheConstantLongValuesSource that = (NoCacheConstantLongValuesSource) o;
-      return value == that.value &&
-          Objects.equals(parent, that.parent);
+      return value == that.value && Objects.equals(parent, that.parent);
     }
 
     @Override
@@ -230,8 +230,9 @@ public final class IndexReaderFunctions {
 
         @Override
         public boolean advanceExact(int doc) throws IOException {
-          if (pe.docID() > doc)
+          if (pe.docID() > doc) {
             return false;
+          }
           return pe.docID() == doc || pe.advance(doc) == doc;
         }
       };
@@ -277,7 +278,8 @@ public final class IndexReaderFunctions {
    * @see IndexReader#totalTermFreq(Term)
    */
   public static DoubleValuesSource totalTermFreq(Term term) {
-    return new IndexReaderDoubleValuesSource(r -> r.totalTermFreq(term), "totalTermFreq(" + term.toString() + ")");
+    return new IndexReaderDoubleValuesSource(
+        r -> r.totalTermFreq(term), "totalTermFreq(" + term.toString() + ")");
   }
 
   /**
@@ -286,7 +288,8 @@ public final class IndexReaderFunctions {
    * @see IndexReader#getSumDocFreq(String)
    */
   public static DoubleValuesSource sumDocFreq(String field) {
-    return new IndexReaderDoubleValuesSource(r -> r.getSumDocFreq(field), "sumDocFreq(" + field + ")");
+    return new IndexReaderDoubleValuesSource(
+        r -> r.getSumDocFreq(field), "sumDocFreq(" + field + ")");
   }
 
   /**
@@ -392,8 +395,7 @@ public final class IndexReaderFunctions {
       if (this == o) return true;
       if (!(o instanceof NoCacheConstantDoubleValuesSource)) return false;
       NoCacheConstantDoubleValuesSource that = (NoCacheConstantDoubleValuesSource) o;
-      return Double.compare(that.value, value) == 0 &&
-          Objects.equals(parent, that.parent);
+      return Double.compare(that.value, value) == 0 && Objects.equals(parent, that.parent);
     }
 
     @Override
@@ -411,5 +413,4 @@ public final class IndexReaderFunctions {
       return false;
     }
   }
-
 }

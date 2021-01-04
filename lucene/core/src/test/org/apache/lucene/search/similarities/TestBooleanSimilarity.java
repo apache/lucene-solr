@@ -18,7 +18,6 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -41,8 +40,7 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
 
   public void testTermScoreIsEqualToBoost() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Store.NO));
     doc.add(new StringField("foo", "baz", Store.NO));
@@ -75,8 +73,9 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
 
   public void testPhraseScoreIsEqualToBoost() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig().setSimilarity(new BooleanSimilarity()));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(), dir, newIndexWriterConfig().setSimilarity(new BooleanSimilarity()));
     Document doc = new Document();
     doc.add(new TextField("foo", "bar baz quux", Store.NO));
     w.addDocument(doc);
@@ -110,11 +109,18 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
       final int numOverlaps = random().nextInt(length);
       final int maxTermFrequency = 1;
       final int uniqueTermCount = 1;
-      FieldInvertState state = new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS, position, length, numOverlaps, 100, maxTermFrequency, uniqueTermCount);
-      assertEquals(
-          sim2.computeNorm(state),
-          sim1.computeNorm(state),
-          0f);
+      FieldInvertState state =
+          new FieldInvertState(
+              Version.LATEST.major,
+              "foo",
+              IndexOptions.DOCS_AND_FREQS,
+              position,
+              length,
+              numOverlaps,
+              100,
+              maxTermFrequency,
+              uniqueTermCount);
+      assertEquals(sim2.computeNorm(state), sim1.computeNorm(state), 0f);
     }
   }
 

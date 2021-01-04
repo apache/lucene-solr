@@ -18,16 +18,14 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafSimScorer;
 
 /**
- * Expert:
- * Public for extension only.
- * This does not work correctly for terms that indexed at position Integer.MAX_VALUE.
+ * Expert: Public for extension only. This does not work correctly for terms that indexed at
+ * position Integer.MAX_VALUE.
  */
 public class TermSpans extends Spans {
   protected final PostingsEnum postings;
@@ -39,8 +37,7 @@ public class TermSpans extends Spans {
   protected boolean readPayload;
   private final float positionsCost;
 
-  public TermSpans(LeafSimScorer scorer,
-                    PostingsEnum postings, Term term, float positionsCost) {
+  public TermSpans(LeafSimScorer scorer, PostingsEnum postings, Term term, float positionsCost) {
     this.postings = Objects.requireNonNull(postings);
     this.term = Objects.requireNonNull(term);
     this.doc = -1;
@@ -87,7 +84,7 @@ public class TermSpans extends Spans {
     }
     int prevPosition = position;
     position = postings.nextPosition();
-    assert position >= prevPosition : "prevPosition="+prevPosition+" > position="+position;
+    assert position >= prevPosition : "prevPosition=" + prevPosition + " > position=" + position;
     assert position != NO_MORE_POSITIONS; // int endPosition not possible
     count++;
     readPayload = false;
@@ -101,9 +98,9 @@ public class TermSpans extends Spans {
 
   @Override
   public int endPosition() {
-    return (position == -1) ? -1
-          : (position != NO_MORE_POSITIONS) ? position + 1
-          : NO_MORE_POSITIONS;
+    return (position == -1)
+        ? -1
+        : (position != NO_MORE_POSITIONS) ? position + 1 : NO_MORE_POSITIONS;
   }
 
   @Override
@@ -128,9 +125,14 @@ public class TermSpans extends Spans {
 
   @Override
   public String toString() {
-    return "spans(" + term.toString() + ")@" +
-            (doc == -1 ? "START" : (doc == NO_MORE_DOCS) ? "ENDDOC"
-              : doc + " - " + (position == NO_MORE_POSITIONS ? "ENDPOS" : position));
+    return "spans("
+        + term.toString()
+        + ")@"
+        + (doc == -1
+            ? "START"
+            : (doc == NO_MORE_DOCS)
+                ? "ENDDOC"
+                : doc + " - " + (position == NO_MORE_POSITIONS ? "ENDPOS" : position));
   }
 
   public PostingsEnum getPostings() {

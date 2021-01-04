@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -28,8 +27,8 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A filtered LeafReader that only includes the terms that are also in a provided set of terms.
- * Certain methods may be unimplemented or cause large operations on the underlying reader
- * and be slow.
+ * Certain methods may be unimplemented or cause large operations on the underlying reader and be
+ * slow.
  *
  * @lucene.internal
  */
@@ -40,8 +39,10 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
   private final String fieldFilter;
 
   /**
-   * <p>Construct a FilterLeafReader based on the specified base reader.
-   * <p>Note that base reader is closed if this FilterLeafReader is closed.</p>
+   * Construct a FilterLeafReader based on the specified base reader.
+   *
+   * <p>Note that base reader is closed if this FilterLeafReader is closed.
+   *
    * @param baseLeafReader full/original reader.
    * @param filterTerms set of terms to filter by -- probably from a TermVector or MemoryIndex.
    * @param fieldFilter the field to do this on
@@ -58,7 +59,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
       return super.terms(field); // proceed like normal for fields we're not interested in
     }
     Terms terms = in.terms(field);
-    return terms==null ? null : new TermsFilteredTerms(terms, filterTerms);
+    return terms == null ? null : new TermsFilteredTerms(terms, filterTerms);
   }
 
   private static final class TermsFilteredTerms extends FilterLeafReader.FilterTerms {
@@ -71,9 +72,9 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
       this.filterTerms = filterTerms;
     }
 
-    //TODO delegate size() ?
+    // TODO delegate size() ?
 
-    //TODO delegate getMin, getMax to filterTerms
+    // TODO delegate getMin, getMax to filterTerms
 
     @Override
     public TermsEnum iterator() throws IOException {
@@ -82,7 +83,8 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
 
     @Override
     public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
-      return new TermVectorFilteredTermsEnum(in.iterator(), filterTerms.intersect(compiled, startTerm));
+      return new TermVectorFilteredTermsEnum(
+          in.iterator(), filterTerms.intersect(compiled, startTerm));
     }
   }
 
@@ -90,7 +92,8 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
     // NOTE: super ("in") is the filteredTermsEnum. This is different than wrappers above because we
     //    navigate the terms using the filter.
 
-    //TODO: track the last term state from the term state method and do some potential optimizations
+    // TODO: track the last term state from the term state method and do some potential
+    // optimizations
     private final TermsEnum baseTermsEnum;
 
     TermVectorFilteredTermsEnum(TermsEnum baseTermsEnum, TermsEnum filteredTermsEnum) {
@@ -98,7 +101,7 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
       this.baseTermsEnum = baseTermsEnum;
     }
 
-    //TODO delegate docFreq & ttf (moveToCurrentTerm() then call on full?
+    // TODO delegate docFreq & ttf (moveToCurrentTerm() then call on full?
 
     @Override
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
@@ -111,10 +114,10 @@ final class TermVectorFilteredLeafReader extends FilterLeafReader {
       boolean termInBothTermsEnum = baseTermsEnum.seekExact(currentTerm);
 
       if (!termInBothTermsEnum) {
-        throw new IllegalStateException("Term vector term '" + currentTerm.utf8ToString() + "' does not appear in full index.");
+        throw new IllegalStateException(
+            "Term vector term '" + currentTerm.utf8ToString() + "' does not appear in full index.");
       }
     }
-
   }
 
   @Override

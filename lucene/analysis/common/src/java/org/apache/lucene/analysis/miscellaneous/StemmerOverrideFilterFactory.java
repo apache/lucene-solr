@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter.StemmerOverrideMap;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link StemmerOverrideFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_dicstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -36,10 +35,12 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.StemmerOverrideFilterFactory" dictionary="dictionary.txt" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
-public class StemmerOverrideFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class StemmerOverrideFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   /** SPI name */
   public static final String NAME = "stemmerOverride";
@@ -49,7 +50,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
   private final boolean ignoreCase;
 
   /** Creates a new StemmerOverrideFilterFactory */
-  public StemmerOverrideFilterFactory(Map<String,String> args) {
+  public StemmerOverrideFilterFactory(Map<String, String> args) {
     super(args);
     dictionaryFiles = get(args, "dictionary");
     ignoreCase = getBoolean(args, "ignoreCase", false);

@@ -16,18 +16,16 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link DateRecognizerFilter}.
- * 
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_filter_none_date" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -36,11 +34,11 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
- * 
- * <p>
- * The {@code datePattern} is optional. If omitted, {@link DateRecognizerFilter} will be created with the default date
- * format of the system. The {@code locale} is optional and if omitted the filter will be created with
- * {@link Locale#ENGLISH}.
+ *
+ * <p>The {@code datePattern} is optional. If omitted, {@link DateRecognizerFilter} will be created
+ * with the default date format of the system. The {@code locale} is optional and if omitted the
+ * filter will be created with {@link Locale#ENGLISH}.
+ *
  * @since 5.5.0
  * @lucene.spi {@value #NAME}
  */
@@ -56,7 +54,7 @@ public class DateRecognizerFilterFactory extends TokenFilterFactory {
   private final Locale locale;
 
   /** Creates a new FingerprintFilterFactory */
-  public DateRecognizerFilterFactory(Map<String,String> args) {
+  public DateRecognizerFilterFactory(Map<String, String> args) {
     super(args);
     this.locale = getLocale(get(args, LOCALE));
     this.dateFormat = getDataFormat(get(args, DATE_PATTERN));
@@ -82,7 +80,7 @@ public class DateRecognizerFilterFactory extends TokenFilterFactory {
       return new Locale.Builder().setLanguageTag(localeStr).build();
     }
   }
-  
+
   public DateFormat getDataFormat(String datePattern) {
     if (datePattern != null) {
       return new SimpleDateFormat(datePattern, locale);
@@ -90,5 +88,4 @@ public class DateRecognizerFilterFactory extends TokenFilterFactory {
       return DateFormat.getDateInstance(DateFormat.DEFAULT, locale);
     }
   }
-  
 }

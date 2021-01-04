@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.standard;
+package org.apache.lucene.analysis.classic;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 

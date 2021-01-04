@@ -17,21 +17,19 @@
 package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
-/**
- * Utility class to encode/decode increasing sequences of 128 integers.
- */
+/** Utility class to encode/decode increasing sequences of 128 integers. */
 public class ForDeltaUtil {
 
   // IDENTITY_PLUS_ONE[i] == i+1
   private static final long[] IDENTITY_PLUS_ONE = new long[ForUtil.BLOCK_SIZE];
+
   static {
     for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
-      IDENTITY_PLUS_ONE[i] = i+1;
+      IDENTITY_PLUS_ONE[i] = i + 1;
     }
   }
 
@@ -50,8 +48,8 @@ public class ForDeltaUtil {
   }
 
   /**
-   * Encode deltas of a strictly monotonically increasing sequence of integers.
-   * The provided {@code longs} are expected to be deltas between consecutive values.
+   * Encode deltas of a strictly monotonically increasing sequence of integers. The provided {@code
+   * longs} are expected to be deltas between consecutive values.
    */
   void encodeDeltas(long[] longs, DataOutput out) throws IOException {
     if (longs[0] == 1 && PForUtil.allEqual(longs)) { // happens with very dense postings
@@ -68,9 +66,7 @@ public class ForDeltaUtil {
     }
   }
 
-  /**
-   * Decode deltas, compute the prefix sum and add {@code base} to all decoded longs.
-   */
+  /** Decode deltas, compute the prefix sum and add {@code base} to all decoded longs. */
   void decodeAndPrefixSum(DataInput in, long base, long[] longs) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue == 0) {
@@ -80,14 +76,11 @@ public class ForDeltaUtil {
     }
   }
 
-  /**
-   * Skip a sequence of 128 longs.
-   */
+  /** Skip a sequence of 128 longs. */
   void skip(DataInput in) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue != 0) {
       in.skipBytes(forUtil.numBytes(bitsPerValue));
     }
   }
-
 }

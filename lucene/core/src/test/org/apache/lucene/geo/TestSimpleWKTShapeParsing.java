@@ -29,9 +29,9 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof double[]);
-    double[] point = (double[])shape;
-    assertEquals(101d, point[0], 0d);  // lon
-    assertEquals(10d, point[1], 1d);   // lat
+    double[] point = (double[]) shape;
+    assertEquals(101d, point[0], 0d); // lon
+    assertEquals(10d, point[1], 1d); // lat
   }
 
   /** test POINT EMPTY returns null */
@@ -49,8 +49,8 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof double[][]);
-    double[][] pts = (double[][])shape;
-    assertEquals(3, pts.length,0);
+    double[][] pts = (double[][]) shape;
+    assertEquals(3, pts.length, 0);
     assertEquals(101d, pts[0][0], 0);
     assertEquals(10d, pts[0][1], 0);
     assertEquals(180d, pts[1][0], 0);
@@ -74,8 +74,8 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Line);
-    Line line = (Line)shape;
-    assertEquals(3, line.numPoints(),0);
+    Line line = (Line) shape;
+    assertEquals(3, line.numPoints(), 0);
     assertEquals(101d, line.getLon(0), 0);
     assertEquals(10d, line.getLat(0), 0);
     assertEquals(180d, line.getLon(1), 0);
@@ -95,12 +95,13 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
   /** test simple MULTILINESTRING */
   public void testMultiLine() throws Exception {
     StringBuilder b = new StringBuilder();
-    b.append(ShapeType.MULTILINESTRING + "((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0),");
+    b.append(
+        ShapeType.MULTILINESTRING + "((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0),");
     b.append("(10.0 2.0, 11.0 2.0, 11.0 3.0, 10.0 3.0, 10.0 2.0))");
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Line[]);
-    Line[] lines = (Line[])shape;
+    Line[] lines = (Line[]) shape;
     assertEquals(2, lines.length, 0);
   }
 
@@ -119,9 +120,12 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Polygon);
-    Polygon polygon = (Polygon)shape;
-    assertEquals(new Polygon(new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
-        new double[] {100.0, 101.0, 101.0, 100.0, 100.0}), polygon);
+    Polygon polygon = (Polygon) shape;
+    assertEquals(
+        new Polygon(
+            new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
+            new double[] {100.0, 101.0, 101.0, 100.0, 100.0}),
+        polygon);
   }
 
   /** test polygon with hole */
@@ -132,11 +136,16 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Polygon);
-    Polygon hole = new Polygon(new double[] {0.5, 0.75, 0.75, 0.5, 0.5},
-        new double[] {100.5, 100.5, 100.75, 100.75, 100.5});
-    Polygon expected = new Polygon(new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
-        new double[] {100.0, 101.0, 101.0, 100.0, 100.0}, hole);
-    Polygon polygon = (Polygon)shape;
+    Polygon hole =
+        new Polygon(
+            new double[] {0.5, 0.75, 0.75, 0.5, 0.5},
+            new double[] {100.5, 100.5, 100.75, 100.75, 100.5});
+    Polygon expected =
+        new Polygon(
+            new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
+            new double[] {100.0, 101.0, 101.0, 100.0, 100.0},
+            hole);
+    Polygon polygon = (Polygon) shape;
 
     assertEquals(expected, polygon);
   }
@@ -144,17 +153,23 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
   /** test MultiPolygon returns Polygon array */
   public void testMultiPolygon() throws Exception {
     StringBuilder b = new StringBuilder();
-    b.append(ShapeType.MULTIPOLYGON + "(((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0)),");
+    b.append(
+        ShapeType.MULTIPOLYGON + "(((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0)),");
     b.append("((10.0 2.0, 11.0 2.0, 11.0 3.0, 10.0 3.0, 10.0 2.0)))");
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Polygon[]);
-    Polygon[] polygons = (Polygon[])shape;
+    Polygon[] polygons = (Polygon[]) shape;
     assertEquals(2, polygons.length);
-    assertEquals(new Polygon(new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
-        new double[] {100.0, 101.0, 101.0, 100.0, 100.0}), polygons[0]);
-    assertEquals(new Polygon(new double[] {2.0, 2.0, 3.0, 3.0, 2.0},
-        new double[] {10.0, 11.0, 11.0, 10.0, 10.0}), polygons[1]);
+    assertEquals(
+        new Polygon(
+            new double[] {0.0, 0.0, 1.0, 1.0, 0.0},
+            new double[] {100.0, 101.0, 101.0, 100.0, 100.0}),
+        polygons[0]);
+    assertEquals(
+        new Polygon(
+            new double[] {2.0, 2.0, 3.0, 3.0, 2.0}, new double[] {10.0, 11.0, 11.0, 10.0, 10.0}),
+        polygons[1]);
   }
 
   /** polygon must be closed */
@@ -162,11 +177,18 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     StringBuilder b = new StringBuilder();
     b.append(ShapeType.POLYGON + "((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0))\n");
 
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      SimpleWKTShapeParser.parse(b.toString());
-    });
-    assertTrue(expected.getMessage(),
-        expected.getMessage().contains("first and last points of the polygon must be the same (it must close itself)"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              SimpleWKTShapeParser.parse(b.toString());
+            });
+    assertTrue(
+        expected.getMessage(),
+        expected
+            .getMessage()
+            .contains(
+                "first and last points of the polygon must be the same (it must close itself)"));
   }
 
   /** test simple ENVELOPE (minLon, maxLon, maxLat, minLat) */
@@ -176,7 +198,7 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
     Object shape = SimpleWKTShapeParser.parse(b.toString());
 
     assertTrue(shape instanceof Rectangle);
-    Rectangle bbox = (Rectangle)shape;
+    Rectangle bbox = (Rectangle) shape;
     assertEquals(-180d, bbox.minLon, 0);
     assertEquals(180d, bbox.maxLon, 0);
     assertEquals(-90d, bbox.minLat, 0);
@@ -187,7 +209,8 @@ public class TestSimpleWKTShapeParsing extends LuceneTestCase {
   public void testGeometryCollection() throws Exception {
     StringBuilder b = new StringBuilder();
     b.append(ShapeType.GEOMETRYCOLLECTION + "(");
-    b.append(ShapeType.MULTIPOLYGON + "(((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0)),");
+    b.append(
+        ShapeType.MULTIPOLYGON + "(((100.0 0.0, 101.0 0.0, 101.0 1.0, 100.0 1.0, 100.0 0.0)),");
     b.append("((10.0 2.0, 11.0 2.0, 11.0 3.0, 10.0 3.0, 10.0 2.0))),");
     b.append(ShapeType.POINT + "(101.0 10.0),");
     b.append(ShapeType.LINESTRING + "(101.0 10.0, 180.0 90.0, -180.0 -90.0),");

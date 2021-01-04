@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,33 +43,33 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 
-/** Records per-dimension configuration.  By default a
- *  dimension is flat, single valued and does
- *  not require count for the dimension; use
- *  the setters in this class to change these settings for
- *  each dim.
+/**
+ * Records per-dimension configuration. By default a dimension is flat, single valued and does not
+ * require count for the dimension; use the setters in this class to change these settings for each
+ * dim.
  *
- *  <p><b>NOTE</b>: this configuration is not saved into the
- *  index, but it's vital, and up to the application to
- *  ensure, that at search time the provided {@code
- *  FacetsConfig} matches what was used during indexing.
+ * <p><b>NOTE</b>: this configuration is not saved into the index, but it's vital, and up to the
+ * application to ensure, that at search time the provided {@code FacetsConfig} matches what was
+ * used during indexing.
  *
- *  @lucene.experimental */
+ * @lucene.experimental
+ */
 public class FacetsConfig {
 
-  /** Which Lucene field holds the drill-downs and ords (as
-   *  doc values). */
+  /** Which Lucene field holds the drill-downs and ords (as doc values). */
   public static final String DEFAULT_INDEX_FIELD_NAME = "$facets";
 
-  private final Map<String,DimConfig> fieldTypes = new ConcurrentHashMap<>();
+  private final Map<String, DimConfig> fieldTypes = new ConcurrentHashMap<>();
 
   // Used only for best-effort detection of app mixing
   // int/float/bytes in a single indexed field:
-  private final Map<String,String> assocDimTypes = new ConcurrentHashMap<>();
+  private final Map<String, String> assocDimTypes = new ConcurrentHashMap<>();
 
-  /** Holds the configuration for one dimension
+  /**
+   * Holds the configuration for one dimension
    *
-   * @lucene.experimental */
+   * @lucene.experimental
+   */
   public static final class DimConfig {
     /** True if this dimension is hierarchical. */
     public boolean hierarchical;
@@ -78,42 +77,42 @@ public class FacetsConfig {
     /** True if this dimension is multi-valued. */
     public boolean multiValued;
 
-    /** True if the count/aggregate for the entire dimension
-     *  is required, which is unusual (default is false). */
+    /**
+     * True if the count/aggregate for the entire dimension is required, which is unusual (default
+     * is false).
+     */
     public boolean requireDimCount;
 
-    /** True if drilling down by a whole dimension, to match all
-     *  documents that had any value for this dimension, is necessary
-     *  (default is true)*/
+    /**
+     * True if drilling down by a whole dimension, to match all documents that had any value for
+     * this dimension, is necessary (default is true)
+     */
     public boolean requireDimensionDrillDown = true;
 
-    /** Actual field where this dimension's facet labels
-     *  should be indexed */
+    /** Actual field where this dimension's facet labels should be indexed */
     public String indexFieldName = DEFAULT_INDEX_FIELD_NAME;
 
     /** Default constructor. */
-    public DimConfig() {
-    }
+    public DimConfig() {}
   }
 
   /** Default per-dimension configuration. */
-  public final static DimConfig DEFAULT_DIM_CONFIG = new DimConfig();
+  public static final DimConfig DEFAULT_DIM_CONFIG = new DimConfig();
 
   /** Default constructor. */
-  public FacetsConfig() {
-  }
+  public FacetsConfig() {}
 
-  /** Get the default configuration for new dimensions.  Useful when
-   *  the dimension is not known beforehand and may need different 
-   *  global default settings, like {@code multivalue =
-   *  true}.
+  /**
+   * Get the default configuration for new dimensions. Useful when the dimension is not known
+   * beforehand and may need different global default settings, like {@code multivalue = true}.
    *
-   *  @return The default configuration to be used for dimensions that 
-   *  are not yet set in the {@link FacetsConfig} */
+   * @return The default configuration to be used for dimensions that are not yet set in the {@link
+   *     FacetsConfig}
+   */
   protected DimConfig getDefaultDimConfig() {
     return DEFAULT_DIM_CONFIG;
   }
-  
+
   /** Get the current configuration for a dimension. */
   public DimConfig getDimConfig(String dimName) {
     DimConfig ft = fieldTypes.get(dimName);
@@ -123,8 +122,7 @@ public class FacetsConfig {
     return ft;
   }
 
-  /** Pass {@code true} if this dimension is hierarchical
-   *  (has depth &gt; 1 paths). */
+  /** Pass {@code true} if this dimension is hierarchical (has depth &gt; 1 paths). */
   public synchronized void setHierarchical(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -134,8 +132,7 @@ public class FacetsConfig {
     ft.hierarchical = v;
   }
 
-  /** Pass {@code true} if this dimension may have more than
-   *  one value per document. */
+  /** Pass {@code true} if this dimension may have more than one value per document. */
   public synchronized void setMultiValued(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -145,9 +142,10 @@ public class FacetsConfig {
     ft.multiValued = v;
   }
 
-  /** Pass {@code true} if at search time you require
-   *  accurate counts of the dimension, i.e. how many
-   *  hits have this dimension. */
+  /**
+   * Pass {@code true} if at search time you require accurate counts of the dimension, i.e. how many
+   * hits have this dimension.
+   */
   public synchronized void setRequireDimCount(String dimName, boolean v) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -157,9 +155,10 @@ public class FacetsConfig {
     ft.requireDimCount = v;
   }
 
-  /** Specify which index field name should hold the
-   *  ordinals for this dimension; this is only used by the
-   *  taxonomy based facet methods. */
+  /**
+   * Specify which index field name should hold the ordinals for this dimension; this is only used
+   * by the taxonomy based facet methods.
+   */
   public synchronized void setIndexFieldName(String dimName, String indexFieldName) {
     DimConfig ft = fieldTypes.get(dimName);
     if (ft == null) {
@@ -180,25 +179,26 @@ public class FacetsConfig {
   }
 
   /** Returns map of field name to {@link DimConfig}. */
-  public Map<String,DimConfig> getDimConfigs() {
+  public Map<String, DimConfig> getDimConfigs() {
     return fieldTypes;
   }
 
   private static void checkSeen(Set<String> seenDims, String dim) {
     if (seenDims.contains(dim)) {
-      throw new IllegalArgumentException("dimension \"" + dim + "\" is not multiValued, but it appears more than once in this document");
+      throw new IllegalArgumentException(
+          "dimension \""
+              + dim
+              + "\" is not multiValued, but it appears more than once in this document");
     }
     seenDims.add(dim);
   }
 
   /**
-   * Translates any added {@link FacetField}s into normal fields for indexing;
-   * only use this version if you did not add any taxonomy-based fields (
-   * {@link FacetField} or {@link AssociationFacetField}).
-   * 
-   * <p>
-   * <b>NOTE:</b> you should add the returned document to IndexWriter, not the
-   * input one!
+   * Translates any added {@link FacetField}s into normal fields for indexing; only use this version
+   * if you did not add any taxonomy-based fields ( {@link FacetField} or {@link
+   * AssociationFacetField}).
+   *
+   * <p><b>NOTE:</b> you should add the returned document to IndexWriter, not the input one!
    */
   public Document build(Document doc) throws IOException {
     return build(null, doc);
@@ -206,20 +206,18 @@ public class FacetsConfig {
 
   /**
    * Translates any added {@link FacetField}s into normal fields for indexing.
-   * 
-   * <p>
-   * <b>NOTE:</b> you should add the returned document to IndexWriter, not the
-   * input one!
+   *
+   * <p><b>NOTE:</b> you should add the returned document to IndexWriter, not the input one!
    */
   public Document build(TaxonomyWriter taxoWriter, Document doc) throws IOException {
     // Find all FacetFields, collated by the actual field:
-    Map<String,List<FacetField>> byField = new HashMap<>();
+    Map<String, List<FacetField>> byField = new HashMap<>();
 
     // ... and also all SortedSetDocValuesFacetFields:
-    Map<String,List<SortedSetDocValuesFacetField>> dvByField = new HashMap<>();
+    Map<String, List<SortedSetDocValuesFacetField>> dvByField = new HashMap<>();
 
     // ... and also all AssociationFacetFields
-    Map<String,List<AssociationFacetField>> assocByField = new HashMap<>();
+    Map<String, List<AssociationFacetField>> assocByField = new HashMap<>();
 
     Set<String> seenDims = new HashSet<>();
 
@@ -261,10 +259,12 @@ public class FacetsConfig {
           checkSeen(seenDims, facetField.dim);
         }
         if (dimConfig.hierarchical) {
-          throw new IllegalArgumentException("AssociationFacetField cannot be hierarchical (dim=\"" + facetField.dim + "\")");
+          throw new IllegalArgumentException(
+              "AssociationFacetField cannot be hierarchical (dim=\"" + facetField.dim + "\")");
         }
         if (dimConfig.requireDimCount) {
-          throw new IllegalArgumentException("AssociationFacetField cannot requireDimCount (dim=\"" + facetField.dim + "\")");
+          throw new IllegalArgumentException(
+              "AssociationFacetField cannot requireDimCount (dim=\"" + facetField.dim + "\")");
         }
 
         String indexFieldName = dimConfig.indexFieldName;
@@ -290,7 +290,14 @@ public class FacetsConfig {
         if (curType == null) {
           assocDimTypes.put(indexFieldName, type);
         } else if (!curType.equals(type)) {
-          throw new IllegalArgumentException("mixing incompatible types of AssocationFacetField (" + curType + " and " + type + ") in indexed field \"" + indexFieldName + "\"; use FacetsConfig to change the indexFieldName for each dimension");
+          throw new IllegalArgumentException(
+              "mixing incompatible types of AssocationFacetField ("
+                  + curType
+                  + " and "
+                  + type
+                  + ") in indexed field \""
+                  + indexFieldName
+                  + "\"; use FacetsConfig to change the indexFieldName for each dimension");
         }
       }
     }
@@ -301,46 +308,55 @@ public class FacetsConfig {
     processSSDVFacetFields(dvByField, result);
     processAssocFacetFields(taxoWriter, assocByField, result);
 
-    //System.out.println("add stored: " + addedStoredFields);
+    // System.out.println("add stored: " + addedStoredFields);
 
     for (IndexableField field : doc.getFields()) {
       IndexableFieldType ft = field.fieldType();
-      if (ft != FacetField.TYPE && ft != SortedSetDocValuesFacetField.TYPE && ft != AssociationFacetField.TYPE) {
+      if (ft != FacetField.TYPE
+          && ft != SortedSetDocValuesFacetField.TYPE
+          && ft != AssociationFacetField.TYPE) {
         result.add(field);
       }
     }
 
-    //System.out.println("all indexed: " + allIndexedFields);
-    //System.out.println("all stored: " + allStoredFields);
+    // System.out.println("all indexed: " + allIndexedFields);
+    // System.out.println("all stored: " + allStoredFields);
 
     return result;
   }
 
-  private void processFacetFields(TaxonomyWriter taxoWriter, Map<String,List<FacetField>> byField, Document doc) throws IOException {
+  private void processFacetFields(
+      TaxonomyWriter taxoWriter, Map<String, List<FacetField>> byField, Document doc)
+      throws IOException {
 
-    for(Map.Entry<String,List<FacetField>> ent : byField.entrySet()) {
+    for (Map.Entry<String, List<FacetField>> ent : byField.entrySet()) {
 
       String indexFieldName = ent.getKey();
-      //System.out.println("  indexFieldName=" + indexFieldName + " fields=" + ent.getValue());
+      // System.out.println("  indexFieldName=" + indexFieldName + " fields=" + ent.getValue());
 
       IntsRefBuilder ordinals = new IntsRefBuilder();
-      for(FacetField facetField : ent.getValue()) {
+      for (FacetField facetField : ent.getValue()) {
 
         FacetsConfig.DimConfig ft = getDimConfig(facetField.dim);
         if (facetField.path.length > 1 && ft.hierarchical == false) {
-          throw new IllegalArgumentException("dimension \"" + facetField.dim + "\" is not hierarchical yet has " + facetField.path.length + " components");
+          throw new IllegalArgumentException(
+              "dimension \""
+                  + facetField.dim
+                  + "\" is not hierarchical yet has "
+                  + facetField.path.length
+                  + " components");
         }
-      
+
         FacetLabel cp = new FacetLabel(facetField.dim, facetField.path);
 
         checkTaxoWriter(taxoWriter);
         int ordinal = taxoWriter.addCategory(cp);
         ordinals.append(ordinal);
-        //System.out.println("ords[" + (ordinals.length-1) + "]=" + ordinal);
-        //System.out.println("  add cp=" + cp);
+        // System.out.println("ords[" + (ordinals.length-1) + "]=" + ordinal);
+        // System.out.println("  add cp=" + cp);
 
         if (ft.multiValued && (ft.hierarchical || ft.requireDimCount)) {
-          //System.out.println("  add parents");
+          // System.out.println("  add parents");
           // Add all parents too:
           int parent = taxoWriter.getParent(ordinal);
           while (parent > 0) {
@@ -361,7 +377,7 @@ public class FacetsConfig {
         } else {
           start = 2;
         }
-        for (int i=start;i<=cp.length;i++) {
+        for (int i = start; i <= cp.length; i++) {
           doc.add(new StringField(indexFieldName, pathToString(cp.components, i), Field.Store.NO));
         }
       }
@@ -372,17 +388,18 @@ public class FacetsConfig {
     }
   }
 
-  private void processSSDVFacetFields(Map<String,List<SortedSetDocValuesFacetField>> byField, Document doc) throws IOException {
-    //System.out.println("process SSDV: " + byField);
-    for(Map.Entry<String,List<SortedSetDocValuesFacetField>> ent : byField.entrySet()) {
+  private void processSSDVFacetFields(
+      Map<String, List<SortedSetDocValuesFacetField>> byField, Document doc) throws IOException {
+    // System.out.println("process SSDV: " + byField);
+    for (Map.Entry<String, List<SortedSetDocValuesFacetField>> ent : byField.entrySet()) {
 
       String indexFieldName = ent.getKey();
-      //System.out.println("  field=" + indexFieldName);
+      // System.out.println("  field=" + indexFieldName);
 
-      for(SortedSetDocValuesFacetField facetField : ent.getValue()) {
+      for (SortedSetDocValuesFacetField facetField : ent.getValue()) {
         FacetLabel cp = new FacetLabel(facetField.dim, facetField.label);
         String fullPath = pathToString(cp.components, cp.length);
-        //System.out.println("add " + fullPath);
+        // System.out.println("add " + fullPath);
 
         // For facet counts:
         doc.add(new SortedSetDocValuesField(indexFieldName, new BytesRef(fullPath)));
@@ -390,7 +407,7 @@ public class FacetsConfig {
         // For drill-down:
         doc.add(new StringField(indexFieldName, fullPath, Field.Store.NO));
 
-        FacetsConfig.DimConfig ft = getDimConfig(facetField.dim);        
+        FacetsConfig.DimConfig ft = getDimConfig(facetField.dim);
         if (ft.requireDimensionDrillDown) {
           doc.add(new StringField(indexFieldName, facetField.dim, Field.Store.NO));
         }
@@ -398,20 +415,20 @@ public class FacetsConfig {
     }
   }
 
-  private void processAssocFacetFields(TaxonomyWriter taxoWriter,
-      Map<String,List<AssociationFacetField>> byField, Document doc)
+  private void processAssocFacetFields(
+      TaxonomyWriter taxoWriter, Map<String, List<AssociationFacetField>> byField, Document doc)
       throws IOException {
-    for (Map.Entry<String,List<AssociationFacetField>> ent : byField.entrySet()) {
+    for (Map.Entry<String, List<AssociationFacetField>> ent : byField.entrySet()) {
       byte[] bytes = new byte[16];
       int upto = 0;
       String indexFieldName = ent.getKey();
-      for(AssociationFacetField field : ent.getValue()) {
+      for (AssociationFacetField field : ent.getValue()) {
         // NOTE: we don't add parents for associations
         checkTaxoWriter(taxoWriter);
         FacetLabel label = new FacetLabel(field.dim, field.path);
         int ordinal = taxoWriter.addCategory(label);
         if (upto + 4 > bytes.length) {
-          bytes = ArrayUtil.grow(bytes, upto+4);
+          bytes = ArrayUtil.grow(bytes, upto + 4);
         }
         // big-endian:
         bytes[upto++] = (byte) (ordinal >> 24);
@@ -419,13 +436,13 @@ public class FacetsConfig {
         bytes[upto++] = (byte) (ordinal >> 8);
         bytes[upto++] = (byte) ordinal;
         if (upto + field.assoc.length > bytes.length) {
-          bytes = ArrayUtil.grow(bytes, upto+field.assoc.length);
+          bytes = ArrayUtil.grow(bytes, upto + field.assoc.length);
         }
         System.arraycopy(field.assoc.bytes, field.assoc.offset, bytes, upto, field.assoc.length);
         upto += field.assoc.length;
 
-        FacetsConfig.DimConfig ft = getDimConfig(field.dim);        
-        
+        FacetsConfig.DimConfig ft = getDimConfig(field.dim);
+
         // Drill down:
         int start;
         if (ft.requireDimensionDrillDown) {
@@ -434,22 +451,22 @@ public class FacetsConfig {
           start = 2;
         }
         for (int i = 1; i <= label.length; i++) {
-          doc.add(new StringField(indexFieldName, pathToString(label.components, i), Field.Store.NO));
+          doc.add(
+              new StringField(indexFieldName, pathToString(label.components, i), Field.Store.NO));
         }
       }
       doc.add(new BinaryDocValuesField(indexFieldName, new BytesRef(bytes, 0, upto)));
     }
   }
 
-  /** Encodes ordinals into a BytesRef; expert: subclass can
-   *  override this to change encoding. */
+  /** Encodes ordinals into a BytesRef; expert: subclass can override this to change encoding. */
   protected BytesRef dedupAndEncode(IntsRef ordinals) {
     Arrays.sort(ordinals.ints, ordinals.offset, ordinals.length);
-    byte[] bytes = new byte[5*ordinals.length];
+    byte[] bytes = new byte[5 * ordinals.length];
     int lastOrd = -1;
     int upto = 0;
-    for(int i=0;i<ordinals.length;i++) {
-      int ord = ordinals.ints[ordinals.offset+i];
+    for (int i = 0; i < ordinals.length; i++) {
+      int ord = ordinals.ints[ordinals.offset + i];
       // ord could be == lastOrd, so we must dedup:
       if (ord > lastOrd) {
         int delta;
@@ -492,15 +509,15 @@ public class FacetsConfig {
 
   private void checkTaxoWriter(TaxonomyWriter taxoWriter) {
     if (taxoWriter == null) {
-      throw new IllegalStateException("a non-null TaxonomyWriter must be provided when indexing FacetField or AssociationFacetField");
+      throw new IllegalStateException(
+          "a non-null TaxonomyWriter must be provided when indexing FacetField or AssociationFacetField");
     }
   }
 
   /**
-   * Character used to join the category path components together into a single
-   * drill down term for indexing.  Applications and unit-tests can reference this for
-   * creating their own drill-down terms, or use existing APIs (for example,
-   * {@link #pathToString}).
+   * Character used to join the category path components together into a single drill down term for
+   * indexing. Applications and unit-tests can reference this for creating their own drill-down
+   * terms, or use existing APIs (for example, {@link #pathToString}).
    *
    * @lucene.internal
    */
@@ -511,7 +528,7 @@ public class FacetsConfig {
 
   /** Turns a dim + path into an encoded string. */
   public static String pathToString(String dim, String[] path) {
-    String[] fullPath = new String[1+path.length];
+    String[] fullPath = new String[1 + path.length];
     fullPath[0] = dim;
     System.arraycopy(path, 0, fullPath, 1, path.length);
     return pathToString(fullPath, fullPath.length);
@@ -522,20 +539,19 @@ public class FacetsConfig {
     return pathToString(path, path.length);
   }
 
-  /** Turns the first {@code length} elements of {@code
-   * path} into an encoded string. */
+  /** Turns the first {@code length} elements of {@code path} into an encoded string. */
   public static String pathToString(String[] path, int length) {
     if (length == 0) {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    for(int i=0;i<length;i++) {
+    for (int i = 0; i < length; i++) {
       String s = path[i];
       if (s.length() == 0) {
         throw new IllegalArgumentException("each path component must have length > 0 (got: \"\")");
       }
       int numChars = s.length();
-      for(int j=0;j<numChars;j++) {
+      for (int j = 0; j < numChars; j++) {
         char ch = s.charAt(j);
         if (ch == DELIM_CHAR || ch == ESCAPE_CHAR) {
           sb.append(ESCAPE_CHAR);
@@ -546,13 +562,14 @@ public class FacetsConfig {
     }
 
     // Trim off last DELIM_CHAR:
-    sb.setLength(sb.length()-1);
+    sb.setLength(sb.length() - 1);
     return sb.toString();
   }
 
-  /** Turns an encoded string (from a previous call to {@link
-   *  #pathToString}) back into the original {@code
-   *  String[]}. */
+  /**
+   * Turns an encoded string (from a previous call to {@link #pathToString}) back into the original
+   * {@code String[]}.
+   */
   public static String[] stringToPath(String s) {
     List<String> parts = new ArrayList<>();
     int length = s.length();
@@ -563,7 +580,7 @@ public class FacetsConfig {
 
     int upto = 0;
     boolean lastEscape = false;
-    for(int i=0;i<length;i++) {
+    for (int i = 0; i < length; i++) {
       char ch = s.charAt(i);
       if (lastEscape) {
         buffer[upto++] = ch;

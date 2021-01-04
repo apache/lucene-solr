@@ -32,9 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Tests for {@link BM25NBClassifier}
- */
+/** Tests for {@link BM25NBClassifier} */
 public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
@@ -43,7 +41,8 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      BM25NBClassifier classifier = new BM25NBClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      BM25NBClassifier classifier =
+          new BM25NBClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -59,7 +58,8 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "not"));
-      BM25NBClassifier classifier = new BM25NBClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName);
+      BM25NBClassifier classifier =
+          new BM25NBClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -74,7 +74,8 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     try {
       Analyzer analyzer = new NGramAnalyzer();
       leafReader = getSampleIndex(analyzer);
-      BM25NBClassifier classifier = new BM25NBClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      BM25NBClassifier classifier =
+          new BM25NBClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -87,21 +88,26 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
+      return new TokenStreamComponents(
+          tokenizer,
+          new ReverseStringFilter(
+              new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 
-  @Test @Slow
+  @Test
+  @Slow
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     int numDocs = atLeast(10);
     LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
-      BM25NBClassifier classifier = new BM25NBClassifier(leafReader,
-          analyzer, null, categoryFieldName, textFieldName);
+      BM25NBClassifier classifier =
+          new BM25NBClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
 
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          classifier, categoryFieldName, textFieldName, -1);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              leafReader, classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
 
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
@@ -142,7 +148,5 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     } finally {
       leafReader.close();
     }
-
   }
-
 }

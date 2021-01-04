@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -31,7 +29,6 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.util.Version;
-
 
 /** Tests the functionality of {@link CreateIndexTask}. */
 public class CreateIndexTaskTest extends BenchmarkTestCase {
@@ -49,7 +46,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
   }
 
   public void testInfoStream_SystemOutErr() throws Exception {
- 
+
     PrintStream curOut = System.out;
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     System.setOut(new PrintStream(baos, false, Charset.defaultCharset().name()));
@@ -62,7 +59,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     } finally {
       System.setOut(curOut);
     }
-    
+
     PrintStream curErr = System.err;
     baos.reset();
     System.setErr(new PrintStream(baos, false, Charset.defaultCharset().name()));
@@ -75,11 +72,10 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     } finally {
       System.setErr(curErr);
     }
-
   }
 
   public void testInfoStream_File() throws Exception {
-    
+
     Path outFile = getWorkDir().resolve("infoStreamTest");
     PerfRunData runData = createPerfRunData(outFile.toAbsolutePath().toString());
     new CreateIndexTask(runData).doLogic();
@@ -93,7 +89,7 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     new CreateIndexTask(runData).doLogic();
     new CloseIndexTask(runData).doLogic();
   }
-  
+
   public void testNoMergeScheduler() throws Exception {
     PerfRunData runData = createPerfRunData(null);
     runData.getConfig().set("merge.scheduler", NoMergeScheduler.class.getName());

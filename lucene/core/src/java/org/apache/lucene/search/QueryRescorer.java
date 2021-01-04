@@ -16,49 +16,48 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.ArrayUtil;
 
-/** A {@link Rescorer} that uses a provided Query to assign
- *  scores to the first-pass hits.
+/**
+ * A {@link Rescorer} that uses a provided Query to assign scores to the first-pass hits.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public abstract class QueryRescorer extends Rescorer {
 
   private final Query query;
 
-  /** Sole constructor, passing the 2nd pass query to
-   *  assign scores to the 1st pass hits.  */
+  /** Sole constructor, passing the 2nd pass query to assign scores to the 1st pass hits. */
   public QueryRescorer(Query query) {
     this.query = query;
   }
 
   /**
-   * Implement this in a subclass to combine the first pass and
-   * second pass scores.  If secondPassMatches is false then
-   * the second pass query failed to match a hit from the
-   * first pass query, and you should ignore the
-   * secondPassScore.
+   * Implement this in a subclass to combine the first pass and second pass scores. If
+   * secondPassMatches is false then the second pass query failed to match a hit from the first pass
+   * query, and you should ignore the secondPassScore.
    */
-  protected abstract float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore);
+  protected abstract float combine(
+      float firstPassScore, boolean secondPassMatches, float secondPassScore);
 
   @Override
-  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN) throws IOException {
+  public TopDocs rescore(IndexSearcher searcher, TopDocs firstPassTopDocs, int topN)
+      throws IOException {
     ScoreDoc[] hits = firstPassTopDocs.scoreDocs.clone();
 
-    Arrays.sort(hits,
-                new Comparator<ScoreDoc>() {
-                  @Override
-                  public int compare(ScoreDoc a, ScoreDoc b) {
-                    return a.doc - b.doc;
-                  }
-                });
+    Arrays.sort(
+        hits,
+        new Comparator<ScoreDoc>() {
+          @Override
+          public int compare(ScoreDoc a, ScoreDoc b) {
+            return a.doc - b.doc;
+          }
+        });
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
 
@@ -111,21 +110,22 @@ public abstract class QueryRescorer extends Rescorer {
       hitUpto++;
     }
 
-    Comparator<ScoreDoc> sortDocComparator = new Comparator<ScoreDoc>() {
-      @Override
-      public int compare(ScoreDoc a, ScoreDoc b) {
-        // Sort by score descending, then docID ascending:
-        if (a.score > b.score) {
-          return -1;
-        } else if (a.score < b.score) {
-          return 1;
-        } else {
-          // This subtraction can't overflow int
-          // because docIDs are >= 0:
-          return a.doc - b.doc;
-        }
-      }
-    };
+    Comparator<ScoreDoc> sortDocComparator =
+        new Comparator<ScoreDoc>() {
+          @Override
+          public int compare(ScoreDoc a, ScoreDoc b) {
+            // Sort by score descending, then docID ascending:
+            if (a.score > b.score) {
+              return -1;
+            } else if (a.score < b.score) {
+              return 1;
+            } else {
+              // This subtraction can't overflow int
+              // because docIDs are >= 0:
+              return a.doc - b.doc;
+            }
+          }
+        };
 
     if (topN < hits.length) {
       ArrayUtil.select(hits, 0, hits.length, topN, sortDocComparator);
@@ -140,19 +140,24 @@ public abstract class QueryRescorer extends Rescorer {
   }
 
   @Override
-  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID) throws IOException {
+  public Explanation explain(IndexSearcher searcher, Explanation firstPassExplanation, int docID)
+      throws IOException {
     Explanation secondPassExplanation = searcher.explain(query, docID);
 
-    Number secondPassScore = secondPassExplanation.isMatch() ? secondPassExplanation.getValue() : null;
+    Number secondPassScore =
+        secondPassExplanation.isMatch() ? secondPassExplanation.getValue() : null;
 
     float score;
     if (secondPassScore == null) {
       score = combine(firstPassExplanation.getValue().floatValue(), false, 0.0f);
     } else {
-      score = combine(firstPassExplanation.getValue().floatValue(), true,  secondPassScore.floatValue());
+      score =
+          combine(firstPassExplanation.getValue().floatValue(), true, secondPassScore.floatValue());
     }
 
-    Explanation first = Explanation.match(firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
+    Explanation first =
+        Explanation.match(
+            firstPassExplanation.getValue(), "first pass score", firstPassExplanation);
 
     Explanation second;
     if (secondPassScore == null) {
@@ -161,15 +166,21 @@ public abstract class QueryRescorer extends Rescorer {
       second = Explanation.match(secondPassScore, "second pass score", secondPassExplanation);
     }
 
-    return Explanation.match(score, "combined first and second pass score using " + getClass(), first, second);
+    return Explanation.match(
+        score, "combined first and second pass score using " + getClass(), first, second);
   }
 
-  /** Sugar API, calling {#rescore} using a simple linear
-   *  combination of firstPassScore + weight * secondPassScore */
-  public static TopDocs rescore(IndexSearcher searcher, TopDocs topDocs, Query query, final double weight, int topN) throws IOException {
+  /**
+   * Sugar API, calling {#rescore} using a simple linear combination of firstPassScore + weight *
+   * secondPassScore
+   */
+  public static TopDocs rescore(
+      IndexSearcher searcher, TopDocs topDocs, Query query, final double weight, int topN)
+      throws IOException {
     return new QueryRescorer(query) {
       @Override
-      protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+      protected float combine(
+          float firstPassScore, boolean secondPassMatches, float secondPassScore) {
         float score = firstPassScore;
         if (secondPassMatches) {
           score += weight * secondPassScore;

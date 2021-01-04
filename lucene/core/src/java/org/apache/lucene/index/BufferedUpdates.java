@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
@@ -28,12 +26,12 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** Holds buffered deletes and updates, by docID, term or query for a
- *  single segment. This is used to hold buffered pending
- *  deletes and updates against the to-be-flushed segment.  Once the
- *  deletes and updates are pushed (on flush in DocumentsWriter), they
- *  are converted to a {@link FrozenBufferedUpdates} instance and
- *  pushed to the {@link BufferedUpdatesStream}. */
+/**
+ * Holds buffered deletes and updates, by docID, term or query for a single segment. This is used to
+ * hold buffered pending deletes and updates against the to-be-flushed segment. Once the deletes and
+ * updates are pushed (on flush in DocumentsWriter), they are converted to a {@link
+ * FrozenBufferedUpdates} instance and pushed to the {@link BufferedUpdatesStream}.
+ */
 
 // NOTE: instances of this class are accessed either via a private
 // instance on DocumentWriterPerThread, or via sync'd code by
@@ -42,31 +40,38 @@ import org.apache.lucene.util.RamUsageEstimator;
 class BufferedUpdates implements Accountable {
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
-     load factor (say 2 * POINTER).  Entry is object w/ Term
-     key, Integer val, int hash, Entry next
-     (OBJ_HEADER + 3*POINTER + INT).  Term is object w/
-     String field and String text (OBJ_HEADER + 2*POINTER).
-     Term's field is String (OBJ_HEADER + 4*INT + POINTER +
-     OBJ_HEADER + string.length*CHAR).
-     Term's text is String (OBJ_HEADER + 4*INT + POINTER +
-     OBJ_HEADER + string.length*CHAR).  Integer is
-     OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_TERM = 9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 7*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 10*Integer.BYTES;
+  load factor (say 2 * POINTER).  Entry is object w/ Term
+  key, Integer val, int hash, Entry next
+  (OBJ_HEADER + 3*POINTER + INT).  Term is object w/
+  String field and String text (OBJ_HEADER + 2*POINTER).
+  Term's field is String (OBJ_HEADER + 4*INT + POINTER +
+  OBJ_HEADER + string.length*CHAR).
+  Term's text is String (OBJ_HEADER + 4*INT + POINTER +
+  OBJ_HEADER + string.length*CHAR).  Integer is
+  OBJ_HEADER + INT. */
+  static final int BYTES_PER_DEL_TERM =
+      9 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + 7 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+          + 10 * Integer.BYTES;
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
-     load factor (say 2 * POINTER).  Entry is object w/
-     Query key, Integer val, int hash, Entry next
-     (OBJ_HEADER + 3*POINTER + INT).  Query we often
-     undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*Integer.BYTES + 24;
+  load factor (say 2 * POINTER).  Entry is object w/
+  Query key, Integer val, int hash, Entry next
+  (OBJ_HEADER + 3*POINTER + INT).  Query we often
+  undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
+  static final int BYTES_PER_DEL_QUERY =
+      5 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+          + 2 * Integer.BYTES
+          + 24;
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numFieldUpdates = new AtomicInteger();
 
-  final Map<Term,Integer> deleteTerms = new HashMap<>(); // TODO cut this over to FieldUpdatesBuffer
-  final Map<Query,Integer> deleteQueries = new HashMap<>();
+  final Map<Term, Integer> deleteTerms =
+      new HashMap<>(); // TODO cut this over to FieldUpdatesBuffer
+  final Map<Query, Integer> deleteQueries = new HashMap<>();
 
   final Map<String, FieldUpdatesBuffer> fieldUpdates = new HashMap<>();
-  
 
   public static final Integer MAX_INT = Integer.valueOf(Integer.MAX_VALUE);
 
@@ -74,12 +79,12 @@ class BufferedUpdates implements Accountable {
   final Counter fieldUpdatesBytesUsed = Counter.newCounter(true);
   private final Counter termsBytesUsed = Counter.newCounter(true);
 
-  private final static boolean VERBOSE_DELETES = false;
+  private static final boolean VERBOSE_DELETES = false;
 
   long gen;
 
   final String segmentName;
-  
+
   public BufferedUpdates(String segmentName) {
     this.segmentName = segmentName;
   }
@@ -87,13 +92,17 @@ class BufferedUpdates implements Accountable {
   @Override
   public String toString() {
     if (VERBOSE_DELETES) {
-      return "gen=" + gen + " numTerms=" + numTermDeletes + ", deleteTerms=" + deleteTerms
-        + ", deleteQueries=" + deleteQueries + ", fieldUpdates=" + fieldUpdates
-        + ", bytesUsed=" + bytesUsed;
+      return ("gen=" + gen)
+          + (" numTerms=" + numTermDeletes)
+          + (", deleteTerms=" + deleteTerms)
+          + (", deleteQueries=" + deleteQueries)
+          + (", fieldUpdates=" + fieldUpdates)
+          + (", bytesUsed=" + bytesUsed);
     } else {
       String s = "gen=" + gen;
       if (numTermDeletes.get() != 0) {
-        s += " " + numTermDeletes.get() + " deleted terms (unique count=" + deleteTerms.size() + ")";
+        s +=
+            " " + numTermDeletes.get() + " deleted terms (unique count=" + deleteTerms.size() + ")";
       }
       if (deleteQueries.size() != 0) {
         s += " " + deleteQueries.size() + " deleted queries";
@@ -136,12 +145,15 @@ class BufferedUpdates implements Accountable {
     // is done to respect IndexWriterConfig.setMaxBufferedDeleteTerms.
     numTermDeletes.incrementAndGet();
     if (current == null) {
-      termsBytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length()));
+      termsBytesUsed.addAndGet(
+          BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length()));
     }
   }
- 
+
   void addNumericUpdate(NumericDocValuesUpdate update, int docIDUpto) {
-    FieldUpdatesBuffer buffer = fieldUpdates.computeIfAbsent(update.field, k -> new FieldUpdatesBuffer(fieldUpdatesBytesUsed, update, docIDUpto));
+    FieldUpdatesBuffer buffer =
+        fieldUpdates.computeIfAbsent(
+            update.field, k -> new FieldUpdatesBuffer(fieldUpdatesBytesUsed, update, docIDUpto));
     if (update.hasValue) {
       buffer.addUpdate(update.term, update.getValue(), docIDUpto);
     } else {
@@ -149,9 +161,11 @@ class BufferedUpdates implements Accountable {
     }
     numFieldUpdates.incrementAndGet();
   }
-  
+
   void addBinaryUpdate(BinaryDocValuesUpdate update, int docIDUpto) {
-    FieldUpdatesBuffer buffer = fieldUpdates.computeIfAbsent(update.field, k -> new FieldUpdatesBuffer(fieldUpdatesBytesUsed, update, docIDUpto));
+    FieldUpdatesBuffer buffer =
+        fieldUpdates.computeIfAbsent(
+            update.field, k -> new FieldUpdatesBuffer(fieldUpdatesBytesUsed, update, docIDUpto));
     if (update.hasValue) {
       buffer.addUpdate(update.term, update.getValue(), docIDUpto);
     } else {
@@ -165,7 +179,7 @@ class BufferedUpdates implements Accountable {
     termsBytesUsed.addAndGet(-termsBytesUsed.get());
     deleteTerms.clear();
   }
-  
+
   void clear() {
     deleteTerms.clear();
     deleteQueries.clear();
@@ -176,7 +190,7 @@ class BufferedUpdates implements Accountable {
     fieldUpdatesBytesUsed.addAndGet(-fieldUpdatesBytesUsed.get());
     termsBytesUsed.addAndGet(-termsBytesUsed.get());
   }
-  
+
   boolean any() {
     return deleteTerms.size() > 0 || deleteQueries.size() > 0 || numFieldUpdates.get() > 0;
   }

@@ -20,34 +20,35 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * This tokenizer uses regex pattern matching to construct distinct tokens
- * for the input stream.  It takes two arguments:  "pattern" and "group".
+ * This tokenizer uses regex pattern matching to construct distinct tokens for the input stream. It
+ * takes two arguments: "pattern" and "group".
+ *
  * <ul>
- * <li>"pattern" is the regular expression.</li>
- * <li>"group" says which group to extract into tokens.</li>
- *  </ul>
- * <p>
- * group=-1 (the default) is equivalent to "split".  In this case, the tokens will
- * be equivalent to the output from (without empty tokens):
- * {@link String#split(java.lang.String)}
- * </p>
- * <p>
- * Using group &gt;= 0 selects the matching group as the token.  For example, if you have:<br>
+ *   <li>"pattern" is the regular expression.
+ *   <li>"group" says which group to extract into tokens.
+ * </ul>
+ *
+ * <p>group=-1 (the default) is equivalent to "split". In this case, the tokens will be equivalent
+ * to the output from (without empty tokens): {@link String#split(java.lang.String)}
+ *
+ * <p>Using group &gt;= 0 selects the matching group as the token. For example, if you have:<br>
+ *
  * <pre>
  *  pattern = \'([^\']+)\'
  *  group = 0
  *  input = aaa 'bbb' 'ccc'
- *</pre>
- * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input
- * but using group=1, the output would be: bbb and ccc (no ' marks)
- * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
+ * </pre>
+ *
+ * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks). With the same input but
+ * using group=1, the output would be: bbb and ccc (no ' marks)
+ *
+ * <p>NOTE: This Tokenizer does not output tokens that are of zero length.
  *
  * @see Pattern
  */
@@ -58,7 +59,7 @@ public final class PatternTokenizer extends Tokenizer {
 
   private final StringBuilder str = new StringBuilder();
   private int index;
-  
+
   private final int group;
   private final Matcher matcher;
 
@@ -78,7 +79,10 @@ public final class PatternTokenizer extends Tokenizer {
 
     // confusingly group count depends ENTIRELY on the pattern but is only accessible via matcher
     if (group >= 0 && group > matcher.groupCount()) {
-      throw new IllegalArgumentException("invalid group specified: pattern only has: " + matcher.groupCount() + " capturing groups");
+      throw new IllegalArgumentException(
+          "invalid group specified: pattern only has: "
+              + matcher.groupCount()
+              + " capturing groups");
     }
   }
 
@@ -87,22 +91,22 @@ public final class PatternTokenizer extends Tokenizer {
     if (index >= str.length()) return false;
     clearAttributes();
     if (group >= 0) {
-    
+
       // match a specific group
       while (matcher.find()) {
         index = matcher.start(group);
         final int endIndex = matcher.end(group);
-        if (index == endIndex) continue;       
+        if (index == endIndex) continue;
         termAtt.setEmpty().append(str, index, endIndex);
         offsetAtt.setOffset(correctOffset(index), correctOffset(endIndex));
         return true;
       }
-      
+
       index = Integer.MAX_VALUE; // mark exhausted
       return false;
-      
+
     } else {
-    
+
       // String.split() functionality
       while (matcher.find()) {
         if (matcher.start() - index > 0) {
@@ -112,15 +116,15 @@ public final class PatternTokenizer extends Tokenizer {
           index = matcher.end();
           return true;
         }
-        
+
         index = matcher.end();
       }
-      
+
       if (str.length() - index == 0) {
         index = Integer.MAX_VALUE; // mark exhausted
         return false;
       }
-      
+
       termAtt.setEmpty().append(str, index, str.length());
       offsetAtt.setOffset(correctOffset(index), correctOffset(str.length()));
       index = Integer.MAX_VALUE; // mark exhausted
@@ -152,10 +156,11 @@ public final class PatternTokenizer extends Tokenizer {
     matcher.reset(str);
     index = 0;
   }
-  
+
   // TODO: we should see if we can make this tokenizer work without reading
   // the entire document into RAM, perhaps with Matcher.hitEnd/requireEnd ?
   final char[] buffer = new char[8192];
+
   private void fillBuffer(Reader input) throws IOException {
     int len;
     str.setLength(0);

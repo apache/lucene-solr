@@ -17,29 +17,32 @@
 
 /**
  * Finite state transducers
- * <p>
- * This package implements <a href="http://en.wikipedia.org/wiki/Finite_state_transducer">
- * Finite State Transducers</a> with the following characteristics:
+ *
+ * <p>This package implements <a href="http://en.wikipedia.org/wiki/Finite_state_transducer">Finite
+ * State Transducers</a> with the following characteristics:
+ *
  * <ul>
- *    <li>Fast and low memory overhead construction of the minimal FST 
- *        (but inputs must be provided in sorted order)</li>
- *    <li>Low object overhead and quick deserialization (byte[] representation)</li>
- *    <li>{@link org.apache.lucene.util.fst.Util#getByOutput Lookup-by-output} when the 
- *        outputs are in sorted order (e.g., ordinals or file pointers)</li>
- *    <li>Pluggable {@link org.apache.lucene.util.fst.Outputs Outputs} representation</li>
- *    <li>{@link org.apache.lucene.util.fst.Util#shortestPaths N-shortest-paths} search by
- *        weight</li>
- *    <li>Enumerators ({@link org.apache.lucene.util.fst.IntsRefFSTEnum IntsRef} and {@link org.apache.lucene.util.fst.BytesRefFSTEnum BytesRef}) that behave like {@link java.util.SortedMap SortedMap} iterators
+ *   <li>Fast and low memory overhead construction of the minimal FST (but inputs must be provided
+ *       in sorted order)
+ *   <li>Low object overhead and quick deserialization (byte[] representation)
+ *   <li>{@link org.apache.lucene.util.fst.Util#getByOutput Lookup-by-output} when the outputs are
+ *       in sorted order (e.g., ordinals or file pointers)
+ *   <li>Pluggable {@link org.apache.lucene.util.fst.Outputs Outputs} representation
+ *   <li>{@link org.apache.lucene.util.fst.Util#shortestPaths N-shortest-paths} search by weight
+ *   <li>Enumerators ({@link org.apache.lucene.util.fst.IntsRefFSTEnum IntsRef} and {@link
+ *       org.apache.lucene.util.fst.BytesRefFSTEnum BytesRef}) that behave like {@link
+ *       java.util.SortedMap SortedMap} iterators
  * </ul>
- * <p>
- * FST Construction example:
+ *
+ * <p>FST Construction example:
+ *
  * <pre class="prettyprint">
  *     // Input values (keys). These must be provided to Builder in Unicode code point (UTF8 or UTF32) sorted order.
  *     // Note that sorting by Java's String.compareTo, which is UTF16 sorted order, is not correct and can lead to
  *     // exceptions while building the FST:
  *     String inputValues[] = {"cat", "dog", "dogs"};
  *     long outputValues[] = {5, 7, 12};
- *     
+ *
  *     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
  *     FSTCompiler&lt;Long&gt; fstCompiler = new FSTCompiler&lt;Long&gt;(INPUT_TYPE.BYTE1, outputs);
  *     BytesRefBuilder scratchBytes = new BytesRefBuilder();
@@ -50,18 +53,24 @@
  *     }
  *     FST&lt;Long&gt; fst = fstCompiler.compile();
  * </pre>
+ *
  * Retrieval by key:
+ *
  * <pre class="prettyprint">
  *     Long value = Util.get(fst, new BytesRef("dog"));
  *     System.out.println(value); // 7
  * </pre>
+ *
  * Retrieval by value:
+ *
  * <pre class="prettyprint">
  *     // Only works because outputs are also in sorted order
  *     IntsRef key = Util.getByOutput(fst, 12);
  *     System.out.println(Util.toBytesRef(key, scratchBytes).utf8ToString()); // dogs
  * </pre>
+ *
  * Iterate over key-value pairs in sorted order:
+ *
  * <pre class="prettyprint">
  *     // Like TermsEnum, this also supports seeking (advance)
  *     BytesRefFSTEnum&lt;Long&gt; iterator = new BytesRefFSTEnum&lt;Long&gt;(fst);
@@ -71,7 +80,9 @@
  *       System.out.println(mapEntry.output);
  *     }
  * </pre>
+ *
  * N-shortest paths by weight:
+ *
  * <pre class="prettyprint">
  *     Comparator&lt;Long&gt; comparator = new Comparator&lt;Long&gt;() {
  *       public int compare(Long left, Long right) {

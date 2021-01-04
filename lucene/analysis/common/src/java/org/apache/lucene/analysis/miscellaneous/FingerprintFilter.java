@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,9 +30,8 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
- * Filter outputs a single token which is a concatenation of the sorted and
- * de-duplicated set of input tokens. This can be useful for clustering/linking
- * use cases.
+ * Filter outputs a single token which is a concatenation of the sorted and de-duplicated set of
+ * input tokens. This can be useful for clustering/linking use cases.
  */
 public class FingerprintFilter extends TokenFilter {
 
@@ -41,7 +39,8 @@ public class FingerprintFilter extends TokenFilter {
   public static final char DEFAULT_SEPARATOR = ' ';
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
@@ -52,28 +51,20 @@ public class FingerprintFilter extends TokenFilter {
   private final char separator;
   private boolean inputEnded = false;
 
-
-  /**
-   * Create a new FingerprintFilter with default settings
-   */
+  /** Create a new FingerprintFilter with default settings */
   public FingerprintFilter(TokenStream input) {
     this(input, DEFAULT_MAX_OUTPUT_TOKEN_SIZE, DEFAULT_SEPARATOR);
   }
 
   /**
    * Create a new FingerprintFilter with control over all settings
-   * 
-   * @param input
-   *          the source of tokens to be summarized into a single token
-   * @param maxOutputTokenSize
-   *          the maximum length of the summarized output token. If exceeded, no
-   *          output token is emitted
-   * @param separator
-   *          the character used to separate tokens combined into the single
-   *          output token
+   *
+   * @param input the source of tokens to be summarized into a single token
+   * @param maxOutputTokenSize the maximum length of the summarized output token. If exceeded, no
+   *     output token is emitted
+   * @param separator the character used to separate tokens combined into the single output token
    */
-  public FingerprintFilter(TokenStream input, int maxOutputTokenSize,
-      char separator) {
+  public FingerprintFilter(TokenStream input, int maxOutputTokenSize, char separator) {
     super(input);
     this.maxOutputTokenSize = maxOutputTokenSize;
     this.separator = separator;
@@ -91,7 +82,7 @@ public class FingerprintFilter extends TokenFilter {
 
   /**
    * Gathers all tokens from input, de-duplicates, sorts then concatenates.
-   * 
+   *
    * @return false for end of stream; true otherwise
    */
   private final boolean buildSingleOutputToken() throws IOException {
@@ -113,31 +104,31 @@ public class FingerprintFilter extends TokenFilter {
         clonedLastTerm = new char[length];
         System.arraycopy(term, 0, clonedLastTerm, 0, length);
         if (uniqueTerms.size() > 0) {
-          outputTokenSize++; //Add 1 for the separator char we will output
+          outputTokenSize++; // Add 1 for the separator char we will output
         }
         uniqueTerms.add(clonedLastTerm);
         outputTokenSize += length;
       }
     }
-    //Force end-of-stream operations to get the final state.
+    // Force end-of-stream operations to get the final state.
     input.end();
     inputEnded = true;
 
-    //Gathering complete - now output exactly zero or one token:
+    // Gathering complete - now output exactly zero or one token:
 
-    //Set the attributes for the single output token
+    // Set the attributes for the single output token
     offsetAtt.setOffset(0, offsetAtt.endOffset());
     posLenAtt.setPositionLength(1);
     posIncrAtt.setPositionIncrement(1);
     typeAtt.setType("fingerprint");
 
-    //No tokens gathered - no output
+    // No tokens gathered - no output
     if (uniqueTerms.size() < 1) {
       termAttribute.setEmpty();
       return false;
     }
 
-    //Tokens gathered are too large - no output
+    // Tokens gathered are too large - no output
     if (outputTokenSize > maxOutputTokenSize) {
       termAttribute.setEmpty();
       uniqueTerms.clear();
@@ -151,32 +142,34 @@ public class FingerprintFilter extends TokenFilter {
       return true;
     }
 
-    // Sort the set of deduplicated tokens and combine 
+    // Sort the set of deduplicated tokens and combine
     Object[] items = uniqueTerms.toArray();
 
-    Arrays.sort(items, new Comparator<Object>() {
-      @Override
-      public int compare(Object o1, Object o2) {
-        char v1[] = (char[]) o1;
-        char v2[] = (char[]) o2;
-        int len1 = v1.length;
-        int len2 = v2.length;
-        int lim = Math.min(len1, len2);
+    Arrays.sort(
+        items,
+        new Comparator<Object>() {
+          @Override
+          public int compare(Object o1, Object o2) {
+            char v1[] = (char[]) o1;
+            char v2[] = (char[]) o2;
+            int len1 = v1.length;
+            int len2 = v2.length;
+            int lim = Math.min(len1, len2);
 
-        int k = 0;
-        while (k < lim) {
-          char c1 = v1[k];
-          char c2 = v2[k];
-          if (c1 != c2) {
-            return c1 - c2;
+            int k = 0;
+            while (k < lim) {
+              char c1 = v1[k];
+              char c2 = v2[k];
+              if (c1 != c2) {
+                return c1 - c2;
+              }
+              k++;
+            }
+            return len1 - len2;
           }
-          k++;
-        }
-        return len1 - len2;
-      }
-    });
+        });
 
-    //TODO lets append directly to termAttribute?
+    // TODO lets append directly to termAttribute?
     StringBuilder sb = new StringBuilder();
     for (Object item : items) {
       if (sb.length() >= 1) {
@@ -187,7 +180,6 @@ public class FingerprintFilter extends TokenFilter {
     termAttribute.setEmpty().append(sb);
     uniqueTerms.clear();
     return true;
-
   }
 
   @Override
@@ -210,5 +202,4 @@ public class FingerprintFilter extends TokenFilter {
     inputEnded = false;
     uniqueTerms = null;
   }
-
 }

@@ -16,19 +16,17 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
-import org.apache.lucene.index.LeafReaderContext;
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
-import java.io.IOException;
-import java.util.Map;
-
 /**
- * Returns the value of {@link IndexReader#numDocs()}
- * for every document. This is the number of documents
- * excluding deletions.
+ * Returns the value of {@link IndexReader#numDocs()} for every document. This is the number of
+ * documents excluding deletions.
  */
 public class NumDocsValueSource extends ValueSource {
   public String name() {
@@ -41,9 +39,11 @@ public class NumDocsValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     // Searcher has no numdocs so we must use the reader instead
-    return new DocFreqValueSource.ConstIntDocValues(ReaderUtil.getTopLevelContext(readerContext).reader().numDocs(), this);
+    return new DocFreqValueSource.ConstIntDocValues(
+        ReaderUtil.getTopLevelContext(readerContext).reader().numDocs(), this);
   }
 
   @Override

@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link LimitTokenOffsetFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_limit_pos" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,8 +30,9 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.LimitTokenOffsetFilter" maxStartOffset="100000" consumeAllTokens="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * <p>
- * The {@code consumeAllTokens} property is optional and defaults to {@code false}.
+ *
+ * <p>The {@code consumeAllTokens} property is optional and defaults to {@code false}.
+ *
  * @since 5.2.0
  * @lucene.spi {@value #NAME}
  */

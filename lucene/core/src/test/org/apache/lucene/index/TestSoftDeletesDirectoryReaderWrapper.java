@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -39,10 +38,11 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     IndexWriterConfig indexWriterConfig = newIndexWriterConfig();
     String softDeletesField = "soft_delete";
     indexWriterConfig.setSoftDeletesField(softDeletesField);
-    indexWriterConfig.setMergePolicy(new SoftDeletesRetentionMergePolicy(softDeletesField, MatchAllDocsQuery::new,
-        NoMergePolicy.INSTANCE));
+    indexWriterConfig.setMergePolicy(
+        new SoftDeletesRetentionMergePolicy(
+            softDeletesField, MatchAllDocsQuery::new, NoMergePolicy.INSTANCE));
     try (Directory dir = newDirectory();
-         IndexWriter writer = new IndexWriter(dir, indexWriterConfig)) {
+        IndexWriter writer = new IndexWriter(dir, indexWriterConfig)) {
 
       Document doc = new Document();
       doc.add(new StringField("id", "1", Field.Store.YES));
@@ -55,7 +55,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
       writer.addDocument(doc);
       writer.commit();
 
-      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
+      try (DirectoryReader reader =
+          new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
         assertEquals(2, reader.leaves().size());
         assertEquals(2, reader.numDocs());
         assertEquals(2, reader.maxDoc());
@@ -63,13 +64,15 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
       }
       writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField(softDeletesField, 1));
       writer.commit();
-      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(writer), softDeletesField)) {
+      try (DirectoryReader reader =
+          new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(writer), softDeletesField)) {
         assertEquals(1, reader.numDocs());
         assertEquals(1, reader.maxDoc());
         assertEquals(0, reader.numDeletedDocs());
         assertEquals(1, reader.leaves().size());
       }
-      try (DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
+      try (DirectoryReader reader =
+          new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField)) {
         assertEquals(1, reader.numDocs());
         assertEquals(1, reader.maxDoc());
         assertEquals(0, reader.numDeletedDocs());
@@ -102,7 +105,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     doc.add(new StringField("version", "1", Field.Store.YES));
     writer.addDocument(doc);
     writer.commit();
-    DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
+    DirectoryReader reader =
+        new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
     assertEquals(2, reader.numDocs());
     assertEquals(2, reader.maxDoc());
     assertEquals(0, reader.numDeletedDocs());
@@ -110,7 +114,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     doc.add(new StringField("version", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
 
     doc = new Document();
     doc.add(new StringField("id", "3", Field.Store.YES));
@@ -129,7 +134,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     doc.add(new StringField("version", "3", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
     writer.commit();
 
     newReader = DirectoryReader.openIfChanged(reader);
@@ -137,7 +143,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     assertEquals(3, newReader.getSequentialSubReaders().size());
     assertEquals(2, reader.getSequentialSubReaders().size());
     assertSame(reader.getSequentialSubReaders().get(0), newReader.getSequentialSubReaders().get(0));
-    assertNotSame(reader.getSequentialSubReaders().get(1), newReader.getSequentialSubReaders().get(1));
+    assertNotSame(
+        reader.getSequentialSubReaders().get(1), newReader.getSequentialSubReaders().get(1));
     assertTrue(isWrapped(reader.getSequentialSubReaders().get(0)));
     // last one has no soft deletes
     assertFalse(isWrapped(reader.getSequentialSubReaders().get(1)));
@@ -170,18 +177,21 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
       int docId = random().nextInt(5);
       uniqueDocs.add(docId);
       Document doc = new Document();
-      doc.add(new StringField("id",  String.valueOf(docId), Field.Store.YES));
-      if (docId %  2 == 0) {
+      doc.add(new StringField("id", String.valueOf(docId), Field.Store.YES));
+      if (docId % 2 == 0) {
         writer.updateDocument(new Term("id", String.valueOf(docId)), doc);
       } else {
-        writer.softUpdateDocument(new Term("id", String.valueOf(docId)), doc,
-            new NumericDocValuesField(softDeletesField,  0));
+        writer.softUpdateDocument(
+            new Term("id", String.valueOf(docId)),
+            doc,
+            new NumericDocValuesField(softDeletesField, 0));
       }
     }
 
     writer.commit();
     writer.close();
-    DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
+    DirectoryReader reader =
+        new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
     assertEquals(uniqueDocs.size(), reader.numDocs());
     IndexSearcher searcher = new IndexSearcher(reader);
     for (Integer docId : uniqueDocs) {
@@ -208,19 +218,23 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     doc.add(new StringField("version", "1", Field.Store.YES));
     writer.addDocument(doc);
     writer.commit();
-    DirectoryReader reader = new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
-    IndexReader.CacheHelper readerCacheHelper = reader.leaves().get(0).reader().getReaderCacheHelper();
+    DirectoryReader reader =
+        new SoftDeletesDirectoryReaderWrapper(DirectoryReader.open(dir), softDeletesField);
+    IndexReader.CacheHelper readerCacheHelper =
+        reader.leaves().get(0).reader().getReaderCacheHelper();
     AtomicInteger leafCalled = new AtomicInteger(0);
     AtomicInteger dirCalled = new AtomicInteger(0);
-    readerCacheHelper.addClosedListener(key -> {
-      leafCalled.incrementAndGet();
-      assertSame(key, readerCacheHelper.getKey());
-    });
+    readerCacheHelper.addClosedListener(
+        key -> {
+          leafCalled.incrementAndGet();
+          assertSame(key, readerCacheHelper.getKey());
+        });
     IndexReader.CacheHelper dirReaderCacheHelper = reader.getReaderCacheHelper();
-    dirReaderCacheHelper.addClosedListener(key -> {
-      dirCalled.incrementAndGet();
-      assertSame(key, dirReaderCacheHelper.getKey());
-    });
+    dirReaderCacheHelper.addClosedListener(
+        key -> {
+          dirCalled.incrementAndGet();
+          assertSame(key, dirReaderCacheHelper.getKey());
+        });
     assertEquals(2, reader.numDocs());
     assertEquals(2, reader.maxDoc());
     assertEquals(0, reader.numDeletedDocs());
@@ -228,7 +242,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     doc = new Document();
     doc.add(new StringField("id", "1", Field.Store.YES));
     doc.add(new StringField("version", "2", Field.Store.YES));
-    writer.softUpdateDocument(new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
+    writer.softUpdateDocument(
+        new Term("id", "1"), doc, new NumericDocValuesField("soft_delete", 1));
 
     doc = new Document();
     doc.add(new StringField("id", "3", Field.Store.YES));
@@ -240,7 +255,8 @@ public class TestSoftDeletesDirectoryReaderWrapper extends LuceneTestCase {
     DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
     assertEquals(0, leafCalled.get());
     assertEquals(0, dirCalled.get());
-    assertNotSame(newReader.getReaderCacheHelper().getKey(), reader.getReaderCacheHelper().getKey());
+    assertNotSame(
+        newReader.getReaderCacheHelper().getKey(), reader.getReaderCacheHelper().getKey());
     assertNotSame(newReader, reader);
     reader.close();
     reader = newReader;

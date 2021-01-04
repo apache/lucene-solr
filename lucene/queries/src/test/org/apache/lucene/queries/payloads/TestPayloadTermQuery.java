@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.payloads;
-import java.io.IOException;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -49,18 +49,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-
-/**
- *
- *
- **/
+/** */
 public class TestPayloadTermQuery extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Similarity similarity = new BoostingSimilarity();
-  private static final byte[] payloadField = new byte[]{1};
-  private static final byte[] payloadMultiField1 = new byte[]{2};
-  private static final byte[] payloadMultiField2 = new byte[]{4};
+  private static final byte[] payloadField = new byte[] {1};
+  private static final byte[] payloadMultiField1 = new byte[] {2};
+  private static final byte[] payloadMultiField2 = new byte[] {4};
   protected static Directory directory;
 
   private static class PayloadAnalyzer extends Analyzer {
@@ -79,15 +75,15 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private static class PayloadFilter extends TokenFilter {
     private final String fieldName;
     private int numSeen = 0;
-    
+
     private final PayloadAttribute payloadAtt;
-    
+
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
       this.fieldName = fieldName;
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
-    
+
     @Override
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
@@ -118,17 +114,26 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, 
-        newIndexWriterConfig(new PayloadAnalyzer())
-           .setSimilarity(similarity).setMergePolicy(newLogMergePolicy()));
-    //writer.infoStream = System.out;
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new PayloadAnalyzer())
+                .setSimilarity(similarity)
+                .setMergePolicy(newLogMergePolicy()));
+    // writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      Field noPayloadField = newTextField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES);
-      //noPayloadField.setBoost(0);
+      Field noPayloadField =
+          newTextField(PayloadHelper.NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES);
+      // noPayloadField.setBoost(0);
       doc.add(noPayloadField);
       doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
-      doc.add(newTextField("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
+      doc.add(
+          newTextField(
+              "multiField",
+              English.intToEnglish(i) + "  " + English.intToEnglish(i),
+              Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
@@ -149,21 +154,28 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   public void test() throws IOException {
-    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term("field", "seventy")),
-            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery query =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term("field", "seventy")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
+    assertTrue(
+        "hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
 
-    //they should all have the exact same score, because they all contain seventy once, and we set
-    //all the other similarity factors to be 1
+    // they should all have the exact same score, because they all contain seventy once, and we set
+    // all the other similarity factors to be 1
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
       assertTrue(doc.score + " does not equal: " + 1, doc.score == 1);
     }
     CheckHits.checkExplanations(query, PayloadHelper.FIELD, searcher, true);
-    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans =
+        query
+            .createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f)
+            .getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
     /*float score = hits.score(0);
     for (int i =1; i < hits.length(); i++)
@@ -172,35 +184,46 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }*/
 
   }
-  
+
   public void testQuery() {
-    SpanQuery boostingFuncTermQuery = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery boostingFuncTermQuery =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     QueryUtils.check(boostingFuncTermQuery);
-    
+
     SpanTermQuery spanTermQuery = new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
 
-    assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
-    
-    SpanQuery boostingFuncTermQuery2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-        new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER);
-    
+    assertTrue(
+        boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
+
+    SpanQuery boostingFuncTermQuery2 =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
+            new AveragePayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
+
     QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
-    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
-            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery query =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
-    assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
+    assertTrue(
+        "hits Size: " + hits.totalHits.value + " is not: " + 100, hits.totalHits.value == 100);
 
-    //they should all have the exact same score, because they all contain seventy once, and we set
-    //all the other similarity factors to be 1
+    // they should all have the exact same score, because they all contain seventy once, and we set
+    // all the other similarity factors to be 1
 
-    //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
-    //there should be exactly 10 items that score a 4, all the rest should score a 2
-    //The 10 items are: 70 + i*100 where i in [0-9]
+    // System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
+    // there should be exactly 10 items that score a 4, all the rest should score a 2
+    // The 10 items are: 70 + i*100 where i in [0-9]
     int numTens = 0;
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
@@ -213,11 +236,14 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
     assertTrue(numTens + " does not equal: " + 10, numTens == 10);
     CheckHits.checkExplanations(query, "field", searcher, true);
-    Spans spans = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spans =
+        query
+            .createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f)
+            .getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertTrue("spans is null and it shouldn't be", spans != null);
-    //should be two matches per document
+    // should be two matches per document
     int count = 0;
-    //100 hits times 2 matches per hit, we should have 200 in count
+    // 100 hits times 2 matches per hit, we should have 200 in count
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (spans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         count++;
@@ -227,19 +253,27 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   }
 
   public void testNoMatch() throws Exception {
-    SpanQuery query = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.FIELD, "junk")),
-            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery query =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.FIELD, "junk")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     TopDocs hits = searcher.search(query, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 0, hits.totalHits.value == 0);
-
   }
 
   public void testNoPayload() throws Exception {
-    SpanQuery q1 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero")),
-            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
-    SpanQuery q2 = new PayloadScoreQuery(new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo")),
-            new MaxPayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery q1 =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
+    SpanQuery q2 =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo")),
+            new MaxPayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
     BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -249,16 +283,17 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits.value + " is not: " + 1, hits.totalHits.value == 1);
     int[] results = new int[1];
-    results[0] = 0;//hits.scoreDocs[0].doc;
-    CheckHits.checkHitCollector(random(), query.build(), PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
+    results[0] = 0; // hits.scoreDocs[0].doc;
+    CheckHits.checkHitCollector(
+        random(), query.build(), PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
   static class BoostingSimilarity extends ClassicSimilarity {
 
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //Make everything else 1 so we see the effect of the payload
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    @Override 
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // Make everything else 1 so we see the effect of the payload
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    @Override
     public float lengthNorm(int length) {
       return 1;
     }
@@ -273,5 +308,4 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       return freq == 0 ? 0 : 1;
     }
   }
-
 }

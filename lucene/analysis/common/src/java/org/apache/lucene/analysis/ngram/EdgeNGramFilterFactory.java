@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
 import java.util.Map;
-
 import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Creates new instances of {@link EdgeNGramTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -50,7 +49,8 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
     super(args);
     minGramSize = requireInt(args, "minGramSize");
     maxGramSize = requireInt(args, "maxGramSize");
-    preserveOriginal = getBoolean(args, "preserveOriginal", EdgeNGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
+    preserveOriginal =
+        getBoolean(args, "preserveOriginal", EdgeNGramTokenFilter.DEFAULT_PRESERVE_ORIGINAL);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

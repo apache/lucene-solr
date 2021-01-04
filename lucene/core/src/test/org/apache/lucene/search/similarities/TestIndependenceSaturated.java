@@ -24,5 +24,4 @@ public class TestIndependenceSaturated extends BaseSimilarityTestCase {
   protected final Similarity getSimilarity(Random random) {
     return new DFISimilarity(new IndependenceSaturated());
   }
-
 }

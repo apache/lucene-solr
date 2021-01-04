@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.lucene50;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests Lucene60FieldInfoFormat
- */
+/** Tests Lucene60FieldInfoFormat */
 public class TestLucene60FieldInfoFormat extends BaseFieldInfoFormatTestCase {
 
   @Override

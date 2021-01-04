@@ -17,22 +17,21 @@
 package org.apache.lucene.analysis.payloads;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 
 /**
  * Characters before the delimiter are the "token", those after are the payload.
- * <p>
- * For example, if the delimiter is '|', then for the string "foo|bar", foo is the token
- * and "bar" is a payload.
- * <p>
- * Note, you can also include a {@link org.apache.lucene.analysis.payloads.PayloadEncoder} to convert the payload in an appropriate way (from characters to bytes).
- * <p>
- * Note make sure your Tokenizer doesn't split on the delimiter, or this won't work
+ *
+ * <p>For example, if the delimiter is '|', then for the string "foo|bar", foo is the token and
+ * "bar" is a payload.
+ *
+ * <p>Note, you can also include a {@link org.apache.lucene.analysis.payloads.PayloadEncoder} to
+ * convert the payload in an appropriate way (from characters to bytes).
+ *
+ * <p>Note make sure your Tokenizer doesn't split on the delimiter, or this won't work
  *
  * @see PayloadEncoder
  */
@@ -42,7 +41,6 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PayloadAttribute payAtt = addAttribute(PayloadAttribute.class);
   private final PayloadEncoder encoder;
-
 
   public DelimitedPayloadTokenFilter(TokenStream input, char delimiter, PayloadEncoder encoder) {
     super(input);
@@ -65,6 +63,8 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
       // we have not seen the delimiter
       payAtt.setPayload(null);
       return true;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 }

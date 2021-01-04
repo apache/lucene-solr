@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
@@ -78,7 +76,7 @@ final class IntersectTermsEnumFrame {
 
   int numFollowFloorBlocks;
   int nextFloorLabel;
-        
+
   final Transition transition = new Transition();
   int transitionIndex;
   int transitionCount;
@@ -117,7 +115,7 @@ final class IntersectTermsEnumFrame {
   }
 
   void loadNextFloorBlock() throws IOException {
-    assert numFollowFloorBlocks > 0: "nextFloorLabel=" + nextFloorLabel;
+    assert numFollowFloorBlocks > 0 : "nextFloorLabel=" + nextFloorLabel;
 
     do {
       fp = fpOrig + (floorDataReader.readVLong() >>> 1);
@@ -144,7 +142,8 @@ final class IntersectTermsEnumFrame {
       // Must set min to -1 so the "label < min" check never falsely triggers:
       transition.min = -1;
 
-      // Must set max to -1 so we immediately realize we need to step to the next transition and then pop this frame:
+      // Must set max to -1 so we immediately realize we need to step to the next transition and
+      // then pop this frame:
       transition.max = -1;
     }
   }
@@ -164,7 +163,7 @@ final class IntersectTermsEnumFrame {
         // first block in case it has empty suffix:
         if (ite.runAutomaton.isAccept(state) == false && transitionCount != 0) {
           // Maybe skip floor blocks:
-          assert transitionIndex == 0: "transitionIndex=" + transitionIndex;
+          assert transitionIndex == 0 : "transitionIndex=" + transitionIndex;
           while (numFollowFloorBlocks != 0 && nextFloorLabel <= transition.min) {
             fp = fpOrig + (floorDataReader.readVLong() >>> 1);
             numFollowFloorBlocks--;
@@ -265,7 +264,8 @@ final class IntersectTermsEnumFrame {
   }
 
   public void nextLeaf() {
-    assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
+    assert nextEnt != -1 && nextEnt < entCount
+        : "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     suffix = suffixLengthsReader.readVInt();
     startBytePos = suffixesReader.getPosition();
@@ -273,7 +273,8 @@ final class IntersectTermsEnumFrame {
   }
 
   public boolean nextNonLeaf() {
-    assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
+    assert nextEnt != -1 && nextEnt < entCount
+        : "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
     final int code = suffixLengthsReader.readVInt();
     suffix = code >>> 1;
@@ -336,12 +337,12 @@ final class IntersectTermsEnumFrame {
         }
       } else {
         termState.docFreq = statsReader.readVInt();
-        //if (DEBUG) System.out.println("    dF=" + state.docFreq);
+        // if (DEBUG) System.out.println("    dF=" + state.docFreq);
         if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
           termState.totalTermFreq = termState.docFreq; // all postings have freq=1
         } else {
           termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-          //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+          // if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
         }
       }
       // metadata

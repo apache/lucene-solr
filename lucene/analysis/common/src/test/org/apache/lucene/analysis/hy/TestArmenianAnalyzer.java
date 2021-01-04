@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.hy;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new ArmenianAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new ArmenianAnalyzer();
@@ -37,20 +34,19 @@ public class TestArmenianAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "արծիվ", "արծ");
     checkOneTerm(a, "արծիվներ", "արծ");
     // stopword
-    assertAnalyzesTo(a, "է", new String[] { });
+    assertAnalyzesTo(a, "է", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("արծիվներ"), false);
-    Analyzer a = new ArmenianAnalyzer( 
-        ArmenianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("արծիվներ"), false);
+    Analyzer a = new ArmenianAnalyzer(ArmenianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "արծիվներ", "արծիվներ");
     checkOneTerm(a, "արծիվ", "արծ");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new ArmenianAnalyzer();

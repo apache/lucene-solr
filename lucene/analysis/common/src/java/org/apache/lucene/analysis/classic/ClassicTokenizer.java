@@ -18,71 +18,69 @@
 package org.apache.lucene.analysis.classic;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
 
-/** A grammar-based tokenizer constructed with JFlex
+/**
+ * A grammar-based tokenizer constructed with JFlex
  *
- * <p> This should be a good tokenizer for most European-language documents:
+ * <p>This should be a good tokenizer for most European-language documents:
  *
  * <ul>
- *   <li>Splits words at punctuation characters, removing punctuation. However, a 
- *     dot that's not followed by whitespace is considered part of a token.
- *   <li>Splits words at hyphens, unless there's a number in the token, in which case
- *     the whole token is interpreted as a product number and is not split.
+ *   <li>Splits words at punctuation characters, removing punctuation. However, a dot that's not
+ *       followed by whitespace is considered part of a token.
+ *   <li>Splits words at hyphens, unless there's a number in the token, in which case the whole
+ *       token is interpreted as a product number and is not split.
  *   <li>Recognizes email addresses and internet hostnames as one token.
  * </ul>
  *
- * <p>Many applications have specific tokenizer needs.  If this tokenizer does
- * not suit your application, please consider copying this source code
- * directory to your project and maintaining your own grammar-based tokenizer.
+ * <p>Many applications have specific tokenizer needs. If this tokenizer does not suit your
+ * application, please consider copying this source code directory to your project and maintaining
+ * your own grammar-based tokenizer.
  *
- * ClassicTokenizer was named StandardTokenizer in Lucene versions prior to 3.1.
- * As of 3.1, {@link StandardTokenizer} implements Unicode text segmentation,
- * as specified by UAX#29.
+ * <p>ClassicTokenizer was named StandardTokenizer in Lucene versions prior to 3.1. As of 3.1,
+ * {@link StandardTokenizer} implements Unicode text segmentation, as specified by UAX#29.
  */
-
 public final class ClassicTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
   private ClassicTokenizerImpl scanner;
 
-  public static final int ALPHANUM          = 0;
-  public static final int APOSTROPHE        = 1;
-  public static final int ACRONYM           = 2;
-  public static final int COMPANY           = 3;
-  public static final int EMAIL             = 4;
-  public static final int HOST              = 5;
-  public static final int NUM               = 6;
-  public static final int CJ                = 7;
+  public static final int ALPHANUM = 0;
+  public static final int APOSTROPHE = 1;
+  public static final int ACRONYM = 2;
+  public static final int COMPANY = 3;
+  public static final int EMAIL = 4;
+  public static final int HOST = 5;
+  public static final int NUM = 6;
+  public static final int CJ = 7;
 
-  public static final int ACRONYM_DEP       = 8;
+  public static final int ACRONYM_DEP = 8;
 
   /** String token types that correspond to token type int constants */
-  public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    "<ACRONYM_DEP>"
-  };
-  
+  public static final String[] TOKEN_TYPES =
+      new String[] {
+        "<ALPHANUM>",
+        "<APOSTROPHE>",
+        "<ACRONYM>",
+        "<COMPANY>",
+        "<EMAIL>",
+        "<HOST>",
+        "<NUM>",
+        "<CJ>",
+        "<ACRONYM_DEP>"
+      };
+
   private int skippedPositions;
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
-  /** Set the max allowed token length.  Any token longer
-   *  than this is skipped. */
+  /** Set the max allowed token length. Any token longer than this is skipped. */
   public void setMaxTokenLength(int length) {
     if (length < 1) {
       throw new IllegalArgumentException("maxTokenLength must be greater than zero");
@@ -96,18 +94,16 @@ public final class ClassicTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link ClassicTokenizer}.  Attaches
-   * the <code>input</code> to the newly created JFlex scanner.
+   * Creates a new instance of the {@link ClassicTokenizer}. Attaches the <code>input</code> to the
+   * newly created JFlex scanner.
    *
-   * See http://issues.apache.org/jira/browse/LUCENE-1068
+   * <p>See http://issues.apache.org/jira/browse/LUCENE-1068
    */
   public ClassicTokenizer() {
     init();
   }
 
-  /**
-   * Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} 
-   */
+  /** Creates a new ClassicTokenizer with a given {@link org.apache.lucene.util.AttributeFactory} */
   public ClassicTokenizer(AttributeFactory factory) {
     super(factory);
     init();
@@ -121,7 +117,8 @@ public final class ClassicTokenizer extends Tokenizer {
   // term offset, positionIncrement and type
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   /*
@@ -134,7 +131,7 @@ public final class ClassicTokenizer extends Tokenizer {
     clearAttributes();
     skippedPositions = 0;
 
-    while(true) {
+    while (true) {
       int tokenType = scanner.getNextToken();
 
       if (tokenType == ClassicTokenizerImpl.YYEOF) {
@@ -142,10 +139,10 @@ public final class ClassicTokenizer extends Tokenizer {
       }
 
       if (scanner.yylength() <= maxTokenLength) {
-        posIncrAtt.setPositionIncrement(skippedPositions+1);
+        posIncrAtt.setPositionIncrement(skippedPositions + 1);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
-        offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
+        offsetAtt.setOffset(correctOffset(start), correctOffset(start + termAtt.length()));
 
         if (tokenType == ClassicTokenizer.ACRONYM_DEP) {
           typeAtt.setType(ClassicTokenizer.TOKEN_TYPES[ClassicTokenizer.HOST]);
@@ -160,7 +157,7 @@ public final class ClassicTokenizer extends Tokenizer {
         skippedPositions++;
     }
   }
-  
+
   @Override
   public final void end() throws IOException {
     super.end();
@@ -168,9 +165,9 @@ public final class ClassicTokenizer extends Tokenizer {
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
     // adjust any skipped tokens
-    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement()+skippedPositions);
+    posIncrAtt.setPositionIncrement(posIncrAtt.getPositionIncrement() + skippedPositions);
   }
-  
+
   @Override
   public void close() throws IOException {
     super.close();

@@ -16,20 +16,16 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.HashSet;
 
 /**
- * Implements {@link LockFactory} for a single in-process instance,
- * meaning all locking will take place through this one instance.
- * Only use this {@link LockFactory} when you are certain all
- * IndexWriters for a given index are running
- * against a single shared in-process Directory instance.
+ * Implements {@link LockFactory} for a single in-process instance, meaning all locking will take
+ * place through this one instance. Only use this {@link LockFactory} when you are certain all
+ * IndexWriters for a given index are running against a single shared in-process Directory instance.
  *
  * @see LockFactory
  */
-
 public final class SingleInstanceLockFactory extends LockFactory {
 
   final HashSet<String> locks = new HashSet<>();
@@ -40,7 +36,8 @@ public final class SingleInstanceLockFactory extends LockFactory {
       if (locks.add(lockName)) {
         return new SingleInstanceLock(lockName);
       } else {
-        throw new LockObtainFailedException("lock instance already obtained: (dir=" + dir + ", lockName=" + lockName + ")");
+        throw new LockObtainFailedException(
+            "lock instance already obtained: (dir=" + dir + ", lockName=" + lockName + ")");
       }
     }
   }

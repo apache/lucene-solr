@@ -16,36 +16,46 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 
 public class TestAnalysisSPILoader extends LuceneTestCase {
-  
-  private Map<String,String> versionArgOnly() {
-    return new HashMap<String, String>() {{
-      put("luceneMatchVersion", Version.LATEST.toString());
-    }};
+
+  private Map<String, String> versionArgOnly() {
+    return new HashMap<String, String>() {
+      {
+        put("luceneMatchVersion", Version.LATEST.toString());
+      }
+    };
   }
-  
+
   public void testLookupTokenizer() {
-    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("Standard", versionArgOnly()).getClass());
-    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("STANDARD", versionArgOnly()).getClass());
-    assertSame(StandardTokenizerFactory.class, TokenizerFactory.forName("standard", versionArgOnly()).getClass());
+    assertSame(
+        StandardTokenizerFactory.class,
+        TokenizerFactory.forName("Standard", versionArgOnly()).getClass());
+    assertSame(
+        StandardTokenizerFactory.class,
+        TokenizerFactory.forName("STANDARD", versionArgOnly()).getClass());
+    assertSame(
+        StandardTokenizerFactory.class,
+        TokenizerFactory.forName("standard", versionArgOnly()).getClass());
   }
-  
+
   public void testBogusLookupTokenizer() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenizerFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenizerFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenizerFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String, String>());
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenizerFactory.forName("!(**#$U*#$*", new HashMap<String, String>());
+        });
   }
 
   public void testLookupTokenizerClass() {
@@ -53,35 +63,49 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(StandardTokenizerFactory.class, TokenizerFactory.lookupClass("STANDARD"));
     assertSame(StandardTokenizerFactory.class, TokenizerFactory.lookupClass("standard"));
   }
-  
+
   public void testBogusLookupTokenizerClass() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenizerFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenizerFactory.lookupClass("!(**#$U*#$*");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenizerFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenizerFactory.lookupClass("!(**#$U*#$*");
+        });
   }
-  
+
   public void testAvailableTokenizers() {
     assertTrue(TokenizerFactory.availableTokenizers().contains("standard"));
   }
-  
+
   public void testLookupTokenFilter() {
-    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("Fake", versionArgOnly()).getClass());
-    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("FAKE", versionArgOnly()).getClass());
-    assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.forName("fake", versionArgOnly()).getClass());
+    assertSame(
+        FakeTokenFilterFactory.class,
+        TokenFilterFactory.forName("Fake", versionArgOnly()).getClass());
+    assertSame(
+        FakeTokenFilterFactory.class,
+        TokenFilterFactory.forName("FAKE", versionArgOnly()).getClass());
+    assertSame(
+        FakeTokenFilterFactory.class,
+        TokenFilterFactory.forName("fake", versionArgOnly()).getClass());
   }
-  
+
   public void testBogusLookupTokenFilter() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenFilterFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String, String>());
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenFilterFactory.forName("!(**#$U*#$*", new HashMap<String, String>());
+        });
   }
 
   public void testLookupTokenFilterClass() {
@@ -89,35 +113,49 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.lookupClass("FAKE"));
     assertSame(FakeTokenFilterFactory.class, TokenFilterFactory.lookupClass("fake"));
   }
-  
+
   public void testBogusLookupTokenFilterClass() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      TokenFilterFactory.lookupClass("!(**#$U*#$*");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          TokenFilterFactory.lookupClass("!(**#$U*#$*");
+        });
   }
-  
+
   public void testAvailableTokenFilters() {
     assertTrue(TokenFilterFactory.availableTokenFilters().contains("fake"));
   }
-  
+
   public void testLookupCharFilter() {
-    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("Fake", versionArgOnly()).getClass());
-    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("FAKE", versionArgOnly()).getClass());
-    assertSame(FakeCharFilterFactory.class, CharFilterFactory.forName("fake", versionArgOnly()).getClass());
+    assertSame(
+        FakeCharFilterFactory.class,
+        CharFilterFactory.forName("Fake", versionArgOnly()).getClass());
+    assertSame(
+        FakeCharFilterFactory.class,
+        CharFilterFactory.forName("FAKE", versionArgOnly()).getClass());
+    assertSame(
+        FakeCharFilterFactory.class,
+        CharFilterFactory.forName("fake", versionArgOnly()).getClass());
   }
-  
+
   public void testBogusLookupCharFilter() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      CharFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      CharFilterFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          CharFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String, String>());
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          CharFilterFactory.forName("!(**#$U*#$*", new HashMap<String, String>());
+        });
   }
 
   public void testLookupCharFilterClass() {
@@ -125,17 +163,21 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
     assertSame(FakeCharFilterFactory.class, CharFilterFactory.lookupClass("FAKE"));
     assertSame(FakeCharFilterFactory.class, CharFilterFactory.lookupClass("fake"));
   }
-  
+
   public void testBogusLookupCharFilterClass() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      CharFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      CharFilterFactory.lookupClass("!(**#$U*#$*");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          CharFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          CharFilterFactory.lookupClass("!(**#$U*#$*");
+        });
   }
-  
+
   public void testAvailableCharFilters() {
     assertTrue(CharFilterFactory.availableCharFilters().contains("fake"));
   }

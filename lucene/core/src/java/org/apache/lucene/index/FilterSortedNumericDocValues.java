@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Objects;
 
-/**
- * Delegates all methods to a wrapped {@link SortedNumericDocValues}.
- */
+/** Delegates all methods to a wrapped {@link SortedNumericDocValues}. */
 public abstract class FilterSortedNumericDocValues extends SortedNumericDocValues {
 
   /** Wrapped values */
@@ -60,7 +58,4 @@ public abstract class FilterSortedNumericDocValues extends SortedNumericDocValue
   public long cost() {
     return in.cost();
   }
-
-  
-
 }

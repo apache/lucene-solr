@@ -16,45 +16,40 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
 import java.io.BufferedInputStream;
 import java.io.EOFException;
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
 
-/**
- * Base class for a binary-encoded in-memory dictionary.
- */
+/** Base class for a binary-encoded in-memory dictionary. */
 public abstract class BinaryDictionary implements Dictionary {
-  
-  /**
-   * Used to specify where (dictionary) resources get loaded from.
-   */
+
+  /** Used to specify where (dictionary) resources get loaded from. */
   public enum ResourceScheme {
-    CLASSPATH, FILE
+    CLASSPATH,
+    FILE
   }
 
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
   public static final String POSDICT_FILENAME_SUFFIX = "$posDict.dat";
-  
+
   public static final String DICT_HEADER = "kuromoji_dict";
   public static final String TARGETMAP_HEADER = "kuromoji_dict_map";
   public static final String POSDICT_HEADER = "kuromoji_dict_pos";
   public static final int VERSION = 1;
-  
+
   private final ResourceScheme resourceScheme;
   private final String resourcePath;
   private final ByteBuffer buffer;
@@ -62,21 +57,23 @@ public abstract class BinaryDictionary implements Dictionary {
   private final String[] posDict;
   private final String[] inflTypeDict;
   private final String[] inflFormDict;
-  
+
   protected BinaryDictionary() throws IOException {
     this(ResourceScheme.CLASSPATH, null);
   }
 
   /**
    * @param resourceScheme - scheme for loading resources (FILE or CLASSPATH).
-   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
-   * this class's name as the path.
+   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH
+   *     scheme only, use this class's name as the path.
    */
-  protected BinaryDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+  protected BinaryDictionary(ResourceScheme resourceScheme, String resourcePath)
+      throws IOException {
     this.resourceScheme = resourceScheme;
     if (resourcePath == null) {
       if (resourceScheme != ResourceScheme.CLASSPATH) {
-        throw new IllegalArgumentException("resourcePath must be supplied with FILE resource scheme");
+        throw new IllegalArgumentException(
+            "resourcePath must be supplied with FILE resource scheme");
       }
       this.resourcePath = getClass().getName().replace('.', '/');
     } else {
@@ -107,12 +104,17 @@ public abstract class BinaryDictionary implements Dictionary {
         targetMap[ofs] = accum;
       }
       if (sourceId + 1 != targetMapOffsets.length)
-        throw new IOException("targetMap file format broken; targetMap.length=" + targetMap.length
-                              + ", targetMapOffsets.length=" + targetMapOffsets.length
-                              + ", sourceId=" + sourceId);
+        throw new IOException(
+            "targetMap file format broken; targetMap.length="
+                + targetMap.length
+                + ", targetMapOffsets.length="
+                + targetMapOffsets.length
+                + ", sourceId="
+                + sourceId);
       targetMapOffsets[sourceId] = targetMap.length;
-      mapIS.close(); mapIS = null;
-      
+      mapIS.close();
+      mapIS = null;
+
       posIS = getResource(POSDICT_FILENAME_SUFFIX);
       posIS = new BufferedInputStream(posIS);
       in = new InputStreamDataInput(posIS);
@@ -133,8 +135,9 @@ public abstract class BinaryDictionary implements Dictionary {
           inflFormDict[j] = null;
         }
       }
-      posIS.close(); posIS = null;
-      
+      posIS.close();
+      posIS = null;
+
       dictIS = getResource(DICT_FILENAME_SUFFIX);
       // no buffering here, as we load in one large buffer
       in = new InputStreamDataInput(dictIS);
@@ -146,7 +149,8 @@ public abstract class BinaryDictionary implements Dictionary {
       if (read != size) {
         throw new EOFException("Cannot read whole dictionary");
       }
-      dictIS.close(); dictIS = null;
+      dictIS.close();
+      dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
       success = true;
     } finally {
@@ -156,7 +160,7 @@ public abstract class BinaryDictionary implements Dictionary {
         IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
       }
     }
-    
+
     this.targetMap = targetMap;
     this.targetMapOffsets = targetMapOffsets;
     this.posDict = posDict;
@@ -164,9 +168,9 @@ public abstract class BinaryDictionary implements Dictionary {
     this.inflFormDict = inflFormDict;
     this.buffer = buffer;
   }
-  
+
   protected final InputStream getResource(String suffix) throws IOException {
-    switch(resourceScheme) {
+    switch (resourceScheme) {
       case CLASSPATH:
         return getClassResource(resourcePath + suffix);
       case FILE:
@@ -175,9 +179,10 @@ public abstract class BinaryDictionary implements Dictionary {
         throw new IllegalStateException("unknown resource scheme " + resourceScheme);
     }
   }
-  
-  public static final InputStream getResource(ResourceScheme scheme, String path) throws IOException {
-    switch(scheme) {
+
+  public static final InputStream getResource(ResourceScheme scheme, String path)
+      throws IOException {
+    switch (scheme) {
       case CLASSPATH:
         return getClassResource(path);
       case FILE:
@@ -188,14 +193,16 @@ public abstract class BinaryDictionary implements Dictionary {
   }
 
   // util, reused by ConnectionCosts and CharacterDefinition
-  public static final InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
+  public static final InputStream getClassResource(Class<?> clazz, String suffix)
+      throws IOException {
     final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
     if (is == null) {
-      throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.','/') + suffix);
+      throw new FileNotFoundException(
+          "Not in classpath: " + clazz.getName().replace('.', '/') + suffix);
     }
     return is;
   }
-  
+
   private static InputStream getClassResource(String path) throws IOException {
     final InputStream is = BinaryDictionary.class.getClassLoader().getResourceAsStream(path);
     if (is == null) {
@@ -210,20 +217,20 @@ public abstract class BinaryDictionary implements Dictionary {
     // targetMapOffsets always has one more entry pointing behind last:
     ref.length = targetMapOffsets[sourceId + 1] - ref.offset;
   }
-  
+
   @Override
   public int getLeftId(int wordId) {
     return (buffer.getShort(wordId) & 0xffff) >>> 3;
   }
-  
+
   @Override
   public int getRightId(int wordId) {
     return (buffer.getShort(wordId) & 0xffff) >>> 3;
   }
-  
+
   @Override
   public int getWordCost(int wordId) {
-    return buffer.getShort(wordId + 2);  // Skip id
+    return buffer.getShort(wordId + 2); // Skip id
   }
 
   @Override
@@ -233,17 +240,17 @@ public abstract class BinaryDictionary implements Dictionary {
       int data = buffer.get(offset++) & 0xff;
       int prefix = data >>> 4;
       int suffix = data & 0xF;
-      char text[] = new char[prefix+suffix];
+      char text[] = new char[prefix + suffix];
       System.arraycopy(surfaceForm, off, text, 0, prefix);
       for (int i = 0; i < suffix; i++) {
-        text[prefix+i] = buffer.getChar(offset + (i << 1));
+        text[prefix + i] = buffer.getChar(offset + (i << 1));
       }
       return new String(text);
     } else {
       return null;
     }
   }
-  
+
   @Override
   public String getReading(int wordId, char surface[], int off, int len) {
     if (hasReadingData(wordId)) {
@@ -254,9 +261,9 @@ public abstract class BinaryDictionary implements Dictionary {
       // the reading is the surface form, with hiragana shifted to katakana
       char text[] = new char[len];
       for (int i = 0; i < len; i++) {
-        char ch = surface[off+i];
+        char ch = surface[off + i];
         if (ch > 0x3040 && ch < 0x3097) {
-          text[i] = (char)(ch + 0x60);
+          text[i] = (char) (ch + 0x60);
         } else {
           text[i] = ch;
         }
@@ -264,12 +271,12 @@ public abstract class BinaryDictionary implements Dictionary {
       return new String(text);
     }
   }
-  
+
   @Override
   public String getPartOfSpeech(int wordId) {
     return posDict[getLeftId(wordId)];
   }
-  
+
   @Override
   public String getPronunciation(int wordId, char surface[], int off, int len) {
     if (hasPronunciationData(wordId)) {
@@ -280,7 +287,7 @@ public abstract class BinaryDictionary implements Dictionary {
       return getReading(wordId, surface, off, len); // same as the reading
     }
   }
-  
+
   @Override
   public String getInflectionType(int wordId) {
     return inflTypeDict[getLeftId(wordId)];
@@ -290,11 +297,11 @@ public abstract class BinaryDictionary implements Dictionary {
   public String getInflectionForm(int wordId) {
     return inflFormDict[getLeftId(wordId)];
   }
-  
+
   private static int baseFormOffset(int wordId) {
     return wordId + 4;
   }
-  
+
   private int readingOffset(int wordId) {
     int offset = baseFormOffset(wordId);
     if (hasBaseFormData(wordId)) {
@@ -304,7 +311,7 @@ public abstract class BinaryDictionary implements Dictionary {
       return offset;
     }
   }
-  
+
   private int pronunciationOffset(int wordId) {
     if (hasReadingData(wordId)) {
       int offset = readingOffset(wordId);
@@ -320,19 +327,19 @@ public abstract class BinaryDictionary implements Dictionary {
       return readingOffset(wordId);
     }
   }
-  
+
   private boolean hasBaseFormData(int wordId) {
     return (buffer.getShort(wordId) & HAS_BASEFORM) != 0;
   }
-  
+
   private boolean hasReadingData(int wordId) {
     return (buffer.getShort(wordId) & HAS_READING) != 0;
   }
-  
+
   private boolean hasPronunciationData(int wordId) {
     return (buffer.getShort(wordId) & HAS_PRONUNCIATION) != 0;
   }
-  
+
   private String readString(int offset, int length, boolean kana) {
     char text[] = new char[length];
     if (kana) {
@@ -346,10 +353,12 @@ public abstract class BinaryDictionary implements Dictionary {
     }
     return new String(text);
   }
-  
+
   /** flag that the entry has baseform data. otherwise it's not inflected (same as surface form) */
   public static final int HAS_BASEFORM = 1;
-  /** flag that the entry has reading data. otherwise reading is surface form converted to katakana */
+  /**
+   * flag that the entry has reading data. otherwise reading is surface form converted to katakana
+   */
   public static final int HAS_READING = 2;
   /** flag that the entry has pronunciation data. otherwise pronunciation is the reading */
   public static final int HAS_PRONUNCIATION = 4;

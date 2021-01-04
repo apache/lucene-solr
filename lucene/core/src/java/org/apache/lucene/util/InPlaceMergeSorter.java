@@ -16,11 +16,12 @@
  */
 package org.apache.lucene.util;
 
-
-/** {@link Sorter} implementation based on the merge-sort algorithm that merges
- *  in place (no extra memory will be allocated). Small arrays are sorted with
- *  insertion sort.
- *  @lucene.internal */
+/**
+ * {@link Sorter} implementation based on the merge-sort algorithm that merges in place (no extra
+ * memory will be allocated). Small arrays are sorted with insertion sort.
+ *
+ * @lucene.internal
+ */
 public abstract class InPlaceMergeSorter extends Sorter {
 
   /** Create a new {@link InPlaceMergeSorter} */
@@ -42,5 +43,4 @@ public abstract class InPlaceMergeSorter extends Sorter {
       mergeInPlace(from, mid, to);
     }
   }
-
 }

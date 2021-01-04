@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Additional Kuromoji-specific Attributes for text analysis.
- */
+/** Additional Kuromoji-specific Attributes for text analysis. */
 package org.apache.lucene.analysis.ja.tokenattributes;

@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.index;
 
-
+import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
-
+import org.apache.lucene.util.*;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestIsCurrent extends LuceneTestCase {
 
@@ -54,16 +51,14 @@ public class TestIsCurrent extends LuceneTestCase {
     directory.close();
   }
 
-  /**
-   * Failing testcase showing the trouble
-   */
+  /** Failing testcase showing the trouble */
   @Test
   public void testDeleteByTermIsCurrent() throws IOException {
 
     // get reader
     DirectoryReader reader = writer.getReader();
 
-    // assert index has a document and reader is up2date 
+    // assert index has a document and reader is up2date
     assertEquals("One document should be in the index", 1, writer.getDocStats().numDocs);
     assertTrue("One document added, reader should be current", reader.isCurrent());
 
@@ -79,16 +74,14 @@ public class TestIsCurrent extends LuceneTestCase {
     reader.close();
   }
 
-  /**
-   * Testcase for example to show that writer.deleteAll() is working as expected
-   */
+  /** Testcase for example to show that writer.deleteAll() is working as expected */
   @Test
   public void testDeleteAllIsCurrent() throws IOException {
 
     // get reader
     DirectoryReader reader = writer.getReader();
 
-    // assert index has a document and reader is up2date 
+    // assert index has a document and reader is up2date
     assertEquals("One document should be in the index", 1, writer.getDocStats().numDocs);
     assertTrue("Document added, reader should be stale ", reader.isCurrent());
 

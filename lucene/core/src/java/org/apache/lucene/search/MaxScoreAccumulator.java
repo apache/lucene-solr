@@ -20,9 +20,7 @@ package org.apache.lucene.search;
 import java.util.Objects;
 import java.util.concurrent.atomic.LongAccumulator;
 
-/**
- * Maintains the maximum score and its corresponding document id concurrently
- */
+/** Maintains the maximum score and its corresponding document id concurrently */
 final class MaxScoreAccumulator {
   // we use 2^10-1 to check the remainder with a bitwise operation
   static final int DEFAULT_INTERVAL = 0x3ff;
@@ -76,8 +74,7 @@ final class MaxScoreAccumulator {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       DocAndScore result = (DocAndScore) o;
-      return docID == result.docID &&
-          Float.compare(result.score, score) == 0;
+      return docID == result.docID && Float.compare(result.score, score) == 0;
     }
 
     @Override
@@ -87,10 +84,7 @@ final class MaxScoreAccumulator {
 
     @Override
     public String toString() {
-      return "DocAndScore{" +
-          "docID=" + docID +
-          ", score=" + score +
-          '}';
+      return "DocAndScore{" + "docID=" + docID + ", score=" + score + '}';
     }
   }
 }

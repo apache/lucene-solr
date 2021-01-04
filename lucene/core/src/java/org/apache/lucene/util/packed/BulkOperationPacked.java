@@ -16,11 +16,7 @@
  */
 package org.apache.lucene.util.packed;
 
-
-
-/**
- * Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED}.
- */
+/** Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED}. */
 class BulkOperationPacked extends BulkOperation {
 
   private final int bitsPerValue;
@@ -78,15 +74,15 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, long[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     int bitsLeft = 64;
     for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft < 0) {
         values[valuesOffset++] =
             ((blocks[blocksOffset++] & ((1L << (bitsPerValue + bitsLeft)) - 1)) << -bitsLeft)
-            | (blocks[blocksOffset] >>> (64 + bitsLeft));
+                | (blocks[blocksOffset] >>> (64 + bitsLeft));
         bitsLeft += 64;
       } else {
         values[valuesOffset++] = (blocks[blocksOffset] >>> bitsLeft) & mask;
@@ -95,8 +91,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     long nextValue = 0L;
     int bitsLeft = bitsPerValue;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
@@ -122,18 +118,20 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, int[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     if (bitsPerValue > 32) {
-      throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
+      throw new UnsupportedOperationException(
+          "Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
     int bitsLeft = 64;
     for (int i = 0; i < longValueCount * iterations; ++i) {
       bitsLeft -= bitsPerValue;
       if (bitsLeft < 0) {
-        values[valuesOffset++] = (int)
-            (((blocks[blocksOffset++] & ((1L << (bitsPerValue + bitsLeft)) - 1)) << -bitsLeft)
-            | (blocks[blocksOffset] >>> (64 + bitsLeft)));
+        values[valuesOffset++] =
+            (int)
+                (((blocks[blocksOffset++] & ((1L << (bitsPerValue + bitsLeft)) - 1)) << -bitsLeft)
+                    | (blocks[blocksOffset] >>> (64 + bitsLeft)));
         bitsLeft += 64;
       } else {
         values[valuesOffset++] = (int) ((blocks[blocksOffset] >>> bitsLeft) & mask);
@@ -142,8 +140,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, int[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     int nextValue = 0;
     int bitsLeft = bitsPerValue;
     for (int i = 0; i < iterations * byteBlockCount; ++i) {
@@ -169,8 +167,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void encode(long[] values, int valuesOffset, long[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
     long nextBlock = 0;
     int bitsLeft = 64;
     for (int i = 0; i < longValueCount * iterations; ++i) {
@@ -192,8 +190,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void encode(int[] values, int valuesOffset, long[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
     long nextBlock = 0;
     int bitsLeft = 64;
     for (int i = 0; i < longValueCount * iterations; ++i) {
@@ -215,8 +213,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void encode(long[] values, int valuesOffset, byte[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     int nextBlock = 0;
     int bitsLeft = 8;
     for (int i = 0; i < byteValueCount * iterations; ++i) {
@@ -243,8 +241,8 @@ class BulkOperationPacked extends BulkOperation {
   }
 
   @Override
-  public void encode(int[] values, int valuesOffset, byte[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     int nextBlock = 0;
     int bitsLeft = 8;
     for (int i = 0; i < byteValueCount * iterations; ++i) {
@@ -269,5 +267,4 @@ class BulkOperationPacked extends BulkOperation {
     }
     assert bitsLeft == 8;
   }
-
 }
