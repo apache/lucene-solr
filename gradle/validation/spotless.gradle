@@ -79,6 +79,14 @@ allprojects { prj ->
             targetExclude "**/resources/**"
             break
 
+          case ":lucene:test-framework":
+            target "src/**/*.java"
+            targetExclude "**/resources/**",
+                "**/EmojiTokenizationTestUnicode_11_0.java",
+                "**/WordBreakTestUnicode_9_0_0.java"
+            break
+          //
+
           case ":lucene:expressions":
             target "src/**/*.java"
             targetExclude "**/resources/**", "**/JavascriptLexer.java", "**/JavascriptParser.java",
@@ -113,7 +121,6 @@ allprojects { prj ->
           case ":lucene:luke":
           case ":lucene:spatial3d":
           case ":lucene:spatial-extras":
-          case ":lucene:test-framework":
 
           default:
             target 'non-existing/**'

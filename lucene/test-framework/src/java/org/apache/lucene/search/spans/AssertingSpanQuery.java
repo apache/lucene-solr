@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -28,7 +27,7 @@ import org.apache.lucene.search.ScoreMode;
 /** Wraps a span query with asserts */
 public class AssertingSpanQuery extends SpanQuery {
   private final SpanQuery in;
-  
+
   public AssertingSpanQuery(SpanQuery in) {
     this.in = in;
   }
@@ -44,7 +43,8 @@ public class AssertingSpanQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     SpanWeight weight = in.createWeight(searcher, scoreMode, boost);
     return new AssertingSpanWeight(searcher, weight);
   }
@@ -73,8 +73,7 @@ public class AssertingSpanQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object o) {
-    return sameClassAs(o) &&
-           equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(AssertingSpanQuery other) {

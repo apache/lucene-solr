@@ -19,18 +19,16 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-/**
- * Simple example of a filter that seems to show some problems with LookaheadTokenFilter.
- */
-final public class TrivialLookaheadFilter extends LookaheadTokenFilter<TestPosition> {
+/** Simple example of a filter that seems to show some problems with LookaheadTokenFilter. */
+public final class TrivialLookaheadFilter extends LookaheadTokenFilter<TestPosition> {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private int insertUpto;
@@ -46,8 +44,10 @@ final public class TrivialLookaheadFilter extends LookaheadTokenFilter<TestPosit
 
   @Override
   public boolean incrementToken() throws IOException {
-    // At the outset, getMaxPos is -1. So we'll peek. When we reach the end of the sentence and go to the
-    // first token of the next sentence, maxPos will be the prev sentence's end token, and we'll go again.
+    // At the outset, getMaxPos is -1. So we'll peek. When we reach the end of the sentence and go
+    // to the
+    // first token of the next sentence, maxPos will be the prev sentence's end token, and we'll go
+    // again.
     if (positions.getMaxPos() < outputPos) {
       peekSentence();
     }
@@ -70,8 +70,8 @@ final public class TrivialLookaheadFilter extends LookaheadTokenFilter<TestPosit
       termAtt.setEmpty();
       posIncAtt.setPositionIncrement(0);
       termAtt.append(positions.get(outputPos).getFact());
-      offsetAtt.setOffset(positions.get(outputPos).startOffset,
-                          positions.get(outputPos+1).endOffset);
+      offsetAtt.setOffset(
+          positions.get(outputPos).startOffset, positions.get(outputPos + 1).endOffset);
       insertUpto = outputPos;
     }
   }

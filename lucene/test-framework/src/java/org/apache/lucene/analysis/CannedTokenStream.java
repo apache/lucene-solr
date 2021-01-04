@@ -17,18 +17,16 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-/**
- * TokenStream from a canned list of Tokens.
- */
+/** TokenStream from a canned list of Tokens. */
 public final class CannedTokenStream extends TokenStream {
   private final Token[] tokens;
   private int upto = 0;
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final int finalOffset;
   private final int finalPosInc;
 
@@ -36,8 +34,7 @@ public final class CannedTokenStream extends TokenStream {
     this(0, 0, tokens);
   }
 
-  /** If you want trailing holes, pass a non-zero
-   *  finalPosInc. */
+  /** If you want trailing holes, pass a non-zero finalPosInc. */
   public CannedTokenStream(int finalPosInc, int finalOffset, Token... tokens) {
     super(Token.TOKEN_ATTRIBUTE_FACTORY);
     this.tokens = tokens;
@@ -62,7 +59,8 @@ public final class CannedTokenStream extends TokenStream {
   public boolean incrementToken() {
     if (upto < tokens.length) {
       clearAttributes();
-      // NOTE: this looks weird, casting offsetAtt to Token, but because we are using the Token class's AttributeFactory, all attributes are
+      // NOTE: this looks weird, casting offsetAtt to Token, but because we are using the Token
+      // class's AttributeFactory, all attributes are
       // in fact backed by the Token class, so we just copy the current token into our Token:
       tokens[upto++].copyTo((Token) offsetAtt);
       return true;
