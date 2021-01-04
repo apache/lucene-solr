@@ -17,28 +17,38 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Node;
-
-import java.util.Optional;
-
-public interface AttributeValues {
-  /**
-   * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
-   */
-  Optional<String> getSystemProperty(Node node, String name);
+/**
+ * Node metric identifier, corresponding
+ * to a node-level metric registry and the internal metric name.
+ */
+public interface NodeMetric<T> extends Metric<T> {
 
   /**
-   * For the given node: environment variable value
+   * Metric registry. If this metric identifier uses a fully-qualified
+   * metric key instead, then this method will return {@link Registry#UNSPECIFIED}.
    */
-  Optional<String> getEnvironmentVariable(Node node, String name);
+  Registry getRegistry();
 
   /**
-   * For the given node: metric identified by an instance of {@link NodeMetric}
+   * Registry options for node metrics.
    */
-  <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
-
-  /**
-   * Get collection metrics.
-   */
-  Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
+  enum Registry {
+    /**
+     * corresponds to solr.node
+     */
+    SOLR_NODE,
+    /**
+     * corresponds to solr.jvm
+     */
+    SOLR_JVM,
+    /**
+     * corresponds to solr.jetty
+     */
+    SOLR_JETTY,
+    /**
+     * In case when the registry name is not relevant (eg. a fully-qualified
+     * metric key was provided as the metric name).
+     */
+    UNSPECIFIED
+  }
 }

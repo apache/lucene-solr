@@ -63,10 +63,6 @@ import static java.util.Collections.emptyMap;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  //only for debugging
-  public static SolrClientNodeStateProvider INST;
-
-
 
   private final CloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
@@ -81,7 +77,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    if(log.isDebugEnabled()) INST = this;
   }
 
   protected ClusterStateProvider getClusterStateProvider() {
@@ -167,28 +162,30 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   }
 
   protected Map<String, Object> fetchReplicaMetrics(String node, Map<String, Pair<String, Replica>> metricsKeyVsTagReplica) {
-    Map<String, Object> collect = metricsKeyVsTagReplica.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getKey));
+    Map<String, Set<Object>> collect = metricsKeyVsTagReplica.entrySet().stream()
+            .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
     ClientSnitchCtx ctx = new ClientSnitchCtx(null, null, emptyMap(), solrClient);
     fetchReplicaMetrics(node, ctx, collect);
     return ctx.getTags();
 
   }
 
-  static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
+  static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Set<Object>> metricsKeyVsTag) {
     if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
     try {
       SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
-      metricsKeyVsTag.forEach((key, tag) -> {
+      metricsKeyVsTag.forEach((key, tags) -> {
         Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
-        if (tag instanceof Function) {
-          @SuppressWarnings({"unchecked"})
-          Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
-          ctx.getTags().put(p.first(), p.second());
-        } else {
-          if (v != null) ctx.getTags().put(tag.toString(), v);
+        for (Object tag : tags) {
+          if (tag instanceof Function) {
+            @SuppressWarnings({"unchecked"})
+            Pair<String, Object> p = (Pair<String, Object>) ((Function) tag).apply(v);
+            ctx.getTags().put(p.first(), p.second());
+          } else {
+            if (v != null) ctx.getTags().put(tag.toString(), v);
+          }
         }
       });
     } catch (Exception e) {
@@ -207,25 +204,18 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     protected void getRemoteInfo(String solrNode, Set<String> requestedTags, SnitchContext ctx) {
       if (!((ClientSnitchCtx)ctx).isNodeAlive(solrNode)) return;
       ClientSnitchCtx snitchContext = (ClientSnitchCtx) ctx;
-      Map<String, Object> metricsKeyVsTag = new HashMap<>();
+      Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
       for (String tag : requestedTags) {
         if (tag.startsWith(SYSPROP)) {
-          metricsKeyVsTag.put("solr.jvm:system.properties:" + tag.substring(SYSPROP.length()), tag);
+          metricsKeyVsTag.computeIfAbsent("solr.jvm:system.properties:" + tag.substring(SYSPROP.length()), k -> new HashSet<>())
+              .add(tag);
+        } else if (tag.startsWith(SYSENV)) {
+            metricsKeyVsTag.computeIfAbsent("solr.jvm:system.env:" + tag.substring(SYSENV.length()), k -> new HashSet<>())
+              .add(tag);
         } else if (tag.startsWith(METRICS_PREFIX)) {
-          metricsKeyVsTag.put(tag.substring(METRICS_PREFIX.length()), tag);
+          metricsKeyVsTag.computeIfAbsent(tag.substring(METRICS_PREFIX.length()), k -> new HashSet<>())
+              .add(tag);
         }
-      }
-      if (requestedTags.contains(ImplicitSnitch.DISKTYPE)) {
-        metricsKeyVsTag.put("solr.node:CONTAINER.fs.coreRoot.spins", (Function<Object, Pair<String, Object>>) o -> {
-          if("true".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "rotational");
-          }
-          if("false".equals(String.valueOf(o))){
-            return new Pair<>(ImplicitSnitch.DISKTYPE, "ssd");
-          }
-          return new Pair<>(ImplicitSnitch.DISKTYPE,null);
-
-        });
       }
       if (!metricsKeyVsTag.isEmpty()) {
         fetchReplicaMetrics(solrNode, snitchContext, metricsKeyVsTag);
@@ -283,7 +273,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           }
           if (requestedTags.contains(SYSLOADAVG)) {
             Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/os.systemLoadAverage");
-            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue() * 100.0d);
+            if (n != null) ctx.getTags().put(SYSLOADAVG, n.doubleValue());
           }
           if (requestedTags.contains(HEAPUSAGE)) {
             Number n = (Number) Utils.getObjectByPath(metrics, true, "solr.jvm/memory.heap.usage");

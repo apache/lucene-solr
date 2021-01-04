@@ -17,28 +17,16 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Node;
-
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 
-public interface AttributeValues {
-  /**
-   * For the given node: system property value (system properties are passed to Java using {@code -Dname=value}
-   */
-  Optional<String> getSystemProperty(Node node, String name);
+/**
+ * Strongly-typed replica-level metrics.
+ */
+public interface ReplicaMetrics {
 
-  /**
-   * For the given node: environment variable value
-   */
-  Optional<String> getEnvironmentVariable(Node node, String name);
-
-  /**
-   * For the given node: metric identified by an instance of {@link NodeMetric}
-   */
-  <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
-
-  /**
-   * Get collection metrics.
-   */
-  Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
+  String getReplicaName();
+  <T> Optional<T> getReplicaMetric(ReplicaMetric<T> metric);
+  Iterator<Map.Entry<ReplicaMetric<?>, Object>> iterator();
 }
