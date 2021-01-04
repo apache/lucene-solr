@@ -82,10 +82,13 @@ allprojects { prj ->
                 "**/JavascriptVisitor.java"
             break
 
-          // Partially complete.
+          case ":lucene:grouping":
+            target "src/**/*.java"
+            break
+
+        // Partially complete.
 
           // All others - disable reformatting/ checks for now.
-          case ":lucene:grouping":
           case ":lucene:luke":
           case ":lucene:queryparser":
           case ":lucene:sandbox":
