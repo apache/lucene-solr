@@ -75,7 +75,8 @@ public class DirectIODirectory extends FilterDirectory {
    * There are two reasons for using this instead of directly referencing ExtendedOpenOption.DIRECT:
    * <ol>
    * <li> ExtendedOpenOption.DIRECT is OpenJDK's internal proprietary API. This API causes un-suppressible(?) warning to be emitted
-   *  when compiling with --release flag and value N, where N is smaller than the the version of javac used for compilation.</li>
+   *  when compiling with --release flag and value N, where N is smaller than the the version of javac used for compilation.
+   *  For details, please refer to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8259039.</li>
    * <li> It is possible that Lucene is run using JDK that does not support ExtendedOpenOption.DIRECT. In such a
    *  case, dynamic lookup allows us to bail out with UnsupportedOperationException with meaningful error message.</li>
    * </ol>
