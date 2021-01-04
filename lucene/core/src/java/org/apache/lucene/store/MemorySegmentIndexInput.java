@@ -96,10 +96,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     return e;
   }
   
-  // return value only for compiler!
-  byte handlePositionalIOOBE(String action, long pos) throws IOException {
+  RuntimeException handlePositionalIOOBE(String action, long pos) throws IOException {
     if (pos < 0L) {
-      throw new IllegalArgumentException(action + " negative position: " + this);
+      return new IllegalArgumentException(action + " negative position: " + this);
     } else {
       throw new EOFException(action + " past EOF: " + this);
     }
@@ -240,7 +239,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       }
       this.curPosition = Objects.checkIndex(pos & chunkSizeMask, curSegment.byteSize() + 1);
     } catch (IndexOutOfBoundsException e) {
-      handlePositionalIOOBE("seek", pos);
+      throw handlePositionalIOOBE("seek", pos);
     }
   }
 
@@ -250,7 +249,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       final int si = (int) (pos >> chunkSizePower);
       return (byte) VH_getByte.get(segments[si], pos & chunkSizeMask);
     } catch (IndexOutOfBoundsException ioobe) {
-      return handlePositionalIOOBE("read", pos);
+      throw handlePositionalIOOBE("read", pos);
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
@@ -265,7 +264,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       this.curSegmentIndex = si;
       this.curSegment = seg;
     } catch (IndexOutOfBoundsException ioobe) {
-      handlePositionalIOOBE("read", pos);
+      throw handlePositionalIOOBE("read", pos);
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
@@ -410,7 +409,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         curPosition = Objects.checkIndex(pos, length + 1);
       } catch (IndexOutOfBoundsException e) {
-        handlePositionalIOOBE("seek", pos);
+        throw handlePositionalIOOBE("seek", pos);
       }
     }
 
@@ -425,7 +424,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         return (byte) VH_getByte.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        return handlePositionalIOOBE("read", pos);
+        throw handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -436,7 +435,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         return (short) VH_getShort.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        return handlePositionalIOOBE("read", pos);
+        throw handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -447,7 +446,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         return (int) VH_getInt.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        return handlePositionalIOOBE("read", pos);
+        throw handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
@@ -458,7 +457,7 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       try {
         return (long) VH_getLong.get(curSegment, pos);
       } catch (IndexOutOfBoundsException e) {
-        return handlePositionalIOOBE("read", pos);
+        throw handlePositionalIOOBE("read", pos);
       } catch (NullPointerException | IllegalStateException e) {
         throw wrapAlreadyClosedException(e);
       }
