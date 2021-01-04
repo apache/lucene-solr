@@ -300,8 +300,8 @@ public abstract class LuceneTestCase extends Assert {
    * Annotation for test classes that should avoid mock filesystem types (because they test a bug
    * that only happens on linux, for example).
    *
-   * <p>You can avoid specific names {@link Class#getSimpleName()} or use the special value {@code
-   * *} to disable all mock filesystems.
+   * <p>You can avoid specific names {@link Class#getSimpleName()} or use the special value <code>*
+   * </code> to disable all mock filesystems.
    */
   @Documented
   @Inherited
