@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -41,13 +40,15 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** A {@link Query} that allows to have a configurable number or required
- *  matches per document. This is typically useful in order to build queries
- *  whose query terms must all appear in documents.
- *  @lucene.experimental
+/**
+ * A {@link Query} that allows to have a configurable number or required matches per document. This
+ * is typically useful in order to build queries whose query terms must all appear in documents.
+ *
+ * @lucene.experimental
  */
 public final class CoveringQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(CoveringQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(CoveringQuery.class);
 
   private final Collection<Query> queries;
   private final LongValuesSource minimumNumberMatch;
@@ -56,37 +57,41 @@ public final class CoveringQuery extends Query implements Accountable {
 
   /**
    * Sole constructor.
+   *
    * @param queries Sub queries to match.
-   * @param minimumNumberMatch Per-document long value that records how many queries
-   *                           should match. Values that are less than 1 are treated
-   *                           like <code>1</code>: only documents that have at least one
-   *                           matching clause will be considered matches. Documents
-   *                           that do not have a value for <code>minimumNumberMatch</code>
-   *                           do not match.
+   * @param minimumNumberMatch Per-document long value that records how many queries should match.
+   *     Values that are less than 1 are treated like <code>1</code>: only documents that have at
+   *     least one matching clause will be considered matches. Documents that do not have a value
+   *     for <code>minimumNumberMatch</code> do not match.
    */
   public CoveringQuery(Collection<Query> queries, LongValuesSource minimumNumberMatch) {
     if (queries.size() > IndexSearcher.getMaxClauseCount()) {
       throw new IndexSearcher.TooManyClauses();
     }
     if (minimumNumberMatch.needsScores()) {
-      throw new IllegalArgumentException("The minimum number of matches may not depend on the score.");
+      throw new IllegalArgumentException(
+          "The minimum number of matches may not depend on the score.");
     }
     this.queries = new Multiset<>();
     this.queries.addAll(queries);
     this.minimumNumberMatch = Objects.requireNonNull(minimumNumberMatch);
     this.hashCode = computeHashCode();
 
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.queries, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+    this.ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(
+                this.queries, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
   public String toString(String field) {
-    String queriesToString = queries.stream()
-        .map(q -> q.toString(field))
-        .sorted()
-        .collect(Collectors.joining(", "));
-    return "CoveringQuery(queries=[" + queriesToString + "], minimumNumberMatch=" + minimumNumberMatch + ")";
+    String queriesToString =
+        queries.stream().map(q -> q.toString(field)).sorted().collect(Collectors.joining(", "));
+    return "CoveringQuery(queries=["
+        + queriesToString
+        + "], minimumNumberMatch="
+        + minimumNumberMatch
+        + ")";
   }
 
   @Override
@@ -141,7 +146,8 @@ public final class CoveringQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final List<Weight> weights = new ArrayList<>(queries.size());
     for (Query query : queries) {
       weights.add(searcher.createWeight(query, scoreMode, boost));
@@ -201,9 +207,13 @@ public final class CoveringQuery extends Query implements Accountable {
         subExpls.add(subExpl);
       }
       if (freq >= minimumNumberMatch) {
-        return Explanation.match((float) score, freq + " matches for " + minimumNumberMatch + " required matches, sum of:", subExpls);
+        return Explanation.match(
+            (float) score,
+            freq + " matches for " + minimumNumberMatch + " required matches, sum of:",
+            subExpls);
       } else {
-        return Explanation.noMatch(freq + " matches for " + minimumNumberMatch + " required matches", subExpls);
+        return Explanation.noMatch(
+            freq + " matches for " + minimumNumberMatch + " required matches", subExpls);
       }
     }
 
@@ -219,14 +229,13 @@ public final class CoveringQuery extends Query implements Accountable {
       if (scorers.isEmpty()) {
         return null;
       }
-      return new CoveringScorer(this, scorers, minimumNumberMatch.getValues(context, null), context.reader().maxDoc());
+      return new CoveringScorer(
+          this, scorers, minimumNumberMatch.getValues(context, null), context.reader().maxDoc());
     }
 
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return minimumNumberMatch.isCacheable(ctx);
     }
-
   }
-
 }

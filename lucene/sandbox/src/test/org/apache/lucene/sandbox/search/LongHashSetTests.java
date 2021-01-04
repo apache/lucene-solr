@@ -21,8 +21,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import org.apache.lucene.sandbox.search.LongHashSet;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class LongHashSetTests extends LuceneTestCase {
@@ -91,9 +89,12 @@ public class LongHashSetTests extends LuceneTestCase {
         }
       }
       if (values.length > 0 && random().nextBoolean()) {
-        values[values.length/2] = Long.MIN_VALUE;
+        values[values.length / 2] = Long.MIN_VALUE;
       }
-      Set<Long> set1 = LongStream.of(values).mapToObj(Long::valueOf).collect(Collectors.toCollection(HashSet::new));
+      Set<Long> set1 =
+          LongStream.of(values)
+              .mapToObj(Long::valueOf)
+              .collect(Collectors.toCollection(HashSet::new));
       LongHashSet set2 = new LongHashSet(values);
       assertEquals(set1, set2);
     }
