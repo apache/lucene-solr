@@ -70,6 +70,7 @@ allprojects { prj ->
           case ":lucene:grouping":
           case ":lucene:join":
           case ":lucene:facet":
+          case ":lucene:luke":
           case ":lucene:misc":
           case ":lucene:monitor":
           case ":lucene:replicator":
@@ -119,7 +120,7 @@ allprojects { prj ->
             // Partially complete.
 
           // All others - disable reformatting/ checks for now.
-          case ":lucene:luke":
+
           case ":lucene:spatial3d":
 
           default:

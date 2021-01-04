@@ -17,12 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.analysis.Analysis;
 
 /** Operator of the simple analyze result panel */
-public interface SimpleAnalyzeResultPanelOperator extends ComponentOperatorRegistry.ComponentOperator  {
+public interface SimpleAnalyzeResultPanelOperator
+    extends ComponentOperatorRegistry.ComponentOperator {
 
   void setAnalysisModel(Analysis analysisModel);
 

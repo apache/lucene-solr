@@ -19,7 +19,6 @@ package org.apache.lucene.luke.models.documents;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -55,7 +54,8 @@ public class TermVectorsAdapterTest extends DocumentsTestBase {
     textType_pos_offset.setStoreTermVectorPositions(true);
     textType_pos_offset.setStoreTermVectorOffsets(true);
 
-    String text = "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.";
+    String text =
+        "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.";
     Document doc = new Document();
     doc.add(newField("text1", text, textType));
     doc.add(newField("text2", text, textType_pos));
