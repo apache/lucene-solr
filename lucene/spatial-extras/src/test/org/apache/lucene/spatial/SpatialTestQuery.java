@@ -16,11 +16,6 @@
  */
 package org.apache.lucene.spatial;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-
-import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.query.SpatialArgsParser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,10 +25,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialArgsParser;
+import org.locationtech.spatial4j.context.SpatialContext;
 
-/**
- * Helper class to execute queries
- */
+/** Helper class to execute queries */
 public class SpatialTestQuery {
   public String testname;
   public String line;
@@ -41,14 +37,13 @@ public class SpatialTestQuery {
   public SpatialArgs args;
   public List<String> ids = new ArrayList<>();
 
-  /**
-   * Get Test Queries.  The InputStream is closed.
-   */
+  /** Get Test Queries. The InputStream is closed. */
   public static Iterator<SpatialTestQuery> getTestQueries(
       final SpatialArgsParser parser,
       final SpatialContext ctx,
       final String name,
-      final InputStream in ) throws IOException {
+      final InputStream in)
+      throws IOException {
 
     List<SpatialTestQuery> results = new ArrayList<>();
 
@@ -62,10 +57,10 @@ public class SpatialTestQuery {
 
         try {
           // skip a comment
-          if( line.startsWith( "[" ) ) {
-            int idx = line.indexOf( ']' );
-            if( idx > 0 ) {
-              line = line.substring( idx+1 );
+          if (line.startsWith("[")) {
+            int idx = line.indexOf(']');
+            if (idx > 0) {
+              line = line.substring(idx + 1);
             }
           }
 
@@ -76,9 +71,8 @@ public class SpatialTestQuery {
           }
           test.args = parser.parse(line.substring(idx + 1).trim(), ctx);
           results.add(test);
-        }
-        catch( Exception ex ) {
-          throw new RuntimeException( "invalid query line: "+test.line, ex );
+        } catch (Exception ex) {
+          throw new RuntimeException("invalid query line: " + test.line, ex);
         }
       }
     } finally {
@@ -89,8 +83,7 @@ public class SpatialTestQuery {
 
   @Override
   public String toString() {
-    if (line != null)
-      return line;
-    return args.toString()+" "+ids;
+    if (line != null) return line;
+    return args.toString() + " " + ids;
   }
 }

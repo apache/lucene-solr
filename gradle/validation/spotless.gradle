@@ -75,6 +75,7 @@ allprojects { prj ->
           case ":lucene:replicator":
           case ":lucene:sandbox":
           case ":lucene:suggest":
+          case ":lucene:spatial-extras":
             target "src/**/*.java"
             targetExclude "**/resources/**"
             break
@@ -120,7 +121,6 @@ allprojects { prj ->
           // All others - disable reformatting/ checks for now.
           case ":lucene:luke":
           case ":lucene:spatial3d":
-          case ":lucene:spatial-extras":
 
           default:
             target 'non-existing/**'

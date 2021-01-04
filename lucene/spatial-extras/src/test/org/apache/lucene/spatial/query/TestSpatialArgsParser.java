@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.spatial.query;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Rectangle;
+import java.text.ParseException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Rectangle;
 
-import java.text.ParseException;
-
-//Tests SpatialOperation somewhat too
+// Tests SpatialOperation somewhat too
 public class TestSpatialArgsParser extends LuceneTestCase {
 
   private SpatialContext ctx = SpatialContext.GEO;
 
-  //The args parser is only dependent on the ctx for IO so I don't care to test
+  // The args parser is only dependent on the ctx for IO so I don't care to test
   // with other implementations.
 
   @Test
@@ -48,14 +47,18 @@ public class TestSpatialArgsParser extends LuceneTestCase {
     assertEquals(SpatialOperation.IsDisjointTo, out.getOperation());
 
     // spatial operations need args
-    expectThrows(Exception.class, () -> {
-      parser.parse(SpatialOperation.IsDisjointTo + "[ ]", ctx);
-    });
+    expectThrows(
+        Exception.class,
+        () -> {
+          parser.parse(SpatialOperation.IsDisjointTo + "[ ]", ctx);
+        });
 
     // unknown operation
-    expectThrows(Exception.class, () -> {
-      parser.parse("XXXX(Envelope(-10, 10, 20, -20))", ctx);
-    });
+    expectThrows(
+        Exception.class,
+        () -> {
+          parser.parse("XXXX(Envelope(-10, 10, 20, -20))", ctx);
+        });
 
     assertAlias(SpatialOperation.IsWithin, "CoveredBy");
     assertAlias(SpatialOperation.IsWithin, "COVEREDBY");
@@ -73,5 +76,4 @@ public class TestSpatialArgsParser extends LuceneTestCase {
     out = new SpatialArgsParser().parse(arg, ctx);
     assertEquals(op, out.getOperation());
   }
-
 }
