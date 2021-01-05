@@ -130,7 +130,7 @@ final class WANDScorer extends Scorer {
 
   int upTo; // upper bound for which max scores are valid
 
-  int minShouldMatch;
+  final int minShouldMatch;
   int freq;
 
   WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) throws IOException {
