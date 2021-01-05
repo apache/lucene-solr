@@ -84,6 +84,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.WrappedQuery;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -404,7 +405,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
     if(groupQuery !=  null) {
       //Limits the results to documents that are in the same group as the documents in the page.
-      newFilters.add(groupQuery);
+      WrappedQuery uncachedQuery = new WrappedQuery(groupQuery);
+      uncachedQuery.setCache(false);
+      newFilters.add(uncachedQuery);
     }
 
     SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
