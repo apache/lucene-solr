@@ -21,6 +21,4 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface GeoPolygon extends GeoAreaShape {
-
-}
+public interface GeoPolygon extends GeoAreaShape {}

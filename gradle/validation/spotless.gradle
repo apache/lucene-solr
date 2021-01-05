@@ -76,6 +76,7 @@ allprojects { prj ->
           case ":lucene:replicator":
           case ":lucene:sandbox":
           case ":lucene:suggest":
+          case ":lucene:spatial3d":
           case ":lucene:spatial-extras":
             target "src/**/*.java"
             targetExclude "**/resources/**"
@@ -118,10 +119,6 @@ allprojects { prj ->
               "**/surround/parser/TokenMgrError.java"
             break
             // Partially complete.
-
-          // All others - disable reformatting/ checks for now.
-
-          case ":lucene:spatial3d":
 
           default:
             target 'non-existing/**'

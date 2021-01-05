@@ -17,8 +17,8 @@
 
 package org.apache.lucene.spatial3d.geom;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Base class to create a composite of GeoMembershipShapes
@@ -27,34 +27,37 @@ import java.io.IOException;
  * @lucene.internal
  */
 abstract class GeoBaseCompositeMembershipShape<T extends GeoMembershipShape>
-    extends GeoBaseCompositeShape<T> implements GeoMembershipShape{
+    extends GeoBaseCompositeShape<T> implements GeoMembershipShape {
 
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   GeoBaseCompositeMembershipShape(PlanetModel planetModel) {
     super(planetModel);
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    * @param clazz is the class of the generic.
    */
-  GeoBaseCompositeMembershipShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
+  GeoBaseCompositeMembershipShape(
+      final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz)
+      throws IOException {
     super(planetModel, inputStream, clazz);
   }
-  
+
   @Override
   public double computeOutsideDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
     return computeOutsideDistance(distanceStyle, point.x, point.y, point.z);
   }
 
   @Override
-  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    if (isWithin(x,y,z))
+  public double computeOutsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    if (isWithin(x, y, z)) {
       return 0.0;
+    }
     double distance = Double.POSITIVE_INFINITY;
     for (GeoMembershipShape shape : shapes) {
       final double normalDistance = shape.computeOutsideDistance(distanceStyle, x, y, z);
