@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;

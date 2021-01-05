@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.demo.facet;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.DrillSideways;
+import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
@@ -55,11 +53,12 @@ public class SimpleFacetsExample {
   public SimpleFacetsExample() {
     config.setHierarchical("Publish Date", true);
   }
-  
+
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
+    IndexWriter indexWriter =
+        new IndexWriter(
+            indexDir, new IndexWriterConfig(new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // Writes facet ords to a separate directory from the main index
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
@@ -88,7 +87,7 @@ public class SimpleFacetsExample {
     doc.add(new FacetField("Author", "Frank"));
     doc.add(new FacetField("Publish Date", "1999", "5", "5"));
     indexWriter.addDocument(config.build(taxoWriter, doc));
-    
+
     indexWriter.close();
     taxoWriter.close();
   }
@@ -113,14 +112,14 @@ public class SimpleFacetsExample {
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Date"));
-    
+
     indexReader.close();
     taxoReader.close();
-    
+
     return results;
   }
-  
-  /** User runs a query and counts facets only without collecting the matching documents.*/
+
+  /** User runs a query and counts facets only without collecting the matching documents. */
   private List<FacetResult> facetsOnly() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -138,18 +137,17 @@ public class SimpleFacetsExample {
 
     // Count both "Publish Date" and "Author" dimensions
     Facets facets = new FastTaxonomyFacetCounts(taxoReader, config, fc);
-   
+
     results.add(facets.getTopChildren(10, "Author"));
     results.add(facets.getTopChildren(10, "Publish Date"));
-    
+
     indexReader.close();
     taxoReader.close();
-    
+
     return results;
   }
-  
-  /** User drills down on 'Publish Date/2010', and we
-   *  return facets for 'Author' */
+
+  /** User drills down on 'Publish Date/2010', and we return facets for 'Author' */
   private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -170,13 +168,14 @@ public class SimpleFacetsExample {
 
     indexReader.close();
     taxoReader.close();
-    
+
     return result;
   }
 
-  /** User drills down on 'Publish Date/2010', and we
-   *  return facets for both 'Publish Date' and 'Author',
-   *  using DrillSideways. */
+  /**
+   * User drills down on 'Publish Date/2010', and we return facets for both 'Publish Date' and
+   * 'Author', using DrillSideways.
+   */
   private List<FacetResult> drillSideways() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -197,7 +196,7 @@ public class SimpleFacetsExample {
 
     indexReader.close();
     taxoReader.close();
-    
+
     return facets;
   }
 
@@ -206,13 +205,13 @@ public class SimpleFacetsExample {
     index();
     return facetsOnly();
   }
-  
+
   /** Runs the search example. */
   public List<FacetResult> runSearch() throws IOException {
     index();
     return facetsWithSearch();
   }
-  
+
   /** Runs the drill-down example. */
   public FacetResult runDrillDown() throws IOException {
     index();
@@ -233,22 +232,21 @@ public class SimpleFacetsExample {
     List<FacetResult> results1 = example.runFacetOnly();
     System.out.println("Author: " + results1.get(0));
     System.out.println("Publish Date: " + results1.get(1));
-    
+
     System.out.println("Facet counting example (combined facets and search):");
     System.out.println("-----------------------");
     List<FacetResult> results = example.runSearch();
     System.out.println("Author: " + results.get(0));
     System.out.println("Publish Date: " + results.get(1));
-    
+
     System.out.println("Facet drill-down example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
     System.out.println("Author: " + example.runDrillDown());
 
     System.out.println("Facet drill-sideways example (Publish Date/2010):");
     System.out.println("---------------------------------------------");
-    for(FacetResult result : example.runDrillSideways()) {
+    for (FacetResult result : example.runDrillSideways()) {
       System.out.println(result);
     }
   }
-  
 }

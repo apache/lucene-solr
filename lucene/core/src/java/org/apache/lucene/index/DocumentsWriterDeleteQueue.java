@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
-
 import org.apache.lucene.index.DocValuesUpdate.BinaryDocValuesUpdate;
 import org.apache.lucene.index.DocValuesUpdate.NumericDocValuesUpdate;
 import org.apache.lucene.search.Query;
@@ -30,45 +29,38 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.InfoStream;
 
 /**
- * {@link DocumentsWriterDeleteQueue} is a non-blocking linked pending deletes
- * queue. In contrast to other queue implementation we only maintain the
- * tail of the queue. A delete queue is always used in a context of a set of
- * DWPTs and a global delete pool. Each of the DWPT and the global pool need to
- * maintain their 'own' head of the queue (as a DeleteSlice instance per
- * {@link DocumentsWriterPerThread}).
- * The difference between the DWPT and the global pool is that the DWPT starts
- * maintaining a head once it has added its first document since for its segments
- * private deletes only the deletes after that document are relevant. The global
- * pool instead starts maintaining the head once this instance is created by
- * taking the sentinel instance as its initial head.
- * <p>
- * Since each {@link DeleteSlice} maintains its own head and the list is only
- * single linked the garbage collector takes care of pruning the list for us.
- * All nodes in the list that are still relevant should be either directly or
- * indirectly referenced by one of the DWPT's private {@link DeleteSlice} or by
- * the global {@link BufferedUpdates} slice.
- * <p>
- * Each DWPT as well as the global delete pool maintain their private
- * DeleteSlice instance. In the DWPT case updating a slice is equivalent to
- * atomically finishing the document. The slice update guarantees a "happens
- * before" relationship to all other updates in the same indexing session. When a
- * DWPT updates a document it:
- * 
+ * {@link DocumentsWriterDeleteQueue} is a non-blocking linked pending deletes queue. In contrast to
+ * other queue implementation we only maintain the tail of the queue. A delete queue is always used
+ * in a context of a set of DWPTs and a global delete pool. Each of the DWPT and the global pool
+ * need to maintain their 'own' head of the queue (as a DeleteSlice instance per {@link
+ * DocumentsWriterPerThread}). The difference between the DWPT and the global pool is that the DWPT
+ * starts maintaining a head once it has added its first document since for its segments private
+ * deletes only the deletes after that document are relevant. The global pool instead starts
+ * maintaining the head once this instance is created by taking the sentinel instance as its initial
+ * head.
+ *
+ * <p>Since each {@link DeleteSlice} maintains its own head and the list is only single linked the
+ * garbage collector takes care of pruning the list for us. All nodes in the list that are still
+ * relevant should be either directly or indirectly referenced by one of the DWPT's private {@link
+ * DeleteSlice} or by the global {@link BufferedUpdates} slice.
+ *
+ * <p>Each DWPT as well as the global delete pool maintain their private DeleteSlice instance. In
+ * the DWPT case updating a slice is equivalent to atomically finishing the document. The slice
+ * update guarantees a "happens before" relationship to all other updates in the same indexing
+ * session. When a DWPT updates a document it:
+ *
  * <ol>
- * <li>consumes a document and finishes its processing</li>
- * <li>updates its private {@link DeleteSlice} either by calling
- * {@link #updateSlice(DeleteSlice)} or {@link #add(Node, DeleteSlice)} (if the
- * document has a delTerm)</li>
- * <li>applies all deletes in the slice to its private {@link BufferedUpdates}
- * and resets it</li>
- * <li>increments its internal document id</li>
+ *   <li>consumes a document and finishes its processing
+ *   <li>updates its private {@link DeleteSlice} either by calling {@link #updateSlice(DeleteSlice)}
+ *       or {@link #add(Node, DeleteSlice)} (if the document has a delTerm)
+ *   <li>applies all deletes in the slice to its private {@link BufferedUpdates} and resets it
+ *   <li>increments its internal document id
  * </ol>
- * 
- * The DWPT also doesn't apply its current documents delete term until it has
- * updated its delete slice which ensures the consistency of the update. If the
- * update fails before the DeleteSlice could have been updated the deleteTerm
- * will also not be added to its private deletes neither to the global deletes.
- * 
+ *
+ * The DWPT also doesn't apply its current documents delete term until it has updated its delete
+ * slice which ensures the consistency of the update. If the update fails before the DeleteSlice
+ * could have been updated the deleteTerm will also not be added to its private deletes neither to
+ * the global deletes.
  */
 final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
@@ -77,17 +69,24 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   private volatile boolean closed = false;
 
-  /** Used to record deletes against all prior (already written to disk) segments.  Whenever any segment flushes, we bundle up this set of
-   *  deletes and insert into the buffered updates stream before the newly flushed segment(s). */
+  /**
+   * Used to record deletes against all prior (already written to disk) segments. Whenever any
+   * segment flushes, we bundle up this set of deletes and insert into the buffered updates stream
+   * before the newly flushed segment(s).
+   */
   private final DeleteSlice globalSlice;
+
   private final BufferedUpdates globalBufferedUpdates;
-  
+
   // only acquired to update the global deletes, pkg-private for access by tests:
   final ReentrantLock globalBufferLock = new ReentrantLock();
 
   final long generation;
 
-  /** Generates the sequence number that IW returns to callers changing the index, showing the effective serialization of all operations. */
+  /**
+   * Generates the sequence number that IW returns to callers changing the index, showing the
+   * effective serialization of all operations.
+   */
   private final AtomicLong nextSeqNo;
 
   private final InfoStream infoStream;
@@ -97,13 +96,14 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
   private final long startSeqNo;
   private final LongSupplier previousMaxSeqId;
   private boolean advanced;
-  
+
   DocumentsWriterDeleteQueue(InfoStream infoStream) {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
     this(infoStream, 0, 1, () -> 0);
   }
 
-  private DocumentsWriterDeleteQueue(InfoStream infoStream, long generation, long startSeqNo, LongSupplier previousMaxSeqId) {
+  private DocumentsWriterDeleteQueue(
+      InfoStream infoStream, long generation, long startSeqNo, LongSupplier previousMaxSeqId) {
     this.infoStream = infoStream;
     this.globalBufferedUpdates = new BufferedUpdates("global");
     this.generation = generation;
@@ -146,9 +146,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     return new DocValuesUpdatesNode(updates);
   }
 
-  /**
-   * invariant for document update
-   */
+  /** invariant for document update */
   long add(Node<?> deleteNode, DeleteSlice slice) {
     long seqNo = add(deleteNode);
     /*
@@ -180,11 +178,14 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     globalBufferLock.lock();
     try {
       /*
-       * check if all items in the global slice were applied 
+       * check if all items in the global slice were applied
        * and if the global slice is up-to-date
        * and if globalBufferedUpdates has changes
        */
-      return globalBufferedUpdates.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail || tail.next != null;
+      return globalBufferedUpdates.any()
+          || !globalSlice.isEmpty()
+          || globalSlice.sliceTail != tail
+          || tail.next != null;
     } finally {
       globalBufferLock.unlock();
     }
@@ -209,7 +210,6 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
 
-
   FrozenBufferedUpdates freezeGlobalBuffer(DeleteSlice callerSlice) {
     globalBufferLock.lock();
     try {
@@ -233,8 +233,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
   }
 
   /**
-   * This may freeze the global buffer unless the delete queue has already been closed.
-   * If the queue has been closed this method will return <code>null</code>
+   * This may freeze the global buffer unless the delete queue has already been closed. If the queue
+   * has been closed this method will return <code>null</code>
    */
   FrozenBufferedUpdates maybeFreezeGlobalBuffer() {
     globalBufferLock.lock();
@@ -255,7 +255,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
 
-  private FrozenBufferedUpdates freezeGlobalBufferInternal(final Node<?> currentTail ) {
+  private FrozenBufferedUpdates freezeGlobalBufferInternal(final Node<?> currentTail) {
     assert globalBufferLock.isHeldByCurrentThread();
     if (globalSlice.sliceTail != currentTail) {
       globalSlice.sliceTail = currentTail;
@@ -263,7 +263,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
 
     if (globalBufferedUpdates.any()) {
-      final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(infoStream, globalBufferedUpdates, null);
+      final FrozenBufferedUpdates packet =
+          new FrozenBufferedUpdates(infoStream, globalBufferedUpdates, null);
       globalBufferedUpdates.clear();
       return packet;
     } else {
@@ -299,7 +300,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   private void ensureOpen() {
     if (closed) {
-      throw new AlreadyClosedException("This " + DocumentsWriterDeleteQueue.class.getSimpleName() + " is already closed");
+      throw new AlreadyClosedException(
+          "This " + DocumentsWriterDeleteQueue.class.getSimpleName() + " is already closed");
     }
   }
 
@@ -316,8 +318,9 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
       }
       this.closed = true;
       long seqNo = nextSeqNo.get();
-      assert seqNo <= maxSeqNo : "maxSeqNo must be greater or equal to " + seqNo + " but was " + maxSeqNo;
-      nextSeqNo.set(maxSeqNo+1);
+      assert seqNo <= maxSeqNo
+          : "maxSeqNo must be greater or equal to " + seqNo + " but was " + maxSeqNo;
+      nextSeqNo.set(maxSeqNo + 1);
     } finally {
       globalBufferLock.unlock();
     }
@@ -352,7 +355,8 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
       Node<?> current = sliceHead;
       do {
         current = current.next;
-        assert current != null : "slice property violated between the head on the tail must not be a null node";
+        assert current != null
+            : "slice property violated between the head on the tail must not be a null node";
         current.apply(del, docIDUpto);
       } while (current != sliceTail);
       reset();
@@ -364,16 +368,16 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
 
     /**
-     * Returns <code>true</code> iff the given node is identical to the slices tail,
-     * otherwise <code>false</code>.
+     * Returns <code>true</code> iff the given node is identical to the slices tail, otherwise
+     * <code>false</code>.
      */
     boolean isTail(Node<?> node) {
       return sliceTail == node;
     }
 
     /**
-     * Returns <code>true</code> iff the given item is identical to the item
-     * hold by the slices tail, otherwise <code>false</code>.
+     * Returns <code>true</code> iff the given item is identical to the item hold by the slices
+     * tail, otherwise <code>false</code>.
      */
     boolean isTailItem(Object object) {
       return sliceTail.item == object;
@@ -431,7 +435,6 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     public String toString() {
       return "del=" + item;
     }
-
   }
 
   private static final class QueryArrayNode extends Node<Query[]> {
@@ -442,11 +445,11 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     @Override
     void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Query query : item) {
-        bufferedUpdates.addQuery(query, docIDUpto);  
+        bufferedUpdates.addQuery(query, docIDUpto);
       }
     }
   }
-  
+
   private static final class TermArrayNode extends Node<Term[]> {
     TermArrayNode(Term[] term) {
       super(term);
@@ -455,7 +458,7 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     @Override
     void apply(BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Term term : item) {
-        bufferedUpdates.addTerm(term, docIDUpto);  
+        bufferedUpdates.addTerm(term, docIDUpto);
       }
     }
 
@@ -463,7 +466,6 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     public String toString() {
       return "dels=" + Arrays.toString(item);
     }
-
   }
 
   private static final class DocValuesUpdatesNode extends Node<DocValuesUpdate[]> {
@@ -483,11 +485,11 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
             bufferedUpdates.addBinaryUpdate((BinaryDocValuesUpdate) update, docIDUpto);
             break;
           default:
-            throw new IllegalArgumentException(update.type + " DocValues updates not supported yet!");
+            throw new IllegalArgumentException(
+                update.type + " DocValues updates not supported yet!");
         }
       }
     }
-
 
     @Override
     boolean isDelete() {
@@ -503,12 +505,12 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
         for (DocValuesUpdate update : item) {
           sb.append(update.field).append(':').append(update.valueToString()).append(',');
         }
-        sb.setCharAt(sb.length()-1, ']');
+        sb.setCharAt(sb.length() - 1, ']');
       }
       return sb.toString();
     }
   }
-  
+
   public int getBufferedUpdatesTermsSize() {
     final ReentrantLock lock = globalBufferLock; // Trusted final
     lock.lock();
@@ -536,23 +538,23 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
 
   public long getNextSequenceNumber() {
     long seqNo = nextSeqNo.getAndIncrement();
-    assert seqNo <= maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
+    assert seqNo <= maxSeqNo : "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
     return seqNo;
-  }  
+  }
 
   long getLastSequenceNumber() {
-    return nextSeqNo.get()-1;
-  }  
+    return nextSeqNo.get() - 1;
+  }
 
-  /** Inserts a gap in the sequence numbers.  This is used by IW during flush or commit to ensure any in-flight threads get sequence numbers
-   *  inside the gap */
+  /**
+   * Inserts a gap in the sequence numbers. This is used by IW during flush or commit to ensure any
+   * in-flight threads get sequence numbers inside the gap
+   */
   void skipSequenceNumbers(long jump) {
     nextSeqNo.addAndGet(jump);
   }
 
-  /**
-   * Returns the maximum completed seq no for this queue.
-   */
+  /** Returns the maximum completed seq no for this queue. */
   long getMaxCompletedSeqNo() {
     if (startSeqNo < nextSeqNo.get()) {
       return getLastSequenceNumber();
@@ -564,20 +566,23 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     }
   }
 
-  // we use a static method to get this lambda since we previously introduced a memory leak since it would
-  // implicitly reference this.nextSeqNo which holds on to this del queue. see LUCENE-9478 for reference
+  // we use a static method to get this lambda since we previously introduced a memory leak since it
+  // would
+  // implicitly reference this.nextSeqNo which holds on to this del queue. see LUCENE-9478 for
+  // reference
   private static LongSupplier getPrevMaxSeqIdSupplier(AtomicLong nextSeqNo) {
     return () -> nextSeqNo.get() - 1;
   }
 
   /**
-   * Advances the queue to the next queue on flush. This carries over the the generation to the next queue and
-   * set the {@link #getMaxSeqNo()} based on the given maxNumPendingOps. This method can only be called once, subsequently
-   * the returned queue should be used.
-   * @param maxNumPendingOps the max number of possible concurrent operations that will execute on this queue after
-   *                         it was advanced. This corresponds the the number of DWPTs that own the current queue at the
-   *                         moment when this queue is advanced since each these DWPTs can increment the seqId after we
-   *                         advanced it.
+   * Advances the queue to the next queue on flush. This carries over the the generation to the next
+   * queue and set the {@link #getMaxSeqNo()} based on the given maxNumPendingOps. This method can
+   * only be called once, subsequently the returned queue should be used.
+   *
+   * @param maxNumPendingOps the max number of possible concurrent operations that will execute on
+   *     this queue after it was advanced. This corresponds the the number of DWPTs that own the
+   *     current queue at the moment when this queue is advanced since each these DWPTs can
+   *     increment the seqId after we advanced it.
    * @return a new queue as a successor of this queue.
    */
   synchronized DocumentsWriterDeleteQueue advanceQueue(int maxNumPendingOps) {
@@ -587,23 +592,24 @@ final class DocumentsWriterDeleteQueue implements Accountable, Closeable {
     advanced = true;
     long seqNo = getLastSequenceNumber() + maxNumPendingOps + 1;
     maxSeqNo = seqNo;
-    return new DocumentsWriterDeleteQueue(infoStream, generation + 1, seqNo + 1,
+    return new DocumentsWriterDeleteQueue(
+        infoStream,
+        generation + 1,
+        seqNo + 1,
         // don't pass ::getMaxCompletedSeqNo here b/c otherwise we keep an reference to this queue
         // and this will be a memory leak since the queues can't be GCed
         getPrevMaxSeqIdSupplier(nextSeqNo));
-
   }
 
   /**
-   * Returns the maximum sequence number for this queue. This value will change once this queue is advanced.
+   * Returns the maximum sequence number for this queue. This value will change once this queue is
+   * advanced.
    */
   long getMaxSeqNo() {
     return maxSeqNo;
   }
 
-  /**
-   * Returns <code>true</code> if it was advanced.
-   */
+  /** Returns <code>true</code> if it was advanced. */
   boolean isAdvanced() {
     return advanced;
   }

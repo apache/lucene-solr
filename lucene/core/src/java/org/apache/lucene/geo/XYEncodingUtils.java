@@ -18,7 +18,6 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.util.NumericUtils;
 
-
 /**
  * reusable cartesian geometry encoding methods
  *
@@ -30,19 +29,20 @@ public final class XYEncodingUtils {
   public static final double MAX_VAL_INCL = Float.MAX_VALUE;
 
   // No instance:
-  private XYEncodingUtils() {
-  }
+  private XYEncodingUtils() {}
 
   /** validates value is a number and finite */
   static float checkVal(float x) {
     if (Float.isFinite(x) == false) {
-      throw new IllegalArgumentException("invalid value " + x + "; must be between " + MIN_VAL_INCL + " and " + MAX_VAL_INCL);
+      throw new IllegalArgumentException(
+          "invalid value " + x + "; must be between " + MIN_VAL_INCL + " and " + MAX_VAL_INCL);
     }
     return x;
   }
 
   /**
    * Quantizes double (64 bit) values into 32 bits
+   *
    * @param x cartesian value
    * @return encoded value as a 32-bit {@code int}
    * @throws IllegalArgumentException if value is out of bounds
@@ -53,17 +53,19 @@ public final class XYEncodingUtils {
 
   /**
    * Turns quantized value from {@link #encode} back into a double.
+   *
    * @param encoded encoded value: 32-bit quantized value.
    * @return decoded value value.
    */
   public static float decode(int encoded) {
     float result = NumericUtils.sortableIntToFloat(encoded);
-    assert result >=  MIN_VAL_INCL && result <= MAX_VAL_INCL;
+    assert result >= MIN_VAL_INCL && result <= MAX_VAL_INCL;
     return result;
   }
 
   /**
    * Turns quantized value from byte array back into a double.
+   *
    * @param src byte array containing 4 bytes to decode at {@code offset}
    * @param offset offset into {@code src} to decode from.
    * @return decoded value.

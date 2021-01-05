@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -28,9 +27,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * This class handles accounting and applying pending deletes for live segment readers
- */
+/** This class handles accounting and applying pending deletes for live segment readers */
 class PendingDeletes {
   protected final SegmentCommitInfo info;
   // Read-only live docs, null until live docs are initialized or if all docs are alive
@@ -48,9 +45,12 @@ class PendingDeletes {
 
   PendingDeletes(SegmentCommitInfo info) {
     this(info, null, info.hasDeletions() == false);
-    // if we don't have deletions we can mark it as initialized since we might receive deletes on a segment
-    // without having a reader opened on it ie. after a merge when we apply the deletes that IW received while merging.
-    // For segments that were published we enforce a reader in the BufferedUpdatesStream.SegmentState ctor
+    // if we don't have deletions we can mark it as initialized since we might receive deletes on a
+    // segment
+    // without having a reader opened on it ie. after a merge when we apply the deletes that IW
+    // received while merging.
+    // For segments that were published we enforce a reader in the
+    // BufferedUpdatesStream.SegmentState ctor
   }
 
   PendingDeletes(SegmentCommitInfo info, Bits liveDocs, boolean liveDocsInitialized) {
@@ -59,7 +59,6 @@ class PendingDeletes {
     pendingDeleteCount = 0;
     this.liveDocsInitialized = liveDocsInitialized;
   }
-
 
   protected FixedBitSet getMutableBits() {
     // if we pull mutable bits but we haven't been initialized something is completely off.
@@ -81,16 +80,23 @@ class PendingDeletes {
     return writeableLiveDocs;
   }
 
-
   /**
-   * Marks a document as deleted in this segment and return true if a document got actually deleted or
-   * if the document was already deleted.
+   * Marks a document as deleted in this segment and return true if a document got actually deleted
+   * or if the document was already deleted.
    */
   boolean delete(int docID) throws IOException {
     assert info.info.maxDoc() > 0;
     FixedBitSet mutableBits = getMutableBits();
     assert mutableBits != null;
-    assert docID >= 0 && docID < mutableBits.length() : "out of bounds: docid=" + docID + " liveDocsLength=" + mutableBits.length() + " seg=" + info.info.name + " maxDoc=" + info.info.maxDoc();
+    assert docID >= 0 && docID < mutableBits.length()
+        : "out of bounds: docid="
+            + docID
+            + " liveDocsLength="
+            + mutableBits.length()
+            + " seg="
+            + info.info.name
+            + " maxDoc="
+            + info.info.maxDoc();
     final boolean didDelete = mutableBits.get(docID);
     if (didDelete) {
       mutableBits.clear(docID);
@@ -99,25 +105,19 @@ class PendingDeletes {
     return didDelete;
   }
 
-  /**
-   * Returns a snapshot of the current live docs.
-   */
+  /** Returns a snapshot of the current live docs. */
   Bits getLiveDocs() {
     // Prevent modifications to the returned live docs
     writeableLiveDocs = null;
     return liveDocs;
   }
 
-  /**
-   * Returns a snapshot of the hard live docs.
-   */
+  /** Returns a snapshot of the hard live docs. */
   Bits getHardLiveDocs() {
     return getLiveDocs();
   }
 
-  /**
-   * Returns the number of pending deletes that are not written to disk.
-   */
+  /** Returns the number of pending deletes that are not written to disk. */
   protected int numPendingDeletes() {
     return pendingDeleteCount;
   }
@@ -134,7 +134,8 @@ class PendingDeletes {
         // have any existing live docs
         assert pendingDeleteCount == 0 : "pendingDeleteCount: " + pendingDeleteCount;
         liveDocs = reader.getLiveDocs();
-        assert liveDocs == null || assertCheckLiveDocs(liveDocs, info.info.maxDoc(), info.getDelCount());
+        assert liveDocs == null
+            || assertCheckLiveDocs(liveDocs, info.info.maxDoc(), info.getDelCount());
       }
       liveDocsInitialized = true;
     }
@@ -148,13 +149,12 @@ class PendingDeletes {
         deletedCount++;
       }
     }
-    assert deletedCount == expectedDeleteCount : "deleted: " + deletedCount + " != expected: " + expectedDeleteCount;
+    assert deletedCount == expectedDeleteCount
+        : "deleted: " + deletedCount + " != expected: " + expectedDeleteCount;
     return true;
   }
 
-  /**
-   * Resets the pending docs
-   */
+  /** Resets the pending docs */
   void dropChanges() {
     pendingDeleteCount = 0;
   }
@@ -168,9 +168,7 @@ class PendingDeletes {
     return sb.toString();
   }
 
-  /**
-   * Writes the live docs to disk and returns <code>true</code> if any new docs were written.
-   */
+  /** Writes the live docs to disk and returns <code>true</code> if any new docs were written. */
   boolean writeLiveDocs(Directory dir) throws IOException {
     if (pendingDeleteCount == 0) {
       return false;
@@ -192,7 +190,9 @@ class PendingDeletes {
     boolean success = false;
     try {
       Codec codec = info.info.getCodec();
-      codec.liveDocsFormat().writeLiveDocs(liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
+      codec
+          .liveDocsFormat()
+          .writeLiveDocs(liveDocs, trackingDir, info, pendingDeleteCount, IOContext.DEFAULT);
       success = true;
     } finally {
       if (!success) {
@@ -217,7 +217,8 @@ class PendingDeletes {
   }
 
   /**
-   * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully deleted
+   * Returns <code>true</code> iff the segment represented by this {@link PendingDeletes} is fully
+   * deleted
    */
   boolean isFullyDeleted(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
     return getDelCount() == info.info.maxDoc();
@@ -225,34 +226,30 @@ class PendingDeletes {
 
   /**
    * Called for every field update for the given field at flush time
+   *
    * @param info the field info of the field that's updated
    * @param iterator the values to apply
    */
-  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator) throws IOException {
-  }
+  void onDocValuesUpdate(FieldInfo info, DocValuesFieldUpdates.Iterator iterator)
+      throws IOException {}
 
-  int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+  int numDeletesToMerge(MergePolicy policy, IOSupplier<CodecReader> readerIOSupplier)
+      throws IOException {
     return policy.numDeletesToMerge(info, getDelCount(), readerIOSupplier);
   }
 
-  /**
-   * Returns true if the given reader needs to be refreshed in order to see the latest deletes
-   */
+  /** Returns true if the given reader needs to be refreshed in order to see the latest deletes */
   final boolean needsRefresh(CodecReader reader) {
     return reader.getLiveDocs() != getLiveDocs() || reader.numDeletedDocs() != getDelCount();
   }
 
-  /**
-   * Returns the number of deleted docs in the segment.
-   */
+  /** Returns the number of deleted docs in the segment. */
   final int getDelCount() {
     int delCount = info.getDelCount() + info.getSoftDelCount() + numPendingDeletes();
     return delCount;
   }
 
-  /**
-   * Returns the number of live documents in this segment
-   */
+  /** Returns the number of live documents in this segment */
   final int numDocs() {
     return info.info.maxDoc() - getDelCount();
   }
@@ -262,7 +259,7 @@ class PendingDeletes {
     int count = 0;
     Bits liveDocs = getLiveDocs();
     if (liveDocs != null) {
-      for(int docID = 0; docID < info.info.maxDoc(); docID++) {
+      for (int docID = 0; docID < info.info.maxDoc(); docID++) {
         if (liveDocs.get(docID)) {
           count++;
         }
@@ -270,13 +267,30 @@ class PendingDeletes {
     } else {
       count = info.info.maxDoc();
     }
-    assert numDocs() == count: "info.maxDoc=" + info.info.maxDoc() + " info.getDelCount()=" + info.getDelCount() +
-        " info.getSoftDelCount()=" + info.getSoftDelCount() +
-        " pendingDeletes=" + toString() + " count=" + count + " numDocs: " + numDocs();
-    assert reader.numDocs() == numDocs() : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
-    assert reader.numDeletedDocs() <= info.info.maxDoc(): "delCount=" + reader.numDeletedDocs() + " info.maxDoc=" +
-        info.info.maxDoc() + " rld.pendingDeleteCount=" + numPendingDeletes() +
-        " info.getDelCount()=" + info.getDelCount();
+    assert numDocs() == count
+        : "info.maxDoc="
+            + info.info.maxDoc()
+            + " info.getDelCount()="
+            + info.getDelCount()
+            + " info.getSoftDelCount()="
+            + info.getSoftDelCount()
+            + " pendingDeletes="
+            + toString()
+            + " count="
+            + count
+            + " numDocs: "
+            + numDocs();
+    assert reader.numDocs() == numDocs()
+        : "reader.numDocs() = " + reader.numDocs() + " numDocs() " + numDocs();
+    assert reader.numDeletedDocs() <= info.info.maxDoc()
+        : "delCount="
+            + reader.numDeletedDocs()
+            + " info.maxDoc="
+            + info.info.maxDoc()
+            + " rld.pendingDeleteCount="
+            + numPendingDeletes()
+            + " info.getDelCount()="
+            + info.getDelCount();
     return true;
   }
 

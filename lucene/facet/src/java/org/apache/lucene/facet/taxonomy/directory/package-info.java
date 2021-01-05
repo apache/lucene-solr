@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Taxonomy index implementation using on top of a Directory.
- */
+/** Taxonomy index implementation using on top of a Directory. */
 package org.apache.lucene.facet.taxonomy.directory;

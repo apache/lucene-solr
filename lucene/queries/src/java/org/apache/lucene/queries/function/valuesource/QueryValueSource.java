@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -34,20 +33,27 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
-/**
- * <code>QueryValueSource</code> returns the relevance score of the query
- */
+/** <code>QueryValueSource</code> returns the relevance score of the query */
 public class QueryValueSource extends ValueSource {
   final Query q;
   final float defVal;
 
   public QueryValueSource(Query q, float defVal) {
+    super();
+    if (q == null) {
+      throw new IllegalArgumentException("query cannot be null");
+    }
     this.q = q;
     this.defVal = defVal;
   }
 
-  public Query getQuery() { return q; }
-  public float getDefaultValue() { return defVal; }
+  public Query getQuery() {
+    return q;
+  }
+
+  public float getDefaultValue() {
+    return defVal;
+  }
 
   @Override
   public String description() {
@@ -55,7 +61,8 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext)
+      throws IOException {
     return new QueryDocValues(this, readerContext, fcontext);
   }
 
@@ -67,8 +74,8 @@ public class QueryValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (QueryValueSource.class != o.getClass()) return false;
-    QueryValueSource other = (QueryValueSource)o;
-    return this.q.equals(other.q) && this.defVal==other.defVal;
+    QueryValueSource other = (QueryValueSource) o;
+    return this.q.equals(other.q) && this.defVal == other.defVal;
   }
 
   @Override
@@ -78,7 +85,6 @@ public class QueryValueSource extends ValueSource {
     context.put(this, w);
   }
 }
-
 
 class QueryDocValues extends FloatDocValues {
   final LeafReaderContext readerContext;
@@ -93,10 +99,11 @@ class QueryDocValues extends FloatDocValues {
   Boolean thisDocMatches;
 
   // the last document requested
-  int lastDocRequested=-1;
+  int lastDocRequested = -1;
 
-
-  public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map<Object, Object> fcontext) throws IOException {
+  public QueryDocValues(
+      QueryValueSource vs, LeafReaderContext readerContext, Map<Object, Object> fcontext)
+      throws IOException {
     super(vs);
 
     this.readerContext = readerContext;
@@ -104,19 +111,19 @@ class QueryDocValues extends FloatDocValues {
     this.q = vs.q;
     this.fcontext = fcontext;
 
-    Weight w = fcontext==null ? null : (Weight)fcontext.get(vs);
+    Weight w = fcontext == null ? null : (Weight) fcontext.get(vs);
     if (w == null) {
       IndexSearcher weightSearcher;
-      if(fcontext == null) {
+      if (fcontext == null) {
         weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
       } else {
-        weightSearcher = (IndexSearcher)fcontext.get("searcher");
+        weightSearcher = (IndexSearcher) fcontext.get("searcher");
         if (weightSearcher == null) {
           weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
         }
       }
       vs.createWeight(fcontext, weightSearcher);
-      w = (Weight)fcontext.get(vs);
+      w = (Weight) fcontext.get(vs);
     }
     weight = w;
   }
@@ -126,14 +133,15 @@ class QueryDocValues extends FloatDocValues {
     try {
       return exists(doc) ? scorer.score() : defVal;
     } catch (IOException e) {
-      throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+      throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
     }
   }
 
   @Override
   public boolean exists(int doc) {
     if (doc < lastDocRequested) {
-      throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocRequested + " vs docID=" + doc);
+      throw new IllegalArgumentException(
+          "docs were sent out-of-order: lastDocID=" + lastDocRequested + " vs docID=" + doc);
     }
     lastDocRequested = doc;
 
@@ -158,9 +166,11 @@ class QueryDocValues extends FloatDocValues {
           thisDocMatches = tpi == null || tpi.matches();
         }
         return thisDocMatches;
-      } else return false;
+      } else {
+        return false;
+      }
     } catch (IOException e) {
-      throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+      throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
     }
   }
 
@@ -195,7 +205,7 @@ class QueryDocValues extends FloatDocValues {
             mval.exists = false;
           }
         } catch (IOException e) {
-          throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+          throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
         }
       }
     };

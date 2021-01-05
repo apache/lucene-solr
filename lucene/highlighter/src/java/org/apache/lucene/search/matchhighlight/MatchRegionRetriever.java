@@ -16,6 +16,18 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.PrimitiveIterator;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Predicate;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
@@ -32,22 +44,9 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.PrimitiveIterator;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.function.Predicate;
-
 /**
- * Utility class to compute a list of "match regions" for a given query, searcher and
- * document(s) using {@link Matches} API.
+ * Utility class to compute a list of "match regions" for a given query, searcher and document(s)
+ * using {@link Matches} API.
  */
 public class MatchRegionRetriever {
   private final List<LeafReaderContext> leaves;
@@ -58,20 +57,21 @@ public class MatchRegionRetriever {
 
   /**
    * A callback for accepting a single document (and its associated leaf reader, leaf document ID)
-   * and its match offset ranges, as indicated by the {@link Matches} interface retrieved for
-   * the query.
+   * and its match offset ranges, as indicated by the {@link Matches} interface retrieved for the
+   * query.
    */
   @FunctionalInterface
   public interface MatchOffsetsConsumer {
-    void accept(int docId, LeafReader leafReader, int leafDocId, Map<String, List<OffsetRange>> hits)
+    void accept(
+        int docId, LeafReader leafReader, int leafDocId, Map<String, List<OffsetRange>> hits)
         throws IOException;
   }
 
   /**
-   * An abstraction that provides document values for a given field. Default implementation
-   * in {@link DocumentFieldValueProvider} just reaches to a preloaded {@link Document}. It is
-   * possible to write a more efficient implementation on top of a reusable character buffer
-   * (that reuses the buffer while retrieving hit regions for documents).
+   * An abstraction that provides document values for a given field. Default implementation in
+   * {@link DocumentFieldValueProvider} just reaches to a preloaded {@link Document}. It is possible
+   * to write a more efficient implementation on top of a reusable character buffer (that reuses the
+   * buffer while retrieving hit regions for documents).
    */
   @FunctionalInterface
   public interface FieldValueProvider {
@@ -81,23 +81,26 @@ public class MatchRegionRetriever {
   /**
    * A constructor with the default offset strategy supplier.
    *
-   * @param analyzer An analyzer that may be used to reprocess (retokenize) document fields
-   *                 in the absence of position offsets in the index. Note that the analyzer must return
-   *                 tokens (positions and offsets) identical to the ones stored in the index.
+   * @param analyzer An analyzer that may be used to reprocess (retokenize) document fields in the
+   *     absence of position offsets in the index. Note that the analyzer must return tokens
+   *     (positions and offsets) identical to the ones stored in the index.
    */
-  public MatchRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer) throws IOException {
+  public MatchRegionRetriever(IndexSearcher searcher, Query query, Analyzer analyzer)
+      throws IOException {
     this(searcher, query, computeOffsetRetrievalStrategies(searcher.getIndexReader(), analyzer));
   }
 
   /**
    * @param searcher Index searcher to be used for retrieving matches.
    * @param query The query for which matches should be retrieved. The query should be rewritten
-   *              against the provided searcher.
-   * @param fieldOffsetStrategySupplier A custom supplier of per-field {@link OffsetsRetrievalStrategy}
-   *                                    instances.
+   *     against the provided searcher.
+   * @param fieldOffsetStrategySupplier A custom supplier of per-field {@link
+   *     OffsetsRetrievalStrategy} instances.
    */
-  public MatchRegionRetriever(IndexSearcher searcher, Query query,
-                              OffsetsRetrievalStrategySupplier fieldOffsetStrategySupplier)
+  public MatchRegionRetriever(
+      IndexSearcher searcher,
+      Query query,
+      OffsetsRetrievalStrategySupplier fieldOffsetStrategySupplier)
       throws IOException {
     leaves = searcher.getIndexReader().leaves();
     assert checkOrderConsistency(leaves);
@@ -138,19 +141,19 @@ public class MatchRegionRetriever {
     preloadFields.retainAll(affectedFields);
   }
 
-  public void highlightDocuments(TopDocs topDocs, MatchOffsetsConsumer consumer) throws IOException {
-    highlightDocuments(Arrays.stream(topDocs.scoreDocs)
-        .mapToInt(scoreDoc -> scoreDoc.doc)
-        .sorted()
-        .iterator(), consumer);
+  public void highlightDocuments(TopDocs topDocs, MatchOffsetsConsumer consumer)
+      throws IOException {
+    highlightDocuments(
+        Arrays.stream(topDocs.scoreDocs).mapToInt(scoreDoc -> scoreDoc.doc).sorted().iterator(),
+        consumer);
   }
 
   /**
    * Low-level, high-efficiency method for highlighting large numbers of documents at once in a
    * streaming fashion.
    *
-   * @param docIds A stream of <em>sorted</em> document identifiers for which hit ranges should
-   *               be returned.
+   * @param docIds A stream of <em>sorted</em> document identifiers for which hit ranges should be
+   *     returned.
    * @param consumer A streaming consumer for document-hits pairs.
    */
   public void highlightDocuments(PrimitiveIterator.OfInt docIds, MatchOffsetsConsumer consumer)
@@ -187,7 +190,8 @@ public class MatchRegionRetriever {
       }
 
       highlights.clear();
-      highlightDocument(currentContext, contextRelativeDocId, documentSupplier, (field) -> true, highlights);
+      highlightDocument(
+          currentContext, contextRelativeDocId, documentSupplier, (field) -> true, highlights);
       consumer.accept(docId, currentContext.reader(), contextRelativeDocId, highlights);
     }
   }
@@ -212,7 +216,8 @@ public class MatchRegionRetriever {
       if (acceptField.test(field)) {
         MatchesIterator matchesIterator = matches.getMatches(field);
         if (matchesIterator == null) {
-          // No matches on this field, even though the field was part of the query. This may be possible
+          // No matches on this field, even though the field was part of the query. This may be
+          // possible
           // with complex queries that source non-text fields (have no "hit regions" in any textual
           // representation). Skip.
         } else {
@@ -241,8 +246,8 @@ public class MatchRegionRetriever {
   }
 
   /**
-   * Compute default strategies for retrieving offsets from {@link MatchesIterator}
-   * instances for a set of given fields.
+   * Compute default strategies for retrieving offsets from {@link MatchesIterator} instances for a
+   * set of given fields.
    */
   public static OffsetsRetrievalStrategySupplier computeOffsetRetrievalStrategies(
       IndexReader reader, Analyzer analyzer) {
@@ -274,22 +279,18 @@ public class MatchRegionRetriever {
           return new OffsetsFromTokens(field, analyzer);
 
         default:
-          return
-              (matchesIterator, doc) -> {
-                throw new IOException(
-                    "Field is indexed without positions and/or offsets: "
-                        + field
-                        + ", "
-                        + fieldInfo.getIndexOptions());
-              };
+          return (matchesIterator, doc) -> {
+            throw new IOException(
+                "Field is indexed without positions and/or offsets: "
+                    + field
+                    + ", "
+                    + fieldInfo.getIndexOptions());
+          };
       }
     };
   }
 
-  /**
-   * Implements {@link FieldValueProvider} wrapping a preloaded
-   * {@link Document}.
-   */
+  /** Implements {@link FieldValueProvider} wrapping a preloaded {@link Document}. */
   private static final class DocumentFieldValueProvider implements FieldValueProvider {
     private final Document doc;
 

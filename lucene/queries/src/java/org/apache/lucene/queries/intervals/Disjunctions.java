@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.search.IndexSearcher;
 
 final class Disjunctions {
@@ -32,8 +31,8 @@ final class Disjunctions {
 
   // eg FUNC(a, b, OR(c, "d e")) => [FUNC(a, b, c), FUNC(a, b, "d e")]
 
-  public static List<IntervalsSource> pullUp(List<IntervalsSource> sources,
-                                             Function<List<IntervalsSource>, IntervalsSource> function) {
+  public static List<IntervalsSource> pullUp(
+      List<IntervalsSource> sources, Function<List<IntervalsSource>, IntervalsSource> function) {
 
     List<List<IntervalsSource>> rewritten = new ArrayList<>();
     rewritten.add(new ArrayList<>());
@@ -41,8 +40,7 @@ final class Disjunctions {
       List<IntervalsSource> disjuncts = splitDisjunctions(source);
       if (disjuncts.size() == 1) {
         rewritten.forEach(l -> l.add(disjuncts.get(0)));
-      }
-      else {
+      } else {
         if (rewritten.size() * disjuncts.size() > IndexSearcher.getMaxClauseCount()) {
           throw new IllegalArgumentException("Too many disjunctions to expand");
         }
@@ -66,7 +64,8 @@ final class Disjunctions {
 
   // Given a source containing disjunctions, and a mapping function,
   // pulls the disjunctions to the top of the source tree
-  public static List<IntervalsSource> pullUp(IntervalsSource source, Function<IntervalsSource, IntervalsSource> function) {
+  public static List<IntervalsSource> pullUp(
+      IntervalsSource source, Function<IntervalsSource, IntervalsSource> function) {
     List<IntervalsSource> disjuncts = splitDisjunctions(source);
     if (disjuncts.size() == 1) {
       return Collections.singletonList(function.apply(disjuncts.get(0)));
@@ -84,8 +83,7 @@ final class Disjunctions {
     for (IntervalsSource disj : source.pullUpDisjunctions()) {
       if (disj.minExtent() == 1) {
         singletons.add(disj);
-      }
-      else {
+      } else {
         nonSingletons.add(disj);
       }
     }
@@ -96,5 +94,4 @@ final class Disjunctions {
     split.addAll(nonSingletons);
     return split;
   }
-
 }

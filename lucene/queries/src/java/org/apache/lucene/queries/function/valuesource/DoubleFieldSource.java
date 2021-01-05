@@ -18,20 +18,19 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
-import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
 /**
- * Obtains double field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and makes
- * those values available as other numeric types, casting as needed.
+ * Obtains double field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues}
+ * and makes those values available as other numeric types, casting as needed.
  */
 public class DoubleFieldSource extends FieldCacheSource {
 
@@ -48,9 +47,10 @@ public class DoubleFieldSource extends FieldCacheSource {
   public SortField getSortField(boolean reverse) {
     return new SortField(field, Type.DOUBLE, reverse);
   }
-  
+
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
 
     final NumericDocValues values = getNumericDocValues(context, readerContext);
 
@@ -59,7 +59,8 @@ public class DoubleFieldSource extends FieldCacheSource {
 
       private double getValueForDoc(int doc) throws IOException {
         if (doc < lastDocID) {
-          throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          throw new IllegalArgumentException(
+              "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
         }
         lastDocID = doc;
         int curDocID = values.docID();
@@ -72,7 +73,7 @@ public class DoubleFieldSource extends FieldCacheSource {
           return 0.0;
         }
       }
-      
+
       @Override
       public double doubleVal(int doc) throws IOException {
         return getValueForDoc(doc);
@@ -104,7 +105,8 @@ public class DoubleFieldSource extends FieldCacheSource {
     };
   }
 
-  protected NumericDocValues getNumericDocValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  protected NumericDocValues getNumericDocValues(
+      Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     return DocValues.getNumeric(readerContext.reader(), field);
   }
 

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Sources for benchmark inputs: documents and queries.
- */
+/** Sources for benchmark inputs: documents and queries. */
 package org.apache.lucene.benchmark.byTask.feeds;

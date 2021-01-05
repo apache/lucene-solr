@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
@@ -36,26 +34,23 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
 /**
- * Information about a segment such as its name, directory, and files related
- * to the segment.
+ * Information about a segment such as its name, directory, and files related to the segment.
  *
  * @lucene.experimental
  */
 public final class SegmentInfo {
-  
-  // TODO: remove these from this class, for now this is the representation
-  /** Used by some member fields to mean not present (e.g.,
-   *  norms, deletions). */
-  public static final int NO = -1;          // e.g. no norms; no deletes;
 
-  /** Used by some member fields to mean present (e.g.,
-   *  norms, deletions). */
-  public static final int YES = 1;          // e.g. have norms; have deletes;
+  // TODO: remove these from this class, for now this is the representation
+  /** Used by some member fields to mean not present (e.g., norms, deletions). */
+  public static final int NO = -1; // e.g. no norms; no deletes;
+
+  /** Used by some member fields to mean present (e.g., norms, deletions). */
+  public static final int YES = 1; // e.g. have norms; have deletes;
 
   /** Unique segment name in the directory. */
   public final String name;
 
-  private int maxDoc;         // number of docs in seg
+  private int maxDoc; // number of docs in seg
 
   /** Where this segment resides. */
   public final Directory dir;
@@ -67,9 +62,9 @@ public final class SegmentInfo {
 
   private Codec codec;
 
-  private Map<String,String> diagnostics;
-  
-  private Map<String,String> attributes;
+  private Map<String, String> diagnostics;
+
+  private Map<String, String> attributes;
 
   private final Sort indexSort;
 
@@ -90,20 +85,28 @@ public final class SegmentInfo {
     this.diagnostics = Map.copyOf(Objects.requireNonNull(diagnostics));
   }
 
-  /** Returns diagnostics saved into the segment when it was
-   *  written. The map is immutable. */
+  /** Returns diagnostics saved into the segment when it was written. The map is immutable. */
   public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
 
   /**
    * Construct a new complete SegmentInfo instance from input.
-   * <p>Note: this is public only to allow access from
-   * the codecs package.</p>
+   *
+   * <p>Note: this is public only to allow access from the codecs package.
    */
-  public SegmentInfo(Directory dir, Version version, Version minVersion, String name, int maxDoc,
-                     boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
-                     byte[] id, Map<String,String> attributes, Sort indexSort) {
+  public SegmentInfo(
+      Directory dir,
+      Version version,
+      Version minVersion,
+      String name,
+      int maxDoc,
+      boolean isCompoundFile,
+      Codec codec,
+      Map<String, String> diagnostics,
+      byte[] id,
+      Map<String, String> attributes,
+      Sort indexSort) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = Objects.requireNonNull(dir);
     this.version = Objects.requireNonNull(version);
@@ -124,17 +127,13 @@ public final class SegmentInfo {
   /**
    * Mark whether this segment is stored as a compound file.
    *
-   * @param isCompoundFile true if this is a compound file;
-   * else, false
+   * @param isCompoundFile true if this is a compound file; else, false
    */
   void setUseCompoundFile(boolean isCompoundFile) {
     this.isCompoundFile = isCompoundFile;
   }
-  
-  /**
-   * Returns true if this segment is stored as a compound
-   * file; else, false.
-   */
+
+  /** Returns true if this segment is stored as a compound file; else, false. */
   public boolean getUseCompoundFile() {
     return isCompoundFile;
   }
@@ -153,8 +152,7 @@ public final class SegmentInfo {
     return codec;
   }
 
-  /** Returns number of documents in this segment (deletions
-   *  are not taken into account). */
+  /** Returns number of documents in this segment (deletions are not taken into account). */
   public int maxDoc() {
     if (this.maxDoc == -1) {
       throw new IllegalStateException("maxDoc isn't set yet");
@@ -165,7 +163,8 @@ public final class SegmentInfo {
   // NOTE: leave package private
   void setMaxDoc(int maxDoc) {
     if (this.maxDoc != -1) {
-      throw new IllegalStateException("maxDoc was already set: this.maxDoc=" + this.maxDoc + " vs maxDoc=" + maxDoc);
+      throw new IllegalStateException(
+          "maxDoc was already set: this.maxDoc=" + this.maxDoc + " vs maxDoc=" + maxDoc);
     }
     this.maxDoc = maxDoc;
   }
@@ -173,7 +172,8 @@ public final class SegmentInfo {
   /** Return all files referenced by this SegmentInfo. */
   public Set<String> files() {
     if (setFiles == null) {
-      throw new IllegalStateException("files were not computed yet; segment=" + name + " maxDoc=" + maxDoc);
+      throw new IllegalStateException(
+          "files were not computed yet; segment=" + name + " maxDoc=" + maxDoc);
     }
     return Collections.unmodifiableSet(setFiles);
   }
@@ -183,16 +183,14 @@ public final class SegmentInfo {
     return toString(0);
   }
 
-  /** Used for debugging.  Format may suddenly change.
+  /**
+   * Used for debugging. Format may suddenly change.
    *
-   *  <p>Current format looks like
-   *  <code>_a(3.1):c45/4:[sorter=&lt;long: "timestamp"&gt;!]</code>, which means
-   *  the segment's name is <code>_a</code>; it was created with Lucene 3.1 (or
-   *  '?' if it's unknown); it's using compound file
-   *  format (would be <code>C</code> if not compound); it
-   *  has 45 documents; it has 4 deletions (this part is
-   *  left off when there are no deletions); it is sorted by the timestamp field
-   *  in descending order (this part is omitted for unsorted segments).</p>
+   * <p>Current format looks like <code>_a(3.1):c45/4:[sorter=&lt;long: "timestamp"&gt;!]</code>,
+   * which means the segment's name is <code>_a</code>; it was created with Lucene 3.1 (or '?' if
+   * it's unknown); it's using compound file format (would be <code>C</code> if not compound); it
+   * has 45 documents; it has 4 deletions (this part is left off when there are no deletions); it is
+   * sorted by the timestamp field in descending order (this part is omitted for unsorted segments).
    */
   public String toString(int delCount) {
     StringBuilder s = new StringBuilder();
@@ -227,8 +225,7 @@ public final class SegmentInfo {
     return s.toString();
   }
 
-  /** We consider another SegmentInfo instance equal if it
-   *  has the same dir and same name. */
+  /** We consider another SegmentInfo instance equal if it has the same dir and same name. */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
@@ -245,15 +242,14 @@ public final class SegmentInfo {
     return dir.hashCode() + name.hashCode();
   }
 
-  /** Returns the version of the code which wrote the segment.
-   */
+  /** Returns the version of the code which wrote the segment. */
   public Version getVersion() {
     return version;
   }
 
   /**
-   * Return the minimum Lucene version that contributed documents to this
-   * segment, or {@code null} if it is unknown.
+   * Return the minimum Lucene version that contributed documents to this segment, or {@code null}
+   * if it is unknown.
    */
   public Version getMinVersion() {
     return minVersion;
@@ -272,8 +268,7 @@ public final class SegmentInfo {
     addFiles(files);
   }
 
-  /** Add these files to the set of files written for this
-   *  segment. */
+  /** Add these files to the set of files written for this segment. */
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
     for (String f : files) {
@@ -281,70 +276,74 @@ public final class SegmentInfo {
     }
   }
 
-  /** Add this file to the set of files written for this
-   *  segment. */
+  /** Add this file to the set of files written for this segment. */
   public void addFile(String file) {
     checkFileNames(Collections.singleton(file));
     setFiles.add(namedForThisSegment(file));
   }
-  
+
   private void checkFileNames(Collection<String> files) {
     Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
     for (String file : files) {
       m.reset(file);
       if (!m.matches()) {
-        throw new IllegalArgumentException("invalid codec filename '" + file + "', must match: " + IndexFileNames.CODEC_FILE_PATTERN.pattern());
+        throw new IllegalArgumentException(
+            "invalid codec filename '"
+                + file
+                + "', must match: "
+                + IndexFileNames.CODEC_FILE_PATTERN.pattern());
       }
       if (file.toLowerCase(Locale.ROOT).endsWith(".tmp")) {
-        throw new IllegalArgumentException("invalid codec filename '" + file + "', cannot end with .tmp extension");
+        throw new IllegalArgumentException(
+            "invalid codec filename '" + file + "', cannot end with .tmp extension");
       }
     }
   }
-  
-  /** 
-   * strips any segment name from the file, naming it with this segment
-   * this is because "segment names" can change, e.g. by addIndexes(Dir)
+
+  /**
+   * strips any segment name from the file, naming it with this segment this is because "segment
+   * names" can change, e.g. by addIndexes(Dir)
    */
   String namedForThisSegment(String file) {
     return name + IndexFileNames.stripSegmentName(file);
   }
-  
-  /**
-   * Get a codec attribute value, or null if it does not exist
-   */
+
+  /** Get a codec attribute value, or null if it does not exist */
   public String getAttribute(String key) {
     return attributes.get(key);
   }
-  
+
   /**
    * Puts a codec attribute value.
-   * <p>
-   * This is a key-value mapping for the field that the codec can use to store
-   * additional metadata, and will be available to the codec when reading the
-   * segment via {@link #getAttribute(String)}
-   * <p>
-   * If a value already exists for the field, it will be replaced with the new
-   * value.
-   * This method make a copy on write for every attribute change.
+   *
+   * <p>This is a key-value mapping for the field that the codec can use to store additional
+   * metadata, and will be available to the codec when reading the segment via {@link
+   * #getAttribute(String)}
+   *
+   * <p>If a value already exists for the field, it will be replaced with the new value. This method
+   * make a copy on write for every attribute change.
    */
   public String putAttribute(String key, String value) {
     HashMap<String, String> newMap = new HashMap<>(attributes);
     String oldValue = newMap.put(key, value);
-    // we make a full copy of this to prevent concurrent modifications to this in the toString method
+    // we make a full copy of this to prevent concurrent modifications to this in the toString
+    // method
     // this method is only called when a segment is written but the SegmentInfo might be exposed
     // in running merges which can cause ConcurrentModificationExceptions if we modify / share
     // the same instance. Technically that's an unsafe publication but IW design would require
-    // significant changes to prevent this. On the other hand, since we expose the map in getAttributes()
+    // significant changes to prevent this. On the other hand, since we expose the map in
+    // getAttributes()
     // it's a good design to make it unmodifiable anyway.
     attributes = Collections.unmodifiableMap(newMap);
     return oldValue;
   }
-  
+
   /**
    * Returns the internal codec attributes map.
+   *
    * @return internal codec attributes map.
    */
-  public Map<String,String> getAttributes() {
+  public Map<String, String> getAttributes() {
     return attributes;
   }
 
@@ -353,4 +352,3 @@ public final class SegmentInfo {
     return indexSort;
   }
 }
-

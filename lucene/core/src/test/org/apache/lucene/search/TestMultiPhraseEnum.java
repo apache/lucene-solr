@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -33,84 +31,88 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** simple tests for unionpostingsenum */
 public class TestMultiPhraseEnum extends LuceneTestCase {
-  
-  /** Tests union on one document  */
+
+  /** Tests union on one document */
   public void testOneDocument() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, iwc);
-    
+
     Document doc = new Document();
     doc.add(new TextField("field", "foo bar", Field.Store.NO));
     writer.addDocument(doc);
-    
+
     DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
-    PostingsEnum p1 = getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
-    PostingsEnum p2 = getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum p1 =
+        getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
+    PostingsEnum p2 =
+        getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
     PostingsEnum union = new MultiPhraseQuery.UnionPostingsEnum(Arrays.asList(p1, p2));
-    
+
     assertEquals(-1, union.docID());
-    
+
     assertEquals(0, union.nextDoc());
     assertEquals(2, union.freq());
     assertEquals(0, union.nextPosition());
     assertEquals(1, union.nextPosition());
-    
+
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, union.nextDoc());
-    
+
     ir.close();
     dir.close();
   }
-  
-  /** Tests union on a few documents  */
+
+  /** Tests union on a few documents */
   public void testSomeDocuments() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter writer = new IndexWriter(dir, iwc);
-    
+
     Document doc = new Document();
     doc.add(new TextField("field", "foo", Field.Store.NO));
     writer.addDocument(doc);
-    
+
     writer.addDocument(new Document());
-    
+
     doc = new Document();
     doc.add(new TextField("field", "foo bar", Field.Store.NO));
     writer.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(new TextField("field", "bar", Field.Store.NO));
     writer.addDocument(doc);
-    
+
     writer.forceMerge(1);
     DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
-    PostingsEnum p1 = getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
-    PostingsEnum p2 = getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
+    PostingsEnum p1 =
+        getOnlyLeafReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
+    PostingsEnum p2 =
+        getOnlyLeafReader(ir).postings(new Term("field", "bar"), PostingsEnum.POSITIONS);
     PostingsEnum union = new MultiPhraseQuery.UnionPostingsEnum(Arrays.asList(p1, p2));
-    
+
     assertEquals(-1, union.docID());
-    
+
     assertEquals(0, union.nextDoc());
     assertEquals(1, union.freq());
     assertEquals(0, union.nextPosition());
-    
+
     assertEquals(2, union.nextDoc());
     assertEquals(2, union.freq());
     assertEquals(0, union.nextPosition());
     assertEquals(1, union.nextPosition());
-    
+
     assertEquals(3, union.nextDoc());
     assertEquals(1, union.freq());
     assertEquals(0, union.nextPosition());
-    
+
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, union.nextDoc());
-    
+
     ir.close();
     dir.close();
   }

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -30,40 +28,39 @@ import org.junit.Test;
 
 public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
   public void testFilterWithPosIncr() throws Exception {
-    TokenStream stream = whitespaceMockTokenizer("short toolong evenmuchlongertext a ab toolong foo");
+    TokenStream stream =
+        whitespaceMockTokenizer("short toolong evenmuchlongertext a ab toolong foo");
     CodepointCountFilter filter = new CodepointCountFilter(stream, 2, 6);
-    assertTokenStreamContents(filter,
-      new String[]{"short", "ab", "foo"},
-      new int[]{1, 4, 2}
-    );
+    assertTokenStreamContents(filter, new String[] {"short", "ab", "foo"}, new int[] {1, 4, 2});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new CodepointCountFilter(tokenizer, 0, 5));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new CodepointCountFilter(tokenizer, 0, 5));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
-  
+
   public void testRandomStrings() throws IOException {
     for (int i = 0; i < 10000; i++) {
       String text = TestUtil.randomUnicodeString(random(), 100);
       int min = TestUtil.nextInt(random(), 0, 100);
       int max = TestUtil.nextInt(random(), 0, 100);
       int count = text.codePointCount(0, text.length());
-      if(min>max){
+      if (min > max) {
         int temp = min;
         min = max;
         max = temp;
       }
       boolean expected = count >= min && count <= max;
       TokenStream stream = new KeywordTokenizer();
-      ((Tokenizer)stream).setReader(new StringReader(text));
+      ((Tokenizer) stream).setReader(new StringReader(text));
       stream = new CodepointCountFilter(stream, min, max);
       stream.reset();
       assertEquals(expected, stream.incrementToken());
@@ -72,9 +69,7 @@ public class TestCodepointCountFilter extends BaseTokenStreamTestCase {
     }
   }
 
-  /**
-   * checking the validity of constructor arguments
-   */
+  /** checking the validity of constructor arguments */
   @Test(expected = IllegalArgumentException.class)
   public void testIllegalArguments() throws Exception {
     new CodepointCountFilter(whitespaceMockTokenizer("accept only valid arguments"), 4, 1);

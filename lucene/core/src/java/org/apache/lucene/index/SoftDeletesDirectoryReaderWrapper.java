@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -34,7 +33,9 @@ import org.apache.lucene.util.FixedBitSet;
 
 /**
  * This reader filters out documents that have a doc values value in the given field and treat these
- * documents as soft deleted. Hard deleted documents will also be filtered out in the life docs of this reader.
+ * documents as soft deleted. Hard deleted documents will also be filtered out in the life docs of
+ * this reader.
+ *
  * @see IndexWriterConfig#setSoftDeletesField(String)
  * @see IndexWriter#softUpdateDocument(Term, Iterable, Field...)
  * @see SoftDeletesRetentionMergePolicy
@@ -44,6 +45,7 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
   private final CacheHelper readerCacheHelper;
   /**
    * Creates a new soft deletes wrapper.
+   *
    * @param in the incoming directory reader
    * @param field the soft deletes field
    */
@@ -51,10 +53,14 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     this(in, new SoftDeletesSubReaderWrapper(Collections.emptyMap(), field));
   }
 
-  private SoftDeletesDirectoryReaderWrapper(DirectoryReader in, SoftDeletesSubReaderWrapper wrapper) throws IOException {
+  private SoftDeletesDirectoryReaderWrapper(DirectoryReader in, SoftDeletesSubReaderWrapper wrapper)
+      throws IOException {
     super(in, wrapper);
     this.field = wrapper.field;
-    readerCacheHelper = in.getReaderCacheHelper() == null ? null : new DelegatingCacheHelper(in.getReaderCacheHelper());
+    readerCacheHelper =
+        in.getReaderCacheHelper() == null
+            ? null
+            : new DelegatingCacheHelper(in.getReaderCacheHelper());
   }
 
   @Override
@@ -63,13 +69,16 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     for (LeafReader reader : getSequentialSubReaders()) {
       // we try to reuse the life docs instances here if the reader cache key didn't change
       if (reader instanceof SoftDeletesFilterLeafReader && reader.getReaderCacheHelper() != null) {
-        readerCache.put(((SoftDeletesFilterLeafReader) reader).reader.getReaderCacheHelper().getKey(), reader);
-      } else if (reader instanceof SoftDeletesFilterCodecReader && reader.getReaderCacheHelper() != null) {
-        readerCache.put(((SoftDeletesFilterCodecReader) reader).reader.getReaderCacheHelper().getKey(), reader);
+        readerCache.put(
+            ((SoftDeletesFilterLeafReader) reader).reader.getReaderCacheHelper().getKey(), reader);
+      } else if (reader instanceof SoftDeletesFilterCodecReader
+          && reader.getReaderCacheHelper() != null) {
+        readerCache.put(
+            ((SoftDeletesFilterCodecReader) reader).reader.getReaderCacheHelper().getKey(), reader);
       }
-
     }
-    return new SoftDeletesDirectoryReaderWrapper(in, new SoftDeletesSubReaderWrapper(readerCache, field));
+    return new SoftDeletesDirectoryReaderWrapper(
+        in, new SoftDeletesSubReaderWrapper(readerCache, field));
   }
 
   @Override
@@ -104,7 +113,8 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     public LeafReader wrap(LeafReader reader) {
       CacheHelper readerCacheHelper = reader.getReaderCacheHelper();
       if (readerCacheHelper != null && mapping.containsKey(readerCacheHelper.getKey())) {
-        // if the reader cache helper didn't change and we have it in the cache don't bother creating a new one
+        // if the reader cache helper didn't change and we have it in the cache don't bother
+        // creating a new one
         return mapping.get(readerCacheHelper.getKey());
       }
       try {
@@ -116,43 +126,57 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
   }
 
   static LeafReader wrap(LeafReader reader, String field) throws IOException {
-      DocIdSetIterator iterator = DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(field, reader);
-      if (iterator == null) {
-        return reader;
-      }
-      Bits liveDocs = reader.getLiveDocs();
-      final FixedBitSet bits;
-      if (liveDocs != null) {
-        bits = FixedBitSet.copyOf(liveDocs);
-      } else {
-        bits = new FixedBitSet(reader.maxDoc());
-        bits.set(0, reader.maxDoc());
-      }
-      int numSoftDeletes = PendingSoftDeletes.applySoftDeletes(iterator, bits);
-      int numDeletes = reader.numDeletedDocs() + numSoftDeletes;
-      int numDocs = reader.maxDoc() - numDeletes;
-      assert assertDocCounts(numDocs, numSoftDeletes, reader);
-      return reader instanceof CodecReader ? new SoftDeletesFilterCodecReader((CodecReader) reader, bits, numDocs)
-          : new SoftDeletesFilterLeafReader(reader, bits, numDocs);
+    DocIdSetIterator iterator =
+        DocValuesFieldExistsQuery.getDocValuesDocIdSetIterator(field, reader);
+    if (iterator == null) {
+      return reader;
+    }
+    Bits liveDocs = reader.getLiveDocs();
+    final FixedBitSet bits;
+    if (liveDocs != null) {
+      bits = FixedBitSet.copyOf(liveDocs);
+    } else {
+      bits = new FixedBitSet(reader.maxDoc());
+      bits.set(0, reader.maxDoc());
+    }
+    int numSoftDeletes = PendingSoftDeletes.applySoftDeletes(iterator, bits);
+    int numDeletes = reader.numDeletedDocs() + numSoftDeletes;
+    int numDocs = reader.maxDoc() - numDeletes;
+    assert assertDocCounts(numDocs, numSoftDeletes, reader);
+    return reader instanceof CodecReader
+        ? new SoftDeletesFilterCodecReader((CodecReader) reader, bits, numDocs)
+        : new SoftDeletesFilterLeafReader(reader, bits, numDocs);
   }
 
-  private static boolean assertDocCounts(int expectedNumDocs, int numSoftDeletes, LeafReader reader) {
+  private static boolean assertDocCounts(
+      int expectedNumDocs, int numSoftDeletes, LeafReader reader) {
     if (reader instanceof SegmentReader) {
       SegmentReader segmentReader = (SegmentReader) reader;
       SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
       if (segmentReader.isNRT == false) {
-        int numDocs = segmentInfo.info.maxDoc() - segmentInfo.getSoftDelCount() - segmentInfo.getDelCount();
-        assert numDocs == expectedNumDocs : "numDocs: " + numDocs + " expected: " + expectedNumDocs
-            + " maxDoc: " + segmentInfo.info.maxDoc()
-            + " getDelCount: " + segmentInfo.getDelCount()
-            + " getSoftDelCount: " + segmentInfo.getSoftDelCount()
-            + " numSoftDeletes: " + numSoftDeletes
-            + " reader.numDeletedDocs(): " + reader.numDeletedDocs();
+        int numDocs =
+            segmentInfo.info.maxDoc() - segmentInfo.getSoftDelCount() - segmentInfo.getDelCount();
+        assert numDocs == expectedNumDocs
+            : "numDocs: "
+                + numDocs
+                + " expected: "
+                + expectedNumDocs
+                + " maxDoc: "
+                + segmentInfo.info.maxDoc()
+                + " getDelCount: "
+                + segmentInfo.getDelCount()
+                + " getSoftDelCount: "
+                + segmentInfo.getSoftDelCount()
+                + " numSoftDeletes: "
+                + numSoftDeletes
+                + " reader.numDeletedDocs(): "
+                + reader.numDeletedDocs();
       }
-      // in the NRT case we don't have accurate numbers for getDelCount and getSoftDelCount since they might not be
-      // flushed to disk when this reader is opened. We don't necessarily flush deleted doc on reopen but
+      // in the NRT case we don't have accurate numbers for getDelCount and getSoftDelCount since
+      // they might not be
+      // flushed to disk when this reader is opened. We don't necessarily flush deleted doc on
+      // reopen but
       // we do for docValues.
-
 
     }
 
@@ -170,8 +194,10 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       this.reader = reader;
       this.bits = bits;
       this.numDocs = numDocs;
-      this.readerCacheHelper = reader.getReaderCacheHelper() == null ? null :
-          new DelegatingCacheHelper(reader.getReaderCacheHelper());
+      this.readerCacheHelper =
+          reader.getReaderCacheHelper() == null
+              ? null
+              : new DelegatingCacheHelper(reader.getReaderCacheHelper());
     }
 
     @Override
@@ -195,7 +221,7 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     }
   }
 
-  final static class SoftDeletesFilterCodecReader extends FilterCodecReader {
+  static final class SoftDeletesFilterCodecReader extends FilterCodecReader {
     private final LeafReader reader;
     private final FixedBitSet bits;
     private final int numDocs;
@@ -206,8 +232,10 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
       this.reader = reader;
       this.bits = bits;
       this.numDocs = numDocs;
-      this.readerCacheHelper = reader.getReaderCacheHelper() == null ? null :
-          new DelegatingCacheHelper(reader.getReaderCacheHelper());
+      this.readerCacheHelper =
+          reader.getReaderCacheHelper() == null
+              ? null
+              : new DelegatingCacheHelper(reader.getReaderCacheHelper());
     }
 
     @Override
@@ -247,9 +275,9 @@ public final class SoftDeletesDirectoryReaderWrapper extends FilterDirectoryRead
     @Override
     public void addClosedListener(ClosedListener listener) {
       // here we wrap the listener and call it with our cache key
-      // this is important since this key will be used to cache the reader and otherwise we won't free caches etc.
+      // this is important since this key will be used to cache the reader and otherwise we won't
+      // free caches etc.
       delegate.addClosedListener(unused -> listener.onClose(cacheKey));
     }
   }
 }
-

@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
 import java.io.IOException;
 
-/**
- * Dictionary for unknown-word handling.
- */
+/** Dictionary for unknown-word handling. */
 public final class UnknownDictionary extends BinaryDictionary {
 
   private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();
-  
+
   /**
    * @param scheme scheme for loading resources (FILE or CLASSPATH).
    * @param path where to load resources from; a path, including the file base name without
-   * extension; this is used to match multiple files with the same base name.
+   *     extension; this is used to match multiple files with the same base name.
    */
   public UnknownDictionary(ResourceScheme scheme, String path) throws IOException {
     super(scheme, path);
@@ -38,30 +35,31 @@ public final class UnknownDictionary extends BinaryDictionary {
   private UnknownDictionary() throws IOException {
     super();
   }
-  
+
   public int lookup(char[] text, int offset, int len) {
-    if(!characterDefinition.isGroup(text[offset])) {
+    if (!characterDefinition.isGroup(text[offset])) {
       return 1;
     }
-    
-    // Extract unknown word. Characters with the same character class are considered to be part of unknown word
+
+    // Extract unknown word. Characters with the same character class are considered to be part of
+    // unknown word
     byte characterIdOfFirstCharacter = characterDefinition.getCharacterClass(text[offset]);
     int length = 1;
     for (int i = 1; i < len; i++) {
-      if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text[offset+i])){
+      if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text[offset + i])) {
         length++;
       } else {
         break;
       }
     }
-    
+
     return length;
   }
-  
+
   public CharacterDefinition getCharacterDefinition() {
     return characterDefinition;
   }
-  
+
   @Override
   public String getReading(int wordId, char surface[], int off, int len) {
     return null;
@@ -80,9 +78,10 @@ public final class UnknownDictionary extends BinaryDictionary {
   public static UnknownDictionary getInstance() {
     return SingletonHolder.INSTANCE;
   }
-  
+
   private static class SingletonHolder {
     static final UnknownDictionary INSTANCE;
+
     static {
       try {
         INSTANCE = new UnknownDictionary();
@@ -90,6 +89,5 @@ public final class UnknownDictionary extends BinaryDictionary {
         throw new RuntimeException("Cannot load UnknownDictionary.", ioe);
       }
     }
-   }
-  
+  }
 }

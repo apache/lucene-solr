@@ -16,18 +16,15 @@
  */
 
 package org.apache.lucene.util;
- 
-/**
- * Utilities for computations with numeric arrays
- */
+
+/** Utilities for computations with numeric arrays */
 public final class VectorUtil {
 
-  private VectorUtil() {
-  }
+  private VectorUtil() {}
 
   /**
-   * Returns the vector dot product of the two vectors. IllegalArgumentException is thrown if the vectors'
-   * dimensions differ.
+   * Returns the vector dot product of the two vectors. IllegalArgumentException is thrown if the
+   * vectors' dimensions differ.
    */
   public static float dotProduct(float[] a, float[] b) {
     if (a.length != b.length) {
@@ -68,13 +65,13 @@ public final class VectorUtil {
   }
 
   /**
-   * Returns the sum of squared differences of the two vectors. IllegalArgumentException is thrown if the vectors'
-   * dimensions differ.
+   * Returns the sum of squared differences of the two vectors. IllegalArgumentException is thrown
+   * if the vectors' dimensions differ.
    */
-
   public static float squareDistance(float[] v1, float[] v2) {
     if (v1.length != v2.length) {
-      throw new IllegalArgumentException("vector dimensions differ: " + v1.length + "!=" + v2.length);
+      throw new IllegalArgumentException(
+          "vector dimensions differ: " + v1.length + "!=" + v2.length);
     }
     float squareSum = 0.0f;
     int dim = v1.length;
@@ -86,8 +83,8 @@ public final class VectorUtil {
   }
 
   /**
-   * Modifies the argument to be unit length, dividing by its l2-norm.
-   * IllegalArgumentException is thrown for zero vectors.
+   * Modifies the argument to be unit length, dividing by its l2-norm. IllegalArgumentException is
+   * thrown for zero vectors.
    */
   public static void l2normalize(float[] v) {
     double squareSum = 0.0f;
@@ -103,6 +100,4 @@ public final class VectorUtil {
       v[i] /= length;
     }
   }
-
-
 }

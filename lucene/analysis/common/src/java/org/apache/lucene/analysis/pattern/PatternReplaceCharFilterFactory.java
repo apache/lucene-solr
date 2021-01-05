@@ -16,24 +16,23 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
 import java.io.Reader;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
- * Factory for {@link PatternReplaceCharFilter}. 
+ * Factory for {@link PatternReplaceCharFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ptnreplace" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
- *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory" 
+ *     &lt;charFilter class="solr.PatternReplaceCharFilterFactory"
  *                    pattern="([^a-z])" replacement=""/&gt;
  *     &lt;tokenizer class="solr.KeywordTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * 
+ *
  * @since Solr 3.1
  * @lucene.spi {@value #NAME}
  */

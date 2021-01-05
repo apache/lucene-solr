@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -34,11 +33,13 @@ import org.apache.lucene.index.Terms;
 
 /**
  * Utility class to update the {@link MergeState} instance to be restricted to a set of fields.
- * <p>
- * Warning: the input {@linkplain MergeState} instance will be updated when calling {@link #apply(Collection)}.
- * <p>
- * It should be called within a {@code try {...} finally {...}} block to make sure that the mergeState instance is
- * restored to its original state:
+ *
+ * <p>Warning: the input {@linkplain MergeState} instance will be updated when calling {@link
+ * #apply(Collection)}.
+ *
+ * <p>It should be called within a {@code try {...} finally {...}} block to make sure that the
+ * mergeState instance is restored to its original state:
+ *
  * <pre>
  * PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);
  * try {
@@ -62,7 +63,8 @@ final class PerFieldMergeState {
     this.orgFieldsProducers = new FieldsProducer[in.fieldsProducers.length];
 
     System.arraycopy(in.fieldInfos, 0, this.orgFieldInfos, 0, this.orgFieldInfos.length);
-    System.arraycopy(in.fieldsProducers, 0, this.orgFieldsProducers, 0, this.orgFieldsProducers.length);
+    System.arraycopy(
+        in.fieldsProducers, 0, this.orgFieldsProducers, 0, this.orgFieldsProducers.length);
   }
 
   /**
@@ -130,7 +132,9 @@ final class PerFieldMergeState {
           hasVectors |= fi.hasVectors();
           hasProx |= fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
           hasFreq |= fi.getIndexOptions() != IndexOptions.DOCS;
-          hasOffsets |= fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+          hasOffsets |=
+              fi.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+                  >= 0;
           hasNorms |= fi.hasNorms();
           hasDocValues |= fi.getDocValuesType() != DocValuesType.NONE;
           hasPayloads |= fi.hasPayloads();
@@ -211,8 +215,12 @@ final class PerFieldMergeState {
     public FieldInfo fieldInfo(String fieldName) {
       if (!filteredNames.contains(fieldName)) {
         // Throw IAE to be consistent with fieldInfo(int) which throws it as well on invalid numbers
-        throw new IllegalArgumentException("The field named '" + fieldName + "' is not accessible in the current " +
-            "merge context, available ones are: " + filteredNames);
+        throw new IllegalArgumentException(
+            "The field named '"
+                + fieldName
+                + "' is not accessible in the current "
+                + "merge context, available ones are: "
+                + filteredNames);
       }
       return super.fieldInfo(fieldName);
     }
@@ -221,8 +229,14 @@ final class PerFieldMergeState {
     public FieldInfo fieldInfo(int fieldNumber) {
       FieldInfo res = super.fieldInfo(fieldNumber);
       if (!filteredNames.contains(res.name)) {
-        throw new IllegalArgumentException("The field named '" + res.name + "' numbered '" + fieldNumber + "' is not " +
-            "accessible in the current merge context, available ones are: " + filteredNames);
+        throw new IllegalArgumentException(
+            "The field named '"
+                + res.name
+                + "' numbered '"
+                + fieldNumber
+                + "' is not "
+                + "accessible in the current merge context, available ones are: "
+                + filteredNames);
       }
       return res;
     }
@@ -250,8 +264,12 @@ final class PerFieldMergeState {
     @Override
     public Terms terms(String field) throws IOException {
       if (!filtered.contains(field)) {
-        throw new IllegalArgumentException("The field named '" + field + "' is not accessible in the current " +
-            "merge context, available ones are: " + filtered);
+        throw new IllegalArgumentException(
+            "The field named '"
+                + field
+                + "' is not accessible in the current "
+                + "merge context, available ones are: "
+                + filtered);
       }
       return in.terms(field);
     }

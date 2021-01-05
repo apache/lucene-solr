@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.*;
 
-/**
- * A {@link DataInput} wrapping a plain {@link InputStream}.
- */
+/** A {@link DataInput} wrapping a plain {@link InputStream}. */
 public class InputStreamDataInput extends DataInput implements Closeable {
   private final InputStream is;
-  
+
   public InputStreamDataInput(InputStream is) {
     this.is = is;
   }
@@ -35,14 +32,14 @@ public class InputStreamDataInput extends DataInput implements Closeable {
     if (v == -1) throw new EOFException();
     return (byte) v;
   }
-  
+
   @Override
   public void readBytes(byte[] b, int offset, int len) throws IOException {
     while (len > 0) {
       final int cnt = is.read(b, offset, len);
       if (cnt < 0) {
-          // Partially read the input, but no more data available in the stream.
-          throw new EOFException();
+        // Partially read the input, but no more data available in the stream.
+        throw new EOFException();
       }
       len -= cnt;
       offset += cnt;

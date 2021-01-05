@@ -16,17 +16,11 @@
  */
 package org.apache.lucene.search.spans;
 
-
-
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Query;
 
-
-/**
- * subclass of TestSimpleExplanations that verifies non matches.
- */
-public class TestSpanExplanationsOfNonMatches
-  extends TestSpanExplanations {
+/** subclass of TestSimpleExplanations that verifies non matches. */
+public class TestSpanExplanationsOfNonMatches extends TestSpanExplanations {
 
   /**
    * Overrides superclass to ignore matches and focus on non-matches
@@ -37,5 +31,4 @@ public class TestSpanExplanationsOfNonMatches
   public void qtest(Query q, int[] expDocNrs) throws Exception {
     CheckHits.checkNoMatchExplanations(q, FIELD, searcher, expDocNrs);
   }
-    
 }

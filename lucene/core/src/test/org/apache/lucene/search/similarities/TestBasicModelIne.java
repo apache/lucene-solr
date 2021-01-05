@@ -22,5 +22,4 @@ public class TestBasicModelIne extends BasicModelTestCase {
   protected BasicModel getBasicModel() {
     return new BasicModelIne();
   }
-
 }

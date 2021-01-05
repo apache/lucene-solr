@@ -18,7 +18,6 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -35,7 +34,12 @@ class IntervalScorer extends Scorer {
   private float freq;
   private int lastScoredDoc = -1;
 
-  IntervalScorer(Weight weight, IntervalIterator intervals, int minExtent, float boost, IntervalScoreFunction scoreFunction) {
+  IntervalScorer(
+      Weight weight,
+      IntervalIterator intervals,
+      int minExtent,
+      float boost,
+      IntervalScoreFunction scoreFunction) {
     super(weight);
     this.intervals = intervals;
     this.minExtent = minExtent;
@@ -66,8 +70,7 @@ class IntervalScorer extends Scorer {
       do {
         int length = (intervals.end() - intervals.start() + 1);
         freq += 1.0 / Math.max(length - minExtent + 1, 1);
-      }
-      while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS);
+      } while (intervals.nextInterval() != IntervalIterator.NO_MORE_INTERVALS);
     }
   }
 
@@ -95,5 +98,4 @@ class IntervalScorer extends Scorer {
   public float getMaxScore(int upTo) {
     return boost;
   }
-
 }

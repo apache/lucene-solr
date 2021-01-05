@@ -19,7 +19,6 @@ package org.apache.lucene.search.uhighlight;
 
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
@@ -32,15 +31,26 @@ public class UHComponents {
   private final String field;
   private final Predicate<String> fieldMatcher;
   private final Query query;
-  private final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
-  private final PhraseHelper phraseHelper; // Query: position-sensitive information
-  private final LabelledCharArrayMatcher[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
-  private final boolean hasUnrecognizedQueryPart; // Query: if part of the query (other than the extracted terms / automata) is a leaf we don't know
+  // Query: all terms we extracted (some may be position sensitive)
+  private final BytesRef[] terms;
+  // Query: position-sensitive information
+  private final PhraseHelper phraseHelper;
+  // Query: wildcards (i.e. multi-term query), not position sensitive
+  private final LabelledCharArrayMatcher[] automata;
+  // Query: if part of the query (other than the extracted terms / automata) is a leaf we don't know
+  private final boolean hasUnrecognizedQueryPart;
+
   private final Set<UnifiedHighlighter.HighlightFlag> highlightFlags;
 
-  public UHComponents(String field, Predicate<String> fieldMatcher, Query query,
-                      BytesRef[] terms, PhraseHelper phraseHelper, LabelledCharArrayMatcher[] automata,
-                      boolean hasUnrecognizedQueryPart, Set<UnifiedHighlighter.HighlightFlag> highlightFlags) {
+  public UHComponents(
+      String field,
+      Predicate<String> fieldMatcher,
+      Query query,
+      BytesRef[] terms,
+      PhraseHelper phraseHelper,
+      LabelledCharArrayMatcher[] automata,
+      boolean hasUnrecognizedQueryPart,
+      Set<UnifiedHighlighter.HighlightFlag> highlightFlags) {
     this.field = field;
     this.fieldMatcher = fieldMatcher;
     this.query = query;

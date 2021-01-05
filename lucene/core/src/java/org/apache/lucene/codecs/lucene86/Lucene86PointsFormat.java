@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene86;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
@@ -26,14 +24,16 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Lucene 8.6 point format, which encodes dimensional values in a block KD-tree structure
- * for fast 1D range and N dimensional shape intersection filtering.
- * See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
+ * Lucene 8.6 point format, which encodes dimensional values in a block KD-tree structure for fast
+ * 1D range and N dimensional shape intersection filtering. See <a
+ * href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for
+ * details.
  *
  * <p>Data is stored across three files
+ *
  * <ul>
- *   <li>A .kdm file that records metadata about the fields, such as numbers of
- *       dimensions or numbers of bytes per dimension.
+ *   <li>A .kdm file that records metadata about the fields, such as numbers of dimensions or
+ *       numbers of bytes per dimension.
  *   <li>A .kdi file that stores inner nodes of the tree.
  *   <li>A .kdm file that stores leaf nodes, where most of the data lives.
  * </ul>
@@ -46,27 +46,20 @@ public final class Lucene86PointsFormat extends PointsFormat {
   static final String INDEX_CODEC_NAME = "Lucene86PointsFormatIndex";
   static final String META_CODEC_NAME = "Lucene86PointsFormatMeta";
 
-  /**
-   * Filename extension for the leaf blocks
-   */
+  /** Filename extension for the leaf blocks */
   public static final String DATA_EXTENSION = "kdd";
 
-  /**
-   * Filename extension for the index per field
-   */
+  /** Filename extension for the index per field */
   public static final String INDEX_EXTENSION = "kdi";
 
-  /**
-   * Filename extension for the meta per field
-   */
+  /** Filename extension for the meta per field */
   public static final String META_EXTENSION = "kdm";
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor */
-  public Lucene86PointsFormat() {
-  }
+  public Lucene86PointsFormat() {}
 
   @Override
   public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {

@@ -21,7 +21,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -53,8 +52,8 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
   final FieldType fieldType = UHTestHelper.randomFieldType(random());
 
   /**
-   * indexes a bunch of gibberish, and then highlights top(n).
-   * asserts that top(n) highlights is a subset of top(n+1) up to some max N
+   * indexes a bunch of gibberish, and then highlights top(n). asserts that top(n) highlights is a
+   * subset of top(n+1) up to some max N
    */
   // TODO: this only tests single-valued fields. we should also index multiple values per field!
   public void testRanking() throws Exception {
@@ -104,10 +103,11 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
       checkQuery(is, new TermQuery(term), doc, maxTopN);
       // check a boolean query
       Term nextTerm = new Term("body", "" + (char) (ch + 1));
-      BooleanQuery bq = new BooleanQuery.Builder()
-          .add(new TermQuery(term), BooleanClause.Occur.SHOULD)
-          .add(new TermQuery(nextTerm), BooleanClause.Occur.SHOULD)
-          .build();
+      BooleanQuery bq =
+          new BooleanQuery.Builder()
+              .add(new TermQuery(term), BooleanClause.Occur.SHOULD)
+              .add(new TermQuery(nextTerm), BooleanClause.Occur.SHOULD)
+              .build();
       checkQuery(is, bq, doc, maxTopN);
     }
   }
@@ -115,28 +115,31 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
   private void checkQuery(IndexSearcher is, Query query, int doc, int maxTopN) throws IOException {
     for (int n = 1; n < maxTopN; n++) {
       final FakePassageFormatter f1 = new FakePassageFormatter();
-      UnifiedHighlighter p1 = new UnifiedHighlighter(is, indexAnalyzer) {
-        @Override
-        protected PassageFormatter getFormatter(String field) {
-          assertEquals("body", field);
-          return f1;
-        }
-      };
+      UnifiedHighlighter p1 =
+          new UnifiedHighlighter(is, indexAnalyzer) {
+            @Override
+            protected PassageFormatter getFormatter(String field) {
+              assertEquals("body", field);
+              return f1;
+            }
+          };
       p1.setMaxLength(Integer.MAX_VALUE - 1);
 
       final FakePassageFormatter f2 = new FakePassageFormatter();
-      UnifiedHighlighter p2 = new UnifiedHighlighter(is, indexAnalyzer) {
-        @Override
-        protected PassageFormatter getFormatter(String field) {
-          assertEquals("body", field);
-          return f2;
-        }
-      };
+      UnifiedHighlighter p2 =
+          new UnifiedHighlighter(is, indexAnalyzer) {
+            @Override
+            protected PassageFormatter getFormatter(String field) {
+              assertEquals("body", field);
+              return f2;
+            }
+          };
       p2.setMaxLength(Integer.MAX_VALUE - 1);
 
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
       queryBuilder.add(query, BooleanClause.Occur.MUST);
-      queryBuilder.add(new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
+      queryBuilder.add(
+          new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
       BooleanQuery bq = queryBuilder.build();
       TopDocs td = is.search(bq, 1);
       p1.highlight("body", bq, td, n);
@@ -146,8 +149,8 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
   }
 
   /**
-   * returns a new random sentence, up to maxSentenceLength "words" in length.
-   * each word is a single character (a-z). The first one is capitalized.
+   * returns a new random sentence, up to maxSentenceLength "words" in length. each word is a single
+   * character (a-z). The first one is capitalized.
    */
   private String newSentence(Random r, int maxSentenceLength) {
     StringBuilder sb = new StringBuilder();
@@ -166,8 +169,8 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
   }
 
   /**
-   * a fake formatter that doesn't actually format passages.
-   * instead it just collects them for asserts!
+   * a fake formatter that doesn't actually format passages. instead it just collects them for
+   * asserts!
    */
   static class FakePassageFormatter extends PassageFormatter {
     HashSet<Pair> seen = new HashSet<>();
@@ -199,7 +202,8 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
           assertEquals(matchStart + 1, matchEnd);
           // and the offsets must be correct...
           assertEquals(1, term.length);
-          assertEquals((char) term.bytes[term.offset], Character.toLowerCase(content.charAt(matchStart)));
+          assertEquals(
+              (char) term.bytes[term.offset], Character.toLowerCase(content.charAt(matchStart)));
         }
         // record just the start/end offset for simplicity
         seen.add(new Pair(p.getStartOffset(), p.getEndOffset()));
@@ -253,9 +257,7 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     }
   }
 
-  /**
-   * sets b=0 to disable passage length normalization
-   */
+  /** sets b=0 to disable passage length normalization */
   public void testCustomB() throws Exception {
     Directory dir = newDirectory();
     indexAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
@@ -267,29 +269,34 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     Document doc = new Document();
     doc.add(body);
 
-    body.setStringValue("This is a test.  This test is a better test but the sentence is excruiatingly long, " +
-        "you have no idea how painful it was for me to type this long sentence into my IDE.");
+    body.setStringValue(
+        "This is a test.  This test is a better test but the sentence is excruiatingly long, "
+            + "you have no idea how painful it was for me to type this long sentence into my IDE.");
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
-      @Override
-      protected Set<HighlightFlag> getFlags(String field) {
-        if (random().nextBoolean()) {
-          return EnumSet.of(HighlightFlag.MULTI_TERM_QUERY, HighlightFlag.PHRASES, HighlightFlag.WEIGHT_MATCHES);
-        } else {
-          return super.getFlags(field);
-        }
-      }
+    UnifiedHighlighter highlighter =
+        new UnifiedHighlighter(searcher, indexAnalyzer) {
+          @Override
+          protected Set<HighlightFlag> getFlags(String field) {
+            if (random().nextBoolean()) {
+              return EnumSet.of(
+                  HighlightFlag.MULTI_TERM_QUERY,
+                  HighlightFlag.PHRASES,
+                  HighlightFlag.WEIGHT_MATCHES);
+            } else {
+              return super.getFlags(field);
+            }
+          }
 
-      @Override
-      protected PassageScorer getScorer(String field) {
-        return new PassageScorer(1.2f, 0, 87);
-      }
-    };
+          @Override
+          protected PassageScorer getScorer(String field) {
+            return new PassageScorer(1.2f, 0, 87);
+          }
+        };
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits.value);
@@ -301,9 +308,7 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     dir.close();
   }
 
-  /**
-   * sets k1=0 for simple coordinate-level match (# of query terms present)
-   */
+  /** sets k1=0 for simple coordinate-level match (# of query terms present) */
   public void testCustomK1() throws Exception {
     Directory dir = newDirectory();
     indexAnalyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
@@ -315,34 +320,40 @@ public class TestUnifiedHighlighterRanking extends LuceneTestCase {
     Document doc = new Document();
     doc.add(body);
 
-    body.setStringValue("This has only foo foo. " +
-        "On the other hand this sentence contains both foo and bar. " +
-        "This has only bar bar bar bar bar bar bar bar bar bar bar bar.");
+    body.setStringValue(
+        "This has only foo foo. "
+            + "On the other hand this sentence contains both foo and bar. "
+            + "This has only bar bar bar bar bar bar bar bar bar bar bar bar.");
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
-      @Override
-      protected Set<HighlightFlag> getFlags(String field) {
-        if (random().nextBoolean()) {
-          return EnumSet.of(HighlightFlag.MULTI_TERM_QUERY, HighlightFlag.PHRASES, HighlightFlag.WEIGHT_MATCHES);
-        } else {
-          return super.getFlags(field);
-        }
-      }
+    UnifiedHighlighter highlighter =
+        new UnifiedHighlighter(searcher, indexAnalyzer) {
+          @Override
+          protected Set<HighlightFlag> getFlags(String field) {
+            if (random().nextBoolean()) {
+              return EnumSet.of(
+                  HighlightFlag.MULTI_TERM_QUERY,
+                  HighlightFlag.PHRASES,
+                  HighlightFlag.WEIGHT_MATCHES);
+            } else {
+              return super.getFlags(field);
+            }
+          }
 
-      @Override
-      protected PassageScorer getScorer(String field) {
-        return new PassageScorer(0, 0.75f, 87);
-      }
-    };
-    BooleanQuery query = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD)
-        .build();
+          @Override
+          protected PassageScorer getScorer(String field) {
+            return new PassageScorer(0, 0.75f, 87);
+          }
+        };
+    BooleanQuery query =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("body", "foo")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("body", "bar")), BooleanClause.Occur.SHOULD)
+            .build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(1, topDocs.totalHits.value);
     String snippets[] = highlighter.highlight("body", query, topDocs, 1);

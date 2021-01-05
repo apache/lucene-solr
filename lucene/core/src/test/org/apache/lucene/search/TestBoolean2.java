@@ -16,12 +16,9 @@
  */
 package org.apache.lucene.search;
 
-
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,8 +40,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
- * This also tests the scoring order of BooleanQuery.
+/**
+ * Test BooleanQuery2 against BooleanQuery by overriding the standard query parser. This also tests
+ * the scoring order of BooleanQuery.
  */
 public class TestBoolean2 extends LuceneTestCase {
   private static IndexSearcher searcher;
@@ -59,7 +57,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private static int PRE_FILLER_DOCS;
   /** num "extra" docs containing value in "field2" added to the "big" clone of the index */
   private static final int NUM_EXTRA_DOCS = 6000;
-  
+
   public static final String field = "field";
   private static Directory directory;
   private static Directory singleSegmentDirectory;
@@ -68,7 +66,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
   private static Directory copyOf(Directory dir) throws IOException {
     Directory copy = newFSDirectory(createTempDir());
-    for(String name : dir.listAll()) {
+    for (String name : dir.listAll()) {
       if (name.startsWith("extra")) {
         continue;
       }
@@ -80,11 +78,13 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // in some runs, test immediate adjacency of matches - in others, force a full bucket gap between docs
+    // in some runs, test immediate adjacency of matches - in others, force a full bucket gap
+    // between docs
     NUM_FILLER_DOCS = random().nextBoolean() ? 0 : BooleanScorer.SIZE;
     PRE_FILLER_DOCS = TestUtil.nextInt(random(), 0, (NUM_FILLER_DOCS / 2));
     if (VERBOSE) {
-      System.out.println("TEST: NUM_FILLER_DOCS=" + NUM_FILLER_DOCS + " PRE_FILLER_DOCS=" + PRE_FILLER_DOCS);
+      System.out.println(
+          "TEST: NUM_FILLER_DOCS=" + NUM_FILLER_DOCS + " PRE_FILLER_DOCS=" + PRE_FILLER_DOCS);
     }
 
     if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
@@ -97,11 +97,11 @@ public class TestBoolean2 extends LuceneTestCase {
     // randomized codecs are sometimes too costly for this test:
     iwc.setCodec(TestUtil.getDefaultCodec());
     iwc.setMergePolicy(newLogMergePolicy());
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, iwc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
     // we'll make a ton of docs, disable store/norms/vectors
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
-    
+
     Document doc = new Document();
     for (int filler = 0; filler < PRE_FILLER_DOCS; filler++) {
       writer.addDocument(doc);
@@ -109,7 +109,7 @@ public class TestBoolean2 extends LuceneTestCase {
     for (int i = 0; i < docFields.length; i++) {
       doc.add(new Field(field, docFields[i], ft));
       writer.addDocument(doc);
-      
+
       doc = new Document();
       for (int filler = 0; filler < NUM_FILLER_DOCS; filler++) {
         writer.addDocument(doc);
@@ -118,7 +118,8 @@ public class TestBoolean2 extends LuceneTestCase {
     writer.close();
     littleReader = DirectoryReader.open(directory);
     searcher = newSearcher(littleReader);
-    // this is intentionally using the baseline sim, because it compares against bigSearcher (which uses a random one)
+    // this is intentionally using the baseline sim, because it compares against bigSearcher (which
+    // uses a random one)
     searcher.setSimilarity(new ClassicSimilarity());
 
     // make a copy of our index using a single segment
@@ -136,7 +137,7 @@ public class TestBoolean2 extends LuceneTestCase {
       singleSegmentDirectory.copyFrom(directory, fileName, fileName, IOContext.DEFAULT);
       singleSegmentDirectory.sync(Collections.singleton(fileName));
     }
-    
+
     iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     // we need docID order to be preserved:
     // randomized codecs are sometimes too costly for this test:
@@ -148,7 +149,7 @@ public class TestBoolean2 extends LuceneTestCase {
     singleSegmentReader = DirectoryReader.open(singleSegmentDirectory);
     singleSegmentSearcher = newSearcher(singleSegmentReader);
     singleSegmentSearcher.setSimilarity(searcher.getSimilarity());
-    
+
     // Make big index
     dir2 = copyOf(directory);
 
@@ -173,7 +174,7 @@ public class TestBoolean2 extends LuceneTestCase {
       docCount = w.getDocStats().maxDoc;
       w.close();
       mulFactor *= 2;
-    } while(docCount < 3000 * NUM_FILLER_DOCS);
+    } while (docCount < 3000 * NUM_FILLER_DOCS);
 
     iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000));
@@ -183,12 +184,12 @@ public class TestBoolean2 extends LuceneTestCase {
 
     doc = new Document();
     doc.add(new Field("field2", "xxx", ft));
-    for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
+    for (int i = 0; i < NUM_EXTRA_DOCS / 2; i++) {
       w.addDocument(doc);
     }
     doc = new Document();
     doc.add(new Field("field2", "big bad bug", ft));
-    for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
+    for (int i = 0; i < NUM_EXTRA_DOCS / 2; i++) {
       w.addDocument(doc);
     }
     reader = w.getReader();
@@ -216,10 +217,7 @@ public class TestBoolean2 extends LuceneTestCase {
   }
 
   private static String[] docFields = {
-    "w1 w2 w3 w4 w5",
-    "w1 w3 w2 w3",
-    "w1 xx w2 yy w3",
-    "w1 w3 xx w2 yy mm"
+    "w1 w2 w3 w4 w5", "w1 w3 w2 w3", "w1 xx w2 yy w3", "w1 w3 xx w2 yy mm"
   };
 
   public void queriesTest(Query query, int[] expDocNrs) throws Exception {
@@ -227,11 +225,11 @@ public class TestBoolean2 extends LuceneTestCase {
     // adjust the expected doc numbers according to our filler docs
     if (0 < NUM_FILLER_DOCS) {
       expDocNrs = ArrayUtil.copyOfSubArray(expDocNrs, 0, expDocNrs.length);
-      for (int i=0; i < expDocNrs.length; i++) {
+      for (int i = 0; i < expDocNrs.length; i++) {
         expDocNrs[i] = PRE_FILLER_DOCS + ((NUM_FILLER_DOCS + 1) * expDocNrs[i]);
       }
     }
-    
+
     final int topDocsToCheck = atLeast(1000);
     // The asserting searcher will sometimes return the bulk scorer and
     // sometimes return a default impl around the scorer so that we can
@@ -241,7 +239,7 @@ public class TestBoolean2 extends LuceneTestCase {
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
     collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
     searcher.search(query, collector);
-    ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
+    ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
 
     CheckHits.checkHitsQuery(query, hits1, hits2, expDocNrs);
 
@@ -249,12 +247,11 @@ public class TestBoolean2 extends LuceneTestCase {
     // scores against an single segment copy of our index
     collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
     singleSegmentSearcher.search(query, collector);
-    hits2 = collector.topDocs().scoreDocs; 
+    hits2 = collector.topDocs().scoreDocs;
     CheckHits.checkHitsQuery(query, hits1, hits2, expDocNrs);
-    
+
     // sanity check expected num matches in bigSearcher
-    assertEquals(mulFactor * collector.totalHits,
-                 bigSearcher.count(query));
+    assertEquals(mulFactor * collector.totalHits, bigSearcher.count(query));
 
     // now check 2 diff scorers from the bigSearcher as well
     collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
@@ -262,12 +259,11 @@ public class TestBoolean2 extends LuceneTestCase {
     hits1 = collector.topDocs().scoreDocs;
     collector = TopScoreDocCollector.create(topDocsToCheck, Integer.MAX_VALUE);
     bigSearcher.search(query, collector);
-    hits2 = collector.topDocs().scoreDocs; 
+    hits2 = collector.topDocs().scoreDocs;
 
     // NOTE: just comparing results, not vetting against expDocNrs
     // since we have dups in bigSearcher
     CheckHits.checkEqual(query, hits1, hits2);
-      
   }
 
   @Test
@@ -275,7 +271,7 @@ public class TestBoolean2 extends LuceneTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST);
-    int[] expDocNrs = {2,3};
+    int[] expDocNrs = {2, 3};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -284,7 +280,7 @@ public class TestBoolean2 extends LuceneTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
-    int[] expDocNrs = {2,3,1,0};
+    int[] expDocNrs = {2, 3, 1, 0};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -293,7 +289,7 @@ public class TestBoolean2 extends LuceneTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
-    int[] expDocNrs = {2,3,1,0};
+    int[] expDocNrs = {2, 3, 1, 0};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -302,7 +298,7 @@ public class TestBoolean2 extends LuceneTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
-    int[] expDocNrs = {1,0};
+    int[] expDocNrs = {1, 0};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -311,7 +307,7 @@ public class TestBoolean2 extends LuceneTestCase {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.MUST_NOT);
-    int[] expDocNrs = {1,0};
+    int[] expDocNrs = {1, 0};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -341,7 +337,7 @@ public class TestBoolean2 extends LuceneTestCase {
     query.add(new TermQuery(new Term(field, "w3")), BooleanClause.Occur.MUST);
     query.add(new TermQuery(new Term(field, "xx")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(field, "w5")), BooleanClause.Occur.MUST_NOT);
-    int[] expDocNrs = {2,3,1};
+    int[] expDocNrs = {2, 3, 1};
     queriesTest(query.build(), expDocNrs);
   }
 
@@ -358,24 +354,32 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @Test
   public void testRandomQueries() throws Exception {
-    String[] vals = {"w1","w2","w3","w4","w5","xx","yy","zzz"};
+    String[] vals = {"w1", "w2", "w3", "w4", "w5", "xx", "yy", "zzz"};
 
-    int tot=0;
+    int tot = 0;
 
     BooleanQuery q1 = null;
     try {
 
       // increase number of iterations for more complete testing
       int num = atLeast(3);
-      for (int i=0; i<num; i++) {
+      for (int i = 0; i < num; i++) {
         int level = random().nextInt(3);
-        q1 = randBoolQuery(new Random(random().nextLong()), random().nextBoolean(), level, field, vals, null).build();
-        
+        q1 =
+            randBoolQuery(
+                    new Random(random().nextLong()),
+                    random().nextBoolean(),
+                    level,
+                    field,
+                    vals,
+                    null)
+                .build();
+
         // Can't sort by relevance since floating point numbers may not quite
         // match up.
         Sort sort = Sort.INDEXORDER;
 
-        QueryUtils.check(random(), q1,searcher); // baseline sim
+        QueryUtils.check(random(), q1, searcher); // baseline sim
         try {
           // a little hackish, QueryUtils.check is too costly to do on bigSearcher in this loop.
           searcher.setSimilarity(bigSearcher.getSimilarity()); // random sim
@@ -391,13 +395,14 @@ public class TestBoolean2 extends LuceneTestCase {
         collector = TopFieldCollector.create(sort, 1000, 1);
         searcher.search(q1, collector);
         ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
-        tot+=hits2.length;
+        tot += hits2.length;
         CheckHits.checkEqual(q1, hits1, hits2);
 
         BooleanQuery.Builder q3 = new BooleanQuery.Builder();
         q3.add(q1, BooleanClause.Occur.SHOULD);
         q3.add(new PrefixQuery(new Term("field2", "b")), BooleanClause.Occur.SHOULD);
-        assertEquals(mulFactor*collector.totalHits + NUM_EXTRA_DOCS/2, bigSearcher.count(q3.build()));
+        assertEquals(
+            mulFactor * collector.totalHits + NUM_EXTRA_DOCS / 2, bigSearcher.count(q3.build()));
 
         // test diff (randomized) scorers produce the same results on bigSearcher as well
         collector = TopFieldCollector.create(sort, 1000 * mulFactor, 1);
@@ -407,7 +412,6 @@ public class TestBoolean2 extends LuceneTestCase {
         bigSearcher.search(q1, collector);
         hits2 = collector.topDocs().scoreDocs;
         CheckHits.checkEqual(q1, hits1, hits2);
-        
       }
 
     } catch (Exception e) {
@@ -419,7 +423,6 @@ public class TestBoolean2 extends LuceneTestCase {
     // System.out.println("Total hits:"+tot);
   }
 
-
   // used to set properties or change every BooleanQuery
   // generated from randBoolQuery.
   public static interface Callback {
@@ -428,11 +431,12 @@ public class TestBoolean2 extends LuceneTestCase {
 
   // Random rnd is passed in so that the exact same random query may be created
   // more than once.
-  public static BooleanQuery.Builder randBoolQuery(Random rnd, boolean allowMust, int level, String field, String[] vals, Callback cb) {
+  public static BooleanQuery.Builder randBoolQuery(
+      Random rnd, boolean allowMust, int level, String field, String[] vals, Callback cb) {
     BooleanQuery.Builder current = new BooleanQuery.Builder();
-    for (int i=0; i<rnd.nextInt(vals.length)+1; i++) {
-      int qType=0; // term query
-      if (level>0) {
+    for (int i = 0; i < rnd.nextInt(vals.length) + 1; i++) {
+      int qType = 0; // term query
+      if (level > 0) {
         qType = rnd.nextInt(10);
       }
       Query q;
@@ -445,29 +449,26 @@ public class TestBoolean2 extends LuceneTestCase {
       } else if (qType < 7) {
         q = new WildcardQuery(new Term(field, "w*"));
       } else {
-        q = randBoolQuery(rnd, allowMust, level-1, field, vals, cb).build();
+        q = randBoolQuery(rnd, allowMust, level - 1, field, vals, cb).build();
       }
 
       int r = rnd.nextInt(10);
       BooleanClause.Occur occur;
-      if (r<2) {
-        occur=BooleanClause.Occur.MUST_NOT;
-      }
-      else if (r<5) {
+      if (r < 2) {
+        occur = BooleanClause.Occur.MUST_NOT;
+      } else if (r < 5) {
         if (allowMust) {
-          occur=BooleanClause.Occur.MUST;
+          occur = BooleanClause.Occur.MUST;
         } else {
-          occur=BooleanClause.Occur.SHOULD;
+          occur = BooleanClause.Occur.SHOULD;
         }
       } else {
-        occur=BooleanClause.Occur.SHOULD;
+        occur = BooleanClause.Occur.SHOULD;
       }
 
       current.add(q, occur);
     }
-    if (cb!=null) cb.postCreate(current);
+    if (cb != null) cb.postCreate(current);
     return current;
   }
-
-
 }

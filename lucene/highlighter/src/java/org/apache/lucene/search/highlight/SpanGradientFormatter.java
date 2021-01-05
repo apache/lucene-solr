@@ -16,28 +16,25 @@
  */
 package org.apache.lucene.search.highlight;
 /**
- * Formats text with different color intensity depending on the score of the
- * term using the span tag.  GradientFormatter uses a bgcolor argument to the font tag which
- * doesn't work in Mozilla, thus this class.
+ * Formats text with different color intensity depending on the score of the term using the span
+ * tag. GradientFormatter uses a bgcolor argument to the font tag which doesn't work in Mozilla,
+ * thus this class.
  *
  * @see GradientFormatter
  */
-
-public class SpanGradientFormatter
-    extends GradientFormatter {
-  public SpanGradientFormatter(float maxScore, String minForegroundColor,
-                               String maxForegroundColor, String minBackgroundColor,
-                               String maxBackgroundColor) {
-    super(maxScore, minForegroundColor,
-        maxForegroundColor, minBackgroundColor,
-        maxBackgroundColor);
+public class SpanGradientFormatter extends GradientFormatter {
+  public SpanGradientFormatter(
+      float maxScore,
+      String minForegroundColor,
+      String maxForegroundColor,
+      String minBackgroundColor,
+      String maxBackgroundColor) {
+    super(maxScore, minForegroundColor, maxForegroundColor, minBackgroundColor, maxBackgroundColor);
   }
-
 
   @Override
   public String highlightTerm(String originalText, TokenGroup tokenGroup) {
-    if (tokenGroup.getTotalScore() == 0)
-      return originalText;
+    if (tokenGroup.getTotalScore() == 0) return originalText;
     float score = tokenGroup.getTotalScore();
     if (score == 0) {
       return originalText;
@@ -63,7 +60,9 @@ public class SpanGradientFormatter
     return sb.toString();
   }
 
-  // guess how much extra text we'll add to the text we're highlighting to try to avoid a  StringBuilder resize
-  private static final String TEMPLATE = "<span style=\"background: #EEEEEE; color: #000000;\">...</span>";
+  // guess how much extra text we'll add to the text we're highlighting to try to avoid a
+  // StringBuilder resize
+  private static final String TEMPLATE =
+      "<span style=\"background: #EEEEEE; color: #000000;\">...</span>";
   private static final int EXTRA = TEMPLATE.length();
 }

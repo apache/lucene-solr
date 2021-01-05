@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -28,32 +27,28 @@ import org.apache.lucene.util.BytesRef;
  */
 public interface RandomAccessVectorValues {
 
-  /**
-   * Return the number of vector values
-   */
+  /** Return the number of vector values */
   int size();
 
-  /**
-   * Return the dimension of the returned vector values
-   */
+  /** Return the dimension of the returned vector values */
   int dimension();
 
-  /**
-   * Return the search strategy used to compare these vectors
-   */
+  /** Return the search strategy used to compare these vectors */
   VectorValues.SearchStrategy searchStrategy();
 
   /**
-   * Return the vector value indexed at the given ordinal. The provided floating point array may
-   * be shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
+   * Return the vector value indexed at the given ordinal. The provided floating point array may be
+   * shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
+   *
    * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
    */
   float[] vectorValue(int targetOrd) throws IOException;
 
   /**
-   * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-   * these are the bytes corresponding to the float array. The provided bytes may be shared and overwritten
-   * by subsequent calls to this method and {@link #vectorValue(int)}.
+   * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef; these
+   * are the bytes corresponding to the float array. The provided bytes may be shared and
+   * overwritten by subsequent calls to this method and {@link #vectorValue(int)}.
+   *
    * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
    */
   BytesRef binaryValue(int targetOrd) throws IOException;

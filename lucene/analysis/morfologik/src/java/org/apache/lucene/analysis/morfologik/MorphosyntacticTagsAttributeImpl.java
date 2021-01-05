@@ -18,29 +18,27 @@
 package org.apache.lucene.analysis.morfologik;
 
 import java.util.*;
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
 /**
  * Morphosyntactic annotations for surface forms.
+ *
  * @see MorphosyntacticTagsAttribute
  */
-public class MorphosyntacticTagsAttributeImpl extends AttributeImpl 
-  implements MorphosyntacticTagsAttribute, Cloneable {
-  
+public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
+    implements MorphosyntacticTagsAttribute, Cloneable {
+
   /** Initializes this attribute with no tags */
   public MorphosyntacticTagsAttributeImpl() {}
-  
-  /**
-   * A list of potential tag variants for the current token.
-   */
+
+  /** A list of potential tag variants for the current token. */
   private List<StringBuilder> tags;
 
   /**
-   * Returns the POS tag of the term. If you need a copy of this char sequence, copy
-   * its contents (and clone {@link StringBuilder}s) because it changes with 
-   * each new term to avoid unnecessary memory allocations.
+   * Returns the POS tag of the term. If you need a copy of this char sequence, copy its contents
+   * (and clone {@link StringBuilder}s) because it changes with each new term to avoid unnecessary
+   * memory allocations.
    */
   @Override
   public List<StringBuilder> getTags() {
@@ -69,10 +67,7 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     return this.tags == null ? 0 : tags.hashCode();
   }
 
-  /**
-   * Sets the internal tags reference to the given list. The contents
-   * is not copied. 
-   */
+  /** Sets the internal tags reference to the given list. The contents is not copied. */
   @Override
   public void setTags(List<StringBuilder> tags) {
     this.tags = tags;

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Character n-gram tokenizers and filters.
- */
+/** Character n-gram tokenizers and filters. */
 package org.apache.lucene.analysis.ngram;

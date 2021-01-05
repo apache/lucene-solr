@@ -17,13 +17,12 @@
 package org.apache.lucene.index;
 
 /**
- * Extension of {@link PostingsEnum} which also provides information about
- * upcoming impacts.
+ * Extension of {@link PostingsEnum} which also provides information about upcoming impacts.
+ *
  * @lucene.experimental
  */
 public abstract class ImpactsEnum extends PostingsEnum implements ImpactsSource {
 
   /** Sole constructor. */
   protected ImpactsEnum() {}
-
 }

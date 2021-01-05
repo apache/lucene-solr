@@ -16,18 +16,14 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
- * Simply waits for the specified (via the parameter) amount
- * of time.  For example Wait(30s) waits for 30 seconds.
- * This is useful with background tasks to control how long
- * the tasks run.
+ * Simply waits for the specified (via the parameter) amount of time. For example Wait(30s) waits
+ * for 30 seconds. This is useful with background tasks to control how long the tasks run.
  *
- *<p>You can specify h, m, or s (hours, minutes, seconds) as
- *the trailing time unit.  No unit is interpreted as
- *seconds.</p>
+ * <p>You can specify h, m, or s (hours, minutes, seconds) as the trailing time unit. No unit is
+ * interpreted as seconds.
  */
 public class WaitTask extends PerfTask {
 
@@ -44,13 +40,13 @@ public class WaitTask extends PerfTask {
       int multiplier;
       if (params.endsWith("s")) {
         multiplier = 1;
-        params = params.substring(0, params.length()-1);
+        params = params.substring(0, params.length() - 1);
       } else if (params.endsWith("m")) {
         multiplier = 60;
-        params = params.substring(0, params.length()-1);
+        params = params.substring(0, params.length() - 1);
       } else if (params.endsWith("h")) {
         multiplier = 3600;
-        params = params.substring(0, params.length()-1);
+        params = params.substring(0, params.length() - 1);
       } else {
         // Assume seconds
         multiplier = 1;
@@ -64,7 +60,7 @@ public class WaitTask extends PerfTask {
 
   @Override
   public int doLogic() throws Exception {
-    Thread.sleep((long) (1000*waitTimeSec));
+    Thread.sleep((long) (1000 * waitTimeSec));
     return 0;
   }
 

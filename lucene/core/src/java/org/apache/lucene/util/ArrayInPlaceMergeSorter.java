@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Comparator;
 
 /**
  * An {@link InPlaceMergeSorter} for object arrays.
+ *
  * @lucene.internal
  */
 final class ArrayInPlaceMergeSorter<T> extends InPlaceMergeSorter {
@@ -43,5 +43,4 @@ final class ArrayInPlaceMergeSorter<T> extends InPlaceMergeSorter {
   protected void swap(int i, int j) {
     ArrayUtil.swap(arr, i, j);
   }
-
 }

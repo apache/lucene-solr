@@ -61,6 +61,16 @@ public class TestXYShapeEncoding extends BaseShapeEncodingTestCase {
 
   @Override
   protected Component2D createPolygon2D(Object polygon) {
-    return XYGeometry.create((XYPolygon)polygon);
+    return XYGeometry.create((XYPolygon) polygon);
+  }
+
+  public void testRotationChangesOrientation() {
+    double ay = -3.4028218437925203E38;
+    double ax = 3.4028220466166163E38;
+    double by = 3.4028218437925203E38;
+    double bx = -3.4028218437925203E38;
+    double cy = 3.4028230607370965E38;
+    double cx = -3.4028230607370965E38;
+    verifyEncoding(ay, ax, by, bx, cy, cx);
   }
 }

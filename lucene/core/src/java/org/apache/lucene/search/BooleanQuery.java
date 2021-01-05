@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,37 +30,40 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
 
-/** A Query that matches documents matching boolean combinations of other
-  * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
-  * BooleanQuerys.
-  */
+/**
+ * A Query that matches documents matching boolean combinations of other queries, e.g. {@link
+ * TermQuery}s, {@link PhraseQuery}s or other BooleanQuerys.
+ */
 public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
-  /** Thrown when an attempt is made to add more than {@link
-   * #getMaxClauseCount()} clauses. This typically happens if
-   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery
-   * is expanded to many terms during search.
+  /**
+   * Thrown when an attempt is made to add more than {@link #getMaxClauseCount()} clauses. This
+   * typically happens if a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery is expanded to
+   * many terms during search.
+   *
    * @deprecated use {@link IndexSearcher.TooManyClauses}
    */
   @Deprecated // Remove in Lucene 10
-  public static class TooManyClauses extends IndexSearcher.TooManyClauses { }
+  public static class TooManyClauses extends IndexSearcher.TooManyClauses {}
 
-  /** Return the maximum number of clauses permitted, 1024 by default.
-   * Attempts to add more than the permitted number of clauses cause {@link
-   * TooManyClauses} to be thrown.
+  /**
+   * Return the maximum number of clauses permitted, 1024 by default. Attempts to add more than the
+   * permitted number of clauses cause {@link TooManyClauses} to be thrown.
+   *
    * @see IndexSearcher#setMaxClauseCount(int)
    * @deprecated use {@link IndexSearcher#getMaxClauseCount()}
    */
   @Deprecated // Remove in Lucene 10
-  public static int getMaxClauseCount() { return IndexSearcher.getMaxClauseCount(); }
+  public static int getMaxClauseCount() {
+    return IndexSearcher.getMaxClauseCount();
+  }
 
   /**
-   * Set the maximum number of clauses permitted per BooleanQuery.
-   * Default value is 1024.
+   * Set the maximum number of clauses permitted per BooleanQuery. Default value is 1024.
+   *
    * @deprecated use {@link IndexSearcher#setMaxClauseCount(int)}
    */
   @Deprecated // Remove in Lucene 10
@@ -79,19 +81,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     public Builder() {}
 
     /**
-     * Specifies a minimum number of the optional BooleanClauses
-     * which must be satisfied.
+     * Specifies a minimum number of the optional BooleanClauses which must be satisfied.
      *
-     * <p>
-     * By default no optional clauses are necessary for a match
-     * (unless there are no required clauses).  If this method is used,
-     * then the specified number of clauses is required.
-     * </p>
-     * <p>
-     * Use of this method is totally independent of specifying that
-     * any specific clauses are required (or prohibited).  This number will
-     * only be compared against the number of matching optional clauses.
-     * </p>
+     * <p>By default no optional clauses are necessary for a match (unless there are no required
+     * clauses). If this method is used, then the specified number of clauses is required.
+     *
+     * <p>Use of this method is totally independent of specifying that any specific clauses are
+     * required (or prohibited). This number will only be compared against the number of matching
+     * optional clauses.
      *
      * @param min the number of optional clauses that must match
      */
@@ -101,14 +98,15 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     /**
-     * Add a new clause to this {@link Builder}. Note that the order in which
-     * clauses are added does not have any impact on matching documents or query
-     * performance.
-     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * Add a new clause to this {@link Builder}. Note that the order in which clauses are added does
+     * not have any impact on matching documents or query performance.
+     *
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause
+     *     number
      */
     public Builder add(BooleanClause clause) {
       // We do the final deep check for max clauses count limit during
-      //<code>IndexSearcher.rewrite</code> but do this check to short
+      // <code>IndexSearcher.rewrite</code> but do this check to short
       // circuit in case a single query holds more than numClauses
       if (clauses.size() >= IndexSearcher.maxClauseCount) {
         throw new IndexSearcher.TooManyClauses();
@@ -118,29 +116,29 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
 
     /**
-     * Add a new clause to this {@link Builder}. Note that the order in which
-     * clauses are added does not have any impact on matching documents or query
-     * performance.
-     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause number
+     * Add a new clause to this {@link Builder}. Note that the order in which clauses are added does
+     * not have any impact on matching documents or query performance.
+     *
+     * @throws IndexSearcher.TooManyClauses if the new number of clauses exceeds the maximum clause
+     *     number
      */
     public Builder add(Query query, Occur occur) {
       return add(new BooleanClause(query, occur));
     }
 
-    /** Create a new {@link BooleanQuery} based on the parameters that have
-     *  been set on this builder. */
+    /**
+     * Create a new {@link BooleanQuery} based on the parameters that have been set on this builder.
+     */
     public BooleanQuery build() {
       return new BooleanQuery(minimumNumberShouldMatch, clauses.toArray(new BooleanClause[0]));
     }
-
   }
 
   private final int minimumNumberShouldMatch;
-  private final List<BooleanClause> clauses;              // used for toString() and getClauses()
+  private final List<BooleanClause> clauses; // used for toString() and getClauses()
   private final Map<Occur, Collection<Query>> clauseSets; // used for equals/hashcode
 
-  private BooleanQuery(int minimumNumberShouldMatch,
-      BooleanClause[] clauses) {
+  private BooleanQuery(int minimumNumberShouldMatch, BooleanClause[] clauses) {
     this.minimumNumberShouldMatch = minimumNumberShouldMatch;
     this.clauses = Collections.unmodifiableList(Arrays.asList(clauses));
     clauseSets = new EnumMap<>(Occur.class);
@@ -155,10 +153,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     }
   }
 
-  /**
-   * Gets the minimum number of the optional BooleanClauses
-   * which must be satisfied.
-   */
+  /** Gets the minimum number of the optional BooleanClauses which must be satisfied. */
   public int getMinimumNumberShouldMatch() {
     return minimumNumberShouldMatch;
   }
@@ -174,16 +169,17 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   /**
-   * Whether this query is a pure disjunction, ie. it only has SHOULD clauses
-   * and it is enough for a single clause to match for this boolean query to match.
+   * Whether this query is a pure disjunction, ie. it only has SHOULD clauses and it is enough for a
+   * single clause to match for this boolean query to match.
    */
   boolean isPureDisjunction() {
-    return clauses.size() == getClauses(Occur.SHOULD).size()
-        && minimumNumberShouldMatch <= 1;
+    return clauses.size() == getClauses(Occur.SHOULD).size() && minimumNumberShouldMatch <= 1;
   }
 
-  /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
-   * make it possible to do:
+  /**
+   * Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface
+   * to make it possible to do:
+   *
    * <pre class="prettyprint">for (BooleanClause clause : booleanQuery) {}</pre>
    */
   @Override
@@ -192,8 +188,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   private BooleanQuery rewriteNoScoring() {
-    boolean keepShould = getMinimumNumberShouldMatch() > 0
-        || (clauseSets.get(Occur.MUST).size() + clauseSets.get(Occur.FILTER).size() == 0);
+    boolean keepShould =
+        getMinimumNumberShouldMatch() > 0
+            || (clauseSets.get(Occur.MUST).size() + clauseSets.get(Occur.FILTER).size() == 0);
 
     if (clauseSets.get(Occur.MUST).size() == 0 && keepShould) {
       return this;
@@ -203,19 +200,22 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     newQuery.setMinimumNumberShouldMatch(getMinimumNumberShouldMatch());
     for (BooleanClause clause : clauses) {
       switch (clause.getOccur()) {
-        case MUST: {
-          newQuery.add(clause.getQuery(), Occur.FILTER);
-          break;
-        }
-        case SHOULD: {
-          if (keepShould) {
+        case MUST:
+          {
+            newQuery.add(clause.getQuery(), Occur.FILTER);
+            break;
+          }
+        case SHOULD:
+          {
+            if (keepShould) {
+              newQuery.add(clause);
+            }
+            break;
+          }
+        default:
+          {
             newQuery.add(clause);
           }
-          break;
-        }
-        default: {
-          newQuery.add(clause);
-        }
       }
     }
 
@@ -223,7 +223,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     BooleanQuery query = this;
     if (scoreMode.needsScores() == false) {
       query = rewriteNoScoring();
@@ -236,7 +237,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     if (clauses.size() == 0) {
       return new MatchNoDocsQuery("empty BooleanQuery");
     }
-    
+
     // optimize 1-clause queries
     if (clauses.size() == 1) {
       BooleanClause c = clauses.get(0);
@@ -379,9 +380,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         shouldClauses.put(query, shouldClauses.getOrDefault(query, 0d) + boost);
       }
       if (shouldClauses.size() != clauseSets.get(Occur.SHOULD).size()) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder()
-            .setMinimumNumberShouldMatch(minimumNumberShouldMatch);
-        for (Map.Entry<Query,Double> entry : shouldClauses.entrySet()) {
+        BooleanQuery.Builder builder =
+            new BooleanQuery.Builder().setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+        for (Map.Entry<Query, Double> entry : shouldClauses.entrySet()) {
           Query query = entry.getKey();
           float boost = entry.getValue().floatValue();
           if (boost != 1f) {
@@ -411,9 +412,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         mustClauses.put(query, mustClauses.getOrDefault(query, 0d) + boost);
       }
       if (mustClauses.size() != clauseSets.get(Occur.MUST).size()) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder()
-            .setMinimumNumberShouldMatch(minimumNumberShouldMatch);
-        for (Map.Entry<Query,Double> entry : mustClauses.entrySet()) {
+        BooleanQuery.Builder builder =
+            new BooleanQuery.Builder().setMinimumNumberShouldMatch(minimumNumberShouldMatch);
+        for (Map.Entry<Query, Double> entry : mustClauses.entrySet()) {
           Query query = entry.getKey();
           float boost = entry.getValue().floatValue();
           if (boost != 1f) {
@@ -435,8 +436,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     {
       final Collection<Query> musts = clauseSets.get(Occur.MUST);
       final Collection<Query> filters = clauseSets.get(Occur.FILTER);
-      if (musts.size() == 1
-          && filters.size() > 0) {
+      if (musts.size() == 1 && filters.size() > 0) {
         Query must = musts.iterator().next();
         float boost = 1f;
         if (must instanceof BoostQuery) {
@@ -466,9 +466,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           }
 
           // now add back the SHOULD clauses
-          builder = new BooleanQuery.Builder()
-            .setMinimumNumberShouldMatch(getMinimumNumberShouldMatch())
-            .add(rewritten, Occur.MUST);
+          builder =
+              new BooleanQuery.Builder()
+                  .setMinimumNumberShouldMatch(getMinimumNumberShouldMatch())
+                  .add(rewritten, Occur.MUST);
           for (Query query : clauseSets.get(Occur.SHOULD)) {
             builder.add(query, Occur.SHOULD);
           }
@@ -515,8 +516,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           for (Query q : clauseSets.get(occur)) {
             q.visit(sub);
           }
-        }
-        else {
+        } else {
           QueryVisitor v = sub.getSubVisitor(occur, this);
           for (Query q : clauseSets.get(occur)) {
             q.visit(v);
@@ -540,7 +540,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       buffer.append(c.getOccur().toString());
 
       Query subQuery = c.getQuery();
-      if (subQuery instanceof BooleanQuery) {  // wrap sub-bools in parens
+      if (subQuery instanceof BooleanQuery) { // wrap sub-bools in parens
         buffer.append("(");
         buffer.append(subQuery.toString(field));
         buffer.append(")");
@@ -558,7 +558,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       buffer.append(")");
     }
 
-    if (getMinimumNumberShouldMatch()>0) {
+    if (getMinimumNumberShouldMatch() > 0) {
       buffer.append('~');
       buffer.append(getMinimumNumberShouldMatch());
     }
@@ -567,26 +567,28 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   }
 
   /**
-   * Compares the specified object with this boolean query for equality.
-   * Returns true if and only if the provided object<ul>
-   * <li>is also a {@link BooleanQuery},</li>
-   * <li>has the same value of {@link #getMinimumNumberShouldMatch()}</li>
-   * <li>has the same {@link Occur#SHOULD} clauses, regardless of the order</li>
-   * <li>has the same {@link Occur#MUST} clauses, regardless of the order</li>
-   * <li>has the same set of {@link Occur#FILTER} clauses, regardless of the
-   * order and regardless of duplicates</li>
-   * <li>has the same set of {@link Occur#MUST_NOT} clauses, regardless of
-   * the order and regardless of duplicates</li></ul>
+   * Compares the specified object with this boolean query for equality. Returns true if and only if
+   * the provided object
+   *
+   * <ul>
+   *   <li>is also a {@link BooleanQuery},
+   *   <li>has the same value of {@link #getMinimumNumberShouldMatch()}
+   *   <li>has the same {@link Occur#SHOULD} clauses, regardless of the order
+   *   <li>has the same {@link Occur#MUST} clauses, regardless of the order
+   *   <li>has the same set of {@link Occur#FILTER} clauses, regardless of the order and regardless
+   *       of duplicates
+   *   <li>has the same set of {@link Occur#MUST_NOT} clauses, regardless of the order and
+   *       regardless of duplicates
+   * </ul>
    */
   @Override
   public boolean equals(Object o) {
-    return sameClassAs(o) &&
-           equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(BooleanQuery other) {
-    return getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch() && 
-           clauseSets.equals(other.clauseSets);
+    return getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch()
+        && clauseSets.equals(other.clauseSets);
   }
 
   private int computeHashCode() {
@@ -610,5 +612,4 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     assert hashCode == computeHashCode();
     return hashCode;
   }
-
 }

@@ -16,27 +16,6 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.store.BufferedChecksumIndexInput;
-import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.StringHelper;
-
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_FP;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BYTES_PER_DIM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.DOC_COUNT;
@@ -54,24 +33,48 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_C
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_DIM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_VALUE;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.store.BufferedChecksumIndexInput;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
+
 class SimpleTextPointsReader extends PointsReader {
 
   private final IndexInput dataIn;
   final SegmentReadState readState;
-  final Map<String,SimpleTextBKDReader> readers = new HashMap<>();
+  final Map<String, SimpleTextBKDReader> readers = new HashMap<>();
   final BytesRefBuilder scratch = new BytesRefBuilder();
 
   public SimpleTextPointsReader(SegmentReadState readState) throws IOException {
     // Initialize readers now:
 
     // Read index:
-    Map<String,Long> fieldToFileOffset = new HashMap<>();
+    Map<String, Long> fieldToFileOffset = new HashMap<>();
 
-    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointsFormat.POINT_INDEX_EXTENSION);
-    try (ChecksumIndexInput in = readState.directory.openChecksumInput(indexFileName, IOContext.DEFAULT)) {
+    String indexFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextPointsFormat.POINT_INDEX_EXTENSION);
+    try (ChecksumIndexInput in =
+        readState.directory.openChecksumInput(indexFileName, IOContext.DEFAULT)) {
       readLine(in);
       int count = parseInt(FIELD_COUNT);
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         readLine(in);
         String fieldName = stripPrefix(FIELD_FP_NAME);
         readLine(in);
@@ -82,10 +85,14 @@ class SimpleTextPointsReader extends PointsReader {
     }
 
     boolean success = false;
-    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointsFormat.POINT_EXTENSION);
+    String fileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextPointsFormat.POINT_EXTENSION);
     dataIn = readState.directory.openInput(fileName, IOContext.DEFAULT);
     try {
-      for(Map.Entry<String,Long> ent : fieldToFileOffset.entrySet()) {
+      for (Map.Entry<String, Long> ent : fieldToFileOffset.entrySet()) {
         readers.put(ent.getKey(), initReader(ent.getValue()));
       }
       success = true;
@@ -94,7 +101,7 @@ class SimpleTextPointsReader extends PointsReader {
         IOUtils.closeWhileHandlingException(this);
       }
     }
-        
+
     this.readState = readState;
   }
 
@@ -119,12 +126,12 @@ class SimpleTextPointsReader extends PointsReader {
     readLine(dataIn);
     assert startsWith(MIN_VALUE);
     BytesRef minValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MIN_VALUE));
-    assert minValue.length == numIndexDims*bytesPerDim;
+    assert minValue.length == numIndexDims * bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(MAX_VALUE);
     BytesRef maxValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MAX_VALUE));
-    assert maxValue.length == numIndexDims*bytesPerDim;
+    assert maxValue.length == numIndexDims * bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(POINT_COUNT);
@@ -133,9 +140,9 @@ class SimpleTextPointsReader extends PointsReader {
     readLine(dataIn);
     assert startsWith(DOC_COUNT);
     int docCount = parseInt(DOC_COUNT);
-    
+
     long[] leafBlockFPs = new long[count];
-    for(int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       readLine(dataIn);
       leafBlockFPs[i] = parseLong(BLOCK_FP);
     }
@@ -150,7 +157,7 @@ class SimpleTextPointsReader extends PointsReader {
       bytesPerIndexEntry = 1 + bytesPerDim;
     }
     splitPackedValues = new byte[count * bytesPerIndexEntry];
-    for(int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       readLine(dataIn);
       int address = bytesPerIndexEntry * i;
       int splitDim = parseInt(SPLIT_DIM);
@@ -164,7 +171,18 @@ class SimpleTextPointsReader extends PointsReader {
       System.arraycopy(br.bytes, br.offset, splitPackedValues, address, bytesPerDim);
     }
 
-    return new SimpleTextBKDReader(dataIn, numDataDims, numIndexDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes, pointCount, docCount);
+    return new SimpleTextBKDReader(
+        dataIn,
+        numDataDims,
+        numIndexDims,
+        maxPointsInLeafNode,
+        bytesPerDim,
+        leafBlockFPs,
+        splitPackedValues,
+        minValue.bytes,
+        maxValue.bytes,
+        pointCount,
+        docCount);
   }
 
   private void readLine(IndexInput in) throws IOException {
@@ -186,7 +204,8 @@ class SimpleTextPointsReader extends PointsReader {
   }
 
   private String stripPrefix(BytesRef prefix) {
-    return new String(scratch.bytes(), prefix.length, scratch.length() - prefix.length, StandardCharsets.UTF_8);
+    return new String(
+        scratch.bytes(), prefix.length, scratch.length() - prefix.length, StandardCharsets.UTF_8);
   }
 
   @Override
@@ -207,7 +226,8 @@ class SimpleTextPointsReader extends PointsReader {
     IndexInput clone = dataIn.clone();
     clone.seek(0);
 
-    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included in SimpleTextUtil.CHECKSUM):
+    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included
+    // in SimpleTextUtil.CHECKSUM):
     long footerStartPos = dataIn.length() - (SimpleTextUtil.CHECKSUM.length + 21);
     ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
     while (true) {
@@ -215,7 +235,12 @@ class SimpleTextPointsReader extends PointsReader {
       if (input.getFilePointer() >= footerStartPos) {
         // Make sure we landed at precisely the right location:
         if (input.getFilePointer() != footerStartPos) {
-          throw new CorruptIndexException("SimpleText failure: footer does not start at expected position current=" + input.getFilePointer() + " vs expected=" + footerStartPos, input);
+          throw new CorruptIndexException(
+              "SimpleText failure: footer does not start at expected position current="
+                  + input.getFilePointer()
+                  + " vs expected="
+                  + footerStartPos,
+              input);
         }
         SimpleTextUtil.checkFooter(input);
         break;
@@ -235,7 +260,10 @@ class SimpleTextPointsReader extends PointsReader {
 
   @Override
   public String toString() {
-    return "SimpleTextPointsReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
+    return "SimpleTextPointsReader(segment="
+        + readState.segmentInfo.name
+        + " maxDoc="
+        + readState.segmentInfo.maxDoc()
+        + ")";
   }
-
 }

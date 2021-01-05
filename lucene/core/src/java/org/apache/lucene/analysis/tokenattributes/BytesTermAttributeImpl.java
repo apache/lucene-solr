@@ -16,17 +16,18 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import java.util.Objects;
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 
-/** Implementation class for {@link BytesTermAttribute}.
+/**
+ * Implementation class for {@link BytesTermAttribute}.
+ *
  * @lucene.internal
  */
-public class BytesTermAttributeImpl extends AttributeImpl implements BytesTermAttribute, TermToBytesRefAttribute {
+public class BytesTermAttributeImpl extends AttributeImpl
+    implements BytesTermAttribute, TermToBytesRefAttribute {
   private BytesRef bytes;
 
   /** Initialize this attribute with no bytes. */
@@ -55,7 +56,7 @@ public class BytesTermAttributeImpl extends AttributeImpl implements BytesTermAt
 
   @Override
   public AttributeImpl clone() {
-    BytesTermAttributeImpl c = (BytesTermAttributeImpl)super.clone();
+    BytesTermAttributeImpl c = (BytesTermAttributeImpl) super.clone();
     copyTo(c);
     return c;
   }

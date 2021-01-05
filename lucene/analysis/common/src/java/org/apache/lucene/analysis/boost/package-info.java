@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Provides various convenience classes for creating boosts on Tokens.
- */
+/** Provides various convenience classes for creating boosts on Tokens. */
 package org.apache.lucene.analysis.boost;

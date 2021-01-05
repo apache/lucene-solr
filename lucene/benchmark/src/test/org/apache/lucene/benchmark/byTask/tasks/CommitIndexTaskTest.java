@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -43,7 +41,7 @@ public class CommitIndexTaskTest extends BenchmarkTestCase {
     new CommitIndexTask(runData).doLogic();
     new CloseIndexTask(runData).doLogic();
   }
-  
+
   public void testCommitData() throws Exception {
     PerfRunData runData = createPerfRunData();
     new CreateIndexTask(runData).doLogic();
@@ -54,5 +52,4 @@ public class CommitIndexTaskTest extends BenchmarkTestCase {
     assertEquals("params", infos.getUserData().get(OpenReaderTask.USER_DATA));
     new CloseIndexTask(runData).doLogic();
   }
-
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
@@ -36,18 +34,16 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
-
 /**
- * Read index (abstract) task.
- * Sub classes implement withSearch(), withWarm(), withTraverse() and withRetrieve()
- * methods to configure the actual action.
- * <p>Note: All ReadTasks reuse the reader if it is already open.
- * Otherwise a reader is opened at start and closed at the end.
- * <p>
- * The <code>search.num.hits</code> config parameter sets
- * the top number of hits to collect during searching.  If
- * <code>print.hits.field</code> is set, then each hit is
- * printed along with the value of that field.</p>
+ * Read index (abstract) task. Sub classes implement withSearch(), withWarm(), withTraverse() and
+ * withRetrieve() methods to configure the actual action.
+ *
+ * <p>Note: All ReadTasks reuse the reader if it is already open. Otherwise a reader is opened at
+ * start and closed at the end.
+ *
+ * <p>The <code>search.num.hits</code> config parameter sets the top number of hits to collect
+ * during searching. If <code>print.hits.field</code> is set, then each hit is printed along with
+ * the value of that field.
  *
  * <p>Other side effects: none.
  */
@@ -63,6 +59,7 @@ public abstract class ReadTask extends PerfTask {
       queryMaker = null;
     }
   }
+
   @Override
   public int doLogic() throws Exception {
     int res = 0;
@@ -111,8 +108,8 @@ public abstract class ReadTask extends PerfTask {
             // the IndexSearcher search methods that take
             // Weight public again, we can go back to
             // pulling the Weight ourselves:
-            TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-                                                                   withTotalHits() ? Integer.MAX_VALUE : 1);
+            TopFieldCollector collector =
+                TopFieldCollector.create(sort, numHits, withTotalHits() ? Integer.MAX_VALUE : 1);
             searcher.search(q, collector);
             hits = collector.topDocs();
           } else {
@@ -121,7 +118,7 @@ public abstract class ReadTask extends PerfTask {
         } else {
           Collector collector = createCollector();
           searcher.search(q, collector);
-          //hits = collector.topDocs();
+          // hits = collector.topDocs();
         }
 
         if (hits != null) {
@@ -130,10 +127,20 @@ public abstract class ReadTask extends PerfTask {
             System.out.println("totalHits = " + hits.totalHits);
             System.out.println("maxDoc()  = " + reader.maxDoc());
             System.out.println("numDocs() = " + reader.numDocs());
-            for(int i=0;i<hits.scoreDocs.length;i++) {
+            for (int i = 0; i < hits.scoreDocs.length; i++) {
               final int docID = hits.scoreDocs[i].doc;
               final Document doc = reader.document(docID);
-              System.out.println("  " + i + ": doc=" + docID + " score=" + hits.scoreDocs[i].score + " " + printHitsField + " =" + doc.get(printHitsField));
+              System.out.println(
+                  "  "
+                      + i
+                      + ": doc="
+                      + docID
+                      + " score="
+                      + hits.scoreDocs[i].score
+                      + " "
+                      + printHitsField
+                      + " ="
+                      + doc.get(printHitsField));
             }
           }
 
@@ -177,47 +184,36 @@ public abstract class ReadTask extends PerfTask {
     return TopScoreDocCollector.create(numHits(), withTotalHits() ? Integer.MAX_VALUE : 1);
   }
 
-
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
     return ir.document(id);
   }
 
-  /**
-   * Return query maker used for this task.
-   */
+  /** Return query maker used for this task. */
   public abstract QueryMaker getQueryMaker();
 
-  /**
-   * Return true if search should be performed.
-   */
+  /** Return true if search should be performed. */
   public abstract boolean withSearch();
 
-  public boolean withCollector(){
+  public boolean withCollector() {
     return false;
   }
-  
 
-  /**
-   * Return true if warming should be performed.
-   */
+  /** Return true if warming should be performed. */
   public abstract boolean withWarm();
 
-  /**
-   * Return true if, with search, results should be traversed.
-   */
+  /** Return true if, with search, results should be traversed. */
   public abstract boolean withTraverse();
 
-  /** Whether totalHits should be computed (only useful with
-   *  field sort) */
+  /** Whether totalHits should be computed (only useful with field sort) */
   public boolean withTotalHits() {
     return false;
   }
 
   /**
-   * Specify the number of hits to traverse.  Tasks should override this if they want to restrict the number
-   * of hits that are traversed when {@link #withTraverse()} is true. Must be greater than 0.
-   * <p>
-   * Read task calculates the traversal as: Math.min(hits.length(), traversalSize())
+   * Specify the number of hits to traverse. Tasks should override this if they want to restrict the
+   * number of hits that are traversed when {@link #withTraverse()} is true. Must be greater than 0.
+   *
+   * <p>Read task calculates the traversal as: Math.min(hits.length(), traversalSize())
    *
    * @return Integer.MAX_VALUE
    */
@@ -235,8 +231,8 @@ public abstract class ReadTask extends PerfTask {
   }
 
   /**
-   * Specify the number of hits to retrieve.  Tasks should override this if they want to restrict the number
-   * of hits that are collected during searching. Must be greater than 0.
+   * Specify the number of hits to retrieve. Tasks should override this if they want to restrict the
+   * number of hits that are collected during searching. Must be greater than 0.
    *
    * @return 10 by default, or search.num.hits config if set.
    */
@@ -244,13 +240,10 @@ public abstract class ReadTask extends PerfTask {
     return numHits;
   }
 
-  /**
-   * Return true if, with search and results traversing, docs should be retrieved.
-   */
+  /** Return true if, with search and results traversing, docs should be retrieved. */
   public abstract boolean withRetrieve();
 
   protected Sort getSort() {
     return null;
   }
-
 }

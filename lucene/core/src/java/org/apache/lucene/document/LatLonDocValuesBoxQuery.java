@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.index.DocValues;
@@ -40,7 +39,12 @@ final class LatLonDocValuesBoxQuery extends Query {
   private final int minLatitude, maxLatitude, minLongitude, maxLongitude;
   private final boolean crossesDateline;
 
-  LatLonDocValuesBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
+  LatLonDocValuesBoxQuery(
+      String field,
+      double minLatitude,
+      double maxLatitude,
+      double minLongitude,
+      double maxLongitude) {
     GeoUtils.checkLatitude(minLatitude);
     GeoUtils.checkLatitude(maxLatitude);
     GeoUtils.checkLongitude(minLongitude);
@@ -76,12 +80,12 @@ final class LatLonDocValuesBoxQuery extends Query {
       return false;
     }
     LatLonDocValuesBoxQuery other = (LatLonDocValuesBoxQuery) obj;
-    return field.equals(other.field) &&
-        crossesDateline == other.crossesDateline &&
-        minLatitude == other.minLatitude &&
-        maxLatitude == other.maxLatitude &&
-        minLongitude == other.minLongitude &&
-        maxLongitude == other.maxLongitude;
+    return field.equals(other.field)
+        && crossesDateline == other.crossesDateline
+        && minLatitude == other.minLatitude
+        && maxLatitude == other.maxLatitude
+        && minLongitude == other.minLongitude
+        && maxLongitude == other.maxLongitude;
   }
 
   @Override
@@ -104,7 +108,8 @@ final class LatLonDocValuesBoxQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -113,40 +118,41 @@ final class LatLonDocValuesBoxQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator iterator = new TwoPhaseIterator(values) {
-          @Override
-          public boolean matches() throws IOException {
-            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-              final long value = values.nextValue();
-              final int lat = (int) (value >>> 32);
-              if (lat < minLatitude || lat > maxLatitude) {
-                // not within latitude range
-                continue;
+        final TwoPhaseIterator iterator =
+            new TwoPhaseIterator(values) {
+              @Override
+              public boolean matches() throws IOException {
+                for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                  final long value = values.nextValue();
+                  final int lat = (int) (value >>> 32);
+                  if (lat < minLatitude || lat > maxLatitude) {
+                    // not within latitude range
+                    continue;
+                  }
+
+                  final int lon = (int) (value & 0xFFFFFFFF);
+                  if (crossesDateline) {
+                    if (lon > maxLongitude && lon < minLongitude) {
+                      // not within longitude range
+                      continue;
+                    }
+                  } else {
+                    if (lon < minLongitude || lon > maxLongitude) {
+                      // not within longitude range
+                      continue;
+                    }
+                  }
+
+                  return true;
+                }
+                return false;
               }
 
-              final int lon = (int) (value & 0xFFFFFFFF);
-              if (crossesDateline) {
-                if (lon > maxLongitude && lon < minLongitude) {
-                  // not within longitude range
-                  continue;
-                }
-              } else {
-                if (lon < minLongitude || lon > maxLongitude) {
-                  // not within longitude range
-                  continue;
-                }
+              @Override
+              public float matchCost() {
+                return 5; // 5 comparisons
               }
-
-              return true;
-            }
-            return false;
-          }
-
-          @Override
-          public float matchCost() {
-            return 5; // 5 comparisons
-          }
-        };
+            };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
@@ -154,8 +160,6 @@ final class LatLonDocValuesBoxQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
-
 }

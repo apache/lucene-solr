@@ -18,9 +18,7 @@ package org.apache.lucene.search.matchhighlight;
 
 import java.text.CharacterIterator;
 
-/**
- * A {@link CharacterIterator} over a {@link CharSequence}.
- */
+/** A {@link CharacterIterator} over a {@link CharSequence}. */
 final class CharSequenceIterator implements CharacterIterator {
   private final CharSequence text;
 

@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.codecs.lucene84;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -28,8 +28,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
 public class TestForDeltaUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
@@ -37,10 +35,10 @@ public class TestForDeltaUtil extends LuceneTestCase {
     final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
-      final int bpv = TestUtil.nextInt(random(), 1, 31-7);
+      final int bpv = TestUtil.nextInt(random(), 1, 31 - 7);
       for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-        values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
-            1, (int) PackedInts.maxValue(bpv));
+        values[i * ForUtil.BLOCK_SIZE + j] =
+            RandomNumbers.randomIntBetween(random(), 1, (int) PackedInts.maxValue(bpv));
       }
     }
 
@@ -55,7 +53,7 @@ public class TestForDeltaUtil extends LuceneTestCase {
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          source[j] = values[i*ForUtil.BLOCK_SIZE+j];
+          source[j] = values[i * ForUtil.BLOCK_SIZE + j];
         }
         forDeltaUtil.encodeDeltas(source, out);
       }
@@ -77,9 +75,9 @@ public class TestForDeltaUtil extends LuceneTestCase {
         forDeltaUtil.decodeAndPrefixSum(in, base, restored);
         final long[] expected = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          expected[j] = values[i*ForUtil.BLOCK_SIZE+j];
+          expected[j] = values[i * ForUtil.BLOCK_SIZE + j];
           if (j > 0) {
-            expected[j] += expected[j-1];
+            expected[j] += expected[j - 1];
           } else {
             expected[j] += base;
           }

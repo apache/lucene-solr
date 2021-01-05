@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -24,25 +23,25 @@ import org.apache.lucene.analysis.TokenStream;
 public class TestFingerprintFilter extends BaseTokenStreamTestCase {
 
   public void testDupsAndSorting() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("B A B E");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new FingerprintFilter(tokenizer);
-      assertTokenStreamContents(stream, new String[] { "A B E" });
+      assertTokenStreamContents(stream, new String[] {"A B E"});
     }
   }
 
   public void testAllDupValues() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("B2 B2");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new FingerprintFilter(tokenizer);
-      assertTokenStreamContents(stream, new String[] { "B2" });
+      assertTokenStreamContents(stream, new String[] {"B2"});
     }
   }
 
   public void testMaxFingerprintSize() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("B2 A1 C3 D4 E5 F6 G7 H1");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new FingerprintFilter(tokenizer, 4, ' ');
@@ -51,31 +50,30 @@ public class TestFingerprintFilter extends BaseTokenStreamTestCase {
   }
 
   public void testCustomSeparator() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("B2 A1 C3 B2");
       tokenizer.setEnableChecks(consumeAll);
-      TokenStream stream = new FingerprintFilter(tokenizer,
-          FingerprintFilter.DEFAULT_MAX_OUTPUT_TOKEN_SIZE, '_');
-      assertTokenStreamContents(stream, new String[] { "A1_B2_C3" });
+      TokenStream stream =
+          new FingerprintFilter(tokenizer, FingerprintFilter.DEFAULT_MAX_OUTPUT_TOKEN_SIZE, '_');
+      assertTokenStreamContents(stream, new String[] {"A1_B2_C3"});
     }
   }
 
   public void testSingleToken() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("A1");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new FingerprintFilter(tokenizer);
-      assertTokenStreamContents(stream, new String[] { "A1" });
+      assertTokenStreamContents(stream, new String[] {"A1"});
     }
   }
 
   public void testEmpty() throws Exception {
-    for (final boolean consumeAll : new boolean[] { true, false }) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("");
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = new FingerprintFilter(tokenizer);
       assertTokenStreamContents(stream, new String[0]);
     }
   }
-
 }

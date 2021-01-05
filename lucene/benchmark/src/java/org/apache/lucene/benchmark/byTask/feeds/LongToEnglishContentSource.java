@@ -16,40 +16,39 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
+import com.ibm.icu.text.RuleBasedNumberFormat;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Locale;
 
-import com.ibm.icu.text.RuleBasedNumberFormat;
-
 /**
- * Creates documents whose content is a <code>long</code> number starting from
- * <code>{@link Long#MIN_VALUE} + 10</code>.
+ * Creates documents whose content is a <code>long</code> number starting from <code>
+ * {@link Long#MIN_VALUE} + 10</code>.
  */
-public class LongToEnglishContentSource extends ContentSource{
+public class LongToEnglishContentSource extends ContentSource {
   private long counter = 0;
 
   @Override
-  public void close() throws IOException {
-  }
+  public void close() throws IOException {}
 
   // TODO: we could take param to specify locale...
-  private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ROOT,
-                                                                       RuleBasedNumberFormat.SPELLOUT);
+  private final RuleBasedNumberFormat rnbf =
+      new RuleBasedNumberFormat(Locale.ROOT, RuleBasedNumberFormat.SPELLOUT);
+
   @Override
-  public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
+  public synchronized DocData getNextDocData(DocData docData)
+      throws NoMoreDataException, IOException {
     docData.clear();
     // store the current counter to avoid synchronization later on
     long curCounter;
     synchronized (this) {
       curCounter = counter;
-      if (counter == Long.MAX_VALUE){
-        counter = Long.MIN_VALUE;//loop around
+      if (counter == Long.MAX_VALUE) {
+        counter = Long.MIN_VALUE; // loop around
       } else {
         ++counter;
       }
-    }    
+    }
 
     docData.setBody(rnbf.format(curCounter));
     docData.setName("doc_" + String.valueOf(curCounter));
@@ -62,5 +61,4 @@ public class LongToEnglishContentSource extends ContentSource{
   public void resetInputs() throws IOException {
     counter = Long.MIN_VALUE + 10;
   }
-  
 }

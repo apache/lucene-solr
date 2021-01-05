@@ -22,9 +22,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Executor which is responsible
- * for execution of slices based on the current status
- * of the system and current system load
+ * Executor which is responsible for execution of slices based on the current status of the system
+ * and current system load
  */
 class SliceExecutor {
   private final Executor executor;
@@ -55,12 +54,12 @@ class SliceExecutor {
 
       processTask(task, shouldExecuteOnCallerThread);
       ++i;
-    };
+    }
+    ;
   }
 
   // Helper method to execute a single task
-  protected void processTask(final Runnable task,
-                             final boolean shouldExecuteOnCallerThread) {
+  protected void processTask(final Runnable task, final boolean shouldExecuteOnCallerThread) {
     if (task == null) {
       throw new IllegalArgumentException("Input is null");
     }

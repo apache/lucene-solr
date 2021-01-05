@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -28,25 +27,26 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Writes blocks in the block file.
- * <p>
- * According the Uniform Split technique, the writing combines three steps
- * per block, and it is repeated for all the field blocks:
+ *
+ * <p>According the Uniform Split technique, the writing combines three steps per block, and it is
+ * repeated for all the field blocks:
+ *
  * <ol>
- * <li>Select the term with the shortest {@link TermBytes minimal distinguishing prefix}
- * (MDP) in the neighborhood of the {@link #targetNumBlockLines target block size}
- * (+- {@link #deltaNumLines delta size})</li>
- * <li>The selected term becomes the first term of the next block, and its
- * MDP is the next block key.</li>
- * <li>The current block is written to the {@link UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}.
- * And its block key is {@link IndexDictionary.Builder#add(BytesRef, long) added}
- * to the {@link IndexDictionary index dictionary}.</li>
+ *   <li>Select the term with the shortest {@link TermBytes minimal distinguishing prefix} (MDP) in
+ *       the neighborhood of the {@link #targetNumBlockLines target block size} (+- {@link
+ *       #deltaNumLines delta size})
+ *   <li>The selected term becomes the first term of the next block, and its MDP is the next block
+ *       key.
+ *   <li>The current block is written to the {@link
+ *       UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}. And its block key is {@link
+ *       IndexDictionary.Builder#add(BytesRef, long) added} to the {@link IndexDictionary index
+ *       dictionary}.
  * </ol>
- * <p>
- * This stateful {@link BlockWriter} is called repeatedly to
- * {@link #addLine(BytesRef, BlockTermState, IndexDictionary.Builder) add}
- * all the {@link BlockLine} terms of a field. Then {@link #finishLastBlock}
- * is called. And then this {@link BlockWriter} can be reused to add the terms
- * of another field.
+ *
+ * <p>This stateful {@link BlockWriter} is called repeatedly to {@link #addLine(BytesRef,
+ * BlockTermState, IndexDictionary.Builder) add} all the {@link BlockLine} terms of a field. Then
+ * {@link #finishLastBlock} is called. And then this {@link BlockWriter} can be reused to add the
+ * terms of another field.
  *
  * @lucene.experimental
  */
@@ -72,7 +72,11 @@ public class BlockWriter {
   protected final BlockHeader reusableBlockHeader;
   protected BytesRef scratchBytesRef;
 
-  protected BlockWriter(IndexOutput blockOutput, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) {
+  protected BlockWriter(
+      IndexOutput blockOutput,
+      int targetNumBlockLines,
+      int deltaNumLines,
+      BlockEncoder blockEncoder) {
     assert blockOutput != null;
     assert targetNumBlockLines > 0;
     assert deltaNumLines >= 0;
@@ -109,21 +113,22 @@ public class BlockWriter {
 
   /**
    * Adds a new {@link BlockLine} term for the current field.
-   * <p>
-   * This method determines whether the new term is part of the current block,
-   * or if it is part of the next block. In the latter case, a new block is started
-   * (including one or more of the lastly added lines), the current block is
-   * written to the block file, and the current block key is added to the
-   * {@link IndexDictionary.Builder}.
    *
-   * @param term              The block line term. The {@link BytesRef} instance is used directly,
-   *                          the caller is responsible to make a deep copy if needed. This is required
-   *                          because we keep a list of block lines until we decide to write the
-   *                          current block, and each line must have a different term instance.
-   * @param blockTermState    Block line details.
+   * <p>This method determines whether the new term is part of the current block, or if it is part
+   * of the next block. In the latter case, a new block is started (including one or more of the
+   * lastly added lines), the current block is written to the block file, and the current block key
+   * is added to the {@link IndexDictionary.Builder}.
+   *
+   * @param term The block line term. The {@link BytesRef} instance is used directly, the caller is
+   *     responsible to make a deep copy if needed. This is required because we keep a list of block
+   *     lines until we decide to write the current block, and each line must have a different term
+   *     instance.
+   * @param blockTermState Block line details.
    * @param dictionaryBuilder to which the block keys are added.
    */
-  protected void addLine(BytesRef term, BlockTermState blockTermState, IndexDictionary.Builder dictionaryBuilder) throws IOException {
+  protected void addLine(
+      BytesRef term, BlockTermState blockTermState, IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
     assert term != null;
     assert blockTermState != null;
     int mdpLength = TermBytes.computeMdpLength(lastTerm, term);
@@ -135,10 +140,9 @@ public class BlockWriter {
   }
 
   /**
-   * This method is called when there is no more term for the field. It writes
-   * the remaining lines added with {@link #addLine} as the last block of the
-   * field and resets this {@link BlockWriter} state. Then this {@link BlockWriter}
-   * can be used for another field.
+   * This method is called when there is no more term for the field. It writes the remaining lines
+   * added with {@link #addLine} as the last block of the field and resets this {@link BlockWriter}
+   * state. Then this {@link BlockWriter} can be used for another field.
    */
   protected void finishLastBlock(IndexDictionary.Builder dictionaryBuilder) throws IOException {
     while (!blockLines.isEmpty()) {
@@ -149,11 +153,10 @@ public class BlockWriter {
   }
 
   /**
-   * Defines the new block start according to {@link #targetNumBlockLines}
-   * and {@link #deltaNumLines}.
-   * The new block is started (including one or more of the lastly added lines),
-   * the current block is written to the block file, and the current block key
-   * is added to the {@link IndexDictionary.Builder}.
+   * Defines the new block start according to {@link #targetNumBlockLines} and {@link
+   * #deltaNumLines}. The new block is started (including one or more of the lastly added lines),
+   * the current block is written to the block file, and the current block key is added to the
+   * {@link IndexDictionary.Builder}.
    */
   protected void splitAndWriteBlock(IndexDictionary.Builder dictionaryBuilder) throws IOException {
     assert !blockLines.isEmpty();
@@ -187,10 +190,9 @@ public class BlockWriter {
     subList.clear();
   }
 
-  /**
-   * Writes a block and adds its block key to the dictionary builder.
-   */
-  protected void writeBlock(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) throws IOException {
+  /** Writes a block and adds its block key to the dictionary builder. */
+  protected void writeBlock(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
 
     long blockStartFP = blockOutput.getFilePointer();
 
@@ -210,8 +212,13 @@ public class BlockWriter {
       previousLine = line;
     }
 
-    reusableBlockHeader.reset(blockLines.size(), termStateSerializer.getBaseDocStartFP(), termStateSerializer.getBasePosStartFP(),
-        termStateSerializer.getBasePayStartFP(), Math.toIntExact(blockLinesWriteBuffer.size()), middleOffset);
+    reusableBlockHeader.reset(
+        blockLines.size(),
+        termStateSerializer.getBaseDocStartFP(),
+        termStateSerializer.getBasePosStartFP(),
+        termStateSerializer.getBasePayStartFP(),
+        Math.toIntExact(blockLinesWriteBuffer.size()),
+        middleOffset);
     blockHeaderWriter.write(blockWriteBuffer, reusableBlockHeader);
 
     blockLinesWriteBuffer.copyTo(blockWriteBuffer);
@@ -221,7 +228,8 @@ public class BlockWriter {
       blockOutput.writeVInt(Math.toIntExact(blockWriteBuffer.size()));
       blockWriteBuffer.copyTo(blockOutput);
     } else {
-      BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(blockWriteBuffer.toDataInput(), blockWriteBuffer.size());
+      BlockEncoder.WritableBytes encodedBytes =
+          blockEncoder.encode(blockWriteBuffer.toDataInput(), blockWriteBuffer.size());
       blockOutput.writeVInt(Math.toIntExact(encodedBytes.size()));
       encodedBytes.writeTo(blockOutput);
     }
@@ -235,9 +243,7 @@ public class BlockWriter {
     updateFieldMetadata(blockStartFP);
   }
 
-  /**
-   * updates the field metadata after all lines were written for the block.
-   */
+  /** updates the field metadata after all lines were written for the block. */
   protected void updateFieldMetadata(long blockStartFP) {
     assert fieldMetadata != null;
     if (fieldMetadata.getFirstBlockStartFP() == -1) {
@@ -250,18 +256,27 @@ public class BlockWriter {
     this.fieldMetadata = fieldMetadata;
   }
 
-  protected void writeBlockLine(boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine) throws IOException {
+  protected void writeBlockLine(
+      boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine)
+      throws IOException {
     assert fieldMetadata != null;
-    blockLineWriter.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
-    blockLineWriter.writeLineTermState(termStatesWriteBuffer, line, fieldMetadata.getFieldInfo(), termStateSerializer);
+    blockLineWriter.writeLine(
+        blockLinesWriteBuffer,
+        line,
+        previousLine,
+        Math.toIntExact(termStatesWriteBuffer.size()),
+        isIncrementalEncodingSeed);
+    blockLineWriter.writeLineTermState(
+        termStatesWriteBuffer, line, fieldMetadata.getFieldInfo(), termStateSerializer);
   }
 
   /**
-   * Adds a new block key with its corresponding block file pointer to the
-   * {@link IndexDictionary.Builder} .
-   * The block key is the MDP (see {@link TermBytes}) of the block first term.
+   * Adds a new block key with its corresponding block file pointer to the {@link
+   * IndexDictionary.Builder} . The block key is the MDP (see {@link TermBytes}) of the block first
+   * term.
    */
-  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) throws IOException {
+  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
     assert !blockLines.isEmpty();
     assert dictionaryBuilder != null;
     TermBytes firstTerm = blockLines.get(0).getTermBytes();

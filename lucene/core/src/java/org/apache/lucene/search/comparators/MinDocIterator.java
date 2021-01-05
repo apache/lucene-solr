@@ -17,13 +17,10 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 
-import java.io.IOException;
-
-/**
- * Docs iterator that starts iterating from a configurable minimum document
- */
+/** Docs iterator that starts iterating from a configurable minimum document */
 public class MinDocIterator extends DocIdSetIterator {
   final int segmentMinDoc;
   final int maxDoc;

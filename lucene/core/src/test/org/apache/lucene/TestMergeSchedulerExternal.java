@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,8 +29,8 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.store.ByteBuffersDirectory;
@@ -44,15 +43,15 @@ import org.apache.lucene.util.PrintStreamInfoStream;
 import org.junit.AfterClass;
 
 /**
- * Holds tests cases to verify external APIs are accessible
- * while not being in org.apache.lucene.index package.
+ * Holds tests cases to verify external APIs are accessible while not being in
+ * org.apache.lucene.index package.
  */
 public class TestMergeSchedulerExternal extends LuceneTestCase {
 
   volatile boolean mergeCalled;
   volatile boolean mergeThreadCreated;
   volatile boolean excCalled;
-  volatile static InfoStream infoStream;
+  static volatile InfoStream infoStream;
 
   private class MyMergeScheduler extends ConcurrentMergeScheduler {
 
@@ -64,7 +63,8 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
 
     @Override
-    protected MergeThread getMergeThread(MergeSource mergeSource, MergePolicy.OneMerge merge) throws IOException {
+    protected MergeThread getMergeThread(MergeSource mergeSource, MergePolicy.OneMerge merge)
+        throws IOException {
       MergeThread thread = new MyMergeThread(mergeSource, merge);
       thread.setDaemon(true);
       thread.setName("MyMergeThread");
@@ -88,7 +88,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
 
   private static class FailOnlyOnMerge extends MockDirectoryWrapper.Failure {
     @Override
-    public void eval(MockDirectoryWrapper dir)  throws IOException {
+    public void eval(MockDirectoryWrapper dir) throws IOException {
       if (callStackContainsAnyOf("doMerge")) {
         IOException ioe = new IOException("now failing during merge");
         StringWriter sw = new StringWriter();
@@ -115,10 +115,12 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     Field idField = newStringField("id", "", Field.Store.YES);
     doc.add(idField);
 
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-      .setMergeScheduler(new MyMergeScheduler())
-      .setMaxBufferedDocs(2).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-      .setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig iwc =
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setMergeScheduler(new MyMergeScheduler())
+            .setMaxBufferedDocs(2)
+            .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+            .setMergePolicy(newLogMergePolicy());
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     infoStream = new PrintStreamInfoStream(new PrintStream(baos, true, IOUtils.UTF_8));
@@ -127,7 +129,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, iwc);
     LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();
     logMP.setMergeFactor(10);
-    for(int i=0;i<20;i++) {
+    for (int i = 0; i < 20; i++) {
       writer.addDocument(doc);
     }
 
@@ -149,7 +151,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
     dir.close();
   }
-  
+
   private static class ReportingMergeScheduler extends MergeScheduler {
 
     @Override
@@ -165,7 +167,6 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
 
     @Override
     public void close() throws IOException {}
-    
   }
 
   public void testCustomMergeScheduler() throws Exception {

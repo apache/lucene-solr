@@ -20,22 +20,23 @@ import org.apache.lucene.index.PointValues.Relation;
 
 /**
  * 2D geo line implementation represented as a balanced interval tree of edges.
- * <p>
- * Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree construction.
- * {@link #relate relate()} are {@code O(n)}, but for most practical lines are much faster than brute force.
+ *
+ * <p>Line {@code Line2D} Construction takes {@code O(n log n)} time for sorting and tree
+ * construction. {@link #relate relate()} are {@code O(n)}, but for most practical lines are much
+ * faster than brute force.
  */
 final class Line2D implements Component2D {
 
   /** minimum Y of this geometry's bounding box area */
-  final private double minY;
+  private final double minY;
   /** maximum Y of this geometry's bounding box area */
-  final private double maxY;
+  private final double maxY;
   /** minimum X of this geometry's bounding box area */
-  final private double minX;
+  private final double minX;
   /** maximum X of this geometry's bounding box area */
-  final private double maxX;
-  /** lines represented as a 2-d interval tree.*/
-  final private EdgeTree tree;
+  private final double maxX;
+  /** lines represented as a 2-d interval tree. */
+  private final EdgeTree tree;
 
   private Line2D(Line line) {
     this.minY = line.minLat;
@@ -50,7 +51,10 @@ final class Line2D implements Component2D {
     this.maxY = line.maxY;
     this.minX = line.minX;
     this.maxX = line.maxX;
-    this.tree = EdgeTree.createTree(XYEncodingUtils.floatArrayToDoubleArray(line.getX()), XYEncodingUtils.floatArrayToDoubleArray(line.getY()));
+    this.tree =
+        EdgeTree.createTree(
+            XYEncodingUtils.floatArrayToDoubleArray(line.getX()),
+            XYEncodingUtils.floatArrayToDoubleArray(line.getY()));
   }
 
   @Override
@@ -96,8 +100,15 @@ final class Line2D implements Component2D {
   }
 
   @Override
-  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
@@ -105,25 +116,51 @@ final class Line2D implements Component2D {
   }
 
   @Override
-  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    return Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) ||
-           tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
+    return Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        || tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true);
   }
 
   @Override
-  public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     // can be improved?
     return false;
   }
 
   @Override
-  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     return false;
   }
 
@@ -133,17 +170,37 @@ final class Line2D implements Component2D {
   }
 
   @Override
-  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
-                                   double aX, double aY, boolean ab, double bX, double bY) {
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
     if (ab && intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY)) {
-      return  WithinRelation.NOTWITHIN;
+      return WithinRelation.NOTWITHIN;
     }
     return WithinRelation.DISJOINT;
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                       double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
@@ -181,7 +238,9 @@ final class Line2D implements Component2D {
     }
 
     // Check if shape is within the triangle
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true) {
+    if (Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        == true) {
       return WithinRelation.CANDIDATE;
     }
     return relation;

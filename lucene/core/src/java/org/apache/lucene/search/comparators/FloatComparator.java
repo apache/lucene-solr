@@ -17,22 +17,22 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafFieldComparator;
 
-import java.io.IOException;
-
 /**
- * Comparator based on {@link Float#compare} for {@code numHits}.
- * This comparator provides a skipping functionality – an iterator that can skip over non-competitive documents.
+ * Comparator based on {@link Float#compare} for {@code numHits}. This comparator provides a
+ * skipping functionality – an iterator that can skip over non-competitive documents.
  */
 public class FloatComparator extends NumericComparator<Float> {
   private final float[] values;
   protected float topValue;
   protected float bottom;
 
-  public FloatComparator(int numHits, String field, Float missingValue, boolean reverse, int sortPos) {
+  public FloatComparator(
+      int numHits, String field, Float missingValue, boolean reverse, int sortPos) {
     super(field, missingValue != null ? missingValue : 0.0f, reverse, sortPos, Float.BYTES);
     values = new float[numHits];
   }
@@ -58,9 +58,7 @@ public class FloatComparator extends NumericComparator<Float> {
     return new FloatLeafComparator(context);
   }
 
-  /**
-   * Leaf comparator for {@link FloatComparator} that provides skipping functionality
-   */
+  /** Leaf comparator for {@link FloatComparator} that provides skipping functionality */
   public class FloatLeafComparator extends NumericLeafComparator {
 
     public FloatLeafComparator(LeafReaderContext context) throws IOException {
@@ -113,5 +111,4 @@ public class FloatComparator extends NumericComparator<Float> {
       FloatPoint.encodeDimension(topValue, packedValue, 0);
     }
   }
-
 }

@@ -41,7 +41,8 @@ public class TestSimplifications extends LuceneTestCase {
   public void testOrderedWithDuplicates() {
     IntervalsSource actual = Intervals.ordered(Intervals.term("term"), Intervals.term("term"));
     assertEquals("ORDERED(term,term)", actual.toString());
-    actual = Intervals.ordered(Intervals.term("term"), Intervals.term("term"), Intervals.term("bar"));
+    actual =
+        Intervals.ordered(Intervals.term("term"), Intervals.term("term"), Intervals.term("bar"));
     assertEquals("ORDERED(term,term,bar)", actual.toString());
   }
 
@@ -54,13 +55,15 @@ public class TestSimplifications extends LuceneTestCase {
   public void testUnorderedWithDuplicates() {
     IntervalsSource actual = Intervals.unordered(Intervals.term("term"), Intervals.term("term"));
     assertEquals("UNORDERED(term,term)", actual.toString());
-    actual = Intervals.unordered(Intervals.term("term"), Intervals.term("term"), Intervals.term("bar"));
+    actual =
+        Intervals.unordered(Intervals.term("term"), Intervals.term("term"), Intervals.term("bar"));
     assertEquals("UNORDERED(term,term,bar)", actual.toString());
   }
 
   public void testUnorderedOverlaps() {
     // UNORDERED_NO_OVERLAPS(term, term) => ORDERED(term, term)
-    IntervalsSource actual = Intervals.unorderedNoOverlaps(Intervals.term("term"), Intervals.term("term"));
+    IntervalsSource actual =
+        Intervals.unorderedNoOverlaps(Intervals.term("term"), Intervals.term("term"));
     assertEquals(Intervals.ordered(Intervals.term("term"), Intervals.term("term")), actual);
   }
 
@@ -71,26 +74,41 @@ public class TestSimplifications extends LuceneTestCase {
 
   public void testDisjunctionRemovesDuplicates() {
     // or(a, b, a) => or(a, b)
-    IntervalsSource actual = Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("a"));
+    IntervalsSource actual =
+        Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("a"));
     assertEquals(Intervals.or(Intervals.term("a"), Intervals.term("b")), actual);
   }
 
   public void testPhraseSimplification() {
     // BLOCK(BLOCK(a, b), c) => BLOCK(a, b, c)
-    IntervalsSource actual = Intervals.phrase(Intervals.phrase(Intervals.term("a"), Intervals.term("b")), Intervals.term("c"));
-    assertEquals(Intervals.phrase(Intervals.term("a"), Intervals.term("b"), Intervals.term("c")), actual);
+    IntervalsSource actual =
+        Intervals.phrase(
+            Intervals.phrase(Intervals.term("a"), Intervals.term("b")), Intervals.term("c"));
+    assertEquals(
+        Intervals.phrase(Intervals.term("a"), Intervals.term("b"), Intervals.term("c")), actual);
 
     // BLOCK(a, BLOCK(b, BLOCK(c, d))) => BLOCK(a, b, c, d)
-    actual = Intervals.phrase(Intervals.term("a"), Intervals.phrase(Intervals.term("b"),
-        Intervals.phrase(Intervals.term("c"), Intervals.term("d"))));
-    assertEquals(Intervals.phrase(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")), actual);
+    actual =
+        Intervals.phrase(
+            Intervals.term("a"),
+            Intervals.phrase(
+                Intervals.term("b"), Intervals.phrase(Intervals.term("c"), Intervals.term("d"))));
+    assertEquals(
+        Intervals.phrase(
+            Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")),
+        actual);
   }
 
   public void testDisjunctionSimplification() {
     // or(a, or(b, or(c, d))) => or(a, b, c, d)
-    IntervalsSource actual = Intervals.or(Intervals.term("a"), Intervals.or(Intervals.term("b"),
-        Intervals.or(Intervals.term("c"), Intervals.term("d"))));
-    assertEquals(Intervals.or(Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")), actual);
+    IntervalsSource actual =
+        Intervals.or(
+            Intervals.term("a"),
+            Intervals.or(
+                Intervals.term("b"), Intervals.or(Intervals.term("c"), Intervals.term("d"))));
+    assertEquals(
+        Intervals.or(
+            Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")),
+        actual);
   }
-
 }

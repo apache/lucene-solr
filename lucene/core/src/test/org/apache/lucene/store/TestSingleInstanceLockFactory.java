@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -27,12 +25,12 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 /** Simple tests for SingleInstanceLockFactory */
 public class TestSingleInstanceLockFactory extends BaseLockFactoryTestCase {
-  
+
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     return newDirectory(random(), new SingleInstanceLockFactory());
   }
-  
+
   // Verify: basic locking on single instance lock factory (can't create two IndexWriters)
   public void testDefaultLockFactory() throws IOException {
     ByteBuffersDirectory dir = new ByteBuffersDirectory();
@@ -40,12 +38,15 @@ public class TestSingleInstanceLockFactory extends BaseLockFactoryTestCase {
     assertTrue(dir.lockFactory instanceof SingleInstanceLockFactory);
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
-    
+
     // Create a 2nd IndexWriter.  This should fail.
-    expectThrows(IOException.class, () -> {
-      new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    });
-    
+    expectThrows(
+        IOException.class,
+        () -> {
+          new IndexWriter(
+              dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+        });
+
     writer.close();
   }
 }

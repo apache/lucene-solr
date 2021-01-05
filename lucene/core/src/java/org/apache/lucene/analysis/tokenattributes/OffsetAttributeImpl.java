@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
@@ -24,7 +23,7 @@ import org.apache.lucene.util.AttributeReflector;
 public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribute, Cloneable {
   private int startOffset;
   private int endOffset;
-  
+
   /** Initialize this attribute with startOffset and endOffset of 0. */
   public OffsetAttributeImpl() {}
 
@@ -43,19 +42,22 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     // OffsetAtt
 
     if (startOffset < 0 || endOffset < startOffset) {
-      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset; got "
-          + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+      throw new IllegalArgumentException(
+          "startOffset must be non-negative, and endOffset must be >= startOffset; got "
+              + "startOffset="
+              + startOffset
+              + ",endOffset="
+              + endOffset);
     }
 
     this.startOffset = startOffset;
     this.endOffset = endOffset;
   }
-  
+
   @Override
   public int endOffset() {
     return endOffset;
   }
-
 
   @Override
   public void clear() {
@@ -64,18 +66,18 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     startOffset = 0;
     endOffset = 0;
   }
-  
+
   @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
     }
-    
+
     if (other instanceof OffsetAttributeImpl) {
       OffsetAttributeImpl o = (OffsetAttributeImpl) other;
       return o.startOffset == startOffset && o.endOffset == endOffset;
     }
-    
+
     return false;
   }
 
@@ -84,13 +86,13 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     int code = startOffset;
     code = code * 31 + endOffset;
     return code;
-  } 
-  
+  }
+
   @Override
   public void copyTo(AttributeImpl target) {
     OffsetAttribute t = (OffsetAttribute) target;
     t.setOffset(startOffset, endOffset);
-  }  
+  }
 
   @Override
   public void reflectWith(AttributeReflector reflector) {

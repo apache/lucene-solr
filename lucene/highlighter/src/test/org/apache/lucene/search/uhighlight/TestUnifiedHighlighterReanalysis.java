@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexReader;
@@ -35,38 +34,41 @@ import org.junit.Test;
 public class TestUnifiedHighlighterReanalysis extends LuceneTestCase {
 
   private MockAnalyzer indexAnalyzer =
-      new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);//whitespace, punctuation, lowercase;
+      new MockAnalyzer(random(), MockTokenizer.SIMPLE, true); // whitespace, punctuation, lowercase;
 
   @Test
   public void testWithoutIndexSearcher() throws IOException {
-    String text = "This is a test. Just a test highlighting without a searcher. Feel free to ignore.";
-    BooleanQuery query = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("title", "test")), BooleanClause.Occur.SHOULD)
-        .build();
+    String text =
+        "This is a test. Just a test highlighting without a searcher. Feel free to ignore.";
+    BooleanQuery query =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("title", "test")), BooleanClause.Occur.SHOULD)
+            .build();
 
     UnifiedHighlighter highlighter = new UnifiedHighlighter(null, indexAnalyzer);
     String snippet = highlighter.highlightWithoutSearcher("body", query, text, 1).toString();
 
     assertEquals("Just a test <b>highlighting</b> without a searcher. ", snippet);
 
-    assertEquals("test single space", " ", highlighter.highlightWithoutSearcher("body", query, " ", 1));
+    assertEquals(
+        "test single space", " ", highlighter.highlightWithoutSearcher("body", query, " ", 1));
 
     assertEquals("Hello", highlighter.highlightWithoutSearcher("nonexistent", query, "Hello", 1));
   }
 
   @Test(expected = IllegalStateException.class)
   public void testIndexSearcherNullness() throws IOException {
-    String text = "This is a test. Just a test highlighting without a searcher. Feel free to ignore.";
+    String text =
+        "This is a test. Just a test highlighting without a searcher. Feel free to ignore.";
     Query query = new TermQuery(new Term("body", "highlighting"));
 
     try (Directory directory = newDirectory();
-         RandomIndexWriter indexWriter = new RandomIndexWriter(random(), directory);
-         IndexReader indexReader = indexWriter.getReader()) {
+        RandomIndexWriter indexWriter = new RandomIndexWriter(random(), directory);
+        IndexReader indexReader = indexWriter.getReader()) {
       IndexSearcher searcher = newSearcher(indexReader);
       UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
-      highlighter.highlightWithoutSearcher("body", query, text, 1);//should throw
+      highlighter.highlightWithoutSearcher("body", query, text, 1); // should throw
     }
   }
-
 }

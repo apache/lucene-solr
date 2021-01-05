@@ -16,24 +16,24 @@
  */
 package org.apache.lucene.analysis.sr;
 
-
 import java.util.Arrays;
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link SerbianNormalizationFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_srnorm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *     &lt;filter class="solr.SerbianNormalizationFilterFactory"
- *       haircut="bald"/&gt; 
+ *       haircut="bald"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
+ * &lt;/fieldType&gt;</pre>
+ *
  * @since 5.0.0
  * @lucene.spi {@value #NAME}
  */
@@ -45,10 +45,10 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory {
   final String haircut;
 
   /** Creates a new SerbianNormalizationFilterFactory */
-  public SerbianNormalizationFilterFactory(Map<String,String> args) {
+  public SerbianNormalizationFilterFactory(Map<String, String> args) {
     super(args);
 
-    this.haircut = get(args, "haircut", Arrays.asList( "bald", "regular" ), "bald");
+    this.haircut = get(args, "haircut", Arrays.asList("bald", "regular"), "bald");
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -61,7 +61,7 @@ public class SerbianNormalizationFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {
-    if( this.haircut.equals( "regular" ) ) {
+    if (this.haircut.equals("regular")) {
       return new SerbianNormalizationRegularFilter(input);
     } else {
       return new SerbianNormalizationFilter(input);

@@ -16,21 +16,22 @@
  */
 package org.apache.lucene.util.bkd;
 
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.NumericUtils;
 
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-
-// e.g. run like this: ant test -Dtestcase=Test2BBKDPoints -Dtests.nightly=true -Dtests.verbose=true -Dtests.monster=true
-// 
-//   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 4g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BBKDPoints.test2D -verbose
+// e.g. run like this: ant test -Dtestcase=Test2BBKDPoints -Dtests.nightly=true -Dtests.verbose=true
+// -Dtests.monster=true
+//
+//   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 4g -once -nolog -tmpDir /b/tmp
+// -logDir /l/logs Test2BBKDPoints.test2D -verbose
 
 @TimeoutSuite(millis = Integer.MAX_VALUE) // hopefully ~24 days is long enough ;)
 @Monster("takes at least 4 hours and consumes many GB of temp disk space")
@@ -40,12 +41,18 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", new BKDConfig(1, 1, Long.BYTES, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE),
-                                BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, 26L * numDocs);
+    BKDWriter w =
+        new BKDWriter(
+            numDocs,
+            dir,
+            "_0",
+            new BKDConfig(1, 1, Long.BYTES, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE),
+            BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+            26L * numDocs);
     int counter = 0;
     byte[] packedBytes = new byte[Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {
-      for (int j=0;j<26;j++) {
+      for (int j = 0; j < 26; j++) {
         // first a random int:
         NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, 0);
         // then our counter, which will overflow a bit in the end:
@@ -79,19 +86,26 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", new BKDConfig(2, 2, Long.BYTES, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE),
-                                BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, 26L * numDocs);
+    BKDWriter w =
+        new BKDWriter(
+            numDocs,
+            dir,
+            "_0",
+            new BKDConfig(2, 2, Long.BYTES, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE),
+            BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+            26L * numDocs);
     int counter = 0;
-    byte[] packedBytes = new byte[2*Long.BYTES];
+    byte[] packedBytes = new byte[2 * Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {
-      for (int j=0;j<26;j++) {
+      for (int j = 0; j < 26; j++) {
         // first a random int:
         NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, 0);
         // then our counter, which will overflow a bit in the end:
         NumericUtils.intToSortableBytes(counter, packedBytes, Integer.BYTES);
         // then two random ints for the 2nd dimension:
         NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, Long.BYTES);
-        NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, Long.BYTES + Integer.BYTES);
+        NumericUtils.intToSortableBytes(
+            random().nextInt(), packedBytes, Long.BYTES + Integer.BYTES);
         w.add(packedBytes, docID);
         counter++;
       }

@@ -18,7 +18,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -26,6 +25,7 @@ import org.apache.lucene.util.BytesRefHash;
 
 /**
  * A filtered TermsEnum that uses a BytesRefHash as a filter
+ *
  * @lucene.internal
  */
 public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
@@ -40,9 +40,7 @@ public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
   private BytesRef seekTerm;
   private int upto = 0;
 
-  /**
-   * Constructor
-   */
+  /** Constructor */
   public SeekingTermSetTermsEnum(TermsEnum tenum, BytesRefHash terms, int[] ords) {
     super(tenum);
     this.terms = terms;
@@ -78,11 +76,13 @@ public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
         return AcceptStatus.NO;
       } else { // Our current term doesn't match the the given term.
         int cmp;
-        do { // We maybe are behind the given term by more than one step. Keep incrementing till we're the same or higher.
+        do { // We maybe are behind the given term by more than one step. Keep incrementing till
+          // we're the same or higher.
           if (upto == lastElement) {
             return AcceptStatus.NO;
           }
-          // typically the terms dict is a superset of query's terms so it's unusual that we have to skip many of
+          // typically the terms dict is a superset of query's terms so it's unusual that we have to
+          // skip many of
           // our terms so we don't do a binary search here
           seekTerm = terms.get(ords[++upto], spare);
         } while ((cmp = seekTerm.compareTo(term)) < 0);
@@ -98,5 +98,4 @@ public class SeekingTermSetTermsEnum extends FilteredTermsEnum {
       }
     }
   }
-
 }

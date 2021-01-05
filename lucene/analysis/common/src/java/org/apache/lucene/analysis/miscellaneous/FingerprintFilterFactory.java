@@ -16,21 +16,20 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link FingerprintFilter}.
- * 
+ *
  * <pre class="prettyprint">
- * The {@code maxOutputTokenSize} property is optional and defaults to {@code 1024}.  
- * The {@code separator} property is optional and defaults to the space character.  
+ * The {@code maxOutputTokenSize} property is optional and defaults to {@code 1024}.
+ * The {@code separator} property is optional and defaults to the space character.
  * See
  * {@link FingerprintFilter} for an explanation of its use.
  * </pre>
+ *
  * @since 5.4.0
  * @lucene.spi {@value #NAME}
  */
@@ -47,10 +46,9 @@ public class FingerprintFilterFactory extends TokenFilterFactory {
   /** Creates a new FingerprintFilterFactory */
   public FingerprintFilterFactory(Map<String, String> args) {
     super(args);
-    maxOutputTokenSize = getInt(args, MAX_OUTPUT_TOKEN_SIZE_KEY,
-        FingerprintFilter.DEFAULT_MAX_OUTPUT_TOKEN_SIZE);
-    separator = getChar(args, SEPARATOR_KEY,
-        FingerprintFilter.DEFAULT_SEPARATOR);
+    maxOutputTokenSize =
+        getInt(args, MAX_OUTPUT_TOKEN_SIZE_KEY, FingerprintFilter.DEFAULT_MAX_OUTPUT_TOKEN_SIZE);
+    separator = getChar(args, SEPARATOR_KEY, FingerprintFilter.DEFAULT_SEPARATOR);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
@@ -65,5 +63,4 @@ public class FingerprintFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new FingerprintFilter(input, maxOutputTokenSize, separator);
   }
-
 }
