@@ -77,7 +77,9 @@ public class MetricsQueryTemplate {
     String keySelector = matched.group("KEYSELECTOR");
     if (keySelector == null) keySelector = "";
 
-    String unique = matched.group("UNIQUE").trim();
+    String unique = matched.group("UNIQUE");
+    unique = unique != null ? unique.trim() : "";
+
     String type = matched.group("TYPE");
     if (type == null) {
       type = defaultType;
