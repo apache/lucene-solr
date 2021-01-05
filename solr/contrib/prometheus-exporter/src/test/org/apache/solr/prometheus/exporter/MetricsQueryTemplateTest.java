@@ -57,15 +57,15 @@ public class MetricsQueryTemplateTest {
   public void testTemplateRegexMatchAndApply() {
     final String[] matches = new String[]{
         "$jq:jvm-item(memory_bytes,select(.key | startswith(\"memory.total.\")),object.value,\n\nGAUGE)",
-        "$jq:node( client_errors_total,     endswith(\".clientErrors\"), count )",
-        "$jq:node(time_seconds_total,\n\"UPDATE.updateHandler.autoCommits\", ($object.value / 1000))   ",
-        "$jq:core-query( 1minRate, endswith(\".distrib.requestTimes\") )"
+        "$jq:node( client_errors_total,     select(.key | endswith(\".clientErrors\")), count )",
+        "$jq:node(time_seconds_total,\nselect(.key == \"UPDATE.updateHandler.autoCommits\"), ($object.value / 1000))   ",
+        "$jq:core-query( 1minRate, select(.key | endswith(\".distrib.requestTimes\")) )"
     };
     final String[] expectedApply = new String[]{
         "memory_bytes, select(.key | startswith(\"memory.total.\")), $object.value, GAUGE",
-        "client_errors_total, .key | endswith(\".clientErrors\"), $object.value.count, COUNTER",
-        "time_seconds_total, .key == \"UPDATE.updateHandler.autoCommits\", ($object.value / 1000), COUNTER",
-        "1minRate, .key | endswith(\".distrib.requestTimes\"), $object.value[\"1minRate\"], COUNTER"
+        "client_errors_total, select(.key | endswith(\".clientErrors\")), $object.value.count, COUNTER",
+        "time_seconds_total, select(.key == \"UPDATE.updateHandler.autoCommits\"), ($object.value / 1000), COUNTER",
+        "1minRate, select(.key | endswith(\".distrib.requestTimes\")), $object.value[\"1minRate\"], COUNTER"
     };
 
     MetricsQueryTemplate template =

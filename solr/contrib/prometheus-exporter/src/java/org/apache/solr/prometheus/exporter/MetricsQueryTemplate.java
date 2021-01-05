@@ -75,16 +75,8 @@ public class MetricsQueryTemplate {
 
   public String applyTemplate(final Matcher matched) {
     String keySelector = matched.group("KEYSELECTOR");
-    if (keySelector != null) {
-      if (!keySelector.contains("select(") && !keySelector.contains(".key")) {
-        if (keySelector.contains("(") && keySelector.contains(")")) {
-          // some kind of function here ...
-          keySelector = ".key | " + keySelector.trim();
-        } else {
-          keySelector = ".key == " + keySelector.trim();
-        }
-      }
-    }
+    if (keySelector == null) keySelector = "";
+
     String unique = matched.group("UNIQUE").trim();
     String type = matched.group("TYPE");
     if (type == null) {
@@ -109,7 +101,7 @@ public class MetricsQueryTemplate {
           metric = "$object.value." + metric;
         }
       } // else some kind of function, pass thru as-is
-    }
+    } // else there's a $ so just assume it is a fully qualified reference to the desired value, leave as-is
 
     return template
         .replace("{UNIQUE}", unique)
