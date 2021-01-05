@@ -191,6 +191,10 @@ Bug fixes
 
 Other
 
+* LUCENE-9570, LUCENE-9564: Apply google java format and enforce it on source Java files.
+  Review diffs and correct automatic formatting oddities. (Erick Erickson,
+  Bruno Roustant, Dawid Weiss)
+
 * LUCENE-9631: Properly override slice() on subclasses of OffsetRange. (Dawid Weiss)
 
 * LUCENE-9312: Allow gradle builds against arbitrary JVMs. (Tomoko Uchida, Dawid Weiss)
