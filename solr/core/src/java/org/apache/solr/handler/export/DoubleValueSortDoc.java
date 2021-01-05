@@ -112,7 +112,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     if (comp == 0) {
       comp = value2.compareTo(sd.value2);
       if (comp == 0) {
-        return docId + docBase - sd.docId - sd.docBase;
+        return (sd.docId + sd.docBase) - (docId + docBase);
       } else {
         return comp;
       }

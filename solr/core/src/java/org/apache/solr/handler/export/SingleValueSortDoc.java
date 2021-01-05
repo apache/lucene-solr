@@ -96,7 +96,7 @@ class SingleValueSortDoc extends SortDoc {
     SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
-      return docId + docBase - sd.docId - sd.docBase;
+      return  (sd.docId + sd.docBase) - (docId + docBase);
     } else {
       return comp;
     }

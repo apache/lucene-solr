@@ -146,7 +146,7 @@ class QuadValueSortDoc extends TripleValueSortDoc {
         if (comp == 0) {
           comp = value4.compareTo(sd.value4);
           if (comp == 0) {
-            return docId + docBase - sd.docId - sd.docBase;
+            return (sd.docId + sd.docBase) - (docId + docBase);
           } else {
             return comp;
           }

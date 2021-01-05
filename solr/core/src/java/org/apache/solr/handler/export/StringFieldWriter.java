@@ -30,13 +30,13 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.FieldType;
 
 class StringFieldWriter extends FieldWriter {
-  private String field;
+  protected String field;
   private FieldType fieldType;
   private BytesRef lastRef;
   private int lastOrd = -1;
   private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
 
-  private CharsRefBuilder cref = new CharsRefBuilder();
+  protected CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
     @Override
     public String toString() {
@@ -95,15 +95,23 @@ class StringFieldWriter extends FieldWriter {
 
       int ord = vals.ordValue();
       ref = vals.lookupOrd(ord);
-      lastRef = ref.clone();
+
+      if(stringValue != null) {
+        //Don't need to set the lastRef if it's not a sort value.
+        lastRef = ref.clone();
+      }
     }
 
+    writeBytes(ew, ref, fieldType);
+    return true;
+  }
+
+  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
       fieldType.indexedToReadable(ref, cref);
       ew.put(this.field, cref.toString());
     }
-    return true;
   }
 }

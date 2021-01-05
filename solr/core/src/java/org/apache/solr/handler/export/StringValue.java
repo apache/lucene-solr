@@ -91,7 +91,6 @@ class StringValue implements SortValue {
     if (docId == docValues.docID()) {
       present = true;
       currentOrd = docValues.ordValue();
-      //System.out.println("Local:"+currentOrd+", Global:"+toGlobal.get(docValues.ordValue()));
     } else {
       present = false;
       currentOrd = -1;
@@ -126,10 +125,14 @@ class StringValue implements SortValue {
     lastOrd = currentOrd;
     StringValue sv = (StringValue) previousValue;
     if (sv.lastOrd == currentOrd) {
-      //Take the global ord from the previousValue
-      this.currentOrd = sv.currentOrd;
+      //Take the global ord from the previousValue unless we are a -1 which is the same in both global and leaf ordinal
+      if(this.currentOrd != -1) {
+        this.currentOrd = sv.currentOrd;
+      }
     } else {
-      this.currentOrd = (int) toGlobal.get(this.currentOrd);
+      if(this.currentOrd > -1) {
+        this.currentOrd = (int) toGlobal.get(this.currentOrd);
+      }
     }
   }
 
@@ -158,6 +161,6 @@ class StringValue implements SortValue {
   }
 
   public String toString() {
-    return Integer.toString(this.currentOrd);
+    return "HERE:"+Integer.toString(this.currentOrd);
   }
 }
