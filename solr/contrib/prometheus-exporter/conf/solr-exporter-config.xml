@@ -60,7 +60,7 @@
       (if $parent_key_item_len == 5 then $parent_key_items[3] else "" end) as $shard |
       (if $parent_key_item_len == 5 then $parent_key_items[4] else "" end) as $replica |
       (if $parent_key_item_len == 5 then ($collection + "_" + $shard + "_" + $replica) else $core end) as $core |
-      $parent.value | to_entries | .[] | select({KEYSELECTOR}) | select (.value | type == "object") as $object |
+      $parent.value | to_entries | .[] | {KEYSELECTOR} | select (.value | type == "object") as $object |
       $object.key | split(".")[0] as $category |
       $object.key | split(".")[1] as $handler |
       select($category | startswith("QUERY")) |
@@ -154,7 +154,7 @@
       end
     </template>
     <template name="node" defaultType="COUNTER">
-      .metrics["solr.node"] | to_entries | .[] | select({KEYSELECTOR}) as $object |
+      .metrics["solr.node"] | to_entries | .[] | {KEYSELECTOR} as $object |
       $object.key | split(".")[0] as $category |
       $object.key | split(".")[1] as $handler |
       {METRIC} as $value |
@@ -477,22 +477,22 @@
             node metrics
           -->
           <str>
-            $jq:node(client_errors_total, endswith(".clientErrors"), count)
+            $jq:node(client_errors_total, select(.key | endswith(".clientErrors")), count)
           </str>
           <str>
-            $jq:node(errors_total, endswith(".errors"), count)
+            $jq:node(errors_total, select(.key | endswith(".errors")), count)
           </str>
           <str>
-            $jq:node(requests_total, endswith(".local.requestTimes"), count)
+            $jq:node(requests_total, select(.key | endswith(".local.requestTimes")), count)
           </str>
           <str>
-            $jq:node(server_errors_total, endswith(".serverErrors"), count)
+            $jq:node(server_errors_total, select(.key | endswith(".serverErrors")), count)
           </str>
           <str>
-            $jq:node(timeouts_total, endswith(".timeouts"), count)
+            $jq:node(timeouts_total, select(.key | endswith(".timeouts")), count)
           </str>
           <str>
-            $jq:node(time_seconds_total, endswith(".local.totalTime"), ($object.value / 1000))
+            $jq:node(time_seconds_total, select(.key | endswith(".local.totalTime")), ($object.value / 1000))
           </str>
           <str>
             .metrics["solr.node"] | to_entries | .[] | select(.key | startswith("CONTAINER.cores.")) as $object |
@@ -555,57 +555,57 @@
           Query related core metrics; see jq-templates for details on the core-query template used below
           -->
           <str>
-            $jq:core-query(errors_1minRate, endswith(".errors"), 1minRate)
+            $jq:core-query(errors_1minRate, select(.key | endswith(".errors")), 1minRate)
           </str>
           <str>
-            $jq:core-query(client_errors_1minRate, endswith(".clientErrors"), 1minRate)
+            $jq:core-query(client_errors_1minRate, select(.key | endswith(".clientErrors")), 1minRate)
           </str>
           <str>
-            $jq:core-query(1minRate, endswith(".distrib.requestTimes"))
+            $jq:core-query(1minRate, select(.key | endswith(".distrib.requestTimes")), 1minRate)
           </str>
           <str>
-            $jq:core-query(5minRate, endswith(".distrib.requestTimes"))
+            $jq:core-query(5minRate, select(.key | endswith(".distrib.requestTimes")), 5minRate)
           </str>
           <str>
-            $jq:core-query(median_ms, endswith(".distrib.requestTimes"))
+            $jq:core-query(median_ms, select(.key | endswith(".distrib.requestTimes")), median_ms)
           </str>
           <str>
-            $jq:core-query(p75_ms, endswith(".distrib.requestTimes"))
+            $jq:core-query(p75_ms, select(.key | endswith(".distrib.requestTimes")), p75_ms)
           </str>
           <str>
-            $jq:core-query(p95_ms, endswith(".distrib.requestTimes"))
+            $jq:core-query(p95_ms, select(.key | endswith(".distrib.requestTimes")), p95_ms)
           </str>
           <str>
-            $jq:core-query(p99_ms, endswith(".distrib.requestTimes"))
+            $jq:core-query(p99_ms, select(.key | endswith(".distrib.requestTimes")), p99_ms)
           </str>
           <str>
-            $jq:core-query(mean_rate, endswith(".distrib.requestTimes"), meanRate)
+            $jq:core-query(mean_rate, select(.key | endswith(".distrib.requestTimes")), meanRate)
           </str>
           
           <!-- Local (non-distrib) query metrics -->
           <str>
-            $jq:core-query(local_1minRate, endswith(".local.requestTimes"), 1minRate)
+            $jq:core-query(local_1minRate, select(.key | endswith(".local.requestTimes")), 1minRate)
           </str>
           <str>
-            $jq:core-query(local_5minRate, endswith(".local.requestTimes"), 5minRate)
+            $jq:core-query(local_5minRate, select(.key | endswith(".local.requestTimes")), 5minRate)
           </str>
           <str>
-            $jq:core-query(local_median_ms, endswith(".local.requestTimes"), median_ms)
+            $jq:core-query(local_median_ms, select(.key | endswith(".local.requestTimes")), median_ms)
           </str>
           <str>
-            $jq:core-query(local_p75_ms, endswith(".local.requestTimes"), p75_ms)
+            $jq:core-query(local_p75_ms, select(.key | endswith(".local.requestTimes")), p75_ms)
           </str>
           <str>
-            $jq:core-query(local_p95_ms, endswith(".local.requestTimes"), p95_ms)
+            $jq:core-query(local_p95_ms, select(.key | endswith(".local.requestTimes")), p95_ms)
           </str>
           <str>
-            $jq:core-query(local_p99_ms, endswith(".local.requestTimes"), p99_ms)
+            $jq:core-query(local_p99_ms, select(.key | endswith(".local.requestTimes")), p99_ms)
           </str>
           <str>
-            $jq:core-query(local_mean_rate, endswith(".local.requestTimes"), meanRate)
+            $jq:core-query(local_mean_rate, select(.key | endswith(".local.requestTimes")), meanRate)
           </str>
           <str>
-            $jq:core-query(local_count, endswith(".local.requestTimes"), count, COUNTER)
+            $jq:core-query(local_count, select(.key | endswith(".local.requestTimes")), count, COUNTER)
           </str>
 
           <!-- core metrics other than query -->
