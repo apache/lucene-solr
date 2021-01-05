@@ -285,6 +285,9 @@ Bug Fixes
 
 * SOLR-14571: Download speed was hard-coded in the "Replication" screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
 
+* SOLR-15048: Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent that are in the
+  null group to treat them consistently regardless of collapse field type or group head selector. (hossman)
+
 Other Changes
 ---------------------
 
